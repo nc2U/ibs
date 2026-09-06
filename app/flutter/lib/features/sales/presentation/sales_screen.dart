@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../data/models/sales_models.dart';
@@ -180,58 +182,91 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+    final projectSlug = selectedProject?.slug;
+
+    final canPerformance = ref.can(Perm.salesRead, projectSlug: projectSlug);
+    final canSettlement = ref.can(Perm.salesSettle, projectSlug: projectSlug);
+    final canPayout = ref.can(Perm.salesPayout, projectSlug: projectSlug);
+    final canOrganization = ref.can(Perm.salesManage, projectSlug: projectSlug);
+    final canPolicy = ref.can(Perm.salesPolicy, projectSlug: projectSlug);
+
+    final availableTabs = <SalesSubTab>[];
+    if (canPerformance) availableTabs.add(SalesSubTab.performance);
+    if (canSettlement) availableTabs.add(SalesSubTab.settlement);
+    if (canPayout) availableTabs.add(SalesSubTab.payout);
+    if (canOrganization) availableTabs.add(SalesSubTab.organization);
+    if (canPolicy) availableTabs.add(SalesSubTab.policy);
+
+    if (availableTabs.isNotEmpty && !availableTabs.contains(_currentTab)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && availableTabs.isNotEmpty && !availableTabs.contains(_currentTab)) {
+          setState(() => _currentTab = availableTabs.first);
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
       body: Column(
         children: [
           // ── 상단 서브 탭 바 (IBS Global Flat radius=0) ─────────────────
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: context.colors.bgSurface,
-              border: Border(
-                bottom: BorderSide(color: context.colors.border, width: 1),
+          if (availableTabs.isNotEmpty)
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: context.colors.bgSurface,
+                border: Border(
+                  bottom: BorderSide(color: context.colors.border, width: 1),
+                ),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    if (canPerformance) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.performance,
+                        label: '계약 실적',
+                        icon: Icons.assignment_turned_in_outlined,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (canSettlement) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.settlement,
+                        label: '수수료 정산',
+                        icon: Icons.calculate_outlined,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (canPayout) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.payout,
+                        label: '수수료 지급',
+                        icon: Icons.account_balance_outlined,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (canOrganization) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.organization,
+                        label: '영업 조직',
+                        icon: Icons.groups_outlined,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (canPolicy) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.policy,
+                        label: '수수료 정책',
+                        icon: Icons.rule_folder_outlined,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  _buildSubTabButton(
-                    tab: SalesSubTab.performance,
-                    label: '계약 실적',
-                    icon: Icons.assignment_turned_in_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildSubTabButton(
-                    tab: SalesSubTab.settlement,
-                    label: '수수료 정산',
-                    icon: Icons.calculate_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildSubTabButton(
-                    tab: SalesSubTab.payout,
-                    label: '수수료 지급',
-                    icon: Icons.account_balance_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildSubTabButton(
-                    tab: SalesSubTab.organization,
-                    label: '영업 조직',
-                    icon: Icons.groups_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildSubTabButton(
-                    tab: SalesSubTab.policy,
-                    label: '수수료 정책',
-                    icon: Icons.rule_folder_outlined,
-                  ),
-                ],
-              ),
-            ),
-          ),
 
           // ── 본문 영역 ──────────────────────────────────────────
           Expanded(
@@ -244,7 +279,26 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                     ),
                   )
-                : _buildTabContent(selectedProject),
+                : availableTabs.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock_outline, size: 48, color: context.colors.textMuted),
+                            const SizedBox(height: 12),
+                            Text(
+                              '분양 대행 관리 열람 권한이 없습니다.',
+                              style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '관리자에게 분양 대행 관련 권한(sales.*)을 요청해 주세요.',
+                              style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _buildTabContent(selectedProject),
           ),
         ],
       ),
@@ -538,6 +592,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
   /// 검색창 & 필터 칩스 & 배정 버튼 바
   Widget _buildFilterAndSearchBar(SelectedProject project, SalesPerformanceSummary summary) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
     final statusFilter = ref.watch(salesMappingStatusFilterProvider);
     final teams = ref.watch(salesTeamsProvider).valueOrNull ?? [];
     final selectedTeamId = ref.watch(salesTeamFilterProvider);
@@ -675,36 +730,38 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            // + 담당자 배정 버튼
-            Material(
-              color: const Color(0xFF8B5CF6),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              child: InkWell(
-                onTap: () => showContractAgentFormSheet(
-                  context,
-                  projectId: project.realProjectId,
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add, size: 14, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        '배정',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11.5,
+            if (canManage) ...[
+              const SizedBox(width: 8),
+              // + 담당자 배정 버튼
+              Material(
+                color: const Color(0xFF8B5CF6),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                child: InkWell(
+                  onTap: () => showContractAgentFormSheet(
+                    context,
+                    projectId: project.realProjectId,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          '배정',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.5,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
@@ -749,6 +806,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     SelectedProject project,
     List<SalesPersonModel> persons,
   ) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
     final isMapped = item.isMapped;
     SalesPersonModel? matchedPerson;
     if (isMapped && item.mapping?.salesPerson != null) {
@@ -991,43 +1049,45 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ],
                 const Spacer(),
-                if (isMapped)
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.colors.textPrimary,
-                      side: BorderSide(color: context.colors.border, width: 0.8),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      minimumSize: Size.zero,
+                if (canManage) ...[
+                  if (isMapped)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.colors.textPrimary,
+                        side: BorderSide(color: context.colors.border, width: 0.8),
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        minimumSize: Size.zero,
+                      ),
+                      icon: const Icon(Icons.edit_outlined, size: 12),
+                      label: const Text('배정 수정', style: TextStyle(fontSize: 11.5)),
+                      onPressed: () => showContractAgentFormSheet(
+                        context,
+                        projectId: project.realProjectId,
+                        initialContractId: item.contractId,
+                        initialContractLabel: item.contractLabel,
+                        existingMapping: item.mapping,
+                      ),
+                    )
+                  else
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        foregroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        minimumSize: Size.zero,
+                      ),
+                      icon: const Icon(Icons.person_add_alt_1_outlined, size: 12),
+                      label: const Text('담당자 배정', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                      onPressed: () => showContractAgentFormSheet(
+                        context,
+                        projectId: project.realProjectId,
+                        initialContractId: item.contractId,
+                        initialContractLabel: item.contractLabel,
+                      ),
                     ),
-                    icon: const Icon(Icons.edit_outlined, size: 12),
-                    label: const Text('배정 수정', style: TextStyle(fontSize: 11.5)),
-                    onPressed: () => showContractAgentFormSheet(
-                      context,
-                      projectId: project.realProjectId,
-                      initialContractId: item.contractId,
-                      initialContractLabel: item.contractLabel,
-                      existingMapping: item.mapping,
-                    ),
-                  )
-                else
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5CF6),
-                      foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      minimumSize: Size.zero,
-                    ),
-                    icon: const Icon(Icons.person_add_alt_1_outlined, size: 12),
-                    label: const Text('담당자 배정', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    onPressed: () => showContractAgentFormSheet(
-                      context,
-                      projectId: project.realProjectId,
-                      initialContractId: item.contractId,
-                      initialContractLabel: item.contractLabel,
-                    ),
-                  ),
+                ],
               ],
             ),
           ],
@@ -1275,6 +1335,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     List<SettlementPeriodModel> periods,
     SettlementPeriodModel? currentPeriod,
   ) {
+    final canSettle = ref.can(Perm.salesSettle, projectSlug: project.slug);
+
     if (periods.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -1300,18 +1362,20 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               textAlign: TextAlign.center,
               style: AppTextStyles.caption.copyWith(color: context.colors.textSecond),
             ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF06B6D4),
-                side: const BorderSide(color: Color(0xFF06B6D4)),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            if (canSettle) ...[
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF06B6D4),
+                  side: const BorderSide(color: Color(0xFF06B6D4)),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text('새 정산 회차 등록', style: AppTextStyles.caption),
+                onPressed: () => showPeriodFormSheet(context, projectId: project.realProjectId),
               ),
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: Text('새 정산 회차 등록', style: AppTextStyles.caption),
-              onPressed: () => showPeriodFormSheet(context, projectId: project.realProjectId),
-            ),
+            ],
           ],
         ),
       );
@@ -1437,20 +1501,22 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                // 회차 정보 수정 버튼
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: '회차 설정 수정',
-                  color: context.colors.textMuted,
-                  onPressed: () => showPeriodFormSheet(
-                    context,
-                    projectId: project.realProjectId,
-                    existingPeriod: period,
+                if (canSettle) ...[
+                  const SizedBox(width: 6),
+                  // 회차 정보 수정 버튼
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: '회차 설정 수정',
+                    color: context.colors.textMuted,
+                    onPressed: () => showPeriodFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                      existingPeriod: period,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1500,22 +1566,23 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             child: Row(
               children: [
                 // [+ 새 회차 등록]
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colors.textSecond,
-                    side: BorderSide(color: context.colors.border),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    minimumSize: Size.zero,
+                if (canSettle)
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.colors.textSecond,
+                      side: BorderSide(color: context.colors.border),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: Size.zero,
+                    ),
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('회차 추가', style: TextStyle(fontSize: 12)),
+                    onPressed: () => showPeriodFormSheet(context, projectId: project.realProjectId),
                   ),
-                  icon: const Icon(Icons.add, size: 14),
-                  label: const Text('회차 추가', style: TextStyle(fontSize: 12)),
-                  onPressed: () => showPeriodFormSheet(context, projectId: project.realProjectId),
-                ),
                 const Spacer(),
 
                 // [⚡ 정산 계산 실행] 버튼 (작성 중일 때 활성화)
-                if (period.isDraft) ...[
+                if (canSettle && period.isDraft) ...[
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF06B6D4),
@@ -1532,7 +1599,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ],
 
                 // [✓ 정산 확정] 버튼 (작성 중이고 집계된 내역이 있을 때)
-                if (period.isDraft && (period.payoutCount > 0 || period.totalGrossAmount > 0)) ...[
+                if (canSettle && period.isDraft && (period.payoutCount > 0 || period.totalGrossAmount > 0)) ...[
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
@@ -2000,7 +2067,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (ctx, index) {
                 final item = filteredPayouts[index];
-                return _buildSettlementPayoutCard(context, item);
+                return _buildSettlementPayoutCard(context, item, project);
               },
             ),
           ],
@@ -2012,7 +2079,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   bool periodIsDraft(SettlementPeriodModel period) => period.isDraft || period.status == '1';
 
   /// 개인별 수수료 지급 명세 카드
-  Widget _buildSettlementPayoutCard(BuildContext context, CommissionPayoutModel item) {
+  Widget _buildSettlementPayoutCard(BuildContext context, CommissionPayoutModel item, SelectedProject project) {
     Color statusColor;
     switch (item.payStatus) {
       case '2': // 승인 완료
@@ -2048,7 +2115,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => showPayoutDetailSheet(context, payout: item),
+          onTap: () => showPayoutDetailSheet(context, payout: item, projectSlug: project.slug),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -2514,7 +2581,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           const SizedBox(height: 14),
 
           // 5. 다중 선택 & 일괄 상태 변경 & 이체 파일 다운로드 툴바
-          _buildPayoutBatchActionBar(currentPeriod, filteredList, selectedIds),
+          _buildPayoutBatchActionBar(project, currentPeriod, filteredList, selectedIds),
           const SizedBox(height: 14),
 
           // 6. 개인별 지급 대장 카드 리스트
@@ -2532,6 +2599,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     SettlementPeriodModel? currentPeriod,
     PayoutStatusSummaryModel summary,
   ) {
+    final canPayout = ref.can(Perm.salesPayout, projectSlug: project.slug);
+
     if (periods.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -2721,7 +2790,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ),
                 // 회차 완료 버튼 (조건 충족 시)
-                if (canCompletePeriod) ...[
+                if (canPayout && canCompletePeriod) ...[
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
@@ -2909,10 +2978,12 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
   /// 다중 선택 및 일괄 처리 & 이체 파일 다운로드 액션 바
   Widget _buildPayoutBatchActionBar(
+    SelectedProject project,
     SettlementPeriodModel? currentPeriod,
     List<CommissionPayoutModel> filteredList,
     Set<int> selectedIds,
   ) {
+    final canPayout = ref.can(Perm.salesPayout, projectSlug: project.slug);
     final isAllSelected = filteredList.isNotEmpty &&
         filteredList.every((item) => selectedIds.contains(item.id));
 
@@ -3015,8 +3086,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             ],
           ),
 
-          // 선택 항목이 있을 때 일괄 상태 변경 버튼 그룹 표출
-          if (selectedIds.isNotEmpty) ...[
+          // 선택 항목이 있을 때 일괄 상태 변경 버튼 그룹 표출 (지급 권한 보유 시)
+          if (canPayout && selectedIds.isNotEmpty) ...[
             const SizedBox(height: 8),
             Divider(height: 1, thickness: 0.5, color: context.colors.borderSubtle),
             const SizedBox(height: 8),
@@ -3230,7 +3301,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               itemBuilder: (ctx, index) {
                 final item = filteredList[index];
                 final isSelected = selectedIds.contains(item.id);
-                return _buildPayoutExecutionCard(context, item, isSelected);
+                return _buildPayoutExecutionCard(context, item, isSelected, project);
               },
             ),
           ],
@@ -3244,7 +3315,9 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     BuildContext context,
     CommissionPayoutModel item,
     bool isSelected,
+    SelectedProject project,
   ) {
+    final canPayout = ref.can(Perm.salesPayout, projectSlug: project.slug);
     Color statusColor;
     switch (item.payStatus) {
       case '2': // 승인 완료
@@ -3283,7 +3356,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => showPayoutDetailSheet(context, payout: item),
+          onTap: () => showPayoutDetailSheet(context, payout: item, projectSlug: project.slug),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -3344,41 +3417,59 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                     ),
 
-                    // 원클릭 상태 전환 팝업 메뉴
-                    PopupMenuButton<String>(
-                      tooltip: '지급 상태 변경',
-                      padding: EdgeInsets.zero,
-                      onSelected: (newStatus) => _handleIndividualStatusUpdate(item, newStatus),
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(value: '1', child: Text('지급 대기')),
-                        const PopupMenuItem(value: '2', child: Text('승인 완료')),
-                        const PopupMenuItem(value: '3', child: Text('지급 완료 (오늘 일자)')),
-                        const PopupMenuItem(value: '4', child: Text('지급 보류')),
-                      ],
-                      child: Container(
+                    // 원클릭 상태 전환 팝업 메뉴 (권한 보유 시 팝업, 미보유 시 단순 뱃지)
+                    if (canPayout)
+                      PopupMenuButton<String>(
+                        tooltip: '지급 상태 변경',
+                        padding: EdgeInsets.zero,
+                        onSelected: (newStatus) => _handleIndividualStatusUpdate(item, newStatus),
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(value: '1', child: Text('지급 대기')),
+                          const PopupMenuItem(value: '2', child: Text('승인 완료')),
+                          const PopupMenuItem(value: '3', child: Text('지급 완료 (오늘 일자)')),
+                          const PopupMenuItem(value: '4', child: Text('지급 보류')),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: statusColor.withAlpha(25),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                item.payStatusDisplay ?? '지급 대기',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(Icons.arrow_drop_down, size: 14, color: statusColor),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: statusColor.withAlpha(25),
                           borderRadius: BorderRadius.zero,
                           border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              item.payStatusDisplay ?? '지급 대기',
-                              style: AppTextStyles.caption.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(Icons.arrow_drop_down, size: 14, color: statusColor),
-                          ],
+                        child: Text(
+                          item.payStatusDisplay ?? '지급 대기',
+                          style: AppTextStyles.caption.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -3619,6 +3710,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     List<SalesAgencyModel> agencies,
     List<SalesTeamModel> teams,
   ) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
     final selectedAgencyId = ref.watch(orgAgencyFilterProvider);
     final selectedTeamId = ref.watch(orgTeamFilterProvider);
 
@@ -3729,42 +3821,45 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        // [⚙️ 조직 관리] 버튼
-        Material(
-          color: const Color(0xFF6366F1),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          child: InkWell(
-            onTap: () => showAgencyTeamManageSheet(
-              context,
-              projectId: project.realProjectId,
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.account_tree_outlined, size: 14, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text(
-                    '조직 관리',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11.5,
+        if (canManage) ...[
+          const SizedBox(width: 8),
+          // [⚙️ 조직 관리] 버튼
+          Material(
+            color: const Color(0xFF6366F1),
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            child: InkWell(
+              onTap: () => showAgencyTeamManageSheet(
+                context,
+                projectId: project.realProjectId,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.account_tree_outlined, size: 14, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      '조직 관리',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
 
   /// 인력 검색창 & 직책/재직상태 필터 바 + [+ 인력 등록] 버튼
   Widget _buildOrgPersonFilterBar(SelectedProject project) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
     final statusFilter = ref.watch(orgStatusFilterProvider);
     final dutyFilter = ref.watch(orgDutyFilterProvider);
 
@@ -3916,36 +4011,38 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            // [+ 인력 등록] 버튼
-            Material(
-              color: const Color(0xFF10B981),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              child: InkWell(
-                onTap: () => showPersonFormSheet(
-                  context,
-                  projectId: project.realProjectId,
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.person_add_alt_1, size: 14, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        '인력 등록',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11.5,
+            if (canManage) ...[
+              const SizedBox(width: 8),
+              // [+ 인력 등록] 버튼
+              Material(
+                color: const Color(0xFF10B981),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                child: InkWell(
+                  onTap: () => showPersonFormSheet(
+                    context,
+                    projectId: project.realProjectId,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person_add_alt_1, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          '인력 등록',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.5,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
@@ -3958,6 +4055,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     AsyncValue<List<SalesPersonModel>> personsAsync,
     List<SalesPersonModel> filteredPersons,
   ) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
+
     return personsAsync.when(
       loading: () => Container(
         padding: const EdgeInsets.all(40),
@@ -4019,21 +4118,23 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   textAlign: TextAlign.center,
                   style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                 ),
-                const SizedBox(height: 14),
-                OutlinedButton.icon(
-                  onPressed: () => showPersonFormSheet(
-                    context,
-                    projectId: project.realProjectId,
+                if (canManage) ...[
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => showPersonFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                    ),
+                    icon: const Icon(Icons.person_add_alt_1, size: 14),
+                    label: const Text('신규 인력 등록하기', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF10B981),
+                      side: const BorderSide(color: Color(0xFF10B981)),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
+                    ),
                   ),
-                  icon: const Icon(Icons.person_add_alt_1, size: 14),
-                  label: const Text('신규 인력 등록하기', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF10B981),
-                    side: const BorderSide(color: Color(0xFF10B981)),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero),
-                  ),
-                ),
+                ],
               ],
             ),
           );
@@ -4053,6 +4154,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     SalesPersonModel person,
     SelectedProject project,
   ) {
+    final canManage = ref.can(Perm.salesManage, projectSlug: project.slug);
     final isActive = person.status == '1';
     final dutyColor = _getDutyColor(person.duty);
     final dutyText = _getDutyLabel(person.duty, person.dutyDisplay);
@@ -4156,31 +4258,32 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ],
                 const Spacer(),
                 // 수정 버튼
-                InkWell(
-                  onTap: () => showPersonFormSheet(
-                    context,
-                    projectId: project.realProjectId,
-                    existingPerson: person,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_outlined,
-                            size: 13, color: context.colors.textMuted),
-                        const SizedBox(width: 3),
-                        Text(
-                          '수정',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.colors.textMuted,
+                if (canManage)
+                  InkWell(
+                    onTap: () => showPersonFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                      existingPerson: person,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit_outlined,
+                              size: 13, color: context.colors.textMuted),
+                          const SizedBox(width: 3),
+                          Text(
+                            '수정',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.colors.textMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -4334,6 +4437,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   onTap: () => showPersonDocumentSheet(
                     context,
                     person: person,
+                    projectSlug: project.slug,
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -4591,6 +4695,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     List<OrderGroupOption> orderGroups,
     List<UnitTypeOption> unitTypes,
   ) {
+    final canPolicy = ref.can(Perm.salesPolicy, projectSlug: project.slug);
     final activeFilter = ref.watch(policyActiveFilterProvider);
     final selectedOrderGroupId = ref.watch(policyOrderGroupFilterProvider);
     final selectedUnitTypeId = ref.watch(policyUnitTypeFilterProvider);
@@ -4783,36 +4888,38 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            // [+ 정책 등록] 버튼
-            Material(
-              color: const Color(0xFFEC4899),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              child: InkWell(
-                onTap: () => showPolicyFormSheet(
-                  context,
-                  projectId: project.realProjectId,
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add, size: 14, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        '정책 등록',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11.5,
+            if (canPolicy) ...[
+              const SizedBox(width: 8),
+              // [+ 정책 등록] 버튼
+              Material(
+                color: const Color(0xFFEC4899),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                child: InkWell(
+                  onTap: () => showPolicyFormSheet(
+                    context,
+                    projectId: project.realProjectId,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          '정책 등록',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.5,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
@@ -4825,6 +4932,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     AsyncValue<List<CommissionPolicyModel>> policiesAsync,
     List<CommissionPolicyModel> filteredPolicies,
   ) {
+    final canPolicy = ref.can(Perm.salesPolicy, projectSlug: project.slug);
+
     return policiesAsync.when(
       loading: () => Container(
         padding: const EdgeInsets.all(40),
@@ -4886,21 +4995,23 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   textAlign: TextAlign.center,
                   style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                 ),
-                const SizedBox(height: 14),
-                OutlinedButton.icon(
-                  onPressed: () => showPolicyFormSheet(
-                    context,
-                    projectId: project.realProjectId,
+                if (canPolicy) ...[
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => showPolicyFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                    ),
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('신규 정책 등록하기', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEC4899),
+                      side: const BorderSide(color: Color(0xFFEC4899)),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
+                    ),
                   ),
-                  icon: const Icon(Icons.add, size: 14),
-                  label: const Text('신규 정책 등록하기', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFEC4899),
-                    side: const BorderSide(color: Color(0xFFEC4899)),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero),
-                  ),
-                ),
+                ],
               ],
             ),
           );
@@ -4920,6 +5031,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     CommissionPolicyModel policy,
     SelectedProject project,
   ) {
+    final canPolicy = ref.can(Perm.salesPolicy, projectSlug: project.slug);
     final isActive = policy.isActive;
     final total = policy.totalFee;
 
@@ -4985,32 +5097,34 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // 수정 버튼
-                InkWell(
-                  onTap: () => showPolicyFormSheet(
-                    context,
-                    projectId: project.realProjectId,
-                    existingPolicy: policy,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_outlined, size: 13, color: context.colors.textMuted),
-                        const SizedBox(width: 3),
-                        Text(
-                          '수정',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.colors.textMuted,
+                if (canPolicy) ...[
+                  const SizedBox(width: 8),
+                  // 수정 버튼
+                  InkWell(
+                    onTap: () => showPolicyFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                      existingPolicy: policy,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit_outlined, size: 13, color: context.colors.textMuted),
+                          const SizedBox(width: 3),
+                          Text(
+                            '수정',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.colors.textMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 6),

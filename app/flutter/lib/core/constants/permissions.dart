@@ -99,6 +99,13 @@ abstract class Perm {
   static const String siteUpdate = 'site.update';
   static const String siteDelete = 'site.delete';
 
+  // Sales permissions
+  static const String salesRead   = 'sales.read';
+  static const String salesManage = 'sales.manage';
+  static const String salesPolicy = 'sales.policy';
+  static const String salesSettle = 'sales.settle';
+  static const String salesPayout = 'sales.payout';
+
   // HQ PERMISSION -----------------------------
   // HR Work permissions
   static const String hqHrWorkRead   = 'hq.hr_work.read';

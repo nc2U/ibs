@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
 import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
@@ -42,6 +44,26 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           slug: project.slug,
         ),
       );
+    }
+    if (module == ProjectActiveModule.sales) {
+      final canSales = ref.canAny([
+        Perm.salesRead,
+        Perm.salesManage,
+        Perm.salesPolicy,
+        Perm.salesSettle,
+        Perm.salesPayout,
+      ], projectSlug: project?.slug);
+      if (!canSales) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('분양 대행 관리 권한(sales.*)이 없습니다.'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
     ref.read(projectActiveModuleProvider.notifier).state = module;
   }
@@ -89,6 +111,14 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
+    final canSales = isRealEstateProject &&
+        ref.canAny([
+          Perm.salesRead,
+          Perm.salesManage,
+          Perm.salesPolicy,
+          Perm.salesSettle,
+          Perm.salesPayout,
+        ], projectSlug: selectedProject.slug);
 
     final realEstateProjectsAsync = ref.watch(realEstateProjectsProvider);
     final realEstateProjects = realEstateProjectsAsync.valueOrNull ?? [];
@@ -765,9 +795,22 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                       subtitle: '영업 실적 매핑, 차수별 수수료 정산 및 지급 이력 관리',
                       icon: Icons.badge_outlined,
                       accentColor: const Color(0xFF8B5CF6), // Electric Violet
-                      isEnabled: isRealEstateProject,
-                      onTap: () => _openSubModule(ProjectActiveModule.sales),
-                      onDisabledTap: () => _handleDisabledModuleTap('분양 대행 관리'),
+                      isEnabled: canSales,
+                      onTap: () => _openSubModule(ProjectActiveModule.sales, selectedProject),
+                      onDisabledTap: () {
+                        if (!isRealEstateProject) {
+                          _handleDisabledModuleTap('분양 대행 관리');
+                        } else {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('분양 대행 관리 권한(sales.*)이 없습니다.'),
+                              duration: Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 10),

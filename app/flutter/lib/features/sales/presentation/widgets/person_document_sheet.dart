@@ -6,7 +6,9 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/dio_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
 import '../../data/sales_repository.dart';
@@ -16,6 +18,8 @@ import '../../providers/sales_provider.dart';
 void showPersonDocumentSheet(
   BuildContext context, {
   required SalesPersonModel person,
+  String? projectSlug,
+  bool? canManage,
 }) {
   showModalBottomSheet(
     context: context,
@@ -28,7 +32,11 @@ void showPersonDocumentSheet(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(ctx).viewInsets.bottom,
       ),
-      child: PersonDocumentSheet(person: person),
+      child: PersonDocumentSheet(
+        person: person,
+        projectSlug: projectSlug,
+        canManage: canManage,
+      ),
     ),
   );
 }
@@ -36,10 +44,14 @@ void showPersonDocumentSheet(
 /// 영업 인력 증빙 서류 바텀시트
 class PersonDocumentSheet extends ConsumerStatefulWidget {
   final SalesPersonModel person;
+  final String? projectSlug;
+  final bool? canManage;
 
   const PersonDocumentSheet({
     super.key,
     required this.person,
+    this.projectSlug,
+    this.canManage,
   });
 
   @override
@@ -486,6 +498,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
 
   /// 개별 서류 카드 위젯
   Widget _buildDocumentCard(SalesPersonDocumentModel doc) {
+    final canManage = widget.canManage ?? ref.can(Perm.salesManage, projectSlug: widget.projectSlug);
     final typeColor = _getDocTypeColor(doc.docType);
     final typeLabel = _getDocTypeLabel(doc.docType, doc.docTypeDisplay);
     final isDownloading = _downloadingDocId == doc.id;
@@ -727,63 +740,65 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                 ),
               ),
 
-              const SizedBox(width: 6),
+              if (canManage) ...[
+                const SizedBox(width: 6),
 
-              // 3. [검증 / 검증취소] 버튼
-              Material(
-                color: doc.isVerified
-                    ? context.colors.borderSubtle
-                    : const Color(0xFF10B981).withAlpha(15),
-                shape: Border.all(
+                // 3. [검증 / 검증취소] 버튼
+                Material(
                   color: doc.isVerified
-                      ? context.colors.border
-                      : const Color(0xFF10B981).withAlpha(70),
-                  width: 0.8,
-                ),
-                child: InkWell(
-                  onTap: isVerifying ? null : () => _toggleVerify(doc),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isVerifying) ...[
-                          SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
+                      ? context.colors.borderSubtle
+                      : const Color(0xFF10B981).withAlpha(15),
+                  shape: Border.all(
+                    color: doc.isVerified
+                        ? context.colors.border
+                        : const Color(0xFF10B981).withAlpha(70),
+                    width: 0.8,
+                  ),
+                  child: InkWell(
+                    onTap: isVerifying ? null : () => _toggleVerify(doc),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isVerifying) ...[
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: doc.isVerified
+                                    ? context.colors.textMuted
+                                    : const Color(0xFF10B981),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                          ] else ...[
+                            Icon(
+                              doc.isVerified ? Icons.remove_done : Icons.check,
+                              size: 13,
+                              color: doc.isVerified
+                                  ? context.colors.textMuted
+                                  : const Color(0xFF10B981),
+                            ),
+                            const SizedBox(width: 3),
+                          ],
+                          Text(
+                            doc.isVerified ? '검증취소' : '검증',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                               color: doc.isVerified
                                   ? context.colors.textMuted
                                   : const Color(0xFF10B981),
                             ),
                           ),
-                          const SizedBox(width: 5),
-                        ] else ...[
-                          Icon(
-                            doc.isVerified ? Icons.remove_done : Icons.check,
-                            size: 13,
-                            color: doc.isVerified
-                                ? context.colors.textMuted
-                                : const Color(0xFF10B981),
-                          ),
-                          const SizedBox(width: 3),
                         ],
-                        Text(
-                          doc.isVerified ? '검증취소' : '검증',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: doc.isVerified
-                                ? context.colors.textMuted
-                                : const Color(0xFF10B981),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

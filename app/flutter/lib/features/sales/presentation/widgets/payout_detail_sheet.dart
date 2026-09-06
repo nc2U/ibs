@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
 import '../../data/sales_repository.dart';
@@ -11,6 +13,8 @@ import '../../providers/sales_provider.dart';
 void showPayoutDetailSheet(
   BuildContext context, {
   required CommissionPayoutModel payout,
+  String? projectSlug,
+  bool? canPayout,
 }) {
   showModalBottomSheet(
     context: context,
@@ -23,15 +27,26 @@ void showPayoutDetailSheet(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(ctx).viewInsets.bottom,
       ),
-      child: PayoutDetailSheet(payout: payout),
+      child: PayoutDetailSheet(
+        payout: payout,
+        projectSlug: projectSlug,
+        canPayout: canPayout,
+      ),
     ),
   );
 }
 
 class PayoutDetailSheet extends ConsumerStatefulWidget {
   final CommissionPayoutModel payout;
+  final String? projectSlug;
+  final bool? canPayout;
 
-  const PayoutDetailSheet({super.key, required this.payout});
+  const PayoutDetailSheet({
+    super.key,
+    required this.payout,
+    this.projectSlug,
+    this.canPayout,
+  });
 
   @override
   ConsumerState<PayoutDetailSheet> createState() => _PayoutDetailSheetState();
@@ -139,6 +154,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final canPayout = widget.canPayout ?? ref.can(Perm.salesPayout, projectSlug: widget.projectSlug);
     final hasAccount =
         _payout.accountNumber != null && _payout.accountNumber!.isNotEmpty;
 
@@ -524,8 +540,9 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
           ),
 
           // 하단 지급 상태 제어 바
-          Container(
-            padding: const EdgeInsets.all(16),
+          if (canPayout)
+            Container(
+              padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
             ),
