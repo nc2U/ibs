@@ -1,0 +1,659 @@
+from datetime import date, timedelta
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework import status as http_status
+from rest_framework.test import APITestCase
+
+from company.models import Company
+from contract.models import OrderGroup, Contract, Contractor
+from items.models import UnitType, KeyUnit, BuildingUnit, HouseUnit
+from project.models import Project
+from work.models.project import IssueProject
+
+from sales.models import (
+    SalesAgency, SalesTeam, SalesPerson, CommissionPolicy,
+    ContractSalesAgent, SettlementPeriod, CommissionPayout,
+    PayoutContractDetail, CommissionClawback
+)
+
+User = get_user_model()
+
+
+class SalesModelUnitTests(TestCase):
+    """분양 대행 (sales) 모델 단위 및 비즈니스 로직 테스트"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='sales_tester',
+            email='sales_tester@example.com',
+            password='password123'
+        )
+        self.company = Company.objects.create(name='테스트 시행사')
+        self.issue_project = IssueProject.objects.create(
+            company=self.company,
+            name='테스트 프로젝트',
+            slug='test-sales-proj',
+            creator=self.user
+        )
+        self.project = Project.objects.create(
+            issue_project=self.issue_project,
+            name='테스트 분양 사업지',
+            order=1,
+            kind='2',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+        self.order_group = OrderGroup.objects.create(
+            project=self.project,
+            order_number=1,
+            name='일반분양 1차',
+            is_default_for_uncontracted=True
+        )
+        self.unit_type = UnitType.objects.create(
+            project=self.project,
+            name='84A',
+            color='#6366F1',
+            average_price=450000000,
+            num_unit=50
+        )
+        self.building = BuildingUnit.objects.create(
+            project=self.project,
+            name='101동'
+        )
+        self.key_unit = KeyUnit.objects.create(
+            project=self.project,
+            unit_type=self.unit_type,
+            unit_code='A001'
+        )
+        self.house_unit = HouseUnit.objects.create(
+            unit_type=self.unit_type,
+            building_unit=self.building,
+            key_unit=self.key_unit,
+            name='101호',
+            bldg_line=1,
+            floor_no=1
+        )
+        self.contract = Contract.objects.create(
+            project=self.project,
+            serial_number='CONT-2026-0001',
+            order_group=self.order_group,
+            unit_type=self.unit_type,
+            key_unit=self.key_unit
+        )
+        self.contractor = Contractor.objects.create(
+            contract=self.contract,
+            name='홍길동',
+            status='2',
+            contract_date='2026-09-01'
+        )
+
+        # 영업 조직 기본 세팅
+        self.agency = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜골든분양대행',
+            is_direct_managed=False,
+            ceo_name='김대표',
+            phone='02-1234-5678'
+        )
+        self.hq_team = SalesTeam.objects.create(
+            agency=self.agency,
+            name='영업1본부'
+        )
+        self.sub_team = SalesTeam.objects.create(
+            agency=self.agency,
+            parent=self.hq_team,
+            name='분양1팀'
+        )
+        self.person = SalesPerson.objects.create(
+            team=self.sub_team,
+            name='이분양',
+            duty='1',  # 분양상담사
+            status='1',  # 재직
+            phone='010-1111-2222',
+            tax_type='1',  # 3.3% 프리랜서
+            bank_name='국민은행',
+            account_number='123-456-789012',
+            account_holder='이분양'
+        )
+
+    def test_sales_agency_and_team_str(self):
+        """대행사 및 영업팀 문자열 표현식 검증"""
+        self.assertIn('[외주] ㈜골든분양대행', str(self.agency))
+        self.assertEqual(str(self.hq_team), '영업1본부')
+        self.assertEqual(str(self.sub_team), '영업1본부 > 분양1팀')
+
+    def test_sales_person_str_and_duty(self):
+        """영업 인력 문자열 및 직책 검증"""
+        self.assertIn('이분양', str(self.person))
+        self.assertIn('분양상담사', str(self.person))
+        self.assertEqual(self.person.get_duty_display(), '분양상담사')
+        self.assertEqual(self.person.get_tax_type_display(), '3.3% 사업소득 (프리랜서)')
+
+    def test_commission_policy_str(self):
+        """수수료 정책 문자열 표현식 (타입 지정 vs 전체 공통)"""
+        policy_with_type = CommissionPolicy.objects.create(
+            project=self.project,
+            unit_type=self.unit_type,
+            name='84A 정규 수수료',
+            agent_fee=2500000,
+            start_date='2026-09-01'
+        )
+        self.assertIn('84A 정규 수수료 - 84A', str(policy_with_type))
+
+        policy_common = CommissionPolicy.objects.create(
+            project=self.project,
+            unit_type=None,
+            name='전체 공통 기본 수수료',
+            agent_fee=2000000,
+            start_date='2026-09-01'
+        )
+        self.assertIn('전체 공통 기본 수수료 (전체 공통)', str(policy_common))
+
+    def test_contract_sales_agent_team_auto_assignment(self):
+        """계약 영업 매핑 시 소속 팀이 명시되지 않은 경우 상담사 소속 팀으로 자동 할당"""
+        csa = ContractSalesAgent(
+            contract=self.contract,
+            sales_person=self.person,
+            contract_date='2026-09-02'
+        )
+        csa.save()
+        self.assertEqual(csa.team, self.sub_team)
+        self.assertIn('CONT-2026-0001 ➔ 이분양 (분양1팀)', str(csa))
+
+    def test_payout_tax_calculation_freelancer_3_3_percent(self):
+        """3.3% 프리랜서 사업소득세 원 단위 절사 및 실지급액 계산 검증"""
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+
+        # 1. 3,000,000원 기준 테스트 (정수 3% = 90,000 / 0.3% = 9,000)
+        payout = CommissionPayout(
+            period=period,
+            sales_person=self.person,
+            commission_amount=3000000,
+            base_pay=0,
+            bonus_amount=0,
+            deduction_amount=0
+        )
+        payout.save()
+
+        self.assertEqual(payout.gross_amount, 3000000)
+        self.assertEqual(payout.income_tax, 90000)  # 3%
+        self.assertEqual(payout.local_income_tax, 9000)  # 0.3%
+        self.assertEqual(payout.total_tax, 99000)  # 3.3%
+        self.assertEqual(payout.net_amount, 2901000)  # 3,000,000 - 99,000
+
+        # 2. 원 단위 절사(10원 미만 절사) 검증: 3,333,333원
+        # 소득세: 3,333,333 * 0.03 = 99,999.99 -> 99,990원 (10원 단위 절사)
+        # 지방소득세: 99,990 * 0.1 = 9,999 -> 9,990원 (10원 단위 절사)
+        # 원천세 합계: 99,990 + 9,990 = 109,980원
+        # 실지급액: 3,333,333 - 109,980 = 3,223,353원
+        payout.commission_amount = 3333333
+        payout.save()
+
+        self.assertEqual(payout.gross_amount, 3333333)
+        self.assertEqual(payout.income_tax, 99990)
+        self.assertEqual(payout.local_income_tax, 9990)
+        self.assertEqual(payout.total_tax, 109980)
+        self.assertEqual(payout.net_amount, 3223353)
+
+    def test_payout_tax_calculation_non_freelancer(self):
+        """근로소득/기타 소득 구분 시 원천세 0원 처리 검증"""
+        employee = SalesPerson.objects.create(
+            team=self.sub_team,
+            name='박직원',
+            duty='5',  # 지원/기타
+            tax_type='2',  # 근로소득
+            phone='010-3333-4444'
+        )
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+        payout = CommissionPayout(
+            period=period,
+            sales_person=employee,
+            base_pay=2500000
+        )
+        payout.save()
+
+        self.assertEqual(payout.gross_amount, 2500000)
+        self.assertEqual(payout.total_tax, 0)
+        self.assertEqual(payout.net_amount, 2500000)
+
+    def test_payout_bank_account_auto_sync(self):
+        """정산 지급 명세 등록 시 계좌 정보 미입력 시 영업인력 프로필 계좌 자동 복사"""
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+        payout = CommissionPayout.objects.create(
+            period=period,
+            sales_person=self.person,
+            commission_amount=1000000
+        )
+        self.assertEqual(payout.bank_name, self.person.bank_name)
+        self.assertEqual(payout.account_number, self.person.account_number)
+        self.assertEqual(payout.account_holder, self.person.account_holder)
+
+    def test_commission_clawback_str(self):
+        """수수료 환수 모델 상태 문자열 검증"""
+        clawback = CommissionClawback.objects.create(
+            contract=self.contract,
+            sales_person=self.person,
+            amount=500000,
+            is_settled=False
+        )
+        self.assertIn('[미상계]', str(clawback))
+        clawback.is_settled = True
+        clawback.save()
+        self.assertIn('[상계완료]', str(clawback))
+
+
+class SalesAPITests(APITestCase):
+    """분양 대행 (sales) REST API 및 핵심 비즈니스 액션 테스트"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='sales_admin',
+            email='sales_admin@example.com',
+            password='password123',
+            is_staff=True
+        )
+        self.client.force_authenticate(user=self.user)
+
+        self.company = Company.objects.create(name='㈜한국개발')
+        self.issue_project = IssueProject.objects.create(
+            company=self.company,
+            name='강남 센트럴타워',
+            slug='gangnam-central',
+            creator=self.user
+        )
+        self.project = Project.objects.create(
+            issue_project=self.issue_project,
+            name='강남 센트럴타워 프로젝트',
+            order=1,
+            kind='2',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+        self.order_group = OrderGroup.objects.create(
+            project=self.project,
+            order_number=1,
+            name='1차 정규분양',
+            is_default_for_uncontracted=True
+        )
+        self.unit_type_84 = UnitType.objects.create(
+            project=self.project,
+            name='84A',
+            color='#6366F1',
+            average_price=600000000,
+            num_unit=50
+        )
+        self.unit_type_59 = UnitType.objects.create(
+            project=self.project,
+            name='59A',
+            color='#10B981',
+            average_price=450000000,
+            num_unit=50
+        )
+        self.building = BuildingUnit.objects.create(
+            project=self.project,
+            name='101동'
+        )
+
+        # 영업 조직 구성
+        self.agency = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜미래분양대행',
+            is_direct_managed=False,
+            ceo_name='홍길동',
+            phone='02-555-1234'
+        )
+        self.team = SalesTeam.objects.create(
+            agency=self.agency,
+            name='영업1본부 1팀'
+        )
+        # 상담사 1 (프리랜서 3.3%)
+        self.counselor = SalesPerson.objects.create(
+            team=self.team,
+            name='김상담',
+            duty='1',  # 분양상담사
+            status='1',  # 재직
+            phone='010-1234-5678',
+            tax_type='1',
+            bank_name='신한은행',
+            account_number='110-123-456789',
+            account_holder='김상담'
+        )
+        # 팀장 1 (프리랜서 3.3%)
+        self.leader = SalesPerson.objects.create(
+            team=self.team,
+            name='박팀장',
+            duty='2',  # 팀장
+            status='1',  # 재직
+            phone='010-8765-4321',
+            tax_type='1',
+            bank_name='하나은행',
+            account_number='220-123-456789',
+            account_holder='박팀장'
+        )
+
+        # 수수료 정책: 84A 타입 정책 (상담사 200만, 팀장 50만)
+        self.policy_84 = CommissionPolicy.objects.create(
+            project=self.project,
+            unit_type=self.unit_type_84,
+            name='84A 분양 수수료 기준',
+            agent_fee=2000000,
+            leader_fee=500000,
+            director_fee=300000,
+            agency_fee=1000000,
+            start_date='2026-09-01'
+        )
+
+    def test_sales_agency_api_crud(self):
+        """분양 대행사 등록 및 목록 조회 API 검증"""
+        # 생성
+        payload = {
+            'project': self.project.id,
+            'name': '㈜신한마케팅',
+            'is_direct_managed': True,
+            'ceo_name': '신대표',
+            'phone': '02-777-8888',
+            'business_number': '123-45-67890'
+        }
+        res = self.client.post('/api/v1/sales-agency/', payload)
+        self.assertEqual(res.status_code, http_status.HTTP_201_CREATED)
+        self.assertEqual(res.data['name'], '㈜신한마케팅')
+        self.assertTrue(res.data['is_direct_managed'])
+
+        # 조회 및 필터링
+        res_list = self.client.get(f'/api/v1/sales-agency/?project={self.project.id}')
+        self.assertEqual(res_list.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_list.data['count'], 2)
+
+    def test_sales_team_api_crud_and_members_count(self):
+        """영업 팀 등록 및 소속 인력 카운트 검증"""
+        # 목록 조회: members_count 계산 필드 확인 (현재 self.team에 2명 등록됨)
+        res = self.client.get(f'/api/v1/sales-team/?agency={self.agency.id}')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res.data['count'], 1)
+        self.assertEqual(res.data['results'][0]['members_count'], 2)
+
+        # 신규 팀 생성
+        payload = {
+            'agency': self.agency.id,
+            'parent': self.team.id,
+            'name': '분양2팀',
+            'order': 2
+        }
+        res_post = self.client.post('/api/v1/sales-team/', payload)
+        self.assertEqual(res_post.status_code, http_status.HTTP_201_CREATED)
+        self.assertEqual(res_post.data['name'], '분양2팀')
+        self.assertEqual(res_post.data['parent_name'], '영업1본부 1팀')
+
+    def test_sales_person_api_crud_and_filtering(self):
+        """영업 인력 등록 및 직책/상태별 필터링 API 검증"""
+        payload = {
+            'team': self.team.id,
+            'name': '최본부',
+            'duty': '3',  # 본부장
+            'status': '1',
+            'phone': '010-9999-0000',
+            'tax_type': '1'
+        }
+        res_post = self.client.post('/api/v1/sales-person/', payload)
+        self.assertEqual(res_post.status_code, http_status.HTTP_201_CREATED)
+        self.assertEqual(res_post.data['duty_display'], '본부장')
+
+        # 직책별 필터링 (상담사만 조회)
+        res_filter = self.client.get('/api/v1/sales-person/?duty=1')
+        self.assertEqual(res_filter.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_filter.data['count'], 1)
+        self.assertEqual(res_filter.data['results'][0]['name'], '김상담')
+
+    def test_commission_policy_api_crud(self):
+        """수수료 정책 등록 및 조회 API 검증"""
+        payload = {
+            'project': self.project.id,
+            'unit_type': self.unit_type_59.id,
+            'name': '59A 분양 수수료 기준',
+            'agent_fee': 1800000,
+            'leader_fee': 400000,
+            'director_fee': 200000,
+            'agency_fee': 800000,
+            'start_date': '2026-09-01'
+        }
+        res = self.client.post('/api/v1/sales-policy/', payload)
+        self.assertEqual(res.status_code, http_status.HTTP_201_CREATED)
+        self.assertEqual(res.data['agent_fee'], 1800000)
+        self.assertEqual(res.data['unit_type_name'], '59A')
+
+    def test_contract_sales_agent_mapping_api(self):
+        """계약 영업 담당자 매핑 생성 및 상세 조회 API 검증"""
+        key_unit = KeyUnit.objects.create(
+            project=self.project,
+            unit_type=self.unit_type_84,
+            unit_code='B101'
+        )
+        contract = Contract.objects.create(
+            project=self.project,
+            serial_number='CONT-2026-0010',
+            order_group=self.order_group,
+            unit_type=self.unit_type_84,
+            key_unit=key_unit
+        )
+        Contractor.objects.create(
+            contract=contract,
+            name='강계약',
+            status='2',
+            contract_date='2026-09-03'
+        )
+
+        payload = {
+            'contract': contract.id,
+            'sales_person': self.counselor.id,
+            'team': self.team.id,
+            'policy': self.policy_84.id,
+            'contract_date': '2026-09-03',
+            'mgm_name': '강남공인중개사',
+            'mgm_fee': 500000
+        }
+        res = self.client.post('/api/v1/sales-contract-agent/', payload)
+        self.assertEqual(res.status_code, http_status.HTTP_201_CREATED)
+        self.assertEqual(res.data['contract_serial'], 'CONT-2026-0010')
+        self.assertEqual(res.data['sales_person_name'], '김상담')
+        self.assertEqual(res.data['contractor_name'], '강계약')
+
+    def test_generate_payouts_batch_action(self):
+        """
+        [핵심 정산 로직 검증]
+        정산 회차(SettlementPeriod)의 generate-payouts 액션을 호출하여:
+        1. 기간 내 계약 실적 자동 집계
+        2. 직책별(상담사 200만 vs 팀장 50만) 수수료 차등 산출
+        3. 미상계된 수수료 환수금(Clawback 30만) 자동 차감 및 상계 처리
+        4. 회차 전체 합계 금액(총계약수, 총지급액, 총원천세, 총실지급액) 갱신
+        """
+        # 1. 계약 3건 생성 (김상담 2건, 박팀장 1건)
+        # 1-1. 김상담 1차 계약
+        ku1 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='C101')
+        c1 = Contract.objects.create(project=self.project, serial_number='CONT-C101', order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku1)
+        Contractor.objects.create(contract=c1, name='계약자A', status='2')
+        ContractSalesAgent.objects.create(contract=c1, sales_person=self.counselor, team=self.team, policy=self.policy_84, contract_date='2026-09-02')
+
+        # 1-2. 김상담 2차 계약
+        ku2 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='C102')
+        c2 = Contract.objects.create(project=self.project, serial_number='CONT-C102', order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku2)
+        Contractor.objects.create(contract=c2, name='계약자B', status='2')
+        ContractSalesAgent.objects.create(contract=c2, sales_person=self.counselor, team=self.team, policy=self.policy_84, contract_date='2026-09-05')
+
+        # 1-3. 박팀장 계약 1건
+        ku3 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='C103')
+        c3 = Contract.objects.create(project=self.project, serial_number='CONT-C103', order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku3)
+        Contractor.objects.create(contract=c3, name='계약자C', status='2')
+        ContractSalesAgent.objects.create(contract=c3, sales_person=self.leader, team=self.team, policy=self.policy_84, contract_date='2026-09-06')
+
+        # 1-4. 정산 기간 밖(2026-09-20)의 계약 (집계에서 제외되어야 함)
+        ku_out = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='C104')
+        c_out = Contract.objects.create(project=self.project, serial_number='CONT-C104', order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_out)
+        Contractor.objects.create(contract=c_out, name='계약자D', status='2')
+        ContractSalesAgent.objects.create(contract=c_out, sales_person=self.counselor, team=self.team, policy=self.policy_84, contract_date='2026-09-20')
+
+        # 2. 김상담 앞으로 이전 해지 계약에 대한 미상계 환수금(300,000원) 등록
+        clawback = CommissionClawback.objects.create(
+            contract=c1,
+            sales_person=self.counselor,
+            amount=300000,
+            reason='이전 계약 해지 수수료 환수',
+            is_settled=False
+        )
+
+        # 3. 정산 회차 생성 (2026-09-01 ~ 2026-09-15)
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 수수료 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15',
+            created_by=self.user
+        )
+
+        # 4. 정산 집계 액션 실행: POST /api/v1/sales-settlement-period/{id}/generate-payouts/
+        url = f'/api/v1/sales-settlement-period/{period.id}/generate-payouts/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        # 5. 김상담 지급 명세 검증
+        # - 계약 2건 (건당 2,000,000원 = 4,000,000원)
+        # - 환수 공제 300,000원
+        # - 총 지급액(세전): 4,000,000 - 300,000 = 3,700,000원
+        # - 소득세(3%): 3,700,000 * 0.03 = 111,000원
+        # - 지방세(0.3%): 111,000 * 0.1 = 11,100원
+        # - 원천세 합계(3.3%): 122,100원
+        # - 실지급액(세후): 3,700,000 - 122,100 = 3,577,900원
+        counselor_payout = CommissionPayout.objects.get(period=period, sales_person=self.counselor)
+        self.assertEqual(counselor_payout.contract_count, 2)
+        self.assertEqual(counselor_payout.commission_amount, 4000000)
+        self.assertEqual(counselor_payout.deduction_amount, 300000)
+        self.assertEqual(counselor_payout.gross_amount, 3700000)
+        self.assertEqual(counselor_payout.income_tax, 111000)
+        self.assertEqual(counselor_payout.local_income_tax, 11100)
+        self.assertEqual(counselor_payout.total_tax, 122100)
+        self.assertEqual(counselor_payout.net_amount, 3577900)
+
+        # 환수금 상계 플래그가 True로 전환되었고 payout에 연결되었는지 확인
+        clawback.refresh_from_db()
+        self.assertTrue(clawback.is_settled)
+        self.assertEqual(clawback.settled_payout, counselor_payout)
+
+        # 김상담 계약 상세 2건 기록 확인
+        self.assertEqual(counselor_payout.contract_details.count(), 2)
+        for detail in counselor_payout.contract_details.all():
+            self.assertEqual(detail.role_type, 'agent')
+            self.assertEqual(detail.unit_fee, 2000000)
+
+        # 6. 박팀장 지급 명세 검증
+        # - 팀장 직책: leader_fee = 500,000원 적용
+        # - 계약 1건 = 500,000원
+        # - 소득세(3%): 15,000원 / 지방세(0.3%): 1,500원 / 합계: 16,500원
+        # - 실지급액: 500,000 - 16,500 = 483,500원
+        leader_payout = CommissionPayout.objects.get(period=period, sales_person=self.leader)
+        self.assertEqual(leader_payout.contract_count, 1)
+        self.assertEqual(leader_payout.commission_amount, 500000)
+        self.assertEqual(leader_payout.gross_amount, 500000)
+        self.assertEqual(leader_payout.income_tax, 15000)
+        self.assertEqual(leader_payout.local_income_tax, 1500)
+        self.assertEqual(leader_payout.total_tax, 16500)
+        self.assertEqual(leader_payout.net_amount, 483500)
+
+        # 박팀장 계약 상세 1건 기록 확인
+        leader_detail = leader_payout.contract_details.first()
+        self.assertIsNotNone(leader_detail)
+        self.assertEqual(leader_detail.role_type, 'leader')
+        self.assertEqual(leader_detail.unit_fee, 500000)
+
+        # 7. SettlementPeriod 합계 필드 갱신 검증
+        # - 총 계약 건수: 2 + 1 = 3건
+        # - 총 지급액 (세전): 3,700,000 + 500,000 = 4,200,000원
+        # - 총 원천세: 122,100 + 16,500 = 138,600원
+        # - 총 실지급액 (세후): 3,577,900 + 483,500 = 4,061,400원
+        period.refresh_from_db()
+        self.assertEqual(period.total_contracts, 3)
+        self.assertEqual(period.total_gross_amount, 4200000)
+        self.assertEqual(period.total_tax_amount, 138600)
+        self.assertEqual(period.total_net_amount, 4061400)
+
+    def test_generate_payouts_empty_period(self):
+        """정산 기간 내 실적이 없을 경우 빈 결과 응답 반환 검증"""
+        empty_period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='실적 없는 회차',
+            start_date='2026-08-01',
+            end_date='2026-08-15'
+        )
+        url = f'/api/v1/sales-settlement-period/{empty_period.id}/generate-payouts/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res.data['count'], 0)
+
+    def test_confirm_settlement_action(self):
+        """정산 회차 확정 (상태: 정산 확정 '2') 액션 검증"""
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 수수료 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15',
+            status='1'  # 작성 중
+        )
+        url = f'/api/v1/sales-settlement-period/{period.id}/confirm-settlement/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        period.refresh_from_db()
+        self.assertEqual(period.status, '2')  # 확정됨
+
+    def test_update_payout_status_action(self):
+        """지급 명세 상태 변경 및 지급완료 시 지급일 자동 기록 검증"""
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='2026년 9월 1회차 수수료 정산',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+        payout = CommissionPayout.objects.create(
+            period=period,
+            sales_person=self.counselor,
+            commission_amount=2000000,
+            pay_status='1'  # 대기
+        )
+        self.assertIsNone(payout.paid_date)
+
+        # 1. 승인 상태로 변경
+        url = f'/api/v1/sales-payout/{payout.id}/update-pay-status/'
+        res_approve = self.client.post(url, {'pay_status': '2'})
+        self.assertEqual(res_approve.status_code, http_status.HTTP_200_OK)
+        payout.refresh_from_db()
+        self.assertEqual(payout.pay_status, '2')
+        self.assertIsNone(payout.paid_date)
+
+        # 2. 지급 완료 상태로 변경 시 paid_date 오늘 날짜로 자동 기록
+        res_paid = self.client.post(url, {'pay_status': '3'})
+        self.assertEqual(res_paid.status_code, http_status.HTTP_200_OK)
+        payout.refresh_from_db()
+        self.assertEqual(payout.pay_status, '3')
+        self.assertEqual(payout.paid_date, timezone.localdate())
+
+        # 3. 잘못된 상태값 전송 시 400 에러 반환
+        res_invalid = self.client.post(url, {'pay_status': '99'})
+        self.assertEqual(res_invalid.status_code, http_status.HTTP_400_BAD_REQUEST)
