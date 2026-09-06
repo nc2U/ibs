@@ -80,6 +80,8 @@ export interface ContractSalesAgent {
   contract: number
   contract_serial?: string
   contractor_name?: string
+  order_group_name?: string
+  unit_type_name?: string
   unit_info?: string
   sales_person: number
   sales_person_name?: string

@@ -52,7 +52,7 @@ class SalesPersonSerializer(serializers.ModelSerializer):
 
 class CommissionPolicySerializer(serializers.ModelSerializer):
     unit_type_name = serializers.ReadOnlyField(source='unit_type.name')
-    order_group_name = serializers.ReadOnlyField(source='order_group.order_group_name')
+    order_group_name = serializers.ReadOnlyField(source='order_group.name')
     pay_condition_display = serializers.CharField(source='get_pay_condition_display', read_only=True)
 
     class Meta:
@@ -70,6 +70,8 @@ class CommissionPolicySerializer(serializers.ModelSerializer):
 class ContractSalesAgentSerializer(serializers.ModelSerializer):
     contract_serial = serializers.ReadOnlyField(source='contract.serial_number')
     contractor_name = serializers.ReadOnlyField(source='contract.contractor.name')
+    order_group_name = serializers.ReadOnlyField(source='contract.order_group.name')
+    unit_type_name = serializers.ReadOnlyField(source='contract.unit_type.name')
     unit_info = serializers.SerializerMethodField()
     sales_person_name = serializers.ReadOnlyField(source='sales_person.name')
     team_name = serializers.ReadOnlyField(source='team.name')
@@ -78,7 +80,8 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractSalesAgent
         fields = (
-            'id', 'contract', 'contract_serial', 'contractor_name', 'unit_info',
+            'id', 'contract', 'contract_serial', 'contractor_name',
+            'order_group_name', 'unit_type_name', 'unit_info',
             'sales_person', 'sales_person_name', 'team', 'team_name',
             'policy', 'policy_name', 'contract_date',
             'mgm_name', 'mgm_phone', 'mgm_fee', 'note',
