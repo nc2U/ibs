@@ -69,7 +69,7 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     serializer_class = ContractSalesAgentSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPaginationCustomBasic
-    filterset_fields = ('team__agency__project', 'sales_person', 'team', 'contract')
+    filterset_fields = ('team__agency__project', 'contract__project', 'sales_person', 'team', 'contract')
     search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
 
 

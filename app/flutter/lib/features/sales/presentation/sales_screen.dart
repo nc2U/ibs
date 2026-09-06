@@ -1,8 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../data/models/sales_models.dart';
+import '../providers/sales_provider.dart';
+import 'widgets/contract_agent_form_sheet.dart';
+import 'widgets/person_form_sheet.dart';
+import 'widgets/agency_team_manage_sheet.dart';
 
 /// 🤝 분양 대행 관리 (Sales Agency) 서브 탭 구분
 enum SalesSubTab {
@@ -28,6 +36,102 @@ class SalesScreen extends ConsumerStatefulWidget {
 
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   SalesSubTab _currentTab = SalesSubTab.performance;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
+
+  final TextEditingController _orgSearchController = TextEditingController();
+  Timer? _orgDebounceTimer;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    _orgSearchController.dispose();
+    _orgDebounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      ref.read(salesSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _onOrgSearchChanged(String value) {
+    _orgDebounceTimer?.cancel();
+    _orgDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      ref.read(orgSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  Future<void> _makePhoneCall(String phone, {String? targetName}) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.isEmpty) return;
+
+    final shouldCall = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.bgCard,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actionsPadding: const EdgeInsets.all(12),
+        title: Row(
+          children: [
+            const Icon(Icons.phone_in_talk, size: 20, color: Color(0xFF10B981)),
+            const SizedBox(width: 8),
+            Text(
+              '통화 연결 확인',
+              style: AppTextStyles.titleSm.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          targetName != null && targetName.isNotEmpty
+              ? '$targetName ($phone) 님에게 전화를 연결하시겠습니까?'
+              : '$phone 로 전화를 연결하시겠습니까?',
+          style: AppTextStyles.bodySecond.copyWith(
+            color: context.colors.textSecond,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              '취소',
+              style: TextStyle(color: context.colors.textMuted),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('통화 연결'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCall == true) {
+      final uri = Uri.parse('tel:$cleanPhone');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('통화 기능을 실행할 수 없습니다.')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +200,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                     ),
                   )
-                : _buildTabContent(selectedProject.name),
+                : _buildTabContent(selectedProject),
           ),
         ],
       ),
@@ -149,49 +253,742 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     );
   }
 
-  Widget _buildTabContent(String projectName) {
+  Widget _buildTabContent(SelectedProject project) {
     switch (_currentTab) {
       case SalesSubTab.performance:
-        return _buildPerformanceView(projectName);
+        return _buildPerformanceView(project);
       case SalesSubTab.settlement:
-        return _buildSettlementView(projectName);
+        return _buildSettlementView(project.name);
       case SalesSubTab.payout:
-        return _buildPayoutView(projectName);
+        return _buildPayoutView(project.name);
       case SalesSubTab.organization:
-        return _buildOrganizationView(projectName);
+        return _buildOrganizationView(project);
       case SalesSubTab.policy:
-        return _buildPolicyView(projectName);
+        return _buildPolicyView(project.name);
     }
   }
 
-  /// 1. 계약 실적 관리 뷰
-  Widget _buildPerformanceView(String projectName) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  /// 1. 계약 실적 관리 뷰 (실제 API 연동 + 2×2 KPI + 카드 리스트 + 검색/필터 + 배정 모달)
+  Widget _buildPerformanceView(SelectedProject project) {
+    final summary = ref.watch(salesPerformanceSummaryProvider);
+    final combinedAsync = ref.watch(combinedContractPerformanceProvider);
+    final filteredItems = ref.watch(filteredContractPerformanceProvider);
+    final persons = ref.watch(salesPersonsProvider).valueOrNull ?? [];
+
+    return RefreshIndicator(
+      color: const Color(0xFF8B5CF6),
+      onRefresh: () async {
+        ref.invalidate(simpleContractsProvider);
+        ref.invalidate(rawContractSalesAgentsProvider);
+        ref.invalidate(salesTeamsProvider);
+        ref.invalidate(salesPersonsProvider);
+        ref.invalidate(salesPoliciesProvider);
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. 2×2 실시간 실적 KPI 대시보드
+          _buildPerformanceKpiSection(summary),
+          const SizedBox(height: 14),
+
+          // 2. 검색 및 필터 바
+          _buildFilterAndSearchBar(project, summary),
+          const SizedBox(height: 14),
+
+          // 3. 계약 실적 리스트
+          combinedAsync.when(
+            loading: () => Container(
+              padding: const EdgeInsets.all(40),
+              child: const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF8B5CF6),
+                  ),
+                ),
+              ),
+            ),
+            error: (err, _) => Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: context.colors.bgCard,
+                borderRadius: BorderRadius.zero,
+                border: Border.all(color: context.colors.error.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 18, color: context.colors.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '실적 데이터를 불러오지 못했습니다: $err',
+                      style: AppTextStyles.caption.copyWith(color: context.colors.error),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            data: (_) {
+              if (filteredItems.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: context.colors.bgCard,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(color: context.colors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.search_off_rounded, size: 32, color: context.colors.textMuted),
+                      const SizedBox(height: 10),
+                      Text(
+                        '조건에 일치하는 계약 실적이 없습니다',
+                        style: AppTextStyles.titleSm.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '검색어나 필터 조건을 변경해 보시거나, 상단 [배정] 버튼을 눌러 상담사를 배정해 보세요.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                children: filteredItems.map((item) {
+                  return _buildPerformanceCardItem(item, project, persons);
+                }).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  /// 2×2 실적 KPI 요약 대시보드
+  Widget _buildPerformanceKpiSection(SalesPerformanceSummary summary) {
+    return Column(
       children: [
-        _buildInfoBanner(
-          title: '계약 실적 & 영업 담당자 매핑',
-          subtitle: '체결된 분양 계약에 영업 상담사 및 MGM 중개사를 배정하고 실적을 집계합니다.',
-          icon: Icons.assignment_turned_in_outlined,
-          color: const Color(0xFF8B5CF6),
-        ),
-        const SizedBox(height: 16),
-        _buildKpiCard(
-          title: '영업 배정 KPI 요약',
-          items: const [
-            {'label': '분양 계약', 'value': '진행 중', 'color': 0xFF38BDF8},
-            {'label': '영업 배정률', 'value': '실시간 집계', 'color': 0xFF34D399},
-            {'label': 'MGM 연계', 'value': '공인중개사', 'color': 0xFFFBBF24},
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '총 분양 계약',
+                value: '${NumberFormat('#,###').format(summary.totalContracts)}건',
+                subText: '프로젝트 전체 계약',
+                accentColor: const Color(0xFF38BDF8), // Sky Blue
+                icon: Icons.assignment_outlined,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '영업 배정 완료',
+                value: '${NumberFormat('#,###').format(summary.mappedCount)}건 (${summary.mappingRate}%)',
+                subText: '실적 매핑률',
+                accentColor: const Color(0xFF10B981), // Emerald
+                icon: Icons.account_circle_outlined,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          title: '모바일 실적 조회 안내',
-          description:
-              '웹에서 등록된 상담사별 계약 실적과 MGM 매핑 정보를 프로젝트 기준으로 실시간 연동합니다. 계약 배정 변경 및 상세 수정은 IBS 웹 시스템을 통해 지원됩니다.',
-          tags: const ['계약자 매핑', '소속 팀 연동', '성과 인정일', 'MGM 정보'],
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '미배정 계약',
+                value: '${NumberFormat('#,###').format(summary.unmappedCount)}건',
+                subText: summary.unmappedCount > 0 ? '상담사 배정 필요' : '전건 배정 완료',
+                accentColor: summary.unmappedCount > 0
+                    ? const Color(0xFFF59E0B) // Amber
+                    : context.colors.textMuted,
+                icon: Icons.error_outline_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '1위 실적 상담사',
+                value: summary.topAgentName ?? '-',
+                subText: summary.topAgentCount > 0
+                    ? '${summary.topAgentCount}건 달성 (${summary.topAgentTeam ?? ""})'
+                    : 'MGM ${summary.mgmCount}건 연계',
+                accentColor: const Color(0xFF8B5CF6), // Violet
+                icon: Icons.emoji_events_outlined,
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSingleKpiTile({
+    required String label,
+    required String value,
+    required String subText,
+    required Color accentColor,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(
+          color: accentColor.withAlpha(60),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: context.colors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+              Icon(icon, size: 14, color: accentColor),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTextStyles.titleSm.copyWith(
+              color: accentColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subText,
+            style: AppTextStyles.caption.copyWith(
+              color: context.colors.textSecond,
+              fontSize: 10,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 검색창 & 필터 칩스 & 배정 버튼 바
+  Widget _buildFilterAndSearchBar(SelectedProject project, SalesPerformanceSummary summary) {
+    final statusFilter = ref.watch(salesMappingStatusFilterProvider);
+    final teams = ref.watch(salesTeamsProvider).valueOrNull ?? [];
+    final selectedTeamId = ref.watch(salesTeamFilterProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 검색창
+        Container(
+          height: 38,
+          decoration: BoxDecoration(
+            color: context.colors.bgCard,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: context.colors.border, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 10),
+              Icon(Icons.search_rounded, size: 18, color: context.colors.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  style: const TextStyle(fontSize: 12.5),
+                  decoration: InputDecoration(
+                    hintText: '계약자 / 동·호수 / 상담사 / MGM 검색',
+                    hintStyle: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear_rounded, size: 16),
+                  onPressed: () {
+                    _searchController.clear();
+                    ref.read(salesSearchQueryProvider.notifier).state = '';
+                  },
+                  color: context.colors.textMuted,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // 필터 칩스 + 신규 배정 버튼
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip(
+                      label: '전체 ${summary.totalContracts}',
+                      isSelected: statusFilter == SalesMappingStatusFilter.all,
+                      onTap: () => ref.read(salesMappingStatusFilterProvider.notifier).state =
+                          SalesMappingStatusFilter.all,
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '배정 완료 ${summary.mappedCount}',
+                      isSelected: statusFilter == SalesMappingStatusFilter.mapped,
+                      onTap: () => ref.read(salesMappingStatusFilterProvider.notifier).state =
+                          SalesMappingStatusFilter.mapped,
+                      activeColor: const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '미배정 ${summary.unmappedCount}',
+                      isSelected: statusFilter == SalesMappingStatusFilter.unmapped,
+                      onTap: () => ref.read(salesMappingStatusFilterProvider.notifier).state =
+                          SalesMappingStatusFilter.unmapped,
+                      activeColor: const Color(0xFFF59E0B),
+                    ),
+                    if (teams.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      // 팀 드롭다운 필터
+                      PopupMenuButton<int?>(
+                        initialValue: selectedTeamId,
+                        onSelected: (teamId) {
+                          ref.read(salesTeamFilterProvider.notifier).state = teamId;
+                        },
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem<int?>(
+                            value: null,
+                            child: Text('전체 팀', style: TextStyle(fontSize: 12)),
+                          ),
+                          ...teams.map((t) => PopupMenuItem<int?>(
+                                value: t.id,
+                                child: Text(t.name, style: const TextStyle(fontSize: 12)),
+                              )),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: selectedTeamId != null
+                                ? const Color(0xFF8B5CF6).withAlpha(20)
+                                : context.colors.bgCard,
+                            border: Border.all(
+                              color: selectedTeamId != null
+                                  ? const Color(0xFF8B5CF6)
+                                  : context.colors.border,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                selectedTeamId != null
+                                    ? teams.firstWhere((t) => t.id == selectedTeamId).name
+                                    : '팀 필터',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: selectedTeamId != null ? FontWeight.bold : FontWeight.normal,
+                                  color: selectedTeamId != null
+                                      ? const Color(0xFF8B5CF6)
+                                      : context.colors.textSecond,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Icon(Icons.arrow_drop_down, size: 16, color: context.colors.textMuted),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // + 담당자 배정 버튼
+            Material(
+              color: const Color(0xFF8B5CF6),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              child: InkWell(
+                onTap: () => showContractAgentFormSheet(
+                  context,
+                  projectId: project.realProjectId,
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, size: 14, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        '배정',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color activeColor = const Color(0xFF8B5CF6),
+  }) {
+    return Material(
+      color: isSelected ? activeColor.withAlpha(25) : context.colors.bgCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(
+          color: isSelected ? activeColor : context.colors.border,
+          width: 0.8,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? activeColor : context.colors.textSecond,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 계약 실적 개별 카드 위젯
+  Widget _buildPerformanceCardItem(
+    CombinedContractPerformanceItem item,
+    SelectedProject project,
+    List<SalesPersonModel> persons,
+  ) {
+    final isMapped = item.isMapped;
+    SalesPersonModel? matchedPerson;
+    if (isMapped && item.mapping?.salesPerson != null) {
+      for (final p in persons) {
+        if (p.id == item.mapping!.salesPerson) {
+          matchedPerson = p;
+          break;
+        }
+      }
+    }
+
+    final hasPersonPhone = matchedPerson?.phone != null && matchedPerson!.phone!.isNotEmpty;
+    final hasMgmPhone = item.mgmPhone != null && item.mgmPhone!.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(
+          color: isMapped
+              ? const Color(0xFF8B5CF6).withAlpha(50)
+              : const Color(0xFFF59E0B).withAlpha(60),
+          width: 0.8,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 상단 행: 계약 라벨 + 상태 뱃지
+            Row(
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 15,
+                  color: isMapped ? const Color(0xFF8B5CF6) : const Color(0xFFF59E0B),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    item.contractLabel,
+                    style: AppTextStyles.titleSm.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isMapped
+                        ? const Color(0xFF8B5CF6).withAlpha(15)
+                        : const Color(0xFFF59E0B).withAlpha(20),
+                    border: Border.all(
+                      color: isMapped
+                          ? const Color(0xFF8B5CF6).withAlpha(70)
+                          : const Color(0xFFF59E0B).withAlpha(80),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    isMapped ? '배정완료' : '미배정',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isMapped ? const Color(0xFF8B5CF6) : const Color(0xFFD97706),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Divider(color: context.colors.borderSubtle, height: 1),
+            const SizedBox(height: 8),
+
+            // 내용 영역
+            if (isMapped) ...[
+              // 담당 상담사 & 소속 팀
+              Row(
+                children: [
+                  Icon(Icons.person_outline_rounded, size: 14, color: context.colors.textMuted),
+                  const SizedBox(width: 5),
+                  Text(
+                    item.salesPersonName ?? '담당자 미지정',
+                    style: AppTextStyles.bodySecond.copyWith(
+                      color: const Color(0xFF8B5CF6),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  if (item.teamName != null && item.teamName!.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '(${item.teamName})',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                  if (item.policyName != null && item.policyName!.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSurface,
+                        border: Border.all(color: context.colors.border, width: 0.7),
+                      ),
+                      child: Text(
+                        item.policyName!,
+                        style: AppTextStyles.caption.copyWith(
+                          color: context.colors.textSecond,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (item.contractDate != null && item.contractDate!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.event_available_outlined, size: 13, color: context.colors.textMuted),
+                    const SizedBox(width: 5),
+                    Text(
+                      '성과인정일: ${item.contractDate}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textSecond,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (item.mgmName != null && item.mgmName!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.handshake_outlined, size: 13, color: Color(0xFF06B6D4)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'MGM: ${item.mgmName}'
+                        '${item.mgmPhone != null && item.mgmPhone!.isNotEmpty ? ' (${item.mgmPhone})' : ''}'
+                        '${item.mgmFee > 0 ? ' · 수수료: ${NumberFormat('#,###').format(item.mgmFee)}원' : ''}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFF0891B2),
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (item.note != null && item.note!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '비고: ${item.note}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  '영업 담당 상담사가 아직 배정되지 않은 분양 계약입니다.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 10),
+            Divider(color: context.colors.borderSubtle, height: 1),
+            const SizedBox(height: 6),
+
+            // 하단 버튼 바: 전화걸기 & 배정/수정 버튼
+            Row(
+              children: [
+                if (isMapped && hasPersonPhone)
+                  InkWell(
+                    onTap: () => _makePhoneCall(matchedPerson!.phone!, targetName: item.salesPersonName),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '상담사 통화',
+                            style: AppTextStyles.caption.copyWith(
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (isMapped && hasMgmPhone) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _makePhoneCall(item.mgmPhone!, targetName: 'MGM ${item.mgmName}'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF06B6D4)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'MGM 통화',
+                            style: AppTextStyles.caption.copyWith(
+                              color: const Color(0xFF06B6D4),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                if (isMapped)
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.colors.textPrimary,
+                      side: BorderSide(color: context.colors.border, width: 0.8),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      minimumSize: Size.zero,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 12),
+                    label: const Text('배정 수정', style: TextStyle(fontSize: 11.5)),
+                    onPressed: () => showContractAgentFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                      initialContractId: item.contractId,
+                      initialContractLabel: item.contractLabel,
+                      existingMapping: item.mapping,
+                    ),
+                  )
+                else
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B5CF6),
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      minimumSize: Size.zero,
+                    ),
+                    icon: const Icon(Icons.person_add_alt_1_outlined, size: 12),
+                    label: const Text('담당자 배정', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    onPressed: () => showContractAgentFormSheet(
+                      context,
+                      projectId: project.realProjectId,
+                      initialContractId: item.contractId,
+                      initialContractLabel: item.contractLabel,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -257,26 +1054,914 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     );
   }
 
-  /// 4. 영업 조직 관리 뷰
-  Widget _buildOrganizationView(String projectName) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  /// 4. 영업 조직 관리 뷰 (실시간 API 연동 + 2×2 KPI + 대행사/팀 계층 필터 + 인력 명부 + 원터치 통화/수정)
+  Widget _buildOrganizationView(SelectedProject project) {
+    final summary = ref.watch(salesOrganizationSummaryProvider);
+    final agenciesAsync = ref.watch(salesAgenciesProvider);
+    final teamsAsync = ref.watch(salesTeamsProvider);
+    final personsAsync = ref.watch(salesPersonsProvider);
+    final filteredPersons = ref.watch(filteredOrgPersonsProvider);
+
+    return RefreshIndicator(
+      color: const Color(0xFF6366F1),
+      onRefresh: () async {
+        ref.invalidate(salesAgenciesProvider);
+        ref.invalidate(salesTeamsProvider);
+        ref.invalidate(salesPersonsProvider);
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. 2×2 조직 KPI 요약 대시보드
+          _buildOrgKpiSection(summary),
+          const SizedBox(height: 14),
+
+          // 2. 대행사 & 팀 계층 가로 필터 바 + [⚙️ 조직 관리] 버튼
+          _buildOrgHierarchyFilterBar(
+            project,
+            agenciesAsync.valueOrNull ?? [],
+            teamsAsync.valueOrNull ?? [],
+          ),
+          const SizedBox(height: 12),
+
+          // 3. 인력 검색창 & 직책/재직상태 필터 + [+ 인력 등록] 버튼
+          _buildOrgPersonFilterBar(project),
+          const SizedBox(height: 14),
+
+          // 4. 인력 명부 리스트
+          _buildOrgPersonListSection(
+            project,
+            personsAsync,
+            filteredPersons,
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  /// 2×2 영업 조직 KPI 대시보드
+  Widget _buildOrgKpiSection(SalesOrganizationSummary summary) {
+    final direct = summary.directAgencyCount;
+    final outsourced = summary.agencyCount - summary.directAgencyCount;
+
+    return Column(
       children: [
-        _buildInfoBanner(
-          title: '영업 조직 & 인력 명부',
-          subtitle: '분양 대행사 ➔ 영업 본부/팀 ➔ 상담사 3단계 계층 구조를 관리합니다.',
-          icon: Icons.groups_outlined,
-          color: const Color(0xFF6366F1),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '분양 대행사',
+                value: '${NumberFormat('#,###').format(summary.agencyCount)}개사',
+                subText: '직영 $direct사 / 외주 ${outsourced > 0 ? outsourced : 0}사',
+                accentColor: const Color(0xFF6366F1), // Indigo
+                icon: Icons.corporate_fare_outlined,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '영업 본부/팀',
+                value: '${NumberFormat('#,###').format(summary.teamCount)}개 팀',
+                subText: '소속 팀 체계',
+                accentColor: const Color(0xFF38BDF8), // Sky Blue
+                icon: Icons.account_tree_outlined,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          title: '영업 조직 체계',
-          description:
-              '프로젝트에 투입된 직영/외주 분양 대행사, 산하 영업 팀, 상담사 인력 명부와 금융 입금 계좌 정보를 조회합니다. 3.3% 프리랜서 사업소득 원천징수 여부 및 재직 상태(위촉/해촉)가 통합 관리됩니다.',
-          tags: ['대행사 관리', '영업팀 계층', '상담사 인력', '3.3% 프리랜서'],
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '총 등록 인력',
+                value: '${NumberFormat('#,###').format(summary.totalPersons)}명',
+                subText: '영업 인력 명부',
+                accentColor: const Color(0xFF8B5CF6), // Violet
+                icon: Icons.groups_outlined,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '활동(재직) 인력',
+                value: '${NumberFormat('#,###').format(summary.activePersons)}명',
+                subText: summary.totalPersons > 0
+                    ? '재직률 ${((summary.activePersons / summary.totalPersons) * 100).toStringAsFixed(0)}%'
+                    : '등록 인력 없음',
+                accentColor: const Color(0xFF10B981), // Emerald
+                icon: Icons.verified_user_outlined,
+              ),
+            ),
+          ],
         ),
       ],
     );
+  }
+
+  /// 대행사 및 팀 계층 가로 필터 바 + [⚙️ 조직 관리] 버튼
+  Widget _buildOrgHierarchyFilterBar(
+    SelectedProject project,
+    List<SalesAgencyModel> agencies,
+    List<SalesTeamModel> teams,
+  ) {
+    final selectedAgencyId = ref.watch(orgAgencyFilterProvider);
+    final selectedTeamId = ref.watch(orgTeamFilterProvider);
+
+    // 선택된 대행사에 속한 팀 목록 (대행사 미선택 시 전체 팀)
+    final availableTeams = selectedAgencyId != null
+        ? teams.where((t) => t.agency == selectedAgencyId).toList()
+        : teams;
+
+    return Row(
+      children: [
+        // 대행사 & 팀 가로 스크롤 필터
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip(
+                  label: '대행사 전체',
+                  isSelected: selectedAgencyId == null,
+                  onTap: () {
+                    ref.read(orgAgencyFilterProvider.notifier).state = null;
+                    ref.read(orgTeamFilterProvider.notifier).state = null;
+                  },
+                  activeColor: const Color(0xFF6366F1),
+                ),
+                for (final agency in agencies) ...[
+                  const SizedBox(width: 6),
+                  _buildFilterChip(
+                    label: agency.isDirectManaged
+                        ? '[직영] ${agency.name}'
+                        : agency.name,
+                    isSelected: selectedAgencyId == agency.id,
+                    onTap: () {
+                      if (selectedAgencyId == agency.id) {
+                        ref.read(orgAgencyFilterProvider.notifier).state = null;
+                        ref.read(orgTeamFilterProvider.notifier).state = null;
+                      } else {
+                        ref.read(orgAgencyFilterProvider.notifier).state = agency.id;
+                        ref.read(orgTeamFilterProvider.notifier).state = null;
+                      }
+                    },
+                    activeColor: const Color(0xFF6366F1),
+                  ),
+                ],
+                if (availableTeams.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  // 팀 드롭다운 필터
+                  PopupMenuButton<int?>(
+                    initialValue: selectedTeamId,
+                    onSelected: (teamId) {
+                      ref.read(orgTeamFilterProvider.notifier).state = teamId;
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem<int?>(
+                        value: null,
+                        child: Text('전체 팀', style: TextStyle(fontSize: 12)),
+                      ),
+                      ...availableTeams.map(
+                        (t) => PopupMenuItem<int?>(
+                          value: t.id,
+                          child: Text(t.name, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: selectedTeamId != null
+                            ? const Color(0xFF38BDF8).withAlpha(20)
+                            : context.colors.bgCard,
+                        border: Border.all(
+                          color: selectedTeamId != null
+                              ? const Color(0xFF38BDF8)
+                              : context.colors.border,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            selectedTeamId != null
+                                ? (availableTeams
+                                        .where((t) => t.id == selectedTeamId)
+                                        .firstOrNull
+                                        ?.name ??
+                                    '팀 필터')
+                                : '팀 선택',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: selectedTeamId != null
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: selectedTeamId != null
+                                  ? const Color(0xFF0284C7)
+                                  : context.colors.textSecond,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(Icons.arrow_drop_down,
+                              size: 16, color: context.colors.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // [⚙️ 조직 관리] 버튼
+        Material(
+          color: const Color(0xFF6366F1),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: InkWell(
+            onTap: () => showAgencyTeamManageSheet(
+              context,
+              projectId: project.realProjectId,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.account_tree_outlined, size: 14, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text(
+                    '조직 관리',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 인력 검색창 & 직책/재직상태 필터 바 + [+ 인력 등록] 버튼
+  Widget _buildOrgPersonFilterBar(SelectedProject project) {
+    final statusFilter = ref.watch(orgStatusFilterProvider);
+    final dutyFilter = ref.watch(orgDutyFilterProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. 검색창
+        Container(
+          height: 38,
+          decoration: BoxDecoration(
+            color: context.colors.bgCard,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: context.colors.border, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 10),
+              Icon(Icons.search_rounded, size: 18, color: context.colors.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _orgSearchController,
+                  onChanged: _onOrgSearchChanged,
+                  style: const TextStyle(fontSize: 12.5),
+                  decoration: InputDecoration(
+                    hintText: '성명 / 연락처 / 예금주 / 팀명 검색',
+                    hintStyle: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              if (_orgSearchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear_rounded, size: 16),
+                  onPressed: () {
+                    _orgSearchController.clear();
+                    ref.read(orgSearchQueryProvider.notifier).state = '';
+                  },
+                  color: context.colors.textMuted,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // 2. 재직상태/직책 필터 칩스 + [+ 인력 등록] 버튼
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip(
+                      label: '재직',
+                      isSelected: statusFilter == '1',
+                      onTap: () => ref.read(orgStatusFilterProvider.notifier).state = '1',
+                      activeColor: const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '전체 상태',
+                      isSelected: statusFilter == '',
+                      onTap: () => ref.read(orgStatusFilterProvider.notifier).state = '',
+                      activeColor: const Color(0xFF8B5CF6),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '해촉',
+                      isSelected: statusFilter == '2',
+                      onTap: () => ref.read(orgStatusFilterProvider.notifier).state = '2',
+                      activeColor: const Color(0xFFEF4444),
+                    ),
+                    const SizedBox(width: 8),
+                    // 직책 필터 드롭다운
+                    PopupMenuButton<String>(
+                      initialValue: dutyFilter,
+                      onSelected: (duty) {
+                        ref.read(orgDutyFilterProvider.notifier).state = duty;
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem<String>(
+                          value: '',
+                          child: Text('전체 직책', style: TextStyle(fontSize: 12)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: '1',
+                          child: Text('상담사', style: TextStyle(fontSize: 12)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: '2',
+                          child: Text('팀장', style: TextStyle(fontSize: 12)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: '3',
+                          child: Text('본부장', style: TextStyle(fontSize: 12)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: '4',
+                          child: Text('총괄본부장', style: TextStyle(fontSize: 12)),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: '5',
+                          child: Text('지원/기타', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: dutyFilter.isNotEmpty
+                              ? const Color(0xFF8B5CF6).withAlpha(20)
+                              : context.colors.bgCard,
+                          border: Border.all(
+                            color: dutyFilter.isNotEmpty
+                                ? const Color(0xFF8B5CF6)
+                                : context.colors.border,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              dutyFilter.isNotEmpty
+                                  ? _getDutyLabel(dutyFilter, null)
+                                  : '직책',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: dutyFilter.isNotEmpty
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: dutyFilter.isNotEmpty
+                                    ? const Color(0xFF8B5CF6)
+                                    : context.colors.textSecond,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(Icons.arrow_drop_down,
+                                size: 16, color: context.colors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // [+ 인력 등록] 버튼
+            Material(
+              color: const Color(0xFF10B981),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              child: InkWell(
+                onTap: () => showPersonFormSheet(
+                  context,
+                  projectId: project.realProjectId,
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_add_alt_1, size: 14, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        '인력 등록',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 인력 명부 리스트 섹션 (로딩, 에러, 빈 상태, 카드 리스트)
+  Widget _buildOrgPersonListSection(
+    SelectedProject project,
+    AsyncValue<List<SalesPersonModel>> personsAsync,
+    List<SalesPersonModel> filteredPersons,
+  ) {
+    return personsAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.all(40),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF6366F1),
+            ),
+          ),
+        ),
+      ),
+      error: (err, _) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: context.colors.bgCard,
+          borderRadius: BorderRadius.zero,
+          border: Border.all(color: context.colors.error.withAlpha(80)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 18, color: context.colors.error),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '영업 인력 데이터를 불러오지 못했습니다: $err',
+                style: AppTextStyles.caption.copyWith(color: context.colors.error),
+              ),
+            ),
+          ],
+        ),
+      ),
+      data: (_) {
+        if (filteredPersons.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            decoration: BoxDecoration(
+              color: context.colors.bgCard,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: context.colors.border),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.person_off_outlined,
+                    size: 36, color: context.colors.textMuted),
+                const SizedBox(height: 10),
+                Text(
+                  '조건에 일치하는 영업 인력이 없습니다',
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '검색어나 소속/직책 필터를 변경하시거나, 상단 [+ 인력 등록] 버튼으로 새로운 상담사를 등록해 보세요.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => showPersonFormSheet(
+                    context,
+                    projectId: project.realProjectId,
+                  ),
+                  icon: const Icon(Icons.person_add_alt_1, size: 14),
+                  label: const Text('신규 인력 등록하기', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF10B981),
+                    side: const BorderSide(color: Color(0xFF10B981)),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: filteredPersons.map((person) {
+            return _buildOrgPersonCardItem(person, project);
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  /// 개별 영업 인력 카드 아이템
+  Widget _buildOrgPersonCardItem(
+    SalesPersonModel person,
+    SelectedProject project,
+  ) {
+    final isActive = person.status == '1';
+    final dutyColor = _getDutyColor(person.duty);
+    final dutyText = _getDutyLabel(person.duty, person.dutyDisplay);
+    final statusText = _getStatusLabel(person.status, person.statusDisplay);
+    final hasPhone = person.phone != null && person.phone!.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(
+          color: isActive
+              ? const Color(0xFF6366F1).withAlpha(50)
+              : context.colors.border,
+          width: 0.8,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. 헤더: 성명 + 직책 뱃지 + 재직 뱃지 + 세무구분 + [수정] 버튼
+            Row(
+              children: [
+                Icon(
+                  Icons.person,
+                  size: 16,
+                  color: isActive ? const Color(0xFF6366F1) : context.colors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  person.name,
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 직책 뱃지
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: dutyColor.withAlpha(20),
+                    border: Border.all(color: dutyColor.withAlpha(80), width: 0.8),
+                  ),
+                  child: Text(
+                    dutyText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: dutyColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                // 재직 상태 뱃지
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFF10B981).withAlpha(20)
+                        : context.colors.borderSubtle,
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xFF10B981).withAlpha(80)
+                          : context.colors.textMuted.withAlpha(60),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isActive
+                          ? const Color(0xFF10B981)
+                          : context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                if (person.taxTypeDisplay != null || person.taxType == '1') ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: context.colors.bgSurface,
+                      border: Border.all(color: context.colors.border, width: 0.7),
+                    ),
+                    child: Text(
+                      person.taxTypeDisplay ??
+                          (person.taxType == '1' ? '3.3%' : '일반'),
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textSecond,
+                        fontSize: 9.5,
+                      ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                // 수정 버튼
+                InkWell(
+                  onTap: () => showPersonFormSheet(
+                    context,
+                    projectId: project.realProjectId,
+                    existingPerson: person,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit_outlined,
+                            size: 13, color: context.colors.textMuted),
+                        const SizedBox(width: 3),
+                        Text(
+                          '수정',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.colors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Divider(color: context.colors.borderSubtle, height: 1),
+            const SizedBox(height: 8),
+
+            // 2. 소속 조직 (대행사 > 팀)
+            Row(
+              children: [
+                Icon(Icons.domain_outlined,
+                    size: 14, color: context.colors.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  '소속:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    person.agencyName != null && person.agencyName!.isNotEmpty
+                        ? '${person.agencyName} > ${person.teamName ?? "소속팀 미지정"}'
+                        : (person.teamName ?? '소속팀 미지정'),
+                    style: AppTextStyles.bodySecond.copyWith(
+                      color: context.colors.textPrimary,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // 3. 연락처 & 통화 버튼
+            Row(
+              children: [
+                Icon(Icons.phone_outlined,
+                    size: 14, color: context.colors.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  '연락처:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  hasPhone ? person.phone! : '-',
+                  style: AppTextStyles.bodySecond.copyWith(
+                    color: hasPhone
+                        ? context.colors.textPrimary
+                        : context.colors.textMuted,
+                    fontSize: 12,
+                    fontWeight: hasPhone ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+                if (hasPhone) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () =>
+                        _makePhoneCall(person.phone!, targetName: person.name),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withAlpha(20),
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withAlpha(70),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.phone_in_talk,
+                              size: 11, color: Color(0xFF10B981)),
+                          SizedBox(width: 3),
+                          Text(
+                            '통화',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // 4. 입금 계좌 정보
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.account_balance_outlined,
+                    size: 14, color: context.colors.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  '계좌:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    person.accountNumber != null &&
+                            person.accountNumber!.isNotEmpty
+                        ? '${person.bankName ?? ""} ${person.accountNumber} (예금주: ${person.accountHolder ?? person.name})'
+                        : '미등록',
+                    style: AppTextStyles.bodySecond.copyWith(
+                      color: person.accountNumber != null
+                          ? context.colors.textSecond
+                          : context.colors.textMuted,
+                      fontSize: 11.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+
+            // 5. 위촉일/해촉일
+            if (person.joinDate != null && person.joinDate!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today_outlined,
+                      size: 14, color: context.colors.textMuted),
+                  const SizedBox(width: 6),
+                  Text(
+                    '위촉일:',
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.colors.textMuted,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${person.joinDate}${person.quitDate != null && person.quitDate!.isNotEmpty ? " (해촉: ${person.quitDate})" : ""}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.colors.textSecond,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // 6. 비고
+            if (person.notes != null && person.notes!.trim().isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.note_alt_outlined,
+                      size: 14, color: context.colors.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      person.notes!.trim(),
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textMuted,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getDutyLabel(String duty, String? dutyDisplay) {
+    if (dutyDisplay != null && dutyDisplay.isNotEmpty) return dutyDisplay;
+    switch (duty) {
+      case '1':
+        return '상담사';
+      case '2':
+        return '팀장';
+      case '3':
+        return '본부장';
+      case '4':
+        return '총괄본부장';
+      case '5':
+        return '지원/기타';
+      default:
+        return '상담사';
+    }
+  }
+
+  Color _getDutyColor(String duty) {
+    switch (duty) {
+      case '1':
+        return const Color(0xFF38BDF8); // Sky blue
+      case '2':
+        return const Color(0xFF8B5CF6); // Violet
+      case '3':
+        return const Color(0xFFF59E0B); // Amber
+      case '4':
+        return const Color(0xFFEC4899); // Rose
+      default:
+        return const Color(0xFF64748B); // Slate
+    }
+  }
+
+  String _getStatusLabel(String status, String? statusDisplay) {
+    if (statusDisplay != null && statusDisplay.isNotEmpty) return statusDisplay;
+    switch (status) {
+      case '1':
+        return '재직';
+      case '2':
+        return '해촉';
+      default:
+        return '재직';
+    }
   }
 
   /// 5. 수수료 정책 관리 뷰
