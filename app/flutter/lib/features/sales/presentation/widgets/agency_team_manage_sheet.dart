@@ -69,26 +69,116 @@ class _AgencyTeamManageSheetState
                   ),
                   style: const TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
+                Text(
+                  '운영 형태',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textSecond,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Text('운영 형태: ', style: TextStyle(fontSize: 13)),
-                    ChoiceChip(
-                      label: const Text('외주 대행'),
-                      selected: !isDirect,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      onSelected: (val) => setDlgState(() => isDirect = false),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setDlgState(() => isDirect = false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: !isDirect
+                                ? const Color(0xFF6366F1).withAlpha(18)
+                                : context.colors.bgSurface,
+                            border: Border.all(
+                              color: !isDirect
+                                  ? const Color(0xFF6366F1)
+                                  : context.colors.border,
+                              width: !isDirect ? 1.4 : 0.8,
+                            ),
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                !isDirect
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                size: 15,
+                                color: !isDirect
+                                    ? const Color(0xFF6366F1)
+                                    : context.colors.textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '외주 대행',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: !isDirect
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: !isDirect
+                                      ? const Color(0xFF6366F1)
+                                      : context.colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('직영 대행'),
-                      selected: isDirect,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      onSelected: (val) => setDlgState(() => isDirect = true),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setDlgState(() => isDirect = true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: isDirect
+                                ? const Color(0xFF6366F1).withAlpha(18)
+                                : context.colors.bgSurface,
+                            border: Border.all(
+                              color: isDirect
+                                  ? const Color(0xFF6366F1)
+                                  : context.colors.border,
+                              width: isDirect ? 1.4 : 0.8,
+                            ),
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isDirect
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                size: 15,
+                                color: isDirect
+                                    ? const Color(0xFF6366F1)
+                                    : context.colors.textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '직영 대행',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isDirect
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isDirect
+                                      ? const Color(0xFF6366F1)
+                                      : context.colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 TextField(
                   controller: ceoController,
                   decoration: const InputDecoration(
