@@ -248,6 +248,41 @@ const contract = {
   ],
 }
 
+const sales = {
+  component: 'CNavGroup',
+  name: '분양 대행 관리',
+  to: '/sales',
+  icon: 'cil-briefcase',
+  auth: 'isContManager',
+  items: [
+    {
+      component: 'CNavItem',
+      name: '영업 조직 관리',
+      to: '/sales/organization',
+    },
+    {
+      component: 'CNavItem',
+      name: '수수료 정책 관리',
+      to: '/sales/policy',
+    },
+    {
+      component: 'CNavItem',
+      name: '계약 실적 관리',
+      to: '/sales/performance',
+    },
+    {
+      component: 'CNavItem',
+      name: '수수료 정산 관리',
+      to: '/sales/settlement',
+    },
+    {
+      component: 'CNavItem',
+      name: '수수료 지급 관리',
+      to: '/sales/payout',
+    },
+  ],
+}
+
 const payment = {
   component: 'CNavGroup',
   name: '대금 수납 관리',
@@ -538,6 +573,7 @@ const nav = [
     name: '프로젝트 관리',
   },
   contract,
+  sales,
   payment,
   notice,
   projectLedger,

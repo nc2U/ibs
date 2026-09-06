@@ -102,6 +102,7 @@ INSTALLED_APPS += [  # app
     'ledger.apps.LedgerConfig',
     'notice.apps.NoticeConfig',
     'payment.apps.PaymentConfig',
+    'sales.apps.SalesConfig',
     'project.apps.ProjectConfig',
     'work.apps.WorkConfig',
     '_excel.apps.ExcelConfig',
