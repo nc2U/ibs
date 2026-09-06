@@ -496,3 +496,122 @@ final filteredCommissionPayoutsProvider =
     return true;
   }).toList();
 });
+
+// ═════════════════════════════════════════════════════════════════
+// 💳 수수료 지급 (Payout & Banking Transfer) 관련 프로바이더
+// ═════════════════════════════════════════════════════════════════
+
+/// 지급 관리 전용 선택 회차 ID 프로바이더 (null이면 정산확정/지급완료 회차 우선 선택)
+final payoutTabPeriodIdProvider = StateProvider<int?>((ref) => null);
+
+/// 지급 관리 전용 현재 선택 회차 프로바이더
+final currentPayoutPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
+  final periods = ref.watch(settlementPeriodsProvider).valueOrNull ?? [];
+  final selectedId = ref.watch(payoutTabPeriodIdProvider);
+
+  if (periods.isEmpty) return null;
+  if (selectedId != null) {
+    return periods.where((p) => p.id == selectedId).firstOrNull ?? periods.first;
+  }
+  // 기본 선택: 확정('2') 또는 완료('3') 상태인 최신 회차 우선 선택
+  final confirmedOrDone = periods.where((p) => p.isConfirmed || p.isCompleted).firstOrNull;
+  return confirmedOrDone ?? periods.first;
+});
+
+/// 지급 관리 탭의 개인별 수수료 지급 명세 목록 프로바이더
+final payoutTabPayoutsProvider =
+    FutureProvider<List<CommissionPayoutModel>>((ref) async {
+  final currentPeriod = ref.watch(currentPayoutPeriodProvider);
+  if (currentPeriod == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchCommissionPayouts(periodId: currentPeriod.id);
+});
+
+/// ── 지급 관리 필터 및 검색 프로바이더 ─────────────────────────────
+final payoutTabSearchQueryProvider = StateProvider<String>((ref) => '');
+final payoutTabStatusFilterProvider = StateProvider<String>((ref) => '');
+
+/// ── 다중 선택된 지급 명세 ID 세트 프로바이더 ───────────────────────
+final payoutTabSelectedIdsProvider = StateProvider<Set<int>>((ref) => {});
+
+/// ── 지급 진행 요약 모델 및 프로바이더 ───────────────────────────
+class PayoutStatusSummaryModel {
+  final int totalCount;
+  final int totalNetAmount;
+  final int paidCount;
+  final int paidNetAmount;
+  final int unpaidCount;
+  final int unpaidNetAmount;
+  final int completionRate;
+  final int totalTaxAmount;
+
+  const PayoutStatusSummaryModel({
+    this.totalCount = 0,
+    this.totalNetAmount = 0,
+    this.paidCount = 0,
+    this.paidNetAmount = 0,
+    this.unpaidCount = 0,
+    this.unpaidNetAmount = 0,
+    this.completionRate = 0,
+    this.totalTaxAmount = 0,
+  });
+}
+
+final payoutTabSummaryProvider = Provider<PayoutStatusSummaryModel>((ref) {
+  final payouts = ref.watch(payoutTabPayoutsProvider).valueOrNull ?? [];
+  if (payouts.isEmpty) return const PayoutStatusSummaryModel();
+
+  final totalCount = payouts.length;
+  final totalNetAmount = payouts.fold<int>(0, (sum, p) => sum + p.netAmount);
+  final totalTaxAmount = payouts.fold<int>(0, (sum, p) => sum + p.totalTax);
+
+  final paidItems = payouts.where((p) => p.payStatus == '3').toList();
+  final paidCount = paidItems.length;
+  final paidNetAmount = paidItems.fold<int>(0, (sum, p) => sum + p.netAmount);
+
+  final unpaidCount = totalCount - paidCount;
+  final unpaidNetAmount = totalNetAmount > paidNetAmount ? totalNetAmount - paidNetAmount : 0;
+  final completionRate = totalNetAmount > 0 ? ((paidNetAmount / totalNetAmount) * 100).round() : 0;
+
+  return PayoutStatusSummaryModel(
+    totalCount: totalCount,
+    totalNetAmount: totalNetAmount,
+    paidCount: paidCount,
+    paidNetAmount: paidNetAmount,
+    unpaidCount: unpaidCount,
+    unpaidNetAmount: unpaidNetAmount,
+    completionRate: completionRate,
+    totalTaxAmount: totalTaxAmount,
+  );
+});
+
+/// ── 필터링된 지급 명세 목록 프로바이더 ───────────────────────────
+final payoutTabFilteredListProvider =
+    Provider<List<CommissionPayoutModel>>((ref) {
+  final payouts = ref.watch(payoutTabPayoutsProvider).valueOrNull ?? [];
+  final query = ref.watch(payoutTabSearchQueryProvider).trim().toLowerCase();
+  final statusFilter = ref.watch(payoutTabStatusFilterProvider);
+
+  return payouts.where((p) {
+    // 1. 지급 상태 필터
+    if (statusFilter.isNotEmpty && p.payStatus != statusFilter) {
+      return false;
+    }
+
+    // 2. 통합 검색 필터 (성명, 소속팀, 계좌번호, 예금주, 은행명)
+    if (query.isNotEmpty) {
+      final nameMatch = p.salesPersonName?.toLowerCase().contains(query) ?? false;
+      final teamMatch = p.teamName?.toLowerCase().contains(query) ?? false;
+      final holderMatch = p.accountHolder?.toLowerCase().contains(query) ?? false;
+      final bankMatch = p.bankName?.toLowerCase().contains(query) ?? false;
+      final accountMatch = p.accountNumber?.replaceAll('-', '').contains(query.replaceAll('-', '')) ?? false;
+
+      if (!nameMatch && !teamMatch && !holderMatch && !bankMatch && !accountMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  }).toList();
+});

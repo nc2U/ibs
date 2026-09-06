@@ -404,4 +404,17 @@ class SalesRepository {
       data: {'pay_status': payStatus},
     );
   }
+
+  /// 다중 선택 대상 일괄 지급 상태 변경
+  Future<void> batchUpdatePayStatus(List<int> payoutIds, String payStatus) async {
+    if (payoutIds.isEmpty) return;
+    await Future.wait(
+      payoutIds.map((id) => updatePayStatus(id, payStatus)),
+    );
+  }
+
+  /// 정산 회차 지급 종결 처리 (상태 2 -> 3 지급 완료)
+  Future<void> completeSettlementPeriod(int periodId) async {
+    await updateSettlementPeriod(periodId, {'status': '3'});
+  }
 }
