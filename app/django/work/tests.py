@@ -498,3 +498,47 @@ class WorkMeetingAndSecurityAPITests(APITestCase):
         self.assertEqual(issue_log.action, 'Updated')
         self.assertIn('비계 설치 구간 안전망 보강 (완료 보고)', issue_log.details)
 
+    def test_project_toggle_close_and_reopen(self):
+        """6. 닫힌(status='2') 워크스페이스 다시 열기(toggle_close) 및 잠금보관(status='9') 해제(toggle_lock) 검증"""
+        # 1) 슈퍼유저 권한으로 열려있는 워크스페이스 닫기
+        self.client.force_authenticate(user=self.admin_user)
+        res_close = self.client.post(f'/api/v1/issue-project/{self.private_project.slug}/toggle_close/')
+        self.assertEqual(res_close.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_close.data['status'], '2')
+        self.private_project.refresh_from_db()
+        self.assertEqual(self.private_project.status, '2')
+
+        # 2) 닫힌 워크스페이스 내부의 하위 리소스(이슈 수정)는 차단(403)되어야 함
+        issue = Issue.objects.create(
+            project=self.private_project,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='닫힌 워크스페이스 내 업무',
+            start_date=timezone.now().date(),
+            creator=self.admin_user
+        )
+        res_issue_edit = self.client.patch(f'/api/v1/issue/{issue.pk}/', {'subject': '수정 시도'})
+        self.assertEqual(res_issue_edit.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3) 닫힌 워크스페이스를 다시 열기 (toggle_close: '2' -> '1') 요청이 성공해야 함 (이전 버그 회귀 방지)
+        res_reopen = self.client.post(f'/api/v1/issue-project/{self.private_project.slug}/toggle_close/')
+        self.assertEqual(res_reopen.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_reopen.data['status'], '1')
+        self.private_project.refresh_from_db()
+        self.assertEqual(self.private_project.status, '1')
+
+        # 4) 다시 열린 후에는 업무 수정 정상 동작
+        res_issue_edit_after = self.client.patch(f'/api/v1/issue/{issue.pk}/', {'subject': '재오픈 후 수정'})
+        self.assertEqual(res_issue_edit_after.status_code, status.HTTP_200_OK)
+
+        # 5) 잠금보관(status='9') 토글 및 잠금 해제 검증
+        res_lock = self.client.post(f'/api/v1/issue-project/{self.private_project.slug}/toggle_lock/')
+        self.assertEqual(res_lock.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_lock.data['status'], '9')
+
+        res_unlock = self.client.post(f'/api/v1/issue-project/{self.private_project.slug}/toggle_lock/')
+        self.assertEqual(res_unlock.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_unlock.data['status'], '1')
+
+

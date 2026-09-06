@@ -138,7 +138,9 @@ class ProjectPermission(permissions.BasePermission):
             project = self.find_project(project_slug, request)
             if project and project.status == '9':
                 is_project_view = 'project' in view.__class__.__name__.lower()
-                is_allowed_action = getattr(view, 'action', None) in ['retrieve', 'update', 'partial_update']
+                is_allowed_action = getattr(view, 'action', None) in [
+                    'retrieve', 'update', 'partial_update', 'toggle_lock', 'destroy'
+                ]
                 is_admin = request.user.is_superuser or getattr(request.user, 'work_manager', False)
                 if not (is_project_view and is_allowed_action and is_admin):
                     return False
@@ -220,18 +222,23 @@ class ProjectPermission(permissions.BasePermission):
         if not project:
             return False
 
+        from work.models.project import IssueProject
+        is_project_instance = isinstance(obj, IssueProject)
+
         if project:
-            # [잠금보관(9)] 조회/수정 모두 차단 (슈퍼유저/관리자라도 프로젝트 자체 수정/조회 외에는 차단)
+            # [잠금보관(9)] 조회/수정 모두 차단 (슈퍼유저/관리자라도 프로젝트 자체 수정/조회/잠금해제 외에는 차단)
             if project.status == '9':
-                is_project_view = 'project' in view.__class__.__name__.lower()
-                is_allowed_action = getattr(view, 'action', None) in ['retrieve', 'update', 'partial_update']
+                is_allowed_action = getattr(view, 'action', None) in [
+                    'retrieve', 'update', 'partial_update', 'toggle_lock', 'destroy'
+                ]
                 is_admin = request.user.is_superuser or getattr(request.user, 'work_manager', False)
-                if not (is_project_view and is_allowed_action and is_admin):
+                if not (is_project_instance and is_allowed_action and is_admin):
                     return False
 
-            # [닫힘(2)] 읽기 전용
+            # [닫힘(2)] 읽기 전용: 워크스페이스 자체 관리 액션이 아닌 하위 리소스의 수정/삭제는 차단
             if project.status == '2' and request.method not in permissions.SAFE_METHODS:
-                return False
+                if not is_project_instance:
+                    return False
 
         # 슈퍼유저/관리자 예외 처리
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
