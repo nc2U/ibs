@@ -90,6 +90,6 @@ flowchart LR
 
 시스템 사용 중 문의사항이나 오류가 발생하면 아래 채널을 이용해 주세요.
 
-* **사내 문의 게시판**: [IBS 기술지원 게시판](https://ibs.dyibs.com/#/work/project/ibs/forum/1)
+* **사내 문의 게시판**: [IBS 기술지원 게시판](https://ibs.dyibs.com/#/work/project/dyibs/forum/1)
 * **담당 부서**: IT·디지털혁신팀
 * **문의 요령**: 오류 발생 화면 캡처, URL, 재현 경로를 함께 기재해 주시면 신속한 처리가 가능합니다.
