@@ -14,6 +14,7 @@ from .views import ledger
 from .views import notice
 from .views import payment
 from .views import project
+from .views import sales
 from .views import sse
 from .views import work
 
@@ -201,6 +202,16 @@ router.register(r'contractor-contact', contract.ContContactViewSet)
 router.register(r'contractor-consultations', contract.ContractorConsultationLogsViewSet)
 router.register(r'succession', contract.SuccessionViewSet)
 router.register(r'contractor-release', contract.ContReleaseViewSet)
+
+# sales (분양 대행)
+router.register(r'sales-agency', sales.SalesAgencyViewSet, basename='sales-agency')
+router.register(r'sales-team', sales.SalesTeamViewSet, basename='sales-team')
+router.register(r'sales-person', sales.SalesPersonViewSet, basename='sales-person')
+router.register(r'sales-policy', sales.CommissionPolicyViewSet, basename='sales-policy')
+router.register(r'sales-contract-agent', sales.ContractSalesAgentViewSet, basename='sales-contract-agent')
+router.register(r'sales-settlement-period', sales.SettlementPeriodViewSet, basename='sales-settlement-period')
+router.register(r'sales-payout', sales.CommissionPayoutViewSet, basename='sales-payout')
+router.register(r'sales-clawback', sales.CommissionClawbackViewSet, basename='sales-clawback')
 
 # notice
 router.register(r'sales-bill-issue', notice.BillIssueViewSet)
