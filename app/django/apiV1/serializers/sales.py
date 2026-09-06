@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from sales.models import (
-    SalesAgency, SalesTeam, SalesPerson, CommissionPolicy,
+    SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback
 )
@@ -32,12 +32,31 @@ class SalesTeamSerializer(serializers.ModelSerializer):
         return obj.members.filter(status='1').count()
 
 
+class SalesPersonDocumentSerializer(serializers.ModelSerializer):
+    sales_person_name = serializers.ReadOnlyField(source='sales_person.name')
+    doc_type_display = serializers.CharField(source='get_doc_type_display', read_only=True)
+    verified_by_name = serializers.ReadOnlyField(source='verified_by.username')
+    uploader_name = serializers.ReadOnlyField(source='uploader.username')
+
+    class Meta:
+        model = SalesPersonDocument
+        fields = (
+            'id', 'sales_person', 'sales_person_name', 'doc_type', 'doc_type_display',
+            'title', 'file', 'file_name', 'file_type', 'file_size',
+            'is_verified', 'verified_at', 'verified_by', 'verified_by_name',
+            'uploader', 'uploader_name', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('file_name', 'file_type', 'file_size', 'uploader', 'created_at', 'updated_at')
+
+
 class SalesPersonSerializer(serializers.ModelSerializer):
     team_name = serializers.ReadOnlyField(source='team.name')
     agency_name = serializers.ReadOnlyField(source='team.agency.name')
     duty_display = serializers.CharField(source='get_duty_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     tax_type_display = serializers.CharField(source='get_tax_type_display', read_only=True)
+    documents_count = serializers.SerializerMethodField()
+    documents = SalesPersonDocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = SalesPerson
@@ -46,8 +65,12 @@ class SalesPersonSerializer(serializers.ModelSerializer):
             'name', 'duty', 'duty_display', 'status', 'status_display',
             'phone', 'id_number', 'tax_type', 'tax_type_display',
             'bank_name', 'account_number', 'account_holder',
-            'join_date', 'quit_date', 'notes', 'created_at', 'updated_at'
+            'join_date', 'quit_date', 'notes', 'documents_count', 'documents',
+            'created_at', 'updated_at'
         )
+
+    def get_documents_count(self, obj):
+        return obj.documents.count()
 
 
 class CommissionPolicySerializer(serializers.ModelSerializer):

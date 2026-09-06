@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.db import models
 
+from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_upload_path, populate_file_meta
+
 
 class SalesAgency(models.Model):
     """분양 대행사 (직영 사업부 또는 외주 대행사)"""
@@ -381,3 +384,66 @@ class CommissionClawback(models.Model):
     def __str__(self):
         settled_tag = '[상계완료]' if self.is_settled else '[미상계]'
         return f'{settled_tag} {self.sales_person.name} - {self.contract} ({self.amount:,}원)'
+
+
+def get_sales_docs_upload_path(instance, filename):
+    return get_upload_path(instance, filename, 'sales', 'person_docs')
+
+
+class SalesPersonDocument(models.Model):
+    """영업 인력 제출 증빙 서류 (등본, 통장사본, 각서 등)"""
+
+    DOC_TYPE_CHOICES = (
+        ('1', '주민등록등본/초본'),
+        ('2', '통장 사본 (계좌 사본)'),
+        ('3', '신분증 사본'),
+        ('4', '영업 위촉계약서'),
+        ('5', '각종 서약서/각서'),
+        ('9', '기타 증빙서류'),
+    )
+
+    sales_person = models.ForeignKey(
+        SalesPerson, on_delete=models.CASCADE,
+        related_name='documents', verbose_name='영업 인력'
+    )
+    doc_type = models.CharField('서류 구분', max_length=2, choices=DOC_TYPE_CHOICES, default='1')
+    title = models.CharField(
+        '서류 세부 명칭', max_length=100, blank=True, default='',
+        help_text='서류 세부 명칭 (예: 보안서약서, 청렴각서, 사업자등록증 등. 미입력 시 서류 구분이 기본 적용됩니다)'
+    )
+    file = models.FileField(upload_to=get_sales_docs_upload_path, verbose_name='첨부 파일')
+    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
+    file_type = models.CharField('파일 타입', max_length=80, blank=True)
+    file_size = models.PositiveBigIntegerField('파일 크기', null=True, blank=True)
+
+    # 관리자 진위 확인 프로세스
+    is_verified = models.BooleanField('서류 검증 여부', default=False, help_text='관리자가 서류 유효성을 확인한 경우 체크')
+    verified_at = models.DateTimeField('검증일시', null=True, blank=True)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='verified_sales_docs', verbose_name='검증자'
+    )
+
+    uploader = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='uploaded_sales_docs', verbose_name='등록자'
+    )
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일시', auto_now=True)
+
+    class Meta:
+        ordering = ['sales_person', 'doc_type', '-created_at']
+        verbose_name = '10. 영업 인력 제출 서류'
+        verbose_name_plural = '10. 영업 인력 제출 서류 목록'
+
+    def __str__(self):
+        return f'{self.sales_person.name} - {self.title or self.get_doc_type_display()}'
+
+    def save(self, *args, **kwargs):
+        if not self.title:
+            self.title = self.get_doc_type_display()
+        populate_file_meta(self)
+        super().save(*args, **kwargs)
+
+
+file_cleanup_signals(SalesPersonDocument)

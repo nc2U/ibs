@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status as http_status
@@ -12,7 +13,7 @@ from project.models import Project
 from work.models.project import IssueProject
 
 from sales.models import (
-    SalesAgency, SalesTeam, SalesPerson, CommissionPolicy,
+    SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback
 )
@@ -258,6 +259,35 @@ class SalesModelUnitTests(TestCase):
         clawback.is_settled = True
         clawback.save()
         self.assertIn('[상계완료]', str(clawback))
+
+    def test_sales_person_document_model(self):
+        """영업 인력 제출 서류 모델 및 제목 자동완성/사용자지정 검증"""
+        sample_file = SimpleUploadedFile("id_doc.pdf", b"dummy resident document content", content_type="application/pdf")
+
+        # 1. title 미입력 시 doc_type의 표시명으로 자동 저장
+        doc1 = SalesPersonDocument(
+            sales_person=self.person,
+            doc_type='1',  # 주민등록등본/초본
+            file=sample_file
+        )
+        doc1.save()
+        self.assertEqual(doc1.title, '주민등록등본/초본')
+        self.assertIn('이분양 - 주민등록등본/초본', str(doc1))
+        self.assertEqual(doc1.file_name, 'id_doc.pdf')
+        self.assertFalse(doc1.is_verified)
+
+        # 2. 서약서/각서 ('5') 선택 및 커스텀 title 입력
+        sample_file2 = SimpleUploadedFile("pledge.pdf", b"dummy pledge content", content_type="application/pdf")
+        doc2 = SalesPersonDocument(
+            sales_person=self.person,
+            doc_type='5',  # 각종 서약서/각서
+            title='비밀유지 및 보안서약서',
+            file=sample_file2
+        )
+        doc2.save()
+        self.assertEqual(doc2.title, '비밀유지 및 보안서약서')
+        self.assertIn('이분양 - 비밀유지 및 보안서약서', str(doc2))
+
 
 
 class SalesAPITests(APITestCase):
@@ -657,3 +687,47 @@ class SalesAPITests(APITestCase):
         # 3. 잘못된 상태값 전송 시 400 에러 반환
         res_invalid = self.client.post(url, {'pay_status': '99'})
         self.assertEqual(res_invalid.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+    def test_sales_person_document_api_crud_and_verify(self):
+        """영업 인력 서류 업로드, 인력 상세 조회 시 documents_count 연동, 관리자 검증(verify) 액션 검증"""
+        # 1. 파일 업로드 API 호출
+        test_file = SimpleUploadedFile("bank_book.pdf", b"%PDF-1.4 dummy bank book", content_type="application/pdf")
+        payload = {
+            'sales_person': self.counselor.id,
+            'doc_type': '2',  # 통장 사본
+            'title': '신한은행 통장 사본',
+            'file': test_file
+        }
+        res_post = self.client.post('/api/v1/sales-person-document/', payload, format='multipart')
+        self.assertEqual(res_post.status_code, http_status.HTTP_201_CREATED)
+        doc_id = res_post.data['id']
+        self.assertEqual(res_post.data['sales_person_name'], '김상담')
+        self.assertEqual(res_post.data['doc_type_display'], '통장 사본 (계좌 사본)')
+        self.assertEqual(res_post.data['uploader_name'], 'sales_admin')
+        self.assertFalse(res_post.data['is_verified'])
+
+        # 2. 영업 인력 목록/상세 조회 시 documents_count 및 documents 리스트 확인
+        res_person = self.client.get(f'/api/v1/sales-person/{self.counselor.id}/')
+        self.assertEqual(res_person.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_person.data['documents_count'], 1)
+        self.assertEqual(len(res_person.data['documents']), 1)
+        self.assertEqual(res_person.data['documents'][0]['title'], '신한은행 통장 사본')
+
+        # 3. 관리자 서류 검증(verify) 액션 호출
+        verify_url = f'/api/v1/sales-person-document/{doc_id}/verify/'
+        res_verify = self.client.post(verify_url, {'is_verified': True})
+        self.assertEqual(res_verify.status_code, http_status.HTTP_200_OK)
+        self.assertTrue(res_verify.data['is_verified'])
+        self.assertEqual(res_verify.data['verified_by_name'], 'sales_admin')
+        self.assertIsNotNone(res_verify.data['verified_at'])
+
+        # 4. 필터링 검증 (is_verified=true)
+        res_filter = self.client.get(f'/api/v1/sales-person-document/?sales_person={self.counselor.id}&is_verified=true')
+        self.assertEqual(res_filter.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_filter.data['count'], 1)
+
+        # 5. 검증 취소 액션 호출
+        res_unverify = self.client.post(verify_url, {'is_verified': False})
+        self.assertEqual(res_unverify.status_code, http_status.HTTP_200_OK)
+        self.assertFalse(res_unverify.data['is_verified'])
+

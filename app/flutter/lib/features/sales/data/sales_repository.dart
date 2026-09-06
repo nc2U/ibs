@@ -417,4 +417,58 @@ class SalesRepository {
   Future<void> completeSettlementPeriod(int periodId) async {
     await updateSettlementPeriod(periodId, {'status': '3'});
   }
+
+  /// 17. 영업 인력 제출 서류 목록 조회 (/api/v1/sales-person-document/)
+  Future<List<SalesPersonDocumentModel>> fetchSalesPersonDocuments({
+    required int salesPersonId,
+    String? docType,
+    bool? isVerified,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'sales_person': salesPersonId,
+      };
+      if (docType != null && docType.isNotEmpty) {
+        queryParams['doc_type'] = docType;
+      }
+      if (isVerified != null) {
+        queryParams['is_verified'] = isVerified;
+      }
+      final response = await dio.get(
+        '/api/v1/sales-person-document/',
+        queryParameters: queryParams,
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => SalesPersonDocumentModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 18. 영업 인력 서류 등록 (FormData 업로드)
+  Future<SalesPersonDocumentModel> uploadSalesPersonDocument(FormData formData) async {
+    final response = await dio.post(
+      '/api/v1/sales-person-document/',
+      data: formData,
+    );
+    return SalesPersonDocumentModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// 19. 영업 인력 서류 검증 처리 (verify)
+  Future<void> verifySalesPersonDocument(int documentId, {required bool isVerified}) async {
+    await dio.post(
+      '/api/v1/sales-person-document/$documentId/verify/',
+      data: {'is_verified': isVerified},
+    );
+  }
+
+  /// 20. 영업 인력 서류 삭제
+  Future<void> deleteSalesPersonDocument(int documentId) async {
+    await dio.delete('/api/v1/sales-person-document/$documentId/');
+  }
 }

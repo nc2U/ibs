@@ -119,6 +119,8 @@ class SalesPersonModel {
   final String? joinDate;
   final String? quitDate;
   final String? notes;
+  final int documentsCount;
+  final List<SalesPersonDocumentModel> documents;
 
   const SalesPersonModel({
     required this.id,
@@ -141,9 +143,16 @@ class SalesPersonModel {
     this.joinDate,
     this.quitDate,
     this.notes,
+    this.documentsCount = 0,
+    this.documents = const [],
   });
 
   factory SalesPersonModel.fromJson(Map<String, dynamic> json) {
+    final docsList = (json['documents'] as List<dynamic>?)
+            ?.map((d) => SalesPersonDocumentModel.fromJson(d as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return SalesPersonModel(
       id: json['id'] as int? ?? 0,
       team: json['team'] as int? ?? 0,
@@ -165,6 +174,74 @@ class SalesPersonModel {
       joinDate: json['join_date'] as String?,
       quitDate: json['quit_date'] as String?,
       notes: json['notes'] as String?,
+      documentsCount: json['documents_count'] as int? ?? docsList.length,
+      documents: docsList,
+    );
+  }
+}
+
+/// 영업 인력 제출 증빙 서류 모델
+class SalesPersonDocumentModel {
+  final int id;
+  final int salesPerson;
+  final String? salesPersonName;
+  final String docType; // 1: 등본, 2: 통장, 3: 신분증, 4: 위촉계약서, 5: 각종 서약서/각서, 9: 기타
+  final String? docTypeDisplay;
+  final String title;
+  final String? file;
+  final String? fileName;
+  final String? fileType;
+  final int? fileSize;
+  final bool isVerified;
+  final String? verifiedAt;
+  final int? verifiedBy;
+  final String? verifiedByName;
+  final int? uploader;
+  final String? uploaderName;
+  final String? createdAt;
+  final String? updatedAt;
+
+  const SalesPersonDocumentModel({
+    required this.id,
+    required this.salesPerson,
+    this.salesPersonName,
+    this.docType = '1',
+    this.docTypeDisplay,
+    required this.title,
+    this.file,
+    this.fileName,
+    this.fileType,
+    this.fileSize,
+    this.isVerified = false,
+    this.verifiedAt,
+    this.verifiedBy,
+    this.verifiedByName,
+    this.uploader,
+    this.uploaderName,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory SalesPersonDocumentModel.fromJson(Map<String, dynamic> json) {
+    return SalesPersonDocumentModel(
+      id: json['id'] as int? ?? 0,
+      salesPerson: json['sales_person'] as int? ?? 0,
+      salesPersonName: json['sales_person_name'] as String?,
+      docType: json['doc_type'] as String? ?? '1',
+      docTypeDisplay: json['doc_type_display'] as String?,
+      title: json['title'] as String? ?? '',
+      file: json['file'] as String?,
+      fileName: json['file_name'] as String?,
+      fileType: json['file_type'] as String?,
+      fileSize: json['file_size'] as int?,
+      isVerified: json['is_verified'] as bool? ?? false,
+      verifiedAt: json['verified_at'] as String?,
+      verifiedBy: json['verified_by'] as int?,
+      verifiedByName: json['verified_by_name'] as String?,
+      uploader: json['uploader'] as int?,
+      uploaderName: json['uploader_name'] as String?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
     );
   }
 }

@@ -9,12 +9,13 @@ from rest_framework.response import Response
 from apiV1.pagination import PageNumberPaginationCustomBasic, PageNumberPaginationOneHundred
 from apiV1.serializers.sales import (
     SalesAgencySerializer, SalesTeamSerializer, SalesPersonSerializer,
-    CommissionPolicySerializer, ContractSalesAgentSerializer,
-    SettlementPeriodSerializer, CommissionPayoutSerializer,
-    PayoutContractDetailSerializer, CommissionClawbackSerializer
+    SalesPersonDocumentSerializer, CommissionPolicySerializer,
+    ContractSalesAgentSerializer, SettlementPeriodSerializer,
+    CommissionPayoutSerializer, PayoutContractDetailSerializer,
+    CommissionClawbackSerializer
 )
 from sales.models import (
-    SalesAgency, SalesTeam, SalesPerson, CommissionPolicy,
+    SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback
 )
@@ -42,7 +43,7 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
 
 class SalesPersonViewSet(viewsets.ModelViewSet):
     """영업 인력 (분양상담사/팀장/본부장) ViewSet"""
-    queryset = SalesPerson.objects.all().select_related('team__agency', 'user')
+    queryset = SalesPerson.objects.all().select_related('team__agency', 'user').prefetch_related('documents')
     serializer_class = SalesPersonSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPaginationOneHundred
@@ -258,3 +259,47 @@ class CommissionClawbackViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = ('contract', 'sales_person', 'is_settled')
     search_fields = ('sales_person__name', 'contract__serial_number')
+
+
+class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
+    """영업 인력 제출 서류 ViewSet"""
+    queryset = SalesPersonDocument.objects.all().select_related(
+        'sales_person__team__agency__project', 'verified_by', 'uploader'
+    )
+    serializer_class = SalesPersonDocumentSerializer
+    permission_classes = (IsAuthenticated,)
+    pagination_class = PageNumberPaginationCustomBasic
+    filterset_fields = (
+        'sales_person', 'sales_person__team__agency__project',
+        'doc_type', 'is_verified'
+    )
+    search_fields = ('title', 'file_name', 'sales_person__name')
+
+    def perform_create(self, serializer):
+        serializer.save(uploader=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='verify')
+    def verify_document(self, request, pk=None):
+        """서류 진위 검증 처리 (토글 또는 검증 확정)"""
+        doc = self.get_object()
+        is_verified = request.data.get('is_verified', True)
+        if isinstance(is_verified, str):
+            is_verified = is_verified.lower() in ('true', '1', 'yes')
+
+        doc.is_verified = is_verified
+        if is_verified:
+            doc.verified_at = timezone.now()
+            doc.verified_by = request.user
+        else:
+            doc.verified_at = None
+            doc.verified_by = None
+        doc.save()
+
+        status_str = '검증 완료' if is_verified else '검증 취소'
+        return Response({
+            'detail': f'[{doc.title}] 서류가 {status_str} 상태로 변경되었습니다.',
+            'is_verified': doc.is_verified,
+            'verified_at': doc.verified_at,
+            'verified_by_name': request.user.username if is_verified else None
+        }, status=status.HTTP_200_OK)
+

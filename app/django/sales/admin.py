@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    SalesAgency, SalesTeam, SalesPerson, CommissionPolicy,
+    SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback
 )
@@ -20,11 +20,26 @@ class SalesTeamAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+class SalesPersonDocumentInline(admin.TabularInline):
+    model = SalesPersonDocument
+    extra = 0
+    fields = ('doc_type', 'title', 'file', 'file_name', 'is_verified', 'verified_at', 'verified_by')
+    readonly_fields = ('file_name', 'verified_at', 'verified_by')
+
+
 @admin.register(SalesPerson)
 class SalesPersonAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'duty', 'team', 'status', 'phone', 'tax_type', 'bank_name', 'account_holder')
     list_filter = ('duty', 'status', 'tax_type', 'team__agency__project', 'team')
     search_fields = ('name', 'phone', 'id_number', 'account_holder')
+    inlines = [SalesPersonDocumentInline]
+
+
+@admin.register(SalesPersonDocument)
+class SalesPersonDocumentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'sales_person', 'doc_type', 'title', 'file_name', 'file_size', 'is_verified', 'verified_by', 'created_at')
+    list_filter = ('doc_type', 'is_verified', 'sales_person__team__agency__project')
+    search_fields = ('sales_person__name', 'title', 'file_name')
 
 
 @admin.register(CommissionPolicy)
