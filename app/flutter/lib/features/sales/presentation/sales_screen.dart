@@ -26,8 +26,8 @@ enum SalesSubTab {
   performance, // 계약 실적 관리
   settlement,  // 수수료 정산 관리
   payout,      // 수수료 지급 관리
-  organization,// 영업 조직 관리
   policy,      // 수수료 정책 관리
+  organization,// 영업 조직 관리
 }
 
 /// 🤝 분양 대행 관리 (Sales) 메인 화면
@@ -194,8 +194,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     if (canPerformance) availableTabs.add(SalesSubTab.performance);
     if (canSettlement) availableTabs.add(SalesSubTab.settlement);
     if (canPayout) availableTabs.add(SalesSubTab.payout);
-    if (canOrganization) availableTabs.add(SalesSubTab.organization);
     if (canPolicy) availableTabs.add(SalesSubTab.policy);
+    if (canOrganization) availableTabs.add(SalesSubTab.organization);
 
     if (availableTabs.isNotEmpty && !availableTabs.contains(_currentTab)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -248,19 +248,19 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                       const SizedBox(width: 8),
                     ],
-                    if (canOrganization) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.organization,
-                        label: '영업 조직',
-                        icon: Icons.groups_outlined,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
                     if (canPolicy) ...[
                       _buildSubTabButton(
                         tab: SalesSubTab.policy,
                         label: '수수료 정책',
                         icon: Icons.rule_folder_outlined,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (canOrganization) ...[
+                      _buildSubTabButton(
+                        tab: SalesSubTab.organization,
+                        label: '영업 조직',
+                        icon: Icons.groups_outlined,
                       ),
                     ],
                   ],
@@ -359,10 +359,10 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         return _buildSettlementView(project);
       case SalesSubTab.payout:
         return _buildPayoutView(project);
-      case SalesSubTab.organization:
-        return _buildOrganizationView(project);
       case SalesSubTab.policy:
         return _buildPolicyView(project);
+      case SalesSubTab.organization:
+        return _buildOrganizationView(project);
     }
   }
 
