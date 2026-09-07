@@ -38,20 +38,20 @@ const sales = {
       },
     },
     {
-      path: 'organization',
-      name: '영업 조직 관리',
-      component: () => import('@/views/sales/Organization/Index.vue'),
-      meta: {
-        title: '영업 조직 관리',
-        auth: true,
-      },
-    },
-    {
       path: 'policy',
       name: '수수료 정책 관리',
       component: () => import('@/views/sales/Policy/Index.vue'),
       meta: {
         title: '수수료 정책 관리',
+        auth: true,
+      },
+    },
+    {
+      path: 'organization',
+      name: '영업 조직 관리',
+      component: () => import('@/views/sales/Organization/Index.vue'),
+      meta: {
+        title: '영업 조직 관리',
         auth: true,
       },
     },

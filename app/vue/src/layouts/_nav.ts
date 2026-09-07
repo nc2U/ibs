@@ -275,15 +275,15 @@ const sales = {
     },
     {
       component: 'CNavItem',
-      name: '영업 조직 관리',
-      to: '/sales/organization',
-      auth: 'isSalesManage',
-    },
-    {
-      component: 'CNavItem',
       name: '수수료 정책 관리',
       to: '/sales/policy',
       auth: 'isSalesPolicy',
+    },
+    {
+      component: 'CNavItem',
+      name: '영업 조직 관리',
+      to: '/sales/organization',
+      auth: 'isSalesManage',
     },
   ],
 }

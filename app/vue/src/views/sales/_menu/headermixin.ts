@@ -7,8 +7,8 @@ export const navMenuAll = [
   '계약 실적 관리',
   '수수료 정산 관리',
   '수수료 지급 관리',
-  '영업 조직 관리',
   '수수료 정책 관리',
+  '영업 조직 관리',
 ]
 
 // 기존 정적 배열 호환용
@@ -21,8 +21,8 @@ export const navMenu = navMenuAll
  * - 계약 실적 관리: sales.read
  * - 수수료 정산 관리: sales.settle
  * - 수수료 지급 관리: sales.payout
- * - 영업 조직 관리: sales.manage
  * - 수수료 정책 관리: sales.policy
+ * - 영업 조직 관리: sales.manage
  *
  * @param projectRef (선택) 프로젝트 ID Ref 또는 원시값. 미전달 시 전역 권한 기준으로 판정.
  */
@@ -32,7 +32,7 @@ export const useSalesNavMenu = (
   const { can, PERM } = usePerms()
 
   return computed(() => {
-    const projId = projectRef ? unref(projectRef) ?? undefined : undefined
+    const projId = projectRef ? (unref(projectRef) ?? undefined) : undefined
     const menus: string[] = []
 
     if (can(PERM.SALES_READ, projId)) {
@@ -44,11 +44,11 @@ export const useSalesNavMenu = (
     if (can(PERM.SALES_PAYOUT, projId)) {
       menus.push('수수료 지급 관리')
     }
-    if (can(PERM.SALES_MANAGE, projId)) {
-      menus.push('영업 조직 관리')
-    }
     if (can(PERM.SALES_POLICY, projId)) {
       menus.push('수수료 정책 관리')
+    }
+    if (can(PERM.SALES_MANAGE, projId)) {
+      menus.push('영업 조직 관리')
     }
 
     return menus
