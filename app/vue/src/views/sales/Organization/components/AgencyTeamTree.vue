@@ -24,8 +24,7 @@ const salesStore = useSales()
 const agencyList = computed(() => salesStore.agencyList)
 const teamList = computed(() => salesStore.teamList)
 
-const getTeamsForAgency = (agencyId: number) =>
-  teamList.value.filter(t => t.agency === agencyId)
+const getTeamsForAgency = (agencyId: number) => teamList.value.filter(t => t.agency === agencyId)
 
 const selectAgency = (agency: SalesAgency) => {
   emit('select-agency', agency.id)
@@ -36,7 +35,11 @@ const selectTeam = (team: SalesTeam) => {
 }
 
 const deleteAgency = async (agency: SalesAgency) => {
-  if (confirm(`'${agency.name}' 대행사를 삭제하시겠습니까?\n(하위 조직 및 인력이 함께 삭제되거나 오류가 발생할 수 있습니다)`)) {
+  if (
+    confirm(
+      `'${agency.name}' 대행사를 삭제하시겠습니까?\n(하위 조직 및 인력이 함께 삭제되거나 오류가 발생할 수 있습니다)`,
+    )
+  ) {
     await salesStore.deleteAgency(agency.id)
     if (props.project) {
       await salesStore.fetchAgencyList(props.project)
@@ -65,11 +68,11 @@ const deleteTeam = async (team: SalesTeam) => {
       <v-btn
         v-if="can(PERM.SALES_MANAGE)"
         color="primary"
-        size="x-small"
+        size="small"
         variant="tonal"
         @click="emit('add-agency')"
       >
-        <v-icon icon="mdi-plus" size="x-small" class="mr-1" />
+        <v-icon icon="mdi-plus" size="small" class="mr-1" />
         대행사 추가
       </v-btn>
     </CCardHeader>
@@ -78,7 +81,10 @@ const deleteTeam = async (team: SalesTeam) => {
       <!-- 전체 보기 선택 -->
       <div
         class="tree-item p-2 mb-2 rounded cursor-pointer d-flex justify-content-between align-items-center"
-        :class="{ 'bg-primary text-white': !selectedAgencyId && !selectedTeamId, 'bg-body-secondary': selectedAgencyId || selectedTeamId }"
+        :class="{
+          'bg-primary text-white': !selectedAgencyId && !selectedTeamId,
+          'bg-more-secondary': selectedAgencyId || selectedTeamId,
+        }"
         @click="emit('select-team', null)"
       >
         <span class="fw-bold">
@@ -89,13 +95,17 @@ const deleteTeam = async (team: SalesTeam) => {
       </div>
 
       <!-- 대행사가 없는 경우 -->
-      <div v-if="agencyList.length === 0" class="py-4 text-center text-muted small">
+      <div v-if="agencyList.length === 0" class="py-4 text-center text-muted">
         등록된 분양 대행사가 없습니다.<br />
         <span v-if="can(PERM.SALES_MANAGE)">상단의 [대행사 추가]를 눌러 등록하세요.</span>
       </div>
 
       <!-- 대행사 및 팀 목록 -->
-      <div v-for="agency in agencyList" :key="agency.id" class="agency-block mb-3 border rounded p-2">
+      <div
+        v-for="agency in agencyList"
+        :key="agency.id"
+        class="agency-block mb-3 border rounded p-2"
+      >
         <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
           <div
             class="fw-bold cursor-pointer text-truncate"
@@ -108,9 +118,28 @@ const deleteTeam = async (team: SalesTeam) => {
             {{ agency.name }}
           </div>
           <div v-if="can(PERM.SALES_MANAGE)">
-            <v-btn icon="mdi-pencil" size="x-small" variant="text" color="success" @click.stop="emit('edit-agency', agency)" />
-            <v-btn icon="mdi-delete" size="x-small" variant="text" color="danger" @click.stop="deleteAgency(agency)" />
-            <v-btn icon="mdi-plus-box" size="x-small" variant="text" color="primary" title="팀 추가" @click.stop="emit('add-team', agency.id)" />
+            <v-btn
+              icon="mdi-pencil"
+              size="x-small"
+              variant="text"
+              color="success"
+              @click.stop="emit('edit-agency', agency)"
+            />
+            <v-btn
+              icon="mdi-delete"
+              size="x-small"
+              variant="text"
+              color="danger"
+              @click.stop="deleteAgency(agency)"
+            />
+            <v-btn
+              icon="mdi-plus-box"
+              size="x-small"
+              variant="text"
+              color="primary"
+              title="팀 추가"
+              @click.stop="emit('add-team', agency.id)"
+            />
           </div>
         </div>
 
@@ -120,16 +149,19 @@ const deleteTeam = async (team: SalesTeam) => {
             v-for="team in getTeamsForAgency(agency.id)"
             :key="team.id"
             class="team-item py-1 px-2 mb-1 rounded cursor-pointer d-flex justify-content-between align-items-center"
-            :class="{ 'bg-primary text-white': selectedTeamId === team.id, 'hover-bg': selectedTeamId !== team.id }"
+            :class="{
+              'bg-primary text-white': selectedTeamId === team.id,
+              'hover-bg': selectedTeamId !== team.id,
+            }"
             @click="selectTeam(team)"
           >
-            <span class="small text-truncate">
+            <span class="text-truncate">
               <v-icon icon="mdi-subdirectory-arrow-right" size="x-small" class="mr-1 opacity-75" />
               <span v-if="team.parent_name" class="opacity-75">{{ team.parent_name }} &gt; </span>
               <strong>{{ team.name }}</strong>
             </span>
             <div class="d-flex align-items-center">
-              <CBadge color="light" text-color="dark" class="mr-1" shape="rounded-pill">
+              <CBadge color="light" class="mr-3 text-body" shape="rounded-pill">
                 {{ team.members_count ?? 0 }}명
               </CBadge>
               <template v-if="can(PERM.SALES_MANAGE)">
@@ -151,7 +183,7 @@ const deleteTeam = async (team: SalesTeam) => {
             </div>
           </div>
 
-          <div v-if="getTeamsForAgency(agency.id).length === 0" class="small text-muted pl-3 py-1">
+          <div v-if="getTeamsForAgency(agency.id).length === 0" class="text-muted pl-3 py-1">
             등록된 팀이 없습니다.
           </div>
         </div>

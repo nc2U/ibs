@@ -124,7 +124,7 @@ const deletePerson = async (person: SalesPerson) => {
     </CCardHeader>
 
     <CCardBody class="p-0">
-      <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+      <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body">
         <colgroup>
           <col style="width: 10%" />
           <col style="width: 12%" />
@@ -176,11 +176,11 @@ const deletePerson = async (person: SalesPerson) => {
             </CTableDataCell>
             <CTableDataCell>{{ person.phone }}</CTableDataCell>
             <CTableDataCell>
-              <span class="badge bg-light text-dark border">
+              <span class="badge bg-light text-body border">
                 {{ person.tax_type_display }}
               </span>
             </CTableDataCell>
-            <CTableDataCell class="text-left font-monospace small">
+            <CTableDataCell class="text-left font-monospace">
               <span v-if="person.bank_name || person.account_number">
                 <strong>{{ person.bank_name }}</strong> {{ person.account_number }}
                 <span class="text-muted">({{ person.account_holder }})</span>
@@ -196,7 +196,7 @@ const deletePerson = async (person: SalesPerson) => {
                 title="제출 서류 관리"
                 @click="emit('open-docs', person)"
               >
-                <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
+                <v-icon icon="mdi-paperclip" size="small" class="mr-1" />
                 서류 {{ person.documents_count ?? 0 }}건
               </v-btn>
             </CTableDataCell>
