@@ -154,15 +154,21 @@ defineExpose({ open })
           <!-- 직급별 건당 수수료 금액 -->
           <CCol md="12" class="pt-2">
             <div
-              class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
+              class="border-bottom pb-2 text-primary fw-bold d-flex flex-wrap justify-content-between align-items-center gap-2"
             >
-              <span
-                ><v-icon icon="mdi-cash-multiple" size="small" class="mr-1" /> 직급별 건당 수수료
-                (원)</span
-              >
-              <span class="text-danger fw-bold fs-6">
-                건당 총액: {{ totalFee.toLocaleString() }} 원
+              <span>
+                <v-icon icon="mdi-cash-multiple" size="small" class="mr-1" />
+                직급별 건당 수수료 (원)
               </span>
+              <div class="d-flex align-items-center gap-3">
+                <span class="text-secondary small fw-normal">
+                  건당 공급가 (VAT 별도):
+                  <strong class="text-dark">{{ totalFee.toLocaleString() }}원</strong>
+                </span>
+                <span class="badge bg-warning text-dark px-2 py-1 fs-6 fw-bold">
+                  VAT 10% 포함 청구액: {{ Math.floor(totalFee * 1.1).toLocaleString() }}원
+                </span>
+              </div>
             </div>
           </CCol>
 
@@ -209,7 +215,10 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6" lg="3">
-            <CFormLabel>대행사 수수료 (본사몫)</CFormLabel>
+            <CFormLabel>
+              대행사 수수료 (본사몫)
+              <span class="text-warning small font-weight-bold">VAT 별도</span>
+            </CFormLabel>
             <CInputGroup>
               <CFormInput
                 v-model.number="form.agency_fee"

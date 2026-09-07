@@ -156,14 +156,46 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
     # ── 직영 매핑: person_id → {person, team, [(contract, fee, role_type)]} ──
     direct_map: dict[int, dict] = {}
-    # ── 외주 매핑: agency_id → {agency, [(contract, fee)]} ──
+    # ── 대행사 매핑: agency_id → {agency, is_direct, [(contract, fee)]} ──
     agency_map: dict[int, dict] = {}
 
+    # 실제 계약 건수 (cascade 중복 제외한 원천 계약 수)
+    direct_contract_count = 0
+    agency_contract_count = 0
+    direct_agency_fee_total = 0  # 직영 대행사 차지(agency_fee) 합계
+    direct_supply_price = 0      # 직영 계약 총 분양수수료 공급가액 (인력 수수료 + 대행사 차지)
+
     for m in mappings:
-        is_direct = m.team.agency.is_direct_managed
+        agency = m.team.agency
+        is_direct = agency.is_direct_managed
         policy = _resolve_policy(m, period.project)
 
         if is_direct:
+            direct_contract_count += 1
+            agency_fee = policy.agency_fee if policy else 0
+            direct_agency_fee_total += agency_fee
+
+            # 계약 건당 총 공급가액 (인력 수수료 + 대행사 수수료)
+            unit_total_fee = (
+                (policy.agent_fee + policy.leader_fee + policy.director_fee + policy.agency_fee)
+                if policy else 0
+            )
+            direct_supply_price += unit_total_fee
+
+            # 직영 대행사 청구 집계용
+            aid = agency.pk
+            if aid not in agency_map:
+                agency_map[aid] = {
+                    'agency': agency,
+                    'is_direct': True,
+                    'contracts': [],
+                }
+            agency_map[aid]['contracts'].append({
+                'contract': m.contract,
+                'fee': unit_total_fee,
+            })
+
+            # 직영 운영인력 계층별 타깃
             targets = _build_direct_targets(m.sales_person, m.team, policy) if policy else []
             for person, fee, role in targets:
                 pid = person.pk
@@ -179,12 +211,13 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
                 })
         else:
             # 외주: 대행사 단위 집계
-            agency = m.team.agency
+            agency_contract_count += 1
             aid = agency.pk
             agency_fee = policy.agency_fee if policy else 0
             if aid not in agency_map:
                 agency_map[aid] = {
                     'agency': agency,
+                    'is_direct': False,
                     'contracts': [],
                 }
             agency_map[aid]['contracts'].append({
@@ -194,14 +227,12 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
     # ── 직영 CommissionPayout 생성/갱신 ──
     direct_person_count = 0
-    total_direct_contracts = 0
 
     for pid, data in direct_map.items():
         person: SalesPerson = data['person']
         c_list = data['contracts']
         comm_sum = sum(c['fee'] for c in c_list)
         c_count = len(c_list)
-        total_direct_contracts += c_count
 
         # 미상계 환수금
         clawbacks = CommissionClawback.objects.filter(
@@ -243,16 +274,20 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
         direct_person_count += 1
 
-    # ── 외주 AgencyPayout 생성/갱신 ──
+    # ── 대행사 AgencyPayout 생성/갱신 (직영 청구 + 외주 정산) ──
     agency_count = 0
-    total_agency_contracts = 0
 
     for aid, data in agency_map.items():
         agency = data['agency']
+        is_direct = data.get('is_direct', False)
         c_list = data['contracts']
         fee_sum = sum(c['fee'] for c in c_list)
         c_count = len(c_list)
-        total_agency_contracts += c_count
+
+        note_text = (
+            f'[직영 대행 청구] 운영인력 인센티브 + 대행사 몫 포함 (VAT 10% 별도 가산)'
+            if is_direct else '[외주 대행 정산]'
+        )
 
         ap, created = AgencyPayout.objects.get_or_create(
             period=period,
@@ -261,11 +296,14 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
                 'contract_count': c_count,
                 'agency_fee_sum': fee_sum,
                 'business_number': agency.business_number,
+                'note': note_text,
             },
         )
         if not created:
             ap.contract_count = c_count
             ap.agency_fee_sum = fee_sum
+            if not ap.note:
+                ap.note = note_text
             ap.save()  # calculate_vat() called in save()
 
         ap.contract_details.all().delete()
@@ -280,7 +318,8 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
         agency_count += 1
 
-    total_contracts = total_direct_contracts + total_agency_contracts
+    # 실제 원천 계약 건수 (cascade 중복 제외)
+    total_contracts = direct_contract_count + agency_contract_count
 
     # ── 회차 전체 집계 갱신 ──
     direct_payouts = period.payouts.all()
@@ -288,6 +327,17 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
     period.total_gross_amount = direct_payouts.aggregate(s=Sum('gross_amount'))['s'] or 0
     period.total_tax_amount = direct_payouts.aggregate(s=Sum('total_tax'))['s'] or 0
     period.total_net_amount = direct_payouts.aggregate(s=Sum('net_amount'))['s'] or 0
+
+    # 대행사 몫 및 시행사 청구 금액 (직영 + 외주)
+    external_supply_price = sum(
+        sum(c['fee'] for c in data['contracts'])
+        for data in agency_map.values()
+        if not data.get('is_direct', False)
+    )
+    period.agency_fee_total = direct_agency_fee_total
+    period.billing_supply_price = direct_supply_price + external_supply_price
+    period.billing_vat = int(period.billing_supply_price * 0.1 // 10 * 10)
+    period.billing_total_amount = period.billing_supply_price + period.billing_vat
     period.save()
 
     agency_payouts = period.agency_payouts.all()
@@ -299,4 +349,8 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         'total_contracts': total_contracts,
         'total_gross_amount': period.total_gross_amount,
         'total_agency_amount': total_agency_amount,
+        'agency_fee_total': period.agency_fee_total,
+        'billing_supply_price': period.billing_supply_price,
+        'billing_vat': period.billing_vat,
+        'billing_total_amount': period.billing_total_amount,
     }

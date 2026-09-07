@@ -161,6 +161,7 @@ class SettlementPeriodSerializer(serializers.ModelSerializer):
             'id', 'project', 'title', 'start_date', 'end_date', 'payout_date',
             'status', 'status_display', 'total_contracts',
             'total_gross_amount', 'total_tax_amount', 'total_net_amount',
+            'agency_fee_total', 'billing_supply_price', 'billing_vat', 'billing_total_amount',
             'payout_count', 'agency_payout_count', 'created_by', 'created_at', 'updated_at'
         )
 

@@ -184,14 +184,15 @@ const onSaved = async () => {
         <CCardBody class="p-0">
           <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
             <colgroup>
-              <col style="width: 18%" />
+              <col style="width: 16%" />
+              <col style="width: 11%" />
+              <col style="width: 8%" />
+              <col style="width: 8%" />
+              <col style="width: 8%" />
+              <col style="width: 8%" />
+              <col style="width: 13%" />
               <col style="width: 12%" />
-              <col style="width: 9%" />
-              <col style="width: 9%" />
-              <col style="width: 9%" />
-              <col style="width: 9%" />
-              <col style="width: 11%" />
-              <col style="width: 11%" />
+              <col style="width: 10%" />
               <col style="width: 6%" />
               <col style="width: 6%" />
             </colgroup>
@@ -203,7 +204,14 @@ const onSaved = async () => {
                 <CTableHeaderCell>팀장 수수료</CTableHeaderCell>
                 <CTableHeaderCell>본부장 수수료</CTableHeaderCell>
                 <CTableHeaderCell>대행사 수수료</CTableHeaderCell>
-                <CTableHeaderCell>건당 총 수수료</CTableHeaderCell>
+                <CTableHeaderCell>
+                  건당 총 수수료
+                  <div class="small text-warning fw-normal">VAT 별도</div>
+                </CTableHeaderCell>
+                <CTableHeaderCell class="table-warning">
+                  VAT 포함 청구금액
+                  <div class="small text-muted fw-normal">공급가 + 부가세 10%</div>
+                </CTableHeaderCell>
                 <CTableHeaderCell>지급 조건</CTableHeaderCell>
                 <CTableHeaderCell>상태</CTableHeaderCell>
                 <CTableHeaderCell>관리</CTableHeaderCell>
@@ -264,9 +272,27 @@ const onSaved = async () => {
                   {{ policy.agency_fee.toLocaleString() }}원
                 </CTableDataCell>
 
-                <!-- 건당 총액 -->
-                <CTableDataCell class="text-right font-monospace fw-bold text-danger">
+                <!-- 건당 총 수수료 (VAT 별도) -->
+                <CTableDataCell class="text-right font-monospace fw-bold">
                   {{ (policy.agent_fee + policy.leader_fee + policy.director_fee + policy.agency_fee).toLocaleString() }}원
+                  <div class="small text-warning fw-normal">VAT 별도</div>
+                </CTableDataCell>
+
+                <!-- VAT 포함 청구금액 -->
+                <CTableDataCell class="text-right font-monospace fw-bold text-danger table-warning">
+                  {{
+                    Math.floor(
+                      (policy.agent_fee + policy.leader_fee + policy.director_fee + policy.agency_fee) * 1.1
+                    ).toLocaleString()
+                  }}원
+                  <div class="small text-muted fw-normal">
+                    부가세:
+                    {{
+                      Math.floor(
+                        (policy.agent_fee + policy.leader_fee + policy.director_fee + policy.agency_fee) * 0.1
+                      ).toLocaleString()
+                    }}원
+                  </div>
                 </CTableDataCell>
 
                 <!-- 지급 조건 -->
@@ -308,7 +334,7 @@ const onSaved = async () => {
               </CTableRow>
 
               <CTableRow v-if="filteredPolicies.length === 0">
-                <CTableDataCell colspan="10" class="py-5 text-center text-muted">
+                <CTableDataCell colspan="11" class="py-5 text-center text-muted">
                   등록된 수수료 정책이 없거나 조건에 일치하는 결과가 없습니다.
                 </CTableDataCell>
               </CTableRow>

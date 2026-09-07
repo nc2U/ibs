@@ -175,8 +175,45 @@ export interface SettlementPeriod {
   total_gross_amount: number
   total_tax_amount: number
   total_net_amount: number
+  agency_fee_total?: number
+  billing_supply_price?: number
+  billing_vat?: number
+  billing_total_amount?: number
   payout_count?: number
+  agency_payout_count?: number
   created_by: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AgencyPayoutContractDetail {
+  id: number
+  payout: number
+  contract: number
+  contract_serial?: string
+  contractor_name?: string
+  unit_fee: number
+}
+
+export interface AgencyPayout {
+  id: number
+  period: number
+  agency: number
+  agency_name?: string
+  is_direct_managed?: boolean
+  contract_count: number
+  agency_fee_sum: number
+  vat_amount: number
+  total_amount: number
+  pay_status: '1' | '2' | '3' | '4'
+  pay_status_display?: string
+  paid_date: string | null
+  business_number: string
+  bank_name: string
+  account_number: string
+  account_holder: string
+  note: string
+  contract_details?: AgencyPayoutContractDetail[]
   created_at: string
   updated_at: string
 }

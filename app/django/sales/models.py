@@ -232,6 +232,10 @@ class SettlementPeriod(models.Model):
     total_gross_amount = models.PositiveBigIntegerField('총 지급액 (세전)', default=0)
     total_tax_amount = models.PositiveBigIntegerField('총 원천세 (3.3%)', default=0)
     total_net_amount = models.PositiveBigIntegerField('총 실지급액 (세후)', default=0)
+    agency_fee_total = models.PositiveBigIntegerField('대행사 수수료(차지) 합계', default=0)
+    billing_supply_price = models.PositiveBigIntegerField('시행사 청구 공급가액 (VAT 별도)', default=0)
+    billing_vat = models.PositiveBigIntegerField('시행사 청구 부가가치세 (10%)', default=0)
+    billing_total_amount = models.PositiveBigIntegerField('시행사 총 청구금액 (VAT 포함)', default=0)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name='작성자'

@@ -199,59 +199,66 @@ const onPeriodSaved = async () => {
           </CCardBody>
         </CCard>
 
-        <!-- 정산 총괄 요약 카드 -->
+        <!-- 정산 총괄 요약 카드 (1줄 4개 구성) -->
         <CRow v-if="selectedPeriod" class="mb-4 g-3">
-          <!-- 정산 계약 건수 -->
+          <!-- 1. 운영인력 지급 총액 (세전) -->
           <CCol sm="6" lg="3">
             <CCard class="shadow-sm h-100 border-start border-start-4 border-start-primary">
               <CCardBody>
-                <div class="text-body-secondary small fw-semibold">정산 계약 건수</div>
+                <div class="text-body-secondary small fw-semibold">운영인력 지급 총액 (세전)</div>
                 <div class="fs-4 fw-bold text-primary">
-                  {{ selectedPeriod.total_contracts.toLocaleString() }}건
+                  {{ (selectedPeriod.total_gross_amount || 0).toLocaleString() }}원
                 </div>
                 <div class="small text-muted">
-                  {{ selectedPeriod.start_date }} ~ {{ selectedPeriod.end_date }}
+                  인센티브 + 일비 - 공제 ({{ payoutList.length }}명)
                 </div>
               </CCardBody>
             </CCard>
           </CCol>
 
-          <!-- 총 지급액 (세전) -->
-          <CCol sm="6" lg="3">
-            <CCard class="shadow-sm h-100 border-start border-start-4 border-start-info">
-              <CCardBody>
-                <div class="text-body-secondary small fw-semibold">총 지급액 (세전)</div>
-                <div class="fs-4 fw-bold text-dark">
-                  {{ selectedPeriod.total_gross_amount.toLocaleString() }}원
-                </div>
-                <div class="small text-muted">인센티브 + 일비 - 공제액</div>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          <!-- 원천징수 세액 (3.3%) -->
+          <!-- 2. 원천징수 세액 (3.3%) -->
           <CCol sm="6" lg="3">
             <CCard class="shadow-sm h-100 border-start border-start-4 border-start-danger">
               <CCardBody>
                 <div class="text-body-secondary small fw-semibold">원천징수 세액 (3.3%)</div>
                 <div class="fs-4 fw-bold text-danger">
-                  {{ selectedPeriod.total_tax_amount.toLocaleString() }}원
+                  {{ (selectedPeriod.total_tax_amount || 0).toLocaleString() }}원
                 </div>
                 <div class="small text-muted">소득세 3% + 지방소득세 0.3%</div>
               </CCardBody>
             </CCard>
           </CCol>
 
-          <!-- 총 실지급액 (세후) -->
+          <!-- 3. 인력 총 실지급액 (세후) -->
           <CCol sm="6" lg="3">
             <CCard class="shadow-sm h-100 border-start border-start-4 border-start-success">
               <CCardBody>
-                <div class="text-body-secondary small fw-semibold">총 실지급액 (세후)</div>
+                <div class="text-body-secondary small fw-semibold">인력 총 실지급액 (세후)</div>
                 <div class="fs-4 fw-bold text-success">
-                  {{ selectedPeriod.total_net_amount.toLocaleString() }}원
+                  {{ (selectedPeriod.total_net_amount || 0).toLocaleString() }}원
                 </div>
                 <div class="small text-muted">
-                  예정일: {{ selectedPeriod.payout_date || '미정' }}
+                  지급 예정일: {{ selectedPeriod.payout_date || '미정' }}
+                </div>
+              </CCardBody>
+            </CCard>
+          </CCol>
+
+          <!-- 4. 시행사 청구 금액 (VAT 포함) -->
+          <CCol sm="6" lg="3">
+            <CCard class="shadow-sm h-100 border-start border-start-4 border-start-warning bg-light-subtle">
+              <CCardBody>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="text-body-secondary small fw-semibold text-warning-emphasis">
+                    시행사 청구 금액
+                  </div>
+                  <span class="badge bg-warning text-dark small px-1">VAT 포함</span>
+                </div>
+                <div class="fs-4 fw-bold text-dark">
+                  {{ (selectedPeriod.billing_total_amount || Math.floor((selectedPeriod.billing_supply_price || 0) * 1.1)).toLocaleString() }}원
+                </div>
+                <div class="small text-muted">
+                  총 {{ (selectedPeriod.total_contracts || 0).toLocaleString() }}건 (공급가: {{ (selectedPeriod.billing_supply_price || selectedPeriod.total_gross_amount || 0).toLocaleString() }}원)
                 </div>
               </CCardBody>
             </CCard>
