@@ -1,17 +1,21 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
+import { TableSecondary } from '@/utils/cssMixins'
 import type { Project } from '@/store/types/project'
 import type { CommissionPayout } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
-import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import PeriodFormModal from './components/PeriodFormModal.vue'
 import PayoutDetailModal from './components/PayoutDetailModal.vue'
+
+const refSettlement = ref()
+const refConfirmSettlement = ref()
 
 const router = useRouter()
 const { can, PERM } = usePerms()
@@ -73,18 +77,18 @@ onMounted(() => {
 })
 
 // 정산 실행 및 확정
-const runGeneratePayouts = async () => {
+const runGeneratePayouts = () => {
   if (!selectedPeriodId.value) return
-  if (
-    confirm(
-      `'${selectedPeriod.value?.title}' 정산 계산을 실행하시겠습니까?\n(대상 기간 내의 계약 실적 및 3.3% 원천세가 자동 집계됩니다)`,
-    )
-  ) {
-    await salesStore.generatePayouts(selectedPeriodId.value)
-    if (project.value) {
-      await salesStore.fetchPeriodList(project.value)
-      await salesStore.fetchPayoutList(selectedPeriodId.value)
-    }
+  refSettlement.value?.callModal()
+}
+
+const executeSettlement = async () => {
+  if (!selectedPeriodId.value) return
+  refSettlement.value?.close()
+  await salesStore.generatePayouts(selectedPeriodId.value)
+  if (project.value) {
+    await salesStore.fetchPeriodList(project.value)
+    await salesStore.fetchPayoutList(selectedPeriodId.value)
   }
 }
 
@@ -96,25 +100,19 @@ const goToPayout = () => {
   }
 }
 
-const runConfirmSettlement = async () => {
+const runConfirmSettlement = () => {
   if (!selectedPeriodId.value) return
-  if (
-    confirm(
-      `'${selectedPeriod.value?.title}' 정산을 확정하시겠습니까?\n(확정 후 지급 승인 및 이체 관리를 진행할 수 있습니다)`,
-    )
-  ) {
-    await salesStore.confirmSettlement(selectedPeriodId.value)
-    if (project.value) {
-      await salesStore.fetchPeriodList(project.value)
-    }
-    if (
-      confirm(
-        `'${selectedPeriod.value?.title}' 정산이 확정되었습니다.\n\n해당 회차의 지급 승인 및 이체 관리를 위해 [수수료 지급 관리] 화면으로 지금 이동하시겠습니까?`,
-      )
-    ) {
-      goToPayout()
-    }
+  refConfirmSettlement.value?.callModal()
+}
+
+const executeConfirmSettlement = async () => {
+  if (!selectedPeriodId.value) return
+  refConfirmSettlement.value?.close()
+  await salesStore.confirmSettlement(selectedPeriodId.value)
+  if (project.value) {
+    await salesStore.fetchPeriodList(project.value)
   }
+  goToPayout()
 }
 
 const openCreatePeriod = () => periodModalRef.value?.open()
@@ -373,27 +371,27 @@ const onPeriodSaved = async () => {
                       {{ payout.sales_person_name }}
                     </a>
                   </CTableDataCell>
-                  <CTableDataCell class="font-monospace"
-                    >{{ payout.contract_count }}건</CTableDataCell
-                  >
-                  <CTableDataCell class="text-right font-monospace"
-                    >{{ payout.commission_amount.toLocaleString() }}원</CTableDataCell
-                  >
-                  <CTableDataCell class="text-right font-monospace"
-                    >{{ payout.base_pay.toLocaleString() }}원</CTableDataCell
-                  >
+                  <CTableDataCell class="font-monospace">
+                    {{ payout.contract_count }}건
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace">
+                    {{ payout.commission_amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace">
+                    {{ payout.base_pay.toLocaleString() }}원
+                  </CTableDataCell>
                   <CTableDataCell class="text-right font-monospace text-danger">
-                    <span v-if="payout.deduction_amount > 0"
-                      >-{{ payout.deduction_amount.toLocaleString() }}원</span
-                    >
+                    <span v-if="payout.deduction_amount > 0">
+                      -{{ payout.deduction_amount.toLocaleString() }}원
+                    </span>
                     <span v-else class="text-muted">0원</span>
                   </CTableDataCell>
-                  <CTableDataCell class="text-right font-monospace fw-bold"
-                    >{{ payout.gross_amount.toLocaleString() }}원</CTableDataCell
-                  >
-                  <CTableDataCell class="text-right font-monospace text-danger"
-                    >{{ payout.total_tax.toLocaleString() }}원</CTableDataCell
-                  >
+                  <CTableDataCell class="text-right font-monospace fw-bold">
+                    {{ payout.gross_amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace text-danger">
+                    {{ payout.total_tax.toLocaleString() }}원
+                  </CTableDataCell>
                   <CTableDataCell class="text-right font-monospace fw-bold text-primary">
                     {{ payout.net_amount.toLocaleString() }}원
                   </CTableDataCell>
@@ -411,12 +409,7 @@ const onPeriodSaved = async () => {
                     </CBadge>
                   </CTableDataCell>
                   <CTableDataCell>
-                    <v-btn
-                      size="x-small"
-                      variant="tonal"
-                      color="info"
-                      @click="openPayoutDetail(payout)"
-                    >
+                    <v-btn size="x-small" color="info" @click="openPayoutDetail(payout)">
                       보기
                     </v-btn>
                   </CTableDataCell>
@@ -452,5 +445,40 @@ const onPeriodSaved = async () => {
     />
 
     <PayoutDetailModal ref="detailModalRef" />
+
+    <!-- 수수료 자동 정산 실행 확인 모달 -->
+    <ConfirmModal ref="refSettlement">
+      <template #header>수수료 자동 정산 실행</template>
+      <template #default>
+        <p class="mb-2">
+          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 계산을 실행하시겠습니까?
+        </p>
+        <ul class="text-secondary small mb-0 ps-3">
+          <li>계약일자 기준 정산 대상(승인 완료 건)을 집계합니다.</li>
+          <li>기존 타 회차에서 이미 정산된 계약건은 자동으로 제외됩니다.</li>
+          <li>수수료 정책에 따라 인력별 지급액 및 시행사 청구금액이 자동 산출됩니다.</li>
+        </ul>
+      </template>
+      <template #footer>
+        <v-btn size="small" color="primary" @click="executeSettlement">정산 실행</v-btn>
+      </template>
+    </ConfirmModal>
+
+    <!-- 정산 회차 확정 확인 모달 -->
+    <ConfirmModal ref="refConfirmSettlement">
+      <template #header>정산 회차 확정</template>
+      <template #default>
+        <p class="mb-2">
+          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 <strong>[확정]</strong> 상태로 변경하시겠습니까?
+        </p>
+        <ul class="text-secondary small mb-0 ps-3">
+          <li>확정 후에는 정산 계산을 다시 실행할 수 없습니다.</li>
+          <li>확정 처리가 완료되면 [수수료 지급 관리] 화면으로 자동 이동합니다.</li>
+        </ul>
+      </template>
+      <template #footer>
+        <v-btn size="small" color="success" @click="executeConfirmSettlement">정산 확정</v-btn>
+      </template>
+    </ConfirmModal>
   </ContentBody>
 </template>

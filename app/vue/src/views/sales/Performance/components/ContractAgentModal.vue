@@ -182,7 +182,8 @@ defineExpose({ open })
             <CFormSelect v-model.number="form.team" required>
               <option :value="null">소속 팀 선택</option>
               <option v-for="t in teamList" :key="t.id" :value="t.id">
-                {{ t.agency_name ? `[${t.agency_name}] ` : '' }}{{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
+                {{ t.agency_name ? `[${t.agency_name}] ` : ''
+                }}{{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
               </option>
             </CFormSelect>
           </CCol>
@@ -207,7 +208,8 @@ defineExpose({ open })
           <!-- MGM 및 소개 수수료 -->
           <CCol md="12" class="pt-2">
             <div class="border-bottom pb-1 text-primary fw-bold">
-              <v-icon icon="mdi-handshake" size="small" class="mr-1" /> MGM / 소개 중개사 연계 정보 (선택)
+              <v-icon icon="mdi-handshake" size="small" class="mr-1" /> MGM / 소개 중개사 연계 정보
+              (선택)
             </div>
           </CCol>
 
@@ -236,7 +238,9 @@ defineExpose({ open })
 
           <!-- 수수료 정산 승인 / 보류 관리 -->
           <CCol md="12" class="pt-2">
-            <div class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center">
+            <div
+              class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
+            >
               <span>
                 <v-icon icon="mdi-check-decagram-outline" size="small" class="mr-1" />
                 수수료 정산 승인 관리
@@ -248,15 +252,16 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="12">
-            <div class="p-3 border rounded bg-light">
+            <div class="p-3 border rounded bg-more-light">
               <CFormCheck
                 id="isSettlementApprovedCheck"
                 v-model="form.is_settlement_approved"
                 label="이 계약을 수수료 정산 대상 건으로 최종 승인합니다."
-                class="fw-bold text-dark mb-2"
+                class="fw-bold text-body mb-2"
               />
               <div class="small text-muted mb-2">
-                * 체크 해제 시: 담당자는 배정되지만 <strong>수수료 정산 계산 대상에서 자동으로 제외</strong>됩니다.<br>
+                * 체크 해제 시: 담당자는 배정되지만
+                <strong>수수료 정산 계산 대상에서 자동으로 제외</strong>됩니다.<br />
                 * 서류 완비 및 계약금 완납이 확인된 후 언제든지 승인으로 전환할 수 있습니다.
               </div>
               <div v-if="!form.is_settlement_approved" class="mt-2">
@@ -274,13 +279,7 @@ defineExpose({ open })
       </CModalBody>
       <CModalFooter class="d-flex justify-content-between">
         <div>
-          <v-btn
-            v-if="isEdit"
-            color="danger"
-            variant="text"
-            size="small"
-            @click="removeMapping"
-          >
+          <v-btn v-if="isEdit" color="danger" variant="text" size="small" @click="removeMapping">
             <v-icon icon="mdi-account-remove" size="small" class="mr-1" />
             배정 해제
           </v-btn>
