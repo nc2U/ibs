@@ -114,7 +114,7 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
     def get_unit_info(self, obj):
         if obj.contract and obj.contract.key_unit and hasattr(obj.contract.key_unit, 'houseunit'):
             hu = obj.contract.key_unit.houseunit
-            return f'{hu.building.name}동 {hu.name}호'
+            return f'{hu.building_unit.name}동 {hu.name}호'
         return ''
 
 

@@ -120,7 +120,7 @@ class CommissionPolicyViewSet(viewsets.ModelViewSet):
 class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     """계약 영업 담당자 매핑 ViewSet"""
     queryset = ContractSalesAgent.objects.all().select_related(
-        'contract__contractor', 'contract__key_unit__houseunit__building',
+        'contract__contractor', 'contract__key_unit__houseunit__building_unit',
         'sales_person', 'team', 'policy'
     )
     serializer_class = ContractSalesAgentSerializer

@@ -43,7 +43,11 @@ const topAgent = computed(() => {
             <div class="fs-4 fw-bold text-primary">{{ totalContracts.toLocaleString() }}건</div>
             <div class="small text-muted">프로젝트 전체 계약</div>
           </div>
-          <v-icon icon="mdi-file-document-check-outline" size="x-large" class="text-primary opacity-50" />
+          <v-icon
+            icon="mdi-file-document-check-outline"
+            size="x-large"
+            class="text-primary opacity-50"
+          />
         </CCardBody>
       </CCard>
     </CCol>
@@ -67,16 +71,27 @@ const topAgent = computed(() => {
 
     <!-- 미배정 계약건 -->
     <CCol sm="6" lg="3">
-      <CCard class="shadow-sm h-100 border-start border-start-4" :class="unmappedCount > 0 ? 'border-start-warning' : 'border-start-secondary'">
+      <CCard
+        class="shadow-sm h-100 border-start border-start-4"
+        :class="unmappedCount > 0 ? 'border-start-warning' : 'border-start-secondary'"
+      >
         <CCardBody class="d-flex justify-content-between align-items-center">
           <div>
             <div class="text-body-secondary small fw-semibold">미배정 계약 건수</div>
-            <div class="fs-4 fw-bold" :class="unmappedCount > 0 ? 'text-warning' : 'text-secondary'">
+            <div
+              class="fs-4 fw-bold"
+              :class="unmappedCount > 0 ? 'text-warning' : 'text-secondary'"
+            >
               {{ unmappedCount.toLocaleString() }}건
             </div>
             <div class="small text-muted">담당 상담사 배정 필요</div>
           </div>
-          <v-icon icon="mdi-account-alert" size="x-large" :class="unmappedCount > 0 ? 'text-warning' : 'text-secondary'" class="opacity-50" />
+          <v-icon
+            icon="mdi-account-alert"
+            size="x-large"
+            :class="unmappedCount > 0 ? 'text-warning' : 'text-secondary'"
+            class="opacity-50"
+          />
         </CCardBody>
       </CCard>
     </CCol>
@@ -87,13 +102,12 @@ const topAgent = computed(() => {
         <CCardBody class="d-flex justify-content-between align-items-center">
           <div>
             <div class="text-body-secondary small fw-semibold">최다 실적 상담사</div>
-            <div v-if="topAgent" class="fs-5 fw-bold text-dark">
-              {{ topAgent.name }} <span class="fs-6 fw-normal text-primary">({{ topAgent.count }}건)</span>
+            <div v-if="topAgent" class="fs-5 fw-bold text-body">
+              {{ topAgent.name }}
+              <span class="fs-6 fw-normal text-primary">({{ topAgent.count }}건)</span>
             </div>
             <div v-else class="fs-6 text-muted">-</div>
-            <div class="small text-muted">
-              MGM 연계 {{ mgmCount }}건 포함
-            </div>
+            <div class="small text-muted">MGM 연계 {{ mgmCount }}건 포함</div>
           </div>
           <v-icon icon="mdi-trophy-outline" size="x-large" class="text-info opacity-50" />
         </CCardBody>

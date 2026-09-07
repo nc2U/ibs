@@ -9,6 +9,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 const props = defineProps({
   project: { type: Number, required: true },
   contractOptions: { type: Array as () => { value: number; label: string }[], default: () => [] },
+  mappedContractIds: { type: Array as () => number[], default: () => [] },
 })
 
 const emit = defineEmits(['saved'])
@@ -21,6 +22,13 @@ const targetId = ref<number | null>(null)
 const personList = computed(() => salesStore.personList)
 const teamList = computed(() => salesStore.teamList)
 const policyList = computed(() => salesStore.policyList)
+
+// 이미 다른 담당자가 배정된 계약은 신규 등록 시 제외 (현재 편집 중인 계약은 포함)
+const availableContractOptions = computed(() => {
+  if (isEdit.value) return props.contractOptions
+  const mappedSet = new Set(props.mappedContractIds)
+  return props.contractOptions.filter(c => !mappedSet.has(c.value) || c.value === form.contract)
+})
 
 const form = reactive({
   contract: null as number | null,
@@ -134,7 +142,7 @@ defineExpose({ open })
             </div>
             <CFormSelect v-else v-model.number="form.contract" required>
               <option :value="null">배정할 계약을 선택하세요</option>
-              <option v-for="c in contractOptions" :key="c.value" :value="c.value">
+              <option v-for="c in availableContractOptions" :key="c.value" :value="c.value">
                 {{ c.label }}
               </option>
             </CFormSelect>

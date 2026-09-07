@@ -323,6 +323,7 @@ const onSaved = async () => {
       ref="modalRef"
       :project="project"
       :contract-options="allContracts"
+      :mapped-contract-ids="Array.from(mappingByContractId.keys())"
       @saved="onSaved"
     />
   </ContentBody>
