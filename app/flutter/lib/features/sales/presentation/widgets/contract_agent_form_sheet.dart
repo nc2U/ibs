@@ -69,7 +69,9 @@ class _ContractAgentFormSheetState
   final TextEditingController _mgmPhoneController = TextEditingController();
   final TextEditingController _mgmFeeController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
+  final TextEditingController _approvalNoteController = TextEditingController();
 
+  bool _isSettlementApproved = true;
   bool _isSubmitting = false;
 
   @override
@@ -90,9 +92,12 @@ class _ContractAgentFormSheetState
         _mgmFeeController.text = mapping.mgmFee.toString();
       }
       _noteController.text = mapping.note ?? '';
+      _isSettlementApproved = mapping.isSettlementApproved;
+      _approvalNoteController.text = mapping.approvalNote ?? '';
     } else {
       _selectedContractId = widget.initialContractId;
       _selectedContractDate = DateTime.now();
+      _isSettlementApproved = true;
     }
   }
 
@@ -102,6 +107,7 @@ class _ContractAgentFormSheetState
     _mgmPhoneController.dispose();
     _mgmFeeController.dispose();
     _noteController.dispose();
+    _approvalNoteController.dispose();
     super.dispose();
   }
 
@@ -160,6 +166,8 @@ class _ContractAgentFormSheetState
         'mgm_phone': _mgmPhoneController.text.trim(),
         'mgm_fee': fee,
         'note': _noteController.text.trim(),
+        'is_settlement_approved': _isSettlementApproved,
+        'approval_note': _approvalNoteController.text.trim(),
       };
 
       if (widget.existingMapping != null) {
@@ -525,6 +533,101 @@ class _ContractAgentFormSheetState
                         border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
                       ),
                       style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── 6. 수수료 정산 승인 / 보류 ──────────────────────────
+                    Row(
+                      children: [
+                        Container(width: 3, height: 12, color: const Color(0xFF10B981), margin: const EdgeInsets.only(right: 6)),
+                        Text(
+                          '수수료 정산 승인 관리',
+                          style: AppTextStyles.label.copyWith(
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _isSettlementApproved
+                            ? const Color(0xFF10B981).withAlpha(15)
+                            : const Color(0xFFEF4444).withAlpha(15),
+                        border: Border.all(
+                          color: _isSettlementApproved
+                              ? const Color(0xFF10B981).withAlpha(80)
+                              : const Color(0xFFEF4444).withAlpha(80),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _isSettlementApproved ? Icons.check_circle : Icons.error_outline,
+                                size: 18,
+                                color: _isSettlementApproved
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFEF4444),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _isSettlementApproved ? '정산 승인 대상' : '정산 보류 (미승인)',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: _isSettlementApproved
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _isSettlementApproved,
+                                activeColor: const Color(0xFF10B981),
+                                onChanged: (val) {
+                                  setState(() => _isSettlementApproved = val);
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isSettlementApproved
+                                ? '계약금 및 서류 완비 확인 건으로, 정산 실행 시 정상 집계됩니다.'
+                                : '서류 미비/분납 등 사유로 정산 계산 대상에서 자동으로 제외됩니다.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.colors.textSecond,
+                            ),
+                          ),
+                          if (!_isSettlementApproved) ...[
+                            const SizedBox(height: 10),
+                            TextFormField(
+                              controller: _approvalNoteController,
+                              maxLines: 2,
+                              decoration: InputDecoration(
+                                labelText: '정산 보류 사유 (선택 또는 권장)',
+                                hintText: '예: 계약금 2차 분납 500만원 미납, 인감 미징구 등',
+                                hintStyle: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.zero,
+                                  borderSide: BorderSide(color: const Color(0xFFEF4444).withAlpha(80)),
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

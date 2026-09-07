@@ -260,6 +260,23 @@ class SalesRepository {
     await dio.delete('/api/v1/sales-contract-agent/$id/');
   }
 
+  /// 8-1. 수수료 정산 승인 / 보류 상태 변경 (POST /api/v1/sales-contract-agent/{id}/toggle-approval/)
+  Future<Map<String, dynamic>> toggleSettlementApproval(
+    int id, {
+    String? approvalNote,
+    bool? isApproved,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (approvalNote != null) payload['approval_note'] = approvalNote;
+    if (isApproved != null) payload['is_settlement_approved'] = isApproved;
+
+    final response = await dio.post(
+      '/api/v1/sales-contract-agent/$id/toggle-approval/',
+      data: payload,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   // ── 대행사 CRUD ──────────────────────────────────────────
   Future<SalesAgencyModel> createSalesAgency(Map<String, dynamic> payload) async {
     final response = await dio.post('/api/v1/sales-agency/', data: payload);

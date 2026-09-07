@@ -4,7 +4,7 @@ import '../data/models/sales_models.dart';
 import '../data/sales_repository.dart';
 
 /// ── 필터 상태 프로바이더 ──────────────────────────────────────
-enum SalesMappingStatusFilter { all, mapped, unmapped }
+enum SalesMappingStatusFilter { all, mapped, unmapped, approved, pending }
 
 final salesMappingStatusFilterProvider =
     StateProvider<SalesMappingStatusFilter>((ref) => SalesMappingStatusFilter.all);
@@ -188,12 +188,18 @@ final filteredContractPerformanceProvider =
   final query = ref.watch(salesSearchQueryProvider).trim().toLowerCase();
 
   return items.where((item) {
-    // 1. 매핑 상태 필터
+    // 1. 매핑 및 정산 승인 상태 필터
     if (statusFilter == SalesMappingStatusFilter.mapped && !item.isMapped) {
       return false;
     }
     if (statusFilter == SalesMappingStatusFilter.unmapped && item.isMapped) {
       return false;
+    }
+    if (statusFilter == SalesMappingStatusFilter.approved) {
+      if (!item.isMapped || !item.isSettlementApproved) return false;
+    }
+    if (statusFilter == SalesMappingStatusFilter.pending) {
+      if (!item.isMapped || item.isSettlementApproved) return false;
     }
 
     // 2. 팀 필터

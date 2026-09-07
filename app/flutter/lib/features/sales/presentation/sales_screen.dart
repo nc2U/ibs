@@ -673,6 +673,22 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                           SalesMappingStatusFilter.unmapped,
                       activeColor: const Color(0xFFF59E0B),
                     ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '정산 승인',
+                      isSelected: statusFilter == SalesMappingStatusFilter.approved,
+                      onTap: () => ref.read(salesMappingStatusFilterProvider.notifier).state =
+                          SalesMappingStatusFilter.approved,
+                      activeColor: const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterChip(
+                      label: '정산 보류',
+                      isSelected: statusFilter == SalesMappingStatusFilter.pending,
+                      onTap: () => ref.read(salesMappingStatusFilterProvider.notifier).state =
+                          SalesMappingStatusFilter.pending,
+                      activeColor: const Color(0xFFEF4444),
+                    ),
                     if (teams.isNotEmpty) ...[
                       const SizedBox(width: 8),
                       // 팀 드롭다운 필터
@@ -860,6 +876,68 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                if (isMapped) ...[
+                  // 정산 확정 반영 뱃지
+                  if (item.isSettled) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withAlpha(15),
+                        border: Border.all(color: const Color(0xFF6366F1).withAlpha(70), width: 0.8),
+                      ),
+                      child: Text(
+                        item.settledPeriodTitle != null && item.settledPeriodTitle!.isNotEmpty
+                            ? '정산: ${item.settledPeriodTitle}'
+                            : '기정산',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6366F1),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+
+                  // 정산 승인 / 보류 뱃지 (관리 권한 시 클릭 토글 가능)
+                  InkWell(
+                    onTap: canManage ? () => _showSettlementApprovalDialog(item) : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: item.isSettlementApproved
+                            ? const Color(0xFF10B981).withAlpha(15)
+                            : const Color(0xFFEF4444).withAlpha(15),
+                        border: Border.all(
+                          color: item.isSettlementApproved
+                              ? const Color(0xFF10B981).withAlpha(70)
+                              : const Color(0xFFEF4444).withAlpha(70),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.isSettlementApproved ? Icons.check_circle_outline : Icons.error_outline,
+                            size: 11,
+                            color: item.isSettlementApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            item.isSettlementApproved ? '정산 승인' : '정산 보류',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: item.isSettlementApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -982,6 +1060,27 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              if (!item.isSettlementApproved && item.approvalNote != null && item.approvalNote!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 12, color: Color(0xFFEF4444)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '정산 보류 사유: ${item.approvalNote}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFFEF4444),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ] else ...[
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1094,6 +1193,227 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         ),
       ),
     );
+  }
+
+  /// 계약 영업 담당자의 수수료 정산 승인 / 보류 설정 다이얼로그
+  Future<void> _showSettlementApprovalDialog(CombinedContractPerformanceItem item) async {
+    if (item.mapping == null) return;
+    final mapping = item.mapping!;
+    bool isApproved = mapping.isSettlementApproved;
+    final noteController = TextEditingController(text: mapping.approvalNote ?? '');
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: context.colors.bgCard,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.verified_outlined,
+                  size: 20,
+                  color: isApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '수수료 정산 승인 / 보류 설정',
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 계약 및 담당자 요약
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: context.colors.bgSurface,
+                      border: Border.all(color: context.colors.border, width: 0.8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.contractLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '담당 상담사: ${item.salesPersonName ?? '미지정'} (${item.teamName ?? '소속 팀 없음'})',
+                          style: TextStyle(fontSize: 11.5, color: context.colors.textSecond),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 상태 토글 스위치/라디오
+                  Text(
+                    '정산 대상 승인 상태',
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setModalState(() => isApproved = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: isApproved
+                                  ? const Color(0xFF10B981).withAlpha(20)
+                                  : context.colors.bgSurface,
+                              border: Border.all(
+                                color: isApproved ? const Color(0xFF10B981) : context.colors.border,
+                                width: isApproved ? 1.5 : 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '정산 승인',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setModalState(() => isApproved = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: !isApproved
+                                  ? const Color(0xFFEF4444).withAlpha(20)
+                                  : context.colors.bgSurface,
+                              border: Border.all(
+                                color: !isApproved ? const Color(0xFFEF4444) : context.colors.border,
+                                width: !isApproved ? 1.5 : 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, size: 14, color: Color(0xFFEF4444)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '정산 보류 (미승인)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isApproved
+                        ? '※ 정산 회차 자동 계산 시 수수료 대상에 정상 반영됩니다.'
+                        : '※ 서류 미비/분납 등으로 이번 정산 회차에서 자동으로 제외됩니다.',
+                    style: TextStyle(fontSize: 10.5, color: context.colors.textMuted),
+                  ),
+
+                  // 보류 사유 입력창
+                  if (!isApproved) ...[
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: noteController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: '정산 보류 사유',
+                        hintText: '예: 계약금 2차 분납 500만원 미납, 서류 미비 등',
+                        hintStyle: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: const Color(0xFFEF4444).withAlpha(80)),
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(isApproved ? '승인으로 저장' : '보류로 저장'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != true || !mounted) return;
+
+    try {
+      final repo = ref.read(salesRepositoryProvider);
+      await repo.toggleSettlementApproval(
+        mapping.id,
+        isApproved: isApproved,
+        approvalNote: noteController.text.trim(),
+      );
+      ref.invalidate(rawContractSalesAgentsProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isApproved ? '정산 승인 상태로 변경되었습니다.' : '정산 보류 상태로 변경되었습니다.',
+          ),
+          backgroundColor: isApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('정산 승인 상태 변경 실패: $e'),
+          backgroundColor: context.colors.error,
+        ),
+      );
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════
