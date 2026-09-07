@@ -149,17 +149,22 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='toggle-approval')
     def toggle_approval(self, request, pk=None):
-        """수수료 정산 승인 / 보류 토글 액션"""
+        """수수료 정산 승인 / 보류 토글 또는 지정 액션"""
         agent_mapping = self.get_object()
-        new_state = not agent_mapping.is_settlement_approved
+        explicit_state = request.data.get('is_settlement_approved')
+        if explicit_state is not None:
+            new_state = bool(explicit_state)
+        else:
+            new_state = not agent_mapping.is_settlement_approved
+
         agent_mapping.is_settlement_approved = new_state
         if new_state:
             agent_mapping.approved_by = request.user
             agent_mapping.approved_at = timezone.now()
         else:
-            note = request.data.get('approval_note', '')
-            if note:
-                agent_mapping.approval_note = note
+            note = request.data.get('approval_note')
+            if note is not None:
+                agent_mapping.approval_note = note.strip()
         agent_mapping.save()
 
         status_text = '승인' if new_state else '보류'

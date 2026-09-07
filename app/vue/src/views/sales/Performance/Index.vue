@@ -12,6 +12,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PerformanceSummary from './components/PerformanceSummary.vue'
 import ContractAgentModal from './components/ContractAgentModal.vue'
+import SettlementApprovalModal from './components/SettlementApprovalModal.vue'
 import { CCardBody } from '@coreui/vue'
 
 const { can, PERM } = usePerms()
@@ -35,6 +36,7 @@ const filterApprovalStatus = ref<'all' | 'approved' | 'pending'>('all')
 const search = ref('')
 
 const modalRef = ref()
+const approvalModalRef = ref()
 
 const loadData = async (projId: number) => {
   await Promise.all([
@@ -125,14 +127,16 @@ const openAssignModal = (mapping?: ContractSalesAgent, contractId?: number) => {
   modalRef.value?.open(mapping, contractId)
 }
 
-const toggleApproval = async (mapping: ContractSalesAgent) => {
-  let note = mapping.approval_note || ''
-  if (mapping.is_settlement_approved) {
-    const input = prompt('정산 보류 사유를 입력하세요 (선택):', note)
-    if (input === null) return
-    note = input
-  }
-  await salesStore.toggleSettlementApproval(mapping.id, note)
+const toggleApproval = (mapping: ContractSalesAgent, label?: string) => {
+  approvalModalRef.value?.open(mapping, label)
+}
+
+const onApprovalConfirm = async (payload: {
+  id: number
+  isApproved: boolean
+  approvalNote: string
+}) => {
+  await salesStore.toggleSettlementApproval(payload.id, payload.approvalNote, payload.isApproved)
   if (project.value) {
     await salesStore.fetchContractAgentList(project.value)
   }
@@ -332,7 +336,7 @@ const onSaved = async () => {
                         "
                         :disabled="!can(PERM.SALES_MANAGE)"
                         title="클릭하여 승인 / 보류 상태를 변경합니다."
-                        @click="toggleApproval(item.mapping)"
+                        @click="toggleApproval(item.mapping, item.contractLabel)"
                       >
                         <v-icon
                           :icon="
@@ -420,6 +424,12 @@ const onSaved = async () => {
       :contract-options="allContracts"
       :mapped-contract-ids="Array.from(mappingByContractId.keys())"
       @saved="onSaved"
+    />
+
+    <!-- 정산 승인 / 보류 폼 모달 -->
+    <SettlementApprovalModal
+      ref="approvalModalRef"
+      @confirm="onApprovalConfirm"
     />
   </ContentBody>
 </template>

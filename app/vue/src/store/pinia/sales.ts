@@ -258,9 +258,16 @@ export const useSales = defineStore('sales', () => {
       })
       .catch(err => errorHandle(err))
 
-  const toggleSettlementApproval = (id: number, approvalNote?: string) =>
+  const toggleSettlementApproval = (
+    id: number,
+    approvalNote?: string,
+    isApproved?: boolean,
+  ) =>
     api
-      .post(`/sales-contract-agent/${id}/toggle-approval/`, { approval_note: approvalNote })
+      .post(`/sales-contract-agent/${id}/toggle-approval/`, {
+        approval_note: approvalNote,
+        is_settlement_approved: isApproved,
+      })
       .then(res => {
         message('success', '알림!', res.data.detail || '정산 승인 상태가 변경되었습니다.')
         return res.data
