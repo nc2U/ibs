@@ -386,6 +386,88 @@ class CommissionClawback(models.Model):
         return f'{settled_tag} {self.sales_person.name} - {self.contract} ({self.amount:,}원)'
 
 
+class AgencyPayout(models.Model):
+    """외주 대행사 단위 정산 지급 내역 (시행사 → 대행사 지급 기록)"""
+
+    PAY_STATUS_CHOICES = (
+        ('1', '대기'),
+        ('2', '승인'),
+        ('3', '지급 완료'),
+        ('4', '지급 보류'),
+    )
+
+    period = models.ForeignKey(
+        SettlementPeriod, on_delete=models.CASCADE,
+        related_name='agency_payouts', verbose_name='정산 회차'
+    )
+    agency = models.ForeignKey(
+        SalesAgency, on_delete=models.PROTECT,
+        related_name='payouts', verbose_name='분양 대행사'
+    )
+    contract_count = models.PositiveIntegerField('계약 건수', default=0)
+    agency_fee_sum = models.PositiveBigIntegerField(
+        '대행사 수수료 합계 (VAT 제외)', default=0,
+        help_text='CommissionPolicy.agency_fee × 계약 건수'
+    )
+    vat_amount = models.PositiveBigIntegerField('부가가치세 (10%)', default=0)
+    total_amount = models.PositiveBigIntegerField(
+        '총 지급액 (VAT 포함)', default=0,
+        help_text='agency_fee_sum + vat_amount'
+    )
+    pay_status = models.CharField('지급 상태', max_length=2, choices=PAY_STATUS_CHOICES, default='1')
+    paid_date = models.DateField('실제 지급일', null=True, blank=True)
+    business_number = models.CharField('사업자등록번호', max_length=20, blank=True, default='')
+    bank_name = models.CharField('입금 은행', max_length=30, blank=True, default='')
+    account_number = models.CharField('입금 계좌', max_length=50, blank=True, default='')
+    account_holder = models.CharField('예금주', max_length=50, blank=True, default='')
+    note = models.TextField('비고/정산 메모', blank=True, default='')
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일시', auto_now=True)
+
+    class Meta:
+        ordering = ['period', 'agency']
+        unique_together = ('period', 'agency')
+        verbose_name = '10. 대행사 수수료 지급 명세'
+        verbose_name_plural = '10. 대행사 수수료 지급 명세 목록'
+
+    def __str__(self):
+        return f'[외주] {self.agency.name} - {self.total_amount:,}원 (VAT 포함)'
+
+    def calculate_vat(self):
+        """VAT 10% 자동 계산"""
+        self.vat_amount = int(self.agency_fee_sum * 0.1 // 10 * 10)
+        self.total_amount = self.agency_fee_sum + self.vat_amount
+
+    def save(self, *args, **kwargs):
+        # 대행사 사업자정보 동기화
+        if not self.business_number and self.agency_id:
+            self.business_number = self.agency.business_number
+        self.calculate_vat()
+        super().save(*args, **kwargs)
+
+
+class AgencyPayoutContractDetail(models.Model):
+    """대행사 지급 내역에 포함된 개별 계약 건 상세"""
+
+    payout = models.ForeignKey(
+        AgencyPayout, on_delete=models.CASCADE,
+        related_name='contract_details', verbose_name='대행사 지급 명세'
+    )
+    contract = models.ForeignKey(
+        'contract.Contract', on_delete=models.PROTECT,
+        related_name='agency_payout_details', verbose_name='분양 계약'
+    )
+    unit_fee = models.PositiveIntegerField('대행사 건당 수수료 (원)', default=0)
+
+    class Meta:
+        ordering = ['payout', 'contract']
+        verbose_name = '11. 대행사 지급 대상 계약 상세'
+        verbose_name_plural = '11. 대행사 지급 대상 계약 상세 목록'
+
+    def __str__(self):
+        return f'{self.payout.agency.name} ➔ {self.contract} ({self.unit_fee:,}원)'
+
+
 def get_sales_docs_upload_path(instance, filename):
     return get_upload_path(instance, filename, 'sales', 'person_docs')
 

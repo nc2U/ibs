@@ -13,13 +13,15 @@ from apiV1.serializers.sales import (
     SalesPersonDocumentSerializer, CommissionPolicySerializer,
     ContractSalesAgentSerializer, SettlementPeriodSerializer,
     CommissionPayoutSerializer, PayoutContractDetailSerializer,
-    CommissionClawbackSerializer
+    CommissionClawbackSerializer, AgencyPayoutSerializer,
+    AgencyPayoutContractDetailSerializer,
 )
 from sales.models import (
     SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
-    PayoutContractDetail, CommissionClawback
+    PayoutContractDetail, CommissionClawback, AgencyPayout, AgencyPayoutContractDetail,
 )
+from sales.services import generate_period_payouts
 from work.models import IssueProject
 
 
@@ -171,133 +173,34 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='generate-payouts')
     def generate_payouts(self, request, pk=None):
         """
-        정산 대상 기간 내의 계약 실적을 자동 집계하여
-        개인별 수수료 지급 명세(CommissionPayout) 및 계약 상세를 자동 생성/갱신합니다.
+        정산 대상 기간 내 계약 실적을 집계하여 수수료 지급 명세를 자동 생성/갱신합니다.
+
+        직영 대행사: CommissionPayout (개인별, 계층 수수료 자동 배분)
+        외주 대행사: AgencyPayout    (대행사 단위, VAT 10% 자동 계산)
         """
         period = self.get_object()
 
         with transaction.atomic():
-            # 1. 정산 대상 기간 내의 계약 매핑 조회 (해당 프로젝트)
-            mappings = ContractSalesAgent.objects.filter(
-                contract__project=period.project,
-                contract_date__gte=period.start_date,
-                contract_date__lte=period.end_date,
-            ).select_related('contract', 'sales_person', 'policy', 'contract__unit_type')
+            result = generate_period_payouts(period)
 
-            if not mappings.exists():
-                return Response({
-                    'detail': '해당 기간 내 정산 대상 계약 실적이 없습니다.',
-                    'count': 0
-                }, status=status.HTTP_200_OK)
-
-            # 2. 영업직원별 계약 그룹화
-            person_contracts = {}
-            for m in mappings:
-                agent = m.sales_person
-                if agent.pk not in person_contracts:
-                    person_contracts[agent.pk] = {
-                        'agent': agent,
-                        'contracts': []
-                    }
-
-                # 적용할 수수료 정책 산출
-                policy = m.policy
-                if not policy:
-                    # 유니트 타입에 맞는 활성 정책 검색
-                    policy = CommissionPolicy.objects.filter(
-                        project=period.project,
-                        unit_type=m.contract.unit_type,
-                        is_active=True
-                    ).first() or CommissionPolicy.objects.filter(
-                        project=period.project,
-                        unit_type__isnull=True,
-                        is_active=True
-                    ).first()
-
-                fee = 0
-                if policy:
-                    if agent.duty == '1':  # 상담사
-                        fee = policy.agent_fee
-                    elif agent.duty == '2':  # 팀장
-                        fee = policy.leader_fee
-                    elif agent.duty in ('3', '4'):  # 본부장
-                        fee = policy.director_fee
-                    else:
-                        fee = policy.agent_fee
-
-                person_contracts[agent.pk]['contracts'].append({
-                    'contract': m.contract,
-                    'role_type': 'agent' if agent.duty == '1' else ('leader' if agent.duty == '2' else 'director'),
-                    'fee': fee
-                })
-
-            # 3. 개인별 Payout 및 PayoutContractDetail 생성/업데이트
-            total_contracts = 0
-            created_count = 0
-
-            for agent_id, data in person_contracts.items():
-                agent = data['agent']
-                c_list = data['contracts']
-                comm_sum = sum(c['fee'] for c in c_list)
-                c_count = len(c_list)
-                total_contracts += c_count
-
-                # 미상계된 환수금(Clawback) 확인
-                clawbacks = CommissionClawback.objects.filter(
-                    sales_person=agent,
-                    is_settled=False
-                )
-                clawback_sum = clawbacks.aggregate(total=Sum('amount'))['total'] or 0
-
-                payout, created = CommissionPayout.objects.get_or_create(
-                    period=period,
-                    sales_person=agent,
-                    defaults={
-                        'contract_count': c_count,
-                        'commission_amount': comm_sum,
-                        'deduction_amount': clawback_sum,
-                        'bank_name': agent.bank_name,
-                        'account_number': agent.account_number,
-                        'account_holder': agent.account_holder,
-                    }
-                )
-
-                if not created:
-                    payout.contract_count = c_count
-                    payout.commission_amount = comm_sum
-                    payout.deduction_amount = clawback_sum
-                    payout.save()
-
-                # 기존 계약 상세 삭제 후 재생성
-                payout.contract_details.all().delete()
-                for c in c_list:
-                    PayoutContractDetail.objects.create(
-                        payout=payout,
-                        contract=c['contract'],
-                        role_type=c['role_type'],
-                        unit_fee=c['fee']
-                    )
-
-                # 환수금 상계 처리 연결
-                if clawback_sum > 0:
-                    clawbacks.update(is_settled=True, settled_payout=payout)
-
-                created_count += 1
-
-            # 4. 회차 전체 합계 갱신
-            payouts = period.payouts.all()
-            period.total_contracts = total_contracts
-            period.total_gross_amount = payouts.aggregate(total=Sum('gross_amount'))['total'] or 0
-            period.total_tax_amount = payouts.aggregate(total=Sum('total_tax'))['total'] or 0
-            period.total_net_amount = payouts.aggregate(total=Sum('net_amount'))['total'] or 0
-            period.save()
-
+        if result['total_contracts'] == 0:
             return Response({
-                'detail': f'{created_count}명의 영업 인력에 대해 {total_contracts}건의 계약 정산이 완료되었습니다.',
-                'total_contracts': total_contracts,
-                'total_gross_amount': period.total_gross_amount,
-                'total_net_amount': period.total_net_amount,
+                'detail': '해당 기간 내 정산 대상 계약 실적이 없습니다.',
+                'total_contracts': 0,
             }, status=status.HTTP_200_OK)
+
+        return Response({
+            'detail': (
+                f"직영 {result['direct_person_count']}명 / "
+                f"외주 {result['agency_count']}개 대행사 — "
+                f"총 {result['total_contracts']}건 정산 완료."
+            ),
+            'direct_person_count': result['direct_person_count'],
+            'agency_count': result['agency_count'],
+            'total_contracts': result['total_contracts'],
+            'total_gross_amount': result['total_gross_amount'],
+            'total_agency_amount': result['total_agency_amount'],
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='confirm-settlement')
     def confirm_settlement(self, request, pk=None):
@@ -426,3 +329,42 @@ class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
             'verified_by_name': request.user.username if is_verified else None
         }, status=status.HTTP_200_OK)
 
+
+class AgencyPayoutViewSet(viewsets.ModelViewSet):
+    """외주 대행사 수수료 지급 명세 ViewSet (시행사 → 대행사 지급)"""
+    queryset = AgencyPayout.objects.all().select_related(
+        'period__project', 'agency'
+    ).prefetch_related('contract_details__contract')
+    serializer_class = AgencyPayoutSerializer
+    permission_classes = (IsAuthenticated, IbsModulePermission)
+    pagination_class = PageNumberPaginationCustomBasic
+    filterset_fields = ('period', 'period__project', 'agency', 'pay_status')
+    search_fields = ('agency__name', 'account_holder', 'business_number')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(period__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action == 'update_pay_status':
+            return 'sales.payout'
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.settle'
+
+    @action(detail=True, methods=['post'], url_path='update-pay-status')
+    def update_pay_status(self, request, pk=None):
+        """대행사 지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
+        payout = self.get_object()
+        pay_status = request.data.get('pay_status')
+        if pay_status in ('1', '2', '3', '4'):
+            payout.pay_status = pay_status
+            if pay_status == '3' and not payout.paid_date:
+                payout.paid_date = timezone.localdate()
+            payout.save()
+            return Response({'detail': '지급 상태가 업데이트되었습니다.', 'pay_status': pay_status})
+        return Response({'detail': '올바르지 않은 상태값입니다.'}, status=status.HTTP_400_BAD_REQUEST)

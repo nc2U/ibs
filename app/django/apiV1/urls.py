@@ -213,6 +213,7 @@ router.register(r'sales-contract-agent', sales.ContractSalesAgentViewSet, basena
 router.register(r'sales-settlement-period', sales.SettlementPeriodViewSet, basename='sales-settlement-period')
 router.register(r'sales-payout', sales.CommissionPayoutViewSet, basename='sales-payout')
 router.register(r'sales-clawback', sales.CommissionClawbackViewSet, basename='sales-clawback')
+router.register(r'sales-agency-payout', sales.AgencyPayoutViewSet, basename='sales-agency-payout')
 
 # notice
 router.register(r'sales-bill-issue', notice.BillIssueViewSet)

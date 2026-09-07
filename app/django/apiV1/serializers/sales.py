@@ -2,7 +2,7 @@ from rest_framework import serializers
 from sales.models import (
     SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
-    PayoutContractDetail, CommissionClawback
+    PayoutContractDetail, CommissionClawback, AgencyPayout, AgencyPayoutContractDetail,
 )
 
 
@@ -153,6 +153,7 @@ class CommissionPayoutSerializer(serializers.ModelSerializer):
 class SettlementPeriodSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payout_count = serializers.SerializerMethodField()
+    agency_payout_count = serializers.SerializerMethodField()
 
     class Meta:
         model = SettlementPeriod
@@ -160,11 +161,14 @@ class SettlementPeriodSerializer(serializers.ModelSerializer):
             'id', 'project', 'title', 'start_date', 'end_date', 'payout_date',
             'status', 'status_display', 'total_contracts',
             'total_gross_amount', 'total_tax_amount', 'total_net_amount',
-            'payout_count', 'created_by', 'created_at', 'updated_at'
+            'payout_count', 'agency_payout_count', 'created_by', 'created_at', 'updated_at'
         )
 
     def get_payout_count(self, obj):
         return obj.payouts.count()
+
+    def get_agency_payout_count(self, obj):
+        return obj.agency_payouts.count()
 
 
 class CommissionClawbackSerializer(serializers.ModelSerializer):
@@ -176,4 +180,32 @@ class CommissionClawbackSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'contract', 'contract_serial', 'sales_person', 'sales_person_name',
             'amount', 'reason', 'is_settled', 'settled_payout', 'created_at'
+        )
+
+
+class AgencyPayoutContractDetailSerializer(serializers.ModelSerializer):
+    contract_serial = serializers.ReadOnlyField(source='contract.serial_number')
+    contractor_name = serializers.ReadOnlyField(source='contract.contractor.name')
+
+    class Meta:
+        model = AgencyPayoutContractDetail
+        fields = (
+            'id', 'payout', 'contract', 'contract_serial', 'contractor_name', 'unit_fee'
+        )
+
+
+class AgencyPayoutSerializer(serializers.ModelSerializer):
+    agency_name = serializers.ReadOnlyField(source='agency.name')
+    is_direct_managed = serializers.ReadOnlyField(source='agency.is_direct_managed')
+    pay_status_display = serializers.CharField(source='get_pay_status_display', read_only=True)
+    contract_details = AgencyPayoutContractDetailSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AgencyPayout
+        fields = (
+            'id', 'period', 'agency', 'agency_name', 'is_direct_managed',
+            'contract_count', 'agency_fee_sum', 'vat_amount', 'total_amount',
+            'pay_status', 'pay_status_display', 'paid_date',
+            'business_number', 'bank_name', 'account_number', 'account_holder',
+            'note', 'contract_details', 'created_at', 'updated_at'
         )
