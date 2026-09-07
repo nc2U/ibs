@@ -274,7 +274,9 @@ const onPeriodSaved = async () => {
 
           <!-- 4. 시행사 청구 금액 (VAT 포함) -->
           <CCol sm="6" lg="3">
-            <CCard class="shadow-sm h-100 border-start border-start-4 border-start-warning bg-light-subtle">
+            <CCard
+              class="shadow-sm h-100 border-start border-start-4 border-start-warning bg-light-subtle"
+            >
               <CCardBody>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <div class="text-body-secondary small fw-semibold text-warning-emphasis">
@@ -282,11 +284,23 @@ const onPeriodSaved = async () => {
                   </div>
                   <span class="badge bg-warning text-dark small px-1">VAT 포함</span>
                 </div>
-                <div class="fs-4 fw-bold text-dark">
-                  {{ (selectedPeriod.billing_total_amount || Math.floor((selectedPeriod.billing_supply_price || 0) * 1.1)).toLocaleString() }}원
+                <div class="fs-4 fw-bold text-body">
+                  {{
+                    (
+                      selectedPeriod.billing_total_amount ||
+                      Math.floor((selectedPeriod.billing_supply_price || 0) * 1.1)
+                    ).toLocaleString()
+                  }}원
                 </div>
                 <div class="small text-muted">
-                  총 {{ (selectedPeriod.total_contracts || 0).toLocaleString() }}건 (공급가: {{ (selectedPeriod.billing_supply_price || selectedPeriod.total_gross_amount || 0).toLocaleString() }}원)
+                  총 {{ (selectedPeriod.total_contracts || 0).toLocaleString() }}건 (공급가:
+                  {{
+                    (
+                      selectedPeriod.billing_supply_price ||
+                      selectedPeriod.total_gross_amount ||
+                      0
+                    ).toLocaleString()
+                  }}원)
                 </div>
               </CCardBody>
             </CCard>
@@ -338,7 +352,7 @@ const onPeriodSaved = async () => {
                   <CTableHeaderCell>공제/환수</CTableHeaderCell>
                   <CTableHeaderCell>총액 (세전)</CTableHeaderCell>
                   <CTableHeaderCell>원천세 (3.3%)</CTableHeaderCell>
-                  <CTableHeaderCell class="table-primary">실지급액 (세후)</CTableHeaderCell>
+                  <CTableHeaderCell>실지급액 (세후)</CTableHeaderCell>
                   <CTableHeaderCell>상태</CTableHeaderCell>
                   <CTableHeaderCell>상세</CTableHeaderCell>
                 </CTableRow>
@@ -380,9 +394,7 @@ const onPeriodSaved = async () => {
                   <CTableDataCell class="text-right font-monospace text-danger"
                     >{{ payout.total_tax.toLocaleString() }}원</CTableDataCell
                   >
-                  <CTableDataCell
-                    class="text-right font-monospace fw-bold text-primary table-primary"
-                  >
+                  <CTableDataCell class="text-right font-monospace fw-bold text-primary">
                     {{ payout.net_amount.toLocaleString() }}원
                   </CTableDataCell>
                   <CTableDataCell>
