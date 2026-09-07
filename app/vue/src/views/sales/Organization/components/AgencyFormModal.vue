@@ -96,7 +96,7 @@ defineExpose({ open })
             <CFormLabel>대행사명 <span class="text-danger">*</span></CFormLabel>
             <CFormInput
               v-model="form.name"
-              placeholder="예: [직영] 자체 분양팀 또는 (주)미래분양대행"
+              placeholder="예: [직영] 자체분양관리 또는 (주)미래분양대행"
               required
               @keydown.enter.prevent="submit"
             />
@@ -110,7 +110,11 @@ defineExpose({ open })
           </CCol>
           <CCol md="4">
             <CFormLabel>대표자명</CFormLabel>
-            <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" @keydown.enter.prevent="submit" />
+            <CFormInput
+              v-model="form.ceo_name"
+              placeholder="대표자 성명"
+              @keydown.enter.prevent="submit"
+            />
           </CCol>
           <CCol md="4">
             <CFormLabel>사업자등록번호</CFormLabel>
@@ -136,7 +140,12 @@ defineExpose({ open })
           </CCol>
           <CCol md="4">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter.prevent="submit" />
+            <CFormInput
+              v-model.number="form.order"
+              type="number"
+              min="1"
+              @keydown.enter.prevent="submit"
+            />
           </CCol>
           <CCol md="4" class="d-flex align-items-center pt-4">
             <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />
@@ -144,10 +153,18 @@ defineExpose({ open })
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="primary" size="small" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
+        <v-btn
+          color="primary"
+          size="small"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          @click="submit"
+        >
           {{ isEdit ? '수정 저장' : '등록하기' }}
         </v-btn>
-        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
+        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+          >취소</v-btn
+        >
       </CModalFooter>
     </template>
   </FormModal>
