@@ -45,13 +45,15 @@ const canEditIssue = computed(() => {
 const canCreateComment = computed(() => can(PERM.ISSUE_COMMENT_CREATE))
 
 // 5. 편집 버튼 노출 조건 (일감을 편집할 수 있거나 댓글을 달 수 있다면 활성화)
-const showEditButton = computed(() => canEditIssue.value || canCreateComment.value)
+const showEditButton = computed(
+  () => props.projStatus === '1' && (canEditIssue.value || canCreateComment.value),
+)
 
 // 6. 복사 버튼 노출 조건
-const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && props.projStatus !== '9')
+const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && props.projStatus === '1')
 
 // 7. 삭제 버튼 노출 조건
-const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus !== '9')
+const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus === '1')
 
 const isWatcher = computed(() =>
   (props.watchers || []).map(w => w.pk).includes(userInfo?.value?.pk as number),
@@ -108,7 +110,7 @@ const callDeleteIssue = () => emit('call-delete-issue')
 
 <template>
   <CCol class="text-right form-text">
-    <span v-if="projStatus !== '9' && showEditButton">
+    <span v-if="showEditButton">
       <TextButton name="편집" icon="mdi-pencil" icon-color="amber" @click="callEditForm" />
     </span>
 

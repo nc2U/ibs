@@ -11,13 +11,18 @@ import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { useWork } from '@/store/pinia/work_project.ts'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
+const workStore = useWork()
+const isProjectActive = computed(() => workStore.currentProject?.status === '1')
+
 const RefDelNews = ref()
 const { can, PERM } = usePerms()
+const canNewsManage = computed(() => isProjectActive.value && can(PERM.NEWS_MANAGE))
 const viewForm = ref(false)
 
 const infStore = useInform()
@@ -129,7 +134,7 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
-          <span v-if="can(PERM.NEWS_MANAGE)">
+          <span v-if="canNewsManage">
             <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
 
@@ -143,7 +148,7 @@ onBeforeMount(async () => {
             <TextButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>
 
-          <span v-if="can(PERM.NEWS_MANAGE)">
+          <span v-if="canNewsManage">
             <TextButton
               name="편집"
               icon="mdi-pencil"
@@ -152,7 +157,7 @@ onBeforeMount(async () => {
             />
           </span>
 
-          <span v-if="can(PERM.NEWS_MANAGE) && !viewForm">
+          <span v-if="canNewsManage && !viewForm">
             <TextButton
               name="삭제"
               icon="mdi-trash-can-outline"

@@ -32,16 +32,16 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const navMenu = computed(() => (!allReadableProjectsFlat.value.length ? navMenu1 : navMenu2))
 
-const { can, PERM } = usePerms()
-const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
-const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
-
 const workStore = useWork()
 const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat)
 const allReadableProjects = computed(() =>
   workStore.getAllReadableProjects.filter(pjt => pjt.module?.meeting),
 )
-const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.meeting))
+const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.meeting))
+
+const { can, PERM } = usePerms()
+const canMeetingCreate = computed(() => myProjects.value.length > 0 && can(PERM.MEETING_CREATE))
+const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)

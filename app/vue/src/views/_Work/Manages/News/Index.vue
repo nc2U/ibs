@@ -13,6 +13,8 @@ import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
 import TextButton from '../../components/atomics/TextButton.vue'
 
+import { useWork } from '@/store/pinia/work_project.ts'
+
 const cBody = ref()
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
@@ -21,8 +23,16 @@ const comName = computed(() => company?.value?.name)
 const viewForm = ref(false)
 const route = useRoute()
 
+const workStore = useWork()
+const activeNewsProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(pjt => pjt.module?.news),
+)
+
 const { can, PERM } = usePerms()
 const canNewsRead = computed(() => can(PERM.NEWS_READ))
+const canNewsManage = computed(
+  () => activeNewsProjects.value.length > 0 && can(PERM.NEWS_MANAGE),
+)
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -85,7 +95,7 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol class="text-right">
-          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
+          <span v-if="canNewsManage" class="mr-2 form-text">
             <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
         </CCol>

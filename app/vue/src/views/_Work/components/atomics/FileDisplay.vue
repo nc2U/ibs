@@ -47,7 +47,7 @@ const projStatus = computed(() => workStore.currentProject?.status)
     <span v-if="file.description" class="mr-2">{{ file.description }}</span>
     <span class="file-desc2 mr-1 text-grey"> {{ file.creator?.username }}, </span>
     <span class="file-desc2 mr-2 text-grey">{{ timeFormat(file.created) }}</span>
-    <span v-if="projStatus !== '9'">
+    <span v-if="projStatus === '1'">
       <router-link to="">
         <v-icon
           icon="mdi-trash-can-outline"

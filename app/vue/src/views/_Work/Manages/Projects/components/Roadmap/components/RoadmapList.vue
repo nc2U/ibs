@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { ref, computed, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
 import RoadmapGantt from './RoadmapGantt.vue'
@@ -13,7 +14,11 @@ defineProps({
   selectedVersionId: { type: Number as PropType<number | null>, default: null },
 })
 
+const workStore = useWork()
 const { can, PERM } = usePerms()
+const canManageVersions = computed(
+  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
+)
 const [route, router] = [useRoute(), useRouter()]
 
 const viewMode = ref<'list' | 'gantt'>(
@@ -51,7 +56,7 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
         </v-btn>
       </v-btn-toggle>
 
-      <span v-if="can(PERM.PROJECT_VERSION)" class="mr-2 form-text">
+      <span v-if="canManageVersions" class="mr-2 form-text">
         <TextButton name="새 단계" :to="{ name: '(로드맵) - 추가' }" />
       </span>
 

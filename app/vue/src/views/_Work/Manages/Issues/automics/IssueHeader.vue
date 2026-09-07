@@ -18,10 +18,15 @@ const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 
 const workStore = useWork()
-const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.issue))
+const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.issue))
 
 const { can, PERM } = usePerms()
-const canIssueCreate = computed(() => props.projStatus !== '9' && can(PERM.ISSUE_CREATE))
+const canIssueCreate = computed(() => {
+  if (route.name === '업무') {
+    return myProjects.value.length > 0 && can(PERM.ISSUE_CREATE)
+  }
+  return props.projStatus === '1' && can(PERM.ISSUE_CREATE)
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -106,7 +111,7 @@ const router = useRouter()
               <!--              </router-link>-->
             </CDropdownItem>
             <CDropdownItem
-              v-if="projStatus !== '9' && route.params.projId && workManager"
+              v-if="projStatus === '1' && route.params.projId && workManager"
               class="form-text"
               @click="router.push({ name: '(설정)', query: { menu: '업무추적' } })"
             >

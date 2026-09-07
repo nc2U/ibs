@@ -40,9 +40,15 @@ const isAttendee = computed(() =>
   meeting.value?.attendees_desc.some(user => user.pk === accountStore.userInfo?.pk),
 )
 
+const isProjectActive = computed(() => {
+  const status = meeting.value?.project_desc?.status || workStore.currentProject?.status
+  return status === '1'
+})
+
 const { can, PERM } = usePerms()
-const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
+const canIssueCreate = computed(() => isProjectActive.value && can(PERM.ISSUE_CREATE))
 const canMeetingUpdate = computed(() => {
+  if (!isProjectActive.value) return false
   if (meeting.value) {
     if (meeting.value.is_confirmed) return can(PERM.MEETING_EDIT_CONFIRMED)
     if (can(PERM.MEETING_UPDATE)) return true
@@ -50,8 +56,8 @@ const canMeetingUpdate = computed(() => {
   }
   return false
 })
-const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM))
-const canMeetingDelete = computed(() => can(PERM.MEETING_DELETE))
+const canMeetingConfirm = computed(() => isProjectActive.value && can(PERM.MEETING_CONFIRM))
+const canMeetingDelete = computed(() => isProjectActive.value && can(PERM.MEETING_DELETE))
 
 const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)

@@ -116,6 +116,7 @@ export const useWork = defineStore('work', () => {
   const allReadableProjectsFlat = computed(() => flattenTree(allReadableProjectsTree.value))
   const allActiveProjectsFlat = computed(() => flattenTree(allActiveProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
+  const myActiveProjectsFlat = computed(() => myProjectsFlat.value.filter(p => p.status === '1'))
   const projectResultsFlat = computed(() => flattenTree(projectResultsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
@@ -127,6 +128,7 @@ export const useWork = defineStore('work', () => {
       pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
+      status: i.status,
     })),
   )
   const getAllActiveProjects = computed(() =>
@@ -137,6 +139,7 @@ export const useWork = defineStore('work', () => {
       pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
+      status: i.status,
     })),
   )
   const getMyProjects = computed(() =>
@@ -147,6 +150,18 @@ export const useWork = defineStore('work', () => {
       pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
+      status: i.status,
+    })),
+  )
+  const getMyActiveProjects = computed(() =>
+    myActiveProjectsFlat.value.map(i => ({
+      value: i.pk as number,
+      label:
+        (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      pk: i.pk as number,
+      slug: i.slug as string,
+      module: i.module,
+      status: i.status,
     })),
   )
 
@@ -164,6 +179,12 @@ export const useWork = defineStore('work', () => {
   )
   const getMyProjectSlugs = computed(() =>
     getMyProjects.value.map(p => ({
+      value: p.slug,
+      label: p.label,
+    })),
+  )
+  const getMyActiveProjectSlugs = computed(() =>
+    getMyActiveProjects.value.map(p => ({
       value: p.slug,
       label: p.label,
     })),
@@ -650,17 +671,20 @@ export const useWork = defineStore('work', () => {
     allReadableProjectsFlat,
     projectResultsFlat,
     myProjectsFlat,
+    myActiveProjectsFlat,
 
     allActiveProjects,
 
     getAllReadableProjects,
     getAllActiveProjects,
     getMyProjects,
+    getMyActiveProjects,
     getDevProjects,
 
     getAllReadableProjectSlugs,
     getAllActiveProjectSlugs,
     getMyProjectSlugs,
+    getMyActiveProjectSlugs,
 
     fetchAllProjectList,
     fetchIssueProjectList,

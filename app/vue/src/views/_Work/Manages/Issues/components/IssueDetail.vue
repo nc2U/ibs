@@ -456,7 +456,7 @@ onBeforeMount(async () => {
             :sub-issues="issue.sub_issues"
           />
         </CCol>
-        <CCol v-if="can(PERM.ISSUE_SUB_MANAGE)" class="text-right form-text">
+        <CCol v-if="currentProject?.status === '1' && can(PERM.ISSUE_SUB_MANAGE)" class="text-right form-text">
           <router-link
             :to="{ name: '(업무) - 추가', query: { parent: issue.pk, tracker: issue.tracker.pk } }"
           >
@@ -480,7 +480,7 @@ onBeforeMount(async () => {
             :relations="relatedIssues"
           />
         </CCol>
-        <CCol v-if="can(PERM.ISSUE_REL_MANAGE)" class="text-right form-text">
+        <CCol v-if="currentProject?.status === '1' && can(PERM.ISSUE_REL_MANAGE)" class="text-right form-text">
           <router-link to="" @click="addRIssue = !addRIssue">추가</router-link>
         </CCol>
       </CRow>

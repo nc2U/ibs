@@ -70,7 +70,7 @@ const projectNavMenus = computed(() => {
     if (modules?.forum && project.forums?.length) menus.push({ no: 9, menu: '(게시판)' })
 
     // 권한 검사: 워크스페이스 설정에 접근 가능한 메뉴가 하나라도 있는지 확인
-    if (project.status !== '9' && canAccessSetting.value) menus.push({ no: 99, menu: '(설정)' })
+    if (project.status === '1' && canAccessSetting.value) menus.push({ no: 99, menu: '(설정)' })
   }
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)

@@ -38,8 +38,8 @@ const mainViewName = ref('(문서 사건)')
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && currentProject.value?.status === '1')
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE) && currentProject.value?.status === '1')
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE) && currentProject.value?.status === '1')
 
 const viewForm = ref(false)
 

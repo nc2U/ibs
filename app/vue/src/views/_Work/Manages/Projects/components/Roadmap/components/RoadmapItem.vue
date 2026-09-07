@@ -2,6 +2,7 @@
 import { computed, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
@@ -10,7 +11,11 @@ const props = defineProps({
   isSelected: { type: Boolean, default: false },
 })
 
+const workStore = useWork()
 const { can, PERM } = usePerms()
+const canManageVersions = computed(
+  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
+)
 
 const [route, router] = [useRoute(), useRouter()]
 const projId = computed(() => (route.params.projId as string) || props.version.project?.slug || '')
@@ -55,7 +60,7 @@ const done_ratio = computed(() => {
           {{ version.status_desc }}
         </span>
       </CCol>
-      <CCol v-if="can(PERM.PROJECT_VERSION)" class="text-right">
+      <CCol v-if="canManageVersions" class="text-right">
         <!-- 관리자 권한 있을 때 렌더링 -->
         <v-icon
           icon="mdi-pencil"

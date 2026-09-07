@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 defineProps({
@@ -10,6 +11,9 @@ defineProps({
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
+
+const workStore = useWork()
+const isProjectActive = computed(() => workStore.currentProject?.status === '1')
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -49,7 +53,7 @@ const toLocation = (menu: string) => {
 
 <template>
   <CNav variant="tabs" class="mb-0 pl-4">
-    <CDropdown v-if="route.params['projId']">
+    <CDropdown v-if="route.params['projId'] && isProjectActive">
       <CDropdownToggle :color="isDark ? 'dark' : 'light'" />
       <CDropdownMenu>
         <CDropdownItem @click="router.push({ name: '(업무) - 추가', params: route.params })">

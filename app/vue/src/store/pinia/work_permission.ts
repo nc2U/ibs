@@ -128,11 +128,15 @@ export const usePermission = defineStore('permission', () => {
   }
 
   const isReadOnlyPerm = (c: PermissionCode) => {
+    // Only genuine read permissions are allowed in closed ('2') workspaces
     return (
       c.endsWith('.read') ||
       c.includes('.view') ||
       c.includes('.download') ||
-      c.startsWith('project.')
+      c === PERM.NEWS_READ ||
+      c === PERM.PROJECT_PUB_QUERY ||
+      c === PERM.PROJECT_SAVE_QUERY ||
+      c === PERM.PROJECT_CLOSE // Reopening project is allowed
     )
   }
 

@@ -28,7 +28,9 @@ const form = ref({
 
 const { can, PERM } = usePerms()
 const workStore = useWork()
-const getNewsProjects = computed(() => workStore.getMyProjects.filter(proj => proj.module?.news))
+const getNewsProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(proj => proj.module?.news),
+)
 
 const RefNewFiles = ref()
 const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)

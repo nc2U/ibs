@@ -38,15 +38,16 @@ const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
 const router = useRouter()
+const workStore = useWork()
+const myProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(pjt => pjt.module?.document),
+)
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
-const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
+const canDocsCreate = computed(() => myProjects.value.length > 0 && can(PERM.DOCS_CREATE))
 
 const viewForm = ref(false)
-
-const workStore = useWork()
-const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.document))
 
 const docStore = useDocs()
 const docsList = computed<Docs[]>(() => docStore.docsList)

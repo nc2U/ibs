@@ -10,11 +10,13 @@ import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
+const workStore = useWork()
+
 // 권한 설정 추가
 const { can, PERM } = usePerms()
-const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
-
-const workStore = useWork()
+const canManageVersions = computed(
+  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
+)
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
