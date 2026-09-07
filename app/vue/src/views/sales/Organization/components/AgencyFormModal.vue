@@ -3,7 +3,6 @@ import { ref, reactive } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesAgency } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
-import { CModalBody, CRow } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -54,23 +53,34 @@ const open = (agency?: SalesAgency) => {
   modalRef.value.callModal()
 }
 
-const submit = async () => {
+const isSubmitting = ref(false)
+
+const submit = async (e?: KeyboardEvent) => {
+  if (e?.isComposing) return
+  if (isSubmitting.value) return
+
   if (!form.name.trim()) {
     alert('대행사명을 입력해주세요.')
     return
   }
-  const payload = {
-    ...form,
-    project: props.project,
-  }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updateAgency(targetId.value, payload)
-  } else {
-    await salesStore.createAgency(payload)
+  isSubmitting.value = true
+  try {
+    const payload = {
+      ...form,
+      project: props.project,
+    }
+
+    if (isEdit.value && targetId.value) {
+      await salesStore.updateAgency(targetId.value, payload)
+    } else {
+      await salesStore.createAgency(payload)
+    }
+    modalRef.value.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value.close()
-  emit('saved')
 }
 
 defineExpose({ open })
@@ -88,7 +98,7 @@ defineExpose({ open })
               v-model="form.name"
               placeholder="예: [직영] 자체 분양팀 또는 (주)미래분양대행"
               required
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
           <CCol md="4" class="d-flex align-items-center pt-4">
@@ -100,7 +110,7 @@ defineExpose({ open })
           </CCol>
           <CCol md="4">
             <CFormLabel>대표자명</CFormLabel>
-            <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" @keydown.enter="submit" />
+            <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" @keydown.enter.prevent="submit" />
           </CCol>
           <CCol md="4">
             <CFormLabel>사업자등록번호</CFormLabel>
@@ -110,7 +120,7 @@ defineExpose({ open })
               data-maska="###-##-#####"
               class="form-control"
               placeholder="000-00-00000"
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
           <CCol md="4">
@@ -121,12 +131,12 @@ defineExpose({ open })
               data-maska="['###-###-####', '###-####-####']"
               class="form-control"
               placeholder="02-000-0000"
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
           <CCol md="4">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter="submit" />
+            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter.prevent="submit" />
           </CCol>
           <CCol md="4" class="d-flex align-items-center pt-4">
             <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />
@@ -134,10 +144,10 @@ defineExpose({ open })
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="primary" size="small" @click="submit">
+        <v-btn color="primary" size="small" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
           {{ isEdit ? '수정 저장' : '등록하기' }}
         </v-btn>
-        <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
       </CModalFooter>
     </template>
   </FormModal>

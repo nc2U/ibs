@@ -56,7 +56,12 @@ const open = (team?: SalesTeam, defaultAgencyId?: number) => {
   modalRef.value.callModal()
 }
 
-const submit = async () => {
+const isSubmitting = ref(false)
+
+const submit = async (e?: KeyboardEvent) => {
+  if (e?.isComposing) return
+  if (isSubmitting.value) return
+
   if (!form.agency) {
     alert('소속 분양 대행사를 선택해주세요.')
     return
@@ -66,21 +71,26 @@ const submit = async () => {
     return
   }
 
-  const payload = {
-    agency: form.agency,
-    parent: form.parent,
-    name: form.name.trim(),
-    order: form.order,
-    is_active: form.is_active,
-  }
+  isSubmitting.value = true
+  try {
+    const payload = {
+      agency: form.agency,
+      parent: form.parent,
+      name: form.name.trim(),
+      order: form.order,
+      is_active: form.is_active,
+    }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updateTeam(targetId.value, payload)
-  } else {
-    await salesStore.createTeam(payload)
+    if (isEdit.value && targetId.value) {
+      await salesStore.updateTeam(targetId.value, payload)
+    } else {
+      await salesStore.createTeam(payload)
+    }
+    modalRef.value.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value.close()
-  emit('saved')
 }
 
 defineExpose({ open })
@@ -118,13 +128,13 @@ defineExpose({ open })
               v-model="form.name"
               placeholder="예: 영업1본부 또는 1팀"
               required
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
           <CCol md="3">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter="submit" />
+            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter.prevent="submit" />
           </CCol>
 
           <CCol md="3" class="d-flex align-items-center pt-4">
@@ -133,10 +143,10 @@ defineExpose({ open })
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="primary" size="small" @click="submit">
+        <v-btn color="primary" size="small" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
           {{ isEdit ? '수정 저장' : '등록하기' }}
         </v-btn>
-        <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
       </CModalFooter>
     </template>
   </FormModal>

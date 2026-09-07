@@ -104,7 +104,12 @@ const open = (person?: SalesPerson, teamId?: number) => {
   modalRef.value.callModal()
 }
 
-const submit = async () => {
+const isSubmitting = ref(false)
+
+const submit = async (e?: KeyboardEvent) => {
+  if (e?.isComposing) return
+  if (isSubmitting.value) return
+
   if (!form.team) {
     alert('소속 팀을 선택해주세요.')
     return
@@ -118,29 +123,34 @@ const submit = async () => {
     return
   }
 
-  const payload: Partial<SalesPerson> = {
-    team: form.team,
-    name: form.name.trim(),
-    duty: form.duty,
-    status: form.status,
-    phone: form.phone.trim(),
-    id_number: form.id_number.trim(),
-    tax_type: form.tax_type,
-    bank_name: form.bank_name,
-    account_number: form.account_number.trim(),
-    account_holder: form.account_holder.trim() || form.name.trim(),
-    join_date: form.join_date || null,
-    quit_date: form.quit_date || null,
-    notes: form.notes.trim(),
-  }
+  isSubmitting.value = true
+  try {
+    const payload: Partial<SalesPerson> = {
+      team: form.team,
+      name: form.name.trim(),
+      duty: form.duty,
+      status: form.status,
+      phone: form.phone.trim(),
+      id_number: form.id_number.trim(),
+      tax_type: form.tax_type,
+      bank_name: form.bank_name,
+      account_number: form.account_number.trim(),
+      account_holder: form.account_holder.trim() || form.name.trim(),
+      join_date: form.join_date || null,
+      quit_date: form.quit_date || null,
+      notes: form.notes.trim(),
+    }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updatePerson(targetId.value, payload)
-  } else {
-    await salesStore.createPerson(payload)
+    if (isEdit.value && targetId.value) {
+      await salesStore.updatePerson(targetId.value, payload)
+    } else {
+      await salesStore.createPerson(payload)
+    }
+    modalRef.value.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value.close()
-  emit('saved')
 }
 
 defineExpose({ open })
@@ -171,7 +181,7 @@ defineExpose({ open })
               maxlength="30"
               placeholder="홍길동"
               required
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
@@ -195,7 +205,7 @@ defineExpose({ open })
               placeholder="010-0000-0000"
               class="form-control"
               required
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
@@ -207,7 +217,7 @@ defineExpose({ open })
               data-maska="######-#######"
               placeholder="주민번호(식별용)"
               class="form-control"
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
@@ -241,7 +251,7 @@ defineExpose({ open })
               v-model="form.account_number"
               maxlength="30"
               placeholder="'-' 제외 숫자만 입력"
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
@@ -251,7 +261,7 @@ defineExpose({ open })
               v-model="form.account_holder"
               maxlength="30"
               :placeholder="form.name || '예금주명'"
-              @keydown.enter="submit"
+              @keydown.enter.prevent="submit"
             />
           </CCol>
 
@@ -326,10 +336,17 @@ defineExpose({ open })
           </v-btn>
         </div>
         <div>
-          <v-btn color="primary" size="small" class="me-2" @click="submit">
+          <v-btn
+            color="primary"
+            size="small"
+            class="me-2"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+            @click="submit"
+          >
             {{ isEdit ? '수정 저장' : '등록하기' }}
           </v-btn>
-          <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
         </div>
       </CModalFooter>
     </template>
