@@ -4,6 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import type { SalesPerson, SalesDuty, SalesPersonStatus, TaxType } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { CModalBody } from '@coreui/vue'
 
 const props = defineProps({
   defaultTeamId: { type: Number, default: null },
@@ -24,10 +25,26 @@ const currentPerson = computed(() => {
 const teamList = computed(() => salesStore.teamList)
 
 const bankOptions = [
-  '국민은행', '신한은행', '우리은행', '하나은행', '농협은행',
-  '기업은행', '카카오뱅크', '토스뱅크', 'SC제일은행', '대구은행',
-  '부산은행', '광주은행', '경남은행', '전북은행', '제주은행',
-  '우체국', '새마을금고', '신협', '수협은행', '케이뱅크'
+  '국민은행',
+  '신한은행',
+  '우리은행',
+  '하나은행',
+  '농협은행',
+  '기업은행',
+  '카카오뱅크',
+  '토스뱅크',
+  'SC제일은행',
+  '대구은행',
+  '부산은행',
+  '광주은행',
+  '경남은행',
+  '전북은행',
+  '제주은행',
+  '우체국',
+  '새마을금고',
+  '신협',
+  '수협은행',
+  '케이뱅크',
 ]
 
 const form = reactive({
@@ -141,14 +158,15 @@ defineExpose({ open })
             <CFormSelect v-model.number="form.team" required>
               <option :value="null">소속 팀을 선택하세요</option>
               <option v-for="t in teamList" :key="t.id" :value="t.id">
-                {{ t.agency_name ? `[${t.agency_name}] ` : '' }}{{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
+                {{ t.agency_name ? `[${t.agency_name}] ` : '' }}
+                {{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
               </option>
             </CFormSelect>
           </CCol>
 
           <CCol md="4">
             <CFormLabel>성명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.name" placeholder="홍길동" required />
+            <CFormInput v-model="form.name" placeholder="홍길동" required @keydown.enter="submit" />
           </CCol>
 
           <CCol md="4">
@@ -164,12 +182,27 @@ defineExpose({ open })
 
           <CCol md="4">
             <CFormLabel>연락처 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.phone" placeholder="010-0000-0000" required />
+            <input
+              v-model="form.phone"
+              v-maska
+              data-maska="['###-###-####', '###-####-####']"
+              placeholder="010-0000-0000"
+              class="form-control"
+              required
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="4">
             <CFormLabel>주민등록번호 (원천세용)</CFormLabel>
-            <CFormInput v-model="form.id_number" placeholder="주민번호(식별용)" />
+            <input
+              v-model="form.id_number"
+              v-maska
+              data-maska="######-#######"
+              placeholder="주민번호(식별용)"
+              class="form-control"
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="4">
@@ -198,12 +231,20 @@ defineExpose({ open })
 
           <CCol md="5">
             <CFormLabel>계좌번호</CFormLabel>
-            <CFormInput v-model="form.account_number" placeholder="'-' 제외 숫자만 입력" />
+            <CFormInput
+              v-model="form.account_number"
+              placeholder="'-' 제외 숫자만 입력"
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="3">
             <CFormLabel>예금주</CFormLabel>
-            <CFormInput v-model="form.account_holder" :placeholder="form.name || '예금주명'" />
+            <CFormInput
+              v-model="form.account_holder"
+              :placeholder="form.name || '예금주명'"
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <!-- 재직 및 일정 -->
@@ -234,7 +275,9 @@ defineExpose({ open })
 
           <!-- 증빙 서류 정보 안내 (수정 모드) -->
           <CCol v-if="isEdit && currentPerson" md="12" class="pt-2">
-            <div class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center">
+            <div
+              class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
+            >
               <div>
                 <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
                 증빙 서류 현황
@@ -250,7 +293,8 @@ defineExpose({ open })
               </v-btn>
             </div>
             <div class="small text-muted mt-2">
-              주민등록등본, 통장 사본, 신분증, 영업 위촉계약서, 보안서약서 등 접수된 증빙 서류를 확인하고 관리합니다.
+              주민등록등본, 통장 사본, 신분증, 영업 위촉계약서, 보안서약서 등 접수된 증빙 서류를
+              확인하고 관리합니다.
             </div>
           </CCol>
 

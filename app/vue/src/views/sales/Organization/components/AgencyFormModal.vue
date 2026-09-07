@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesAgency } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
+import { CModalBody, CRow } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -83,7 +84,12 @@ defineExpose({ open })
         <CRow class="g-3">
           <CCol md="8">
             <CFormLabel>대행사명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.name" placeholder="예: [직영] 자체 분양팀 또는 (주)미래분양대행" required />
+            <CFormInput
+              v-model="form.name"
+              placeholder="예: [직영] 자체 분양팀 또는 (주)미래분양대행"
+              required
+              @keydown.enter="submit"
+            />
           </CCol>
           <CCol md="4" class="d-flex align-items-center pt-4">
             <CFormCheck
@@ -94,26 +100,36 @@ defineExpose({ open })
           </CCol>
           <CCol md="4">
             <CFormLabel>대표자명</CFormLabel>
-            <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" />
+            <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" @keydown.enter="submit" />
           </CCol>
           <CCol md="4">
             <CFormLabel>사업자등록번호</CFormLabel>
-            <CFormInput v-model="form.business_number" placeholder="000-00-00000" />
+            <input
+              v-model="form.business_number"
+              v-maska
+              data-maska="###-##-#####"
+              class="form-control"
+              placeholder="000-00-00000"
+              @keydown.enter="submit"
+            />
           </CCol>
           <CCol md="4">
             <CFormLabel>대표 전화번호</CFormLabel>
-            <CFormInput v-model="form.phone" placeholder="02-000-0000" />
+            <input
+              v-model="form.phone"
+              v-maska
+              data-maska="['###-###-####', '###-####-####']"
+              class="form-control"
+              placeholder="02-000-0000"
+              @keydown.enter="submit"
+            />
           </CCol>
           <CCol md="4">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" />
+            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter="submit" />
           </CCol>
           <CCol md="4" class="d-flex align-items-center pt-4">
-            <CFormCheck
-              id="is_active"
-              v-model="form.is_active"
-              label="사용 여부 (활성화)"
-            />
+            <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />
           </CCol>
         </CRow>
       </CModalBody>

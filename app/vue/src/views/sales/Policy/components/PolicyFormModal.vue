@@ -123,7 +123,12 @@ defineExpose({ open })
         <CRow class="g-3">
           <CCol md="12">
             <CFormLabel>정책명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.name" placeholder="예: 84A타입 정규 분양 수수료 기준표" required />
+            <CFormInput
+              v-model="form.name"
+              placeholder="예: 84A타입 정규 분양 수수료 기준표"
+              required
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="6">
@@ -148,8 +153,13 @@ defineExpose({ open })
 
           <!-- 직급별 건당 수수료 금액 -->
           <CCol md="12" class="pt-2">
-            <div class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center">
-              <span><v-icon icon="mdi-cash-multiple" size="small" class="mr-1" /> 직급별 건당 수수료 (원)</span>
+            <div
+              class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
+            >
+              <span
+                ><v-icon icon="mdi-cash-multiple" size="small" class="mr-1" /> 직급별 건당 수수료
+                (원)</span
+              >
               <span class="text-danger fw-bold fs-6">
                 건당 총액: {{ totalFee.toLocaleString() }} 원
               </span>
@@ -159,7 +169,13 @@ defineExpose({ open })
           <CCol md="6" lg="3">
             <CFormLabel>상담사 수수료</CFormLabel>
             <CInputGroup>
-              <CFormInput v-model.number="form.agent_fee" type="number" step="10000" min="0" />
+              <CFormInput
+                v-model.number="form.agent_fee"
+                type="number"
+                step="10000"
+                min="0"
+                @keydown.enter="submit"
+              />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
@@ -167,7 +183,13 @@ defineExpose({ open })
           <CCol md="6" lg="3">
             <CFormLabel>팀장 수수료</CFormLabel>
             <CInputGroup>
-              <CFormInput v-model.number="form.leader_fee" type="number" step="10000" min="0" />
+              <CFormInput
+                v-model.number="form.leader_fee"
+                type="number"
+                step="10000"
+                min="0"
+                @keydown.enter="submit"
+              />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
@@ -175,7 +197,13 @@ defineExpose({ open })
           <CCol md="6" lg="3">
             <CFormLabel>본부장 수수료</CFormLabel>
             <CInputGroup>
-              <CFormInput v-model.number="form.director_fee" type="number" step="10000" min="0" />
+              <CFormInput
+                v-model.number="form.director_fee"
+                type="number"
+                step="10000"
+                min="0"
+                @keydown.enter="submit"
+              />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
@@ -183,7 +211,13 @@ defineExpose({ open })
           <CCol md="6" lg="3">
             <CFormLabel>대행사 수수료 (본사몫)</CFormLabel>
             <CInputGroup>
-              <CFormInput v-model.number="form.agency_fee" type="number" step="10000" min="0" />
+              <CFormInput
+                v-model.number="form.agency_fee"
+                type="number"
+                step="10000"
+                min="0"
+                @keydown.enter="submit"
+              />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
@@ -191,7 +225,8 @@ defineExpose({ open })
           <!-- 지급 조건 및 기간 -->
           <CCol md="12" class="pt-2">
             <div class="border-bottom pb-1 text-primary fw-bold">
-              <v-icon icon="mdi-clock-check-outline" size="small" class="mr-1" /> 지급 조건 및 적용 기간
+              <v-icon icon="mdi-clock-check-outline" size="small" class="mr-1" /> 지급 조건 및 적용
+              기간
             </div>
           </CCol>
 

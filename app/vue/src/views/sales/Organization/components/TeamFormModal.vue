@@ -18,7 +18,7 @@ const targetId = ref<number | null>(null)
 const agencyList = computed(() => salesStore.agencyList)
 // 상위 본부 후보 (parent가 없는 본부급 팀 목록)
 const parentTeamOptions = computed(() =>
-  salesStore.teamList.filter(t => !t.parent && t.id !== targetId.value)
+  salesStore.teamList.filter(t => !t.parent && t.id !== targetId.value),
 )
 
 const form = reactive({
@@ -114,20 +114,21 @@ defineExpose({ open })
 
           <CCol md="6">
             <CFormLabel>조직/팀명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.name" placeholder="예: 영업1본부 또는 1팀" required />
+            <CFormInput
+              v-model="form.name"
+              placeholder="예: 영업1본부 또는 1팀"
+              required
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="3">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" />
+            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter="submit" />
           </CCol>
 
           <CCol md="3" class="d-flex align-items-center pt-4">
-            <CFormCheck
-              id="team_is_active"
-              v-model="form.is_active"
-              label="사용 여부"
-            />
+            <CFormCheck id="team_is_active" v-model="form.is_active" label="사용 여부" />
           </CCol>
         </CRow>
       </CModalBody>
