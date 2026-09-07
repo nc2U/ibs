@@ -166,7 +166,13 @@ defineExpose({ open })
 
           <CCol md="4">
             <CFormLabel>성명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.name" placeholder="홍길동" required @keydown.enter="submit" />
+            <CFormInput
+              v-model="form.name"
+              maxlength="30"
+              placeholder="홍길동"
+              required
+              @keydown.enter="submit"
+            />
           </CCol>
 
           <CCol md="4">
@@ -233,6 +239,7 @@ defineExpose({ open })
             <CFormLabel>계좌번호</CFormLabel>
             <CFormInput
               v-model="form.account_number"
+              maxlength="30"
               placeholder="'-' 제외 숫자만 입력"
               @keydown.enter="submit"
             />
@@ -242,6 +249,7 @@ defineExpose({ open })
             <CFormLabel>예금주</CFormLabel>
             <CFormInput
               v-model="form.account_holder"
+              maxlength="30"
               :placeholder="form.name || '예금주명'"
               @keydown.enter="submit"
             />
