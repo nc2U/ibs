@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
@@ -12,6 +13,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PeriodFormModal from './components/PeriodFormModal.vue'
 import PayoutDetailModal from './components/PayoutDetailModal.vue'
 
+const router = useRouter()
 const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -86,6 +88,14 @@ const runGeneratePayouts = async () => {
   }
 }
 
+const goToPayout = () => {
+  if (selectedPeriodId.value) {
+    router.push({ path: '/sales/payout', query: { period: selectedPeriodId.value } })
+  } else {
+    router.push('/sales/payout')
+  }
+}
+
 const runConfirmSettlement = async () => {
   if (!selectedPeriodId.value) return
   if (
@@ -96,6 +106,13 @@ const runConfirmSettlement = async () => {
     await salesStore.confirmSettlement(selectedPeriodId.value)
     if (project.value) {
       await salesStore.fetchPeriodList(project.value)
+    }
+    if (
+      confirm(
+        `'${selectedPeriod.value?.title}' 정산이 확정되었습니다.\n\n해당 회차의 지급 승인 및 이체 관리를 위해 [수수료 지급 관리] 화면으로 지금 이동하시겠습니까?`,
+      )
+    ) {
+      goToPayout()
     }
   }
 }
@@ -194,6 +211,17 @@ const onPeriodSaved = async () => {
               >
                 <v-icon icon="mdi-check-all" size="small" class="mr-1" />
                 정산 확정
+              </v-btn>
+
+              <v-btn
+                v-if="selectedPeriod && selectedPeriod.status !== '1'"
+                color="secondary"
+                variant="outlined"
+                size="small"
+                @click="goToPayout"
+              >
+                <v-icon icon="mdi-arrow-right-circle-outline" size="small" class="mr-1" />
+                수수료 지급 관리로 이동
               </v-btn>
             </div>
           </CCardBody>

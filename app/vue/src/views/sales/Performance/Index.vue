@@ -30,6 +30,7 @@ const personList = computed(() => salesStore.personList)
 const filterTeam = ref<number | null>(null)
 const filterPerson = ref<number | null>(null)
 const filterMappingStatus = ref<'all' | 'mapped' | 'unmapped'>('all')
+const filterApprovalStatus = ref<'all' | 'approved' | 'pending'>('all')
 const search = ref('')
 
 const modalRef = ref()
@@ -93,6 +94,13 @@ const filteredList = computed(() => {
     if (filterMappingStatus.value === 'mapped' && !m) return false
     if (filterMappingStatus.value === 'unmapped' && !!m) return false
 
+    // 정산 승인 상태 필터
+    if (filterApprovalStatus.value === 'approved') {
+      if (!m || !m.is_settlement_approved) return false
+    } else if (filterApprovalStatus.value === 'pending') {
+      if (!m || m.is_settlement_approved) return false
+    }
+
     // 팀 필터
     if (filterTeam.value && (!m || m.team !== filterTeam.value)) return false
 
@@ -114,6 +122,19 @@ const filteredList = computed(() => {
 
 const openAssignModal = (mapping?: ContractSalesAgent, contractId?: number) => {
   modalRef.value?.open(mapping, contractId)
+}
+
+const toggleApproval = async (mapping: ContractSalesAgent) => {
+  let note = mapping.approval_note || ''
+  if (mapping.is_settlement_approved) {
+    const input = prompt('정산 보류 사유를 입력하세요 (선택):', note)
+    if (input === null) return
+    note = input
+  }
+  await salesStore.toggleSettlementApproval(mapping.id, note)
+  if (project.value) {
+    await salesStore.fetchContractAgentList(project.value)
+  }
 }
 
 const onSaved = async () => {
@@ -161,14 +182,21 @@ const onSaved = async () => {
 
           <div class="d-flex flex-wrap align-items-center gap-2">
             <!-- 매핑 상태 필터 -->
-            <CFormSelect v-model="filterMappingStatus" size="sm" style="width: 120px">
+            <CFormSelect v-model="filterMappingStatus" size="sm" style="width: 110px">
               <option value="all">전체 계약</option>
               <option value="mapped">배정 완료</option>
               <option value="unmapped">미배정 계약</option>
             </CFormSelect>
 
+            <!-- 정산 승인 상태 필터 -->
+            <CFormSelect v-model="filterApprovalStatus" size="sm" style="width: 120px">
+              <option value="all">전체 승인상태</option>
+              <option value="approved">정산 승인건</option>
+              <option value="pending">정산 보류건</option>
+            </CFormSelect>
+
             <!-- 팀 필터 -->
-            <CFormSelect v-model.number="filterTeam" size="sm" style="width: 130px">
+            <CFormSelect v-model.number="filterTeam" size="sm" style="width: 120px">
               <option :value="null">전체 팀</option>
               <option v-for="t in teamList" :key="t.id" :value="t.id">
                 {{ t.name }}
@@ -176,7 +204,7 @@ const onSaved = async () => {
             </CFormSelect>
 
             <!-- 담당직원 필터 -->
-            <CFormSelect v-model.number="filterPerson" size="sm" style="width: 130px">
+            <CFormSelect v-model.number="filterPerson" size="sm" style="width: 120px">
               <option :value="null">전체 상담사</option>
               <option v-for="p in personList" :key="p.id" :value="p.id">
                 {{ p.name }}
@@ -188,7 +216,7 @@ const onSaved = async () => {
               v-model="search"
               size="sm"
               placeholder="계약/계약자/동호수/상담사"
-              style="width: 180px"
+              style="width: 170px"
             />
 
             <!-- 배정 버튼 -->
@@ -207,22 +235,24 @@ const onSaved = async () => {
         <CCardBody class="p-0">
           <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
             <colgroup>
-              <col style="width: 25%" />
-              <col style="width: 12%" />
-              <col style="width: 12%" />
+              <col style="width: 22%" />
+              <col style="width: 10%" />
+              <col style="width: 10%" />
+              <col style="width: 13%" />
+              <col style="width: 9%" />
               <col style="width: 14%" />
-              <col style="width: 11%" />
-              <col style="width: 14%" />
-              <col style="width: 12%" />
+              <col style="width: 13%" />
+              <col style="width: 9%" />
             </colgroup>
             <CTableHead :color="TableSecondary">
               <CTableRow>
                 <CTableHeaderCell>계약 정보 (일련번호 / 계약자 / 유니트)</CTableHeaderCell>
-                <CTableHeaderCell>담당 영업직원 (상담사)</CTableHeaderCell>
+                <CTableHeaderCell>담당 상담사</CTableHeaderCell>
                 <CTableHeaderCell>소속 팀</CTableHeaderCell>
                 <CTableHeaderCell>적용 수수료 정책</CTableHeaderCell>
                 <CTableHeaderCell>성과 인정일</CTableHeaderCell>
-                <CTableHeaderCell>MGM 연계 정보</CTableHeaderCell>
+                <CTableHeaderCell>정산 승인 상태</CTableHeaderCell>
+                <CTableHeaderCell>정산 반영 현황</CTableHeaderCell>
                 <CTableHeaderCell>관리</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
@@ -233,6 +263,9 @@ const onSaved = async () => {
                 <CTableDataCell class="text-left fw-bold">
                   <v-icon icon="mdi-file-document-outline" size="x-small" class="mr-1 text-muted" />
                   {{ item.contractLabel }}
+                  <span v-if="item.mapping?.mgm_name" class="badge bg-warning text-dark ml-1 font-weight-normal">
+                    MGM: {{ item.mapping.mgm_name }}
+                  </span>
                 </CTableDataCell>
 
                 <!-- 담당 영업직원 -->
@@ -240,7 +273,7 @@ const onSaved = async () => {
                   <span v-if="item.mapping" class="fw-bold text-primary">
                     {{ item.mapping.sales_person_name }}
                   </span>
-                  <CBadge v-else color="danger" shape="rounded-pill">
+                  <CBadge v-else color="secondary" shape="rounded-pill">
                     미배정
                   </CBadge>
                 </CTableDataCell>
@@ -267,15 +300,40 @@ const onSaved = async () => {
                   {{ item.mapping?.contract_date || '-' }}
                 </CTableDataCell>
 
-                <!-- MGM 연계 정보 -->
-                <CTableDataCell class="small text-left">
-                  <div v-if="item.mapping?.mgm_name">
-                    <span class="badge bg-warning text-dark mr-1">MGM</span>
-                    <strong>{{ item.mapping.mgm_name }}</strong>
-                    <div v-if="item.mapping.mgm_fee" class="text-muted font-monospace">
-                      {{ item.mapping.mgm_fee.toLocaleString() }}원
+                <!-- 정산 승인 여부 (원클릭 토글) -->
+                <CTableDataCell>
+                  <template v-if="item.mapping">
+                    <button
+                      type="button"
+                      class="btn btn-sm py-0 px-2 fw-semibold"
+                      :class="item.mapping.is_settlement_approved ? 'btn-success text-white' : 'btn-outline-danger'"
+                      :disabled="!can(PERM.SALES_MANAGE)"
+                      title="클릭하여 승인 / 보류 상태를 변경합니다."
+                      @click="toggleApproval(item.mapping)"
+                    >
+                      <v-icon
+                        :icon="item.mapping.is_settlement_approved ? 'mdi-check-circle' : 'mdi-alert-circle'"
+                        size="x-small"
+                        class="mr-1"
+                      />
+                      {{ item.mapping.is_settlement_approved ? '정산 승인' : '정산 보류' }}
+                    </button>
+                    <div v-if="!item.mapping.is_settlement_approved && item.mapping.approval_note" class="small text-danger mt-1 text-truncate" style="max-width: 140px;" :title="item.mapping.approval_note">
+                      {{ item.mapping.approval_note }}
                     </div>
-                  </div>
+                  </template>
+                  <span v-else class="text-muted">-</span>
+                </CTableDataCell>
+
+                <!-- 정산 반영 현황 -->
+                <CTableDataCell>
+                  <span v-if="item.mapping?.is_settled" class="badge bg-info text-dark" :title="item.mapping.settled_period_title || ''">
+                    <v-icon icon="mdi-check-all" size="x-small" class="mr-1" />
+                    {{ item.mapping.settled_period_title ? item.mapping.settled_period_title : '정산 완료' }}
+                  </span>
+                  <span v-else-if="item.mapping" class="badge bg-secondary">
+                    미정산
+                  </span>
                   <span v-else class="text-muted">-</span>
                 </CTableDataCell>
 
@@ -306,7 +364,7 @@ const onSaved = async () => {
               </CTableRow>
 
               <CTableRow v-if="filteredList.length === 0">
-                <CTableDataCell colspan="7" class="py-5 text-center text-muted">
+                <CTableDataCell colspan="8" class="py-5 text-center text-muted">
                   표시할 분양 계약 실적 데이터가 없습니다.
                 </CTableDataCell>
               </CTableRow>

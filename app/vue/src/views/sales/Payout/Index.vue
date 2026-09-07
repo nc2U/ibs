@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
@@ -12,6 +13,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PayoutStatusSummary from './components/PayoutStatusSummary.vue'
 import PayoutDetailModal from '@/views/sales/Settlement/components/PayoutDetailModal.vue'
 
+const route = useRoute()
 const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -41,7 +43,10 @@ const detailModalRef = ref()
 const loadData = async (projId: number) => {
   await salesStore.fetchPeriodList(projId)
   if (periodList.value.length > 0) {
-    if (!selectedPeriodId.value || !periodList.value.some(p => p.id === selectedPeriodId.value)) {
+    const queryPeriod = Number(route.query.period)
+    if (queryPeriod && periodList.value.some(p => p.id === queryPeriod)) {
+      selectedPeriodId.value = queryPeriod
+    } else if (!selectedPeriodId.value || !periodList.value.some(p => p.id === selectedPeriodId.value)) {
       selectedPeriodId.value = periodList.value[0].id
     }
     await salesStore.fetchPayoutList(selectedPeriodId.value)

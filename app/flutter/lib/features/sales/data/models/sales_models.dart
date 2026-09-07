@@ -361,6 +361,10 @@ class ContractSalesAgentModel {
   final String? mgmPhone;
   final int mgmFee;
   final String? note;
+  final bool isSettlementApproved;
+  final String? approvalNote;
+  final bool isSettled;
+  final String? settledPeriodTitle;
   final String? createdAt;
   final String? updatedAt;
 
@@ -383,6 +387,10 @@ class ContractSalesAgentModel {
     this.mgmPhone,
     this.mgmFee = 0,
     this.note,
+    this.isSettlementApproved = true,
+    this.approvalNote,
+    this.isSettled = false,
+    this.settledPeriodTitle,
     this.createdAt,
     this.updatedAt,
   });
@@ -407,6 +415,10 @@ class ContractSalesAgentModel {
       mgmPhone: json['mgm_phone'] as String?,
       mgmFee: json['mgm_fee'] as int? ?? 0,
       note: json['note'] as String?,
+      isSettlementApproved: json['is_settlement_approved'] as bool? ?? true,
+      approvalNote: json['approval_note'] as String?,
+      isSettled: json['is_settled'] as bool? ?? false,
+      settledPeriodTitle: json['settled_period_title'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -434,6 +446,10 @@ class CombinedContractPerformanceItem {
   String? get mgmPhone => mapping?.mgmPhone;
   int get mgmFee => mapping?.mgmFee ?? 0;
   String? get note => mapping?.note;
+  bool get isSettlementApproved => mapping?.isSettlementApproved ?? true;
+  String? get approvalNote => mapping?.approvalNote;
+  bool get isSettled => mapping?.isSettled ?? false;
+  String? get settledPeriodTitle => mapping?.settledPeriodTitle;
 }
 
 /// 수수료 지급 상세 계약 건별 내역 모델

@@ -250,6 +250,23 @@ export const useSales = defineStore('sales', () => {
       })
       .catch(err => errorHandle(err))
 
+  const deleteContractAgent = (id: number) =>
+    api
+      .delete(`/sales-contract-agent/${id}/`)
+      .then(() => {
+        message('warning', '알림!', '계약 영업 담당자 지정이 해제되었습니다.')
+      })
+      .catch(err => errorHandle(err))
+
+  const toggleSettlementApproval = (id: number, approvalNote?: string) =>
+    api
+      .post(`/sales-contract-agent/${id}/toggle-approval/`, { approval_note: approvalNote })
+      .then(res => {
+        message('success', '알림!', res.data.detail || '정산 승인 상태가 변경되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err))
+
   // ── 정산 회차 ─────────────────────────────────────────
   const periodList = ref<SettlementPeriod[]>([])
 
@@ -366,6 +383,8 @@ export const useSales = defineStore('sales', () => {
     fetchContractAgentList,
     createContractAgent,
     updateContractAgent,
+    deleteContractAgent,
+    toggleSettlementApproval,
 
     periodList,
     fetchPeriodList,

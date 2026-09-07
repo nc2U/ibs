@@ -192,6 +192,19 @@ class ContractSalesAgent(models.Model):
     mgm_phone = models.CharField('MGM 연락처', max_length=20, blank=True, default='')
     mgm_fee = models.PositiveIntegerField('MGM 지급 수수료 (원)', default=0)
     note = models.CharField('비고', max_length=255, blank=True, default='')
+    is_settlement_approved = models.BooleanField(
+        '수수료 정산 승인', default=True,
+        help_text='서류 완비 및 완납 확인 후 승인 시 정산 대상에 포함'
+    )
+    approval_note = models.CharField(
+        '정산 승인/보류 사유', max_length=255, blank=True, default='',
+        help_text='보류 사유 예: 계약금 2차 미납, 인감증명서 미징구 등'
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='승인 관리자'
+    )
+    approved_at = models.DateTimeField('승인일시', null=True, blank=True)
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
     updated_at = models.DateTimeField('수정일시', auto_now=True)
 

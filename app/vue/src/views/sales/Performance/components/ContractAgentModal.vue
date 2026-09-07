@@ -64,6 +64,8 @@ const resetForm = () => {
   form.mgm_phone = ''
   form.mgm_fee = 0
   form.note = ''
+  form.is_settlement_approved = true
+  form.approval_note = ''
   targetId.value = null
   isEdit.value = false
 }
@@ -86,6 +88,8 @@ const open = (mapping?: ContractSalesAgent, defaultContractId?: number) => {
     form.mgm_phone = mapping.mgm_phone || ''
     form.mgm_fee = mapping.mgm_fee || 0
     form.note = mapping.note || ''
+    form.is_settlement_approved = mapping.is_settlement_approved ?? true
+    form.approval_note = mapping.approval_note || ''
   }
   modalRef.value.callModal()
 }
@@ -114,6 +118,8 @@ const submit = async () => {
     mgm_phone: form.mgm_phone.trim(),
     mgm_fee: form.mgm_fee || 0,
     note: form.note.trim(),
+    is_settlement_approved: form.is_settlement_approved,
+    approval_note: form.approval_note.trim(),
   }
 
   if (isEdit.value && targetId.value) {
@@ -123,6 +129,15 @@ const submit = async () => {
   }
   modalRef.value.close()
   emit('saved')
+}
+
+const removeMapping = async () => {
+  if (!targetId.value) return
+  if (confirm('담당자 배정을 해제하시겠습니까?')) {
+    await salesStore.deleteContractAgent(targetId.value)
+    modalRef.value.close()
+    emit('saved')
+  }
 }
 
 defineExpose({ open })
@@ -216,13 +231,64 @@ defineExpose({ open })
             <CFormLabel>비고 / 특이사항</CFormLabel>
             <CFormInput v-model="form.note" placeholder="계약 체결 경위, 특약 메모 등" />
           </CCol>
+
+          <!-- 수수료 정산 승인 / 보류 관리 -->
+          <CCol md="12" class="pt-2">
+            <div class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center">
+              <span>
+                <v-icon icon="mdi-check-decagram-outline" size="small" class="mr-1" />
+                수수료 정산 승인 관리
+              </span>
+              <CBadge :color="form.is_settlement_approved ? 'success' : 'warning'">
+                {{ form.is_settlement_approved ? '정산 승인 완료' : '정산 보류 (미승인)' }}
+              </CBadge>
+            </div>
+          </CCol>
+
+          <CCol md="12">
+            <div class="p-3 border rounded bg-light">
+              <CFormCheck
+                id="isSettlementApprovedCheck"
+                v-model="form.is_settlement_approved"
+                label="이 계약을 수수료 정산 대상 건으로 최종 승인합니다."
+                class="fw-bold text-dark mb-2"
+              />
+              <div class="small text-muted mb-2">
+                * 체크 해제 시: 담당자는 배정되지만 <strong>수수료 정산 계산 대상에서 자동으로 제외</strong>됩니다.<br>
+                * 서류 완비 및 계약금 완납이 확인된 후 언제든지 승인으로 전환할 수 있습니다.
+              </div>
+              <div v-if="!form.is_settlement_approved" class="mt-2">
+                <CFormLabel class="text-danger fw-bold small">
+                  정산 보류 사유 (필수 권장)
+                </CFormLabel>
+                <CFormInput
+                  v-model="form.approval_note"
+                  placeholder="예: 계약금 2차 분납 500만원 미납, 인감증명서 미징구 등"
+                />
+              </div>
+            </div>
+          </CCol>
         </CRow>
       </CModalBody>
-      <CModalFooter>
-        <v-btn color="primary" size="small" @click="submit">
-          {{ isEdit ? '수정 저장' : '배정하기' }}
-        </v-btn>
-        <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+      <CModalFooter class="d-flex justify-content-between">
+        <div>
+          <v-btn
+            v-if="isEdit"
+            color="danger"
+            variant="text"
+            size="small"
+            @click="removeMapping"
+          >
+            <v-icon icon="mdi-account-remove" size="small" class="mr-1" />
+            배정 해제
+          </v-btn>
+        </div>
+        <div class="d-flex gap-2">
+          <v-btn color="primary" size="small" @click="submit">
+            {{ isEdit ? '수정 저장' : '배정하기' }}
+          </v-btn>
+          <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+        </div>
       </CModalFooter>
     </template>
   </FormModal>

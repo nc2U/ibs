@@ -141,10 +141,25 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
             'total_agency_amount': int,  # 외주 총 지급액 (VAT 포함)
         }
     """
+    # ── 이중 정산 방지: 이미 다른 정산 회차에 포함된 계약건 제외 ──
+    other_settled_contract_ids = set(
+        PayoutContractDetail.objects.filter(
+            payout__period__project=period.project,
+        ).exclude(payout__period=period).values_list('contract_id', flat=True)
+    ) | set(
+        AgencyPayoutContractDetail.objects.filter(
+            payout__period__project=period.project,
+        ).exclude(payout__period=period).values_list('contract_id', flat=True)
+    )
+
+    # ── 정산 대상 계약 수집 ──
+    # 1. 회차 마감일(end_date) 이전의 계약 (과거 미정산 소급건 포함)
+    # 2. 관리자가 '정산 승인(is_settlement_approved=True)' 처리한 건만 포함 (서류 미비/분납 중인 보류건 자동 제외)
+    # 3. 이미 다른 회차에 배정/정산 완료된 건은 절대 제외 (이중 정산 방지)
     mappings = ContractSalesAgent.objects.filter(
         contract__project=period.project,
-        contract_date__gte=period.start_date,
         contract_date__lte=period.end_date,
+        is_settlement_approved=True,
     ).select_related(
         'contract__unit_type',
         'sales_person__team__agency',
@@ -153,6 +168,13 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         'team__parent',
         'policy',
     )
+
+    if other_settled_contract_ids:
+        mappings = mappings.exclude(contract_id__in=other_settled_contract_ids)
+
+    # ── 재계산 시 기존 회차의 Payout 및 상세 내역 초기화 ──
+    period.payouts.all().delete()
+    period.agency_payouts.all().delete()
 
     # ── 직영 매핑: person_id → {person, team, [(contract, fee, role_type)]} ──
     direct_map: dict[int, dict] = {}

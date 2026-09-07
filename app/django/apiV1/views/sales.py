@@ -128,7 +128,10 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     serializer_class = ContractSalesAgentSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
-    filterset_fields = ('team__agency__project', 'contract__project', 'sales_person', 'team', 'contract')
+    filterset_fields = (
+        'team__agency__project', 'contract__project', 'sales_person', 'team',
+        'contract', 'is_settlement_approved'
+    )
     search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
 
     def get_queryset(self):
@@ -143,6 +146,28 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return 'sales.read'
         return 'sales.manage'
+
+    @action(detail=True, methods=['post'], url_path='toggle-approval')
+    def toggle_approval(self, request, pk=None):
+        """수수료 정산 승인 / 보류 토글 액션"""
+        agent_mapping = self.get_object()
+        new_state = not agent_mapping.is_settlement_approved
+        agent_mapping.is_settlement_approved = new_state
+        if new_state:
+            agent_mapping.approved_by = request.user
+            agent_mapping.approved_at = timezone.now()
+        else:
+            note = request.data.get('approval_note', '')
+            if note:
+                agent_mapping.approval_note = note
+        agent_mapping.save()
+
+        status_text = '승인' if new_state else '보류'
+        return Response({
+            'detail': f'정산 {status_text} 상태로 변경되었습니다.',
+            'is_settlement_approved': agent_mapping.is_settlement_approved,
+            'approval_note': agent_mapping.approval_note,
+        }, status=status.HTTP_200_OK)
 
 
 class SettlementPeriodViewSet(viewsets.ModelViewSet):
@@ -247,6 +272,18 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
             if pay_status == '3' and not payout.paid_date:
                 payout.paid_date = timezone.localdate()
             payout.save()
+
+            # 회차 내 모든 지급 대상의 완료 여부에 따라 회차 상태 자동 동기화
+            period = payout.period
+            if period.status in ('2', '3'):
+                remaining = period.payouts.exclude(pay_status='3').exists()
+                if not remaining and period.status == '2':
+                    period.status = '3'  # 전원 지급 완료
+                    period.save()
+                elif remaining and period.status == '3':
+                    period.status = '2'  # 일부 보류/대기 시 확정 상태 복귀
+                    period.save()
+
             return Response({'detail': '지급 상태가 업데이트되었습니다.', 'pay_status': pay_status})
         return Response({'detail': '올바르지 않은 상태값입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 

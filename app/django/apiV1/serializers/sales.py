@@ -99,6 +99,9 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
     sales_person_name = serializers.ReadOnlyField(source='sales_person.name')
     team_name = serializers.ReadOnlyField(source='team.name')
     policy_name = serializers.ReadOnlyField(source='policy.name')
+    approved_by_name = serializers.ReadOnlyField(source='approved_by.username')
+    is_settled = serializers.SerializerMethodField()
+    settled_period_title = serializers.SerializerMethodField()
 
     class Meta:
         model = ContractSalesAgent
@@ -108,6 +111,9 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
             'sales_person', 'sales_person_name', 'team', 'team_name',
             'policy', 'policy_name', 'contract_date',
             'mgm_name', 'mgm_phone', 'mgm_fee', 'note',
+            'is_settlement_approved', 'approval_note',
+            'approved_by', 'approved_by_name', 'approved_at',
+            'is_settled', 'settled_period_title',
             'created_at', 'updated_at'
         )
 
@@ -116,6 +122,22 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
             hu = obj.contract.key_unit.houseunit
             return f'{hu.building_unit.name}동 {hu.name}호'
         return ''
+
+    def get_is_settled(self, obj):
+        # 직영 또는 외주 PayoutContractDetail 존재 여부
+        return (
+            PayoutContractDetail.objects.filter(contract=obj.contract).exists() or
+            AgencyPayoutContractDetail.objects.filter(contract=obj.contract).exists()
+        )
+
+    def get_settled_period_title(self, obj):
+        pcd = PayoutContractDetail.objects.filter(contract=obj.contract).select_related('payout__period').first()
+        if pcd:
+            return pcd.payout.period.title
+        apcd = AgencyPayoutContractDetail.objects.filter(contract=obj.contract).select_related('payout__period').first()
+        if apcd:
+            return apcd.payout.period.title
+        return None
 
 
 class PayoutContractDetailSerializer(serializers.ModelSerializer):

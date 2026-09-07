@@ -118,6 +118,13 @@ export interface ContractSalesAgent {
   mgm_phone: string
   mgm_fee: number
   note: string
+  is_settlement_approved: boolean
+  approval_note?: string
+  approved_by?: number | null
+  approved_by_name?: string | null
+  approved_at?: string | null
+  is_settled?: boolean
+  settled_period_title?: string | null
   created_at: string
   updated_at: string
 }
