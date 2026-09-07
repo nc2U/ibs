@@ -12,6 +12,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PerformanceSummary from './components/PerformanceSummary.vue'
 import ContractAgentModal from './components/ContractAgentModal.vue'
+import { CCardBody } from '@coreui/vue'
 
 const { can, PERM } = usePerms()
 const projStore = useProject()
@@ -294,7 +295,7 @@ const onSaved = async () => {
 
                   <!-- 소속 팀 -->
                   <CTableDataCell>
-                    <span v-if="item.mapping?.team_name" class="small">
+                    <span v-if="item.mapping?.team_name">
                       {{ item.mapping.team_name }}
                     </span>
                     <span v-else class="text-muted">-</span>
@@ -302,15 +303,19 @@ const onSaved = async () => {
 
                   <!-- 적용 정책 -->
                   <CTableDataCell class="small text-truncate">
-                    <span v-if="item.mapping?.policy_name" class="badge bg-light text-body border">
+                    <v-chip
+                      v-if="item.mapping?.policy_name"
+                      size="x-small"
+                      class="bg-light text-body border"
+                    >
                       {{ item.mapping.policy_name }}
-                    </span>
+                    </v-chip>
                     <span v-else-if="item.mapping" class="text-muted small">기본 정책</span>
                     <span v-else class="text-muted">-</span>
                   </CTableDataCell>
 
                   <!-- 성과 인정일 -->
-                  <CTableDataCell class="font-monospace small">
+                  <CTableDataCell class="font-monospace">
                     {{ item.mapping?.contract_date || '-' }}
                   </CTableDataCell>
 
@@ -354,9 +359,10 @@ const onSaved = async () => {
 
                   <!-- 정산 반영 현황 -->
                   <CTableDataCell>
-                    <span
+                    <v-chip
                       v-if="item.mapping?.is_settled"
-                      class="badge bg-info text-body"
+                      size="x-small"
+                      class="bg-indigo-lighten-2 text-white"
                       :title="item.mapping.settled_period_title || ''"
                     >
                       <v-icon icon="mdi-check-all" size="x-small" class="mr-1" />
@@ -365,7 +371,7 @@ const onSaved = async () => {
                           ? item.mapping.settled_period_title
                           : '정산 완료'
                       }}
-                    </span>
+                    </v-chip>
                     <span v-else-if="item.mapping" class="badge bg-secondary"> 미정산 </span>
                     <span v-else class="text-muted">-</span>
                   </CTableDataCell>
