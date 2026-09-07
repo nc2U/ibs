@@ -23,11 +23,11 @@ const calendarStore = useCalendar()
 const { can, PERM } = usePerms()
 const canCalendarRead = computed(() => can(PERM.CALENDAR_READ))
 
-const isDark = computed(() => store.theme === 'dark')
+const isDark = computed(() => store.isDark)
 
 const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed: boolean }) => {
   if (type === 'meeting' || !status) {
-    return '#9575cd'
+    return isDark.value ? '#a78bfa' : '#d1c4e9'
   }
   const colors = {
     light: {
@@ -40,13 +40,13 @@ const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed:
       default: '#cfd8dc',
     },
     dark: {
-      1: '#b35c5c',
-      2: '#5c86b3',
-      3: '#b3915c',
-      4: '#64748b',
-      5: '#5cb377',
-      6: '#475569',
-      default: '#475569',
+      1: '#f87171',
+      2: '#38bdf8',
+      3: '#fbbf24',
+      4: '#94a3b8',
+      5: '#4ade80',
+      6: '#64748b',
+      default: '#64748b',
     },
   }
   const palette = isDark.value ? colors.dark : colors.light
@@ -61,8 +61,8 @@ const calendarEvents = computed(() => {
         title: event.title,
         start: event.start || undefined,
         allDay: false,
-        backgroundColor: '#9575cd',
-        borderColor: '#9575cd',
+        backgroundColor: getEventColor('meeting'),
+        borderColor: getEventColor('meeting'),
         extendedProps: {
           type: 'meeting',
           project: event.project,
@@ -120,7 +120,7 @@ const renderEventContent = (eventInfo: any) => {
     return {
       html: `
         <div class="fc-event-main-frame d-flex align-items-center" style="overflow: hidden; text-overflow: ellipsis; padding: 1px 4px;">
-          <span style="font-size: 0.85em; font-weight: 600; white-space: nowrap; color: #fff;">
+          <span class="fc-event-title" style="font-size: 0.85em; font-weight: 600; white-space: nowrap;">
             📅 ${eventInfo.event.title}
           </span>
         </div>
@@ -209,7 +209,7 @@ defineExpose({ calendarOptions, currentRange })
 </script>
 
 <template>
-  <FullCalendar :key="`${canCalendarRead}`" :options="calendarOptions" />
+  <FullCalendar :key="`${canCalendarRead}-${isDark}`" :options="calendarOptions" />
 </template>
 
 <style lang="scss" scoped>
@@ -272,10 +272,13 @@ defineExpose({ calendarOptions, currentRange })
     }
   }
 
-  .fc-event {
+  .fc-event,
+  a.fc-event {
     border: none;
     border-radius: 4px;
     padding: 1px 2px;
+    color: #1e293b !important;
+    text-decoration: none !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     transition:
       transform 0.1s ease,
@@ -286,11 +289,14 @@ defineExpose({ calendarOptions, currentRange })
       transform: translateY(-1px);
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
       filter: brightness(1.1);
+      color: #1e293b !important;
+      text-decoration: none !important;
     }
   }
 
   .fc-event-title {
     font-weight: 500;
+    color: inherit;
   }
 }
 
@@ -326,6 +332,17 @@ defineExpose({ calendarOptions, currentRange })
       color: #60a5fa !important;
     }
     background-color: rgba(96, 165, 250, 0.05);
+  }
+
+  .fc-event,
+  a.fc-event,
+  .fc-event-title {
+    color: #ffffff !important;
+    font-weight: 600;
+
+    &:hover {
+      color: #ffffff !important;
+    }
   }
 }
 </style>
