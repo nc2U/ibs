@@ -33,6 +33,7 @@ const validated = ref(false)
 const form = reactive<Company>({
   pk: null,
   name: '',
+  short_name: '',
   ceo: '',
   tax_number: '',
   org_number: '',
@@ -90,6 +91,7 @@ const btnClass = computed(() => (props.company ? 'success' : 'primary'))
 const formsCheck = computed(() => {
   if (props.company) {
     const a = form.name === props.company.name
+    const a2 = (form.short_name || '') === (props.company.short_name || '')
     const b = form.ceo === props.company.ceo
     const c = form.tax_number === props.company.tax_number
     const d = form.org_number === props.company.org_number
@@ -102,7 +104,7 @@ const formsCheck = computed(() => {
     const k = form.address2 === props.company.address2
     const l = form.address3 === props.company.address3
 
-    return a && b && c && d && e && f && g && h && i && j && k && l
+    return a && a2 && b && c && d && e && f && g && h && i && j && k && l
   } else return false
 })
 
@@ -110,6 +112,7 @@ const formDataSetup = () => {
   if (props.company) {
     form.pk = props.company.pk
     form.name = props.company.name
+    form.short_name = props.company.short_name || ''
     form.ceo = props.company.ceo
     form.tax_number = props.company.tax_number
     form.org_number = props.company.org_number
@@ -157,6 +160,23 @@ onBeforeMount(() => formDataSetup())
             required
           />
           <CFormFeedback invalid>대표자명을 입력하세요.</CFormFeedback>
+        </CCol>
+      </CRow>
+
+      <CRow class="mb-3">
+        <CFormLabel for="companyShortName" class="col-md-2 col-form-label">
+          회사 약칭
+        </CFormLabel>
+
+        <CCol md="4">
+          <CFormInput
+            v-model="form.short_name"
+            id="short_name"
+            type="text"
+            placeholder="공문 등에 표기될 약칭 (예: 대영IBS)"
+            maxlength="20"
+          />
+          <small class="text-muted">공문서 번호 접두사 등으로 활용됩니다. (미입력 시 회사명에서 자동 추출)</small>
         </CCol>
       </CRow>
 

@@ -282,7 +282,8 @@ class LetterSequence(models.Model):
 
     @classmethod
     def get_next_document_number(cls, company):
-        """다음 문서번호 생성 (YYYY-NNN 형식)"""
+        """다음 문서번호 생성 ([회사약칭]-YYYY-NNN 형식)"""
+        import re
         current_year = timezone.now().year
 
         sequence, created = cls.objects.get_or_create(
@@ -294,6 +295,13 @@ class LetterSequence(models.Model):
         sequence.last_sequence += 1
         sequence.save()
 
+        # 회사 약칭 결정 (short_name 우선, 미지정 시 '주식회사', '(주)', 공백 제거)
+        prefix = company.short_name.strip() if getattr(company, 'short_name', None) else ''
+        if not prefix and getattr(company, 'name', None):
+            prefix = re.sub(r'\(주\)|주식회사|\s+', '', company.name)
+
+        if prefix:
+            return f'{prefix}-{current_year}-{sequence.last_sequence:03d}'
         return f'{current_year}-{sequence.last_sequence:03d}'
 
 
@@ -301,7 +309,7 @@ class OfficialLetter(models.Model):
     """공문 모델"""
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE,
                                 related_name='official_letters', verbose_name='회사')  # 회사
-    document_number = models.CharField('문서번호', max_length=20, unique=True,
+    document_number = models.CharField('문서번호', max_length=50, unique=True,
                                        db_index=True, editable=False)  # 문서번호 (자동 생성)
     title = models.CharField('제목', max_length=255, db_index=True)  # 제목
     recipient_name = models.CharField('수신처명', max_length=100)  # 수신처 정보

@@ -61,7 +61,7 @@ class CompanySealInline(admin.TabularInline):
 
 
 class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'ceo', 'tax_number', 'org_number', 'business_cond',
+    list_display = ('id', 'name', 'short_name', 'ceo', 'tax_number', 'org_number', 'business_cond',
                     'business_even', 'es_date', 'op_date', 'is_default')
     list_display_links = ('name',)
     list_editable = ('is_default',)

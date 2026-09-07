@@ -7,6 +7,8 @@ from _utils.file_upload import get_company_image_path
 # 회사 - 최상위 모델
 class Company(models.Model):
     name = models.CharField('회사명', max_length=30, unique=True, db_index=True)
+    short_name = models.CharField('회사 약칭', max_length=20, blank=True, default='',
+                                  help_text='공문서 번호 등에 표기될 약칭 (예: 대영IBS, 대영아이비에스, DYIBS)')
     tax_number = models.CharField('사업자등록번호', max_length=12)
     ceo = models.CharField('대표자명', max_length=20)
     org_number = models.CharField('법인등록번호', max_length=14)

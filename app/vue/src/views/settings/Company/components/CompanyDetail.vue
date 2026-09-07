@@ -51,6 +51,12 @@ const toCreate = () => {
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
+              <CTableHeaderCell scope="row" :color="TableSecondary"> 회사 약칭</CTableHeaderCell>
+              <CTableDataCell>
+                <span v-if="company">{{ company.short_name || '-' }}</span>
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 대표자명</CTableHeaderCell>
               <CTableDataCell>
                 <span v-if="company">{{ company.ceo }}</span>

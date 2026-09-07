@@ -30,7 +30,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields = ('pk', 'name', 'ceo', 'tax_number', 'org_number', 'business_cond',
+        fields = ('pk', 'name', 'short_name', 'ceo', 'tax_number', 'org_number', 'business_cond',
                   'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
                   'address2', 'address3', 'departments', 'grades', 'com_issue_project',
                   'is_default')
