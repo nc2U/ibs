@@ -1729,28 +1729,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           children: [
             Expanded(
               child: _buildSingleKpiTile(
-                label: '정산 대상 실적',
-                value: '${NumberFormat('#,###').format(currentPeriod.totalContracts)}건',
-                subText: '지급 대상자: ${NumberFormat('#,###').format(currentPeriod.payoutCount)}명',
-                accentColor: const Color(0xFF06B6D4), // Sky / Cyan
-                icon: Icons.assignment_turned_in_outlined,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildSingleKpiTile(
-                label: '총 지급액 (세전)',
+                label: '운영인력 지급 총액 (세전)',
                 value: '${NumberFormat('#,###').format(currentPeriod.totalGrossAmount)}원',
-                subText: '수수료+보너스+기본급-공제',
+                subText: '정산 대상자: ${NumberFormat('#,###').format(currentPeriod.payoutCount)}명',
                 accentColor: const Color(0xFF8B5CF6), // Violet
                 icon: Icons.payments_outlined,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
+            const SizedBox(width: 8),
             Expanded(
               child: _buildSingleKpiTile(
                 label: '원천징수 세액 (3.3%)',
@@ -1760,14 +1746,30 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 icon: Icons.receipt_long_outlined,
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '인력 총 실지급액 (세후)',
+                value: '${NumberFormat('#,###').format(currentPeriod.totalNetAmount)}원',
+                subText: currentPeriod.payoutDate != null
+                    ? '지급 예정일: ${currentPeriod.payoutDate}'
+                    : '실제 이체 필요 총액',
+                accentColor: const Color(0xFF10B981), // Emerald
+                icon: Icons.account_balance_wallet_outlined,
+              ),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: _buildSingleKpiTile(
-                label: '총 실지급액 (세후)',
-                value: '${NumberFormat('#,###').format(currentPeriod.totalNetAmount)}원',
-                subText: '실제 이체 필요 총액',
-                accentColor: const Color(0xFF10B981), // Emerald
-                icon: Icons.account_balance_wallet_outlined,
+                label: '시행사 청구 금액 (VAT포함)',
+                value: '${NumberFormat('#,###').format(currentPeriod.billingTotalAmount > 0 ? currentPeriod.billingTotalAmount : (currentPeriod.totalGrossAmount * 1.1).floor())}원',
+                subText: '총 ${NumberFormat('#,###').format(currentPeriod.totalContracts)}건 (공급가: ${NumberFormat('#,###').format(currentPeriod.billingSupplyPrice > 0 ? currentPeriod.billingSupplyPrice : currentPeriod.totalGrossAmount)}원)',
+                accentColor: const Color(0xFFF59E0B), // Amber
+                icon: Icons.request_quote_outlined,
               ),
             ),
           ],
@@ -5171,17 +5173,32 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             Divider(color: context.colors.borderSubtle, height: 1),
             const SizedBox(height: 8),
 
-            // 2. 건당 총 수수료 하이라이트
+            // 2. 건당 총 수수료 하이라이트 (VAT 별도 및 청구액)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '건당 총 수수료 (R값)',
-                  style: AppTextStyles.caption.copyWith(
-                    color: context.colors.textSecond,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11.5,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '건당 공급가 (VAT 별도)',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textSecond,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '청구: ₩ ${NumberFormat('#,###').format(policy.totalBillingAmount)} (VAT 10% 포함)',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFF59E0B),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   '₩ ${NumberFormat('#,###').format(total)}원',

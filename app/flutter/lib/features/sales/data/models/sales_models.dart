@@ -305,6 +305,8 @@ class CommissionPolicyModel {
   }
 
   int get totalFee => agentFee + leaderFee + directorFee + agencyFee;
+  int get vatAmount => (totalFee * 0.1).floor();
+  int get totalBillingAmount => totalFee + vatAmount;
 }
 
 /// 차수 (OrderGroup) 간략 옵션 모델
@@ -434,7 +436,7 @@ class CombinedContractPerformanceItem {
   String? get note => mapping?.note;
 }
 
-/// 정산 대상 개별 계약 상세 모델
+/// 수수료 지급 상세 계약 건별 내역 모델
 class PayoutContractDetailModel {
   final int id;
   final int payout;
@@ -525,12 +527,10 @@ class CommissionPayoutModel {
   });
 
   factory CommissionPayoutModel.fromJson(Map<String, dynamic> json) {
-    var detailsList = <PayoutContractDetailModel>[];
-    if (json['contract_details'] is List) {
-      detailsList = (json['contract_details'] as List)
-          .map((item) => PayoutContractDetailModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    }
+    final detailsList = (json['contract_details'] as List<dynamic>?)
+            ?.map((d) => PayoutContractDetailModel.fromJson(d as Map<String, dynamic>))
+            .toList() ??
+        [];
 
     return CommissionPayoutModel(
       id: json['id'] as int? ?? 0,
@@ -575,7 +575,12 @@ class SettlementPeriodModel {
   final int totalGrossAmount;
   final int totalTaxAmount;
   final int totalNetAmount;
+  final int agencyFeeTotal;
+  final int billingSupplyPrice;
+  final int billingVat;
+  final int billingTotalAmount;
   final int payoutCount;
+  final int agencyPayoutCount;
   final int? createdBy;
   final String? createdAt;
   final String? updatedAt;
@@ -593,7 +598,12 @@ class SettlementPeriodModel {
     this.totalGrossAmount = 0,
     this.totalTaxAmount = 0,
     this.totalNetAmount = 0,
+    this.agencyFeeTotal = 0,
+    this.billingSupplyPrice = 0,
+    this.billingVat = 0,
+    this.billingTotalAmount = 0,
     this.payoutCount = 0,
+    this.agencyPayoutCount = 0,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -604,6 +614,12 @@ class SettlementPeriodModel {
   bool get isCompleted => status == '3';
 
   factory SettlementPeriodModel.fromJson(Map<String, dynamic> json) {
+    final gross = json['total_gross_amount'] as int? ?? 0;
+    final agencyFee = json['agency_fee_total'] as int? ?? 0;
+    final supply = json['billing_supply_price'] as int? ?? (gross + agencyFee);
+    final vat = json['billing_vat'] as int? ?? (supply * 0.1).floor();
+    final totalBilling = json['billing_total_amount'] as int? ?? (supply + vat);
+
     return SettlementPeriodModel(
       id: json['id'] as int? ?? 0,
       project: json['project'] as int? ?? 0,
@@ -614,13 +630,81 @@ class SettlementPeriodModel {
       status: json['status'] as String? ?? '1',
       statusDisplay: json['status_display'] as String?,
       totalContracts: json['total_contracts'] as int? ?? 0,
-      totalGrossAmount: json['total_gross_amount'] as int? ?? 0,
+      totalGrossAmount: gross,
       totalTaxAmount: json['total_tax_amount'] as int? ?? 0,
       totalNetAmount: json['total_net_amount'] as int? ?? 0,
+      agencyFeeTotal: agencyFee,
+      billingSupplyPrice: supply,
+      billingVat: vat,
+      billingTotalAmount: totalBilling,
       payoutCount: json['payout_count'] as int? ?? 0,
+      agencyPayoutCount: json['agency_payout_count'] as int? ?? 0,
       createdBy: json['created_by'] as int?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
+    );
+  }
+}
+
+/// 대행사 수수료 지급/청구 명세 모델
+class AgencyPayoutModel {
+  final int id;
+  final int period;
+  final int agency;
+  final String? agencyName;
+  final bool isDirectManaged;
+  final int contractCount;
+  final int agencyFeeSum;
+  final int vatAmount;
+  final int totalAmount;
+  final String payStatus;
+  final String? payStatusDisplay;
+  final String? paidDate;
+  final String? businessNumber;
+  final String? bankName;
+  final String? accountNumber;
+  final String? accountHolder;
+  final String? note;
+
+  const AgencyPayoutModel({
+    required this.id,
+    required this.period,
+    required this.agency,
+    this.agencyName,
+    this.isDirectManaged = false,
+    this.contractCount = 0,
+    this.agencyFeeSum = 0,
+    this.vatAmount = 0,
+    this.totalAmount = 0,
+    this.payStatus = '1',
+    this.payStatusDisplay,
+    this.paidDate,
+    this.businessNumber,
+    this.bankName,
+    this.accountNumber,
+    this.accountHolder,
+    this.note,
+  });
+
+  factory AgencyPayoutModel.fromJson(Map<String, dynamic> json) {
+    return AgencyPayoutModel(
+      id: json['id'] as int? ?? 0,
+      period: json['period'] as int? ?? 0,
+      agency: json['agency'] as int? ?? 0,
+      agencyName: json['agency_name'] as String?,
+      isDirectManaged: json['is_direct_managed'] as bool? ?? false,
+      contractCount: json['contract_count'] as int? ?? 0,
+      agencyFeeSum: json['agency_fee_sum'] as int? ?? 0,
+      vatAmount: json['vat_amount'] as int? ?? 0,
+      totalAmount: json['total_amount'] as int? ?? 0,
+      payStatus: json['pay_status'] as String? ?? '1',
+      payStatusDisplay: json['pay_status_display'] as String?,
+      paidDate: json['paid_date'] as String?,
+      businessNumber: json['business_number'] as String?,
+      bankName: json['bank_name'] as String?,
+      accountNumber: json['account_number'] as String?,
+      accountHolder: json['account_holder'] as String?,
+      note: json['note'] as String?,
     );
   }
 }
