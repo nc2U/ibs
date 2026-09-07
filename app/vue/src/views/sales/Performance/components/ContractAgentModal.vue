@@ -41,6 +41,8 @@ const form = reactive({
   mgm_phone: '',
   mgm_fee: 0,
   note: '',
+  is_settlement_approved: true,
+  approval_note: '',
 })
 
 // 상담사 선택 시 소속 팀 자동 설정
