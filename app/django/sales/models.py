@@ -444,6 +444,13 @@ class AgencyPayout(models.Model):
         '대행사 수수료 합계 (VAT 제외)', default=0,
         help_text='CommissionPolicy.agency_fee × 계약 건수'
     )
+    unallocated_fee = models.PositiveBigIntegerField(
+        '귀속 이익 (미지급 fee 합계)', default=0,
+        help_text=(
+            '직영 운영 시 팀장/본부장 부재로 인해 상위 조직에 귀속된 fee 합계. '
+            '실제 지급 금액이 아닌 시행사(또는 직영 대행사) 귀속 이익으로 표시.'
+        )
+    )
     vat_amount = models.PositiveBigIntegerField('부가가치세 (10%)', default=0)
     total_amount = models.PositiveBigIntegerField(
         '총 지급액 (VAT 포함)', default=0,
@@ -479,6 +486,7 @@ class AgencyPayout(models.Model):
             self.business_number = self.agency.business_number
         self.calculate_vat()
         super().save(*args, **kwargs)
+
 
 
 class AgencyPayoutContractDetail(models.Model):

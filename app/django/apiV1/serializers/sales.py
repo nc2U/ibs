@@ -237,7 +237,8 @@ class AgencyPayoutSerializer(serializers.ModelSerializer):
         model = AgencyPayout
         fields = (
             'id', 'period', 'agency', 'agency_name', 'is_direct_managed',
-            'contract_count', 'agency_fee_sum', 'vat_amount', 'total_amount',
+            'contract_count', 'agency_fee_sum', 'unallocated_fee',
+            'vat_amount', 'total_amount',
             'pay_status', 'pay_status_display', 'paid_date',
             'business_number', 'bank_name', 'account_number', 'account_holder',
             'note', 'contract_details', 'created_at', 'updated_at'
