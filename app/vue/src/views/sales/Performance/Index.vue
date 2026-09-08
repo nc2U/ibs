@@ -190,21 +190,21 @@ const onSaved = async () => {
 
             <div class="d-flex flex-wrap align-items-center gap-2">
               <!-- 매핑 상태 필터 -->
-              <CFormSelect v-model="filterMappingStatus" size="sm" style="width: 110px">
+              <CFormSelect v-model="filterMappingStatus" style="width: 140px">
                 <option value="all">전체 계약</option>
                 <option value="mapped">배정 완료</option>
                 <option value="unmapped">미배정 계약</option>
               </CFormSelect>
 
               <!-- 정산 승인 상태 필터 -->
-              <CFormSelect v-model="filterApprovalStatus" size="sm" style="width: 120px">
+              <CFormSelect v-model="filterApprovalStatus" style="width: 140px">
                 <option value="all">전체 승인상태</option>
                 <option value="approved">정산 승인건</option>
                 <option value="pending">정산 보류건</option>
               </CFormSelect>
 
               <!-- 팀 필터 -->
-              <CFormSelect v-model.number="filterTeam" size="sm" style="width: 120px">
+              <CFormSelect v-model.number="filterTeam" style="width: 140px">
                 <option :value="null">전체 팀</option>
                 <option v-for="t in teamList" :key="t.id" :value="t.id">
                   {{ t.name }}
@@ -212,7 +212,7 @@ const onSaved = async () => {
               </CFormSelect>
 
               <!-- 담당직원 필터 -->
-              <CFormSelect v-model.number="filterPerson" size="sm" style="width: 120px">
+              <CFormSelect v-model.number="filterPerson" style="width: 140px">
                 <option :value="null">전체 상담사</option>
                 <option v-for="p in personList" :key="p.id" :value="p.id">
                   {{ p.name }}
@@ -222,9 +222,8 @@ const onSaved = async () => {
               <!-- 검색창 -->
               <CFormInput
                 v-model="search"
-                size="sm"
                 placeholder="계약/계약자/동호수/상담사"
-                style="width: 170px"
+                style="width: 180px"
               />
 
               <!-- 배정 버튼 -->
@@ -427,9 +426,6 @@ const onSaved = async () => {
     />
 
     <!-- 정산 승인 / 보류 폼 모달 -->
-    <SettlementApprovalModal
-      ref="approvalModalRef"
-      @confirm="onApprovalConfirm"
-    />
+    <SettlementApprovalModal ref="approvalModalRef" @confirm="onApprovalConfirm" />
   </ContentBody>
 </template>

@@ -46,7 +46,10 @@ const loadData = async (projId: number) => {
     const queryPeriod = Number(route.query.period)
     if (queryPeriod && periodList.value.some(p => p.id === queryPeriod)) {
       selectedPeriodId.value = queryPeriod
-    } else if (!selectedPeriodId.value || !periodList.value.some(p => p.id === selectedPeriodId.value)) {
+    } else if (
+      !selectedPeriodId.value ||
+      !periodList.value.some(p => p.id === selectedPeriodId.value)
+    ) {
       selectedPeriodId.value = periodList.value[0].id
     }
     await salesStore.fetchPayoutList(selectedPeriodId.value)
@@ -268,11 +271,11 @@ const openPayoutDetail = (payout: CommissionPayout) => {
               <!-- 정산 회차 선택 -->
               <CCol md="4" lg="3">
                 <div class="d-flex align-items-center gap-2">
-                  <span class="fw-bold text-primary text-nowrap small">
+                  <span class="fw-bold text-primary text-nowrap">
                     <v-icon icon="mdi-calendar-range" size="small" class="mr-1 text-primary" />
                     정산 회차:
                   </span>
-                  <CFormSelect v-model.number="selectedPeriodId" size="sm">
+                  <CFormSelect v-model.number="selectedPeriodId">
                     <option :value="null">회차를 선택하세요</option>
                     <option v-for="p in periodList" :key="p.id" :value="p.id">
                       [{{ p.status_display }}] {{ p.title }}
@@ -284,8 +287,11 @@ const openPayoutDetail = (payout: CommissionPayout) => {
               <!-- 지급 상태 필터 -->
               <CCol md="4" lg="3">
                 <div class="d-flex align-items-center gap-2">
-                  <span class="fw-bold text-primary text-nowrap small">지급 상태:</span>
-                  <CFormSelect v-model="statusFilter" size="sm">
+                  <span class="fw-bold text-primary text-nowrap">
+                    <v-icon icon="mdi-list-status" size="small" class="mr-1 text-primary" />
+                    지급 상태:
+                  </span>
+                  <CFormSelect v-model="statusFilter">
                     <option value="">전체 상태</option>
                     <option value="1">지급대기</option>
                     <option value="2">지급승인</option>
@@ -299,7 +305,6 @@ const openPayoutDetail = (payout: CommissionPayout) => {
               <CCol md="4" lg="4">
                 <CFormInput
                   v-model="searchQuery"
-                  size="sm"
                   placeholder="성명, 소속팀, 예금주, 계좌번호 검색..."
                 />
               </CCol>
@@ -307,8 +312,8 @@ const openPayoutDetail = (payout: CommissionPayout) => {
               <!-- 건수 -->
               <CCol md="12" lg="2" class="text-lg-end">
                 <span class="small text-muted">
-                  조회: <strong>{{ filteredPayouts.length }}</strong
-                  >명
+                  조회: <strong>{{ filteredPayouts.length }}</strong>
+                  명
                 </span>
               </CCol>
             </CRow>
