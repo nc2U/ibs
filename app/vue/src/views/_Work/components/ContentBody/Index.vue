@@ -115,7 +115,7 @@ onBeforeMount(async () => {
         <v-card class="mx-auto mb-5 pointer" max-width="500" border flat>
           <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
             <v-list-item variant="tonal" disabled>
-              {{ route.path.startsWith('/work/') ? '워크스페이스' : '설정관리' }}
+              {{ route.path.startsWith('/work/') ? '업무관리' : '설정관리' }}
             </v-list-item>
             <v-list-item
               v-for="(menu, i) in navMenu"
@@ -126,7 +126,7 @@ onBeforeMount(async () => {
               {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
             </v-list-item>
             <v-list-item variant="tonal" disabled>일반</v-list-item>
-            <v-list-item @click="router.push({ name: '업 무 관 리' })">워크스페이스</v-list-item>
+            <v-list-item @click="router.push({ name: '업 무 관 리' })">업무관리</v-list-item>
             <v-list-item @click="router.push({ name: '설 정 관 리' })">설정관리</v-list-item>
             <v-list-item variant="tonal" disabled>사용자정보</v-list-item>
             <v-list-item @click="getGuide"> 도움말</v-list-item>
