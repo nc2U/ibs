@@ -157,7 +157,7 @@ const onPeriodSaved = async () => {
                 <v-icon icon="mdi-calendar-range" size="small" class="mr-1 text-primary" />
                 정산 회차:
               </span>
-              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 280px">
+              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 200px">
                 <option :value="null">정산 회차를 선택하세요</option>
                 <option v-for="p in periodList" :key="p.id" :value="p.id">
                   [{{ p.status_display }}] {{ p.title }} ({{ p.start_date }} ~ {{ p.end_date }})
@@ -469,7 +469,8 @@ const onPeriodSaved = async () => {
       <template #header>정산 회차 확정</template>
       <template #default>
         <p class="mb-2">
-          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 <strong>[확정]</strong> 상태로 변경하시겠습니까?
+          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 <strong>[확정]</strong> 상태로
+          변경하시겠습니까?
         </p>
         <ul class="text-secondary small mb-0 ps-3">
           <li>확정 후에는 정산 계산을 다시 실행할 수 없습니다.</li>
