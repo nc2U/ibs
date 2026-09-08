@@ -5,16 +5,48 @@ from django.db import migrations, models
 
 
 def populate_agency(apps, schema_editor):
-    ContractSalesAgent = apps.get_model('sales', 'ContractSalesAgent')
-    for m in ContractSalesAgent.objects.select_related('team__agency', 'sales_person__team__agency').all():
-        agency = None
-        if m.team and m.team.agency:
-            agency = m.team.agency
-        elif m.sales_person and m.sales_person.team and m.sales_person.team.agency:
-            agency = m.sales_person.team.agency
-        if agency:
-            m.agency = agency
-            m.save(update_fields=['agency'])
+    connection = schema_editor.connection
+    vendor = connection.vendor
+
+    if vendor == 'postgresql':
+        # PostgreSQL에서는 원자적 UPDATE ... FROM 구문으로 라우터 우회 및 즉각 처리
+        schema_editor.execute("""
+            UPDATE sales_contractsalesagent AS csa
+            SET agency_id = st.agency_id
+            FROM sales_salesteam AS st
+            WHERE csa.team_id = st.id
+              AND csa.agency_id IS NULL
+              AND st.agency_id IS NOT NULL;
+        """)
+        schema_editor.execute("""
+            UPDATE sales_contractsalesagent AS csa
+            SET agency_id = st.agency_id
+            FROM sales_salesperson AS sp
+            JOIN sales_salesteam AS st ON sp.team_id = st.id
+            WHERE csa.sales_person_id = sp.id
+              AND csa.agency_id IS NULL
+              AND st.agency_id IS NOT NULL;
+        """)
+    else:
+        # SQLite 등 기타 DB fallback (schema_editor.connection.alias 명시하여 라우터 간섭 방지)
+        db_alias = connection.alias
+        ContractSalesAgent = apps.get_model('sales', 'ContractSalesAgent')
+        for m in ContractSalesAgent.objects.using(db_alias).select_related(
+            'team__agency', 'sales_person__team__agency'
+        ).all():
+            agency = None
+            if m.team_id and getattr(m, 'team', None) and m.team.agency_id:
+                agency = m.team.agency
+            elif (
+                m.sales_person_id
+                and getattr(m, 'sales_person', None)
+                and m.sales_person.team_id
+                and m.sales_person.team.agency_id
+            ):
+                agency = m.sales_person.team.agency
+            if agency:
+                m.agency = agency
+                m.save(using=db_alias, update_fields=['agency'])
 
 
 class Migration(migrations.Migration):
