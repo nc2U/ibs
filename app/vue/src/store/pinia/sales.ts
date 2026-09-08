@@ -380,9 +380,11 @@ export const useSales = defineStore('sales', () => {
   // ── 수수료 환수 ───────────────────────────────────────
   const clawbackList = ref<CommissionClawback[]>([])
 
-  const fetchClawbackList = (salesPersonId?: number) => {
+  const fetchClawbackList = (salesPersonId?: number, projectId?: number) => {
     const params = new URLSearchParams()
     if (salesPersonId) params.append('sales_person', String(salesPersonId))
+    if (projectId) params.append('contract__project', String(projectId))
+    params.append('limit', '500')
     return api
       .get(`/sales-clawback/?${params}`)
       .then(res => (clawbackList.value = res.data.results ?? res.data))
@@ -390,6 +392,7 @@ export const useSales = defineStore('sales', () => {
         console.warn('fetchClawbackList failed:', err?.message || err)
       })
   }
+
 
   return {
     agencyList,

@@ -7,7 +7,7 @@ import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import { TableSecondary } from '@/utils/cssMixins'
 import type { Project } from '@/store/types/project'
-import type { CommissionPayout } from '@/store/types/sales'
+import type { CommissionPayout, CommissionClawback } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -27,6 +27,7 @@ const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
 const payoutList = computed(() => salesStore.payoutList)
 const agencyPayoutList = computed(() => salesStore.agencyPayoutList)
+const clawbackList = computed(() => salesStore.clawbackList)
 
 // 팀장/본부장 부재로 대행사(시행사)에 귀속된 이익 총액
 const totalUnallocatedFee = computed(() =>
@@ -66,6 +67,7 @@ const loadData = async (projId: number) => {
     await Promise.all([
       salesStore.fetchPayoutList(selectedPeriodId.value),
       salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+      salesStore.fetchClawbackList(undefined, projId),
     ])
   } else {
     selectedPeriodId.value = null
@@ -550,6 +552,82 @@ const onPeriodSaved = async () => {
                   </CTableDataCell>
                   <CTableDataCell class="text-start small text-muted">
                     {{ ap.note || '-' }}
+                  </CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </CCardBody>
+        </CCard>
+
+        <!-- 수수료 환수 이력 테이블 -->
+        <CCard v-if="selectedPeriod && clawbackList.length > 0" class="shadow-sm mb-4">
+          <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <div class="fw-bold d-flex align-items-center">
+              <v-icon icon="mdi-cash-refund" size="small" class="mr-1 text-danger" />
+              수수료 환수 이력
+              <CBadge color="danger" class="ml-2" shape="rounded-pill">
+                {{ clawbackList.length }}건
+              </CBadge>
+              <CBadge
+                v-if="clawbackList.filter(c => !c.is_settled).length > 0"
+                color="warning"
+                class="ml-1"
+                shape="rounded-pill"
+              >
+                미상계 {{ clawbackList.filter(c => !c.is_settled).length }}건
+              </CBadge>
+            </div>
+            <div class="small text-danger fw-semibold">
+              총 환수액:
+              {{ clawbackList.reduce((s, c) => s + (c.amount || 0), 0).toLocaleString() }}원
+            </div>
+          </CCardHeader>
+
+          <CCardBody class="p-0">
+            <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+              <colgroup>
+                <col style="width: 10%" />
+                <col style="width: 12%" />
+                <col style="width: 10%" />
+                <col style="width: 12%" />
+                <col style="width: 30%" />
+                <col style="width: 10%" />
+                <col style="width: 16%" />
+              </colgroup>
+              <CTableHead :color="TableSecondary">
+                <CTableRow>
+                  <CTableHeaderCell>해지 계약번호</CTableHeaderCell>
+                  <CTableHeaderCell>환수 대상자</CTableHeaderCell>
+                  <CTableHeaderCell>환수 금액</CTableHeaderCell>
+                  <CTableHeaderCell>상계 여부</CTableHeaderCell>
+                  <CTableHeaderCell>환수 사유</CTableHeaderCell>
+                  <CTableHeaderCell>등록일</CTableHeaderCell>
+                  <CTableHeaderCell>상계 처리 정산</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="c in clawbackList" :key="c.id">
+                  <CTableDataCell class="small font-monospace text-start ps-3">
+                    {{ c.contract_serial || `#${c.contract}` }}
+                  </CTableDataCell>
+                  <CTableDataCell class="fw-bold">
+                    {{ c.sales_person_name || `#${c.sales_person}` }}
+                  </CTableDataCell>
+                  <CTableDataCell class="text-end font-monospace text-danger fw-bold">
+                    {{ c.amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <CBadge :color="c.is_settled ? 'success' : 'warning'">
+                      {{ c.is_settled ? '상계 완료' : '미상계' }}
+                    </CBadge>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start small text-muted">{{ c.reason }}</CTableDataCell>
+                  <CTableDataCell class="small text-muted">
+                    {{ c.created_at?.slice(0, 10) }}
+                  </CTableDataCell>
+                  <CTableDataCell class="small text-muted">
+                    <span v-if="c.settled_payout">{{ c.settled_payout }}회차 상계</span>
+                    <span v-else class="text-muted">-</span>
                   </CTableDataCell>
                 </CTableRow>
               </CTableBody>
