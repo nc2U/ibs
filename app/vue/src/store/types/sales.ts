@@ -213,6 +213,7 @@ export interface AgencyPayout {
   is_direct_managed?: boolean
   contract_count: number
   agency_fee_sum: number
+  unallocated_fee?: number
   vat_amount: number
   total_amount: number
   pay_status: '1' | '2' | '3' | '4'
@@ -226,6 +227,22 @@ export interface AgencyPayout {
   contract_details?: AgencyPayoutContractDetail[]
   created_at: string
   updated_at: string
+}
+
+export interface OrgHealthWarning {
+  type: string
+  severity: 'error' | 'warning'
+  agency?: string
+  team?: string
+  unit_type?: string
+  message: string
+}
+
+export interface OrgHealthCheckResult {
+  is_healthy: boolean
+  error_count: number
+  warning_count: number
+  items: OrgHealthWarning[]
 }
 
 export interface CommissionClawback {

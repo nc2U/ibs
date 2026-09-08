@@ -53,12 +53,32 @@ const form = reactive({
 })
 
 // 선택된 상담사의 소속 정보 표시용 (읽기 전용)
+const selectedPerson = computed(() => {
+  if (!form.sales_person) return null
+  return personList.value.find(item => item.id === form.sales_person) || null
+})
+
 const selectedPersonTeamInfo = computed(() => {
-  if (!form.sales_person) return ''
-  const p = personList.value.find(item => item.id === form.sales_person)
-  if (!p) return ''
+  if (!selectedPerson.value) return ''
+  const p = selectedPerson.value
   const agencyName = p.agency_name ? `[${p.agency_name}] ` : ''
   return `${agencyName}${p.team_name || ''}`
+})
+
+// 상담사 소속 팀의 팀장 존재 여부 진단
+const selectedPersonTeamWarning = computed(() => {
+  if (assignmentType.value !== 'direct' || !selectedPerson.value) return null
+  const p = selectedPerson.value
+  // duty='1'(상담사) 또는 지원직인 경우 팀장 부재 여부 체크
+  if (p.duty === '1' || p.duty === '5') {
+    const hasLeader = personList.value.some(
+      other => other.team === p.team && other.duty === '2' && other.status === '1',
+    )
+    if (!hasLeader) {
+      return '소속 팀에 재직 중인 팀장이 없습니다. 정산 시 상위 본부장에게 합산 배정되거나 대행사 이익으로 귀속됩니다.'
+    }
+  }
+  return null
 })
 
 const resetForm = () => {
@@ -233,10 +253,16 @@ defineExpose({ open })
                   [{{ p.duty_display }}] {{ p.name }} ({{ p.team_name || '팀 미지정' }})
                 </option>
               </CFormSelect>
-              <div v-if="selectedPersonTeamInfo" class="mt-1">
+              <div v-if="selectedPersonTeamInfo" class="mt-1 d-flex align-items-center gap-2">
                 <CBadge color="info" shape="rounded-pill">
                   소속: {{ selectedPersonTeamInfo }}
                 </CBadge>
+              </div>
+              <div v-if="selectedPersonTeamWarning" class="mt-1">
+                <CAlert color="warning" class="py-1 px-2 mb-0 small text-body-secondary border-warning">
+                  <v-icon icon="mdi-alert" size="small" class="text-warning mr-1" />
+                  {{ selectedPersonTeamWarning }}
+                </CAlert>
               </div>
             </CCol>
           </template>
