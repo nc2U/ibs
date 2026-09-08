@@ -1085,25 +1085,27 @@ class SalesMultiAgencyPayoutTests(APITestCase):
         # 6. AgencyPayout 2개 독립 생성 검증
         self.assertEqual(period.agency_payouts.count(), 2)
 
-        # 외주A: agency_fee = 1,000,000 × 2건 = 2,000,000
+        # 외주A: 건당 전체 수수료 합산 3,800,000 × 2건 = 7,600,000
+        # (agent 200만 + leader 50만 + director 30만 + agency 100만 = 380만)
         payout_a = AgencyPayout.objects.get(period=period, agency=agency_a)
         self.assertEqual(payout_a.contract_count, 2)
-        self.assertEqual(payout_a.agency_fee_sum, 2000000)
-        # VAT 10%: 200,000 / 합계 2,200,000
-        self.assertEqual(payout_a.vat_amount, 200000)
-        self.assertEqual(payout_a.total_amount, 2200000)
+        self.assertEqual(payout_a.agency_fee_sum, 7600000)
+        # VAT 10%: 760,000 / 합계 8,360,000
+        self.assertEqual(payout_a.vat_amount, 760000)
+        self.assertEqual(payout_a.total_amount, 8360000)
         self.assertEqual(payout_a.contract_details.count(), 2)
 
-        # 외주B: agency_fee = 1,000,000 × 1건 = 1,000,000
+        # 외주B: 건당 전체 수수료 합산 3,800,000 × 1건 = 3,800,000
         payout_b = AgencyPayout.objects.get(period=period, agency=agency_b)
         self.assertEqual(payout_b.contract_count, 1)
-        self.assertEqual(payout_b.agency_fee_sum, 1000000)
-        self.assertEqual(payout_b.vat_amount, 100000)
-        self.assertEqual(payout_b.total_amount, 1100000)
+        self.assertEqual(payout_b.agency_fee_sum, 3800000)
+        self.assertEqual(payout_b.vat_amount, 380000)
+        self.assertEqual(payout_b.total_amount, 4180000)
         self.assertEqual(payout_b.contract_details.count(), 1)
 
-        # 7. 총 외주 대행 지급 금액: 2,200,000 + 1,100,000 = 3,300,000
-        self.assertEqual(res.data['total_agency_amount'], 3300000)
+        # 7. 총 외주 대행 지급 금액: 8,360,000 + 4,180,000 = 12,540,000
+        self.assertEqual(res.data['total_agency_amount'], 12540000)
+
 
     def test_generate_payouts_mixed_direct_and_outsource(self):
         """
@@ -1211,11 +1213,13 @@ class SalesMultiAgencyPayoutTests(APITestCase):
         # ── 외주 대행사 AgencyPayout 검증 ──
         payout_oa = AgencyPayout.objects.get(period=period, agency=outsource_a)
         self.assertEqual(payout_oa.contract_count, 2)
-        self.assertEqual(payout_oa.agency_fee_sum, 2000000)  # 1,000,000 × 2
+        # 외주A: 건당 전체 합산 3,800,000 × 2건 = 7,600,000
+        self.assertEqual(payout_oa.agency_fee_sum, 7600000)
 
         payout_ob = AgencyPayout.objects.get(period=period, agency=outsource_b)
         self.assertEqual(payout_ob.contract_count, 1)
-        self.assertEqual(payout_ob.agency_fee_sum, 1000000)  # 1,000,000 × 1
+        # 외주B: 건당 전체 합산 3,800,000 × 1건 = 3,800,000
+        self.assertEqual(payout_ob.agency_fee_sum, 3800000)
 
         # ── 이중 정산 방지: generate-payouts 재호출해도 Payout 수가 동일해야 함 ──
         res2 = self.client.post(url)
@@ -1224,3 +1228,4 @@ class SalesMultiAgencyPayoutTests(APITestCase):
         # 재실행 후 Payout 수 동일 (새로 생성되지 않음)
         self.assertEqual(period.payouts.count(), 2)          # 김상담, 박팀장
         self.assertEqual(period.agency_payouts.count(), 3)   # 직영대행사청구 + 외주A + 외주B
+

@@ -13,7 +13,9 @@ sales/services.py
       '3','4' (본부장/총괄): 본부장=(agent_fee + leader_fee + director_fee)
 
 외주 대행사 (is_direct_managed=False)
-    시행사는 대행사에게만 정산 (agency_fee × 건수, VAT 10% 별도 표시).
+    시행사는 대행사에게 전체 수수료 일괄 정산
+    (agent_fee + leader_fee + director_fee + agency_fee) × 건수, VAT 10% 별도 표시.
+    대행사가 소속 영업 인력에게 내부 재정산하는 구조.
     AgencyPayout + AgencyPayoutContractDetail 생성.
 """
 from __future__ import annotations
@@ -365,10 +367,16 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
                     'role_type': role,
                 })
         else:
-            # 외주: 대행사 단위 집계 (unallocated_fee=0, 합산 지급)
+            # 외주: 대행사 단위 집계
+            # 외주 대행사가 소속 영업 인력에게 재정산하므로,
+            # 시행사는 (agent_fee + leader_fee + director_fee + agency_fee) 전액을 대행사에 일괄 지급.
             agency_contract_count += 1
             aid = agency.pk
-            agency_fee = policy.agency_fee if policy else 0
+            # 전체 수수료 합산 = 정책 상 모든 fee 항목 합계
+            total_policy_fee = (
+                (policy.agent_fee + policy.leader_fee + policy.director_fee + policy.agency_fee)
+                if policy else 0
+            )
             if aid not in agency_map:
                 agency_map[aid] = {
                     'agency': agency,
@@ -378,7 +386,7 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
                 }
             agency_map[aid]['contracts'].append({
                 'contract': m.contract,
-                'fee': agency_fee,
+                'fee': total_policy_fee,
             })
 
 
