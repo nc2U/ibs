@@ -15,7 +15,7 @@ from apiV1.permissions.ibs_perms import IbsModulePermission
 from contract.models import ContractPrice, OrderGroup, Contract
 from items.models import KeyUnit
 from items.models import UnitType, HouseUnit
-from ledger.models import ProjectBankTransaction
+from ledger.models import ProjectBankTransaction, ProjectAccountingEntry
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, PaymentPerInstallment, DownPayment, OverDueRule, \
     ContractPayment
 from project.models import Project
