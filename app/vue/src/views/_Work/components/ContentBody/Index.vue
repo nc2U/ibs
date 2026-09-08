@@ -5,12 +5,11 @@ import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
-defineProps({ aside: { type: Boolean, default: true } })
+defineProps({ aside: { type: Boolean, default: true }, navMenu: { type: Array, default: [] } })
 
 const visible = ref(false)
 
 const query = inject('query') as Record<string, any>
-const navMenu = inject('navMenu')
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -36,7 +35,7 @@ const toggle = () => (visible.value = !visible.value)
 provide('doingToggle', toggle)
 defineExpose({ toggle })
 
-const getGuide = () => window.open('https://www.redmine.org/guide', '_blank', 'noopener,noreferrer')
+const getGuide = () => window.open('https://docs.dyibs.com/', '_blank', 'noopener,noreferrer')
 
 // 검색 관련 기능 시작
 const search = ref('')
@@ -115,28 +114,30 @@ onBeforeMount(async () => {
       <COffcanvasBody class="p-0">
         <v-card class="mx-auto mb-5 pointer" max-width="500" border flat>
           <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
+            <v-list-item variant="tonal" disabled>
+              {{ route.path.startsWith('/work/') ? '워크스페이스' : '설정관리' }}
+            </v-list-item>
+            <v-list-item
+              v-for="(menu, i) in navMenu"
+              :active="isActive(menu as string)"
+              :key="i"
+              @click="goToMenu(menu as string)"
+            >
+              {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
+            </v-list-item>
+            <v-list-item variant="tonal" disabled>일반</v-list-item>
+            <v-list-item @click="router.push({ name: '업 무 관 리' })">워크스페이스</v-list-item>
+            <v-list-item @click="router.push({ name: '설 정 관 리' })">설정관리</v-list-item>
+            <v-list-item variant="tonal" disabled>사용자정보</v-list-item>
+            <v-list-item @click="getGuide"> 도움말</v-list-item>
             <v-list-item
               @click="router.push({ name: '사용자 - 보기', params: { userId: userInfo?.pk } })"
             >
-              {{ userInfo?.username }}
+              내 정보 보기
             </v-list-item>
-            <template v-if="route.path.startsWith('/work/')">
-              <v-list-item variant="tonal" disabled>프로젝트</v-list-item>
-              <v-list-item
-                v-for="(menu, i) in navMenu"
-                :active="isActive(menu)"
-                :key="i"
-                @click="goToMenu(menu as string)"
-              >
-                {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
-              </v-list-item>
-            </template>
-            <v-list-item variant="tonal" disabled>일반</v-list-item>
-            <v-list-item @click="router.push({ name: '업 무 관 리' })">프로젝트</v-list-item>
-            <v-list-item @click="router.push({ name: '설 정 관 리' })">설정관리</v-list-item>
-            <v-list-item @click="getGuide"> 도움말</v-list-item>
-            <v-list-item variant="tonal" disabled>사용자정보</v-list-item>
-            <v-list-item @click="router.push({ name: '내 정보' })">내 계정</v-list-item>
+            <v-list-item @click="router.push({ name: '사용자 - 내 계정' })">
+              내 계정 관리
+            </v-list-item>
             <v-list-item @click="logout">로그아웃</v-list-item>
           </v-list>
         </v-card>
