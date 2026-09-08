@@ -157,7 +157,7 @@ const onPeriodSaved = async () => {
                 <v-icon icon="mdi-calendar-range" size="small" class="mr-1 text-primary" />
                 정산 회차:
               </span>
-              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 200px">
+              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 240px">
                 <option :value="null">정산 회차를 선택하세요</option>
                 <option v-for="p in periodList" :key="p.id" :value="p.id">
                   [{{ p.status_display }}] {{ p.title }} ({{ p.start_date }} ~ {{ p.end_date }})
