@@ -107,9 +107,12 @@ export interface ContractSalesAgent {
   order_group_name?: string
   unit_type_name?: string
   unit_info?: string
-  sales_person: number
+  agency?: number | null
+  agency_name?: string
+  is_direct_managed?: boolean
+  sales_person: number | null
   sales_person_name?: string
-  team: number
+  team: number | null
   team_name?: string
   policy: number | null
   policy_name?: string

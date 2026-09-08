@@ -41,6 +41,7 @@ const approvalModalRef = ref()
 const loadData = async (projId: number) => {
   await Promise.all([
     salesStore.fetchContractAgentList(projId),
+    salesStore.fetchAgencyList(projId),
     salesStore.fetchPersonList(undefined, projId),
     salesStore.fetchTeamList(undefined, projId),
     salesStore.fetchPolicyList(projId),
@@ -104,19 +105,20 @@ const filteredList = computed(() => {
       if (!m || m.is_settlement_approved) return false
     }
 
-    // 팀 필터
+    // 팀 필터 (팀이 있는 직영/인력 배정 건)
     if (filterTeam.value && (!m || m.team !== filterTeam.value)) return false
 
     // 영업직원 필터
     if (filterPerson.value && (!m || m.sales_person !== filterPerson.value)) return false
 
-    // 검색어 필터 (계약 라벨, 상담사명, 계약번호 등)
+    // 검색어 필터 (계약 라벨, 상담사명, 대행사명, MGM 등)
     if (search.value.trim()) {
       const q = search.value.trim().toLowerCase()
       const matchLabel = item.contractLabel.toLowerCase().includes(q)
       const matchAgent = m?.sales_person_name?.toLowerCase().includes(q) || false
+      const matchAgency = m?.agency_name?.toLowerCase().includes(q) || false
       const matchMGM = m?.mgm_name?.toLowerCase().includes(q) || false
-      if (!matchLabel && !matchAgent && !matchMGM) return false
+      if (!matchLabel && !matchAgent && !matchAgency && !matchMGM) return false
     }
 
     return true
@@ -288,19 +290,30 @@ const onSaved = async () => {
                     </span>
                   </CTableDataCell>
 
-                  <!-- 담당 영업직원 -->
+                  <!-- 담당 영업직원 / 배정 주체 -->
                   <CTableDataCell>
-                    <span v-if="item.mapping" class="fw-bold text-primary">
-                      {{ item.mapping.sales_person_name }}
-                    </span>
+                    <template v-if="item.mapping">
+                      <span v-if="item.mapping.sales_person_name" class="fw-bold text-primary">
+                        {{ item.mapping.sales_person_name }}
+                      </span>
+                      <CBadge v-else color="info" shape="rounded-pill">
+                        외주 대행
+                      </CBadge>
+                    </template>
                     <CBadge v-else color="secondary" shape="rounded-pill"> 미배정 </CBadge>
                   </CTableDataCell>
 
-                  <!-- 소속 팀 -->
+                  <!-- 소속 팀 / 대행사 -->
                   <CTableDataCell>
-                    <span v-if="item.mapping?.team_name">
-                      {{ item.mapping.team_name }}
-                    </span>
+                    <template v-if="item.mapping">
+                      <span v-if="item.mapping.team_name">
+                        {{ item.mapping.team_name }}
+                      </span>
+                      <span v-else-if="item.mapping.agency_name" class="fw-semibold text-secondary">
+                        [{{ item.mapping.agency_name }}]
+                      </span>
+                      <span v-else class="text-muted">-</span>
+                    </template>
                     <span v-else class="text-muted">-</span>
                   </CTableDataCell>
 

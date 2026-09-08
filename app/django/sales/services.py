@@ -162,6 +162,7 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         is_settlement_approved=True,
     ).select_related(
         'contract__unit_type',
+        'agency',
         'sales_person__team__agency',
         'sales_person__team__parent',
         'team__agency',
@@ -188,11 +189,13 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
     direct_supply_price = 0      # 직영 계약 총 분양수수료 공급가액 (인력 수수료 + 대행사 차지)
 
     for m in mappings:
-        agency = m.team.agency
+        agency = m.agency or (m.team.agency if m.team else None)
+        if not agency:
+            continue
         is_direct = agency.is_direct_managed
         policy = _resolve_policy(m, period.project)
 
-        if is_direct:
+        if is_direct and m.sales_person:
             direct_contract_count += 1
             agency_fee = policy.agency_fee if policy else 0
             direct_agency_fee_total += agency_fee

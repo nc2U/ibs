@@ -51,9 +51,9 @@ class CommissionPolicyAdmin(admin.ModelAdmin):
 
 @admin.register(ContractSalesAgent)
 class ContractSalesAgentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'contract', 'sales_person', 'team', 'contract_date', 'mgm_name', 'mgm_fee')
-    list_filter = ('team__agency__project', 'team')
-    search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
+    list_display = ('id', 'contract', 'agency', 'sales_person', 'team', 'contract_date', 'mgm_name', 'mgm_fee')
+    list_filter = ('agency__project', 'agency', 'team')
+    search_fields = ('contract__serial_number', 'agency__name', 'sales_person__name', 'mgm_name')
 
 
 class CommissionPayoutInline(admin.TabularInline):

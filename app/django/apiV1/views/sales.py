@@ -123,16 +123,16 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     """계약 영업 담당자 매핑 ViewSet"""
     queryset = ContractSalesAgent.objects.all().select_related(
         'contract__contractor', 'contract__key_unit__houseunit__building_unit',
-        'sales_person', 'team', 'policy'
+        'agency', 'sales_person', 'team', 'policy'
     )
     serializer_class = ContractSalesAgentSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = (
-        'team__agency__project', 'contract__project', 'sales_person', 'team',
+        'agency__project', 'contract__project', 'agency', 'sales_person', 'team',
         'contract', 'is_settlement_approved'
     )
-    search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
+    search_fields = ('contract__serial_number', 'agency__name', 'sales_person__name', 'mgm_name')
 
     def get_queryset(self):
         user = self.request.user
