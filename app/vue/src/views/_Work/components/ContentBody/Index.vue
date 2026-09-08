@@ -142,7 +142,7 @@ onBeforeMount(async () => {
           </v-list>
         </v-card>
 
-        <v-divider />
+        <!--        <v-divider />-->
 
         <slot name="aside"></slot>
       </COffcanvasBody>
