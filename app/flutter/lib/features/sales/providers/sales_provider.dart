@@ -19,6 +19,7 @@ final salesSearchQueryProvider = StateProvider<String>((ref) => '');
 
 /// 영업 팀 목록 프로바이더
 final salesTeamsProvider = FutureProvider<List<SalesTeamModel>>((ref) async {
+
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -465,6 +466,16 @@ final commissionPayoutsProvider =
 
   final repository = ref.watch(salesRepositoryProvider);
   return repository.fetchCommissionPayouts(periodId: currentPeriod.id);
+});
+
+/// 선택된 회차의 대행사 수수료 지급 명세 목록 프로바이더 (/api/v1/sales-agency-payout/)
+final agencyPayoutsProvider =
+    FutureProvider<List<AgencyPayoutModel>>((ref) async {
+  final currentPeriod = ref.watch(currentSettlementPeriodProvider);
+  if (currentPeriod == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchAgencyPayouts(periodId: currentPeriod.id);
 });
 
 /// ── 수수료 정산 명세 필터 프로바이더 ──────────────────────────────

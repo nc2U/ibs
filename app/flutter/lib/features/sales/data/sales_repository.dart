@@ -430,6 +430,51 @@ class SalesRepository {
     );
   }
 
+  /// ── 대행사 수수료 지급 명세 (AgencyPayout) ─────────
+  Future<List<AgencyPayoutModel>> fetchAgencyPayouts({
+    required int periodId,
+    int? agencyId,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'period': periodId,
+        'limit': 100,
+      };
+      if (agencyId != null) {
+        queryParams['agency'] = agencyId;
+      }
+      final response = await dio.get(
+        '/api/v1/sales-agency-payout/',
+        queryParameters: queryParams,
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => AgencyPayoutModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 영업 조직 건강성 사전 진단 (/api/v1/sales-settlement-period/validate-org/?project=<id>)
+  Future<OrgHealthCheckResult?> validateOrgHealth(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/sales-settlement-period/validate-org/',
+        queryParameters: {'project': projectId},
+      );
+      if (response.data is Map<String, dynamic>) {
+        return OrgHealthCheckResult.fromJson(response.data as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// 정산 회차 지급 종결 처리 (상태 2 -> 3 지급 완료)
   Future<void> completeSettlementPeriod(int periodId) async {
     await updateSettlementPeriod(periodId, {'status': '3'});

@@ -350,6 +350,9 @@ class ContractSalesAgentModel {
   final String? orderGroupName;
   final String? unitTypeName;
   final String? unitInfo;
+  final int? agency;
+  final String? agencyName;
+  final bool isDirectManaged;
   final int? salesPerson;
   final String? salesPersonName;
   final int? team;
@@ -376,6 +379,9 @@ class ContractSalesAgentModel {
     this.orderGroupName,
     this.unitTypeName,
     this.unitInfo,
+    this.agency,
+    this.agencyName,
+    this.isDirectManaged = true,
     this.salesPerson,
     this.salesPersonName,
     this.team,
@@ -404,6 +410,9 @@ class ContractSalesAgentModel {
       orderGroupName: json['order_group_name'] as String?,
       unitTypeName: json['unit_type_name'] as String?,
       unitInfo: json['unit_info'] as String?,
+      agency: json['agency'] as int?,
+      agencyName: json['agency_name'] as String?,
+      isDirectManaged: json['is_direct_managed'] as bool? ?? true,
       salesPerson: json['sales_person'] as int?,
       salesPersonName: json['sales_person_name'] as String?,
       team: json['team'] as int?,
@@ -438,6 +447,9 @@ class CombinedContractPerformanceItem {
   });
 
   bool get isMapped => mapping != null;
+  int? get agency => mapping?.agency;
+  String? get agencyName => mapping?.agencyName;
+  bool get isDirectManaged => mapping?.isDirectManaged ?? true;
   String? get salesPersonName => mapping?.salesPersonName;
   String? get teamName => mapping?.teamName;
   String? get policyName => mapping?.policyName;
@@ -451,6 +463,7 @@ class CombinedContractPerformanceItem {
   bool get isSettled => mapping?.isSettled ?? false;
   String? get settledPeriodTitle => mapping?.settledPeriodTitle;
 }
+
 
 /// 수수료 지급 상세 계약 건별 내역 모델
 class PayoutContractDetailModel {
@@ -671,6 +684,7 @@ class AgencyPayoutModel {
   final bool isDirectManaged;
   final int contractCount;
   final int agencyFeeSum;
+  final int unallocatedFee;
   final int vatAmount;
   final int totalAmount;
   final String payStatus;
@@ -690,6 +704,7 @@ class AgencyPayoutModel {
     this.isDirectManaged = false,
     this.contractCount = 0,
     this.agencyFeeSum = 0,
+    this.unallocatedFee = 0,
     this.vatAmount = 0,
     this.totalAmount = 0,
     this.payStatus = '1',
@@ -711,6 +726,7 @@ class AgencyPayoutModel {
       isDirectManaged: json['is_direct_managed'] as bool? ?? false,
       contractCount: json['contract_count'] as int? ?? 0,
       agencyFeeSum: json['agency_fee_sum'] as int? ?? 0,
+      unallocatedFee: json['unallocated_fee'] as int? ?? 0,
       vatAmount: json['vat_amount'] as int? ?? 0,
       totalAmount: json['total_amount'] as int? ?? 0,
       payStatus: json['pay_status'] as String? ?? '1',
@@ -724,3 +740,65 @@ class AgencyPayoutModel {
     );
   }
 }
+
+/// 영업 조직 건강성 경고 항목
+class OrgHealthWarning {
+  final String type;
+  final String severity; // error, warning
+  final String? agency;
+  final String? team;
+  final String? unitType;
+  final String message;
+
+  const OrgHealthWarning({
+    required this.type,
+    required this.severity,
+    this.agency,
+    this.team,
+    this.unitType,
+    required this.message,
+  });
+
+  factory OrgHealthWarning.fromJson(Map<String, dynamic> json) {
+    return OrgHealthWarning(
+      type: json['type'] as String? ?? '',
+      severity: json['severity'] as String? ?? 'warning',
+      agency: json['agency'] as String?,
+      team: json['team'] as String?,
+      unitType: json['unit_type'] as String?,
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  bool get isError => severity == 'error';
+}
+
+/// 영업 조직 건강성 진단 결과 모델
+class OrgHealthCheckResult {
+  final bool isHealthy;
+  final int errorCount;
+  final int warningCount;
+  final List<OrgHealthWarning> items;
+
+  const OrgHealthCheckResult({
+    required this.isHealthy,
+    required this.errorCount,
+    required this.warningCount,
+    required this.items,
+  });
+
+  factory OrgHealthCheckResult.fromJson(Map<String, dynamic> json) {
+    final list = (json['items'] as List<dynamic>?)
+            ?.map((e) => OrgHealthWarning.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    return OrgHealthCheckResult(
+      isHealthy: json['is_healthy'] as bool? ?? true,
+      errorCount: json['error_count'] as int? ?? 0,
+      warningCount: json['warning_count'] as int? ?? 0,
+      items: list,
+    );
+  }
+}
+

@@ -968,29 +968,57 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
             // 내용 영역
             if (isMapped) ...[
-              // 담당 상담사 & 소속 팀
+              // 담당 상담사 & 소속 팀 (또는 외주 대행사)
               Row(
                 children: [
-                  Icon(Icons.person_outline_rounded, size: 14, color: context.colors.textMuted),
-                  const SizedBox(width: 5),
-                  Text(
-                    item.salesPersonName ?? '담당자 미지정',
-                    style: AppTextStyles.bodySecond.copyWith(
-                      color: const Color(0xFF8B5CF6),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                  if (item.teamName != null && item.teamName!.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      '(${item.teamName})',
-                      style: AppTextStyles.caption.copyWith(
-                        color: context.colors.textMuted,
-                        fontSize: 11.5,
+                  if (!item.isDirectManaged || item.salesPersonName == null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD1FAE5),
+                        border: Border.all(color: const Color(0xFF10B981), width: 0.8),
+                      ),
+                      child: const Text(
+                        '외주 대행',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF047857),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 6),
+                    Text(
+                      item.agencyName ?? '외주 대행사',
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: const Color(0xFF047857),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(Icons.person_outline_rounded, size: 14, color: context.colors.textMuted),
+                    const SizedBox(width: 5),
+                    Text(
+                      item.salesPersonName ?? '담당자 미지정',
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: const Color(0xFF8B5CF6),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    if (item.teamName != null && item.teamName!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '(${item.teamName})',
+                        style: AppTextStyles.caption.copyWith(
+                          color: context.colors.textMuted,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
                   ],
+
                   if (item.policyName != null && item.policyName!.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Container(
@@ -1421,6 +1449,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   // ═════════════════════════════════════════════════════════════════
 
   Future<void> _handleGeneratePayouts(SettlementPeriodModel period) async {
+    final repo = ref.read(salesRepositoryProvider);
+
+    // 정산 실행 전 조직 건강성 사전 진단
+    OrgHealthCheckResult? healthResult;
+    try {
+      healthResult = await repo.validateOrgHealth(period.project);
+    } catch (_) {}
+
+    if (!mounted) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1439,11 +1477,83 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             ),
           ],
         ),
-        content: Text(
-          '【${period.title}】\n(대상 기간: ${period.startDate} ~ ${period.endDate})\n\n해당 기간 동안 발생한 계약 실적과 직책별 수수료 정책, 미상계 환수금을 집계하여 개인별 수수료 명세를 자동 산출하시겠습니까?\n\n※ 이미 산출된 명세가 있는 경우 최신 실적으로 재계산됩니다.',
-          style: AppTextStyles.bodySm.copyWith(
-            color: context.colors.textSecond,
-            height: 1.4,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '【${period.title}】\n(대상 기간: ${period.startDate} ~ ${period.endDate})\n\n해당 기간 동안 발생한 계약 실적과 직책별 수수료 정책, 미상계 환수금을 집계하여 개인별 수수료 명세를 자동 산출하시겠습니까?',
+                style: AppTextStyles.bodySm.copyWith(
+                  color: context.colors.textSecond,
+                  height: 1.4,
+                ),
+              ),
+              if (healthResult != null && !healthResult.isHealthy) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFD97706)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '조직 구조 사전 점검 (주의 ${healthResult.warningCount}건 / 오류 ${healthResult.errorCount}건)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ...healthResult.items.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.isError ? '• [오류] ' : '• [주의] ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: item.isError ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  item.message,
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF78350F)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '* 팀장 부재 등 주의 항목은 상위 본부장 합산 또는 대행사 귀속 이익으로 자동 처리됩니다.',
+                        style: TextStyle(fontSize: 10.5, color: Color(0xFFB45309)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Text(
+                '※ 이미 산출된 명세가 있는 경우 최신 실적으로 재계산됩니다.',
+                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -1473,10 +1583,11 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           duration: Duration(seconds: 1),
         ),
       );
-      final repo = ref.read(salesRepositoryProvider);
       final res = await repo.generatePayouts(period.id);
       ref.invalidate(settlementPeriodsProvider);
       ref.invalidate(commissionPayoutsProvider);
+      ref.invalidate(agencyPayoutsProvider);
+
 
       if (!mounted) return;
       final msg = res['message'] as String? ?? '수수료 정산 계산이 완료되었습니다.';
@@ -2084,18 +2195,33 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildSingleKpiTile(
-                label: '시행사 청구 금액 (VAT포함)',
-                value: '${NumberFormat('#,###').format(currentPeriod.billingTotalAmount > 0 ? currentPeriod.billingTotalAmount : (currentPeriod.totalGrossAmount * 1.1).floor())}원',
-                subText: '총 ${NumberFormat('#,###').format(currentPeriod.totalContracts)}건 (공급가: ${NumberFormat('#,###').format(currentPeriod.billingSupplyPrice > 0 ? currentPeriod.billingSupplyPrice : currentPeriod.totalGrossAmount)}원)',
-                accentColor: const Color(0xFFF59E0B), // Amber
-                icon: Icons.request_quote_outlined,
+              child: Builder(
+                builder: (context) {
+                  final agencyPayouts = ref.watch(agencyPayoutsProvider).valueOrNull ?? [];
+                  final totalUnallocated = agencyPayouts.fold<int>(
+                    0,
+                    (sum, ap) => sum + ap.unallocatedFee,
+                  );
+
+                  final subText = totalUnallocated > 0
+                      ? '총 ${NumberFormat('#,###').format(currentPeriod.totalContracts)}건 · 귀속이익: ${NumberFormat('#,###').format(totalUnallocated)}원'
+                      : '총 ${NumberFormat('#,###').format(currentPeriod.totalContracts)}건 (공급가: ${NumberFormat('#,###').format(currentPeriod.billingSupplyPrice > 0 ? currentPeriod.billingSupplyPrice : currentPeriod.totalGrossAmount)}원)';
+
+                  return _buildSingleKpiTile(
+                    label: '시행사 청구 금액 (VAT포함)',
+                    value: '${NumberFormat('#,###').format(currentPeriod.billingTotalAmount > 0 ? currentPeriod.billingTotalAmount : (currentPeriod.totalGrossAmount * 1.1).floor())}원',
+                    subText: subText,
+                    accentColor: const Color(0xFFF59E0B), // Amber
+                    icon: Icons.request_quote_outlined,
+                  );
+                },
               ),
             ),
           ],
         ),
       ],
     );
+
   }
 
   /// 검색창 & 상태/직책 필터 바
