@@ -54,6 +54,7 @@ const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
 const { workManager } = storeToRefs(useAccount())
 
 const validated = ref(false)
+const lawsuitError = ref(false)
 
 const getInitialForm = (): Docs => ({
   pk: undefined,
@@ -99,7 +100,11 @@ const linksUpdate = (payload: Link[]) => (form.value.links = payload)
 
 const submitCheck = (event: Event) => {
   const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
+
+  // @vueform/multiselect의 fake-input은 브라우저 native validation이 동작하지 않으므로 직접 검증
+  lawsuitError.value = form.value.doc_type === 2 && !form.value.lawsuit
+
+  if (!el.checkValidity() || lawsuitError.value) {
     event.preventDefault()
     event.stopPropagation()
 
@@ -300,10 +305,15 @@ onBeforeMount(() => dataSetup())
                     <div class="flex-grow-1">
                       <MultiSelect
                         v-model.number="form.lawsuit"
+                        mode="single"
                         :options="getSuitCase"
-                        :attrs="typeNumber === 2 ? { required: true } : {}"
+                        :invalid="lawsuitError"
                         placeholder="사건번호 선택"
+                        @update:model-value="lawsuitError = false"
                       />
+                      <div v-if="lawsuitError" class="text-error text-caption mt-1">
+                        사건번호를 선택해 주세요.
+                      </div>
                     </div>
                     <v-btn
                       size="x-small"

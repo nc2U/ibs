@@ -1,25 +1,42 @@
 <script setup lang="ts">
-import Multiselect from '@vueform/multiselect'
 import type { PropType } from 'vue'
+import Multiselect from '@vueform/multiselect'
 
-defineProps({
+defineOptions({ inheritAttrs: false })
+
+const props = defineProps({
   mode: { type: String as PropType<'single' | 'tags'>, default: 'tags' },
   options: { type: Array, default: () => [] },
+  modelValue: {
+    type: [Number, String, Array, null] as PropType<number | string | any[] | null>,
+    default: null,
+  },
+  placeholder: { type: String, default: undefined },
+  required: { type: Boolean, default: false },
+  invalid: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['update:modelValue'])
 </script>
 
 <template>
   <Multiselect
     :mode="mode"
     autocomplete="label"
+    :style="invalid ? { '--ms-border-color': '#dc3545', '--ms-border-color-active': '#dc3545' } : {}"
     :classes="{
       caret: 'multiselect-caret mr-4',
       search: 'form-control multiselect-search',
       tagsSearch: 'multiselect-tags-search',
+      container: invalid ? 'multiselect is-invalid' : 'multiselect',
     }"
     :add-option-on="['enter', 'tab']"
     :options="options"
+    :model-value="modelValue"
+    :placeholder="placeholder"
+    :required="required"
     searchable
+    @update:model-value="emit('update:modelValue', $event)"
   />
   <!--  :attrs="form.court ? {} : { required: true }"-->
 </template>
@@ -56,5 +73,15 @@ defineProps({
 
 :deep(.form-control.is-valid:focus) {
   box-shadow: 0 0 0 0.25rem rgba(46, 184, 92, 0.25) !important;
+}
+
+:deep(.multiselect.is-invalid) {
+  --ms-border-color: #dc3545;
+  --ms-border-color-active: #dc3545;
+  border-color: #dc3545 !important;
+}
+
+:deep(.multiselect.is-invalid:focus-within) {
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 </style>
