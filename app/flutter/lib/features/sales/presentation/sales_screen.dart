@@ -4449,7 +4449,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '대행사별 지급/청구 관리',
+                        '대행사별 정산 관리',
                         style: AppTextStyles.label.copyWith(
                           fontWeight: FontWeight.bold,
                           color: currentMode == 'agency'
