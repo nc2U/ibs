@@ -183,8 +183,23 @@ onBeforeUpdate(() => dataSetup())
   >
     <CRow class="mb-3">
       <CFormLabel for="title" class="col-md-2 col-form-label required text-right">제목</CFormLabel>
-      <CCol :md="typeNum === 2 ? 9 : 8">
+      <CCol :md="typeNum === 2 ? 6 : 5">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
+      </CCol>
+      <CFormLabel
+        for="security_level"
+        class="col-sm-2 col-form-label text-right"
+        :class="{ 'col-lg-1': typeNum === 2 }"
+      >
+        보안등급
+      </CFormLabel>
+      <CCol :md="typeNum === 2 ? 2 : 3">
+        <CFormSelect id="security_level" v-model="form.security_level">
+          <option value="4">4등급 전사 공개</option>
+          <option value="3">3등급 프로젝트 공개</option>
+          <option value="2">2등급 팀 공개</option>
+          <option value="1">1등급 비공개</option>
+        </CFormSelect>
       </CCol>
     </CRow>
 
@@ -241,15 +256,10 @@ onBeforeUpdate(() => dataSetup())
         class="col-sm-2 col-form-label text-right"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
-        보안등급
+        발행일자
       </CFormLabel>
       <CCol :md="typeNum === 2 ? 2 : 3">
-        <CFormSelect id="security_level" v-model="form.security_level">
-          <option value="4">4등급 전사 공개</option>
-          <option value="3">3등급 프로젝트 공개</option>
-          <option value="2">2등급 팀 공개</option>
-          <option value="1">1등급 비공개</option>
-        </CFormSelect>
+        <DatePicker v-model="form.execution_date" />
       </CCol>
     </CRow>
 
