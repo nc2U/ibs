@@ -254,7 +254,7 @@ onBeforeUpdate(() => dataSetup())
       <CFormLabel
         for="security_level"
         class="col-sm-2 col-form-label text-right"
-        :class="{ 'col-lg-1': typeNum === 2 }"
+        :class="typeNum === 2 ? 'col-lg-1' : 'offset-2'"
       >
         발행일자
       </CFormLabel>
