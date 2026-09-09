@@ -635,7 +635,7 @@ const onPeriodSaved = async () => {
           </CCardBody>
         </CCard>
 
-        <div v-else class="py-5 text-center text-muted">
+        <div v-if="!selectedPeriod" class="py-5 text-center text-muted">
           <v-icon icon="mdi-calendar-blank" size="large" class="mb-2 text-secondary" />
           <h5>등록된 정산 회차가 없습니다.</h5>
           <p class="mb-0 text-secondary">
