@@ -274,7 +274,6 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
     }
 
     const currentProjPk = currentProject.value?.pk ?? ''
-    docsFilter.value.doc_type = typeNumber.value
     docsFilter.value.issue_project = currentProjPk
 
     caseFilter.value.company = currentProject.value?.company ?? ''
@@ -288,13 +287,29 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
       } else {
         tasks.push(fetchSuitCaseList(caseFilter.value))
       }
+      await Promise.all(tasks)
+    } else if (docId) {
+      // 특정 문서를 보는 경우: docsList 캐시에서 먼저 doc_type 조회 (API 재호출 방지)
+      const cached = docStore.docsList.find(d => d.pk === Number(docId))
+      if (cached?.doc_type) {
+        // 목록에서 클릭한 경우 — doc_type을 캐시에서 바로 읽고 docs 스토어에도 반영
+        typeNumber.value = cached.doc_type as 1 | 2
+        docStore.setDocs(cached) // 스토어에 현재 docs 세팅 (fetchDocs 불필요)
+      }
+      docsFilter.value.doc_type = typeNumber.value
+      await Promise.all([
+        ...tasks,
+        // 캐시 미스(직접 URL 접근 등)일 때만 fetchDocs 실행
+        ...(cached ? [] : [await fetchDocs(Number(docId))]),
+        fetchCategoryList(typeNumber.value),
+        fetchDocsList(docsFilter.value),
+      ])
     } else {
+      docsFilter.value.doc_type = typeNumber.value
       tasks.push(fetchCategoryList(typeNumber.value))
       tasks.push(fetchDocsList(docsFilter.value))
-      if (docId) tasks.push(fetchDocs(Number(docId)))
+      await Promise.all(tasks)
     }
-
-    await Promise.all(tasks)
   } catch (err) {
     console.error('Failed to load project documents data:', err)
   } finally {
