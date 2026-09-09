@@ -19,6 +19,7 @@ import {
   CFormInput,
   CFormTextarea,
   CFormSwitch,
+  CTableHead,
 } from '@coreui/vue'
 
 const approvalStore = useApproval()
@@ -148,27 +149,33 @@ const toggleActive = async (item: ApprovalDelegation) => {
       </CCardHeader>
 
       <CCardBody class="p-0">
-        <v-table hover density="comfortable">
-          <thead>
-            <tr class="bg-light">
-              <th class="text-center" style="width: 70px">No</th>
-              <th class="text-start" style="width: 160px">위임자 (원권한자)</th>
-              <th class="text-start" style="width: 160px">수임자 (대결자)</th>
-              <th class="text-center" style="width: 220px">위임 기간</th>
-              <th class="text-start">부재 및 위임 사유</th>
-              <th class="text-center" style="width: 120px">상태</th>
-              <th class="text-center" style="width: 140px">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="delegationList.length === 0">
-              <td colspan="7" class="text-center py-5 text-muted">
+        <CTable hover bordered responsive align="middle">
+          <CTableHead color="light">
+            <CTableRow class="bg-more-light">
+              <CTableHeaderCell class="text-center" style="width: 70px">No</CTableHeaderCell>
+              <CTableHeaderCell class="text-start" style="width: 160px">
+                위임자 (원권한자)
+              </CTableHeaderCell>
+              <CTableHeaderCell class="text-start" style="width: 160px">
+                수임자 (대결자)
+              </CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 220px">
+                위임 기간
+              </CTableHeaderCell>
+              <CTableHeaderCell class="text-start">부재 및 위임 사유</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px">상태</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 140px">관리</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+          <CTableBody>
+            <CTableRow v-if="delegationList.length === 0">
+              <CTableDataCell colspan="7" class="text-center py-5 text-muted">
                 등록된 결재 위임 내역이 없습니다.
-              </td>
-            </tr>
-            <tr v-for="(item, idx) in delegationList" :key="item.id">
-              <td class="text-center text-muted small">{{ idx + 1 }}</td>
-              <td class="fw-semibold">
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow v-for="(item, idx) in delegationList" :key="item.id">
+              <CTableDataCell class="text-center text-muted small">{{ idx + 1 }}</CTableDataCell>
+              <CTableDataCell class="fw-semibold">
                 {{ item.delegator?.full_name ?? item.delegator?.username }}
                 <v-chip
                   v-if="item.delegator?.id === userInfo?.pk"
@@ -177,8 +184,8 @@ const toggleActive = async (item: ApprovalDelegation) => {
                   class="ms-1"
                   >본인</v-chip
                 >
-              </td>
-              <td class="fw-semibold text-primary">
+              </CTableDataCell>
+              <CTableDataCell class="fw-semibold text-primary">
                 {{ item.delegatee?.full_name ?? item.delegatee?.username }}
                 <v-chip
                   v-if="item.delegatee?.id === userInfo?.pk"
@@ -187,17 +194,19 @@ const toggleActive = async (item: ApprovalDelegation) => {
                   class="ms-1"
                   >수임(대결)</v-chip
                 >
-              </td>
-              <td class="text-center small">{{ item.start_date }} ~ {{ item.end_date }}</td>
-              <td class="small text-truncate" style="max-width: 250px">
+              </CTableDataCell>
+              <CTableDataCell class="text-center small">
+                {{ item.start_date }} ~ {{ item.end_date }}
+              </CTableDataCell>
+              <CTableDataCell class="small text-truncate" style="max-width: 250px">
                 {{ item.reason || '-' }}
-              </td>
-              <td class="text-center">
+              </CTableDataCell>
+              <CTableDataCell class="text-center">
                 <CBadge v-if="item.is_valid_now" color="success">진행중 (유효)</CBadge>
                 <CBadge v-else-if="item.is_active" color="info">대기 / 예정</CBadge>
                 <CBadge v-else color="secondary">비활성 (해제)</CBadge>
-              </td>
-              <td class="text-center">
+              </CTableDataCell>
+              <CTableDataCell class="text-center">
                 <div class="d-flex justify-content-center gap-1">
                   <v-btn
                     size="x-small"
@@ -227,10 +236,10 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     삭제
                   </v-btn>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+              </CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
       </CCardBody>
     </CCard>
 

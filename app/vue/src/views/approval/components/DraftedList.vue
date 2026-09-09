@@ -119,7 +119,7 @@ onMounted(fetchMyDrafted)
   </CRow>
 
   <!-- 목록 테이블 -->
-  <CTable hover bordered align="middle">
+  <CTable hover bordered align="middle" responsive>
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>

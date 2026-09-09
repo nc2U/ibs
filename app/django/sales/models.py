@@ -168,18 +168,25 @@ class CommissionPolicy(models.Model):
 
 
 class ContractSalesAgent(models.Model):
-    """계약별 영업 담당자 매핑 (Contract ↔ SalesPerson)"""
+    """계약별 영업 담당자 매핑 (Contract ↔ SalesAgency / SalesPerson)"""
 
     contract = models.OneToOneField(
         'contract.Contract', on_delete=models.CASCADE,
         related_name='sales_agent_mapping', verbose_name='분양 계약'
     )
+    agency = models.ForeignKey(
+        SalesAgency, on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='contract_mappings', verbose_name='분양 대행사'
+    )
     sales_person = models.ForeignKey(
         SalesPerson, on_delete=models.PROTECT,
+        null=True, blank=True,
         related_name='contract_mappings', verbose_name='담당 영업직원 (상담사)'
     )
     team = models.ForeignKey(
         SalesTeam, on_delete=models.PROTECT,
+        null=True, blank=True,
         related_name='contract_mappings', verbose_name='소속 팀'
     )
     policy = models.ForeignKey(
@@ -214,12 +221,23 @@ class ContractSalesAgent(models.Model):
         verbose_name_plural = '05. 계약 영업 매핑 목록'
 
     def __str__(self):
-        return f'{self.contract} ➔ {self.sales_person.name} ({self.team.name})'
+        if self.sales_person:
+            team_str = f' ({self.team.name})' if self.team else ''
+            return f'{self.contract} ➔ {self.sales_person.name}{team_str}'
+        if self.agency:
+            return f'{self.contract} ➔ [대행사] {self.agency.name}'
+        return f'{self.contract} ➔ 미배정'
 
     def save(self, *args, **kwargs):
-        # 소속 팀이 명시되지 않았을 경우 영업직원의 팀으로 자동 설정
-        if not self.team_id and self.sales_person_id:
+        # 1. 영업직원(상담사)이 지정된 경우: 소속 팀과 대행사 자동 동기화
+        if self.sales_person_id:
             self.team = self.sales_person.team
+            self.agency = self.sales_person.team.agency
+        # 2. 대행사만 지정된 외주 직배정인 경우: 팀과 영업직원은 명시적으로 초기화
+        elif self.agency_id:
+            self.team = None
+            self.sales_person = None
+
         super().save(*args, **kwargs)
 
 
@@ -426,6 +444,13 @@ class AgencyPayout(models.Model):
         '대행사 수수료 합계 (VAT 제외)', default=0,
         help_text='CommissionPolicy.agency_fee × 계약 건수'
     )
+    unallocated_fee = models.PositiveBigIntegerField(
+        '귀속 이익 (미지급 fee 합계)', default=0,
+        help_text=(
+            '직영 운영 시 팀장/본부장 부재로 인해 상위 조직에 귀속된 fee 합계. '
+            '실제 지급 금액이 아닌 시행사(또는 직영 대행사) 귀속 이익으로 표시.'
+        )
+    )
     vat_amount = models.PositiveBigIntegerField('부가가치세 (10%)', default=0)
     total_amount = models.PositiveBigIntegerField(
         '총 지급액 (VAT 포함)', default=0,
@@ -461,6 +486,7 @@ class AgencyPayout(models.Model):
             self.business_number = self.agency.business_number
         self.calculate_vat()
         super().save(*args, **kwargs)
+
 
 
 class AgencyPayoutContractDetail(models.Model):

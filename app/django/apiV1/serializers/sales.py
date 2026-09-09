@@ -96,6 +96,8 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
     order_group_name = serializers.ReadOnlyField(source='contract.order_group.name')
     unit_type_name = serializers.ReadOnlyField(source='contract.unit_type.name')
     unit_info = serializers.SerializerMethodField()
+    agency_name = serializers.ReadOnlyField(source='agency.name')
+    is_direct_managed = serializers.ReadOnlyField(source='agency.is_direct_managed')
     sales_person_name = serializers.ReadOnlyField(source='sales_person.name')
     team_name = serializers.ReadOnlyField(source='team.name')
     policy_name = serializers.ReadOnlyField(source='policy.name')
@@ -108,6 +110,7 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'contract', 'contract_serial', 'contractor_name',
             'order_group_name', 'unit_type_name', 'unit_info',
+            'agency', 'agency_name', 'is_direct_managed',
             'sales_person', 'sales_person_name', 'team', 'team_name',
             'policy', 'policy_name', 'contract_date',
             'mgm_name', 'mgm_phone', 'mgm_fee', 'note',
@@ -116,6 +119,13 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
             'is_settled', 'settled_period_title',
             'created_at', 'updated_at'
         )
+
+    def validate(self, attrs):
+        agency = attrs.get('agency') or (self.instance.agency if self.instance else None)
+        sales_person = attrs.get('sales_person') or (self.instance.sales_person if self.instance else None)
+        if not agency and not sales_person:
+            raise serializers.ValidationError('외주 대행사 또는 담당 영업직원(상담사) 중 하나는 필수 입력해야 합니다.')
+        return attrs
 
     def get_unit_info(self, obj):
         if obj.contract and obj.contract.key_unit and hasattr(obj.contract.key_unit, 'houseunit'):
@@ -227,7 +237,8 @@ class AgencyPayoutSerializer(serializers.ModelSerializer):
         model = AgencyPayout
         fields = (
             'id', 'period', 'agency', 'agency_name', 'is_direct_managed',
-            'contract_count', 'agency_fee_sum', 'vat_amount', 'total_amount',
+            'contract_count', 'agency_fee_sum', 'unallocated_fee',
+            'vat_amount', 'total_amount',
             'pay_status', 'pay_status_display', 'paid_date',
             'business_number', 'bank_name', 'account_number', 'account_holder',
             'note', 'contract_details', 'created_at', 'updated_at'

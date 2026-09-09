@@ -7,7 +7,7 @@ import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import { TableSecondary } from '@/utils/cssMixins'
 import type { Project } from '@/store/types/project'
-import type { CommissionPayout } from '@/store/types/sales'
+import type { CommissionPayout, CommissionClawback } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -26,6 +26,13 @@ const navMenu = useSalesNavMenu(project)
 const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
 const payoutList = computed(() => salesStore.payoutList)
+const agencyPayoutList = computed(() => salesStore.agencyPayoutList)
+const clawbackList = computed(() => salesStore.clawbackList)
+
+// 팀장/본부장 부재로 대행사(시행사)에 귀속된 이익 총액
+const totalUnallocatedFee = computed(() =>
+  agencyPayoutList.value.reduce((sum, ap) => sum + (ap.unallocated_fee || 0), 0),
+)
 
 const selectedPeriodId = ref<number | null>(null)
 const selectedPeriod = computed(
@@ -35,16 +42,37 @@ const selectedPeriod = computed(
 const periodModalRef = ref()
 const detailModalRef = ref()
 
+// 조직 건강성 사전 진단 결과
+const orgHealthResult = ref<{
+  is_healthy: boolean
+  error_count: number
+  warning_count: number
+  items: Array<{
+    type: string
+    severity: 'error' | 'warning'
+    agency?: string
+    team?: string
+    unit_type?: string
+    message: string
+  }>
+} | null>(null)
+const isCheckingHealth = ref(false)
+
 const loadData = async (projId: number) => {
   await salesStore.fetchPeriodList(projId)
   if (periodList.value.length > 0) {
     if (!selectedPeriodId.value || !periodList.value.some(p => p.id === selectedPeriodId.value)) {
       selectedPeriodId.value = periodList.value[0].id
     }
-    await salesStore.fetchPayoutList(selectedPeriodId.value)
+    await Promise.all([
+      salesStore.fetchPayoutList(selectedPeriodId.value),
+      salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+      salesStore.fetchClawbackList(undefined, projId),
+    ])
   } else {
     selectedPeriodId.value = null
     salesStore.payoutList = []
+    salesStore.agencyPayoutList = []
   }
 }
 
@@ -64,9 +92,13 @@ watch(
 
 watch(selectedPeriodId, async newVal => {
   if (newVal) {
-    await salesStore.fetchPayoutList(newVal)
+    await Promise.all([
+      salesStore.fetchPayoutList(newVal),
+      salesStore.fetchAgencyPayoutList(newVal),
+    ])
   } else {
     salesStore.payoutList = []
+    salesStore.agencyPayoutList = []
   }
 })
 
@@ -77,8 +109,19 @@ onMounted(() => {
 })
 
 // 정산 실행 및 확정
-const runGeneratePayouts = () => {
-  if (!selectedPeriodId.value) return
+const runGeneratePayouts = async () => {
+  if (!selectedPeriodId.value || !project.value) return
+  isCheckingHealth.value = true
+  try {
+    const result = await salesStore.validateOrgHealth(project.value)
+    if (result) {
+      orgHealthResult.value = result
+    } else {
+      orgHealthResult.value = null
+    }
+  } finally {
+    isCheckingHealth.value = false
+  }
   refSettlement.value?.callModal()
 }
 
@@ -88,7 +131,10 @@ const executeSettlement = async () => {
   await salesStore.generatePayouts(selectedPeriodId.value)
   if (project.value) {
     await salesStore.fetchPeriodList(project.value)
-    await salesStore.fetchPayoutList(selectedPeriodId.value)
+    await Promise.all([
+      salesStore.fetchPayoutList(selectedPeriodId.value),
+      salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+    ])
   }
 }
 
@@ -157,7 +203,7 @@ const onPeriodSaved = async () => {
                 <v-icon icon="mdi-calendar-range" size="small" class="mr-1 text-primary" />
                 정산 회차:
               </span>
-              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 280px">
+              <CFormSelect v-model.number="selectedPeriodId" style="min-width: 240px">
                 <option :value="null">정산 회차를 선택하세요</option>
                 <option v-for="p in periodList" :key="p.id" :value="p.id">
                   [{{ p.status_display }}] {{ p.title }} ({{ p.start_date }} ~ {{ p.end_date }})
@@ -300,6 +346,10 @@ const onPeriodSaved = async () => {
                     ).toLocaleString()
                   }}원)
                 </div>
+                <div v-if="totalUnallocatedFee > 0" class="mt-1 small text-info fw-semibold">
+                  <v-icon icon="mdi-information-outline" size="x-small" class="mr-1" />
+                  팀장/본부장 미배정 귀속 이익: {{ totalUnallocatedFee.toLocaleString() }}원
+                </div>
               </CCardBody>
             </CCard>
           </CCol>
@@ -426,7 +476,166 @@ const onPeriodSaved = async () => {
           </CCardBody>
         </CCard>
 
-        <div v-else class="py-5 text-center text-muted">
+        <!-- 대행사 단위 정산 및 귀속 이익 명세 테이블 -->
+        <CCard v-if="selectedPeriod && agencyPayoutList.length > 0" class="shadow-sm mb-4">
+          <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <div class="fw-bold d-flex align-items-center">
+              <v-icon icon="mdi-domain" size="small" class="mr-1 text-primary" />
+              대행사 정산 및 귀속 이익 명세
+              <CBadge color="info" class="ml-2" shape="rounded-pill">
+                {{ agencyPayoutList.length }}개사
+              </CBadge>
+            </div>
+            <div v-if="totalUnallocatedFee > 0" class="small text-info fw-semibold">
+              <v-icon icon="mdi-shield-check" size="small" class="mr-1" />
+              총 귀속 이익: {{ totalUnallocatedFee.toLocaleString() }}원
+            </div>
+          </CCardHeader>
+
+          <CCardBody class="p-0">
+            <CTable
+              hover
+              responsive
+              bordered
+              align="middle"
+              class="mb-0 text-center text-body small"
+            >
+              <colgroup>
+                <col style="width: 15%" />
+                <col style="width: 10%" />
+                <col style="width: 8%" />
+                <col style="width: 14%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 14%" />
+                <col style="width: 13%" />
+              </colgroup>
+              <CTableHead :color="TableSecondary">
+                <CTableRow>
+                  <CTableHeaderCell>대행사명</CTableHeaderCell>
+                  <CTableHeaderCell>운영 구분</CTableHeaderCell>
+                  <CTableHeaderCell>계약 건수</CTableHeaderCell>
+                  <CTableHeaderCell>수수료 합계 (공급가)</CTableHeaderCell>
+                  <CTableHeaderCell class="text-info">귀속 이익 (미배정 fee)</CTableHeaderCell>
+                  <CTableHeaderCell>부가세 (10%)</CTableHeaderCell>
+                  <CTableHeaderCell>총 정산액 (VAT 포함)</CTableHeaderCell>
+                  <CTableHeaderCell>비고</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="ap in agencyPayoutList" :key="ap.id">
+                  <CTableDataCell class="fw-bold text-start ps-3">
+                    {{ ap.agency_name }}
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <CBadge :color="ap.is_direct_managed ? 'primary' : 'success'">
+                      {{ ap.is_direct_managed ? '직영 사업부' : '외주 대행' }}
+                    </CBadge>
+                  </CTableDataCell>
+                  <CTableDataCell class="font-monospace">
+                    {{ ap.contract_count }}건
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace">
+                    {{ ap.agency_fee_sum.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace text-info fw-bold">
+                    <span v-if="(ap.unallocated_fee || 0) > 0">
+                      {{ (ap.unallocated_fee || 0).toLocaleString() }}원
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace">
+                    {{ ap.vat_amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell class="text-right font-monospace fw-bold">
+                    {{ ap.total_amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start small text-muted">
+                    {{ ap.note || '-' }}
+                  </CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </CCardBody>
+        </CCard>
+
+        <!-- 수수료 환수 이력 테이블 -->
+        <CCard v-if="selectedPeriod && clawbackList.length > 0" class="shadow-sm mb-4">
+          <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <div class="fw-bold d-flex align-items-center">
+              <v-icon icon="mdi-cash-refund" size="small" class="mr-1 text-danger" />
+              수수료 환수 이력
+              <CBadge color="danger" class="ml-2" shape="rounded-pill">
+                {{ clawbackList.length }}건
+              </CBadge>
+              <CBadge
+                v-if="clawbackList.filter(c => !c.is_settled).length > 0"
+                color="warning"
+                class="ml-1"
+                shape="rounded-pill"
+              >
+                미상계 {{ clawbackList.filter(c => !c.is_settled).length }}건
+              </CBadge>
+            </div>
+            <div class="small text-danger fw-semibold">
+              총 환수액:
+              {{ clawbackList.reduce((s, c) => s + (c.amount || 0), 0).toLocaleString() }}원
+            </div>
+          </CCardHeader>
+
+          <CCardBody class="p-0">
+            <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+              <colgroup>
+                <col style="width: 10%" />
+                <col style="width: 12%" />
+                <col style="width: 10%" />
+                <col style="width: 12%" />
+                <col style="width: 30%" />
+                <col style="width: 10%" />
+                <col style="width: 16%" />
+              </colgroup>
+              <CTableHead :color="TableSecondary">
+                <CTableRow>
+                  <CTableHeaderCell>해지 계약번호</CTableHeaderCell>
+                  <CTableHeaderCell>환수 대상자</CTableHeaderCell>
+                  <CTableHeaderCell>환수 금액</CTableHeaderCell>
+                  <CTableHeaderCell>상계 여부</CTableHeaderCell>
+                  <CTableHeaderCell>환수 사유</CTableHeaderCell>
+                  <CTableHeaderCell>등록일</CTableHeaderCell>
+                  <CTableHeaderCell>상계 처리 정산</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="c in clawbackList" :key="c.id">
+                  <CTableDataCell class="small font-monospace text-start ps-3">
+                    {{ c.contract_serial || `#${c.contract}` }}
+                  </CTableDataCell>
+                  <CTableDataCell class="fw-bold">
+                    {{ c.sales_person_name || `#${c.sales_person}` }}
+                  </CTableDataCell>
+                  <CTableDataCell class="text-end font-monospace text-danger fw-bold">
+                    {{ c.amount.toLocaleString() }}원
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <CBadge :color="c.is_settled ? 'success' : 'warning'">
+                      {{ c.is_settled ? '상계 완료' : '미상계' }}
+                    </CBadge>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start small text-muted">{{ c.reason }}</CTableDataCell>
+                  <CTableDataCell class="small text-muted">
+                    {{ c.created_at?.slice(0, 10) }}
+                  </CTableDataCell>
+                  <CTableDataCell class="small text-muted">
+                    <span v-if="c.settled_payout">{{ c.settled_payout }}회차 상계</span>
+                    <span v-else class="text-muted">-</span>
+                  </CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </CCardBody>
+        </CCard>
+
+        <div v-if="!selectedPeriod" class="py-5 text-center text-muted">
           <v-icon icon="mdi-calendar-blank" size="large" class="mb-2 text-secondary" />
           <h5>등록된 정산 회차가 없습니다.</h5>
           <p class="mb-0 text-secondary">
@@ -453,6 +662,27 @@ const onPeriodSaved = async () => {
         <p class="mb-2">
           <strong>[{{ selectedPeriod?.title }}]</strong> 정산 계산을 실행하시겠습니까?
         </p>
+
+        <!-- 조직 건강성 사전 진단 경고 표시 -->
+        <div v-if="orgHealthResult && !orgHealthResult.is_healthy" class="my-3">
+          <CAlert color="warning" class="py-2 px-3 mb-2 small border-warning">
+            <div class="fw-bold mb-1 d-flex align-items-center">
+              <v-icon icon="mdi-alert" size="small" class="text-warning mr-1" />
+              조직/인력 구조 점검 결과 (주의 {{ orgHealthResult.warning_count }}건 / 오류 {{ orgHealthResult.error_count }}건)
+            </div>
+            <ul class="mb-0 ps-3">
+              <li v-for="(item, idx) in orgHealthResult.items" :key="idx" class="mt-1">
+                <span v-if="item.severity === 'error'" class="badge bg-danger mr-1">오류</span>
+                <span v-else class="badge bg-warning text-dark mr-1">주의</span>
+                {{ item.message }}
+              </li>
+            </ul>
+          </CAlert>
+          <div class="small text-secondary mb-2">
+            * 주의 항목(팀장 부재 등)은 상위 본부장 합산 수령 또는 대행사 귀속 이익으로 자동 처리됩니다.
+          </div>
+        </div>
+
         <ul class="text-secondary small mb-0 ps-3">
           <li>계약일자 기준 정산 대상(승인 완료 건)을 집계합니다.</li>
           <li>기존 타 회차에서 이미 정산된 계약건은 자동으로 제외됩니다.</li>
@@ -469,7 +699,8 @@ const onPeriodSaved = async () => {
       <template #header>정산 회차 확정</template>
       <template #default>
         <p class="mb-2">
-          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 <strong>[확정]</strong> 상태로 변경하시겠습니까?
+          <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 <strong>[확정]</strong> 상태로
+          변경하시겠습니까?
         </p>
         <ul class="text-secondary small mb-0 ps-3">
           <li>확정 후에는 정산 계산을 다시 실행할 수 없습니다.</li>

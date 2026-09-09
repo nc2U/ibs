@@ -12,6 +12,8 @@ import type {
   SettlementPeriod,
   CommissionPayout,
   CommissionClawback,
+  AgencyPayout,
+  OrgHealthCheckResult,
 } from '@/store/types/sales'
 
 export const useSales = defineStore('sales', () => {
@@ -341,12 +343,48 @@ export const useSales = defineStore('sales', () => {
       })
       .catch(err => errorHandle(err))
 
+  // ── 대행사 지급 명세 ─────────────────────────────────────
+  const agencyPayoutList = ref<AgencyPayout[]>([])
+
+  const fetchAgencyPayoutList = (periodId?: number, agencyId?: number) => {
+    const params = new URLSearchParams()
+    if (periodId) params.append('period', String(periodId))
+    if (agencyId) params.append('agency', String(agencyId))
+    params.append('limit', '500')
+    return api
+      .get(`/sales-agency-payout/?${params}`)
+      .then(res => (agencyPayoutList.value = res.data.results ?? res.data))
+      .catch(err => {
+        console.warn('fetchAgencyPayoutList failed:', err?.message || err)
+      })
+  }
+
+  const updateAgencyPayStatus = (payoutId: number, payStatus: string) =>
+    api
+      .post(`/sales-agency-payout/${payoutId}/update-pay-status/`, { pay_status: payStatus })
+      .then(res => {
+        message('success', '알림!', '대행사 지급 상태가 변경되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err))
+
+  // ── 조직 건강성 사전 진단 ─────────────────────────────────
+  const validateOrgHealth = (projectId: number): Promise<OrgHealthCheckResult | void> =>
+    api
+      .get(`/sales-settlement-period/validate-org/?project=${projectId}`)
+      .then(res => res.data as OrgHealthCheckResult)
+      .catch(err => {
+        errorHandle(err)
+      })
+
   // ── 수수료 환수 ───────────────────────────────────────
   const clawbackList = ref<CommissionClawback[]>([])
 
-  const fetchClawbackList = (salesPersonId?: number) => {
+  const fetchClawbackList = (salesPersonId?: number, projectId?: number) => {
     const params = new URLSearchParams()
     if (salesPersonId) params.append('sales_person', String(salesPersonId))
+    if (projectId) params.append('contract__project', String(projectId))
+    params.append('limit', '500')
     return api
       .get(`/sales-clawback/?${params}`)
       .then(res => (clawbackList.value = res.data.results ?? res.data))
@@ -354,6 +392,7 @@ export const useSales = defineStore('sales', () => {
         console.warn('fetchClawbackList failed:', err?.message || err)
       })
   }
+
 
   return {
     agencyList,
@@ -402,6 +441,12 @@ export const useSales = defineStore('sales', () => {
     payoutList,
     fetchPayoutList,
     updatePayStatus,
+
+    agencyPayoutList,
+    fetchAgencyPayoutList,
+    updateAgencyPayStatus,
+
+    validateOrgHealth,
 
     clawbackList,
     fetchClawbackList,

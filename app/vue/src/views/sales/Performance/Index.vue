@@ -41,6 +41,7 @@ const approvalModalRef = ref()
 const loadData = async (projId: number) => {
   await Promise.all([
     salesStore.fetchContractAgentList(projId),
+    salesStore.fetchAgencyList(projId),
     salesStore.fetchPersonList(undefined, projId),
     salesStore.fetchTeamList(undefined, projId),
     salesStore.fetchPolicyList(projId),
@@ -104,19 +105,20 @@ const filteredList = computed(() => {
       if (!m || m.is_settlement_approved) return false
     }
 
-    // 팀 필터
+    // 팀 필터 (팀이 있는 직영/인력 배정 건)
     if (filterTeam.value && (!m || m.team !== filterTeam.value)) return false
 
     // 영업직원 필터
     if (filterPerson.value && (!m || m.sales_person !== filterPerson.value)) return false
 
-    // 검색어 필터 (계약 라벨, 상담사명, 계약번호 등)
+    // 검색어 필터 (계약 라벨, 상담사명, 대행사명, MGM 등)
     if (search.value.trim()) {
       const q = search.value.trim().toLowerCase()
       const matchLabel = item.contractLabel.toLowerCase().includes(q)
       const matchAgent = m?.sales_person_name?.toLowerCase().includes(q) || false
+      const matchAgency = m?.agency_name?.toLowerCase().includes(q) || false
       const matchMGM = m?.mgm_name?.toLowerCase().includes(q) || false
-      if (!matchLabel && !matchAgent && !matchMGM) return false
+      if (!matchLabel && !matchAgent && !matchAgency && !matchMGM) return false
     }
 
     return true
@@ -190,21 +192,21 @@ const onSaved = async () => {
 
             <div class="d-flex flex-wrap align-items-center gap-2">
               <!-- 매핑 상태 필터 -->
-              <CFormSelect v-model="filterMappingStatus" size="sm" style="width: 110px">
+              <CFormSelect v-model="filterMappingStatus" style="width: 140px">
                 <option value="all">전체 계약</option>
                 <option value="mapped">배정 완료</option>
                 <option value="unmapped">미배정 계약</option>
               </CFormSelect>
 
               <!-- 정산 승인 상태 필터 -->
-              <CFormSelect v-model="filterApprovalStatus" size="sm" style="width: 120px">
+              <CFormSelect v-model="filterApprovalStatus" style="width: 140px">
                 <option value="all">전체 승인상태</option>
                 <option value="approved">정산 승인건</option>
                 <option value="pending">정산 보류건</option>
               </CFormSelect>
 
               <!-- 팀 필터 -->
-              <CFormSelect v-model.number="filterTeam" size="sm" style="width: 120px">
+              <CFormSelect v-model.number="filterTeam" style="width: 140px">
                 <option :value="null">전체 팀</option>
                 <option v-for="t in teamList" :key="t.id" :value="t.id">
                   {{ t.name }}
@@ -212,7 +214,7 @@ const onSaved = async () => {
               </CFormSelect>
 
               <!-- 담당직원 필터 -->
-              <CFormSelect v-model.number="filterPerson" size="sm" style="width: 120px">
+              <CFormSelect v-model.number="filterPerson" style="width: 140px">
                 <option :value="null">전체 상담사</option>
                 <option v-for="p in personList" :key="p.id" :value="p.id">
                   {{ p.name }}
@@ -222,9 +224,8 @@ const onSaved = async () => {
               <!-- 검색창 -->
               <CFormInput
                 v-model="search"
-                size="sm"
                 placeholder="계약/계약자/동호수/상담사"
-                style="width: 170px"
+                style="width: 180px"
               />
 
               <!-- 배정 버튼 -->
@@ -289,19 +290,30 @@ const onSaved = async () => {
                     </span>
                   </CTableDataCell>
 
-                  <!-- 담당 영업직원 -->
+                  <!-- 담당 영업직원 / 배정 주체 -->
                   <CTableDataCell>
-                    <span v-if="item.mapping" class="fw-bold text-primary">
-                      {{ item.mapping.sales_person_name }}
-                    </span>
+                    <template v-if="item.mapping">
+                      <span v-if="item.mapping.sales_person_name" class="fw-bold text-primary">
+                        {{ item.mapping.sales_person_name }}
+                      </span>
+                      <CBadge v-else color="info" shape="rounded-pill">
+                        외주 대행
+                      </CBadge>
+                    </template>
                     <CBadge v-else color="secondary" shape="rounded-pill"> 미배정 </CBadge>
                   </CTableDataCell>
 
-                  <!-- 소속 팀 -->
+                  <!-- 소속 팀 / 대행사 -->
                   <CTableDataCell>
-                    <span v-if="item.mapping?.team_name">
-                      {{ item.mapping.team_name }}
-                    </span>
+                    <template v-if="item.mapping">
+                      <span v-if="item.mapping.team_name">
+                        {{ item.mapping.team_name }}
+                      </span>
+                      <span v-else-if="item.mapping.agency_name" class="fw-semibold text-secondary">
+                        [{{ item.mapping.agency_name }}]
+                      </span>
+                      <span v-else class="text-muted">-</span>
+                    </template>
                     <span v-else class="text-muted">-</span>
                   </CTableDataCell>
 
@@ -427,9 +439,6 @@ const onSaved = async () => {
     />
 
     <!-- 정산 승인 / 보류 폼 모달 -->
-    <SettlementApprovalModal
-      ref="approvalModalRef"
-      @confirm="onApprovalConfirm"
-    />
+    <SettlementApprovalModal ref="approvalModalRef" @confirm="onApprovalConfirm" />
   </ContentBody>
 </template>

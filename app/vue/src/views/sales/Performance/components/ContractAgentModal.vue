@@ -20,7 +20,11 @@ const isEdit = ref(false)
 const targetId = ref<number | null>(null)
 
 const personList = computed(() => salesStore.personList)
-const teamList = computed(() => salesStore.teamList)
+const agencyList = computed(() => salesStore.agencyList)
+// 외주 대행사 목록 (is_direct_managed === false)
+const outsourcedAgencies = computed(() =>
+  agencyList.value.filter(a => !a.is_direct_managed && a.is_active),
+)
 const policyList = computed(() => salesStore.policyList)
 
 // 이미 다른 담당자가 배정된 계약은 신규 등록 시 제외 (현재 편집 중인 계약은 포함)
@@ -30,11 +34,14 @@ const availableContractOptions = computed(() => {
   return props.contractOptions.filter(c => !mappedSet.has(c.value) || c.value === form.contract)
 })
 
+// 배정 유형: 'direct' (직영/인력 배정) vs 'agency' (외주 대행사 직배정)
+const assignmentType = ref<'direct' | 'agency'>('direct')
+
 const form = reactive({
   contract: null as number | null,
   contract_info: '',
+  agency: null as number | null,
   sales_person: null as number | null,
-  team: null as number | null,
   policy: null as number | null,
   contract_date: getToday(),
   mgm_name: '',
@@ -45,21 +52,41 @@ const form = reactive({
   approval_note: '',
 })
 
-// 상담사 선택 시 소속 팀 자동 설정
-const onPersonChange = () => {
-  if (form.sales_person) {
-    const person = personList.value.find(p => p.id === form.sales_person)
-    if (person) {
-      form.team = person.team
+// 선택된 상담사의 소속 정보 표시용 (읽기 전용)
+const selectedPerson = computed(() => {
+  if (!form.sales_person) return null
+  return personList.value.find(item => item.id === form.sales_person) || null
+})
+
+const selectedPersonTeamInfo = computed(() => {
+  if (!selectedPerson.value) return ''
+  const p = selectedPerson.value
+  const agencyName = p.agency_name ? `[${p.agency_name}] ` : ''
+  return `${agencyName}${p.team_name || ''}`
+})
+
+// 상담사 소속 팀의 팀장 존재 여부 진단
+const selectedPersonTeamWarning = computed(() => {
+  if (assignmentType.value !== 'direct' || !selectedPerson.value) return null
+  const p = selectedPerson.value
+  // duty='1'(상담사) 또는 지원직인 경우 팀장 부재 여부 체크
+  if (p.duty === '1' || p.duty === '5') {
+    const hasLeader = personList.value.some(
+      other => other.team === p.team && other.duty === '2' && other.status === '1',
+    )
+    if (!hasLeader) {
+      return '소속 팀에 재직 중인 팀장이 없습니다. 정산 시 상위 본부장에게 합산 배정되거나 대행사 이익으로 귀속됩니다.'
     }
   }
-}
+  return null
+})
 
 const resetForm = () => {
+  assignmentType.value = 'direct'
   form.contract = null
   form.contract_info = ''
+  form.agency = null
   form.sales_person = null
-  form.team = null
   form.policy = null
   form.contract_date = getToday()
   form.mgm_name = ''
@@ -82,8 +109,8 @@ const open = (mapping?: ContractSalesAgent, defaultContractId?: number) => {
     targetId.value = mapping.id
     form.contract = mapping.contract
     form.contract_info = `${mapping.contract_serial || ''} (${mapping.contractor_name || ''} - ${mapping.unit_info || ''})`
-    form.sales_person = mapping.sales_person
-    form.team = mapping.team
+    form.agency = mapping.agency || null
+    form.sales_person = mapping.sales_person || null
     form.policy = mapping.policy
     form.contract_date = mapping.contract_date || getToday()
     form.mgm_name = mapping.mgm_name || ''
@@ -92,6 +119,13 @@ const open = (mapping?: ContractSalesAgent, defaultContractId?: number) => {
     form.note = mapping.note || ''
     form.is_settlement_approved = mapping.is_settlement_approved ?? true
     form.approval_note = mapping.approval_note || ''
+
+    // 외주 대행사 직배정 건인지 판별
+    if (mapping.agency && !mapping.sales_person) {
+      assignmentType.value = 'agency'
+    } else {
+      assignmentType.value = 'direct'
+    }
   }
   modalRef.value.callModal()
 }
@@ -101,19 +135,24 @@ const submit = async () => {
     alert('계약을 선택해주세요.')
     return
   }
-  if (!form.sales_person) {
-    alert('담당 영업직원(상담사)을 선택해주세요.')
-    return
-  }
-  if (!form.team) {
-    alert('소속 팀을 선택해주세요.')
-    return
+
+  if (assignmentType.value === 'agency') {
+    if (!form.agency) {
+      alert('외주 대행사를 선택해주세요.')
+      return
+    }
+  } else {
+    if (!form.sales_person) {
+      alert('담당 영업직원(상담사)을 선택해주세요.')
+      return
+    }
   }
 
   const payload: Partial<ContractSalesAgent> = {
     contract: form.contract,
-    sales_person: form.sales_person,
-    team: form.team,
+    agency: assignmentType.value === 'agency' ? form.agency : null,
+    sales_person: assignmentType.value === 'direct' ? form.sales_person : null,
+    team: null, // 백엔드 save()에서 sales_person 소속으로 자동 세팅됨
     policy: form.policy,
     contract_date: form.contract_date || null,
     mgm_name: form.mgm_name.trim(),
@@ -165,28 +204,68 @@ defineExpose({ open })
             </CFormSelect>
           </CCol>
 
-          <!-- 담당 영업직원 (상담사) -->
-          <CCol md="6">
-            <CFormLabel>담당 영업직원 (상담사) <span class="text-danger">*</span></CFormLabel>
-            <CFormSelect v-model.number="form.sales_person" required @change="onPersonChange">
-              <option :value="null">영업직원을 선택하세요</option>
-              <option v-for="p in personList" :key="p.id" :value="p.id">
-                [{{ p.duty_display }}] {{ p.name }} ({{ p.team_name }})
-              </option>
-            </CFormSelect>
+          <!-- 배정 방식 선택 (직영 영업직원 vs 외주 대행사 직배정) -->
+          <CCol md="12">
+            <CFormLabel class="fw-bold">배정 방식 <span class="text-danger">*</span></CFormLabel>
+            <div class="d-flex gap-4 p-2 bg-light rounded border">
+              <CFormCheck
+                id="assignDirectRadio"
+                v-model="assignmentType"
+                type="radio"
+                name="assignmentType"
+                value="direct"
+                label="직영 영업인력 배정 (상담사 직접 배정)"
+              />
+              <CFormCheck
+                id="assignAgencyRadio"
+                v-model="assignmentType"
+                type="radio"
+                name="assignmentType"
+                value="agency"
+                label="외주 대행사 직배정 (대행사 단위 배정)"
+              />
+            </div>
           </CCol>
 
-          <!-- 소속 팀 -->
-          <CCol md="6">
-            <CFormLabel>소속 팀 <span class="text-danger">*</span></CFormLabel>
-            <CFormSelect v-model.number="form.team" required>
-              <option :value="null">소속 팀 선택</option>
-              <option v-for="t in teamList" :key="t.id" :value="t.id">
-                {{ t.agency_name ? `[${t.agency_name}] ` : ''
-                }}{{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+          <!-- [외주 대행사 직배정] 외주 대행사 선택 -->
+          <template v-if="assignmentType === 'agency'">
+            <CCol md="12">
+              <CFormLabel>외주 분양대행사 <span class="text-danger">*</span></CFormLabel>
+              <CFormSelect v-model.number="form.agency" required>
+                <option :value="null">외주 분양대행사를 선택하세요</option>
+                <option v-for="a in outsourcedAgencies" :key="a.id" :value="a.id">
+                  {{ a.name }}
+                </option>
+              </CFormSelect>
+              <div class="form-text text-muted small">
+                * 외주 대행사의 경우 상담사 및 팀을 개별 관리하지 않고 대행사에 계약 건을 직접 배정합니다.
+              </div>
+            </CCol>
+          </template>
+
+          <!-- [직영/인력 배정] 담당 영업직원 (상담사) 선택 -->
+          <template v-else>
+            <CCol md="12">
+              <CFormLabel>담당 영업직원 (상담사) <span class="text-danger">*</span></CFormLabel>
+              <CFormSelect v-model.number="form.sales_person" required>
+                <option :value="null">담당 상담사를 선택하세요</option>
+                <option v-for="p in personList" :key="p.id" :value="p.id">
+                  [{{ p.duty_display }}] {{ p.name }} ({{ p.team_name || '팀 미지정' }})
+                </option>
+              </CFormSelect>
+              <div v-if="selectedPersonTeamInfo" class="mt-1 d-flex align-items-center gap-2">
+                <CBadge color="info" shape="rounded-pill">
+                  소속: {{ selectedPersonTeamInfo }}
+                </CBadge>
+              </div>
+              <div v-if="selectedPersonTeamWarning" class="mt-1">
+                <CAlert color="warning" class="py-1 px-2 mb-0 small text-body-secondary border-warning">
+                  <v-icon icon="mdi-alert" size="small" class="text-warning mr-1" />
+                  {{ selectedPersonTeamWarning }}
+                </CAlert>
+              </div>
+            </CCol>
+          </template>
 
           <!-- 적용 수수료 정책 -->
           <CCol md="6">

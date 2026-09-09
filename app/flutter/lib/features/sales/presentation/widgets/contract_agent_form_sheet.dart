@@ -60,7 +60,11 @@ class _ContractAgentFormSheetState
     extends ConsumerState<ContractAgentFormSheet> {
   final _formKey = GlobalKey<FormState>();
 
+  // 배정 유형: 'direct' (직영 영업인력) vs 'agency' (외주 대행사)
+  String _assignmentType = 'direct';
+
   int? _selectedContractId;
+  int? _selectedAgencyId;
   int? _selectedSalesPersonId;
   int? _selectedPolicyId;
   DateTime? _selectedContractDate;
@@ -81,8 +85,17 @@ class _ContractAgentFormSheetState
 
     if (mapping != null) {
       _selectedContractId = mapping.contract;
+      _selectedAgencyId = mapping.agency;
       _selectedSalesPersonId = mapping.salesPerson;
       _selectedPolicyId = mapping.policy;
+
+      // 외주 대행사 직배정 건인지 판별
+      if (mapping.agency != null && mapping.salesPerson == null) {
+        _assignmentType = 'agency';
+      } else {
+        _assignmentType = 'direct';
+      }
+
       if (mapping.contractDate != null && mapping.contractDate!.isNotEmpty) {
         _selectedContractDate = DateTime.tryParse(mapping.contractDate!);
       }
@@ -95,6 +108,7 @@ class _ContractAgentFormSheetState
       _isSettlementApproved = mapping.isSettlementApproved;
       _approvalNoteController.text = mapping.approvalNote ?? '';
     } else {
+      _assignmentType = 'direct';
       _selectedContractId = widget.initialContractId;
       _selectedContractDate = DateTime.now();
       _isSettlementApproved = true;
@@ -143,9 +157,17 @@ class _ContractAgentFormSheetState
       _showToast('분양 계약을 선택해 주세요.');
       return;
     }
-    if (_selectedSalesPersonId == null) {
-      _showToast('담당 영업직원(상담사)을 선택해 주세요.');
-      return;
+
+    if (_assignmentType == 'agency') {
+      if (_selectedAgencyId == null) {
+        _showToast('외주 분양대행사를 선택해 주세요.');
+        return;
+      }
+    } else {
+      if (_selectedSalesPersonId == null) {
+        _showToast('담당 영업직원(상담사)을 선택해 주세요.');
+        return;
+      }
     }
 
     setState(() => _isSubmitting = true);
@@ -159,7 +181,8 @@ class _ContractAgentFormSheetState
 
       final payload = <String, dynamic>{
         'contract': _selectedContractId,
-        'sales_person': _selectedSalesPersonId,
+        'agency': _assignmentType == 'agency' ? _selectedAgencyId : null,
+        'sales_person': _assignmentType == 'direct' ? _selectedSalesPersonId : null,
         'policy': _selectedPolicyId,
         'contract_date': dateStr,
         'mgm_name': _mgmNameController.text.trim(),
@@ -169,6 +192,7 @@ class _ContractAgentFormSheetState
         'is_settlement_approved': _isSettlementApproved,
         'approval_note': _approvalNoteController.text.trim(),
       };
+
 
       if (widget.existingMapping != null) {
         await repository.updateContractSalesAgent(
@@ -254,10 +278,20 @@ class _ContractAgentFormSheetState
     final contractsAsync = ref.watch(simpleContractsProvider);
     final personsAsync = ref.watch(salesPersonsProvider);
     final policiesAsync = ref.watch(salesPoliciesProvider);
+    final agenciesAsync = ref.watch(salesAgenciesProvider);
 
     final contracts = contractsAsync.valueOrNull ?? [];
     final persons = personsAsync.valueOrNull ?? [];
     final policies = policiesAsync.valueOrNull ?? [];
+    final agencies = agenciesAsync.valueOrNull ?? [];
+    final outsourcedAgencies = agencies.where((a) => !a.isDirectManaged && a.isActive).toList();
+
+    // 선택된 상담사의 팀에 재직 중인 팀장(duty='2') 부재 여부 체크
+    final selectedPerson = persons.where((p) => p.id == _selectedSalesPersonId).firstOrNull;
+    final bool hasNoLeaderWarning = _assignmentType == 'direct' &&
+        selectedPerson != null &&
+        (selectedPerson.duty == '1' || selectedPerson.duty == '5') &&
+        !persons.any((p) => p.team == selectedPerson.team && p.duty == '2' && p.status == '1');
 
     return Container(
       constraints: BoxConstraints(
@@ -363,36 +397,174 @@ class _ContractAgentFormSheetState
                       ),
                     const SizedBox(height: 16),
 
-                    // 2. 담당 영업직원 (상담사)
+                    // 2. 배정 방식 선택 (직영 인력 vs 외주 대행사)
                     Text(
-                      '담당 영업직원 (상담사) *',
+                      '배정 방식 *',
                       style: AppTextStyles.label.copyWith(
                         color: context.colors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedSalesPersonId,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
-                        hintText: '상담사 선택',
+                    Container(
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSurface,
+                        border: Border.all(color: context.colors.border),
                       ),
-                      isExpanded: true,
-                      items: persons.map((p) {
-                        final teamStr = p.teamName != null ? ' (${p.teamName})' : '';
-                        return DropdownMenuItem<int>(
-                          value: p.id,
-                          child: Text('${p.name}$teamStr', style: const TextStyle(fontSize: 13)),
-                        );
-                      }).toList(),
-                      onChanged: (val) => setState(() => _selectedSalesPersonId = val),
-                      validator: (val) => val == null ? '담당 영업직원을 선택해 주세요.' : null,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() {
+                                _assignmentType = 'direct';
+                                _selectedAgencyId = null;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: _assignmentType == 'direct'
+                                      ? const Color(0xFF8B5CF6)
+                                      : Colors.transparent,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '직영 상담사 배정',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: _assignmentType == 'direct'
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: _assignmentType == 'direct'
+                                        ? Colors.white
+                                        : context.colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() {
+                                _assignmentType = 'agency';
+                                _selectedSalesPersonId = null;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: _assignmentType == 'agency'
+                                      ? const Color(0xFF8B5CF6)
+                                      : Colors.transparent,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '외주 대행사 직배정',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: _assignmentType == 'agency'
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: _assignmentType == 'agency'
+                                        ? Colors.white
+                                        : context.colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 
-                    // 3. 적용 수수료 정책
+                    // 3-A. [외주 대행사 직배정] 외주 대행사 선택
+                    if (_assignmentType == 'agency') ...[
+                      Text(
+                        '외주 분양대행사 *',
+                        style: AppTextStyles.label.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int>(
+                        initialValue: _selectedAgencyId,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                          hintText: '외주 분양대행사 선택',
+                        ),
+                        isExpanded: true,
+                        items: outsourcedAgencies.map((a) {
+                          return DropdownMenuItem<int>(
+                            value: a.id,
+                            child: Text(a.name, style: const TextStyle(fontSize: 13)),
+                          );
+                        }).toList(),
+                        onChanged: (val) => setState(() => _selectedAgencyId = val),
+                        validator: (val) =>
+                            _assignmentType == 'agency' && val == null ? '외주 대행사를 선택해 주세요.' : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '* 외주 대행사의 경우 상담사를 개별 지정하지 않고 대행사 단위로 배정합니다.',
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
+                      ),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      // 3-B. [직영 인력 배정] 담당 영업직원 (상담사)
+                      Text(
+                        '담당 영업직원 (상담사) *',
+                        style: AppTextStyles.label.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int>(
+                        initialValue: _selectedSalesPersonId,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                          hintText: '상담사 선택',
+                        ),
+                        isExpanded: true,
+                        items: persons.map((p) {
+                          final teamStr = p.teamName != null ? ' (${p.teamName})' : '';
+                          return DropdownMenuItem<int>(
+                            value: p.id,
+                            child: Text('${p.name}$teamStr', style: const TextStyle(fontSize: 13)),
+                          );
+                        }).toList(),
+                        onChanged: (val) => setState(() => _selectedSalesPersonId = val),
+                        validator: (val) =>
+                            _assignmentType == 'direct' && val == null ? '담당 영업직원을 선택해 주세요.' : null,
+                      ),
+                      if (hasNoLeaderWarning) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFD97706)),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '소속 팀에 재직 중인 팀장이 없습니다. 정산 시 상위 본부장에게 합산 배정되거나 대행사 귀속 이익으로 처리됩니다.',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 4. 적용 수수료 정책
                     Text(
                       '적용 수수료 정책 (선택)',
                       style: AppTextStyles.label.copyWith(
@@ -424,6 +596,7 @@ class _ContractAgentFormSheetState
                       onChanged: (val) => setState(() => _selectedPolicyId = val),
                     ),
                     const SizedBox(height: 16),
+
 
                     // 4. 성과 인정일
                     Text(

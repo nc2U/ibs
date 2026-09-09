@@ -123,16 +123,16 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     """계약 영업 담당자 매핑 ViewSet"""
     queryset = ContractSalesAgent.objects.all().select_related(
         'contract__contractor', 'contract__key_unit__houseunit__building_unit',
-        'sales_person', 'team', 'policy'
+        'agency', 'sales_person', 'team', 'policy'
     )
     serializer_class = ContractSalesAgentSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = (
-        'team__agency__project', 'contract__project', 'sales_person', 'team',
+        'agency__project', 'contract__project', 'agency', 'sales_person', 'team',
         'contract', 'is_settlement_approved'
     )
-    search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
+    search_fields = ('contract__serial_number', 'agency__name', 'sales_person__name', 'mgm_name')
 
     def get_queryset(self):
         user = self.request.user
@@ -205,7 +205,7 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         """
         정산 대상 기간 내 계약 실적을 집계하여 수수료 지급 명세를 자동 생성/갱신합니다.
 
-        직영 대행사: CommissionPayout (개인별, 계층 수수료 자동 배분)
+        직영 대행사: CommissionPayout (개인별, 계층 수수료 자동 배분 + bubble-up 귀속 이익 추적)
         외주 대행사: AgencyPayout    (대행사 단위, VAT 10% 자동 계산)
         """
         period = self.get_object()
@@ -217,6 +217,8 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
             return Response({
                 'detail': '해당 기간 내 정산 대상 계약 실적이 없습니다.',
                 'total_contracts': 0,
+                'org_warnings': result.get('org_warnings', []),
+                'org_is_healthy': result.get('org_is_healthy', True),
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -230,7 +232,35 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
             'total_contracts': result['total_contracts'],
             'total_gross_amount': result['total_gross_amount'],
             'total_agency_amount': result['total_agency_amount'],
+            # 귀속 이익: 팀장/본부장 부재로 미지급된 fee (직영 대행사 귀속, 표시 전용)
+            'total_unallocated_fee': result.get('total_unallocated_fee', 0),
+            # 조직 건강 상태 경고
+            'org_warnings': result.get('org_warnings', []),
+            'org_is_healthy': result.get('org_is_healthy', True),
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='validate-org')
+    def validate_org(self, request):
+        """
+        정산 실행 전 영업 조직 무결성 사전 검증.
+        GET /api/v1/sales-settlement-period/validate-org/?project=<id>
+
+        팀장/본부장 부재 → warning (bubble-up 귀속 발생)
+        수수료 정책 미등록 → error (계약 정산 누락)
+        """
+        from sales.services import validate_org_health
+        from project.models import Project
+
+        project_id = request.query_params.get('project')
+        if not project_id:
+            return Response({'detail': 'project 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response({'detail': '프로젝트를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        result = validate_org_health(project)
+        return Response(result, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='confirm-settlement')
     def confirm_settlement(self, request, pk=None):

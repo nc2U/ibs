@@ -125,10 +125,14 @@ const cngProject = async (slug: any) => {
               :class="{ pointer: !!ancestors.length }"
               @click="visible = !visible"
             >
-              <v-icon :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'" color="" />
+              <v-icon
+                v-if="route.path.startsWith('/work/')"
+                :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                color=""
+              />
               <strong class="title pl-1"> {{ pageTitle }}</strong>
 
-              <CCollapse :visible="visible">
+              <CCollapse v-if="route.path.startsWith('/work/')" :visible="visible">
                 <v-card class="mx-auto mt-3" :max-width="1000">
                   <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
                     <v-list-item

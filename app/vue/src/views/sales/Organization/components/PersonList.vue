@@ -85,7 +85,7 @@ const deletePerson = async (person: SalesPerson) => {
 
       <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- 직책 필터 -->
-        <CFormSelect v-model="dutyFilter" size="sm" style="width: 120px">
+        <CFormSelect v-model="dutyFilter" style="width: 150px">
           <option value="">전체 직책</option>
           <option value="1">분양상담사</option>
           <option value="2">팀장</option>
@@ -95,7 +95,7 @@ const deletePerson = async (person: SalesPerson) => {
         </CFormSelect>
 
         <!-- 상태 필터 -->
-        <CFormSelect v-model="statusFilter" size="sm" style="width: 110px">
+        <CFormSelect v-model="statusFilter" style="width: 150px">
           <option value="">전체 상태</option>
           <option value="1">재직 (활동)</option>
           <option value="2">휴직</option>
@@ -103,12 +103,7 @@ const deletePerson = async (person: SalesPerson) => {
         </CFormSelect>
 
         <!-- 검색창 -->
-        <CFormInput
-          v-model="search"
-          size="sm"
-          placeholder="성명/연락처 검색"
-          style="width: 150px"
-        />
+        <CFormInput v-model="search" placeholder="성명/연락처 검색" style="width: 150px" />
 
         <!-- 등록 버튼 -->
         <v-btn

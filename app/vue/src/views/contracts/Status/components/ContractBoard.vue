@@ -50,5 +50,7 @@ const getUnits = (bldg: number): SimpleUnit[] =>
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 1rem;
+  max-width: 100%;
+  overflow-x: auto;
 }
 </style>

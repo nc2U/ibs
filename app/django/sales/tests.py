@@ -373,7 +373,7 @@ class SalesAPITests(APITestCase):
         self.agency = SalesAgency.objects.create(
             project=self.project,
             name='㈜미래분양대행',
-            is_direct_managed=False,
+            is_direct_managed=True,
             ceo_name='홍길동',
             phone='02-555-1234'
         )
@@ -619,35 +619,33 @@ class SalesAPITests(APITestCase):
             self.assertEqual(detail.unit_fee, 2000000)
 
         # 6. 박팀장 지급 명세 검증
-        # - 팀장 직책: leader_fee = 500,000원 적용
-        # - 계약 1건 = 500,000원
-        # - 소득세(3%): 15,000원 / 지방세(0.3%): 1,500원 / 합계: 16,500원
-        # - 실지급액: 500,000 - 16,500 = 483,500원
+        # - 팀장 직책: 본인 계약 1건 (agent_fee 200만 + leader_fee 50만 = 250만)
+        #             + 소속 상담사(김상담) 계약 2건에 대한 관리 수수료 (각 50만 * 2 = 100만)
+        #             = 총 3건, 3,500,000원
+        # - 소득세(3%): 105,000원 / 지방세(0.3%): 10,500원 / 합계: 115,500원
+        # - 실지급액: 3,500,000 - 115,500 = 3,384,500원
         leader_payout = CommissionPayout.objects.get(period=period, sales_person=self.leader)
-        self.assertEqual(leader_payout.contract_count, 1)
-        self.assertEqual(leader_payout.commission_amount, 500000)
-        self.assertEqual(leader_payout.gross_amount, 500000)
-        self.assertEqual(leader_payout.income_tax, 15000)
-        self.assertEqual(leader_payout.local_income_tax, 1500)
-        self.assertEqual(leader_payout.total_tax, 16500)
-        self.assertEqual(leader_payout.net_amount, 483500)
+        self.assertEqual(leader_payout.contract_count, 3)
+        self.assertEqual(leader_payout.commission_amount, 3500000)
+        self.assertEqual(leader_payout.gross_amount, 3500000)
+        self.assertEqual(leader_payout.income_tax, 105000)
+        self.assertEqual(leader_payout.local_income_tax, 10500)
+        self.assertEqual(leader_payout.total_tax, 115500)
+        self.assertEqual(leader_payout.net_amount, 3384500)
 
-        # 박팀장 계약 상세 1건 기록 확인
-        leader_detail = leader_payout.contract_details.first()
-        self.assertIsNotNone(leader_detail)
-        self.assertEqual(leader_detail.role_type, 'leader')
-        self.assertEqual(leader_detail.unit_fee, 500000)
+        # 박팀장 계약 상세 3건 기록 확인
+        self.assertEqual(leader_payout.contract_details.count(), 3)
 
         # 7. SettlementPeriod 합계 필드 갱신 검증
         # - 총 계약 건수: 2 + 1 = 3건
-        # - 총 지급액 (세전): 3,700,000 + 500,000 = 4,200,000원
-        # - 총 원천세: 122,100 + 16,500 = 138,600원
-        # - 총 실지급액 (세후): 3,577,900 + 483,500 = 4,061,400원
+        # - 총 지급액 (세전): 3,700,000 + 3,500,000 = 7,200,000원
+        # - 총 원천세: 122,100 + 115,500 = 237,600원
+        # - 총 실지급액 (세후): 3,577,900 + 3,384,500 = 6,962,400원
         period.refresh_from_db()
         self.assertEqual(period.total_contracts, 3)
-        self.assertEqual(period.total_gross_amount, 4200000)
-        self.assertEqual(period.total_tax_amount, 138600)
-        self.assertEqual(period.total_net_amount, 4061400)
+        self.assertEqual(period.total_gross_amount, 7200000)
+        self.assertEqual(period.total_tax_amount, 237600)
+        self.assertEqual(period.total_net_amount, 6962400)
 
     def test_generate_payouts_empty_period(self):
         """정산 기간 내 실적이 없을 경우 빈 결과 응답 반환 검증"""
@@ -660,7 +658,7 @@ class SalesAPITests(APITestCase):
         url = f'/api/v1/sales-settlement-period/{empty_period.id}/generate-payouts/'
         res = self.client.post(url)
         self.assertEqual(res.status_code, http_status.HTTP_200_OK)
-        self.assertEqual(res.data['count'], 0)
+        self.assertEqual(res.data['total_contracts'], 0)
 
     def test_confirm_settlement_action(self):
         """정산 회차 확정 (상태: 정산 확정 '2') 액션 검증"""
@@ -936,4 +934,298 @@ class SalesPermissionSecurityTests(APITestCase):
         self.assertEqual(res_all.status_code, http_status.HTTP_200_OK)
         self.assertEqual(res_all.data['count'], 1)
         self.assertEqual(res_all.data['results'][0]['id'], self.agency_b.id)
+
+
+class SalesMultiAgencyPayoutTests(APITestCase):
+    """복수 외주 대행사 배정 및 직영+외주 복합 운영 정산 검증"""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        from company.models import Company
+        from project.models import Project
+        from work.models.project import IssueProject, Role, Permission, Member
+        from contract.models import OrderGroup
+        from items.models import UnitType
+
+        self.admin_user = User.objects.create_superuser(
+            username='sales_admin_ma', email='admin_ma@test.com', password='password123'
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+        company = Company.objects.create(name='㈜복합분양개발')
+        ip = IssueProject.objects.create(
+            company=company, name='복합운영프로젝트', slug='multi-agency-proj',
+            type='2', creator=self.admin_user
+        )
+        self.project = Project.objects.create(
+            issue_project=ip, name='복합운영프로젝트', order=1, kind='2',
+            start_year='2026', monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01', construction_period_months=24
+        )
+
+        perm_settle, _ = Permission.objects.get_or_create(
+            code='sales.settle', defaults={'name': '분양 수수료 정산', 'module': 'sales', 'is_for_project': True}
+        )
+        perm_manage, _ = Permission.objects.get_or_create(
+            code='sales.manage', defaults={'name': '분양 조직/인력 관리', 'module': 'sales', 'is_for_project': True}
+        )
+        perm_read, _ = Permission.objects.get_or_create(
+            code='sales.read', defaults={'name': '분양 대행 조회', 'module': 'sales', 'is_for_project': True}
+        )
+        role = Role.objects.create(name='정산관리자MA', category='ibs_pr_manage', creator=self.admin_user)
+        role.permissions.add(perm_read, perm_manage, perm_settle)
+        mem = Member.objects.create(user=self.admin_user, project=ip)
+        mem.roles.add(role)
+
+        self.order_group = OrderGroup.objects.create(
+            project=self.project, order_number=1, name='1차 정규분양', is_default_for_uncontracted=True
+        )
+        self.unit_type_84 = UnitType.objects.create(
+            project=self.project, name='84A', color='#6366F1',
+            average_price=600000000, num_unit=50
+        )
+
+        # 직영 대행사 + 팀 + 인력
+        self.direct_agency = SalesAgency.objects.create(
+            project=self.project, name='㈜직영분양대행', is_direct_managed=True
+        )
+        self.team = SalesTeam.objects.create(agency=self.direct_agency, name='직영1팀')
+        self.counselor = SalesPerson.objects.create(
+            team=self.team, name='김상담', duty='1', status='1',
+            phone='010-1111-2222', tax_type='1'
+        )
+        self.leader = SalesPerson.objects.create(
+            team=self.team, name='박팀장', duty='2', status='1',
+            phone='010-3333-4444', tax_type='1'
+        )
+
+        # 공통 수수료 정책: agent 200만 / leader 50만 / director 30만 / agency 100만
+        self.policy = CommissionPolicy.objects.create(
+            project=self.project, unit_type=self.unit_type_84,
+            name='84A 정책', agent_fee=2000000, leader_fee=500000,
+            director_fee=300000, agency_fee=1000000, start_date='2026-09-01'
+        )
+
+    def test_generate_payouts_multi_outsource_agencies(self):
+        """
+        [복수 외주 대행사 복합 정산 검증]
+
+        2개의 외주 대행사(외주A, 외주B)가 각각 계약 건을 배정 받았을 때:
+        1. 각 대행사별로 독립적인 AgencyPayout이 생성되어야 한다.
+        2. 각 AgencyPayout의 계약 건수 및 agency_fee_sum이 정확해야 한다.
+        3. 직영 CommissionPayout은 생성되지 않아야 한다.
+        4. total_contracts는 원천 계약 수(이중 계산 없이) 3건이어야 한다.
+        """
+        # 1. 외주 대행사 2개 생성 (is_direct_managed=False)
+        agency_a = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜아웃소싱A분양',
+            is_direct_managed=False,
+            business_number='111-11-11111'
+        )
+        agency_b = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜아웃소싱B분양',
+            is_direct_managed=False,
+            business_number='222-22-22222'
+        )
+
+        # 2. 계약 3건 생성: 외주A 2건, 외주B 1건
+        # 외주A 1번 계약
+        ku1 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='MA01')
+        c1 = Contract.objects.create(project=self.project, serial_number='CONT-MA01',
+                                     order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku1)
+        Contractor.objects.create(contract=c1, name='계약자MA01', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c1, agency=agency_a, policy=self.policy, contract_date='2026-09-01'
+        )
+
+        # 외주A 2번 계약
+        ku2 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='MA02')
+        c2 = Contract.objects.create(project=self.project, serial_number='CONT-MA02',
+                                     order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku2)
+        Contractor.objects.create(contract=c2, name='계약자MA02', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c2, agency=agency_a, policy=self.policy, contract_date='2026-09-03'
+        )
+
+        # 외주B 1번 계약
+        ku3 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='MB01')
+        c3 = Contract.objects.create(project=self.project, serial_number='CONT-MB01',
+                                     order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku3)
+        Contractor.objects.create(contract=c3, name='계약자MB01', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c3, agency=agency_b, policy=self.policy, contract_date='2026-09-05'
+        )
+
+        # 3. 정산 회차 생성 후 generate-payouts 액션 호출
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='복수 외주 대행사 정산 회차',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+        url = f'/api/v1/sales-settlement-period/{period.id}/generate-payouts/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        # 4. 반환 데이터 검증
+        # - 직영 인력 정산 없음 (direct_person_count = 0)
+        # - 대행사 수: 2개
+        # - 총 계약 건수: 3건 (외주A 2 + 외주B 1)
+        self.assertEqual(res.data['direct_person_count'], 0)
+        self.assertEqual(res.data['agency_count'], 2)
+        self.assertEqual(res.data['total_contracts'], 3)
+
+        # 5. CommissionPayout (직영 인력 정산)이 생성되지 않아야 함
+        from sales.models import AgencyPayout
+        self.assertEqual(period.payouts.count(), 0)
+
+        # 6. AgencyPayout 2개 독립 생성 검증
+        self.assertEqual(period.agency_payouts.count(), 2)
+
+        # 외주A: 건당 전체 수수료 합산 3,800,000 × 2건 = 7,600,000
+        # (agent 200만 + leader 50만 + director 30만 + agency 100만 = 380만)
+        payout_a = AgencyPayout.objects.get(period=period, agency=agency_a)
+        self.assertEqual(payout_a.contract_count, 2)
+        self.assertEqual(payout_a.agency_fee_sum, 7600000)
+        # VAT 10%: 760,000 / 합계 8,360,000
+        self.assertEqual(payout_a.vat_amount, 760000)
+        self.assertEqual(payout_a.total_amount, 8360000)
+        self.assertEqual(payout_a.contract_details.count(), 2)
+
+        # 외주B: 건당 전체 수수료 합산 3,800,000 × 1건 = 3,800,000
+        payout_b = AgencyPayout.objects.get(period=period, agency=agency_b)
+        self.assertEqual(payout_b.contract_count, 1)
+        self.assertEqual(payout_b.agency_fee_sum, 3800000)
+        self.assertEqual(payout_b.vat_amount, 380000)
+        self.assertEqual(payout_b.total_amount, 4180000)
+        self.assertEqual(payout_b.contract_details.count(), 1)
+
+        # 7. 총 외주 대행 지급 금액: 8,360,000 + 4,180,000 = 12,540,000
+        self.assertEqual(res.data['total_agency_amount'], 12540000)
+
+
+    def test_generate_payouts_mixed_direct_and_outsource(self):
+        """
+        [직영 + 외주 복합 운영 정산 검증]
+        직영 상담사 2건 + 외주 대행사(2개) 3건이 동일 정산 회차에 포함될 때:
+        1. CommissionPayout (직영 인력)과 AgencyPayout (외주 대행사)가 동시에 생성되어야 한다.
+        2. 직영 상담사(김상담) 2건 수수료 + 팀장(박팀장) 관리 수수료 계층별 분배가 정확해야 한다.
+        3. 외주A·B 대행사 각각의 AgencyPayout이 독립 집계되어야 한다.
+        4. total_contracts는 원천 계약 수만 집계 (계층 cascade 중복 없음) = 5건.
+        5. 동일 정산 회차에서 재실행(generate-payouts 재호출)해도 이중 정산이 발생하지 않아야 한다.
+        """
+        # 외주 대행사 2개 생성
+        outsource_a = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜외주분양대행A',
+            is_direct_managed=False,
+            business_number='333-33-33333'
+        )
+        outsource_b = SalesAgency.objects.create(
+            project=self.project,
+            name='㈜외주분양대행B',
+            is_direct_managed=False,
+            business_number='444-44-44444'
+        )
+
+        # ── 직영 계약 2건 (김상담 담당) ──
+        ku_d1 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='D01')
+        c_d1 = Contract.objects.create(project=self.project, serial_number='CONT-D01',
+                                       order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_d1)
+        Contractor.objects.create(contract=c_d1, name='직영계약자1', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c_d1, sales_person=self.counselor, team=self.team,
+            policy=self.policy, contract_date='2026-09-01'
+        )
+
+        ku_d2 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='D02')
+        c_d2 = Contract.objects.create(project=self.project, serial_number='CONT-D02',
+                                       order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_d2)
+        Contractor.objects.create(contract=c_d2, name='직영계약자2', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c_d2, sales_person=self.counselor, team=self.team,
+            policy=self.policy, contract_date='2026-09-03'
+        )
+
+        # ── 외주A 계약 2건 ──
+        ku_a1 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='A01')
+        c_a1 = Contract.objects.create(project=self.project, serial_number='CONT-A01',
+                                       order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_a1)
+        Contractor.objects.create(contract=c_a1, name='외주A계약자1', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c_a1, agency=outsource_a, policy=self.policy, contract_date='2026-09-02'
+        )
+
+        ku_a2 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='A02')
+        c_a2 = Contract.objects.create(project=self.project, serial_number='CONT-A02',
+                                       order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_a2)
+        Contractor.objects.create(contract=c_a2, name='외주A계약자2', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c_a2, agency=outsource_a, policy=self.policy, contract_date='2026-09-04'
+        )
+
+        # ── 외주B 계약 1건 ──
+        ku_b1 = KeyUnit.objects.create(project=self.project, unit_type=self.unit_type_84, unit_code='B01')
+        c_b1 = Contract.objects.create(project=self.project, serial_number='CONT-B01',
+                                       order_group=self.order_group, unit_type=self.unit_type_84, key_unit=ku_b1)
+        Contractor.objects.create(contract=c_b1, name='외주B계약자1', status='2')
+        ContractSalesAgent.objects.create(
+            contract=c_b1, agency=outsource_b, policy=self.policy, contract_date='2026-09-06'
+        )
+
+        # 정산 회차 생성 + 첫 번째 generate-payouts 호출
+        period = SettlementPeriod.objects.create(
+            project=self.project,
+            title='직영+외주 복합 정산 회차',
+            start_date='2026-09-01',
+            end_date='2026-09-15'
+        )
+        url = f'/api/v1/sales-settlement-period/{period.id}/generate-payouts/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        # ── 기본 건수 검증 ──
+        # - 총 원천 계약: 직영 2건 + 외주A 2건 + 외주B 1건 = 5건
+        # - direct_person_count: 김상담 + 박팀장(계층 cascade) = 2명
+        # - agency_count: 외주A 1개 + 외주B 1개 (+ 직영 대행사 청구 AgencyPayout 1개) = 3개
+        self.assertEqual(res.data['total_contracts'], 5)
+        self.assertEqual(res.data['direct_person_count'], 2)
+        # agency_count에는 직영 대행사 청구 + 외주A + 외주B 포함
+        self.assertEqual(res.data['agency_count'], 3)
+
+        # ── 직영 인력 CommissionPayout 검증 ──
+        from sales.models import AgencyPayout
+        # 김상담: 2건 × agent_fee 200만 = 400만, clawback 없음
+        counselor_payout = period.payouts.get(sales_person=self.counselor)
+        self.assertEqual(counselor_payout.contract_count, 2)
+        self.assertEqual(counselor_payout.commission_amount, 4000000)
+        self.assertEqual(counselor_payout.contract_details.count(), 2)
+
+        # 박팀장: 김상담 2건 × leader_fee 50만 = 100만 (팀장 cascade)
+        leader_payout = period.payouts.get(sales_person=self.leader)
+        self.assertEqual(leader_payout.contract_count, 2)
+        self.assertEqual(leader_payout.commission_amount, 1000000)
+        self.assertEqual(leader_payout.contract_details.count(), 2)
+
+        # ── 외주 대행사 AgencyPayout 검증 ──
+        payout_oa = AgencyPayout.objects.get(period=period, agency=outsource_a)
+        self.assertEqual(payout_oa.contract_count, 2)
+        # 외주A: 건당 전체 합산 3,800,000 × 2건 = 7,600,000
+        self.assertEqual(payout_oa.agency_fee_sum, 7600000)
+
+        payout_ob = AgencyPayout.objects.get(period=period, agency=outsource_b)
+        self.assertEqual(payout_ob.contract_count, 1)
+        # 외주B: 건당 전체 합산 3,800,000 × 1건 = 3,800,000
+        self.assertEqual(payout_ob.agency_fee_sum, 3800000)
+
+        # ── 이중 정산 방지: generate-payouts 재호출해도 Payout 수가 동일해야 함 ──
+        res2 = self.client.post(url)
+        self.assertEqual(res2.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res2.data['total_contracts'], 5)
+        # 재실행 후 Payout 수 동일 (새로 생성되지 않음)
+        self.assertEqual(period.payouts.count(), 2)          # 김상담, 박팀장
+        self.assertEqual(period.agency_payouts.count(), 3)   # 직영대행사청구 + 외주A + 외주B
 
