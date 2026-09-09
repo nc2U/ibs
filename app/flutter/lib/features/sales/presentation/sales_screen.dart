@@ -19,6 +19,7 @@ import 'widgets/period_form_sheet.dart';
 import 'widgets/payout_detail_sheet.dart';
 import 'widgets/banking_csv_helper.dart';
 import 'widgets/person_document_sheet.dart';
+import 'widgets/person_payout_history_sheet.dart';
 import 'package:flutter/services.dart';
 
 /// 🤝 분양 대행 관리 (Sales Agency) 서브 탭 구분
@@ -1684,12 +1685,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     final currentPeriod = ref.watch(currentSettlementPeriodProvider);
     final payoutsAsync = ref.watch(commissionPayoutsProvider);
     final filteredPayouts = ref.watch(filteredCommissionPayoutsProvider);
+    final agencyPayoutsAsync = ref.watch(agencyPayoutsProvider);
+    final clawbacksAsync = ref.watch(projectClawbacksProvider);
 
     return RefreshIndicator(
       color: const Color(0xFF06B6D4),
       onRefresh: () async {
         ref.invalidate(settlementPeriodsProvider);
         ref.invalidate(commissionPayoutsProvider);
+        ref.invalidate(agencyPayoutsProvider);
+        ref.invalidate(projectClawbacksProvider);
       },
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -1733,7 +1738,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '정산 회차 데이터를 불러오지 못했습니다: $err',
+                      '정산 회차 데이터를 불러오지 못했습니다: ',
                       style: AppTextStyles.caption.copyWith(color: context.colors.error),
                     ),
                   ),
@@ -1754,6 +1759,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
           // 5. 개인별 수수료 지급 명세 카드 리스트
           _buildSettlementPayoutListSection(project, currentPeriod, payoutsAsync, filteredPayouts),
+          const SizedBox(height: 20),
+
+          // 6. 대행사별 정산 명세 섹션 (외주/직영 포함)
+          _buildSettlementAgencyPayoutSection(project, currentPeriod, agencyPayoutsAsync),
+          const SizedBox(height: 20),
+
+          // 7. 프로젝트 수수료 환수(Clawback) 이력 섹션
+          _buildSettlementClawbackSection(project, currentPeriod, clawbacksAsync),
           const SizedBox(height: 24),
         ],
       ),
@@ -2572,11 +2585,30 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 // 1. 헤더: 성명 + 직책 + 소속팀 + 상태 뱃지
                 Row(
                   children: [
-                    Text(
-                      item.salesPersonName ?? '미지정',
-                      style: AppTextStyles.titleSm.copyWith(
-                        color: context.colors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    InkWell(
+                      onTap: () {
+                        showPersonPayoutHistorySheet(
+                          context,
+                          salesPersonId: item.salesPerson,
+                          salesPersonName: item.salesPersonName ?? '미지정',
+                          teamName: item.teamName,
+                          dutyDisplay: item.dutyDisplay,
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.salesPersonName ?? '미지정',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: const Color(0xFF06B6D4),
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.history_rounded, size: 14, color: Color(0xFF06B6D4)),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -2755,6 +2787,265 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         '$label: $value',
         style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500),
       ),
+    );
+  }
+
+  // ── 대행사별 정산 명세 섹션 (외주 대행사 직배정 수수료 포함) ──
+  Widget _buildSettlementAgencyPayoutSection(
+    SelectedProject project,
+    SettlementPeriodModel? currentPeriod,
+    AsyncValue<List<AgencyPayoutModel>> agencyPayoutsAsync,
+  ) {
+    return agencyPayoutsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (agencyPayouts) {
+        if (agencyPayouts.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          decoration: BoxDecoration(
+            color: context.colors.bgCard,
+            border: Border.all(color: context.colors.border, width: 0.8),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.business_center_outlined, size: 18, color: Color(0xFF06B6D4)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '대행사 정산 명세 (${agencyPayouts.length}개사)',
+                        style: AppTextStyles.titleSm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '외주 대행사 총액 정산 포함',
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.colors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...agencyPayouts.map((ap) {
+                final fmt = NumberFormat('#,###');
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.colors.bgSurface,
+                    border: Border.all(color: context.colors.border, width: 0.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                ap.agencyName ?? '대행사',
+                                style: AppTextStyles.bodySm.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: ap.isDirectManaged
+                                      ? const Color(0xFF0284C7).withAlpha(25)
+                                      : const Color(0xFF8B5CF6).withAlpha(25),
+                                ),
+                                child: Text(
+                                  ap.isDirectManaged ? '직영' : '외주',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: ap.isDirectManaged
+                                        ? const Color(0xFF0284C7)
+                                        : const Color(0xFF8B5CF6),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${fmt.format(ap.totalAmount)}원 (VAT포함)',
+                            style: AppTextStyles.bodySm.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF06B6D4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '계약: ${ap.contractCount}건 | 공급가액: ${fmt.format(ap.agencyFeeSum)}원',
+                            style: AppTextStyles.caption.copyWith(
+                              color: context.colors.textSecond,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                          if (ap.unallocatedFee > 0)
+                            Text(
+                              '시행사 귀속: ${fmt.format(ap.unallocatedFee)}원',
+                              style: AppTextStyles.caption.copyWith(
+                                color: const Color(0xFF10B981),
+                                fontSize: 10.5,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ── 수수료 환수(Clawback) 이력 섹션 ───────────────────────
+  Widget _buildSettlementClawbackSection(
+    SelectedProject project,
+    SettlementPeriodModel? currentPeriod,
+    AsyncValue<List<CommissionClawbackModel>> clawbacksAsync,
+  ) {
+    return clawbacksAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (clawbacks) {
+        if (clawbacks.isEmpty) return const SizedBox.shrink();
+
+        final fmt = NumberFormat('#,###');
+        final totalAmount = clawbacks.fold<int>(0, (sum, c) => sum + c.amount);
+        final unsettledCount = clawbacks.where((c) => !c.isSettled).length;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFEF4444).withAlpha(10),
+            border: Border.all(color: const Color(0xFFEF4444).withAlpha(60), width: 0.8),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.currency_exchange_rounded, size: 18, color: Color(0xFFEF4444)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '수수료 환수(Clawback) 이력 (${clawbacks.length}건)',
+                        style: AppTextStyles.titleSm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '미상계 $unsettledCount건',
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFEF4444),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '해지 계약에 의해 발생한 환수금으로 차기 정산 시 자동 상계 처리됩니다. 총 환수: ${fmt.format(totalAmount)}원',
+                style: AppTextStyles.caption.copyWith(color: context.colors.textSecond, fontSize: 11),
+              ),
+              const SizedBox(height: 10),
+              ...clawbacks.map((c) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.colors.bgCard,
+                    border: Border.all(color: context.colors.border, width: 0.5),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: c.isSettled
+                              ? const Color(0xFF10B981).withAlpha(20)
+                              : const Color(0xFFEF4444).withAlpha(20),
+                        ),
+                        child: Text(
+                          c.isSettled ? '상계완료' : '미상계',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: c.isSettled ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${c.salesPersonName ?? "인력"} • 계약 ${c.contractSerial ?? "#${c.contract}"}',
+                              style: AppTextStyles.bodySm.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textPrimary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            Text(
+                              c.reason.isNotEmpty ? c.reason : '해약에 따른 수수료 환수',
+                              style: AppTextStyles.caption.copyWith(
+                                color: context.colors.textMuted,
+                                fontSize: 10.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '-${fmt.format(c.amount)}원',
+                        style: AppTextStyles.bodySm.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -2959,12 +3250,17 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     final filteredList = ref.watch(payoutTabFilteredListProvider);
     final summary = ref.watch(payoutTabSummaryProvider);
     final selectedIds = ref.watch(payoutTabSelectedIdsProvider);
+    final payoutMode = ref.watch(payoutTabModeProvider);
+    final agencyPayoutsAsync = ref.watch(payoutTabAgencyPayoutsProvider);
+    final agencySummary = ref.watch(payoutTabAgencySummaryProvider);
+    final filteredAgencyPayouts = ref.watch(payoutTabFilteredAgencyPayoutsProvider);
 
     return RefreshIndicator(
       color: const Color(0xFF10B981),
       onRefresh: () async {
         ref.invalidate(settlementPeriodsProvider);
         ref.invalidate(payoutTabPayoutsProvider);
+        ref.invalidate(payoutTabAgencyPayoutsProvider);
         ref.read(payoutTabSelectedIdsProvider.notifier).state = {};
       },
       child: ListView(
@@ -2973,7 +3269,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           // 1. 상단 안내 배너
           _buildInfoBanner(
             title: '수수료 지급 대장 & 금융 이체',
-            subtitle: '확정된 회차별 수수료 이체 집행, 지급 승인/완료 일괄 처리 및 은행 이체 파일(CSV) 연계를 관리합니다.',
+            subtitle: '확정된 회차별 수수료 이체 집행, 지급 승인/완료 처리 및 개인/외주 대행사 지급 관리를 수행합니다.',
             icon: Icons.account_balance_outlined,
             color: const Color(0xFF10B981),
           ),
@@ -3009,7 +3305,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '회차 데이터를 불러오지 못했습니다: $err',
+                      '회차 데이터를 불러오지 못했습니다: ',
                       style: AppTextStyles.caption.copyWith(color: context.colors.error),
                     ),
                   ),
@@ -3020,20 +3316,37 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           ),
           const SizedBox(height: 14),
 
-          // 3. 2×2 지급 진행 현황 대시보드
-          _buildPayoutSummaryKpi(summary),
+          // 2-1. 개인별 vs 대행사별 지급 전환 탭 (Segmented Control)
+          _buildPayoutSubModeSelector(payoutMode),
           const SizedBox(height: 14),
 
-          // 4. 검색 & 지급 상태 필터 바
-          _buildPayoutFilterBar(),
-          const SizedBox(height: 14),
+          if (payoutMode == 'person') ...[
+            // 3. 2×2 지급 진행 현황 대시보드 (개인)
+            _buildPayoutSummaryKpi(summary),
+            const SizedBox(height: 14),
 
-          // 5. 다중 선택 & 일괄 상태 변경 & 이체 파일 다운로드 툴바
-          _buildPayoutBatchActionBar(project, currentPeriod, filteredList, selectedIds),
-          const SizedBox(height: 14),
+            // 4. 검색 & 지급 상태 필터 바
+            _buildPayoutFilterBar(),
+            const SizedBox(height: 14),
 
-          // 6. 개인별 지급 대장 카드 리스트
-          _buildPayoutExecutionListSection(project, currentPeriod, payoutsAsync, filteredList, selectedIds),
+            // 5. 다중 선택 & 일괄 상태 변경 & 이체 파일 다운로드 툴바
+            _buildPayoutBatchActionBar(project, currentPeriod, filteredList, selectedIds),
+            const SizedBox(height: 14),
+
+            // 6. 개인별 지급 대장 카드 리스트
+            _buildPayoutExecutionListSection(project, currentPeriod, payoutsAsync, filteredList, selectedIds),
+          ] else ...[
+            // 3-B. 2×2 대행사 지급 진행 현황 대시보드
+            _buildPayoutAgencySummaryKpi(agencySummary),
+            const SizedBox(height: 14),
+
+            // 4-B. 대행사 검색 & 상태 필터 바
+            _buildPayoutAgencyFilterBar(),
+            const SizedBox(height: 14),
+
+            // 5-B. 대행사별 지급 명세 카드 리스트
+            _buildPayoutAgencyExecutionListSection(project, currentPeriod, agencyPayoutsAsync, filteredAgencyPayouts),
+          ],
           const SizedBox(height: 24),
         ],
       ),
@@ -3832,11 +4145,30 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      item.salesPersonName ?? '미지정',
-                      style: AppTextStyles.titleSm.copyWith(
-                        color: context.colors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    InkWell(
+                      onTap: () {
+                        showPersonPayoutHistorySheet(
+                          context,
+                          salesPersonId: item.salesPerson,
+                          salesPersonName: item.salesPersonName ?? '미지정',
+                          teamName: item.teamName,
+                          dutyDisplay: item.dutyDisplay,
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.salesPersonName ?? '미지정',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.history_rounded, size: 14, color: Color(0xFF10B981)),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -4044,6 +4376,526 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         ),
       ),
     );
+  }
+
+  // ── 지급 탭 개인 vs 대행사 서브 모드 셀렉터 ─────────────────
+  Widget _buildPayoutSubModeSelector(String currentMode) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.bgSurface,
+        border: Border.all(color: context.colors.border, width: 0.8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Material(
+              color: currentMode == 'person'
+                  ? const Color(0xFF10B981)
+                  : Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  ref.read(payoutTabModeProvider.notifier).state = 'person';
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 16,
+                        color: currentMode == 'person'
+                            ? Colors.white
+                            : context.colors.textSecond,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '개인별 지급 대장',
+                        style: AppTextStyles.label.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: currentMode == 'person'
+                              ? Colors.white
+                              : context.colors.textSecond,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(width: 1, height: 28, color: context.colors.border),
+          Expanded(
+            child: Material(
+              color: currentMode == 'agency'
+                  ? const Color(0xFF8B5CF6)
+                  : Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  ref.read(payoutTabModeProvider.notifier).state = 'agency';
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.business_center_outlined,
+                        size: 16,
+                        color: currentMode == 'agency'
+                            ? Colors.white
+                            : context.colors.textSecond,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '대행사별 지급/청구 관리',
+                        style: AppTextStyles.label.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: currentMode == 'agency'
+                              ? Colors.white
+                              : context.colors.textSecond,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 대행사 지급 진행 현황 2x2 KPI ──────────────────────
+  Widget _buildPayoutAgencySummaryKpi(AgencyPayoutSummaryModel summary) {
+    final fmt = NumberFormat('#,###');
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '총 정산 금액 (VAT포함)',
+                value: '${fmt.format(summary.totalAmount)}원',
+                subText: '${summary.totalCount}개 대행사 대상',
+                accentColor: const Color(0xFF8B5CF6),
+                icon: Icons.payments_outlined,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '지급 완료 금액',
+                value: '${fmt.format(summary.paidAmount)}원',
+                subText: '${summary.paidCount}개사 완료',
+                accentColor: const Color(0xFF10B981),
+                icon: Icons.check_circle_outline,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '미지급 잔액',
+                value: '${fmt.format(summary.unpaidAmount)}원',
+                subText: '${summary.unpaidCount}개사 대기/진행 중',
+                accentColor: summary.unpaidAmount > 0
+                    ? const Color(0xFFF59E0B)
+                    : context.colors.textMuted,
+                icon: Icons.hourglass_empty_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildSingleKpiTile(
+                label: '지급 완료율',
+                value: summary.totalAmount > 0
+                    ? '${((summary.paidAmount / summary.totalAmount) * 100).round()}%'
+                    : '0%',
+                subText: '${summary.paidCount}/${summary.totalCount}개사 완료',
+                accentColor: const Color(0xFF0284C7),
+                icon: Icons.donut_large_rounded,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── 대행사 지급 검색 및 상태 필터 ────────────────────────
+  Widget _buildPayoutAgencyFilterBar() {
+    final statusFilter = ref.watch(payoutTabAgencyStatusFilterProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: context.colors.bgCard,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: context.colors.border, width: 0.8),
+          ),
+          child: TextField(
+            onChanged: (val) => ref.read(payoutTabAgencySearchQueryProvider.notifier).state = val.trim(),
+            style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: '대행사명, 사업자번호, 예금주 검색...',
+              hintStyle: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+              prefixIcon: Icon(Icons.search, size: 18, color: context.colors.textMuted),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Text(
+                '지급상태: ',
+                style: AppTextStyles.caption.copyWith(
+                  color: context.colors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _buildFilterChip(
+                label: '전체',
+                isSelected: statusFilter.isEmpty,
+                onTap: () => ref.read(payoutTabAgencyStatusFilterProvider.notifier).state = '',
+                activeColor: const Color(0xFF8B5CF6),
+              ),
+              const SizedBox(width: 4),
+              _buildFilterChip(
+                label: '대기',
+                isSelected: statusFilter == '1',
+                onTap: () => ref.read(payoutTabAgencyStatusFilterProvider.notifier).state = '1',
+                activeColor: const Color(0xFFF59E0B),
+              ),
+              const SizedBox(width: 4),
+              _buildFilterChip(
+                label: '승인',
+                isSelected: statusFilter == '2',
+                onTap: () => ref.read(payoutTabAgencyStatusFilterProvider.notifier).state = '2',
+                activeColor: const Color(0xFF0284C7),
+              ),
+              const SizedBox(width: 4),
+              _buildFilterChip(
+                label: '지급완료',
+                isSelected: statusFilter == '3',
+                onTap: () => ref.read(payoutTabAgencyStatusFilterProvider.notifier).state = '3',
+                activeColor: const Color(0xFF10B981),
+              ),
+              const SizedBox(width: 4),
+              _buildFilterChip(
+                label: '보류',
+                isSelected: statusFilter == '4',
+                onTap: () => ref.read(payoutTabAgencyStatusFilterProvider.notifier).state = '4',
+                activeColor: const Color(0xFFEF4444),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 대행사별 지급 명세 카드 리스트 ──────────────────────
+  Widget _buildPayoutAgencyExecutionListSection(
+    SelectedProject project,
+    SettlementPeriodModel? currentPeriod,
+    AsyncValue<List<AgencyPayoutModel>> agencyPayoutsAsync,
+    List<AgencyPayoutModel> filteredAgencyPayouts,
+  ) {
+    final canPayout = ref.can(Perm.salesPayout, projectSlug: project.slug);
+
+    return agencyPayoutsAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.all(30),
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6)),
+        ),
+      ),
+      error: (err, _) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.colors.bgCard,
+          border: Border.all(color: context.colors.error.withAlpha(80)),
+        ),
+        child: Text('대행사 지급 데이터를 불러오지 못했습니다: $err',
+            style: AppTextStyles.caption.copyWith(color: context.colors.error)),
+      ),
+      data: (allAgencies) {
+        if (allAgencies.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: context.colors.bgCard,
+              border: Border.all(color: context.colors.border),
+            ),
+            child: Center(
+              child: Text('해당 회차에 정산된 대행사가 없습니다.',
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
+            ),
+          );
+        }
+
+        if (filteredAgencyPayouts.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: context.colors.bgCard,
+              border: Border.all(color: context.colors.border),
+            ),
+            child: Center(
+              child: Text('조건에 일치하는 대행사가 없습니다.',
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '대행사 지급/청구 명세 (${filteredAgencyPayouts.length}개사)',
+              style: AppTextStyles.titleSm.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...filteredAgencyPayouts.map((ap) {
+              return _buildAgencyPayoutCard(context, ap, project, canPayout);
+            }),
+          ],
+        );
+      },
+    );
+  }
+
+  // ── 대행사별 지급 카드 ────────────────────────────────────
+  Widget _buildAgencyPayoutCard(
+    BuildContext context,
+    AgencyPayoutModel ap,
+    SelectedProject project,
+    bool canPayout,
+  ) {
+    final fmt = NumberFormat('#,###');
+    Color statusColor;
+    switch (ap.payStatus) {
+      case '2': // 승인
+        statusColor = const Color(0xFF0284C7);
+        break;
+      case '3': // 완료
+        statusColor = const Color(0xFF10B981);
+        break;
+      case '4': // 보류
+        statusColor = const Color(0xFFEF4444);
+        break;
+      case '1': // 대기
+      default:
+        statusColor = const Color(0xFFF59E0B);
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        border: Border.all(color: context.colors.border, width: 0.8),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                ap.agencyName ?? '대행사',
+                style: AppTextStyles.titleSm.copyWith(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: ap.isDirectManaged
+                      ? const Color(0xFF0284C7).withAlpha(25)
+                      : const Color(0xFF8B5CF6).withAlpha(25),
+                ),
+                child: Text(
+                  ap.isDirectManaged ? '직영운영' : '외주대행',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: ap.isDirectManaged
+                        ? const Color(0xFF0284C7)
+                        : const Color(0xFF8B5CF6),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (canPayout)
+                PopupMenuButton<String>(
+                  tooltip: '대행사 지급 상태 변경',
+                  padding: EdgeInsets.zero,
+                  onSelected: (newStatus) => _handleAgencyStatusUpdate(ap, newStatus),
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(value: '1', child: Text('지급 대기')),
+                    const PopupMenuItem(value: '2', child: Text('승인 완료')),
+                    const PopupMenuItem(value: '3', child: Text('지급 완료')),
+                    const PopupMenuItem(value: '4', child: Text('지급 보류')),
+                  ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withAlpha(25),
+                      border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          ap.payStatusDisplay ?? '지급 대기',
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(Icons.arrow_drop_down, size: 14, color: statusColor),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withAlpha(25),
+                    border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
+                  ),
+                  child: Text(
+                    ap.payStatusDisplay ?? '지급 대기',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '청구 총액 (VAT포함)',
+                style: AppTextStyles.caption.copyWith(color: context.colors.textSecond),
+              ),
+              Text(
+                '₩ ${fmt.format(ap.totalAmount)}',
+                style: AppTextStyles.titleLg.copyWith(
+                  color: const Color(0xFF8B5CF6),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.colors.bgSurface,
+              border: Border.all(color: context.colors.borderSubtle, width: 0.8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_rounded, size: 15, color: Color(0xFF8B5CF6)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${ap.bankName ?? "-"} ${ap.accountNumber ?? "-"} (예금주: ${ap.accountHolder ?? "-"})',
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                '공급가: ${fmt.format(ap.agencyFeeSum)}원 | VAT: ${fmt.format(ap.vatAmount)}원',
+                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
+              ),
+              if (ap.unallocatedFee > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '| 시행사 귀속: ${fmt.format(ap.unallocatedFee)}원',
+                  style: AppTextStyles.caption.copyWith(color: const Color(0xFF10B981), fontSize: 11),
+                ),
+              ],
+              const Spacer(),
+              if (ap.paidDate != null && ap.paidDate!.isNotEmpty)
+                Text(
+                  '지급: ${ap.paidDate}',
+                  style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAgencyStatusUpdate(AgencyPayoutModel ap, String newStatus) async {
+    if (ap.payStatus == newStatus) return;
+
+    try {
+      final repo = ref.read(salesRepositoryProvider);
+      await repo.updateAgencyPayStatus(ap.id, newStatus);
+      ref.invalidate(payoutTabAgencyPayoutsProvider);
+      ref.invalidate(agencyPayoutsProvider);
+      ref.invalidate(settlementPeriodsProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${ap.agencyName ?? "대행사"}의 지급 상태가 변경되었습니다.'),
+          backgroundColor: const Color(0xFF8B5CF6),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('대행사 상태 변경 실패: $e'),
+          backgroundColor: context.colors.error,
+        ),
+      );
+    }
   }
 
   /// 4. 영업 조직 관리 뷰 (실시간 API 연동 + 2×2 KPI + 대행사/팀 계층 필터 + 인력 명부 + 원터치 통화/수정)

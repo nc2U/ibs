@@ -643,3 +643,98 @@ final salesPersonDocumentsProvider =
   final repository = ref.watch(salesRepositoryProvider);
   return repository.fetchSalesPersonDocuments(salesPersonId: personId);
 });
+
+/// ── 지급 탭 전용 대행사 지급 명세 프로바이더 ────────────────────────
+final payoutTabAgencyPayoutsProvider =
+    FutureProvider<List<AgencyPayoutModel>>((ref) async {
+  final currentPeriod = ref.watch(currentPayoutPeriodProvider);
+  if (currentPeriod == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchAgencyPayouts(periodId: currentPeriod.id);
+});
+
+/// 지급 탭: 개인('person') vs 대행사('agency') 서브 모드
+final payoutTabModeProvider = StateProvider<String>((ref) => 'person');
+
+/// 지급 탭 대행사 상태 필터
+final payoutTabAgencyStatusFilterProvider = StateProvider<String>((ref) => '');
+
+/// 지급 탭 대행사 검색어 필터
+final payoutTabAgencySearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// 지급 탭 필터링된 대행사 지급 목록
+final payoutTabFilteredAgencyPayoutsProvider =
+    Provider<List<AgencyPayoutModel>>((ref) {
+  final list = ref.watch(payoutTabAgencyPayoutsProvider).valueOrNull ?? [];
+  final statusFilter = ref.watch(payoutTabAgencyStatusFilterProvider);
+  final query = ref.watch(payoutTabAgencySearchQueryProvider).trim().toLowerCase();
+
+  return list.where((ap) {
+    if (statusFilter.isNotEmpty && ap.payStatus != statusFilter) {
+      return false;
+    }
+    if (query.isNotEmpty) {
+      final nameMatch = ap.agencyName?.toLowerCase().contains(query) ?? false;
+      final bizMatch = ap.businessNumber?.contains(query) ?? false;
+      final holderMatch = ap.accountHolder?.toLowerCase().contains(query) ?? false;
+      if (!nameMatch && !bizMatch && !holderMatch) return false;
+    }
+    return true;
+  }).toList();
+});
+
+/// 지급 탭 대행사 요약 지표
+class AgencyPayoutSummaryModel {
+  final int totalCount;
+  final int totalAmount;
+  final int paidCount;
+  final int paidAmount;
+  final int unpaidCount;
+  final int unpaidAmount;
+
+  const AgencyPayoutSummaryModel({
+    this.totalCount = 0,
+    this.totalAmount = 0,
+    this.paidCount = 0,
+    this.paidAmount = 0,
+    this.unpaidCount = 0,
+    this.unpaidAmount = 0,
+  });
+}
+
+final payoutTabAgencySummaryProvider = Provider<AgencyPayoutSummaryModel>((ref) {
+  final list = ref.watch(payoutTabAgencyPayoutsProvider).valueOrNull ?? [];
+  if (list.isEmpty) return const AgencyPayoutSummaryModel();
+
+  final totalCount = list.length;
+  final totalAmount = list.fold<int>(0, (sum, ap) => sum + ap.totalAmount);
+  final paidItems = list.where((ap) => ap.payStatus == '3').toList();
+  final paidCount = paidItems.length;
+  final paidAmount = paidItems.fold<int>(0, (sum, ap) => sum + ap.totalAmount);
+  final unpaidCount = totalCount - paidCount;
+  final unpaidAmount = totalAmount > paidAmount ? totalAmount - paidAmount : 0;
+
+  return AgencyPayoutSummaryModel(
+    totalCount: totalCount,
+    totalAmount: totalAmount,
+    paidCount: paidCount,
+    paidAmount: paidAmount,
+    unpaidCount: unpaidCount,
+    unpaidAmount: unpaidAmount,
+  );
+});
+
+// ═════════════════════════════════════════════════════════════════
+// 🔄 수수료 환수 (Clawback) 프로바이더
+// ═════════════════════════════════════════════════════════════════
+
+/// 프로젝트별 수수료 환수 목록 프로바이더
+final projectClawbacksProvider =
+    FutureProvider<List<CommissionClawbackModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchClawbacks(projectId: selectedProject.realProjectId);
+});

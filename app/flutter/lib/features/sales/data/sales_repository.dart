@@ -459,6 +459,72 @@ class SalesRepository {
     }
   }
 
+  /// 대행사 지급 상태 변경 (/api/v1/sales-agency-payout/{id}/update-pay-status/)
+  Future<void> updateAgencyPayStatus(int payoutId, String payStatus) async {
+    await dio.post(
+      '/api/v1/sales-agency-payout/$payoutId/update-pay-status/',
+      data: {'pay_status': payStatus},
+    );
+  }
+
+  /// 특정 영업 인력의 전 회차 지급 이력 조회
+  Future<List<CommissionPayoutModel>> fetchSalesPersonPayouts({
+    required int salesPersonId,
+    int limit = 500,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/sales-payout/',
+        queryParameters: {
+          'sales_person': salesPersonId,
+          'limit': limit,
+        },
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 수수료 환수 이력 목록 조회 (/api/v1/sales-clawback/)
+  Future<List<CommissionClawbackModel>> fetchClawbacks({
+    int? projectId,
+    int? salesPersonId,
+    int limit = 500,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'limit': limit,
+      };
+      if (projectId != null) {
+        queryParams['contract__project'] = projectId;
+      }
+      if (salesPersonId != null) {
+        queryParams['sales_person'] = salesPersonId;
+      }
+      final response = await dio.get(
+        '/api/v1/sales-clawback/',
+        queryParameters: queryParams,
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => CommissionClawbackModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+
   /// 영업 조직 건강성 사전 진단 (/api/v1/sales-settlement-period/validate-org/?project=<id>)
   Future<OrgHealthCheckResult?> validateOrgHealth(int projectId) async {
     try {

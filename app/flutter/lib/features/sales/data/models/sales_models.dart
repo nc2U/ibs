@@ -802,3 +802,46 @@ class OrgHealthCheckResult {
   }
 }
 
+/// 수수료 환수(Clawback) 모델
+class CommissionClawbackModel {
+  final int id;
+  final int contract;
+  final String? contractSerial;
+  final int salesPerson;
+  final String? salesPersonName;
+  final int amount;
+  final String reason;
+  final bool isSettled;
+  final int? settledPayout;
+  final String? createdAt;
+
+  const CommissionClawbackModel({
+    required this.id,
+    required this.contract,
+    this.contractSerial,
+    required this.salesPerson,
+    this.salesPersonName,
+    this.amount = 0,
+    this.reason = '',
+    this.isSettled = false,
+    this.settledPayout,
+    this.createdAt,
+  });
+
+  factory CommissionClawbackModel.fromJson(Map<String, dynamic> json) {
+    return CommissionClawbackModel(
+      id: json['id'] as int? ?? 0,
+      contract: json['contract'] as int? ?? 0,
+      contractSerial: json['contract_serial'] as String?,
+      salesPerson: json['sales_person'] as int? ?? 0,
+      salesPersonName: json['sales_person_name'] as String?,
+      amount: json['amount'] as int? ?? 0,
+      reason: json['reason'] as String? ?? '',
+      isSettled: json['is_settled'] as bool? ?? false,
+      settledPayout: json['settled_payout'] as int?,
+      createdAt: json['created_at'] as String?,
+    );
+  }
+}
+
+
