@@ -194,8 +194,22 @@ watch(
   nVal => {
     if (!props.docs) {
       form.value.doc_type = nVal
+      form.value.category = null
     }
   },
+)
+
+watch(
+  () => props.categories,
+  newCategories => {
+    if (form.value.category) {
+      const exists = newCategories.some(c => c.pk === form.value.category)
+      if (!exists) {
+        form.value.category = null
+      }
+    }
+  },
+  { deep: true },
 )
 
 onBeforeMount(() => dataSetup())

@@ -39,9 +39,7 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 const router = useRouter()
 const workStore = useWork()
-const myProjects = computed(() =>
-  workStore.getMyActiveProjects.filter(pjt => pjt.module?.document),
-)
+const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.document))
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
