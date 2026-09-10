@@ -1,298 +1,265 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        @page {
-            size: A4;
-            margin: 2.2cm 2cm 2cm 2cm;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+      @page {
+          size: A4;
+          margin: 2.5cm 2cm 1.6cm 2cm;
+      }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-            font-size: 10pt;
-            line-height: 1.8;
-            color: #000;
-        }
+      body {
+          font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+          font-size: 0.9em;
+          line-height: 1.8;
+          color: #000;
+      }
 
-        .letterhead {
-            position: relative;
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-        }
+      .letterhead {
+          position: relative;
+          text-align: center;
+          margin-bottom: 5px;
+          padding-bottom: 15px;
+      }
 
-        .letterhead::after {
-            content: "{{ company.en_name }}";
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 10px;
+      .letterhead::after {
+          content: "{{ company.en_name }}";
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 10px;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
-            background: linear-gradient(
-                    to right,
-                    #666 0%,
-                    #777 30%,
-                    #999 70%,
-                    #aaa 100%
-            );
+          background: linear-gradient(
+                  to right,
+                  #666 0%,
+                  #777 30%,
+                  #999 70%,
+                  #aaa 100%
+          );
 
-            color: #fff;
-            font-family: Georgia, SansSerif, serif;
-            font-size: 7px;
-            font-weight: normal;
-            line-height: 1;
-        }
+          color: #fff;
+          font-family: Georgia, SansSerif, serif;
+          font-size: 7px;
+          font-weight: normal;
+          line-height: 1;
+      }
 
-        .company-logo {
-            max-height: 80px;
-            max-width: 220px;
-            margin-bottom: 10px;
-        }
+      .company-logo {
+          max-height: 80px;
+          max-width: 220px;
+          margin-bottom: 10px;
+      }
 
-        .company-name {
-            font-size: 16pt;
-            font-weight: bold;
-            margin: 5px 0;
-            letter-spacing: 2px;
-        }
+      .company-name {
+          font-size: 16pt;
+          font-weight: bold;
+          margin: 5px 0;
+          letter-spacing: 2px;
+      }
 
-        .company-info {
-            font-size: 8pt;
-            color: #555;
-            line-height: 1.2;
-            margin-bottom: 3px;
-        }
+      .company-info {
+          font-size: 8pt;
+          color: #555;
+          line-height: 1.2;
+          margin-bottom: 3px;
+      }
 
-        .document-header {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 25px;
-        }
+      {#.recipient-section {#}
+      {#    margin-bottom: 5px;#}
+      {#}#}
 
-        .document-number-box {
-            text-align: right;
-            font-size: 10pt;
-        }
+      .recipient-table {
+          width: 100%;
+      }
 
-        .document-number {
-            font-weight: bold;
-        }
+      .recipient-table td {
+          padding: 5px 10px;
+          vertical-align: middle;
+      }
 
-        .recipient-section {
-            margin-bottom: 30px;
-        }
+      .recipient-table .label {
+          width: 80px;
+      }
 
-        .recipient-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+      .title {
+          font-weight: bold;
+      }
 
-        .recipient-table td {
-            padding: 8px 10px;
-            vertical-align: top;
-        }
+      .content-section {
+          border-top: 2px solid #333;
+          height: 552px;
+          padding: 0 20px;
+          text-align: justify;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+      }
 
-        .recipient-table .label {
-            width: 80px;
-            font-weight: bold;
-            text-align: center;
-            background-color: #f5f5f5;
-            border: 1px solid #ddd;
-        }
+      .content-section p {
+          margin-bottom: 0.5em;
+          text-indent: 1em;
+      }
 
-        .recipient-table .value {
-            border: 1px solid #ddd;
-        }
+      .signature-section {
+          text-align: center;
+      }
 
-        .title-section {
-            text-align: center;
-            margin: 30px 0;
-        }
+      .sender-info {
+          font-size: 12pt;
+          line-height: 2;
+      }
 
-        .title-section h1 {
-            font-size: 16pt;
-            font-weight: bold;
-            margin: 0;
-            padding: 15px 20px;
-            border-top: 2px solid #333;
-            border-bottom: 2px solid #333;
-            display: inline-block;
-            min-width: 300px;
-        }
+      .sender-company {
+          font-size: 14pt;
+          font-weight: bold;
+          margin-bottom: 18px;
+      }
 
-        .content-section {
-            min-height: 300px;
-            padding: 30px 10px;
-            text-align: justify;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
+      .stamp-placeholder {
+          display: inline-block;
+          width: 40px;
+          height: 40px;
+          border: 1px dashed #999;
+          border-radius: 50%;
+          vertical-align: middle;
+          margin-left: 10px;
+          line-height: 40px;
+          font-size: 9pt;
+          color: #999;
+      }
 
-        .content-section p {
-            margin-bottom: 1em;
-            text-indent: 1em;
-        }
+      .stamp-image {
+          display: inline-block;
+          width: 50px;
+          height: 50px;
+          vertical-align: middle;
+          margin-left: 10px;
+          object-fit: contain;
+      }
 
-        .signature-section {
-            margin-top: 60px;
-            text-align: center;
-        }
+      .meta-section {
+          border-top: 2px solid #333;
+          font-size: 0.8em;
+      }
 
-        .signature-date {
-            font-size: 12pt;
-            margin-bottom: 40px;
-        }
+      .meta-section .label {
+          width: 50px;
+          padding-left: 5px;
+      }
 
-        .sender-info {
-            font-size: 12pt;
-            line-height: 2;
-        }
-
-        .sender-company {
-            font-size: 16pt;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .sender-position {
-            font-size: 11pt;
-        }
-
-        .sender-name-line {
-            font-size: 14pt;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .stamp-placeholder {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 1px dashed #999;
-            border-radius: 50%;
-            vertical-align: middle;
-            margin-left: 10px;
-            line-height: 40px;
-            font-size: 9pt;
-            color: #999;
-        }
-
-        .stamp-image {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            vertical-align: middle;
-            margin-left: 10px;
-            object-fit: contain;
-        }
-
-        .footer {
-            margin-top: 50px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-            font-size: 9pt;
-            color: #666;
-            text-align: center;
-        }
-    </style>
-    <title>{{ letter.document_number }} - {{ letter.title }}</title>
+      .meta-section .approval-step {
+          margin: 10px 0;
+      }
+  </style>
+  <title>{{ letter.document_number }} - {{ letter.title }}</title>
 </head>
+
 <body>
-    <!-- Letterhead -->
-    <div class="letterhead">
-        {% if logo_url %}
-        <img src="{{ logo_url }}" alt="Company Logo" class="company-logo">
-        {% else %}
-        <div class="company-name">{{ company.name }}</div>
-        <div class="company-info">
-            {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
-            {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
-            <br>
-            {% if company.address1 %}{{ company.address1 }}{% endif %}
-            {% if company.address2 %} {{ company.address2 }}{% endif %}
-            {% if company.address3 %} ({{ company.address3 }}){% endif %}
-            {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
-        </div>
-        {% endif %}
+<!-- Letterhead -->
+<div class="letterhead">
+  {% if logo_url %}
+    <img src="{{ logo_url }}" alt="Company Logo" class="company-logo">
+  {% else %}
+    <div class="company-name">{{ company.name }}</div>
+    <div class="company-info">
+      {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
+      {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
+      <br>
+      {% if company.address1 %}{{ company.address1 }}{% endif %}
+      {% if company.address2 %} {{ company.address2 }}{% endif %}
+      {% if company.address3 %} ({{ company.address3 }}){% endif %}
+      {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
     </div>
+  {% endif %}
+</div>
 
-    <!-- Recipient Information -->
-    <div class="recipient-section">
-        <table class="recipient-table">
-            <tr>
-                <td class="label">수 신</td>
-                <td class="value">{{ letter.recipient_name }}</td>
-            </tr>
-            {% if letter.recipient_reference %}
-                <tr>
-                    <td class="label">참 조</td>
-                    <td class="value">{{ letter.recipient_reference }}</td>
-                </tr>
-            {% endif %}
-            <tr>
-                <td class="label">제 목</td>
-                <td class="value"><strong>{{ letter.title }}</strong></td>
-            </tr>
-        </table>
-    </div>
+<!-- Recipient Information -->
+<div class="recipient-section">
+  <table class="recipient-table">
+    <tr>
+      <td class="label">수 신 :</td>
+      <td class="value">{{ letter.recipient_name }}</td>
+    </tr>
+    <tr>
+      <td class="label">경 유 :</td>
+      <td class="value">{{ letter.via }}</td>
+    </tr>
+    <tr>
+      <td class="label">참 조 :</td>
+      <td class="value">{{ letter.recipient_reference }}</td>
+    </tr>
+    <tr class="title">
+      <td class="label">제 목 :</td>
+      <td class="value">{{ letter.title }}</td>
+    </tr>
+  </table>
+</div>
 
-    <!-- Document Number and Date -->
-    <div class="document-header">
-        <div class="document-number-box">
-            <span class="document-number">문서번호: {{ letter.document_number }}</span><br>
-            <span>{{ letter.issue_date|date:"Y년 m월 d일" }}</span>
-        </div>
-    </div>
+<!-- Content -->
+<div class="content-section">
+  {{ letter.content|linebreaks }}
+</div>
 
-    <!-- Content -->
-    <div class="content-section">
-        {{ letter.content|linebreaks }}
+<!-- Signature Section -->
+<div class="signature-section">
+  <div class="sender-info">
+    <div class="sender-company">
+      {{ company.name }}
+      {% if seal_url %}
+        <img src="{{ seal_url }}" alt="인감" class="stamp-image">
+      {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+        <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
+      {% else %}
+        <span class="stamp-placeholder">(인)</span>
+      {% endif %}
     </div>
+  </div>
+</div>
 
-    <!-- Signature Section -->
-    <div class="signature-section">
-        <div class="signature-date">{{ letter.issue_date|date:"Y년 m월 d일" }}</div>
-        <div class="sender-info">
-            <div class="sender-company">{{ company.name }}</div>
-            {% if letter.sender_department %}
-            <div class="sender-position">{{ letter.sender_department }}</div>
-            {% endif %}
-            {% if letter.sender_position %}
-            <div class="sender-position">{{ letter.sender_position }}</div>
-            {% endif %}
-            <div class="sender-name-line">
-                {{ letter.sender_name }}
-                {% if seal_url %}
-                <img src="{{ seal_url }}" alt="인감" class="stamp-image">
-                {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
-                <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
-                {% else %}
-                <span class="stamp-placeholder">(인)</span>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer with Recipient Address if provided -->
-    {% if letter.recipient_address or letter.recipient_contact %}
-    <div class="footer">
-        {% if letter.recipient_address %}수신처 주소: {{ letter.recipient_address }}{% endif %}
-        {% if letter.recipient_address and letter.recipient_contact %} | {% endif %}
-        {% if letter.recipient_contact %}연락처: {{ letter.recipient_contact }}{% endif %}
-    </div>
-    {% endif %}
+<!-- Meta Section -->
+<div class="meta-section">
+  <table class="approval-step">
+    <tr>
+      <td class="label">담당</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+  <table>
+    <tr>
+      <td class="label">시행</td>
+      <td style="width: 120px;">{{ letter.document_number }}</td>
+      <td style="width: 100px;">({{ letter.issue_date|date:"Y-m-d" }})</td>
+      <td class="label">접수</td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td class="label">우편</td>
+      <td colspan="5">
+        (21980) 인천광역시 연수구 능허대로289번길 21, 4층 (동춘동, 대성빌딩)
+      </td>
+    </tr>
+    <tr>
+      <td class="label">전화</td>
+      <td>032-831-5500</td>
+      <td></td>
+      <td class="label">팩스</td>
+      <td style="width: 120px;">032-858-5599</td>
+      <td style="text-align: right;"></td>
+    </tr>
+  </table>
+</div>
 </body>
 </html>
