@@ -30,10 +30,9 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields = ('pk', 'name', 'short_name', 'ceo', 'tax_number', 'org_number', 'business_cond',
-                  'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
-                  'address2', 'address3', 'departments', 'grades', 'com_issue_project',
-                  'is_default')
+        fields = ('pk', 'name', 'en_name', 'short_name', 'ceo', 'tax_number', 'org_number',
+                  'business_cond', 'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
+                  'address2', 'address3', 'departments', 'grades', 'com_issue_project', 'is_default')
 
     @staticmethod
     def get_com_issue_project(obj):
@@ -52,7 +51,8 @@ class CompanySealSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanySeal
-        fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'seal_image', 'manager', 'is_active', 'created')
+        fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'seal_image', 'manager', 'is_active',
+                  'created')
 
 
 class StaffsInDepartmentSerializer(serializers.ModelSerializer):
@@ -234,19 +234,20 @@ class StaffLeaveUsageSerializer(serializers.ModelSerializer):
                   'is_cancelled', 'created')
 
 
-
 class StaffSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     sort = serializers.ChoiceField(choices=Staff.SORT_CHOICES)
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
     employment_type_desc = serializers.CharField(source='get_employment_type_display', read_only=True)
     department = serializers.CharField(source='department.name', read_only=True, allow_null=True)
-    position = serializers.SlugRelatedField(queryset=Position.objects.all(), slug_field='name', allow_null=True, required=False)
+    position = serializers.SlugRelatedField(queryset=Position.objects.all(), slug_field='name', allow_null=True,
+                                            required=False)
     duty = serializers.CharField(source='duty.name', read_only=True, allow_null=True)
     department_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     position_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     duty_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
-    grade = serializers.SlugRelatedField(queryset=JobGrade.objects.all(), slug_field='code', allow_null=True, required=False)
+    grade = serializers.SlugRelatedField(queryset=JobGrade.objects.all(), slug_field='code', allow_null=True,
+                                         required=False)
     status = serializers.ChoiceField(choices=Staff.STATUS_CHOICES)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     assignments = StaffAssignmentSerializer(many=True, read_only=True)
@@ -358,4 +359,3 @@ class PromotionCandidateSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'policy', 'staff', 'staff_name', 'current_grade_code', 'target_grade_code',
                   'eval_year', 'tenure_years', 'avg_eval_score', 'status', 'status_desc',
                   'committee_review', 'promoted_date')
-
