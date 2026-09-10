@@ -12,6 +12,8 @@ overrides:
   brace-expansion: 1.1.18
   nanoid: '>=3.3.17'
   fast-uri: 3.1.6
+  js-yaml: 4.3.2
+  joi: 18.2.4
 
 importers:
 
@@ -3221,8 +3223,8 @@ packages:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
 
-  joi@18.2.3:
-    resolution: {integrity: sha512-N5A3KTWQpPWT4ExxxPlUx7WmykGXRzhNidWhV41d6Abu9YfI2NyWCJuxdPnslJCPWtbRpSVOWSnSS6GakLM/Rg==}
+  joi@18.2.4:
+    resolution: {integrity: sha512-5AxF2kdKOcmF3hg4xAyXqihV6A8pEOrsj71Ta7Clk5OJotLqXH9/QepFDqGEFTfatT5merg0KH0W/8cy4/IE+g==}
     engines: {node: '>= 20'}
 
   js-beautify@1.15.4:
@@ -3233,8 +3235,8 @@ packages:
   js-cookie@3.0.8:
     resolution: {integrity: sha512-yeJd4aNAdYZQjaon2bpD/Gb0B/omw7HQOsynXXcOiWVCacbBcPlgn8S/d1X6blFSaHao7ozqtW7NZW19xpCtIw==}
 
-  js-yaml@4.3.1:
-    resolution: {integrity: sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ==}
+  js-yaml@4.3.2:
+    resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
   jsbn@0.1.1:
@@ -5507,7 +5509,7 @@ snapshots:
       globals: 14.0.0
       ignore: 5.3.2
       import-fresh: 3.3.1
-      js-yaml: 4.3.1
+      js-yaml: 4.3.2
       minimatch: 3.1.5
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
@@ -8280,7 +8282,7 @@ snapshots:
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  joi@18.2.3:
+  joi@18.2.4:
     dependencies:
       '@hapi/address': 5.1.1
       '@hapi/formula': 3.0.2
@@ -8300,7 +8302,7 @@ snapshots:
 
   js-cookie@3.0.8: {}
 
-  js-yaml@4.3.1:
+  js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
 
@@ -9860,7 +9862,7 @@ snapshots:
   wait-on@9.0.4(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       axios: 1.19.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
-      joi: 18.2.3
+      joi: 18.2.4
       lodash: 4.18.1
       minimist: 1.2.8
       rxjs: 7.8.2
