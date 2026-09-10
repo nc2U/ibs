@@ -68,13 +68,13 @@ class Document(BaseModel):
     is_pinned = models.BooleanField('상단 고정', default=False)
 
     # ── 보안 등급 (4단계) ──────────────────────────────────────────────
-    SECURITY_PRIVATE = '1'   # 비공개: 작성자 + 명시적 허가자만
-    SECURITY_TEAM    = '2'   # 팀 공개: 작성자의 소속 부서원
-    SECURITY_PROJECT = '3'   # 프로젝트 공개: 해당 워크스페이스 멤버
-    SECURITY_COMPANY = '4'   # 전사 공개: 로그인한 모든 직원
+    SECURITY_PRIVATE = '1'  # 비공개: 작성자 + 명시적 허가자만
+    SECURITY_TEAM = '2'  # 팀 공개: 작성자의 소속 부서원
+    SECURITY_PROJECT = '3'  # 프로젝트 공개: 해당 워크스페이스 멤버
+    SECURITY_COMPANY = '4'  # 전사 공개: 로그인한 모든 직원
     SECURITY_LEVEL_CHOICES = (
         (SECURITY_PRIVATE, '1등급 비공개 (작성자/허가자)'),
-        (SECURITY_TEAM,    '2등급 팀 공개 (소속 부서)'),
+        (SECURITY_TEAM, '2등급 팀 공개 (소속 부서)'),
         (SECURITY_PROJECT, '3등급 프로젝트 공개 (워크스페이스 멤버)'),
         (SECURITY_COMPANY, '4등급 전사 공개'),
     )
@@ -157,7 +157,6 @@ class Document(BaseModel):
             GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='docs_document_title_trgm'),
             GinIndex(fields=['description'], opclasses=['gin_trgm_ops'], name='docs_document_desc_trgm'),
         ]
-
 
 
 class Link(models.Model):
@@ -315,16 +314,15 @@ class OfficialLetter(models.Model):
     recipient_name = models.CharField('수신처명', max_length=100)  # 수신처 정보
     recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
     recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')
-    recipient_reference = models.CharField('참조', max_length=100, blank=True, default='',
-                                           help_text='참조인 또는 부서')
+    via = models.CharField('경유', max_length=100, blank=True, default='', help_text='최종 수신처로 가기 전 거치는 중간 기관 또는 부서')
+    recipient_reference = models.CharField('참조', max_length=100, blank=True, default='', help_text='참조인 또는 부서')
     sender_name = models.CharField('발신자명', max_length=50)  # 발신자 정보
     sender_position = models.CharField('발신자 직위', max_length=50, blank=True, default='')
     sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
     content = models.TextField('내용')  # 내용
     issue_date = models.DateField('발신일자')  # 발신일자
     seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL,
-                            null=True, blank=True, related_name='official_letters',
-                            verbose_name='날인 인감')
+                             null=True, blank=True, related_name='official_letters', verbose_name='날인 인감')
     pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
                                 storage=default_storage, null=True, blank=True)  # 생성된 PDF
     APPROVAL_STATUS_CHOICES = (

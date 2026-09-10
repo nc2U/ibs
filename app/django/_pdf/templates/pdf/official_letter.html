@@ -30,7 +30,7 @@
         }
 
         .letterhead::after {
-            content: "DAEYOUNG IBS Development Inc.";
+            content: "{{ company.en_name }}";
             position: absolute;
             left: 0;
             bottom: 0;
@@ -229,14 +229,6 @@
         {% endif %}
     </div>
 
-    <!-- Document Number and Date -->
-    <div class="document-header">
-        <div class="document-number-box">
-            <span class="document-number">문서번호: {{ letter.document_number }}</span><br>
-            <span>{{ letter.issue_date|date:"Y년 m월 d일" }}</span>
-        </div>
-    </div>
-
     <!-- Recipient Information -->
     <div class="recipient-section">
         <table class="recipient-table">
@@ -245,16 +237,24 @@
                 <td class="value">{{ letter.recipient_name }}</td>
             </tr>
             {% if letter.recipient_reference %}
-            <tr>
-                <td class="label">참 조</td>
-                <td class="value">{{ letter.recipient_reference }}</td>
-            </tr>
+                <tr>
+                    <td class="label">참 조</td>
+                    <td class="value">{{ letter.recipient_reference }}</td>
+                </tr>
             {% endif %}
             <tr>
                 <td class="label">제 목</td>
                 <td class="value"><strong>{{ letter.title }}</strong></td>
             </tr>
         </table>
+    </div>
+
+    <!-- Document Number and Date -->
+    <div class="document-header">
+        <div class="document-number-box">
+            <span class="document-number">문서번호: {{ letter.document_number }}</span><br>
+            <span>{{ letter.issue_date|date:"Y년 m월 d일" }}</span>
+        </div>
     </div>
 
     <!-- Content -->
