@@ -118,16 +118,26 @@ class ExecutiveRankSerializer(serializers.ModelSerializer):
 class ExecutiveSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     staff_name = serializers.CharField(source='staff.name', read_only=True)
+    full_name = serializers.ReadOnlyField()  # 응답용
     rank_name = serializers.CharField(source='rank.name', read_only=True, allow_null=True)
     executive_type_desc = serializers.CharField(source='get_director_type_display', read_only=True)
     represent_type_desc = serializers.CharField(source='get_represent_type_display', read_only=True)
 
     class Meta:
         model = Executive
-        fields = ('pk', 'company', 'staff', 'staff_name', 'rank', 'rank_name',
-                  'executive_type', 'executive_type_desc', 'is_registered', 'is_standing',
-                  'represent_type', 'represent_type_desc', 'term_start', 'term_end',
-                  'appointed_date', 'note')
+        fields = ('pk', 'company', 'staff', 'staff_name', 'name', 'full_name', 'contact', 'rank', 'rank_name',
+                  'executive_type', 'executive_type_desc', 'is_registered', 'is_standing', 'represent_type',
+                  'represent_type_desc', 'term_start', 'term_end', 'appointed_date', 'note')
+
+    def validate(self, attrs):
+        staff = attrs.get('staff')
+        name = attrs.get('name')
+
+        if not staff and (not name or not name.strip()):
+            raise serializers.ValidationError({
+                'non_field_errors': ["시스템 계정(Staff) 또는 이름 중 하나는 반드시 입력해야 합니다."]
+            })
+        return attrs
 
 
 # Staff & Details ------------------------------------------------------------------

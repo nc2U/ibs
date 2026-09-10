@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from company.models import Company, Department, Position, Staff, CompanySeal
+from company.models import Company, Department, Position, Staff, CompanySeal, Executive, ExecutiveRank
 from work.models.project import IssueProject, Member, Role, Permission
 
 User = get_user_model()
@@ -222,3 +223,35 @@ class CompanyDataIsolationAndPermissionTests(APITestCase):
             'name': '매니저부서'
         })
         self.assertEqual(res_post.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ExecutiveModelTests(APITestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='테스트회사')
+        self.rank = ExecutiveRank.objects.create(company=self.company, code='E1', name='사장', sort_order=1)
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.staff = Staff.objects.create(company=self.company, user=self.user, name='홍길동', date_join='2020-01-01')
+
+    def test_executive_with_staff_is_valid(self):
+        exec = Executive(company=self.company, staff=self.staff, rank=self.rank)
+        exec.full_clean()
+        exec.save()
+        self.assertEqual(exec.full_name, '홍길동')
+
+    def test_executive_without_staff_with_name_is_valid(self):
+        exec = Executive(company=self.company, name='외부이사', rank=self.rank)
+        exec.full_clean()
+        exec.save()
+        self.assertEqual(exec.full_name, '외부이사')
+
+    def test_executive_without_staff_without_name_is_invalid(self):
+        exec = Executive(company=self.company, rank=self.rank)
+        with self.assertRaises(ValidationError):
+            exec.full_clean()
+
+    def test_str_representation(self):
+        exec_staff = Executive.objects.create(company=self.company, staff=self.staff, rank=self.rank)
+        self.assertEqual(str(exec_staff), '홍길동 사장 (사내이사)')
+
+        exec_name = Executive.objects.create(company=self.company, name='외부인', rank=self.rank)
+        self.assertEqual(str(exec_name), '외부인 사장 (사내이사)')
