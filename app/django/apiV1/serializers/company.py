@@ -120,7 +120,7 @@ class ExecutiveSerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source='staff.name', read_only=True)
     full_name = serializers.ReadOnlyField()  # 응답용
     rank_name = serializers.CharField(source='rank.name', read_only=True, allow_null=True)
-    executive_type_desc = serializers.CharField(source='get_director_type_display', read_only=True)
+    executive_type_desc = serializers.CharField(source='get_excutive_type_display', read_only=True)
     represent_type_desc = serializers.CharField(source='get_represent_type_display', read_only=True)
 
     class Meta:

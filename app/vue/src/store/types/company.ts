@@ -106,6 +106,9 @@ export interface Executive {
   company?: string
   staff: number
   staff_name?: string
+  full_name?: string
+  name: string
+  contact: string
   rank?: number | null
   rank_name?: string | null
   executive_type: ExecutiveType

@@ -9,6 +9,7 @@ import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { CFormInput } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: String, default: null },
@@ -55,6 +56,8 @@ const form = ref<Executive>({
   pk: undefined,
   company: undefined,
   staff: null as any,
+  name: '',
+  contact: '',
   rank: null,
   executive_type: 'inside',
   is_registered: false,
@@ -70,19 +73,24 @@ const formsCheck = computed(() => {
   if (props.executive) {
     const a = form.value.pk === props.executive.pk
     const b = form.value.staff === props.executive.staff
-    const c = form.value.rank === props.executive.rank
-    const d = form.value.executive_type === props.executive.executive_type
-    const e = form.value.is_registered === props.executive.is_registered
-    const f = form.value.is_standing === props.executive.is_standing
-    const g = form.value.represent_type === props.executive.represent_type
-    const h = form.value.term_start === props.executive.term_start
-    const i = form.value.term_end === props.executive.term_end
-    const j = form.value.appointed_date === props.executive.appointed_date
-    const k = form.value.note === props.executive.note
+    const c = form.value.name === props.executive.name
+    const d = form.value.contact === props.executive.contact
+    const e = form.value.rank === props.executive.rank
+    const f = form.value.executive_type === props.executive.executive_type
+    const g = form.value.is_registered === props.executive.is_registered
+    const h = form.value.is_standing === props.executive.is_standing
+    const i = form.value.represent_type === props.executive.represent_type
+    const j = form.value.term_start === props.executive.term_start
+    const k = form.value.term_end === props.executive.term_end
+    const l = form.value.appointed_date === props.executive.appointed_date
+    const m = form.value.note === props.executive.note
 
-    return a && b && c && d && e && f && g && h && i && j && k
+    return a && b && c && d && e && f && g && h && i && j && k && l && m
   } else return false
 })
+
+const isStaffRequired = computed(() => !form.value.name)
+const isNameRequired = computed(() => !form.value.staff)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
@@ -114,6 +122,8 @@ const formDataSetup = () => {
     form.value.pk = props.executive.pk
     form.value.company = props.executive.company
     form.value.staff = props.executive.staff
+    form.value.name = props.executive.name
+    form.value.contact = props.executive.contact
     form.value.rank = props.executive.rank ?? null
     form.value.executive_type = props.executive.executive_type
     form.value.is_registered = props.executive.is_registered
@@ -144,13 +154,15 @@ watch(
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">임원 (직원선택)</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: isStaffRequired }">
+                임원 (직원선택)
+              </CFormLabel>
               <CCol sm="8">
                 <Multiselect
                   v-model="form.staff"
                   :options="getPkStaffs"
-                  :disabled="!!executive"
-                  required
+                  :disabled="!!executive || !!form.name"
+                  :required="isStaffRequired"
                   placeholder="직원 선택"
                 />
               </CCol>
@@ -164,6 +176,39 @@ watch(
                   v-model="form.rank"
                   :options="getPkExecutiveRanks"
                   placeholder="직위 선택"
+                />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label" :class="{ required: isNameRequired }">
+                이름
+              </CFormLabel>
+              <CCol sm="8">
+                <CFormInput
+                  v-model="form.name"
+                  maxlength="20"
+                  placeholder="이름"
+                  :disabled="!!form.staff"
+                  :required="isNameRequired"
+                />
+              </CCol>
+            </CRow>
+          </CCol>
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label">연락처</CFormLabel>
+              <CCol sm="8">
+                <input
+                  v-model="form.contact"
+                  v-maska
+                  :data-maska="['###-###-####', '###-####-####']"
+                  placeholder="연락처"
+                  class="form-control"
                 />
               </CCol>
             </CRow>

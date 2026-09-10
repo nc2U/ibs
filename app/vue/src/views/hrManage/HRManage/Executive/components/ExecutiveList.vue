@@ -44,7 +44,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <CTableRow class="text-center" align="middle">
         <CTableHeaderCell scope="col">성명</CTableHeaderCell>
         <CTableHeaderCell scope="col">직위</CTableHeaderCell>
-        <CTableHeaderCell scope="col">상법상 지위</CTableHeaderCell>
+        <CTableHeaderCell scope="col">임원 구분</CTableHeaderCell>
         <CTableHeaderCell scope="col">등기</CTableHeaderCell>
         <CTableHeaderCell scope="col">상근</CTableHeaderCell>
         <CTableHeaderCell scope="col">대표권</CTableHeaderCell>
