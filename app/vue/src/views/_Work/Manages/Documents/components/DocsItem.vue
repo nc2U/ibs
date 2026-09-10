@@ -1,14 +1,11 @@
 <script lang="ts" setup="">
 import { computed, type PropType } from 'vue'
-import { useRoute } from 'vue-router'
 import type { Docs } from '@/store/types/docs'
 import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import DOMPurify from 'dompurify'
 
 defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
-
-const route = useRoute()
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
