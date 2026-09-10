@@ -98,7 +98,7 @@ const humanResource = {
         },
         {
           component: 'CNavItem',
-          name: '임원 재임 관리',
+          name: '임원 정보 관리',
           to: '/hr-manage/executives',
         },
         {

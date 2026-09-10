@@ -75,10 +75,10 @@ const hrManage = {
     },
     {
       path: 'executives',
-      name: '임원 재임 관리',
+      name: '임원 정보 관리',
       component: () => import('@/views/hrManage/HRManage/Executive/Index.vue'),
       meta: {
-        title: '임원 재임 관리',
+        title: '임원 정보 관리',
         auth: true,
       },
     },
