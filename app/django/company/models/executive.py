@@ -50,7 +50,9 @@ class Executive(models.Model):
     )
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='executives', verbose_name='회사')
-    staff = models.OneToOneField('company.Staff', on_delete=models.CASCADE, related_name='executive', verbose_name='임원')
+    staff = models.OneToOneField('company.Staff', on_delete=models.CASCADE, null=True, blank=True, related_name='executive', verbose_name='임원')
+    name = models.CharField('이름(직접입력)', max_length=100, null=True, blank=True, help_text='시스템 계정(Staff)이 없는 경우 필수')
+    contact = models.CharField('연락처(직접입력)', max_length=100, null=True, blank=True)
     rank = models.ForeignKey(ExecutiveRank, on_delete=models.PROTECT, related_name='executives', verbose_name='임원 직위')
     executive_type = models.CharField('임원 구분', max_length=25, choices=EXECUTIVE_TYPE_CHOICES, default='inside',
                                       help_text='임원의 법적·조직적 구분')
@@ -63,14 +65,21 @@ class Executive(models.Model):
     appointed_date = models.DateField('최초 임원 선임일', null=True, blank=True)
     note = models.CharField('비고', max_length=255, blank=True)
 
+    @property
+    def full_name(self):
+        return self.staff.name if self.staff else self.name
+
     def __str__(self):
         rank_str = f" {self.rank.name}" if self.rank else ""
-        return f"{self.staff.name}{rank_str} ({self.get_executive_type_display()})"
+        return f"{self.full_name}{rank_str} ({self.get_executive_type_display()})"
 
     def clean(self):
         super().clean()
 
         errors = {}
+
+        if not self.staff and not self.name:
+            errors['name'] = '시스템 계정(Staff)이 없는 경우, 이름은 필수입니다.'
 
         if (
                 self.company_id
