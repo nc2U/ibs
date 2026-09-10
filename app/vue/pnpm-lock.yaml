@@ -13,7 +13,7 @@ overrides:
   nanoid: '>=3.3.17'
   fast-uri: 3.1.6
   js-yaml: 4.3.2
-  joi: 18.2.4
+  joi: 18.2.5
 
 importers:
 
@@ -3223,8 +3223,8 @@ packages:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
 
-  joi@18.2.4:
-    resolution: {integrity: sha512-5AxF2kdKOcmF3hg4xAyXqihV6A8pEOrsj71Ta7Clk5OJotLqXH9/QepFDqGEFTfatT5merg0KH0W/8cy4/IE+g==}
+  joi@18.2.5:
+    resolution: {integrity: sha512-+gEA7rLfaNWx9JzawWPrPetSZwT16NUqHtECDgjyAJreXcs4TM7tx2Pa+VVJJK0YHM83ybrVdaT6UekHH50FJQ==}
     engines: {node: '>= 20'}
 
   js-beautify@1.15.4:
@@ -8282,7 +8282,7 @@ snapshots:
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  joi@18.2.4:
+  joi@18.2.5:
     dependencies:
       '@hapi/address': 5.1.1
       '@hapi/formula': 3.0.2
@@ -9862,7 +9862,7 @@ snapshots:
   wait-on@9.0.4(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       axios: 1.19.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
-      joi: 18.2.4
+      joi: 18.2.5
       lodash: 4.18.1
       minimist: 1.2.8
       rxjs: 7.8.2
