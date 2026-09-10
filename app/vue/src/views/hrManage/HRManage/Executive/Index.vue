@@ -28,7 +28,7 @@ const dataFilter = ref<ExecutiveFilter>({
   page: 1,
   com: 1,
   rank: '',
-  director_type: '',
+  executive_type: '',
   is_registered: '',
   is_standing: '',
   represent_type: '',
@@ -44,7 +44,7 @@ const excelUrl = computed(() => {
   const filter = dataFilter.value
   let query = ''
   query = filter.rank ? `${query}&rank=${filter.rank}` : query
-  query = filter.director_type ? `${query}&director_type=${filter.director_type}` : query
+  query = filter.executive_type ? `${query}&executive_type=${filter.executive_type}` : query
   query = filter.is_registered !== '' ? `${query}&is_registered=${filter.is_registered}` : query
   query = filter.is_standing !== '' ? `${query}&is_standing=${filter.is_standing}` : query
   query = filter.represent_type ? `${query}&represent_type=${filter.represent_type}` : query
@@ -59,7 +59,7 @@ const listFiltering = (payload: ExecutiveFilter) => {
       page: payload.page,
       com: payload.com,
       rank: payload.rank,
-      director_type: payload.director_type,
+      executive_type: payload.executive_type,
       is_registered: payload.is_registered,
       is_standing: payload.is_standing,
       represent_type: payload.represent_type,

@@ -104,18 +104,18 @@ class DutyTitleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class ExecutiveRankAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'rank_order', 'code', 'name', 'role_desc')
+    list_display = ('id', 'company', 'sort_order', 'code', 'name', 'role_desc')
     list_display_links = ('name',)
-    list_editable = ('rank_order',)
+    list_editable = ('sort_order',)
     list_filter = ('company',)
     search_fields = ('code', 'name', 'role_desc')
 
 
 class ExecutiveAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'staff', 'rank', 'director_type', 'is_registered',
+    list_display = ('id', 'company', 'staff', 'rank', 'executive_type', 'is_registered',
                     'is_standing', 'represent_type', 'term_start', 'term_end')
     list_display_links = ('staff',)
-    list_filter = ('company', 'rank', 'director_type', 'is_registered', 'is_standing', 'represent_type')
+    list_filter = ('company', 'rank', 'executive_type', 'is_registered', 'is_standing', 'represent_type')
     search_fields = ('staff__name', 'rank__name', 'note')
 
 
@@ -251,4 +251,3 @@ admin.site.register(StaffLeaveUsage, StaffLeaveUsageAdmin)
 admin.site.register(PromotionPolicy, PromotionPolicyAdmin)
 admin.site.register(StaffEvaluation, StaffEvaluationAdmin)
 admin.site.register(PromotionCandidate, PromotionCandidateAdmin)
-

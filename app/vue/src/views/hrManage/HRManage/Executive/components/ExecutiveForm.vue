@@ -32,7 +32,7 @@ const getPkStaffs = computed(() =>
   })),
 )
 
-const directorTypes = [
+const executiveTypes = [
   { value: 'inside', label: '사내이사' },
   { value: 'outside', label: '사외이사' },
   { value: 'non_standing_director', label: '기타비상무이사' },
@@ -56,7 +56,7 @@ const form = ref<Executive>({
   company: undefined,
   staff: null as any,
   rank: null,
-  director_type: 'inside',
+  executive_type: 'inside',
   is_registered: false,
   is_standing: true,
   represent_type: 'none',
@@ -71,7 +71,7 @@ const formsCheck = computed(() => {
     const a = form.value.pk === props.executive.pk
     const b = form.value.staff === props.executive.staff
     const c = form.value.rank === props.executive.rank
-    const d = form.value.director_type === props.executive.director_type
+    const d = form.value.executive_type === props.executive.executive_type
     const e = form.value.is_registered === props.executive.is_registered
     const f = form.value.is_standing === props.executive.is_standing
     const g = form.value.represent_type === props.executive.represent_type
@@ -115,7 +115,7 @@ const formDataSetup = () => {
     form.value.company = props.executive.company
     form.value.staff = props.executive.staff
     form.value.rank = props.executive.rank ?? null
-    form.value.director_type = props.executive.director_type
+    form.value.executive_type = props.executive.executive_type
     form.value.is_registered = props.executive.is_registered
     form.value.is_standing = props.executive.is_standing
     form.value.represent_type = props.executive.represent_type
@@ -173,13 +173,13 @@ watch(
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">상법상 지위</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">임원 구분</CFormLabel>
               <CCol sm="8">
                 <Multiselect
-                  v-model="form.director_type"
-                  :options="directorTypes"
+                  v-model="form.executive_type"
+                  :options="executiveTypes"
                   required
-                  placeholder="상법상 지위 선택"
+                  placeholder="임원 구분 선택"
                 />
               </CCol>
             </CRow>

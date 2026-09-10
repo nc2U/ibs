@@ -93,12 +93,11 @@ export interface ExecutiveRank {
   company?: string
   code: string
   name: string
-  rank_order: number
+  sort_order: number
   role_desc: string
 }
 
-export type DirectorType =
-  'inside' | 'outside' | 'non_standing_director' | 'auditor' | 'unregistered' | 'advisor'
+export type ExecutiveType = 'inside' | 'outside' | 'non_standing' | 'auditor' | 'advisor'
 
 export type RepresentType = 'none' | 'sole' | 'joint' | 'each'
 
@@ -109,8 +108,8 @@ export interface Executive {
   staff_name?: string
   rank?: number | null
   rank_name?: string | null
-  director_type: DirectorType
-  director_type_desc?: string
+  executive_type: ExecutiveType
+  executive_type_desc?: string
   is_registered: boolean
   is_standing: boolean
   represent_type: RepresentType
@@ -259,7 +258,7 @@ export type ExecutiveFilter = {
   page?: number
   com?: number
   rank?: number | string
-  director_type?: string
+  executive_type?: string
   is_registered?: boolean | string
   is_standing?: boolean | string
   represent_type?: string

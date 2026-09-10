@@ -11,7 +11,7 @@ const form = reactive({
   page: 1,
   com: 1,
   rank: '',
-  director_type: '',
+  executive_type: '',
   is_registered: '',
   is_standing: '',
   represent_type: '',
@@ -21,7 +21,7 @@ const form = reactive({
 const formsCheck = computed(
   () =>
     form.rank === '' &&
-    form.director_type === '' &&
+    form.executive_type === '' &&
     form.is_registered === '' &&
     form.is_standing === '' &&
     form.represent_type === '' &&
@@ -32,12 +32,12 @@ const comStore = useCompany()
 const executivesCount = computed(() => comStore.executivesCount)
 const getPkExecutiveRanks = computed(() => comStore.getPkExecutiveRanks)
 
-const directorTypes = [
+const executiveTypes = [
   { value: 'inside', label: '사내이사' },
   { value: 'outside', label: '사외이사' },
-  { value: 'non_standing_director', label: '기타비상무이사' },
+  { value: 'non_standing', label: '기타비상무이사' },
   { value: 'auditor', label: '감사' },
-  { value: 'advisor', label: '고문/자문' },
+  { value: 'advisor', label: '고문' },
 ]
 
 const registeredOptions = [
@@ -51,7 +51,7 @@ const standingOptions = [
 ]
 
 const representTypes = [
-  { value: 'none', label: '해당없음' },
+  { value: 'none', label: '대표권 없음' },
   { value: 'sole', label: '단독대표' },
   { value: 'joint', label: '공동대표' },
   { value: 'each', label: '각자대표' },
@@ -62,7 +62,7 @@ const listFiltering = (page = 1) => {
     emit('list-filtering', {
       page,
       rank: form.rank || '',
-      director_type: form.director_type || '',
+      executive_type: form.executive_type || '',
       is_registered: form.is_registered !== '' ? form.is_registered : '',
       is_standing: form.is_standing !== '' ? form.is_standing : '',
       represent_type: form.represent_type || '',
@@ -73,7 +73,7 @@ const listFiltering = (page = 1) => {
 
 const resetForm = () => {
   form.rank = ''
-  form.director_type = ''
+  form.executive_type = ''
   form.is_registered = ''
   form.is_standing = ''
   form.represent_type = ''
@@ -103,8 +103,8 @@ defineExpose({ listFiltering })
           </CCol>
           <CCol lg="4" xl="2" class="pb-0 mb-3">
             <Multiselect
-              v-model="form.director_type"
-              :options="directorTypes"
+              v-model="form.executive_type"
+              :options="executiveTypes"
               autocomplete="label"
               :classes="{ search: 'form-control multiselect-search' }"
               :add-option-on="['enter', 'tab']"

@@ -38,7 +38,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center" align="middle">
-        <CTableHeaderCell scope="col">서열</CTableHeaderCell>
+        <CTableHeaderCell scope="col">구분</CTableHeaderCell>
         <CTableHeaderCell scope="col">코드</CTableHeaderCell>
         <CTableHeaderCell scope="col">임원 직위명</CTableHeaderCell>
         <CTableHeaderCell scope="col">역할/관장 설명</CTableHeaderCell>

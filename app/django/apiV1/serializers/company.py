@@ -112,20 +112,20 @@ class ExecutiveRankSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExecutiveRank
-        fields = ('pk', 'company', 'code', 'name', 'rank_order', 'role_desc')
+        fields = ('pk', 'company', 'code', 'name', 'sort_order', 'role_desc')
 
 
 class ExecutiveSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     staff_name = serializers.CharField(source='staff.name', read_only=True)
     rank_name = serializers.CharField(source='rank.name', read_only=True, allow_null=True)
-    director_type_desc = serializers.CharField(source='get_director_type_display', read_only=True)
+    executive_type_desc = serializers.CharField(source='get_director_type_display', read_only=True)
     represent_type_desc = serializers.CharField(source='get_represent_type_display', read_only=True)
 
     class Meta:
         model = Executive
         fields = ('pk', 'company', 'staff', 'staff_name', 'rank', 'rank_name',
-                  'director_type', 'director_type_desc', 'is_registered', 'is_standing',
+                  'executive_type', 'executive_type_desc', 'is_registered', 'is_standing',
                   'represent_type', 'represent_type_desc', 'term_start', 'term_end',
                   'appointed_date', 'note')
 

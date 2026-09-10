@@ -31,7 +31,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <a href="javascript:void(0);" @click="showDetail">{{ executive.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>{{ executive.rank_name || '-' }}</CTableDataCell>
-    <CTableDataCell>{{ executive.director_type_desc }}</CTableDataCell>
+    <CTableDataCell>{{ executive.executive_type_desc }}</CTableDataCell>
     <CTableDataCell>
       <CBadge :color="executive.is_registered ? 'primary' : 'secondary'">
         {{ executive.is_registered ? '등기' : '비등기' }}

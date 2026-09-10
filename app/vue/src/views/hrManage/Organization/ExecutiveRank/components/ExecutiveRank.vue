@@ -25,7 +25,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
 <template>
   <CTableRow v-if="executiveRank" class="text-center">
-    <CTableDataCell>{{ executiveRank.rank_order }}</CTableDataCell>
+    <CTableDataCell>{{ executiveRank.sort_order }}</CTableDataCell>
     <CTableDataCell>{{ executiveRank.code }}</CTableDataCell>
     <CTableDataCell>{{ executiveRank.name }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ executiveRank.role_desc }}</CTableDataCell>

@@ -613,7 +613,7 @@ export const useCompany = defineStore('company', () => {
       page = 1,
       com = 1,
       rank = '',
-      director_type = '',
+      executive_type = '',
       is_registered = '',
       is_standing = '',
       represent_type = '',
@@ -621,7 +621,7 @@ export const useCompany = defineStore('company', () => {
     } = payload
     let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
     if (rank) queryStr += `&rank=${rank}`
-    if (director_type) queryStr += `&director_type=${director_type}`
+    if (executive_type) queryStr += `&executive_type=${executive_type}`
     if (is_registered !== '') queryStr += `&is_registered=${is_registered}`
     if (is_standing !== '') queryStr += `&is_standing=${is_standing}`
     if (represent_type) queryStr += `&represent_type=${represent_type}`

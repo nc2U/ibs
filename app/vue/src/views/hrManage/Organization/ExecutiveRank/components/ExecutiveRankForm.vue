@@ -38,7 +38,7 @@ const form = ref<ExecutiveRank>({
   company: undefined,
   code: '',
   name: '',
-  rank_order: 1,
+  sort_order: 1,
   role_desc: '',
 })
 
@@ -46,7 +46,7 @@ const formsCheck = computed(() => {
   if (props.executiveRank) {
     const a = form.value.code === props.executiveRank.code
     const b = form.value.name === props.executiveRank.name
-    const c = form.value.rank_order === props.executiveRank.rank_order
+    const c = form.value.sort_order === props.executiveRank.sort_order
     const d = form.value.role_desc === props.executiveRank.role_desc
 
     return a && b && c && d
@@ -84,7 +84,7 @@ const formDataSetup = () => {
     form.value.company = props.executiveRank.company
     form.value.code = props.executiveRank.code || ''
     form.value.name = props.executiveRank.name
-    form.value.rank_order = props.executiveRank.rank_order ?? 1
+    form.value.sort_order = props.executiveRank.sort_order ?? 1
     form.value.role_desc = props.executiveRank.role_desc || ''
   } else form.value.company = props.company
 }
@@ -99,13 +99,13 @@ onBeforeMount(() => formDataSetup())
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-2 col-form-label required">서열 순서</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label required">정렬 순서</CFormLabel>
               <CCol sm="10">
                 <CFormInput
-                  v-model.number="form.rank_order"
+                  v-model.number="form.sort_order"
                   type="number"
                   required
-                  placeholder="서열 순서 (낮을수록 상위 서열, 예: 1, 2, 3...)"
+                  placeholder="정렬 순서"
                 />
               </CCol>
             </CRow>
