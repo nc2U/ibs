@@ -16,8 +16,10 @@ export interface Staff {
   sort_desc?: '임원' | '직원'
   name: string
   id_number: string
-  personal_phone: string
+  direct_phone: string
+  direct_fax: string
   email: string
+  personal_phone: string
   department: string
   grade: string
   position: string

@@ -266,10 +266,9 @@ class StaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = Staff
         fields = ('pk', 'company', 'sort', 'sort_desc', 'employment_type', 'employment_type_desc',
-                  'contract_end_date', 'probation_end_date',
-                  'name', 'id_number', 'personal_phone',
-                  'email', 'department', 'position', 'duty', 'department_name', 'position_name', 'duty_name',
-                  'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
+                  'contract_end_date', 'probation_end_date', 'name', 'id_number', 'direct_phone', 'direct_fax',
+                  'personal_phone', 'email', 'department', 'position', 'duty', 'department_name', 'position_name',
+                  'duty_name', 'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
                   'assignments', 'executive')
 
     def create(self, validated_data):
