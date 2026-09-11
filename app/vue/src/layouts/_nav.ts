@@ -202,13 +202,28 @@ const approval = {
     },
     {
       component: 'CNavItem',
-      name: '공문 발송 대장',
-      to: '/approval/official-letters',
+      name: '결재 위임 관리',
+      to: '/approval/delegation',
+    },
+  ],
+}
+
+const officialLetter = {
+  component: 'CNavGroup',
+  name: '대외 공문 관리',
+  to: '/official-letter',
+  auth: 'isStaff',
+  icon: 'cil-envelope-letter',
+  items: [
+    {
+      component: 'CNavItem',
+      name: '발송 공문 관리',
+      to: '/official-letter/outbound',
     },
     {
       component: 'CNavItem',
-      name: '결재 위임 관리',
-      to: '/approval/delegation',
+      name: '수신 공문 관리',
+      to: '/official-letter/inbound',
     },
   ],
 }
@@ -573,6 +588,7 @@ const nav = [
   companyLedger,
   humanResource,
   approval,
+  officialLetter,
   {
     component: 'CNavTitle',
     name: '프로젝트 관리',

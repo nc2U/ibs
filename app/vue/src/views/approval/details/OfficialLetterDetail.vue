@@ -17,11 +17,11 @@ defineProps<{
 <template>
   <div v-if="content.official_letter_id" class="d-flex justify-content-end mb-2">
     <router-link
-      :to="{ name: '공문 발송 대장 - 보기', params: { letterId: content.official_letter_id } }"
+      :to="{ name: '발송 공문 관리 - 보기', params: { letterId: content.official_letter_id } }"
       class="btn btn-outline-primary btn-sm"
     >
       <CIcon name="cilExternalLink" class="me-1" />
-      공문 발송 대장 바로가기
+      발송 공문 바로가기
     </router-link>
   </div>
 

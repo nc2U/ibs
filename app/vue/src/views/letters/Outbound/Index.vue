@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { navMenu, pageTitle } from '@/views/approval/_menu/headermixin'
+import { navMenu, pageTitle } from '@/views/letters/_menu/headermixin'
 import {
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
@@ -20,7 +20,7 @@ import LetterList from './components/LetterList.vue'
 import LetterView from './components/LetterView.vue'
 import LetterForm, { type LocalAttachmentItem } from './components/LetterForm.vue'
 
-const mainViewName = ref('공문 발송 대장')
+const mainViewName = ref('발송 공문 관리')
 
 const letterFilter = ref<LetterFilter>({
   company: '',

@@ -8,6 +8,7 @@ import workSetting from '@/router/modules/workSetting'
 import comLedger from '@/router/modules/comLedger.ts'
 import hrManage from '@/router/modules/hrManage'
 import approval from '@/router/modules/approval'
+import officialLetter from '@/router/modules/officialLetter'
 import contracts from '@/router/modules/contracts'
 import sales from '@/router/modules/sales'
 import payment from '@/router/modules/payment'
@@ -41,6 +42,7 @@ const routes: Array<RouteRecordRaw> = [
       comLedger as unknown as RouteRecordRaw,
       hrManage,
       approval,
+      officialLetter,
       contracts,
       sales,
       payment,
