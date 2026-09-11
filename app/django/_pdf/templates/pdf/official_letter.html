@@ -315,33 +315,37 @@
       <div class="approval-line-wrap">
         <table class="approval-line-table">
           <tr>
-            <!-- 좌측: 기안 / 담당 -->
-            <td style="text-align: left; white-space: nowrap;">
-              <span class="approval-item-title">{{ approval_line.drafter.display_title }}</span>
-              <span class="approval-item-name">{{ approval_line.drafter.name }}</span>
+            <!-- 좌측: 기안 / 담당 (대표이사 단독 기안/결재 시에는 공란) -->
+            <td style="text-align: left; vertical-align: bottom; white-space: nowrap;">
+              {% if not approval_line.is_solo and approval_line.drafter %}
+                <span class="approval-item-title">{{ approval_line.drafter.display_title }}</span>
+                <span class="approval-item-name">{{ approval_line.drafter.name }}</span>
+              {% endif %}
             </td>
 
             <!-- 중앙: 중간 결재 단계 (있을 경우만) -->
-            <td style="text-align: center; white-space: nowrap;">
+            <td style="text-align: center; vertical-align: bottom; white-space: nowrap;">
               {% for step in approval_line.middle_steps %}
                 <span style="margin: 0 12px;">
-                  <span class="approval-item-title">{{ step.display_title }}</span>
+                  {% if step.display_title %}
+                    <span class="approval-item-title">{{ step.display_title }}</span>
+                  {% endif %}
                   <span class="approval-item-name">{{ step.name }}</span>
                 </span>
               {% endfor %}
             </td>
 
-            <!-- 우측: 최종 결재자 (대표 등) 및 바로 아래 승인 일자 -->
-            <td style="text-align: right; white-space: nowrap; width: 1%;">
+            <!-- 우측: 최종 결재자 (상단에 승인/전결 일자, 하단에 직책+이름) -->
+            <td style="text-align: right; vertical-align: bottom; white-space: nowrap; width: 1%;">
+              {% if approval_line.final_date %}
+                <div class="approval-final-date" style="margin-bottom: 2px;">
+                  <span>{{ approval_line.date_label|default:"승인" }} {{ approval_line.final_date }}</span>
+                </div>
+              {% endif %}
               <div>
                 <span class="approval-item-title">{{ approval_line.final_approver.display_title }}</span>
                 <span class="approval-item-name">{{ approval_line.final_approver.name }}</span>
               </div>
-              {% if approval_line.final_date %}
-                <div class="approval-final-date">
-                  <span>승인 {{ approval_line.final_date }}</span>
-                </div>
-              {% endif %}
             </td>
           </tr>
         </table>

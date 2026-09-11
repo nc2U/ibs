@@ -144,7 +144,7 @@ class DocsAppSecurityTests(TestCase):
             company=self.company_a,
             title='[공문] 사업계획 인가 승인 건',
             recipient_name='서울특별시청',
-            sender_name='대표이사',
+            drafter_name='대표이사',
             content='사업계획 인가를 신청합니다.',
             issue_date=date(2026, 3, 1),
             creator=self.author_user
@@ -155,7 +155,7 @@ class DocsAppSecurityTests(TestCase):
             document_number='2026-999',
             title='[타사공문] 제휴 제안',
             recipient_name='거래처 B',
-            sender_name='대표이사 B',
+            drafter_name='대표이사 B',
             content='타사 공문 내용입니다.',
             issue_date=date(2026, 3, 1),
             creator=self.other_user

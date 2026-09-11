@@ -63,7 +63,7 @@ class OfficialLetterAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'document_number', 'company', 'title', 'recipient_name', 'issue_date', 'creator')
     list_display_links = ('document_number', 'title')
     list_filter = ('company', 'issue_date', 'creator')
-    search_fields = ('document_number', 'title', 'recipient_name', 'sender_name', 'content')
+    search_fields = ('document_number', 'title', 'recipient_name', 'drafter_name', 'content')
     readonly_fields = ('document_number', 'created', 'updated')
     date_hierarchy = 'issue_date'
     fieldsets = (
@@ -73,8 +73,8 @@ class OfficialLetterAdmin(ImportExportMixin, admin.ModelAdmin):
         ('수신처 정보', {
             'fields': ('recipient_name', 'recipient_address', 'recipient_contact', 'recipient_reference')
         }),
-        ('발신자 정보', {
-            'fields': ('sender_name', 'sender_position', 'sender_department')
+        ('기안/담당자 정보', {
+            'fields': ('drafter_name', 'drafter_position')
         }),
         ('내용', {
             'fields': ('content',)

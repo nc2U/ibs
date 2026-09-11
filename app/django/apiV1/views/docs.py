@@ -469,7 +469,7 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = OfficialLetterFilterSet
     search_fields = ('document_number', 'title', 'recipient_name',
-                     'sender_name', 'content', 'tracking_number')
+                     'drafter_name', 'content', 'tracking_number')
 
     @property
     def required_permission(self):
@@ -642,12 +642,12 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         content_payload = {
             'receiver': letter.recipient_name,
             'refer_to': letter.recipient_reference,
-            'sender_name': letter.sender_name,
+            'drafter_name': letter.drafter_name,
             'send_due_date': str(letter.issue_date),
             'letter_subject': letter.title,
             'letter_body': letter.content,
             'official_letter_id': letter.pk,
-            'body': f"[대외 공문 발송 품의]\n\n• 수신처: {letter.recipient_name}\n• 참조: {letter.recipient_reference or '-'}\n• 발신자: {letter.sender_name} ({letter.sender_department} {letter.sender_position})\n• 시행일자: {letter.issue_date}\n\n[공문 본문]\n{letter.content}",
+            'body': f"[대외 공문 발송 품의]\n\n• 수신처: {letter.recipient_name}\n• 참조: {letter.recipient_reference or '-'}\n• 기안/담당: {letter.drafter_name}{f' ({letter.drafter_position})' if letter.drafter_position else ''}\n• 시행일자: {letter.issue_date}\n\n[공문 본문]\n{letter.content}",
         }
 
         doc = ApprovalDocument.objects.create(

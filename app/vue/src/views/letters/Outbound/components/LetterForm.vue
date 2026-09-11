@@ -62,9 +62,8 @@ const form = ref<OfficialLetter>({
   attachment_text: '',
   issue_date: new Date().toISOString().substring(0, 10),
   seal: null,
-  sender_name: '',
-  sender_position: '',
-  sender_department: '',
+  drafter_name: '',
+  drafter_position: '',
   sender_zipcode: '',
   sender_address: '',
   // 발송 관리 메타 정보
@@ -107,10 +106,10 @@ watch(
         attachmentInputMode.value = 'file'
       }
     } else {
-      // 신규 작성 시 로그인 유저 정보로 기본 발신자명 준비
+      // 신규 작성 시 로그인 유저 정보로 기본 기안자명 준비
       const currentUserName = accStore.userInfo?.profile?.name || accStore.userInfo?.username || ''
-      if (!form.value.sender_name && currentUserName) {
-        form.value.sender_name = currentUserName
+      if (!form.value.drafter_name && currentUserName) {
+        form.value.drafter_name = currentUserName
       }
     }
   },
@@ -154,9 +153,9 @@ const deleteExistingAttachment = async (attachmentId: number) => {
 const onSubmit = () => {
   validated.value = true
 
-  // 전자결재 모드일 때는 발신자명이 비어있을 경우 현재 사용자명으로 자동 보정
-  if (approvalMode.value === 'approval' && !form.value.sender_name) {
-    form.value.sender_name =
+  // 전자결재 모드일 때는 기안자명이 비어있을 경우 현재 사용자명으로 자동 보정
+  if (approvalMode.value === 'approval' && !form.value.drafter_name) {
+    form.value.drafter_name =
       accStore.userInfo?.profile?.name || accStore.userInfo?.username || '기안'
   }
 
@@ -169,7 +168,7 @@ const onSubmit = () => {
   if (
     !form.value.title ||
     !form.value.recipient_name ||
-    (approvalMode.value === 'manual' && !form.value.sender_name) ||
+    (approvalMode.value === 'manual' && !form.value.drafter_name) ||
     !form.value.content ||
     !form.value.issue_date
   ) {
@@ -585,30 +584,23 @@ const goBack = () => {
                   <CCol v-if="approvalMode === 'manual'" md="6">
                     <CFormLabel>기안/담당자명 <span class="text-danger">*</span></CFormLabel>
                     <CFormInput
-                      v-model="form.sender_name"
+                      v-model="form.drafter_name"
                       placeholder="기안/담당자명 (예: 홍길동)"
                       required
-                      :invalid="validated && !form.sender_name"
+                      :invalid="validated && !form.drafter_name"
                     />
                     <CFormFeedback invalid>기안/담당자명을 입력해주세요.</CFormFeedback>
-                    <CFormText class="text-muted">공문서 하단 담당란에 표기됩니다.</CFormText>
+                    <CFormText class="text-muted">공문서 하단 담당란에 '담당 [성명]'으로 표기됩니다.</CFormText>
                   </CCol>
                 </CRow>
 
-                <!-- 수동 발송일 때만 직위 / 부서 노출 -->
+                <!-- 수동 발송일 때만 직위 노출 -->
                 <CRow v-if="approvalMode === 'manual'" class="mb-3">
                   <CCol md="6">
                     <CFormLabel>담당 직위/직책</CFormLabel>
                     <CFormInput
-                      v-model="form.sender_position"
-                      placeholder="직위 (예: 과장, 팀장)"
-                    />
-                  </CCol>
-                  <CCol md="6">
-                    <CFormLabel>담당 부서</CFormLabel>
-                    <CFormInput
-                      v-model="form.sender_department"
-                      placeholder="부서 (예: 개발기획팀)"
+                      v-model="form.drafter_position"
+                      placeholder="직위/직책 (예: 과장, 팀장, 소장)"
                     />
                   </CCol>
                 </CRow>
@@ -867,29 +859,51 @@ const goBack = () => {
                     class="preview-bottom border-top pt-2"
                     style="font-size: 0.72rem; line-height: 1.4"
                   >
-                    <!-- 결재선 요약 -->
+                    <!-- 결재선 요약 (표준 형식 동기화) -->
                     <div
-                      class="d-flex justify-content-between bg-light p-1 px-2 rounded mb-2 text-muted"
+                      class="d-flex justify-content-between align-items-end p-1 px-2 border-bottom mb-2"
+                      style="font-size: 0.72rem"
                     >
-                      <div>
-                        <strong>기안/담당: </strong>
-                        <span>{{
-                          approvalMode === 'approval'
-                            ? accStore.userInfo?.profile?.name ||
-                              accStore.userInfo?.username ||
-                              '기안자'
-                            : form.sender_name || '담당자'
-                        }}</span>
-                        <span v-if="approvalMode === 'manual' && form.sender_position">
-                          ({{ form.sender_position }})</span
+                      <!-- 좌측: 기안/담당 (대표이사 단독 기안 시 생략) -->
+                      <div class="text-start">
+                        <template
+                          v-if="
+                            approvalMode === 'approval' ||
+                            !form.drafter_name ||
+                            form.drafter_name.trim() !== (currentCompany?.ceo || '').trim()
+                          "
                         >
+                          <span class="fw-bold me-1 text-secondary">담당</span>
+                          <span>{{
+                            approvalMode === 'approval'
+                              ? accStore.userInfo?.profile?.name ||
+                                accStore.userInfo?.username ||
+                                '기안자'
+                              : form.drafter_name || '담당자'
+                          }}</span>
+                        </template>
+                        <span v-else class="text-muted fst-italic">(대표이사 단독 기안)</span>
                       </div>
-                      <div v-if="approvalMode === 'approval'">
-                        <span class="badge bg-secondary">전자결재 상신 시 결재선 자동 생성</span>
-                      </div>
-                      <div v-else>
-                        <strong>최종전결: </strong>
-                        <span>{{ currentCompany?.ceo || '대표이사' }}</span>
+
+                      <!-- 우측: 최종 결재자 및 상단 승인 일자 -->
+                      <div class="text-end">
+                        <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
+                          <span v-if="approvalMode === 'approval'" class="badge bg-secondary">
+                            결재 승인 시 자동 확정
+                          </span>
+                          <span v-else>
+                            시행 {{ form.issue_date || '발신일자' }}
+                          </span>
+                        </div>
+                        <div>
+                          <span class="fw-bold me-1 text-secondary">
+                            {{
+                              selectedSeal?.final_approval_duty_name ||
+                              (selectedSeal?.seal_type === 'CORP_SEAL' ? '대표이사' : '대표이사')
+                            }}
+                          </span>
+                          <span>{{ currentCompany?.ceo || '대표이사' }}</span>
+                        </div>
                       </div>
                     </div>
 

@@ -338,11 +338,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 </tr>
                 <tr>
                   <th>기안/담당자</th>
-                  <td>{{ letter.sender_name }} ({{ letter.sender_position || '담당' }})</td>
-                </tr>
-                <tr v-if="letter.sender_department">
-                  <th>담당부서</th>
-                  <td>{{ letter.sender_department }}</td>
+                  <td>{{ letter.drafter_name }} {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</td>
                 </tr>
                 <tr v-if="letter.sender_address">
                   <th>발신지주소</th>

@@ -215,9 +215,8 @@ export interface OfficialLetter {
   recipient_contact?: string
   via?: string
   recipient_reference?: string
-  sender_name: string
-  sender_position?: string
-  sender_department?: string
+  drafter_name: string
+  drafter_position?: string
   sender_zipcode?: string
   sender_address?: string
   content: string
@@ -264,9 +263,8 @@ export interface PatchLetter {
   recipient_contact?: string
   via?: string
   recipient_reference?: string
-  sender_name?: string
-  sender_position?: string
-  sender_department?: string
+  drafter_name?: string
+  drafter_position?: string
   sender_zipcode?: string
   sender_address?: string
   content?: string

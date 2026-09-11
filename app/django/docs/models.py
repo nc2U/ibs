@@ -321,9 +321,8 @@ class OfficialLetter(models.Model):
     sender_zipcode = models.CharField('발신 우편번호', max_length=5, blank=True, default='')
     sender_address = models.CharField('발신 주소', max_length=255, blank=True, default='')
 
-    sender_name = models.CharField('발신자명', max_length=50)  # 발신자 정보
-    sender_position = models.CharField('발신자 직위', max_length=50, blank=True, default='')
-    sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
+    drafter_name = models.CharField('기안/담당자명', max_length=50)  # 기안/담당자 정보
+    drafter_position = models.CharField('기안/담당 직위', max_length=50, blank=True, default='')
 
     recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
     recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')
