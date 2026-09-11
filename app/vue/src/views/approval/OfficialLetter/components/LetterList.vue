@@ -141,11 +141,12 @@ const formatDate = (dateStr: string | undefined) => {
         <CTableRow>
           <CTableHeaderCell class="text-center" style="width: 120px">문서번호</CTableHeaderCell>
           <CTableHeaderCell>제목</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 150px">수신처</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 110px">발신일</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 100px">작성자</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 100px">결재상태</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 80px">PDF</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 140px">수신처</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 110px">발송방법</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 105px">발신일</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 90px">작성자</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 90px">결재상태</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 60px">PDF</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
       <CTableBody>
@@ -158,8 +159,24 @@ const formatDate = (dateStr: string | undefined) => {
           <CTableDataCell class="text-center">
             <span class="text-primary fw-semibold">{{ letter.document_number }}</span>
           </CTableDataCell>
-          <CTableDataCell>{{ letter.title }}</CTableDataCell>
+          <CTableDataCell>
+            {{ letter.title }}
+            <CIcon
+              v-if="letter.has_attachments || (letter.attachments && letter.attachments.length > 0) || letter.attachment_text"
+              name="cilPaperclip"
+              size="sm"
+              class="text-muted ms-1"
+            />
+          </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.recipient_name }}</CTableDataCell>
+          <CTableDataCell class="text-center">
+            <CBadge color="dark" class="me-1">
+              {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
+            </CBadge>
+            <small v-if="letter.tracking_number" class="text-muted d-block" style="font-size: 0.75rem">
+              {{ letter.tracking_number }}
+            </small>
+          </CTableDataCell>
           <CTableDataCell class="text-center">{{ formatDate(letter.issue_date) }}</CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.creator?.username || '-' }}</CTableDataCell>
           <CTableDataCell class="text-center">
@@ -176,7 +193,7 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="letterList.length === 0">
-          <CTableDataCell colspan="7" class="text-center text-muted py-5">
+          <CTableDataCell colspan="8" class="text-center text-muted py-5">
             등록된 공문이 없습니다.
           </CTableDataCell>
         </CTableRow>

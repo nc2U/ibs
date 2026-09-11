@@ -544,6 +544,27 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const uploadLetterAttachment = async (letterId: number, formData: FormData) =>
+    api
+      .post('/official-letter-attachment/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(async res => {
+        await fetchLetter(letterId)
+        message('success', '', '첨부파일이 등록되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteLetterAttachment = async (attachmentId: number, letterId: number) =>
+    api
+      .delete(`/official-letter-attachment/${attachmentId}/`)
+      .then(async () => {
+        await fetchLetter(letterId)
+        message('warning', '', '첨부파일이 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     docTypes,
 
@@ -635,5 +656,7 @@ export const useDocs = defineStore('docs', () => {
     generatePdf,
     getNextDocumentNumber,
     submitApproval,
+    uploadLetterAttachment,
+    deleteLetterAttachment,
   }
 })

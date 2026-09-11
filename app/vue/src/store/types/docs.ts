@@ -192,6 +192,18 @@ export interface TrashDocs {
 }
 
 // Official Letter (공문) Types
+export interface OfficialLetterAttachment {
+  pk?: number
+  letter?: number
+  file: File | string
+  name?: string
+  file_name?: string
+  file_size?: number
+  quantity?: string
+  ordering?: number
+  created?: string
+}
+
 export interface OfficialLetter {
   pk?: number
   company: number | null
@@ -201,11 +213,17 @@ export interface OfficialLetter {
   recipient_name: string
   recipient_address?: string
   recipient_contact?: string
+  via?: string
   recipient_reference?: string
   sender_name: string
   sender_position?: string
   sender_department?: string
+  sender_zipcode?: string
+  sender_address?: string
   content: string
+  attachment_text?: string
+  attachments?: OfficialLetterAttachment[]
+  has_attachments?: boolean
   issue_date: string
   seal?: number | null
   seal_detail?: {
@@ -216,6 +234,10 @@ export interface OfficialLetter {
     seal_image: string | null
   } | null
   pdf_file?: string | null
+  dispatch_method?: 'email' | 'registered_mail' | 'direct' | 'courier' | 'fax' | 'etc'
+  dispatch_method_desc?: string
+  tracking_number?: string
+  dispatched_at?: string | null
   approval_document?: number | null
   approval_document_detail?: {
     pk: number
@@ -240,10 +262,17 @@ export interface PatchLetter {
   recipient_name?: string
   recipient_address?: string
   recipient_contact?: string
+  via?: string
   recipient_reference?: string
   sender_name?: string
   sender_position?: string
   sender_department?: string
+  sender_zipcode?: string
+  sender_address?: string
   content?: string
+  attachment_text?: string
+  dispatch_method?: string
+  tracking_number?: string
+  dispatched_at?: string | null
   issue_date?: string
 }

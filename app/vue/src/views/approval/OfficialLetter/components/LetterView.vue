@@ -108,12 +108,12 @@ const goToApprovalDetail = (docId: number) => {
   router.push({ name: '결재 문서함 - 보기', params: { docId } })
 }
 
-const formatDate = (dateStr: string | undefined) => {
+const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return '-'
   return dateStr.substring(0, 10)
 }
 
-const formatDateTime = (dateStr: string | undefined) => {
+const formatDateTime = (dateStr: string | null | undefined) => {
   if (!dateStr) return '-'
   return dateStr.replace('T', ' ').substring(0, 19)
 }
@@ -203,31 +203,32 @@ const formatDateTime = (dateStr: string | undefined) => {
       </CCardHeader>
     </CCard>
 
-    <!-- Letter Info -->
+    <!-- Letter Info (수신 & 발신/날인) -->
     <CRow>
       <CCol md="6">
         <CCard class="mb-4">
           <CCardHeader>
-            <strong>수신처 정보</strong>
+            <CIcon name="cilAddressBook" class="me-1" />
+            <strong>수신 정보</strong>
           </CCardHeader>
           <CCardBody>
             <table class="table table-borderless mb-0">
               <tbody>
                 <tr>
                   <th style="width: 100px">수신처명</th>
-                  <td>{{ letter.recipient_name }}</td>
+                  <td class="fw-bold">{{ letter.recipient_name }}</td>
                 </tr>
-                <tr v-if="letter.recipient_reference">
+                <tr>
+                  <th>(경유)</th>
+                  <td>{{ letter.via || '-' }}</td>
+                </tr>
+                <tr>
                   <th>참조</th>
-                  <td>{{ letter.recipient_reference }}</td>
+                  <td>{{ letter.recipient_reference || '-' }}</td>
                 </tr>
-                <tr v-if="letter.recipient_address">
-                  <th>주소</th>
-                  <td>{{ letter.recipient_address }}</td>
-                </tr>
-                <tr v-if="letter.recipient_contact">
-                  <th>연락처</th>
-                  <td>{{ letter.recipient_contact }}</td>
+                <tr>
+                  <th>시행일자</th>
+                  <td>{{ formatDate(letter.issue_date) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -238,36 +239,17 @@ const formatDateTime = (dateStr: string | undefined) => {
       <CCol md="6">
         <CCard class="mb-4">
           <CCardHeader>
-            <strong>발신자 정보</strong>
+            <CIcon name="cilPen" class="me-1" />
+            <strong>발신 및 날인 정보</strong>
           </CCardHeader>
           <CCardBody>
             <table class="table table-borderless mb-0">
               <tbody>
                 <tr>
-                  <th style="width: 100px">발신자명</th>
-                  <td>{{ letter.sender_name }}</td>
-                </tr>
-                <tr v-if="letter.sender_position">
-                  <th>직위</th>
-                  <td>{{ letter.sender_position }}</td>
-                </tr>
-                <tr v-if="letter.sender_department">
-                  <th>부서</th>
-                  <td>{{ letter.sender_department }}</td>
-                </tr>
-                <tr>
-                  <th>발신일자</th>
-                  <td>{{ formatDate(letter.issue_date) }}</td>
-                </tr>
-                <tr v-if="letter.seal_detail">
-                  <th>날인인감</th>
+                  <th style="width: 100px">날인 인감</th>
                   <td>
-                    <div class="d-flex align-items-center">
-                      <span class="me-2"
-                        >{{ letter.seal_detail.name }} ({{
-                          letter.seal_detail.seal_type_desc
-                        }})</span
-                      >
+                    <div v-if="letter.seal_detail" class="d-flex align-items-center">
+                      <span class="me-2">{{ letter.seal_detail.name }} ({{ letter.seal_detail.seal_type_desc }})</span>
                       <img
                         v-if="letter.seal_detail.seal_image"
                         :src="letter.seal_detail.seal_image"
@@ -276,6 +258,22 @@ const formatDateTime = (dateStr: string | undefined) => {
                         class="border rounded p-1 bg-white"
                       />
                     </div>
+                    <span v-else class="text-muted">(직인생략 또는 미선택)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th>기안/담당자</th>
+                  <td>{{ letter.sender_name }} ({{ letter.sender_position || '담당' }})</td>
+                </tr>
+                <tr v-if="letter.sender_department">
+                  <th>담당부서</th>
+                  <td>{{ letter.sender_department }}</td>
+                </tr>
+                <tr v-if="letter.sender_address">
+                  <th>발신지주소</th>
+                  <td>
+                    <span v-if="letter.sender_zipcode">({{ letter.sender_zipcode }}) </span>
+                    {{ letter.sender_address }}
                   </td>
                 </tr>
               </tbody>
@@ -288,7 +286,8 @@ const formatDateTime = (dateStr: string | undefined) => {
     <!-- Letter Content -->
     <CCard class="mb-4">
       <CCardHeader>
-        <strong>공문 내용</strong>
+        <CIcon name="cilDescription" class="me-1" />
+        <strong>공문 본문</strong>
       </CCardHeader>
       <CCardBody>
         <div class="letter-content" style="white-space: pre-wrap; line-height: 1.8">
@@ -297,10 +296,98 @@ const formatDateTime = (dateStr: string | undefined) => {
       </CCardBody>
     </CCard>
 
+    <!-- Attachment Section (붙임 텍스트 및 첨부파일) -->
+    <CCard class="mb-4">
+      <CCardHeader>
+        <CIcon name="cilPaperclip" class="me-1" />
+        <strong>붙임 (첨부 서류 및 파일)</strong>
+      </CCardHeader>
+      <CCardBody>
+        <div v-if="letter.attachment_text" class="mb-3 p-3 bg-light rounded border">
+          <div class="fw-bold mb-1">인쇄용 붙임 목록:</div>
+          <div style="white-space: pre-wrap">{{ letter.attachment_text }}</div>
+        </div>
+
+        <div v-if="letter.attachments && letter.attachments.length > 0">
+          <div class="fw-bold mb-2">첨부 파일 목록:</div>
+          <ul class="list-group">
+            <li
+              v-for="att in letter.attachments"
+              :key="att.pk"
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <CIcon name="cilFile" class="me-2 text-primary" />
+                <strong>{{ att.name || att.file_name }}</strong>
+                <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
+              </div>
+              <a
+                v-if="typeof att.file === 'string'"
+                :href="att.file"
+                target="_blank"
+                class="btn btn-sm btn-outline-primary"
+              >
+                <CIcon name="cilCloudDownload" class="me-1" /> 다운로드
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div v-else-if="!letter.attachment_text" class="text-muted">
+          등록된 붙임 서류나 첨부파일이 없습니다.
+        </div>
+      </CCardBody>
+    </CCard>
+
+    <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
+    <CCard class="mb-4 border-secondary">
+      <CCardHeader class="bg-light">
+        <CIcon name="cilTruck" class="me-1 text-secondary" />
+        <strong>발송 및 대장 관리 메타 정보</strong>
+      </CCardHeader>
+      <CCardBody>
+        <CRow>
+          <CCol md="6">
+            <table class="table table-borderless mb-0">
+              <tbody>
+                <tr>
+                  <th style="width: 120px">발송 방법</th>
+                  <td>
+                    <CBadge color="dark">{{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}</CBadge>
+                  </td>
+                </tr>
+                <tr>
+                  <th>등기/송장 번호</th>
+                  <td>{{ letter.tracking_number || '-' }}</td>
+                </tr>
+                <tr>
+                  <th>발송 완료일시</th>
+                  <td>{{ formatDateTime(letter.dispatched_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CCol>
+          <CCol md="6">
+            <table class="table table-borderless mb-0">
+              <tbody>
+                <tr>
+                  <th style="width: 120px">우편 발송지</th>
+                  <td>{{ letter.recipient_address || '-' }}</td>
+                </tr>
+                <tr>
+                  <th>수신처 연락처</th>
+                  <td>{{ letter.recipient_contact || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CCol>
+        </CRow>
+      </CCardBody>
+    </CCard>
+
     <!-- PDF Section -->
     <CCard class="mb-4">
       <CCardHeader>
-        <strong>PDF 파일</strong>
+        <strong>공문 PDF 파일</strong>
       </CCardHeader>
       <CCardBody>
         <div v-if="letter.pdf_file" class="d-flex align-items-center">
