@@ -306,27 +306,47 @@ class LetterSequence(models.Model):
 
 class OfficialLetter(models.Model):
     """공문 모델"""
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE,
-                                related_name='official_letters', verbose_name='회사')  # 회사
-    document_number = models.CharField('문서번호', max_length=50, unique=True,
-                                       db_index=True, editable=False)  # 문서번호 (자동 생성)
-    title = models.CharField('제목', max_length=255, db_index=True)  # 제목
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='official_letters',
+                                verbose_name='회사')  # 회사
+    document_number = models.CharField('문서번호', max_length=50, unique=True, db_index=True,
+                                       editable=False)  # 문서번호 (자동 생성)
     recipient_name = models.CharField('수신처명', max_length=100)  # 수신처 정보
-    recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
-    recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')
     via = models.CharField('경유', max_length=100, blank=True, default='', help_text='최종 수신처로 가기 전 거치는 중간 기관 또는 부서')
     recipient_reference = models.CharField('참조', max_length=100, blank=True, default='', help_text='참조인 또는 부서')
+    title = models.CharField('제목', max_length=255, db_index=True)  # 제목
+    content = models.TextField('내용')  # 내용
+    seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name='official_letters', verbose_name='날인 인감')
+    issue_date = models.DateField('발신일자')  # 발신일자
+    sender_zipcode = models.CharField('발신 우편번호', max_length=5, blank=True, default='')
+    sender_address = models.CharField('발신 주소', max_length=255, blank=True, default='')
+
     sender_name = models.CharField('발신자명', max_length=50)  # 발신자 정보
     sender_position = models.CharField('발신자 직위', max_length=50, blank=True, default='')
     sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
-    sender_zipcode = models.CharField('발신 우편번호', max_length=5, blank=True, default='')
-    sender_address = models.CharField('발신 주소', max_length=255, blank=True, default='')
-    content = models.TextField('내용')  # 내용
-    issue_date = models.DateField('발신일자')  # 발신일자
-    seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL,
-                             null=True, blank=True, related_name='official_letters', verbose_name='날인 인감')
-    pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
-                                storage=default_storage, null=True, blank=True)  # 생성된 PDF
+
+    recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
+    recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')
+
+    attachment_text = models.TextField('붙임 텍스트', blank=True, default='',
+                                       help_text='직접 텍스트로 붙임 목록을 기입할 경우 사용')
+
+    DISPATCH_METHOD_CHOICES = (
+        ('email', '이메일'),
+        ('registered_mail', '등기우편'),
+        ('direct', '인편/직접교부'),
+        ('courier', '퀵/택배'),
+        ('fax', '팩스'),
+        ('etc', '기타'),
+    )
+    dispatch_method = models.CharField('발송 방법', max_length=20, choices=DISPATCH_METHOD_CHOICES,
+                                       default='email')
+    tracking_number = models.CharField('등기/송장 번호', max_length=50, blank=True, default='',
+                                       help_text='등기우편 번호, 송장번호, 팩스 확인번호 등')
+    dispatched_at = models.DateTimeField('발송 완료일시', null=True, blank=True)
+
+    pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path, storage=default_storage,
+                                null=True, blank=True)  # 생성된 PDF
     APPROVAL_STATUS_CHOICES = (
         ('none', '미상신'),
         ('pending', '결재진행중'),
@@ -371,3 +391,33 @@ class OfficialLetter(models.Model):
 
 
 file_cleanup_signals(OfficialLetter, file_field_names=['pdf_file'])  # PDF 파일 자동 삭제
+
+
+def get_letter_attachment_path(instance, filename):
+    return f'official_letters/{instance.letter.company_id}/attachments/{filename}'
+
+
+class OfficialLetterAttachment(models.Model):
+    """공문 첨부파일 모델"""
+    letter = models.ForeignKey(
+        OfficialLetter, on_delete=models.CASCADE,
+        related_name='attachments', verbose_name='공문'
+    )
+    file = models.FileField('첨부파일', upload_to=get_letter_attachment_path, storage=default_storage)
+    name = models.CharField('붙임 명칭', max_length=255, blank=True, default='',
+                            help_text='공문에 표기될 명칭 (미입력 시 파일명 사용)')
+    quantity = models.CharField('수량/부수', max_length=50, blank=True, default='1부',
+                                help_text='예: 1부, 2부, 1식 등')
+    ordering = models.PositiveSmallIntegerField('표시 순서', default=1)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+
+    class Meta:
+        ordering = ['ordering', 'id']
+        verbose_name = '07. 공문 첨부파일'
+        verbose_name_plural = '07. 공문 첨부파일'
+
+    def __str__(self):
+        return self.name or self.file.name
+
+
+file_cleanup_signals(OfficialLetterAttachment, file_field_names=['file'])

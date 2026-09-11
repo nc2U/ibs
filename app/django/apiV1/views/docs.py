@@ -15,12 +15,14 @@ from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, 
 from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
 from company.models import Company
 from work.models import IssueProject
-from docs.models import LetterSequence, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
+from docs.models import (LetterSequence, Category, LawsuitCase, Document, Link,
+                         File, Image, OfficialLetter, OfficialLetterAttachment)
 from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
-from ..serializers.docs import CategorySerializer, LawSuitCaseSerializer, \
-    SimpleLawSuitCaseSerializer, DocumentSerializer, LinkSerializer, FileSerializer, ImageSerializer, \
-    DocumentInTrashSerializer, OfficialLetterSerializer
+from ..serializers.docs import (CategorySerializer, LawSuitCaseSerializer,
+                                SimpleLawSuitCaseSerializer, DocumentSerializer, LinkSerializer,
+                                FileSerializer, ImageSerializer, DocumentInTrashSerializer,
+                                OfficialLetterSerializer, OfficialLetterAttachmentSerializer)
 
 
 # DocsItem --------------------------------------------------------------------------
@@ -454,17 +456,20 @@ class OfficialLetterFilterSet(FilterSet):
 
     class Meta:
         model = OfficialLetter
-        fields = ('company', 'issue_date_from', 'issue_date_to', 'creator')
+        fields = ('company', 'issue_date_from', 'issue_date_to', 'creator',
+                  'dispatch_method', 'approval_status')
 
 
 class OfficialLetterViewSet(viewsets.ModelViewSet):
-    queryset = OfficialLetter.objects.select_related('company', 'seal', 'creator', 'updator')
+    queryset = OfficialLetter.objects.select_related(
+        'company', 'seal', 'creator', 'updator', 'approval_document'
+    ).prefetch_related('attachments')
     serializer_class = OfficialLetterSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = OfficialLetterFilterSet
     search_fields = ('document_number', 'title', 'recipient_name',
-                     'sender_name', 'content')
+                     'sender_name', 'content', 'tracking_number')
 
     @property
     def required_permission(self):
@@ -645,3 +650,23 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             'approval_document_id': doc.pk,
             'approval_status': letter.approval_status,
         })
+
+
+class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
+    queryset = OfficialLetterAttachment.objects.all()
+    serializer_class = OfficialLetterAttachmentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    filterset_fields = ('letter',)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'docs.read',
+            'retrieve': 'docs.read',
+            'create': 'docs.create',
+            'update': 'docs.update',
+            'partial_update': 'docs.update',
+            'destroy': 'docs.delete',
+        }
+        return mapping.get(self.action, None)
+

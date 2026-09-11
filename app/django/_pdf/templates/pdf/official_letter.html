@@ -278,7 +278,7 @@
         <div class="attachment-title">붙임</div>
         <div class="attachment-list">
           {% for att in letter.attachments.all %}
-            <div>{{ forloop.counter }}. {{ att.attachment_name|default:att.file.name }}{% if att.quantity %} {{ att.quantity }}{% else %} 1부{% endif %}.</div>
+            <div>{{ forloop.counter }}. {{ att.name|default:att.file.name }}{% if att.quantity %} {{ att.quantity }}{% else %} 1부{% endif %}.</div>
           {% endfor %}
         </div>
       </div>

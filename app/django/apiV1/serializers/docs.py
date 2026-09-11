@@ -9,7 +9,8 @@ from rest_framework import serializers
 from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work import SimpleIssueProjectSerializer
-from docs.models import Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
+from docs.models import (Category, LawsuitCase, Document, Link, File, Image,
+                         OfficialLetter, OfficialLetterAttachment)
 
 User = get_user_model()
 
@@ -392,6 +393,26 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
         return instance
 
 
+class OfficialLetterAttachmentSerializer(serializers.ModelSerializer):
+    """공문 첨부파일 시리얼라이저"""
+    file_name = serializers.SerializerMethodField(read_only=True)
+    file_size = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = OfficialLetterAttachment
+        fields = ('pk', 'letter', 'file', 'name', 'file_name', 'file_size', 'quantity', 'ordering', 'created')
+        read_only_fields = ('created',)
+
+    def get_file_name(self, obj):
+        return obj.file.name.split('/')[-1] if obj.file else ''
+
+    def get_file_size(self, obj):
+        try:
+            return obj.file.size if obj.file else 0
+        except Exception:
+            return 0
+
+
 class OfficialLetterSerializer(serializers.ModelSerializer):
     company_name = serializers.SlugField(source='company', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
@@ -399,6 +420,8 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     seal_detail = serializers.SerializerMethodField(read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
+    dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
+    attachments = OfficialLetterAttachmentSerializer(many=True, read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
     next_pk = serializers.SerializerMethodField(read_only=True)
 
@@ -406,8 +429,12 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         model = OfficialLetter
         fields = ('pk', 'company', 'company_name', 'document_number', 'title',
                   'recipient_name', 'recipient_address', 'recipient_contact',
-                  'recipient_reference', 'sender_name', 'sender_position',
-                  'sender_department', 'content', 'issue_date', 'seal', 'seal_detail', 'pdf_file',
+                  'via', 'recipient_reference',
+                  'sender_name', 'sender_position', 'sender_department',
+                  'sender_zipcode', 'sender_address',
+                  'content', 'attachment_text', 'attachments',
+                  'issue_date', 'seal', 'seal_detail', 'pdf_file',
+                  'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
         read_only_fields = ('document_number', 'pdf_file')
@@ -457,9 +484,16 @@ class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
     """목록 조회용 간략 시리얼라이저"""
     creator = SimpleUserSerializer(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
+    dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
+    has_attachments = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OfficialLetter
         fields = ('pk', 'document_number', 'title', 'recipient_name',
-                  'issue_date', 'pdf_file', 'approval_document', 'approval_status',
+                  'issue_date', 'pdf_file', 'dispatch_method', 'dispatch_method_desc',
+                  'tracking_number', 'dispatched_at', 'has_attachments',
+                  'approval_document', 'approval_status',
                   'approval_status_desc', 'creator', 'created')
+
+    def get_has_attachments(self, obj):
+        return bool(obj.attachment_text or obj.attachments.exists())
