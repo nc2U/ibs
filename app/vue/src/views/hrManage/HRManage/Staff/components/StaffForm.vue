@@ -35,6 +35,8 @@ const form = ref<Staff>({
   name: '',
   id_number: '',
   personal_phone: '',
+  direct_phone: '',
+  direct_fax: '',
   email: '',
   department: '',
   grade: '',
