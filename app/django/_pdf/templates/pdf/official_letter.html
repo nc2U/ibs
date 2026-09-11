@@ -95,7 +95,7 @@
 
       .content-section {
           border-top: 2px solid #333;
-          height: 552px;
+          height: 520px;
           padding: 0 20px;
           text-align: justify;
           white-space: pre-wrap;
@@ -154,9 +154,37 @@
           padding-left: 5px;
       }
 
-      .meta-section .approval-step {
+      .approval-line-wrap {
+          margin: 6px 0 4px 0;
+          font-size: 8pt;
+          line-height: 1.4;
+          color: #222;
+      }
+
+      .approval-line-table {
           width: 100%;
-          margin: 10px 0;
+          border-collapse: collapse;
+      }
+
+      .approval-line-table td {
+          padding: 0;
+          vertical-align: top;
+      }
+
+      .approval-item-title {
+          font-weight: bold;
+          color: #333;
+          margin-right: 6px;
+      }
+
+      .approval-item-name {
+          color: #111;
+      }
+
+      .approval-final-date {
+          font-size: 7.5pt;
+          color: #555;
+          margin-top: 1px;
       }
   </style>
   <title>{{ letter.document_number }} - {{ letter.title }}</title>
@@ -226,14 +254,40 @@
 
 <!-- Meta Section -->
 <div class="meta-section">
-  <table class="approval-step">
-    <tr>
-      <td class="label">담당</td>
-      <td></td>
-      <td></td>
-      <td></td>
-    </tr>
-  </table>
+  <div class="approval-line-wrap">
+    <table class="approval-line-table">
+      <tr>
+        <!-- 좌측: 기안 / 담당 -->
+        <td style="text-align: left; white-space: nowrap;">
+          <span class="approval-item-title">{{ approval_line.drafter.display_title }}</span>
+          <span class="approval-item-name">{{ approval_line.drafter.name }}</span>
+        </td>
+
+        <!-- 중앙: 중간 결재 단계 (있을 경우만) -->
+        <td style="text-align: center; white-space: nowrap;">
+          {% for step in approval_line.middle_steps %}
+            <span style="margin: 0 12px;">
+              <span class="approval-item-title">{{ step.display_title }}</span>
+              <span class="approval-item-name">{{ step.name }}</span>
+            </span>
+          {% endfor %}
+        </td>
+
+        <!-- 우측: 최종 결재자 (대표 등) 및 바로 아래 승인 일자 -->
+        <td style="text-align: right; white-space: nowrap; width: 1%;">
+          <div>
+            <span class="approval-item-title">{{ approval_line.final_approver.display_title }}</span>
+            <span class="approval-item-name">{{ approval_line.final_approver.name }}</span>
+          </div>
+          {% if approval_line.final_date %}
+            <div class="approval-final-date">
+              <span>승인 {{ approval_line.final_date }}</span>
+            </div>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
   <table style="width: 100%;">
     <tr>
       <td class="label">시행</td>
