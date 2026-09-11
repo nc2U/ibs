@@ -217,6 +217,7 @@ export interface OfficialLetter {
   recipient_reference?: string
   drafter_name: string
   drafter_position?: string
+  is_solo_approval?: boolean
   sender_zipcode?: string
   sender_address?: string
   content: string
@@ -268,6 +269,7 @@ export interface PatchLetter {
   recipient_reference?: string
   drafter_name?: string
   drafter_position?: string
+  is_solo_approval?: boolean
   sender_zipcode?: string
   sender_address?: string
   content?: string

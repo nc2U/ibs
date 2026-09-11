@@ -367,7 +367,10 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 </tr>
                 <tr>
                   <th>기안/담당자</th>
-                  <td>{{ letter.drafter_name }} {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</td>
+                  <td>
+                    <span>{{ letter.drafter_name }} {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span>
+                    <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1">승인권자 직접기안</CBadge>
+                  </td>
                 </tr>
                 <tr v-if="letter.sender_address">
                   <th>발신지주소</th>

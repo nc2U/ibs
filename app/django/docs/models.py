@@ -340,6 +340,10 @@ class OfficialLetter(models.Model):
 
     drafter_name = models.CharField('기안/담당자명', max_length=50)  # 기안/담당자 정보
     drafter_position = models.CharField('기안/담당 직위', max_length=50, blank=True, default='')
+    is_solo_approval = models.BooleanField(
+        '승인(전결)권자 직접 기안 (담당 생략)', default=False,
+        help_text='대표이사, 현장소장, 본부장 등 최종 승인(전결)권자가 직접 기안하여 공문서 하단 담당자란을 생략하고 단독 결재로 처리하는 경우'
+    )
 
     recipient_address = models.CharField('수신처 주소', max_length=255, blank=True, default='')
     recipient_contact = models.CharField('수신처 연락처', max_length=50, blank=True, default='')

@@ -52,20 +52,31 @@ def get_letter_approval_line(letter):
         if letter.seal and letter.seal.final_approval_duty:
             final_title = letter.seal.final_approval_duty.name
 
-        # 최종 결재권자 성명 결정 (공동대표 문자열이 절대 들어가지 않도록 단일 성명 우선)
-        final_person_name = representative_name or clean_drafter_name
+        date_label = '시행' if letter.dispatched_at else ('전결' if final_title in ['현장소장', '소장', '본부장', '팀장'] else '승인')
 
-        # 대표이사가 직접 기안/발송한 경우: 기안란(담당)은 생략하고 대표이사 단독 표기
-        # (예: '고창균 대표' == '고창균', 또는 성명이 representative_name과 동일한 경우)
-        is_ceo_solo = bool(
-            clean_drafter_name
-            and final_person_name
-            and clean_drafter_name == final_person_name
-        )
+        # 승인권자 직무(전결직책)에 따른 최종 결재권자 성명 결정:
+        # 1) 대표이사 결재인 경우: 회사 대표이사 성명 우선
+        # 2) 현장소장/본부장 등 전결인 경우: 전결권자 직접 기안 시 기안자 성명이 곧 최종 결재권자 성명
+        if final_title in ['현장소장', '소장', '본부장', '팀장']:
+            final_person_name = clean_drafter_name or raw_drafter_name
+        else:
+            final_person_name = representative_name or clean_drafter_name
+
+        # 승인(전결)권자 직접 기안 단독 결재 판단:
+        # 1순위: 모델의 is_solo_approval 명시적 플래그
+        # 2순위: 성명 일치 여부 (폴백)
+        if letter.is_solo_approval:
+            is_solo = True
+        else:
+            is_solo = bool(
+                clean_drafter_name
+                and final_person_name
+                and clean_drafter_name == final_person_name
+            )
 
         return {
-            'is_solo': is_ceo_solo,
-            'drafter': None if is_ceo_solo else {'display_title': '담당', 'name': clean_drafter_name or raw_drafter_name},
+            'is_solo': is_solo,
+            'drafter': None if is_solo else {'display_title': '담당', 'name': clean_drafter_name or raw_drafter_name},
             'middle_steps': [],
             'final_approver': {
                 'display_title': final_title,
@@ -174,28 +185,31 @@ def get_letter_approval_line(letter):
         elif letter.issue_date:
             final_date = letter.issue_date.strftime('%Y. %m. %d.')
 
-    # 대표이사가 직접 기안하여 결재한 1인 결재 여부 확인
-    is_ceo_solo = False
-    clean_drafter_name = (
-        drafter_name.replace('대표이사', '')
-        .replace('대표', '')
-        .replace('사장', '')
-        .strip()
-    )
-    final_name = (final_approver_info.get('name') or '').strip()
-    if len(middle_steps) == 0:
-        if clean_drafter_name and final_name and clean_drafter_name == final_name:
-            is_ceo_solo = True
-        elif representative_name and clean_drafter_name == representative_name:
-            is_ceo_solo = True
+    # 승인(전결)권자 직접 기안 1인 단독 결재 여부 확인
+    if letter.is_solo_approval:
+        is_solo = True
+    else:
+        is_solo = False
+        clean_drafter_name = (
+            drafter_name.replace('대표이사', '')
+            .replace('대표', '')
+            .replace('사장', '')
+            .strip()
+        )
+        final_name = (final_approver_info.get('name') or '').strip()
+        if len(middle_steps) == 0:
+            if clean_drafter_name and final_name and clean_drafter_name == final_name:
+                is_solo = True
+            elif representative_name and clean_drafter_name == representative_name:
+                is_solo = True
 
     date_label = '시행' if letter.dispatched_at else '승인'
     if not letter.dispatched_at and final_approver_info.get('display_title') in ['현장소장', '소장', '본부장', '팀장']:
         date_label = '전결'
 
     return {
-        'is_solo': is_ceo_solo,
-        'drafter': None if is_ceo_solo else {'display_title': '담당', 'name': drafter_name},
+        'is_solo': is_solo,
+        'drafter': None if is_solo else {'display_title': '담당', 'name': drafter_name},
         'middle_steps': middle_steps,
         'final_approver': final_approver_info,
         'final_date': final_date,

@@ -433,7 +433,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'company_name', 'document_number', 'title',
                   'recipient_name', 'recipient_address', 'recipient_contact',
                   'via', 'recipient_reference',
-                  'drafter_name', 'drafter_position',
+                  'drafter_name', 'drafter_position', 'is_solo_approval',
                   'sender_zipcode', 'sender_address',
                   'content', 'attachment_text', 'attachments',
                   'issue_date', 'effective_issue_date', 'seal', 'seal_detail', 'pdf_file',
