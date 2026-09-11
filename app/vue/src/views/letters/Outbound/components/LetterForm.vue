@@ -646,9 +646,20 @@ const goBack = () => {
                       <option value="2">부분공개</option>
                       <option value="3">비공개 (영업비밀/대외비)</option>
                     </CFormSelect>
-                    <CFormText class="text-muted">
-                      공문서 하단 메타정보(전화/팩스 우측)에 공식 표기됩니다.
-                    </CFormText>
+                    <div class="mt-1">
+                      <small v-if="form.disclosure_type === '3'" class="text-danger d-block fw-semibold">
+                        <CIcon name="cilLockLocked" class="me-1" />
+                        영업비밀·대외비 문서: 외부 유출 및 제3자 정보공개가 전면 제한됩니다.
+                      </small>
+                      <small v-else-if="form.disclosure_type === '2'" class="text-warning-emphasis d-block fw-semibold">
+                        <CIcon name="cilShieldAlt" class="me-1" />
+                        부분공개: 개인정보·계약단가 등 특정 비공개 대상 정보 외의 부분만 공개됩니다.
+                      </small>
+                      <small v-else class="text-secondary d-block">
+                        <CIcon name="cilWarning" class="me-1 text-warning" />
+                        개인정보(주민번호·연락처 등), 계약단가, 영업비밀 등이 포함된 경우 <strong>'부분공개'</strong> 또는 <strong>'비공개'</strong>로 지정하십시오.
+                      </small>
+                    </div>
                   </CCol>
 
                   <!-- 수동 발송일 때만 기안자명 노출 -->
