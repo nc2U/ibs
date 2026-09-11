@@ -20,6 +20,8 @@ export declare interface User {
   last_login: string | null
   is_hq_staff?: boolean
   has_staff?: boolean
+  staff_name?: string
+  staff_duty?: string
 }
 
 export type Profile = {

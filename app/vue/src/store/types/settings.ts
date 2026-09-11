@@ -4,6 +4,7 @@ export interface Company {
   en_name?: string
   short_name?: string
   ceo: string
+  representative_name?: string
   tax_number: string
   org_number: string
   business_cond: string

@@ -57,13 +57,31 @@ class UserSerializer(serializers.ModelSerializer):
     profile = ProfileInUserSerializer(read_only=True)
     is_hq_staff = serializers.SerializerMethodField(read_only=True)
     has_staff = serializers.SerializerMethodField(read_only=True)
+    staff_name = serializers.SerializerMethodField(read_only=True)
+    staff_duty = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
                   'work_manager', 'date_joined', 'password', 'profile', 'last_login',
-                  'is_hq_staff', 'has_staff')
+                  'is_hq_staff', 'has_staff', 'staff_name', 'staff_duty')
         read_only_fields = ('date_joined', 'last_login')
+
+    @staticmethod
+    def get_staff_name(obj):
+        staff = getattr(obj, 'staff', None)
+        return staff.name if staff else ''
+
+    @staticmethod
+    def get_staff_duty(obj):
+        staff = getattr(obj, 'staff', None)
+        if not staff:
+            return ''
+        if hasattr(staff, 'executive') and staff.executive and staff.executive.rank:
+            return staff.executive.rank.name
+        if staff.duty:
+            return staff.duty.name
+        return ''
 
     @staticmethod
     def get_is_hq_staff(obj):

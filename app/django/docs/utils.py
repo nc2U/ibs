@@ -20,56 +20,100 @@ def get_letter_approval_line(letter):
     - 대표이사 단독 기안/결재 시: 기안란(담당)은 생략하고 최종권자(대표이사)만 단독 표기
     """
     approval_doc = letter.approval_document
-    ceo_name = letter.company.ceo if (letter.company and letter.company.ceo) else ''
+    # 회사의 공식 장부(Executive/Staff)로부터 단독 대표이사 성명 추출
+    representative_name = (
+        letter.company.get_representative_staff_name()
+        if (letter.company and hasattr(letter.company, 'get_representative_staff_name'))
+        else ''
+    )
+    # 대표이사 직함이나 공백 제거 후 순수 성명 비교용
+    raw_drafter_name = letter.drafter_name or ''
+    clean_drafter_name = (
+        raw_drafter_name.replace('대표이사', '')
+        .replace('대표', '')
+        .replace('사장', '')
+        .strip()
+    )
 
     if not approval_doc:
         # 전자결재 연동이 없는 수동 발송의 경우
-        drafter_name = letter.drafter_name or ''
         final_date = letter.issue_date.strftime('%Y. %m. %d.') if letter.issue_date else ''
         final_title = '대표이사'
+        if letter.seal and letter.seal.final_approval_duty:
+            final_title = letter.seal.final_approval_duty.name
 
-        # 대표이사가 직접 기안/발송한 경우: 기안란은 None으로 두어 단독 표기
-        is_ceo_solo = bool(drafter_name and ceo_name and drafter_name.strip() == ceo_name.strip())
+        # 최종 결재권자 성명 결정 (공동대표 문자열이 절대 들어가지 않도록 단일 성명 우선)
+        final_person_name = representative_name or clean_drafter_name
+
+        # 대표이사가 직접 기안/발송한 경우: 기안란(담당)은 생략하고 대표이사 단독 표기
+        # (예: '고창균 대표' == '고창균', 또는 성명이 representative_name과 동일한 경우)
+        is_ceo_solo = bool(
+            clean_drafter_name
+            and final_person_name
+            and clean_drafter_name == final_person_name
+        )
 
         return {
             'is_solo': is_ceo_solo,
-            'drafter': None if is_ceo_solo else {'display_title': '담당', 'name': drafter_name},
+            'drafter': None if is_ceo_solo else {'display_title': '담당', 'name': clean_drafter_name or raw_drafter_name},
             'middle_steps': [],
             'final_approver': {
                 'display_title': final_title,
-                'name': ceo_name or drafter_name,
+                'name': final_person_name,
             },
             'final_date': final_date,
             'date_label': '시행' if letter.dispatched_at else '승인',
         }
 
     def _get_staff_duty_or_name(user, assignment=None, is_final=False):
+        """
+        결재 선상의 이름 및 직책 추출 원칙:
+        - 이름: 무조건 회사의 공식 장부인 Staff 모델의 name(직원 성명) 사용
+        - 직책: 임원인 경우 ExecutiveRank 직위명, 보직이 있는 경우 DutyTitle 직책명 사용
+        """
         staff = getattr(user, 'staff', None) if user else None
-        name = staff.name if staff else (user.username if user else '')
-        if not staff:
-            return '', name
+        if not staff and user:
+            # 혹시 역참조나 캐싱 문제 방지를 위해 Staff 모델 직접 조회
+            from company.models import Staff
+            staff = Staff.objects.filter(user=user).first()
 
-        # 1. 대표이사/임원 확인
-        if hasattr(staff, 'executive') and staff.executive and staff.executive.rank:
+        name = staff.name if staff else ''
+        if not name and user:
+            # Staff가 등록되지 않은 비정상 계정의 경우에만 최소한의 식별용 표시
+            name = getattr(getattr(user, 'profile', None), 'name', '') or user.username
+
+        # 1. 대표이사/임원 확인 (ExecutiveRank)
+        if staff and hasattr(staff, 'executive') and staff.executive and staff.executive.rank:
             rank_name = staff.executive.rank.name
             return rank_name, name
 
-        # 2. 보직의 직책(duty) 확인
-        duty_obj = assignment.duty if (assignment and assignment.duty) else (staff.duty if hasattr(staff, 'duty') else None)
-        if duty_obj:
+        # 2. 보직의 직책(DutyTitle) 확인
+        duty_obj = None
+        if assignment and assignment.duty:
+            duty_obj = assignment.duty
+        elif staff and hasattr(staff, 'duty') and staff.duty:
+            duty_obj = staff.duty
+
+        if duty_obj and duty_obj.name:
             return duty_obj.name, name
 
-        # 3. 직책이 없는 일반 팀원인 경우 직위(position)를 쓸지 혹은 생략할지
+        # 3. 직책이 없는 일반 팀원인 경우
         # 최종 결재권자인 경우는 직위라도 표기, 중간 단계인 경우는 직책 없으면 이름만
-        if is_final:
-            pos_name = staff.position.name if staff.position else '전결'
-            return pos_name, name
+        if is_final and staff and staff.position:
+            return staff.position.name, name
+
         return '', name
 
-    # 1. 기안자 정보
+    # 1. 기안자 정보 (Staff 모델의 직원 성명 원칙)
     drafter = approval_doc.drafter
     drafter_staff = getattr(drafter, 'staff', None) if drafter else None
-    drafter_name = drafter_staff.name if drafter_staff else (drafter.username if drafter else '')
+    if not drafter_staff and drafter:
+        from company.models import Staff
+        drafter_staff = Staff.objects.filter(user=drafter).first()
+
+    drafter_name = drafter_staff.name if drafter_staff else (
+        getattr(getattr(drafter, 'profile', None), 'name', '') or (drafter.username if drafter else '')
+    )
 
     # 2. 결재 단계 순회
     steps = approval_doc.steps.all().order_by('step_order').prefetch_related('approvers', 'actions__approver')
@@ -122,10 +166,17 @@ def get_letter_approval_line(letter):
 
     # 대표이사가 직접 기안하여 결재한 1인 결재 여부 확인
     is_ceo_solo = False
+    clean_drafter_name = (
+        drafter_name.replace('대표이사', '')
+        .replace('대표', '')
+        .replace('사장', '')
+        .strip()
+    )
+    final_name = (final_approver_info.get('name') or '').strip()
     if len(middle_steps) == 0:
-        if drafter_name and final_approver_info['name'] and drafter_name.strip() == final_approver_info['name'].strip():
+        if clean_drafter_name and final_name and clean_drafter_name == final_name:
             is_ceo_solo = True
-        elif ceo_name and drafter_name.strip() == ceo_name.strip():
+        elif representative_name and clean_drafter_name == representative_name:
             is_ceo_solo = True
 
     date_label = '승인'

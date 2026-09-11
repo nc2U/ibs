@@ -33,6 +33,41 @@ class Company(models.Model):
     def __str__(self):
         return self.name
 
+    def get_representative_staff_name(self):
+        """
+        회사의 공식 장부(Executive / Staff)에 등록된 단일 대표이사 성명 추출
+        - 1순위: represent_type이 'sole', 'joint', 'each'인 Executive의 staff.name (또는 name)
+        - 2순위: 회사의 임원(Staff sort='1') 중 사장/부회장/회장 등 최고 직위 임원의 성명
+        - 3순위: 전체 Staff 중 ceo 텍스트에 포함된 직원 성명
+        - 4순위: 사업자등록증상 ceo 텍스트에서 첫 번째 대표자명 분리
+        """
+        # 1. Executive 모델에서 대표권을 가진 임원 탐색
+        rep_exec = self.executives.filter(
+            represent_type__in=['sole', 'joint', 'each']
+        ).select_related('staff', 'rank').order_by('rank__sort_order', 'id').first()
+        if rep_exec:
+            name = rep_exec.staff.name if rep_exec.staff else rep_exec.name
+            if name and name.strip():
+                return name.strip()
+
+        # 2. Staff 모델에서 임원(sort='1') 중 탐색
+        exec_staff = self.staffs.filter(sort='1').select_related('position').order_by('id').first()
+        if exec_staff and exec_staff.name:
+            return exec_staff.name.strip()
+
+        # 3. 전체 Staff 중 회사 ceo 텍스트와 일치하는 직원 탐색
+        from company.models.staff import Staff
+        if self.ceo:
+            ceo_parts = [p.strip() for p in self.ceo.replace(';', ',').split(',') if p.strip()]
+            for part in ceo_parts:
+                matched_staff = Staff.objects.filter(name=part).first()
+                if matched_staff:
+                    return matched_staff.name.strip()
+            if ceo_parts:
+                return ceo_parts[0]
+
+        return ''
+
     def save(self, *args, **kwargs):
         if self.is_default:
             Company.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)

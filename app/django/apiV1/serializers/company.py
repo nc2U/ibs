@@ -28,9 +28,11 @@ class CompanySerializer(serializers.ModelSerializer):
     grades = GradesInCompanySerializer(many=True, read_only=True)
     com_issue_project = serializers.SerializerMethodField(read_only=True)
 
+    representative_name = serializers.CharField(source='get_representative_staff_name', read_only=True)
+
     class Meta:
         model = Company
-        fields = ('pk', 'name', 'en_name', 'short_name', 'ceo', 'tax_number', 'org_number',
+        fields = ('pk', 'name', 'en_name', 'short_name', 'ceo', 'representative_name', 'tax_number', 'org_number',
                   'business_cond', 'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
                   'address2', 'address3', 'departments', 'grades', 'com_issue_project', 'is_default')
 

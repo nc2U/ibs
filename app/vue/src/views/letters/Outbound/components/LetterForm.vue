@@ -29,6 +29,27 @@ const accStore = useAccount()
 const comStore = useCompany()
 const sealList = computed(() => comStore.sealList)
 const currentCompany = computed(() => comStore.company)
+const representativeName = computed(() => {
+  return (
+    currentCompany.value?.representative_name ||
+    currentCompany.value?.ceo?.split(',')?.[0]?.trim() ||
+    ''
+  )
+})
+const cleanDrafterName = computed(() => {
+  const name =
+    approvalMode.value === 'approval'
+      ? accStore.userInfo?.staff_name ||
+        accStore.userInfo?.profile?.name ||
+        accStore.userInfo?.username ||
+        ''
+      : form.value.drafter_name || ''
+  return name.replace(/대표이사|대표|사장/g, '').trim()
+})
+const isCeoSolo = computed(() => {
+  if (!cleanDrafterName.value || !representativeName.value) return false
+  return cleanDrafterName.value === representativeName.value
+})
 const selectedSeal = computed(() => {
   if (!form.value.seal) return null
   return sealList.value.find(item => item.pk === form.value.seal) || null
@@ -105,9 +126,12 @@ watch(
       } else {
         attachmentInputMode.value = 'file'
       }
-    } else {
-      // 신규 작성 시 로그인 유저 정보로 기본 기안자명 준비
-      const currentUserName = accStore.userInfo?.profile?.name || accStore.userInfo?.username || ''
+      // 신규 작성 시 회사의 공식 장부에 등록된 직원 성명(staff_name)으로 기본 기안자명 준비
+      const currentUserName =
+        accStore.userInfo?.staff_name ||
+        accStore.userInfo?.profile?.name ||
+        accStore.userInfo?.username ||
+        ''
       if (!form.value.drafter_name && currentUserName) {
         form.value.drafter_name = currentUserName
       }
@@ -153,10 +177,13 @@ const deleteExistingAttachment = async (attachmentId: number) => {
 const onSubmit = () => {
   validated.value = true
 
-  // 전자결재 모드일 때는 기안자명이 비어있을 경우 현재 사용자명으로 자동 보정
+  // 전자결재 모드일 때는 기안자명이 비어있을 경우 직원 성명으로 자동 보정
   if (approvalMode.value === 'approval' && !form.value.drafter_name) {
     form.value.drafter_name =
-      accStore.userInfo?.profile?.name || accStore.userInfo?.username || '기안'
+      accStore.userInfo?.staff_name ||
+      accStore.userInfo?.profile?.name ||
+      accStore.userInfo?.username ||
+      '기안'
   }
 
   // 텍스트 모드가 아닐 때는 attachment_text를 비워 상호 배타적으로 유지
@@ -859,65 +886,57 @@ const goBack = () => {
                     class="preview-bottom border-top pt-2"
                     style="font-size: 0.72rem; line-height: 1.4"
                   >
-                    <!-- 결재선 요약 (표준 형식 동기화) -->
-                    <div
-                      class="d-flex justify-content-between align-items-end p-1 px-2 border-bottom mb-2"
-                      style="font-size: 0.72rem"
-                    >
-                      <!-- 좌측: 기안/담당 (대표이사 단독 기안 시 생략) -->
-                      <div class="text-start">
-                        <template
-                          v-if="
-                            approvalMode === 'approval' ||
-                            !form.drafter_name ||
-                            form.drafter_name.trim() !== (currentCompany?.ceo || '').trim()
-                          "
-                        >
-                          <span class="fw-bold me-1 text-secondary">담당</span>
-                          <span>{{
-                            approvalMode === 'approval'
-                              ? accStore.userInfo?.profile?.name ||
-                                accStore.userInfo?.username ||
-                                '기안자'
-                              : form.drafter_name || '담당자'
-                          }}</span>
-                        </template>
-                        <span v-else class="text-muted fst-italic">(대표이사 단독 기안)</span>
-                      </div>
-
-                      <!-- 우측: 최종 결재자 및 상단 승인 일자 -->
-                      <div class="text-end">
-                        <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
-                          <span v-if="approvalMode === 'approval'" class="badge bg-secondary">
-                            결재 승인 시 자동 확정
-                          </span>
-                          <span v-else>
-                            시행 {{ form.issue_date || '발신일자' }}
-                          </span>
-                        </div>
-                        <div>
-                          <span class="fw-bold me-1 text-secondary">
-                            {{
-                              selectedSeal?.final_approval_duty_name ||
-                              (selectedSeal?.seal_type === 'CORP_SEAL' ? '대표이사' : '대표이사')
-                            }}
-                          </span>
-                          <span>{{ currentCompany?.ceo || '대표이사' }}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 시행/접수/주소/연락처 테이블 -->
-                    <table class="w-100" style="color: #444">
+                    <!-- 시행/접수/주소/연락처 및 상단 결재선 통합 테이블 (완전 수직 정렬) -->
+                    <table class="w-100" style="color: #444; border-collapse: collapse; font-size: 0.72rem">
                       <tbody>
+                        <!-- 1행: 결재선 (시행/우편/전화와 동일한 테이블 1행에 배치하여 좌측선 100% 칼정렬) -->
+                        <tr class="border-bottom">
+                          <td class="pb-1" style="width: 40px; vertical-align: bottom; padding-left: 0">
+                            <template v-if="!isCeoSolo">
+                              <span class="text-secondary">담당</span>
+                            </template>
+                          </td>
+                          <td colspan="2" class="pb-1" style="vertical-align: bottom">
+                            <template v-if="!isCeoSolo">
+                              <span class="fw-bold text-dark">{{
+                                approvalMode === 'approval'
+                                  ? accStore.userInfo?.staff_name ||
+                                    accStore.userInfo?.profile?.name ||
+                                    accStore.userInfo?.username ||
+                                    '기안자'
+                                  : cleanDrafterName || form.drafter_name || '담당자'
+                              }}</span>
+                            </template>
+                            <span v-else class="text-muted fst-italic">(대표이사 단독 기안)</span>
+                          </td>
+                          <td colspan="2" class="text-end pb-1" style="vertical-align: bottom">
+                            <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
+                              <span v-if="approvalMode === 'approval'" class="badge bg-secondary">
+                                결재 승인 시 자동 확정
+                              </span>
+                              <span v-else>
+                                시행 {{ form.issue_date || '발신일자' }}
+                              </span>
+                            </div>
+                            <div>
+                              <span class="me-1 text-secondary">
+                                {{
+                                  selectedSeal?.final_approval_duty_name ||
+                                  (selectedSeal?.seal_type === 'CORP_SEAL' ? '대표이사' : '대표이사')
+                                }}
+                              </span>
+                              <span class="fw-bold text-dark">{{ representativeName || '대표이사' }}</span>
+                            </div>
+                          </td>
+                        </tr>
                         <tr>
-                          <td style="width: 40px; font-weight: bold">시행</td>
-                          <td style="width: 140px">
+                          <td style="width: 40px; font-weight: bold; padding-left: 0; padding-top: 4px">시행</td>
+                          <td style="width: 140px; padding-top: 4px">
                             {{ form.document_number || nextDocNumber || '자동채번' }}
                           </td>
-                          <td style="width: 110px">({{ form.issue_date || '발신일자' }})</td>
-                          <td style="width: 40px; font-weight: bold">접수</td>
-                          <td></td>
+                          <td style="width: 110px; padding-top: 4px">({{ form.issue_date || '발신일자' }})</td>
+                          <td style="width: 40px; font-weight: bold; padding-top: 4px">접수</td>
+                          <td style="padding-top: 4px"></td>
                         </tr>
                         <tr>
                           <td style="font-weight: bold">우편</td>
