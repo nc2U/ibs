@@ -481,6 +481,7 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             'partial_update': 'docs.update',
             'destroy': 'docs.delete',
             'generate_pdf': 'docs.create',
+            'upload_pdf': 'docs.create',
             'download_pdf': 'docs.read',
             'next_document_number': 'docs.read',
             'submit_approval': 'docs.create'
@@ -505,6 +506,22 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):
         letter = self.get_object()
+
+        # 1. 발송 완료된 공문은 자료 유실/변조 방지를 위해 수퍼유저를 포함해 시스템 PDF 재생성을 무조건 전면 금지
+        if letter.dispatched_at is not None:
+            return Response(
+                {'detail': '이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. 결재 승인 완료된 공문은 관리자(슈퍼유저/work_manager)만 재생성 가능
+        is_manager = request.user.is_superuser or getattr(request.user, 'work_manager', False)
+        if letter.approval_status == 'approved' and not is_manager:
+            return Response(
+                {'detail': '최종 결재 승인된 공문서는 관리자만 시스템 PDF를 재생성할 수 있습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         try:
             pdf_file = generate_official_letter_pdf(letter)
         except Exception as e:
@@ -514,6 +531,35 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         letter.pdf_file = pdf_file
+        letter.save(update_fields=['pdf_file'])
+        return Response({
+            'status': 'success',
+            'pdf_url': letter.pdf_file.url if letter.pdf_file else None
+        })
+
+    @action(detail=True, methods=['post'])
+    def upload_pdf(self, request, pk=None):
+        """실물 날인 스캔본 등 완성된 PDF 파일을 직접 업로드하여 보관"""
+        letter = self.get_object()
+
+        # 발송 완료된 공문의 스캔 파일 교체는 관리자(슈퍼유저/work_manager)만 허용
+        is_manager = request.user.is_superuser or getattr(request.user, 'work_manager', False)
+        if letter.dispatched_at is not None and not is_manager:
+            return Response(
+                {'detail': '이미 발송 완료된 공문의 최종 스캔본 등록/교체는 관리자만 가능합니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        uploaded_file = request.FILES.get('pdf_file') or request.FILES.get('file')
+
+        if not uploaded_file:
+            return Response({'error': '업로드할 PDF 파일이 전달되지 않았습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not uploaded_file.name.lower().endswith('.pdf'):
+            return Response({'error': 'PDF 파일 형식(.pdf)만 업로드할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 기존 PDF 교체 저장
+        letter.pdf_file = uploaded_file
         letter.save(update_fields=['pdf_file'])
         return Response({
             'status': 'success',

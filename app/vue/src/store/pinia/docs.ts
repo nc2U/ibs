@@ -528,6 +528,21 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const uploadLetterPdf = async (pk: number, file: File) => {
+    const formData = new FormData()
+    formData.append('pdf_file', file)
+    return api
+      .post(`/official-letter/${pk}/upload_pdf/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(async res => {
+        await fetchLetter(pk)
+        message('success', '', '공문 PDF(스캔본) 파일이 성공적으로 업로드되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   const getNextDocumentNumber = async (company: number) =>
     api
       .get(`/official-letter/next_document_number/?company=${company}`)
@@ -654,6 +669,7 @@ export const useDocs = defineStore('docs', () => {
     patchLetter,
     deleteLetter,
     generatePdf,
+    uploadLetterPdf,
     getNextDocumentNumber,
     submitApproval,
     uploadLetterAttachment,

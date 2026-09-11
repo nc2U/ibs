@@ -540,9 +540,9 @@ const goBack = () => {
                         form.seal = Number(($event.target as HTMLSelectElement).value) || null
                       "
                     >
-                      <option value="">인장 미선택 / (직인생략)</option>
+                      <option value="">인장 미선택 / (직인생략 / 출력 후 실물날인)</option>
                       <option v-for="s in sealList" :key="s.pk" :value="s.pk">
-                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }})
+                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}) - 전자날인
                       </option>
                     </CFormSelect>
                     <div v-if="selectedSealImage" class="mt-2 d-flex align-items-center">
@@ -552,7 +552,15 @@ const goBack = () => {
                         style="width: 40px; height: 40px; object-fit: contain"
                         class="border rounded p-1 bg-white me-2"
                       />
-                      <small class="text-muted">등록된 직인 이미지 (PDF 자동 날인)</small>
+                      <small class="text-success fw-semibold">
+                        <CIcon name="cilCheckCircle" class="me-1" />
+                        등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.
+                      </small>
+                    </div>
+                    <div v-else class="mt-1">
+                      <small class="text-muted">
+                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지 마십시오. (발송 후 날인 스캔본 PDF를 대장에 업로드 가능)
+                      </small>
                     </div>
                   </CCol>
 

@@ -7,6 +7,8 @@ import { useDocs } from '@/store/pinia/docs'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { usePerms } from '@/composables/usePerms.ts'
 
+import { useAccount } from '@/store/pinia/account'
+
 const props = defineProps<{
   letter: OfficialLetter | null
   viewRoute: string
@@ -25,9 +27,42 @@ const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
 const router = useRouter()
 const docStore = useDocs()
+const accStore = useAccount()
 
 const showDeleteModal = ref(false)
 const pdfLoading = ref(false)
+const scanUploadLoading = ref(false)
+const scanFileInputRef = ref<HTMLInputElement | null>(null)
+
+// 발송완료 여부
+const isDispatched = computed(() => !!props.letter?.dispatched_at)
+
+// 결재완료 여부
+const isApproved = computed(() => props.letter?.approval_status === 'approved')
+
+// 관리자 여부 (슈퍼유저 또는 work_manager)
+const isManager = computed(() => {
+  return !!accStore.superAuth || !!accStore.workManager
+})
+
+// 재생성 가능 여부:
+// 1. 발송 완료된 경우: 자료 유실/변조 방지를 위해 슈퍼유저 포함 무조건 전면 금지
+// 2. 결재 승인 완료된 경우: 관리자만 가능
+// 3. 그 외: docs.create 권한자 가능
+const canRegeneratePdf = computed(() => {
+  if (isDispatched.value) return false
+  if (!canDocsCreate.value) return false
+  if (isApproved.value) return isManager.value
+  return true
+})
+
+// 스캔본 업로드 가능 여부:
+// 발송 완료된 공문은 관리자만 교체/등록 가능, 발송 전은 create 권한자 가능
+const canUploadScan = computed(() => {
+  if (!canDocsCreate.value) return false
+  if (isDispatched.value) return isManager.value
+  return true
+})
 
 const letterNav = computed(() => docStore.getLetterNav)
 
@@ -76,11 +111,51 @@ const onDelete = () => {
 
 const onGeneratePdf = async () => {
   if (props.letter?.pk) {
+    if (isDispatched.value) {
+      alert('이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.')
+      return
+    }
+    if (isApproved.value && !isManager.value) {
+      alert('최종 결재 승인된 공문서는 관리자만 재생성할 수 있습니다.')
+      return
+    }
     pdfLoading.value = true
     try {
       emit('generatePdf', props.letter.pk)
     } finally {
       pdfLoading.value = false
+    }
+  }
+}
+
+const onScanFileSelect = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0] && props.letter?.pk) {
+    if (isDispatched.value && !isManager.value) {
+      alert('이미 발송 완료된 공문의 스캔 파일 교체는 관리자만 가능합니다.')
+      target.value = ''
+      return
+    }
+
+    if (isDispatched.value) {
+      if (!confirm('이미 발송 완료된 공문서입니다. 등록 시 기존 최종 발송본 파일이 대체됩니다. 계속하시겠습니까?')) {
+        target.value = ''
+        return
+      }
+    }
+
+    const file = target.files[0]
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('PDF 파일(.pdf)만 등록 가능합니다.')
+      target.value = ''
+      return
+    }
+    scanUploadLoading.value = true
+    try {
+      await docStore.uploadLetterPdf(props.letter.pk, file)
+    } finally {
+      scanUploadLoading.value = false
+      target.value = ''
     }
   }
 }
@@ -384,47 +459,118 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       </CCardBody>
     </CCard>
 
-    <!-- PDF Section -->
+    <!-- PDF Section (최종 발송본 PDF 관리) -->
     <CCard class="mb-4">
-      <CCardHeader>
-        <strong>공문 PDF 파일</strong>
+      <CCardHeader class="d-flex justify-content-between align-items-center">
+        <strong>
+          <CIcon name="cilFile" class="me-1" />
+          공문 PDF 파일 (최종 발송/보관본)
+        </strong>
+        <div>
+          <CBadge v-if="isDispatched" color="dark">대외 발송완료 (재생성 금지)</CBadge>
+          <CBadge v-else-if="isApproved" color="secondary">결재승인완료 (재생성 제한)</CBadge>
+        </div>
       </CCardHeader>
       <CCardBody>
-        <div v-if="letter.pdf_file" class="d-flex align-items-center">
-          <CBadge color="success" class="me-3">
-            <CIcon name="cilFile" class="me-1" />
-            PDF 생성됨
-          </CBadge>
-          <CButton color="primary" size="sm" @click="downloadPdf">
-            <CIcon name="cilCloudDownload" class="me-1" />
-            다운로드
-          </CButton>
-          <CButton
-            v-if="canDocsCreate"
-            color="warning"
-            size="sm"
-            class="ms-2"
-            :disabled="pdfLoading"
-            @click="onGeneratePdf"
-          >
-            <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-            <CIcon v-else name="cilReload" class="me-1" />
-            재생성
-          </CButton>
+        <div v-if="letter.pdf_file" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="d-flex align-items-center">
+            <CBadge color="success" class="me-3 p-2">
+              <CIcon name="cilFile" class="me-1" />
+              최종 PDF 등록됨
+            </CBadge>
+            <CButton color="primary" size="sm" @click="downloadPdf">
+              <CIcon name="cilCloudDownload" class="me-1" />
+              PDF 다운로드
+            </CButton>
+          </div>
+
+          <!-- 작업 버튼 그룹: 스캔본 교체 업로드 & 시스템 재생성 -->
+          <div class="d-flex align-items-center gap-2">
+            <!-- 실물 날인 스캔본 직접 업로드 / 교체 (발송 후는 관리자만) -->
+            <template v-if="canUploadScan">
+              <input
+                ref="scanFileInputRef"
+                type="file"
+                accept=".pdf"
+                class="d-none"
+                @change="onScanFileSelect"
+              />
+              <CButton
+                color="info"
+                variant="outline"
+                size="sm"
+                :disabled="scanUploadLoading"
+                @click="scanFileInputRef?.click()"
+              >
+                <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
+                <CIcon v-else name="cilCloudUpload" class="me-1" />
+                실물날인 스캔본(PDF) 업로드/교체
+              </CButton>
+            </template>
+            <small v-else-if="isDispatched" class="text-muted">
+              (발송 완료된 공문의 스캔본 교체는 관리자만 가능)
+            </small>
+
+            <!-- 시스템 양식 PDF 재생성 (발송 완료 시 무조건 금지, 결재 승인 시 관리자만) -->
+            <CButton
+              v-if="canRegeneratePdf"
+              color="warning"
+              variant="outline"
+              size="sm"
+              :disabled="pdfLoading"
+              @click="onGeneratePdf"
+            >
+              <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
+              <CIcon v-else name="cilReload" class="me-1" />
+              시스템 PDF 재생성
+            </CButton>
+            <small v-else-if="isDispatched" class="text-muted ms-1">
+              (발송 완료되어 증빙 보호를 위해 PDF 재생성 불가)
+            </small>
+            <small v-else-if="isApproved" class="text-muted ms-1">
+              (최종 결재 승인되어 관리자만 시스템 PDF 재생성 가능)
+            </small>
+          </div>
         </div>
-        <div v-else>
-          <span class="text-muted me-3">PDF 파일이 아직 생성되지 않았습니다.</span>
-          <CButton
-            v-if="canDocsCreate"
-            color="primary"
-            size="sm"
-            :disabled="pdfLoading"
-            @click="onGeneratePdf"
-          >
-            <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-            <CIcon v-else name="cilFile" class="me-1" />
-            PDF 생성
-          </CButton>
+
+        <!-- PDF 미생성 상태 -->
+        <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <span class="text-muted">PDF 파일이 아직 생성되거나 등록되지 않았습니다.</span>
+          <div class="d-flex align-items-center gap-2">
+            <!-- 직접 스캔본 업로드 -->
+            <input
+              ref="scanFileInputRef"
+              type="file"
+              accept=".pdf"
+              class="d-none"
+              @change="onScanFileSelect"
+            />
+            <CButton
+              v-if="canDocsCreate"
+              color="info"
+              variant="outline"
+              size="sm"
+              :disabled="scanUploadLoading"
+              @click="scanFileInputRef?.click()"
+            >
+              <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
+              <CIcon v-else name="cilCloudUpload" class="me-1" />
+              스캔본(PDF) 직접 업로드
+            </CButton>
+
+            <!-- 시스템 PDF 생성 -->
+            <CButton
+              v-if="canDocsCreate"
+              color="primary"
+              size="sm"
+              :disabled="pdfLoading"
+              @click="onGeneratePdf"
+            >
+              <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
+              <CIcon v-else name="cilFile" class="me-1" />
+              시스템 양식 PDF 생성
+            </CButton>
+          </div>
         </div>
       </CCardBody>
     </CCard>
