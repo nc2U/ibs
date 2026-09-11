@@ -234,6 +234,8 @@ export interface OfficialLetter {
     seal_image: string | null
   } | null
   pdf_file?: string | null
+  disclosure_type?: '1' | '2' | '3'
+  disclosure_type_desc?: string
   dispatch_method?: 'email' | 'registered_mail' | 'direct' | 'courier' | 'fax' | 'etc'
   dispatch_method_desc?: string
   tracking_number?: string
@@ -270,6 +272,7 @@ export interface PatchLetter {
   sender_address?: string
   content?: string
   attachment_text?: string
+  disclosure_type?: '1' | '2' | '3'
   dispatch_method?: string
   tracking_number?: string
   dispatched_at?: string | null

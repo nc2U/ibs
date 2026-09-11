@@ -383,10 +383,14 @@
         </tr>
         <tr>
           <td class="label">전화</td>
-          <td>{{ sender_contact.phone }}</td>
-          <td class="label">팩스</td>
-          <td colspan="2">{{ sender_contact.fax }}</td>
+          <td style="width: 120px;">{{ sender_contact.phone }}</td>
+          <td class="label" style="width: 35px;">팩스</td>
+          <td style="width: 110px;">{{ sender_contact.fax }}</td>
           <td>{{ sender_contact.email }}</td>
+          <td style="text-align: right; padding-right: 5px; white-space: nowrap;">
+            <span style="color: #666; margin-right: 4px;">/</span>
+            <span style="letter-spacing: 1px;">{{ letter.get_disclosure_type_display|default:"공개" }}</span>
+          </td>
         </tr>
       </table>
     </div>

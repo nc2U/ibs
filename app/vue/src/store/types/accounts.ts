@@ -22,6 +22,8 @@ export declare interface User {
   has_staff?: boolean
   staff_name?: string
   staff_duty?: string
+  staff_phone?: string
+  staff_fax?: string
 }
 
 export type Profile = {

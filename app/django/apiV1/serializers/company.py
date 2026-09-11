@@ -34,7 +34,7 @@ class CompanySerializer(serializers.ModelSerializer):
         model = Company
         fields = ('pk', 'name', 'en_name', 'short_name', 'ceo', 'representative_name', 'tax_number', 'org_number',
                   'business_cond', 'business_even', 'es_date', 'op_date', 'zipcode', 'address1',
-                  'address2', 'address3', 'departments', 'grades', 'com_issue_project', 'is_default')
+                  'address2', 'address3', 'phone', 'fax', 'email', 'departments', 'grades', 'com_issue_project', 'is_default')
 
     @staticmethod
     def get_com_issue_project(obj):

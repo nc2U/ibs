@@ -56,6 +56,23 @@ const selectedSeal = computed(() => {
 })
 const selectedSealImage = computed(() => selectedSeal.value?.seal_image || null)
 
+// 발신자 연락처: 기안자 직원(Staff) 직통 연락처 우선, 미등록 시 회사 대표 연락처
+const senderContact = computed(() => {
+  const phone =
+    (approvalMode.value === 'approval' ? accStore.userInfo?.staff_phone : '') ||
+    currentCompany.value?.phone ||
+    '-'
+  const fax =
+    (approvalMode.value === 'approval' ? accStore.userInfo?.staff_fax : '') ||
+    currentCompany.value?.fax ||
+    '-'
+  const email =
+    (approvalMode.value === 'approval' ? accStore.userInfo?.email : '') ||
+    currentCompany.value?.email ||
+    ''
+  return { phone, fax, email }
+})
+
 const isEdit = computed(() => !!props.letter?.pk)
 const canOLManage = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
 
@@ -82,6 +99,7 @@ const form = ref<OfficialLetter>({
   content: '',
   attachment_text: '',
   issue_date: new Date().toISOString().substring(0, 10),
+  disclosure_type: '1',
   seal: null,
   drafter_name: '',
   drafter_position: '',
@@ -107,6 +125,7 @@ watch(
         attachment_text: letter.attachment_text || '',
         sender_zipcode: letter.sender_zipcode || '',
         sender_address: letter.sender_address || '',
+        disclosure_type: letter.disclosure_type || '1',
         dispatch_method: letter.dispatch_method || 'email',
         tracking_number: letter.tracking_number || '',
       }
@@ -140,15 +159,18 @@ watch(
   { immediate: true },
 )
 
-onMounted(async () => {
-  if (props.company) {
-    await comStore.fetchCompanySealList(props.company)
-  }
-  if (!props.letter && props.company) {
-    // Get next document number for new letters
-    nextDocNumber.value = await docStore.getNextDocumentNumber(props.company)
-  }
-})
+watch(
+  () => props.company,
+  async newCompany => {
+    if (newCompany) {
+      await comStore.fetchCompanySealList(newCompany)
+      if (!props.letter?.pk) {
+        nextDocNumber.value = await docStore.getNextDocumentNumber(newCompany)
+      }
+    }
+  },
+  { immediate: true },
+)
 
 const onFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -567,7 +589,7 @@ const goBack = () => {
                 </CAlert>
 
                 <CRow class="mb-3">
-                  <CCol :md="approvalMode === 'manual' ? 6 : 12">
+                  <CCol :md="approvalMode === 'manual' ? 4 : 6">
                     <CFormLabel>날인 인감 (직인)</CFormLabel>
                     <CFormSelect
                       :value="form.seal || ''"
@@ -611,13 +633,26 @@ const goBack = () => {
                     </div>
                     <div v-else class="mt-1">
                       <small class="text-muted">
-                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지 마십시오. (발송 후 날인 스캔본 PDF를 대장에 업로드 가능)
+                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지 마십시오.
                       </small>
                     </div>
                   </CCol>
 
+                  <!-- 공개 구분 선택 -->
+                  <CCol :md="approvalMode === 'manual' ? 4 : 6">
+                    <CFormLabel>공개 구분 <span class="text-danger">*</span></CFormLabel>
+                    <CFormSelect v-model="form.disclosure_type">
+                      <option value="1">공개</option>
+                      <option value="2">부분공개</option>
+                      <option value="3">비공개 (영업비밀/대외비)</option>
+                    </CFormSelect>
+                    <CFormText class="text-muted">
+                      공문서 하단 메타정보(전화/팩스 우측)에 공식 표기됩니다.
+                    </CFormText>
+                  </CCol>
+
                   <!-- 수동 발송일 때만 기안자명 노출 -->
-                  <CCol v-if="approvalMode === 'manual'" md="6">
+                  <CCol v-if="approvalMode === 'manual'" md="4">
                     <CFormLabel>기안/담당자명 <span class="text-danger">*</span></CFormLabel>
                     <CFormInput
                       v-model="form.drafter_name"
@@ -892,8 +927,8 @@ const goBack = () => {
 
                   <!-- 5. 결재선 및 시행 메타 -->
                   <div
-                    class="preview-bottom border-top pt-2"
-                    style="font-size: 0.72rem; line-height: 1.4"
+                    class="preview-bottom pt-2"
+                    style="font-size: 0.72rem; line-height: 1.4; border-top: 2px solid #333333;"
                   >
                     <!-- 시행/접수/주소/연락처 및 상단 결재선 통합 테이블 (완전 수직 정렬) -->
                     <table class="w-100" style="color: #444; border-collapse: collapse; font-size: 0.72rem">
@@ -971,9 +1006,26 @@ const goBack = () => {
                         </tr>
                         <tr>
                           <td style="font-weight: bold">전화</td>
-                          <td>{{ currentCompany?.phone || '-' }}</td>
-                          <td style="font-weight: bold">팩스</td>
-                          <td colspan="2">{{ currentCompany?.fax || '-' }}</td>
+                          <td style="width: 130px">{{ senderContact.phone }}</td>
+                          <td style="width: 35px; font-weight: bold">팩스</td>
+                          <td style="width: 120px">{{ senderContact.fax }}</td>
+                          <td>
+                            <div class="d-flex justify-content-between align-items-center">
+                              <span>{{ senderContact.email }}</span>
+                              <span class="text-end text-dark fw-normal ps-1">
+                                <span class="text-secondary me-1">/</span>
+                                <span class="fw-semibold">
+                                  {{
+                                    form.disclosure_type === '2'
+                                      ? '부분공개'
+                                      : form.disclosure_type === '3'
+                                        ? '비공개'
+                                        : '공개'
+                                  }}
+                                </span>
+                              </span>
+                            </div>
+                          </td>
                         </tr>
                       </tbody>
                     </table>

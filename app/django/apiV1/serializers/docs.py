@@ -421,6 +421,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
+    disclosure_type_desc = serializers.CharField(source='get_disclosure_type_display', read_only=True)
     attachments = OfficialLetterAttachmentSerializer(many=True, read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
     next_pk = serializers.SerializerMethodField(read_only=True)
@@ -436,6 +437,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'sender_zipcode', 'sender_address',
                   'content', 'attachment_text', 'attachments',
                   'issue_date', 'effective_issue_date', 'seal', 'seal_detail', 'pdf_file',
+                  'disclosure_type', 'disclosure_type_desc',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
@@ -487,12 +489,14 @@ class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
+    disclosure_type_desc = serializers.CharField(source='get_disclosure_type_display', read_only=True)
     has_attachments = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OfficialLetter
         fields = ('pk', 'document_number', 'title', 'recipient_name',
-                  'issue_date', 'pdf_file', 'dispatch_method', 'dispatch_method_desc',
+                  'issue_date', 'pdf_file', 'disclosure_type', 'disclosure_type_desc',
+                  'dispatch_method', 'dispatch_method_desc',
                   'tracking_number', 'dispatched_at', 'has_attachments',
                   'approval_document', 'approval_status',
                   'approval_status_desc', 'creator', 'created')

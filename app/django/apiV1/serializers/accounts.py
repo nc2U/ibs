@@ -59,18 +59,31 @@ class UserSerializer(serializers.ModelSerializer):
     has_staff = serializers.SerializerMethodField(read_only=True)
     staff_name = serializers.SerializerMethodField(read_only=True)
     staff_duty = serializers.SerializerMethodField(read_only=True)
+    staff_phone = serializers.SerializerMethodField(read_only=True)
+    staff_fax = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
                   'work_manager', 'date_joined', 'password', 'profile', 'last_login',
-                  'is_hq_staff', 'has_staff', 'staff_name', 'staff_duty')
+                  'is_hq_staff', 'has_staff', 'staff_name', 'staff_duty',
+                  'staff_phone', 'staff_fax')
         read_only_fields = ('date_joined', 'last_login')
 
     @staticmethod
     def get_staff_name(obj):
         staff = getattr(obj, 'staff', None)
         return staff.name if staff else ''
+
+    @staticmethod
+    def get_staff_phone(obj):
+        staff = getattr(obj, 'staff', None)
+        return staff.direct_phone if (staff and staff.direct_phone) else ''
+
+    @staticmethod
+    def get_staff_fax(obj):
+        staff = getattr(obj, 'staff', None)
+        return staff.direct_fax if (staff and staff.direct_fax) else ''
 
     @staticmethod
     def get_staff_duty(obj):

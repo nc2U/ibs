@@ -280,9 +280,27 @@ class LetterSequence(models.Model):
         return f'{self.company.name} - {self.year}'
 
     @classmethod
-    def get_next_document_number(cls, company):
-        """다음 문서번호 생성 ([회사약칭]-YYYY-NNN 형식)"""
+    def _get_prefix(cls, company):
         import re
+        prefix = company.short_name.strip() if getattr(company, 'short_name', None) else ''
+        if not prefix and getattr(company, 'name', None):
+            prefix = re.sub(r'\(주\)|주식회사|\s+', '', company.name)
+        return prefix
+
+    @classmethod
+    def peek_next_document_number(cls, company):
+        """다음에 발급될 예상 문서번호 조회 (시퀀스를 증가시키지 않음)"""
+        current_year = timezone.now().year
+        sequence = cls.objects.filter(company=company, year=current_year).first()
+        next_seq = (sequence.last_sequence + 1) if sequence else 1
+        prefix = cls._get_prefix(company)
+        if prefix:
+            return f'{prefix}-{current_year}-{next_seq:03d}'
+        return f'{current_year}-{next_seq:03d}'
+
+    @classmethod
+    def get_next_document_number(cls, company):
+        """다음 문서번호 생성 ([회사약칭]-YYYY-NNN 형식, 시퀀스 원자적 증가)"""
         current_year = timezone.now().year
 
         sequence, created = cls.objects.get_or_create(
@@ -294,11 +312,7 @@ class LetterSequence(models.Model):
         sequence.last_sequence += 1
         sequence.save()
 
-        # 회사 약칭 결정 (short_name 우선, 미지정 시 '주식회사', '(주)', 공백 제거)
-        prefix = company.short_name.strip() if getattr(company, 'short_name', None) else ''
-        if not prefix and getattr(company, 'name', None):
-            prefix = re.sub(r'\(주\)|주식회사|\s+', '', company.name)
-
+        prefix = cls._get_prefix(company)
         if prefix:
             return f'{prefix}-{current_year}-{sequence.last_sequence:03d}'
         return f'{current_year}-{sequence.last_sequence:03d}'
@@ -332,6 +346,16 @@ class OfficialLetter(models.Model):
 
     attachment_text = models.TextField('붙임 텍스트', blank=True, default='',
                                        help_text='직접 텍스트로 붙임 목록을 기입할 경우 사용')
+
+    DISCLOSURE_CHOICES = (
+        ('1', '공개'),
+        ('2', '부분공개'),
+        ('3', '비공개'),
+    )
+    disclosure_type = models.CharField(
+        '공개 구분', max_length=1, choices=DISCLOSURE_CHOICES, default='1',
+        help_text='1: 공개, 2: 부분공개, 3: 비공개(영업비밀/대외비)'
+    )
 
     DISPATCH_METHOD_CHOICES = (
         ('email', '이메일'),

@@ -302,6 +302,22 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   <td>{{ letter.recipient_reference || '-' }}</td>
                 </tr>
                 <tr>
+                  <th>공개구분</th>
+                  <td>
+                    <CBadge
+                      :color="
+                        letter.disclosure_type === '3'
+                          ? 'danger'
+                          : letter.disclosure_type === '2'
+                            ? 'warning'
+                            : 'success'
+                      "
+                    >
+                      {{ letter.disclosure_type_desc || (letter.disclosure_type === '3' ? '비공개' : letter.disclosure_type === '2' ? '부분공개' : '공개') }}
+                    </CBadge>
+                  </td>
+                </tr>
+                <tr>
                   <th>시행(발신)일</th>
                   <td>
                     <span v-if="letter.dispatched_at" class="fw-bold text-success">

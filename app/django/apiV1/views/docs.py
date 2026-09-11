@@ -595,18 +595,7 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
         try:
             company = Company.objects.get(pk=company_id)
-            current_year = timezone.now().year
-
-            # select_for_update()로 동시 요청 시 Race Condition(중복 채번) 방지
-            from django.db import transaction
-            with transaction.atomic():
-                sequence = LetterSequence.objects.select_for_update().filter(
-                    company=company,
-                    year=current_year
-                ).first()
-                next_seq = (sequence.last_sequence + 1) if sequence else 1
-
-            next_number = f'{current_year}-{next_seq:03d}'
+            next_number = LetterSequence.peek_next_document_number(company)
             return Response({'next_document_number': next_number})
         except Company.DoesNotExist:
             return Response({'error': '회사를 찾을 수 없습니다.'},
