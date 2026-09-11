@@ -425,6 +425,8 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     prev_pk = serializers.SerializerMethodField(read_only=True)
     next_pk = serializers.SerializerMethodField(read_only=True)
 
+    effective_issue_date = serializers.DateField(read_only=True)
+
     class Meta:
         model = OfficialLetter
         fields = ('pk', 'company', 'company_name', 'document_number', 'title',
@@ -433,11 +435,11 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'drafter_name', 'drafter_position',
                   'sender_zipcode', 'sender_address',
                   'content', 'attachment_text', 'attachments',
-                  'issue_date', 'seal', 'seal_detail', 'pdf_file',
+                  'issue_date', 'effective_issue_date', 'seal', 'seal_detail', 'pdf_file',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
-        read_only_fields = ('document_number', 'pdf_file')
+        read_only_fields = ('document_number', 'pdf_file', 'effective_issue_date')
 
     def get_seal_detail(self, obj):
         if obj.seal:

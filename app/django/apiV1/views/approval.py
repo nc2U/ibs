@@ -465,11 +465,21 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         # 최종 승인 — finalize_approval 서비스로 위임 (원자적 채번 + 상태 전이)
         finalize_approval(document)
 
-        # 연동된 공문(OfficialLetter) 상태 동기화
+        # 연동된 공문(OfficialLetter) 상태 동기화 및 최종 승인 공문 PDF 자동 생성
         official_letter_id = (document.content or {}).get('official_letter_id')
         if official_letter_id:
             from docs.models import OfficialLetter
-            OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='approved')
+            from docs.utils import generate_official_letter_pdf
+            official_letter = OfficialLetter.objects.filter(pk=official_letter_id).first()
+            if official_letter:
+                official_letter.approval_status = 'approved'
+                official_letter.save(update_fields=['approval_status'])
+                try:
+                    pdf_file = generate_official_letter_pdf(official_letter)
+                    official_letter.pdf_file = pdf_file
+                    official_letter.save(update_fields=['pdf_file'])
+                except Exception as e:
+                    logger.warning('공문 PDF 자동 생성 실패 (letter pk=%s): %s', official_letter.pk, e)
 
         try:
             notify_drafter_task.delay(document.pk, 'approved')

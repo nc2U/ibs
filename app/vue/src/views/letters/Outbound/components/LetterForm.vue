@@ -273,8 +273,17 @@ const goBack = () => {
                     />
                   </CCol>
                   <CCol md="6">
-                    <CFormLabel>시행(발신) 일자 <span class="text-danger">*</span></CFormLabel>
-                    <DatePicker v-model="form.issue_date" placeholder="시행일자 선택" required />
+                    <CFormLabel>
+                      발신 요청(예정)일 <span class="text-danger">*</span>
+                    </CFormLabel>
+                    <DatePicker v-model="form.issue_date" placeholder="발신 요청일 선택" required />
+                    <CFormText class="text-muted">
+                      {{
+                        approvalMode === 'approval'
+                          ? '결재권자에게 요청하는 발신 희망일입니다. 실제 공문서 시행일자는 최종 승인일에 자동으로 확정됩니다.'
+                          : '발신 예정일자입니다. 실제 대외 발송 처리 시 발송일로 확정됩니다.'
+                      }}
+                    </CFormText>
                   </CCol>
                 </CRow>
                 <CRow>
@@ -934,7 +943,13 @@ const goBack = () => {
                           <td style="width: 140px; padding-top: 4px">
                             {{ form.document_number || nextDocNumber || '자동채번' }}
                           </td>
-                          <td style="width: 110px; padding-top: 4px">({{ form.issue_date || '발신일자' }})</td>
+                          <td style="width: 110px; padding-top: 4px">
+                            ({{
+                              approvalMode === 'approval'
+                                ? form.effective_issue_date || form.issue_date || '승인일 확정'
+                                : form.effective_issue_date || form.issue_date || '발신일자'
+                            }})
+                          </td>
                           <td style="width: 40px; font-weight: bold; padding-top: 4px">접수</td>
                           <td style="padding-top: 4px"></td>
                         </tr>

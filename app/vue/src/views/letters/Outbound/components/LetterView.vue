@@ -302,8 +302,21 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   <td>{{ letter.recipient_reference || '-' }}</td>
                 </tr>
                 <tr>
-                  <th>시행일자</th>
-                  <td>{{ formatDate(letter.issue_date) }}</td>
+                  <th>시행(발신)일</th>
+                  <td>
+                    <span v-if="letter.dispatched_at" class="fw-bold text-success">
+                      {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
+                      <CBadge color="success" class="ms-1">발송완료</CBadge>
+                    </span>
+                    <span v-else-if="letter.approval_status === 'approved'" class="fw-bold text-primary">
+                      {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
+                      <CBadge color="primary" class="ms-1">승인확정</CBadge>
+                    </span>
+                    <span v-else class="text-secondary">
+                      {{ formatDate(letter.issue_date) }}
+                      <small class="text-muted ms-1">(발신 요청일)</small>
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>

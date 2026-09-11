@@ -177,7 +177,9 @@ const formatDate = (dateStr: string | undefined) => {
               {{ letter.tracking_number }}
             </small>
           </CTableDataCell>
-          <CTableDataCell class="text-center">{{ formatDate(letter.issue_date) }}</CTableDataCell>
+          <CTableDataCell class="text-center">
+            {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
+          </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.creator?.username || '-' }}</CTableDataCell>
           <CTableDataCell class="text-center">
             <CBadge v-if="letter.approval_status === 'approved'" color="success">승인완료</CBadge>

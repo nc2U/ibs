@@ -37,7 +37,17 @@ def get_letter_approval_line(letter):
 
     if not approval_doc:
         # 전자결재 연동이 없는 수동 발송의 경우
-        final_date = letter.issue_date.strftime('%Y. %m. %d.') if letter.issue_date else ''
+        # 발송 완료일시가 있으면 발송일(시행), 없으면 발신 요청일(승인)
+        if letter.dispatched_at:
+            final_date = letter.dispatched_at.strftime('%Y. %m. %d.')
+            date_label = '시행'
+        elif letter.issue_date:
+            final_date = letter.issue_date.strftime('%Y. %m. %d.')
+            date_label = '승인'
+        else:
+            final_date = ''
+            date_label = '승인'
+
         final_title = '대표이사'
         if letter.seal and letter.seal.final_approval_duty:
             final_title = letter.seal.final_approval_duty.name
@@ -62,7 +72,7 @@ def get_letter_approval_line(letter):
                 'name': final_person_name,
             },
             'final_date': final_date,
-            'date_label': '시행' if letter.dispatched_at else '승인',
+            'date_label': date_label,
         }
 
     def _get_staff_duty_or_name(user, assignment=None, is_final=False):
@@ -179,8 +189,8 @@ def get_letter_approval_line(letter):
         elif representative_name and clean_drafter_name == representative_name:
             is_ceo_solo = True
 
-    date_label = '승인'
-    if final_approver_info.get('display_title') in ['현장소장', '소장', '본부장', '팀장']:
+    date_label = '시행' if letter.dispatched_at else '승인'
+    if not letter.dispatched_at and final_approver_info.get('display_title') in ['현장소장', '소장', '본부장', '팀장']:
         date_label = '전결'
 
     return {

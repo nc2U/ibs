@@ -317,7 +317,10 @@ class OfficialLetter(models.Model):
     content = models.TextField('내용')  # 내용
     seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL, null=True, blank=True,
                              related_name='official_letters', verbose_name='날인 인감')
-    issue_date = models.DateField('발신일자')  # 발신일자
+    issue_date = models.DateField(
+        '발신 요청일(예정일)',
+        help_text='기안자가 희망하는 발신 예정일/요청일. 실제 공문서 시행일자는 최종 결재 승인일(또는 발송 완료일)로 자동 확정됩니다.'
+    )
     sender_zipcode = models.CharField('발신 우편번호', max_length=5, blank=True, default='')
     sender_address = models.CharField('발신 주소', max_length=255, blank=True, default='')
 
@@ -382,6 +385,27 @@ class OfficialLetter(models.Model):
         if not self.document_number:
             self.document_number = LetterSequence.get_next_document_number(self.company)
         super().save(*args, **kwargs)
+
+    @property
+    def effective_issue_date(self):
+        """
+        공문서(PDF/시행)에 공식 표기되는 유효 시행일자:
+        1. 이미 대외 발송이 완료된 경우: dispatched_at의 날짜 (실제 발송 시행일)
+        2. 전자결재가 최종 승인된 경우:
+           - 승인 완료일(completed_at)이 발신 요청일보다 늦거나 같으면 승인일 확정
+           - 기안자가 먼 미래 일자로 발송 요청한 경우 요청일 유지
+        3. 그 외 결재 진행 중 또는 수동 발송: 기안 시 입력한 발신 예정일(issue_date)
+        """
+        if self.dispatched_at:
+            return self.dispatched_at.date()
+
+        if self.approval_document and self.approval_document.completed_at:
+            app_date = self.approval_document.completed_at.date()
+            if not self.issue_date or app_date >= self.issue_date:
+                return app_date
+            return self.issue_date
+
+        return self.issue_date
 
     def get_pdf_filename(self):
         """PDF 다운로드용 파일명 생성"""

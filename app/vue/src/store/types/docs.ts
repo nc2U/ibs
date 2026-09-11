@@ -224,6 +224,7 @@ export interface OfficialLetter {
   attachments?: OfficialLetterAttachment[]
   has_attachments?: boolean
   issue_date: string
+  effective_issue_date?: string
   seal?: number | null
   seal_detail?: {
     pk: number
