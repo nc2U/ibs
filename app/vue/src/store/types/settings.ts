@@ -1,6 +1,7 @@
 export interface Company {
   pk: number | null
   name: string
+  en_name?: string
   short_name?: string
   ceo: string
   tax_number: string
@@ -13,6 +14,9 @@ export interface Company {
   address1: string
   address2: string
   address3: string
+  phone?: string
+  fax?: string
+  email?: string
   departments?: Department[]
   positions?: Positions[]
   com_issue_project?: number | null

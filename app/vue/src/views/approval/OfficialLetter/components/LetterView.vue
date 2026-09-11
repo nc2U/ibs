@@ -219,7 +219,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   <td class="fw-bold">{{ letter.recipient_name }}</td>
                 </tr>
                 <tr>
-                  <th>(경유)</th>
+                  <th>경유</th>
                   <td>{{ letter.via || '-' }}</td>
                 </tr>
                 <tr>

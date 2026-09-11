@@ -18,7 +18,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
 import LetterList from './components/LetterList.vue'
 import LetterView from './components/LetterView.vue'
-import LetterForm from './components/LetterForm.vue'
+import LetterForm, { type LocalAttachmentItem } from './components/LetterForm.vue'
 
 const mainViewName = ref('공문 발송 대장')
 
@@ -82,26 +82,40 @@ const pageSelect = (page: number) => {
   fetchLetterList(letterFilter.value)
 }
 
-const onSubmit = async (payload: OfficialLetter) => {
+const onSubmit = async (payload: OfficialLetter, attachmentsToUpload?: LocalAttachmentItem[]) => {
   if (company.value) {
     const data = { ...payload, company: company.value }
+    let letterPk: number | null = null
 
     if (payload.pk) {
       await updateLetter(payload.pk, data)
-      await router.replace({
-        name: `${mainViewName.value} - 보기`,
-        params: { letterId: payload.pk },
-      })
+      letterPk = payload.pk
     } else {
       const result = await createLetter(data)
       if (result?.pk) {
-        await router.replace({
-          name: `${mainViewName.value} - 보기`,
-          params: { letterId: result.pk },
-        })
-      } else {
-        await router.replace({ name: mainViewName.value })
+        letterPk = result.pk
       }
+    }
+
+    // 대기 중인 첨부파일 순차 업로드
+    if (letterPk && attachmentsToUpload && attachmentsToUpload.length > 0) {
+      for (const att of attachmentsToUpload) {
+        const formData = new FormData()
+        formData.append('letter', String(letterPk))
+        formData.append('file', att.file)
+        if (att.name) formData.append('name', att.name)
+        if (att.quantity) formData.append('quantity', att.quantity)
+        await docStore.uploadLetterAttachment(letterPk, formData)
+      }
+    }
+
+    if (letterPk) {
+      await router.replace({
+        name: `${mainViewName.value} - 보기`,
+        params: { letterId: letterPk },
+      })
+    } else {
+      await router.replace({ name: mainViewName.value })
     }
   }
 }
