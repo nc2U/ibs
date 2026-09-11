@@ -21,6 +21,9 @@ class Company(models.Model):
     address1 = models.CharField('주소', max_length=35, blank=True)
     address2 = models.CharField('상세주소', max_length=50, blank=True)
     address3 = models.CharField('참고항목', max_length=30, blank=True)
+    phone = models.CharField('대표전화', max_length=15, blank=True, default='')
+    fax = models.CharField('대표팩스', max_length=15, blank=True, default='')
+    email = models.EmailField('대표이메일', blank=True, default='')
     is_default = models.BooleanField('메인 회사 여부', default=False)
 
     class Meta:

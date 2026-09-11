@@ -169,13 +169,25 @@ def generate_official_letter_pdf(letter):
     # 결재선 추출
     approval_line = get_letter_approval_line(letter)
 
+    # 발신자 연락처 추출 (기안자 Staff 직통 연락처 우선, 미등록 시 회사 대표 연락처)
+    drafter_user = letter.approval_document.drafter if letter.approval_document else letter.creator
+    drafter_staff = getattr(drafter_user, 'staff', None) if drafter_user else None
+    company = letter.company
+
+    sender_contact = {
+        'phone': (drafter_staff.direct_phone if drafter_staff and drafter_staff.direct_phone else getattr(company, 'phone', '')) or '',
+        'fax': (drafter_staff.direct_fax if drafter_staff and drafter_staff.direct_fax else getattr(company, 'fax', '')) or '',
+        'email': (drafter_staff.email if drafter_staff and drafter_staff.email else getattr(company, 'email', '')) or '',
+    }
+
     # 템플릿 컨텍스트 준비
     context = {
         'letter': letter,
-        'company': letter.company,
+        'company': company,
         'logo_url': logo_url,
         'seal_url': seal_url,
         'approval_line': approval_line,
+        'sender_contact': sender_contact,
     }
 
     # HTML 템플릿 렌더링

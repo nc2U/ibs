@@ -319,6 +319,8 @@ class OfficialLetter(models.Model):
     sender_name = models.CharField('발신자명', max_length=50)  # 발신자 정보
     sender_position = models.CharField('발신자 직위', max_length=50, blank=True, default='')
     sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
+    sender_zipcode = models.CharField('발신 우편번호', max_length=5, blank=True, default='')
+    sender_address = models.CharField('발신 주소', max_length=255, blank=True, default='')
     content = models.TextField('내용')  # 내용
     issue_date = models.DateField('발신일자')  # 발신일자
     seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL,

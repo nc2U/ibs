@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
       @page {
           size: A4;
@@ -76,6 +75,16 @@
           margin-bottom: 3px;
       }
 
+      .document-container {
+          display: flex;
+          flex-direction: column;
+          min-height: 25.5cm; /* A4(29.7cm) - 상하면 마진(2.5+1.6cm) = 25.6cm 기준 가용 높이 */
+      }
+
+      .recipient-section {
+          margin-bottom: 5px;
+      }
+
       .recipient-table {
           width: 100%;
       }
@@ -93,10 +102,13 @@
           font-weight: bold;
       }
 
-      .content-section {
+      .content-wrapper {
+          flex: 1 0 auto;
           border-top: 2px solid #333;
-          height: 520px;
-          padding: 0 20px;
+          padding: 15px 20px 0 20px;
+      }
+
+      .content-section {
           text-align: justify;
           white-space: pre-wrap;
           word-wrap: break-word;
@@ -107,8 +119,31 @@
           text-indent: 1em;
       }
 
+      .attachment-section {
+          margin-top: 25px;
+          font-size: 0.95em;
+      }
+
+      .attachment-title {
+          font-weight: bold;
+          margin-bottom: 6px;
+      }
+
+      .attachment-list {
+          padding-left: 15px;
+          line-height: 1.6;
+      }
+
+      /* 서명과 메타 정보를 묶어 항상 페이지 최하단 바닥으로 밀착시키고 페이지 쪼개짐 방지 */
+      .document-bottom {
+          margin-top: auto;
+          break-inside: avoid;
+          page-break-inside: avoid;
+      }
+
       .signature-section {
           text-align: center;
+          padding-top: 15px;
       }
 
       .sender-info {
@@ -191,125 +226,157 @@
 </head>
 
 <body>
-<!-- Letterhead -->
-<div class="letterhead">
-  {% if logo_url %}
-    <img src="{{ logo_url }}" alt="Company Logo" class="company-logo">
-  {% else %}
-    <div class="company-name">{{ company.name }}</div>
-    <div class="company-info">
-      {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
-      {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
-      <br>
-      {% if company.address1 %}{{ company.address1 }}{% endif %}
-      {% if company.address2 %} {{ company.address2 }}{% endif %}
-      {% if company.address3 %} ({{ company.address3 }}){% endif %}
-      {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
-    </div>
-  {% endif %}
-</div>
-
-<!-- Recipient Information -->
-<div class="recipient-section">
-  <table class="recipient-table">
-    <tr>
-      <td class="label">수 신</td>
-      <td class="value">{{ letter.recipient_name }}</td>
-    </tr>
-    <tr>
-      <td class="label">경 유</td>
-      <td class="value">{{ letter.via }}</td>
-    </tr>
-    <tr>
-      <td class="label">참 조</td>
-      <td class="value">{{ letter.recipient_reference }}</td>
-    </tr>
-    <tr class="title">
-      <td class="label">제 목</td>
-      <td class="value">{{ letter.title }}</td>
-    </tr>
-  </table>
-</div>
-
-<!-- Content -->
-<div class="content-section">
-  {{ letter.content|linebreaks }}
-</div>
-
-<!-- Signature Section -->
-<div class="signature-section">
-  <div class="sender-info">
-    <div class="sender-company">
-      {{ company.name }}
-      {% if seal_url %}
-        <img src="{{ seal_url }}" alt="인감" class="stamp-image">
-      {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
-        <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
-      {% else %}
-        <span class="stamp-placeholder">(인)</span>
-      {% endif %}
-    </div>
+<div class="document-container">
+  <!-- Letterhead -->
+  <div class="letterhead">
+    {% if logo_url %}
+      <img src="{{ logo_url }}" alt="Company Logo" class="company-logo">
+    {% else %}
+      <div class="company-name">{{ company.name }}</div>
+      <div class="company-info">
+        {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
+        {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
+        <br>
+        {% if company.address1 %}{{ company.address1 }}{% endif %}
+        {% if company.address2 %} {{ company.address2 }}{% endif %}
+        {% if company.address3 %} ({{ company.address3 }}){% endif %}
+        {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
+      </div>
+    {% endif %}
   </div>
-</div>
 
-<!-- Meta Section -->
-<div class="meta-section">
-  <div class="approval-line-wrap">
-    <table class="approval-line-table">
+  <!-- Recipient Information -->
+  <div class="recipient-section">
+    <table class="recipient-table">
       <tr>
-        <!-- 좌측: 기안 / 담당 -->
-        <td style="text-align: left; white-space: nowrap;">
-          <span class="approval-item-title">{{ approval_line.drafter.display_title }}</span>
-          <span class="approval-item-name">{{ approval_line.drafter.name }}</span>
-        </td>
-
-        <!-- 중앙: 중간 결재 단계 (있을 경우만) -->
-        <td style="text-align: center; white-space: nowrap;">
-          {% for step in approval_line.middle_steps %}
-            <span style="margin: 0 12px;">
-              <span class="approval-item-title">{{ step.display_title }}</span>
-              <span class="approval-item-name">{{ step.name }}</span>
-            </span>
-          {% endfor %}
-        </td>
-
-        <!-- 우측: 최종 결재자 (대표 등) 및 바로 아래 승인 일자 -->
-        <td style="text-align: right; white-space: nowrap; width: 1%;">
-          <div>
-            <span class="approval-item-title">{{ approval_line.final_approver.display_title }}</span>
-            <span class="approval-item-name">{{ approval_line.final_approver.name }}</span>
-          </div>
-          {% if approval_line.final_date %}
-            <div class="approval-final-date">
-              <span>승인 {{ approval_line.final_date }}</span>
-            </div>
-          {% endif %}
-        </td>
+        <td class="label">수 신</td>
+        <td class="value">{{ letter.recipient_name }}</td>
+      </tr>
+      <tr>
+        <td class="label">경 유</td>
+        <td class="value">{{ letter.via }}</td>
+      </tr>
+      <tr>
+        <td class="label">참 조</td>
+        <td class="value">{{ letter.recipient_reference }}</td>
+      </tr>
+      <tr class="title">
+        <td class="label">제 목</td>
+        <td class="value">{{ letter.title }}</td>
       </tr>
     </table>
   </div>
-  <table style="width: 100%;">
-    <tr>
-      <td class="label">시행</td>
-      <td style="width: 120px;">{{ letter.document_number }}</td>
-      <td colspan="2" style="width: 100px;">({{ letter.issue_date|date:"Y. m. d." }})</td>
-      <td class="label">접수</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td class="label">우편</td>
-      <td colspan="5">
-        (21980) 인천광역시 연수구 능허대로289번길 21, 4층 (동춘동, 대성빌딩)
-      </td>
-    </tr>
-    <tr>
-      <td class="label">전화</td>
-      <td>032-831-5500</td>
-      <td class="label">팩스</td>
-      <td colspan="2">032-858-5599</td>
-      <td>kori.susie@gmail.com</td>
-    </tr>
-  </table>
+
+  <!-- Content & Attachment Wrapper -->
+  <div class="content-wrapper">
+    <div class="content-section">
+      {{ letter.content|linebreaks }}
+    </div>
+
+    {% if letter.attachments.exists %}
+      <div class="attachment-section">
+        <div class="attachment-title">붙임</div>
+        <div class="attachment-list">
+          {% for att in letter.attachments.all %}
+            <div>{{ forloop.counter }}. {{ att.attachment_name|default:att.file.name }}{% if att.quantity %} {{ att.quantity }}{% else %} 1부{% endif %}.</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% elif letter.attachment_text %}
+      <div class="attachment-section">
+        <div class="attachment-title">붙임</div>
+        <div class="attachment-list">
+          {{ letter.attachment_text|linebreaks }}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Bottom Section (Signature + Meta) -->
+  <div class="document-bottom">
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="sender-info">
+        <div class="sender-company">
+          {{ company.name }}
+          {% if seal_url %}
+            <img src="{{ seal_url }}" alt="인감" class="stamp-image">
+          {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+            <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
+          {% else %}
+            <span class="stamp-placeholder">(인)</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Meta Section -->
+    <div class="meta-section">
+      <div class="approval-line-wrap">
+        <table class="approval-line-table">
+          <tr>
+            <!-- 좌측: 기안 / 담당 -->
+            <td style="text-align: left; white-space: nowrap;">
+              <span class="approval-item-title">{{ approval_line.drafter.display_title }}</span>
+              <span class="approval-item-name">{{ approval_line.drafter.name }}</span>
+            </td>
+
+            <!-- 중앙: 중간 결재 단계 (있을 경우만) -->
+            <td style="text-align: center; white-space: nowrap;">
+              {% for step in approval_line.middle_steps %}
+                <span style="margin: 0 12px;">
+                  <span class="approval-item-title">{{ step.display_title }}</span>
+                  <span class="approval-item-name">{{ step.name }}</span>
+                </span>
+              {% endfor %}
+            </td>
+
+            <!-- 우측: 최종 결재자 (대표 등) 및 바로 아래 승인 일자 -->
+            <td style="text-align: right; white-space: nowrap; width: 1%;">
+              <div>
+                <span class="approval-item-title">{{ approval_line.final_approver.display_title }}</span>
+                <span class="approval-item-name">{{ approval_line.final_approver.name }}</span>
+              </div>
+              {% if approval_line.final_date %}
+                <div class="approval-final-date">
+                  <span>승인 {{ approval_line.final_date }}</span>
+                </div>
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+      <table style="width: 100%;">
+        <tr>
+          <td class="label">시행</td>
+          <td style="width: 120px;">{{ letter.document_number }}</td>
+          <td colspan="2" style="width: 100px;">({{ letter.issue_date|date:"Y. m. d." }})</td>
+          <td class="label">접수</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="label">우편</td>
+          <td colspan="5">
+            {% if letter.sender_address %}
+              {% if letter.sender_zipcode %}({{ letter.sender_zipcode }}) {% endif %}
+              {{ letter.sender_address }}
+            {% else %}
+              {% if company.zipcode %}({{ company.zipcode }}) {% endif %}
+              {{ company.address1 }}{% if company.address2 %} {{ company.address2 }}{% endif %}
+              {% if company.address3 %} ({{ company.address3 }}){% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">전화</td>
+          <td>{{ sender_contact.phone }}</td>
+          <td class="label">팩스</td>
+          <td colspan="2">{{ sender_contact.fax }}</td>
+          <td>{{ sender_contact.email }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </div>
 </body>
 </html>
