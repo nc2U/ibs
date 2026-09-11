@@ -149,10 +149,10 @@ def _find_highest_role_label(user, current_dept_label: str, company, current_dep
     return current_dept_label
 
 
-def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None, content: dict = None):
+def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None, content: dict = None, seal=None):
     """
-    기안자의 보직(소속 부서), 문서 유형의 전결 규정 및 금액별 조건부 정책(ApprovalPolicyRule)에 따라
-    결재 단계 목록을 동적으로 생성합니다.
+    기안자의 보직(소속 부서), 문서 유형의 전결 규정 및 금액별 조건부 정책(ApprovalPolicyRule),
+    그리고 공문 인장(CompanySeal)의 전결 자격 규정에 따라 결재 단계 목록을 동적으로 생성합니다.
     동일인이 하위 직책과 상위 직책을 겸직(예: 팀장 겸 대표이사, 팀장 겸 본부장)하는 경우,
     동일 결재선 내에서 최상위 직함(대표이사, 본부장)으로 자동 승격(Highest Role Promotion)하여 표기합니다.
     """
@@ -196,6 +196,13 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     amount = extract_amount_from_content(content)
     effective_final_duty = doc_type.final_approval_duty
     effective_final_level = doc_type.final_dept_level
+
+    # 🌟 공문 인장(CompanySeal)에 설정된 전결 기준 적용 (인장에 전결 직책/레벨이 지정된 경우 문서 유형 기본값보다 우선)
+    if seal:
+        if getattr(seal, 'final_approval_duty', None):
+            effective_final_duty = seal.final_approval_duty
+        if getattr(seal, 'final_dept_level', None):
+            effective_final_level = seal.final_dept_level
 
     if amount is not None:
         for rule in doc_type.policy_rules.order_by('priority'):

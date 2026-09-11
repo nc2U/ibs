@@ -660,12 +660,13 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             submitted_at=timezone.now(),
         )
 
-        # 동적 결재선 빌드 및 저장
+        # 동적 결재선 빌드 및 저장 (공문 인장에 지정된 전결 기준 자동 연동)
         steps = build_dynamic_approval_route(
             doc_type=doc_type,
             drafter_user=request.user,
             drafter_assignment=assignment,
             content=content_payload,
+            seal=letter.seal,
         )
 
         for step_data in steps:

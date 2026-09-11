@@ -39,6 +39,9 @@ export interface CompanySeal {
   name: string
   seal_image: string | null
   manager?: string
+  final_approval_duty?: number | null
+  final_approval_duty_name?: string | null
+  final_dept_level?: number | null
   is_active: boolean
   created?: string
 }

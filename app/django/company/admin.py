@@ -57,7 +57,7 @@ class LogoInline(admin.StackedInline):
 class CompanySealInline(admin.TabularInline):
     model = CompanySeal
     extra = 1
-    fields = ('seal_type', 'name', 'seal_image', 'manager', 'is_active')
+    fields = ('seal_type', 'name', 'seal_image', 'manager', 'final_approval_duty', 'final_dept_level', 'is_active')
 
 
 class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -70,10 +70,10 @@ class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(CompanySeal)
 class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'seal_type', 'name', 'manager', 'is_active', 'created')
+    list_display = ('id', 'company', 'seal_type', 'name', 'manager', 'final_approval_duty', 'final_dept_level', 'is_active', 'created')
     list_display_links = ('name',)
     list_editable = ('is_active',)
-    list_filter = ('company', 'seal_type', 'is_active')
+    list_filter = ('company', 'seal_type', 'final_approval_duty', 'is_active')
     search_fields = ('name', 'manager')
 
 

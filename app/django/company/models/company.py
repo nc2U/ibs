@@ -63,6 +63,15 @@ class CompanySeal(models.Model):
     seal_image = models.ImageField('인장 이미지', upload_to=get_company_image_path, null=True, blank=True,
                                    help_text='배경이 투명한 PNG 권장 (정방형)')
     manager = models.CharField('관리 책임자/부서', max_length=50, blank=True, default='')
+    final_approval_duty = models.ForeignKey(
+        'company.DutyTitle', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='전결 직책 자격',
+        help_text='이 인장을 날인하기 위한 최소 최종 전결 직책 (미지정 시 대표이사까지 상신)'
+    )
+    final_dept_level = models.PositiveSmallIntegerField(
+        '전결 부서 레벨', null=True, blank=True,
+        help_text='예: 1=본부장 전결, 2=팀장/소장 전결 가능 (미지정 시 대표이사까지 상신)'
+    )
     is_active = models.BooleanField('사용 여부', default=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
 

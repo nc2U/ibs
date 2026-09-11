@@ -29,11 +29,11 @@ const accStore = useAccount()
 const comStore = useCompany()
 const sealList = computed(() => comStore.sealList)
 const currentCompany = computed(() => comStore.company)
-const selectedSealImage = computed(() => {
+const selectedSeal = computed(() => {
   if (!form.value.seal) return null
-  const s = sealList.value.find(item => item.pk === form.value.seal)
-  return s?.seal_image || null
+  return sealList.value.find(item => item.pk === form.value.seal) || null
 })
+const selectedSealImage = computed(() => selectedSeal.value?.seal_image || null)
 
 const isEdit = computed(() => !!props.letter?.pk)
 const canOLManage = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
@@ -545,17 +545,34 @@ const goBack = () => {
                         {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}) - 전자날인
                       </option>
                     </CFormSelect>
-                    <div v-if="selectedSealImage" class="mt-2 d-flex align-items-center">
-                      <img
-                        :src="selectedSealImage"
-                        alt="인장"
-                        style="width: 40px; height: 40px; object-fit: contain"
-                        class="border rounded p-1 bg-white me-2"
-                      />
-                      <small class="text-success fw-semibold">
-                        <CIcon name="cilCheckCircle" class="me-1" />
-                        등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.
-                      </small>
+                    <div v-if="selectedSealImage" class="mt-2">
+                      <div class="d-flex align-items-center mb-1">
+                        <img
+                          :src="selectedSealImage"
+                          alt="인장"
+                          style="width: 40px; height: 40px; object-fit: contain"
+                          class="border rounded p-1 bg-white me-2"
+                        />
+                        <div>
+                          <small class="text-success fw-semibold d-block">
+                            <CIcon name="cilCheckCircle" class="me-1" />
+                            등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.
+                          </small>
+                          <small v-if="approvalMode === 'approval'" class="text-primary">
+                            <CIcon name="cilShieldAlt" class="me-1" />
+                            <strong>전결 승인 규정: </strong>
+                            <span v-if="selectedSeal?.final_approval_duty_name">
+                              {{ selectedSeal.final_approval_duty_name }} 전결 가능
+                            </span>
+                            <span v-else-if="selectedSeal?.final_dept_level">
+                              {{ selectedSeal.final_dept_level }}레벨 부서장 전결 가능
+                            </span>
+                            <span v-else class="text-danger fw-semibold">
+                              대표이사 결재 필수 (전결 불가)
+                            </span>
+                          </small>
+                        </div>
+                      </div>
                     </div>
                     <div v-else class="mt-1">
                       <small class="text-muted">
