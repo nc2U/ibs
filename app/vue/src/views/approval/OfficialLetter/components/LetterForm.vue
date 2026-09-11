@@ -267,7 +267,9 @@ const goBack = () => {
 
               <!-- 본문 내용 -->
               <div class="mb-4">
-                <CFormLabel class="fw-bold"> 본문 내용 <span class="text-danger">*</span> </CFormLabel>
+                <CFormLabel class="fw-bold">
+                  본문 내용 <span class="text-danger">*</span>
+                </CFormLabel>
                 <CFormTextarea
                   v-model="form.content"
                   placeholder="공문 본문 내용을 입력하세요"
@@ -290,7 +292,9 @@ const goBack = () => {
                     <button
                       type="button"
                       class="btn"
-                      :class="attachmentInputMode === 'file' ? 'btn-primary' : 'btn-outline-primary'"
+                      :class="
+                        attachmentInputMode === 'file' ? 'btn-primary' : 'btn-outline-primary'
+                      "
                       @click="attachmentInputMode = 'file'"
                     >
                       <CIcon name="cilPaperclip" class="me-1" />
@@ -299,7 +303,9 @@ const goBack = () => {
                     <button
                       type="button"
                       class="btn"
-                      :class="attachmentInputMode === 'text' ? 'btn-primary' : 'btn-outline-primary'"
+                      :class="
+                        attachmentInputMode === 'text' ? 'btn-primary' : 'btn-outline-primary'
+                      "
                       @click="attachmentInputMode = 'text'"
                     >
                       <CIcon name="cilText" class="me-1" />
@@ -313,7 +319,9 @@ const goBack = () => {
                   <CAlert color="info" class="py-2 mb-3">
                     <small>
                       <CIcon name="cilInfo" class="me-1" />
-                      <strong>권장 사항:</strong> 공문서 위변조 방지 및 수신처의 원활한 열람을 위해 가급적 <strong>PDF 파일</strong>로 변환하여 첨부하는 것을 권장합니다. (부득이한 경우 한글, 엑셀, 이미지, 압축파일 등도 첨부 가능)
+                      <strong>권장 사항:</strong> 공문서 위변조 방지 및 수신처의 원활한 열람을 위해
+                      가급적 <strong>PDF 파일</strong>로 변환하여 첨부하는 것을 권장합니다.
+                      (부득이한 경우 한글, 엑셀, 이미지, 압축파일 등도 첨부 가능)
                     </small>
                   </CAlert>
 
@@ -333,10 +341,18 @@ const goBack = () => {
                         <strong class="text-primary">{{ att.name || att.file_name }}</strong>
                         <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
                         <CBadge
-                          :color="(att.file_name || '').toLowerCase().endsWith('.pdf') ? 'success' : 'warning'"
+                          :color="
+                            (att.file_name || '').toLowerCase().endsWith('.pdf')
+                              ? 'success'
+                              : 'warning'
+                          "
                           class="ms-2"
                         >
-                          {{ (att.file_name || '').toLowerCase().endsWith('.pdf') ? 'PDF' : '일반파일' }}
+                          {{
+                            (att.file_name || '').toLowerCase().endsWith('.pdf')
+                              ? 'PDF'
+                              : '일반파일'
+                          }}
                         </CBadge>
                         <small class="text-muted ms-2">[{{ att.file_name }}]</small>
                       </div>
@@ -369,9 +385,15 @@ const goBack = () => {
                             붙임 {{ (form.attachments?.length || 0) + idx + 1 }}
                           </span>
                           <CBadge
-                            :color="att.file.name.toLowerCase().endsWith('.pdf') ? 'success' : 'warning'"
+                            :color="
+                              att.file.name.toLowerCase().endsWith('.pdf') ? 'success' : 'warning'
+                            "
                           >
-                            {{ att.file.name.toLowerCase().endsWith('.pdf') ? 'PDF (권장서식)' : '일반문서' }}
+                            {{
+                              att.file.name.toLowerCase().endsWith('.pdf')
+                                ? 'PDF (권장서식)'
+                                : '일반문서'
+                            }}
                           </CBadge>
                         </div>
                         <CButton
@@ -388,7 +410,10 @@ const goBack = () => {
                       <CRow class="g-2 align-items-end mb-2">
                         <CCol md="7">
                           <CFormLabel class="small fw-semibold mb-1">
-                            붙임 명칭 <span class="text-muted fw-normal">(공문서 본문에 인쇄될 공식 명칭)</span>
+                            붙임 명칭
+                            <span class="text-muted fw-normal"
+                              >(공문서 본문에 인쇄될 공식 명칭)</span
+                            >
                           </CFormLabel>
                           <CFormInput
                             v-model="att.name"
@@ -415,7 +440,10 @@ const goBack = () => {
                       <!-- 실시간 공문 인쇄 미리보기 -->
                       <div class="bg-light p-2 rounded border small text-secondary">
                         <span class="fw-bold text-dark">인쇄 미리보기: </span>
-                        <span>{{ (form.attachments?.length || 0) + idx + 1 }}. {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.</span>
+                        <span
+                          >{{ (form.attachments?.length || 0) + idx + 1 }}.
+                          {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.</span
+                        >
                       </div>
                     </div>
                   </div>
@@ -442,7 +470,8 @@ const goBack = () => {
                 <!-- 텍스트 직접 입력 모드 -->
                 <div v-else>
                   <CFormText class="text-muted d-block mb-2">
-                    파일 첨부 없이 인쇄용 붙임 텍스트만 기재할 경우 사용합니다. (예: 1. 사업계획서 1부.)
+                    파일 첨부 없이 인쇄용 붙임 텍스트만 기재할 경우 사용합니다. (예: 1. 사업계획서
+                    1부.)
                   </CFormText>
                   <CFormTextarea
                     v-model="form.attachment_text"
@@ -486,7 +515,9 @@ const goBack = () => {
                 <CAlert v-if="approvalMode === 'approval'" color="light" class="border py-2 mb-3">
                   <small class="text-primary">
                     <CIcon name="cilInfo" class="me-1" />
-                    <strong>전자결재 연동 모드:</strong> 결재선 상신 및 최종 승인 시 결재선의 기안자, 검토자, 최종 결재권자(대표이사/임원 등)의 직위와 성명이 공문서 하단 결재선에 자동으로 표기됩니다.
+                    <strong>전자결재 연동 모드:</strong> 결재선 상신 및 최종 승인 시 결재선의
+                    기안자, 검토자, 최종 결재권자(대표이사/임원 등)의 직위와 성명이 공문서 하단
+                    결재선에 자동으로 표기됩니다.
                   </small>
                 </CAlert>
 
@@ -494,7 +525,9 @@ const goBack = () => {
                 <CAlert v-else color="warning" class="py-2 mb-3">
                   <small>
                     <CIcon name="cilWarning" class="me-1" />
-                    <strong>수동(직접) 발송 모드:</strong> 전자결재를 거치지 않고 직접 발송하는 공문입니다. 공문서 하단 결재/담당란에 인쇄될 기안/담당자 정보를 아래에 직접 입력해주세요.
+                    <strong>수동(직접) 발송 모드:</strong> 전자결재를 거치지 않고 직접 발송하는
+                    공문입니다. 공문서 하단 결재/담당란에 인쇄될 기안/담당자 정보를 아래에 직접
+                    입력해주세요.
                   </small>
                 </CAlert>
 
@@ -503,7 +536,9 @@ const goBack = () => {
                     <CFormLabel>날인 인감 (직인)</CFormLabel>
                     <CFormSelect
                       :value="form.seal || ''"
-                      @change="form.seal = Number(($event.target as HTMLSelectElement).value) || null"
+                      @change="
+                        form.seal = Number(($event.target as HTMLSelectElement).value) || null
+                      "
                     >
                       <option value="">인장 미선택 / (직인생략)</option>
                       <option v-for="s in sealList" :key="s.pk" :value="s.pk">
@@ -539,21 +574,24 @@ const goBack = () => {
                 <CRow v-if="approvalMode === 'manual'" class="mb-3">
                   <CCol md="6">
                     <CFormLabel>담당 직위/직책</CFormLabel>
-                    <CFormInput v-model="form.sender_position" placeholder="직위 (예: 과장, 팀장)" />
+                    <CFormInput
+                      v-model="form.sender_position"
+                      placeholder="직위 (예: 과장, 팀장)"
+                    />
                   </CCol>
                   <CCol md="6">
                     <CFormLabel>담당 부서</CFormLabel>
-                    <CFormInput v-model="form.sender_department" placeholder="부서 (예: 개발기획팀)" />
+                    <CFormInput
+                      v-model="form.sender_department"
+                      placeholder="부서 (예: 개발기획팀)"
+                    />
                   </CCol>
                 </CRow>
 
                 <CRow>
                   <CCol md="4">
                     <CFormLabel>발신 우편번호 (현장/지사)</CFormLabel>
-                    <CFormInput
-                      v-model="form.sender_zipcode"
-                      placeholder="예: 12345"
-                    />
+                    <CFormInput v-model="form.sender_zipcode" placeholder="예: 12345" />
                   </CCol>
                   <CCol md="8">
                     <CFormLabel>발신 도로명 주소 (현장/지사)</CFormLabel>
@@ -578,7 +616,8 @@ const goBack = () => {
               <CAlert color="info" class="py-2 mb-3">
                 <small>
                   <CIcon name="cilInfo" class="me-1" />
-                  아래 정보는 공문서 본문에는 인쇄되지 않으며, 우편 라벨 출력, 등기번호 추적 및 발송 대장 이력 관리에 사용됩니다.
+                  아래 정보는 공문서 본문에는 인쇄되지 않으며, 우편 라벨 출력, 등기번호 추적 및 발송
+                  대장 이력 관리에 사용됩니다.
                 </small>
               </CAlert>
 
@@ -664,13 +703,20 @@ const goBack = () => {
             <div class="a4-preview-wrapper d-flex justify-content-center">
               <div class="a4-preview-sheet shadow border bg-white p-4">
                 <!-- 1. 레터헤드 -->
-                <div class="preview-letterhead text-center pb-2 mb-2 border-bottom position-relative">
-                  <div class="preview-company-name fw-bold" style="font-size: 1.15rem; letter-spacing: 2px">
+                <div
+                  class="preview-letterhead text-center pb-2 mb-2 border-bottom position-relative"
+                >
+                  <div
+                    class="preview-company-name fw-bold"
+                    style="font-size: 1.15rem; letter-spacing: 2px"
+                  >
                     {{ currentCompany?.name || '회사명' }}
                   </div>
                   <div class="text-muted" style="font-size: 0.72rem; line-height: 1.3">
                     <span v-if="currentCompany?.ceo">대표이사 {{ currentCompany.ceo }} | </span>
-                    <span v-if="currentCompany?.tax_number">사업자등록번호 {{ currentCompany.tax_number }}</span>
+                    <span v-if="currentCompany?.tax_number"
+                      >사업자등록번호 {{ currentCompany.tax_number }}</span
+                    >
                     <br />
                     <span>
                       {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
@@ -733,7 +779,12 @@ const goBack = () => {
 
                   <!-- 붙임 목록 -->
                   <div v-if="attachmentInputMode === 'file'" class="mt-3 pt-2">
-                    <div v-if="(form.attachments && form.attachments.length > 0) || pendingAttachments.length > 0">
+                    <div
+                      v-if="
+                        (form.attachments && form.attachments.length > 0) ||
+                        pendingAttachments.length > 0
+                      "
+                    >
                       <div class="fw-bold mb-1" style="font-size: 0.78rem">붙임:</div>
                       <div
                         v-for="(att, idx) in form.attachments"
@@ -747,7 +798,8 @@ const goBack = () => {
                         :key="'new-' + idx"
                         style="font-size: 0.78rem; padding-left: 10px"
                       >
-                        {{ (form.attachments?.length || 0) + idx + 1 }}. {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.
+                        {{ (form.attachments?.length || 0) + idx + 1 }}.
+                        {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.
                       </div>
                     </div>
                   </div>
@@ -763,7 +815,10 @@ const goBack = () => {
                 <div class="preview-bottom-wrapper mt-auto">
                   <!-- 4. 하단 서명 / 직인 날인 -->
                   <div class="preview-signature text-center my-2">
-                    <div class="fw-bold d-inline-flex align-items-center" style="font-size: 1.05rem">
+                    <div
+                      class="fw-bold d-inline-flex align-items-center"
+                      style="font-size: 1.05rem"
+                    >
                       <span>{{ currentCompany?.name || '회사명' }}</span>
                       <span v-if="selectedSealImage" class="ms-2">
                         <img
@@ -783,13 +838,26 @@ const goBack = () => {
                   </div>
 
                   <!-- 5. 결재선 및 시행 메타 -->
-                  <div class="preview-bottom border-top pt-2" style="font-size: 0.72rem; line-height: 1.4">
+                  <div
+                    class="preview-bottom border-top pt-2"
+                    style="font-size: 0.72rem; line-height: 1.4"
+                  >
                     <!-- 결재선 요약 -->
-                    <div class="d-flex justify-content-between bg-light p-1 px-2 rounded mb-2 text-muted">
+                    <div
+                      class="d-flex justify-content-between bg-light p-1 px-2 rounded mb-2 text-muted"
+                    >
                       <div>
                         <strong>기안/담당: </strong>
-                        <span>{{ approvalMode === 'approval' ? (accStore.userInfo?.profile?.name || accStore.userInfo?.username || '기안자') : (form.sender_name || '담당자') }}</span>
-                        <span v-if="approvalMode === 'manual' && form.sender_position"> ({{ form.sender_position }})</span>
+                        <span>{{
+                          approvalMode === 'approval'
+                            ? accStore.userInfo?.profile?.name ||
+                              accStore.userInfo?.username ||
+                              '기안자'
+                            : form.sender_name || '담당자'
+                        }}</span>
+                        <span v-if="approvalMode === 'manual' && form.sender_position">
+                          ({{ form.sender_position }})</span
+                        >
                       </div>
                       <div v-if="approvalMode === 'approval'">
                         <span class="badge bg-secondary">전자결재 상신 시 결재선 자동 생성</span>
@@ -805,7 +873,9 @@ const goBack = () => {
                       <tbody>
                         <tr>
                           <td style="width: 40px; font-weight: bold">시행</td>
-                          <td style="width: 140px">{{ form.document_number || nextDocNumber || '자동채번' }}</td>
+                          <td style="width: 140px">
+                            {{ form.document_number || nextDocNumber || '자동채번' }}
+                          </td>
                           <td style="width: 110px">({{ form.issue_date || '발신일자' }})</td>
                           <td style="width: 40px; font-weight: bold">접수</td>
                           <td></td>
@@ -818,8 +888,11 @@ const goBack = () => {
                               {{ form.sender_address }}
                             </span>
                             <span v-else>
-                              <span v-if="currentCompany?.zipcode">({{ currentCompany.zipcode }}) </span>
+                              <span v-if="currentCompany?.zipcode"
+                                >({{ currentCompany.zipcode }})
+                              </span>
                               {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
+                              {{ currentCompany?.address3 || '' }}
                             </span>
                           </td>
                         </tr>
