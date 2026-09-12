@@ -71,6 +71,8 @@ class Company(models.Model):
     def get_representatives_info(self):
         """
         회사의 대표이사 목록 및 대표권 형태(단독 / 공동 / 각자) 반환
+        - Executive 등록 정보와 사업자등록증상 ceo 필드를 종합 분석하여
+          공동대표 체제에서 미등록 대표이사까지 누락 없이 반환합니다.
         Returns:
             list[dict]: [{'title': '대표이사'|'공동대표이사', 'name': '홍길동', 'represent_type': 'sole'|'joint'|'each'}]
         """
@@ -79,32 +81,50 @@ class Company(models.Model):
             represent_type__in=['sole', 'joint', 'each']
         ).select_related('staff', 'rank').order_by('rank__sort_order', 'id'))
 
-        is_joint = any(e.represent_type == 'joint' for e in execs) or len(execs) > 1
+        ceo_parts = [p.strip() for p in self.ceo.replace(';', ',').split(',') if p.strip()] if self.ceo else []
 
-        if execs:
+        # 사업자등록증상 ceo 필드에 2인 이상이 기재되어 있거나 임원에 joint가 있는 경우 공동대표로 판단
+        is_joint = any(e.represent_type == 'joint' for e in execs) or len(execs) > 1 or len(ceo_parts) > 1
+
+        if ceo_parts:
+            # 사업자등록증상의 대표자명을 기본 축으로 구성 (고창균, 최윤정 등)
+            from company.models.staff import Staff
+            for p in ceo_parts:
+                matched_exec = None
+                for e in execs:
+                    e_name = e.staff.name if e.staff else e.name
+                    if e_name and e_name.strip() == p:
+                        matched_exec = e
+                        break
+
+                if matched_exec:
+                    default_title = '공동대표이사' if (matched_exec.represent_type == 'joint' or (
+                                is_joint and matched_exec.represent_type != 'each')) else '대표이사'
+                    rank_title = matched_exec.rank.name if matched_exec.rank and '대표' in matched_exec.rank.name else default_title
+                    rep_type = matched_exec.represent_type
+                else:
+                    matched_staff = Staff.objects.filter(name=p).first()
+                    p_name = matched_staff.name if matched_staff else p
+                    rank_title = '공동대표이사' if is_joint else '대표이사'
+                    rep_type = 'joint' if is_joint else 'sole'
+
+                reps.append({
+                    'title': rank_title,
+                    'name': p,
+                    'represent_type': rep_type,
+                })
+        elif execs:
             for e in execs:
                 name = e.staff.name if e.staff else e.name
                 if name and name.strip():
-                    default_title = '공동대표이사' if (e.represent_type == 'joint' or (is_joint and e.represent_type != 'each')) else '대표이사'
+                    default_title = '공동대표이사' if (
+                                e.represent_type == 'joint' or (is_joint and e.represent_type != 'each')) else '대표이사'
                     rank_title = e.rank.name if e.rank and '대표' in e.rank.name else default_title
                     reps.append({
                         'title': rank_title,
                         'name': name.strip(),
                         'represent_type': e.represent_type,
                     })
-
-        if not reps and self.ceo:
-            ceo_parts = [p.strip() for p in self.ceo.replace(';', ',').split(',') if p.strip()]
-            from company.models.staff import Staff
-            for p in ceo_parts:
-                matched_staff = Staff.objects.filter(name=p).first()
-                p_name = matched_staff.name if matched_staff else p
-                title = '공동대표이사' if len(ceo_parts) > 1 else '대표이사'
-                reps.append({
-                    'title': title,
-                    'name': p_name.strip(),
-                    'represent_type': 'joint' if len(ceo_parts) > 1 else 'sole',
-                })
 
         return reps
 
@@ -128,16 +148,33 @@ class CompanySeal(models.Model):
     SEAL_TYPE_CHOICES = (
         ('CORP_SEAL', '법인인감 (대표이사 직인)'),
         ('USAGE_SEAL', '사용인감'),
-        ('DEPT_SEAL', '부서인감/직인'),
-        ('SIGN', '대표자/부서장 서명'),
+        ('DEPT_SEAL', '부서/현장 직인'),
         ('OMIT', '직인생략'),
     )
+    CUSTODY_TYPE_CHOICES = (
+        ('internal', '사내 보관 (본사/현장)'),
+        ('external', '외부 교부 (용역사/대행사/법무사 등)'),
+    )
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='seals', verbose_name='회사')
     seal_type = models.CharField('인장 종류', max_length=20, choices=SEAL_TYPE_CHOICES, default='USAGE_SEAL')
-    name = models.CharField('인장 명칭', max_length=50, help_text='예: 대표이사 법인인감, 분양계약 전용 사용인감 1호')
+    name = models.CharField('인장 명칭', max_length=50, help_text='예: 대표이사 법인인감, 분양계약 전용 사용인감 1호, 토지매매계약 전용 사용인감')
+    purpose = models.CharField('지정 용도/사용 범위', max_length=200, blank=True, default='',
+                               help_text='예: 토지매매계약 체결 전용, 인허가 관공서 제출용, 분양계약 체결 전용')
     seal_image = models.ImageField('인장 이미지', upload_to=get_company_image_path, null=True, blank=True,
                                    help_text='배경이 투명한 PNG 권장 (정방형)')
-    manager = models.CharField('관리 책임자/부서', max_length=50, blank=True, default='')
+    custody_type = models.CharField('보관 장소 구분', max_length=15, choices=CUSTODY_TYPE_CHOICES, default='internal',
+                                    help_text='사내 금고 보관 또는 외부 협력사(토지용역사, 분양대행사 등) 교부')
+    custodian = models.CharField('실물 보관처 / 수임자', max_length=100, blank=True, default='',
+                                 help_text='예: 본사 재경팀 금고, (주)고성개발컨설팅 김실장')
+    internal_manager = models.ForeignKey(
+        'company.Staff', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='managed_seals', verbose_name='사내 총괄 관리책임자',
+        help_text='외부 교부 시에도 본사에서 교부/회수를 총괄하는 사내 책임 임직원'
+    )
+    valid_from = models.DateField('교부/유효 시작일', null=True, blank=True)
+    valid_until = models.DateField('교부 만료일 / 사용 기한', null=True, blank=True,
+                                   help_text='용역 계약 만료 등에 따른 회수 예정일 (미지정 시 무기한)')
     final_approval_duty = models.ForeignKey(
         'company.DutyTitle', on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name='전결 직책 자격',
@@ -147,7 +184,8 @@ class CompanySeal(models.Model):
         '전결 부서 레벨', null=True, blank=True,
         help_text='예: 1=본부장 전결, 2=팀장/소장 전결 가능 (미지정 시 대표이사까지 상신)'
     )
-    is_active = models.BooleanField('사용 여부', default=True)
+    is_active = models.BooleanField('사용 가능 여부', default=True)
+    description = models.TextField('관리 비고/이력', blank=True, default='', help_text='교부 사유, 회수 이력 등')
     created = models.DateTimeField('등록일시', auto_now_add=True)
 
     class Meta:
@@ -157,6 +195,11 @@ class CompanySeal(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_seal_type_display()})"
+
+    @property
+    def manager(self):
+        """기존 코드 호환용 프로퍼티"""
+        return self.custodian
 
 
 file_cleanup_signals(Logo)

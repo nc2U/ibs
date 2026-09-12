@@ -71,11 +71,15 @@ class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanySeal)
 class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
     change_list_template = 'admin/company/companyseal/change_list.html'
-    list_display = ('id', 'company', 'seal_type', 'name', 'manager', 'final_approval_duty', 'final_dept_level', 'is_active', 'created')
+    list_display = (
+        'id', 'company', 'seal_type', 'name', 'purpose', 'custody_type',
+        'custodian', 'internal_manager', 'final_approval_duty', 'final_dept_level',
+        'valid_until', 'is_active', 'created'
+    )
     list_display_links = ('name',)
     list_editable = ('is_active',)
-    list_filter = ('company', 'seal_type', 'final_approval_duty', 'is_active')
-    search_fields = ('name', 'manager')
+    list_filter = ('company', 'seal_type', 'custody_type', 'final_approval_duty', 'is_active')
+    search_fields = ('name', 'purpose', 'custodian', 'internal_manager__name')
 
     def get_urls(self):
         from django.urls import path
@@ -226,7 +230,7 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
                         company=target_company,
                         seal_type=seal_type,
                         name=name,
-                        manager=manager,
+                        custodian=manager,
                         final_approval_duty=duty_obj,
                         is_active=True,
                     )

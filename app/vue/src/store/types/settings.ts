@@ -35,15 +35,24 @@ export interface Logo {
 export interface CompanySeal {
   pk: number
   company: number
-  seal_type: 'CORP_SEAL' | 'USAGE_SEAL' | 'DEPT_SEAL' | 'SIGN' | 'OMIT'
+  seal_type: 'CORP_SEAL' | 'USAGE_SEAL' | 'DEPT_SEAL' | 'OMIT'
   seal_type_desc?: string
   name: string
+  purpose?: string
   seal_image: string | null
+  custody_type?: 'internal' | 'external'
+  custody_type_desc?: string
+  custodian?: string
+  internal_manager?: number | null
+  internal_manager_name?: string | null
+  valid_from?: string | null
+  valid_until?: string | null
   manager?: string
   final_approval_duty?: number | null
   final_approval_duty_name?: string | null
   final_dept_level?: number | null
   is_active: boolean
+  description?: string
   created?: string
 }
 

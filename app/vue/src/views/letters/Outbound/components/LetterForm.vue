@@ -779,7 +779,9 @@ const goBack = () => {
                     >
                       <option value="">인장 미선택 / (직인생략 / 출력 후 실물날인)</option>
                       <option v-for="s in sealList" :key="s.pk" :value="s.pk">
-                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}) - 전자날인
+                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
+                          s.purpose ? ` [${s.purpose}]` : ''
+                        }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
                       </option>
                     </CFormSelect>
                     <div v-if="selectedSealImage" class="mt-2">
@@ -798,6 +800,9 @@ const goBack = () => {
                                 ? '대표 1 인장 자동 합성'
                                 : '등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.'
                             }}
+                          </small>
+                          <small v-if="selectedSeal?.purpose" class="text-muted d-block">
+                            용도: {{ selectedSeal.purpose }}
                           </small>
                           <small v-if="approvalMode === 'approval'" class="text-primary">
                             <v-icon icon="mdi-shield-check" size="small" class="me-1" />
@@ -834,7 +839,9 @@ const goBack = () => {
                     >
                       <option value="">보조 인장 미선택 / (직인생략 / 실물날인)</option>
                       <option v-for="s in sealList" :key="s.pk" :value="s.pk">
-                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}) - 전자날인
+                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
+                          s.purpose ? ` [${s.purpose}]` : ''
+                        }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
                       </option>
                     </CFormSelect>
                     <div v-if="selectedCoSealImage" class="mt-2">

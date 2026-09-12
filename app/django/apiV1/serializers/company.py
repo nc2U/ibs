@@ -50,13 +50,16 @@ class LogoSerializer(serializers.ModelSerializer):
 
 class CompanySealSerializer(serializers.ModelSerializer):
     seal_type_desc = serializers.CharField(source='get_seal_type_display', read_only=True)
+    custody_type_desc = serializers.CharField(source='get_custody_type_display', read_only=True)
+    internal_manager_name = serializers.CharField(source='internal_manager.name', read_only=True, allow_null=True)
     final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True, allow_null=True)
 
     class Meta:
         model = CompanySeal
-        fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'seal_image', 'manager',
-                  'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
-                  'is_active', 'created')
+        fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'purpose', 'seal_image',
+                  'custody_type', 'custody_type_desc', 'custodian', 'internal_manager', 'internal_manager_name',
+                  'valid_from', 'valid_until', 'final_approval_duty', 'final_approval_duty_name',
+                  'final_dept_level', 'is_active', 'description', 'created', 'manager')
 
 
 class StaffsInDepartmentSerializer(serializers.ModelSerializer):
