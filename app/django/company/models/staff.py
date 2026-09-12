@@ -60,8 +60,8 @@ class Staff(models.Model):
 
     class Meta:
         ordering = ['-date_join']
-        verbose_name = '07. 직원 정보'
-        verbose_name_plural = '07. 직원 정보'
+        verbose_name = '08. 직원 정보'
+        verbose_name_plural = '08. 직원 정보'
 
 
 # 보직 / 발령 모델
@@ -77,8 +77,8 @@ class StaffAssignment(models.Model):
 
     class Meta:
         ordering = ['-is_primary', 'id']
-        verbose_name = '08. 직원 보직/겸직 정보'
-        verbose_name_plural = '08. 직원 보직/겸직 목록'
+        verbose_name = '10. 직원 보직/겸직 정보'
+        verbose_name_plural = '10. 직원 보직/겸직 목록'
         unique_together = ('staff', 'department', 'duty')
 
     def __str__(self):
@@ -142,8 +142,8 @@ class PersonnelOrder(models.Model):
 
     class Meta:
         ordering = ['-order_date', '-id']
-        verbose_name = '10. 인사 발령 이력'
-        verbose_name_plural = '10. 인사 발령 이력'
+        verbose_name = '11. 인사 발령 이력'
+        verbose_name_plural = '11. 인사 발령 이력'
 
     def __str__(self):
         return f'[{self.get_order_type_display()}] {self.staff.name} ({self.order_date})'
@@ -205,8 +205,8 @@ class StaffCareer(models.Model):
 
     class Meta:
         ordering = ['-start_date', '-id']
-        verbose_name = '11. 직원 경력 사항'
-        verbose_name_plural = '11. 직원 경력 사항'
+        verbose_name = '12. 직원 경력 사항'
+        verbose_name_plural = '12. 직원 경력 사항'
 
     def __str__(self):
         return f'{self.staff.name} - {self.company_name} ({self.position_title})'
@@ -228,8 +228,8 @@ class StaffCertificate(models.Model):
 
     class Meta:
         ordering = ['-acquired_date', '-id']
-        verbose_name = '12. 직원 자격/면허'
-        verbose_name_plural = '12. 직원 자격/면허'
+        verbose_name = '13. 직원 자격/면허'
+        verbose_name_plural = '13. 직원 자격/면허'
 
     def __str__(self):
         grade_str = f' ({self.grade})' if self.grade else ''
@@ -256,8 +256,8 @@ class StaffRewardPunishment(models.Model):
 
     class Meta:
         ordering = ['-action_date', '-id']
-        verbose_name = '13. 직원 상벌 이력'
-        verbose_name_plural = '13. 직원 상벌 이력'
+        verbose_name = '14. 직원 상벌 이력'
+        verbose_name_plural = '14. 직원 상벌 이력'
 
     def __str__(self):
         return f'[{self.get_sort_display()}] {self.staff.name} - {self.type_name} ({self.action_date})'
@@ -281,8 +281,8 @@ class StaffLeaveQuota(models.Model):
 
     class Meta:
         ordering = ['-year', 'staff']
-        verbose_name = '14. 직원 연차 부여/잔여'
-        verbose_name_plural = '14. 직원 연차 부여/잔여'
+        verbose_name = '15. 직원 연차 부여/잔여'
+        verbose_name_plural = '15. 직원 연차 부여/잔여'
         unique_together = ('staff', 'year')
 
     def __str__(self):
@@ -343,8 +343,8 @@ class StaffLeaveUsage(models.Model):
 
     class Meta:
         ordering = ['-start_date', '-id']
-        verbose_name = '15. 직원 휴가/연차 사용 기록'
-        verbose_name_plural = '15. 직원 휴가/연차 사용 기록'
+        verbose_name = '16. 직원 휴가/연차 사용 기록'
+        verbose_name_plural = '16. 직원 휴가/연차 사용 기록'
 
     def __str__(self):
         cancel_str = ' [취소됨]' if self.is_cancelled else ''

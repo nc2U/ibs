@@ -20,8 +20,8 @@ class Department(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = '02. 부서 정보'
-        verbose_name_plural = '02. 부서 정보'
+        verbose_name = '03. 부서 정보'
+        verbose_name_plural = '03. 부서 정보'
 
     def save(self, *args, **kwargs):
         # 1. 상위 부서 유무에 따른 level 자동 계산
@@ -51,8 +51,8 @@ class JobGrade(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = "03. 직급 정보"
-        verbose_name_plural = "03. 직급 정보"
+        verbose_name = "04. 직급 정보"
+        verbose_name_plural = "04. 직급 정보"
         unique_together = ('company', 'code')  # 회사 내 직급 코드 중복 방지
 
 
@@ -68,8 +68,8 @@ class Position(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = "04. 직위 정보"
-        verbose_name_plural = "04. 직위 정보"
+        verbose_name = "05. 직위 정보"
+        verbose_name_plural = "05. 직위 정보"
 
 
 # 직책 모델 - 현재 맡고 있는 관리 책임
@@ -84,5 +84,5 @@ class DutyTitle(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = "05. 직책 정보"
-        verbose_name_plural = "05. 직책 정보"
+        verbose_name = "07. 직책 정보"
+        verbose_name_plural = "07. 직책 정보"

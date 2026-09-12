@@ -99,7 +99,7 @@ class Company(models.Model):
 
                 if matched_exec:
                     default_title = '공동대표이사' if (matched_exec.represent_type == 'joint' or (
-                                is_joint and matched_exec.represent_type != 'each')) else '대표이사'
+                            is_joint and matched_exec.represent_type != 'each')) else '대표이사'
                     rank_title = matched_exec.rank.name if matched_exec.rank and '대표' in matched_exec.rank.name else default_title
                     rep_type = matched_exec.represent_type
                 else:
@@ -118,7 +118,7 @@ class Company(models.Model):
                 name = e.staff.name if e.staff else e.name
                 if name and name.strip():
                     default_title = '공동대표이사' if (
-                                e.represent_type == 'joint' or (is_joint and e.represent_type != 'each')) else '대표이사'
+                            e.represent_type == 'joint' or (is_joint and e.represent_type != 'each')) else '대표이사'
                     rank_title = e.rank.name if e.rank and '대표' in e.rank.name else default_title
                     reps.append({
                         'title': rank_title,
@@ -189,8 +189,8 @@ class CompanySeal(models.Model):
     created = models.DateTimeField('등록일시', auto_now_add=True)
 
     class Meta:
-        verbose_name = "03. 회사 인장"
-        verbose_name_plural = "03. 회사 인장"
+        verbose_name = "02. 회사 인장"
+        verbose_name_plural = "02. 회사 인장"
         ordering = ['-is_active', 'seal_type', 'created']
 
     def __str__(self):

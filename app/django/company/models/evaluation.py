@@ -39,8 +39,8 @@ class StaffEvaluation(models.Model):
 
     class Meta:
         ordering = ['-eval_year', 'eval_period', 'staff__name']
-        verbose_name = '16. 직원 인사 평가'
-        verbose_name_plural = '16. 직원 인사 평가'
+        verbose_name = '17. 직원 인사 평가'
+        verbose_name_plural = '17. 직원 인사 평가'
         unique_together = ('staff', 'eval_year', 'eval_period')
 
 
@@ -74,8 +74,8 @@ class PromotionPolicy(models.Model):
 
     class Meta:
         ordering = ['current_grade__id', 'target_grade__id']
-        verbose_name = '17. 직급 승급 정책'
-        verbose_name_plural = '17. 직급 승급 정책'
+        verbose_name = '18. 직급 승급 정책'
+        verbose_name_plural = '18. 직급 승급 정책'
         unique_together = ('company', 'current_grade', 'target_grade')
 
 
@@ -107,5 +107,5 @@ class PromotionCandidate(models.Model):
 
     class Meta:
         ordering = ['-eval_year', 'policy__current_grade__id', 'staff__name']
-        verbose_name = '18. 승급 심사 및 발령'
-        verbose_name_plural = '18. 승급 심사 및 발령'
+        verbose_name = '19. 승급 심사 및 발령'
+        verbose_name_plural = '19. 승급 심사 및 발령'
