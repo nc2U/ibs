@@ -366,6 +366,7 @@ const goBack = () => {
                   v-model="form.content"
                   placeholder="공문 본문 내용을 입력하세요. (상단 툴바를 이용해 표, 굵게, 글머리 기호 등을 자유롭게 작성할 수 있습니다.)"
                   :height="360"
+                  :preview="false"
                 />
                 <div v-if="validated && !form.content" class="text-danger small mt-1">
                   공문 본문 내용을 입력해주세요.

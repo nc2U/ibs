@@ -206,19 +206,19 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <!-- Navigation -->
     <CRow class="mb-3">
       <CCol class="d-flex justify-content-between align-items-center">
-        <CButton color="secondary" variant="outline" size="sm" @click="goToList">
-          <CIcon name="cilList" class="me-1" />
+        <v-btn color="secondary" variant="outlined" size="small" @click="goToList">
+          <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
           목록
-        </CButton>
+        </v-btn>
         <div>
-          <CButton color="light" size="sm" class="me-1" :disabled="!prevPk" @click="goToPrev">
-            <CIcon name="cilChevronLeft" />
+          <v-btn color="light" size="small" class="me-1" :disabled="!prevPk" @click="goToPrev">
+            <v-icon icon="mdi-chevron-left" size="small" />
             이전
-          </CButton>
-          <CButton color="light" size="sm" :disabled="!nextPk" @click="goToNext">
+          </v-btn>
+          <v-btn color="light" size="small" :disabled="!nextPk" @click="goToNext">
             다음
-            <CIcon name="cilChevronRight" />
-          </CButton>
+            <v-icon icon="mdi-chevron-right" size="small" />
+          </v-btn>
         </div>
       </CCol>
     </CRow>
@@ -227,7 +227,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <CCard class="mb-4 border-primary">
       <CCardBody class="d-flex justify-content-between align-items-center py-2 px-3">
         <div class="d-flex align-items-center">
-          <CIcon name="cilShieldAlt" size="lg" class="text-primary me-2" />
+          <v-icon icon="mdi-shield-check" size="large" class="text-primary me-2" />
           <div>
             <strong>전자결재 연동 상태: </strong>
             <CBadge v-if="letter.approval_status === 'approved'" color="success" class="ms-1">
@@ -243,28 +243,28 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </div>
         </div>
         <div>
-          <CButton
+          <v-btn
             v-if="letter.approval_document"
             color="info"
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             class="me-2"
             @click="goToApprovalDetail(letter.approval_document)"
           >
-            <CIcon name="cilExternalLink" class="me-1" />
+            <v-icon icon="mdi-open-in-new" size="small" class="me-1" />
             결재 문서 보기
-          </CButton>
-          <CButton
+          </v-btn>
+          <v-btn
             v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
             color="primary"
-            size="sm"
+            size="small"
             :disabled="approvalLoading"
             @click="onSubmitApproval"
           >
             <CSpinner v-if="approvalLoading" size="sm" class="me-1" />
-            <CIcon v-else name="cilPaperPlane" class="me-1" />
+            <v-icon v-else icon="mdi-send" size="small" class="me-1" />
             {{ letter.approval_status === 'rejected' ? '전자결재 재상신' : '전자결재 상신하기' }}
-          </CButton>
+          </v-btn>
         </div>
       </CCardBody>
     </CCard>
@@ -290,7 +290,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       <CCol md="6">
         <CCard class="mb-4">
           <CCardHeader>
-            <CIcon name="cilAddressBook" class="me-1" />
+            <v-icon icon="mdi-card-account-mail" size="small" class="me-1" />
             <strong>수신 정보</strong>
           </CCardHeader>
           <CCardBody>
@@ -360,7 +360,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       <CCol md="6">
         <CCard class="mb-4">
           <CCardHeader>
-            <CIcon name="cilPen" class="me-1" />
+            <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
             <strong>발신 및 날인 정보</strong>
           </CCardHeader>
           <CCardBody>
@@ -415,18 +415,21 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <!-- Letter Content -->
     <CCard class="mb-4">
       <CCardHeader>
-        <CIcon name="cilDescription" class="me-1" />
+        <v-icon icon="mdi-file-document-outline" size="small" class="me-1" />
         <strong>공문 본문</strong>
       </CCardHeader>
       <CCardBody>
-        <div class="letter-content bg-more-white markdown-content" v-html="markdownRender(letter.content)" />
+        <div
+          class="letter-content bg-more-white markdown-content text-body"
+          v-html="markdownRender(letter.content)"
+        />
       </CCardBody>
     </CCard>
 
     <!-- Attachment Section (붙임 텍스트 및 첨부파일) -->
     <CCard class="mb-4">
       <CCardHeader>
-        <CIcon name="cilPaperclip" class="me-1" />
+        <v-icon icon="mdi-paperclip" size="small" class="me-1" />
         <strong>붙임 (첨부 서류 및 파일)</strong>
       </CCardHeader>
       <CCardBody>
@@ -444,18 +447,20 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               class="list-group-item d-flex justify-content-between align-items-center"
             >
               <div>
-                <CIcon name="cilFile" class="me-2 text-primary" />
+                <v-icon icon="mdi-file-outline" size="small" class="me-2 text-primary" />
                 <strong>{{ att.name || att.file_name }}</strong>
                 <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
               </div>
-              <a
+              <v-btn
                 v-if="typeof att.file === 'string'"
                 :href="att.file"
                 target="_blank"
-                class="btn btn-sm btn-outline-primary"
+                color="primary"
+                variant="outlined"
+                size="x-small"
               >
-                <CIcon name="cilCloudDownload" class="me-1" /> 다운로드
-              </a>
+                <v-icon icon="mdi-cloud-download" size="small" class="me-1" /> 다운로드
+              </v-btn>
             </li>
           </ul>
         </div>
@@ -468,7 +473,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
     <CCard class="mb-4 border-secondary">
       <CCardHeader class="bg-light">
-        <CIcon name="cilTruck" class="me-1 text-secondary" />
+        <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
         <strong>발송 및 대장 관리 메타 정보</strong>
       </CCardHeader>
       <CCardBody>
@@ -517,7 +522,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <CCard class="mb-4">
       <CCardHeader class="d-flex justify-content-between align-items-center">
         <strong>
-          <CIcon name="cilFile" class="me-1" />
+          <v-icon icon="mdi-file-pdf-box" size="small" class="me-1" />
           공문 PDF 파일 (최종 발송/보관본)
         </strong>
         <div>
@@ -532,13 +537,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         >
           <div class="d-flex align-items-center">
             <CBadge color="success" class="me-3 p-2">
-              <CIcon name="cilFile" class="me-1" />
+              <v-icon icon="mdi-check-circle" size="small" class="me-1" />
               최종 PDF 등록됨
             </CBadge>
-            <CButton color="primary" size="sm" @click="downloadPdf">
-              <CIcon name="cilCloudDownload" class="me-1" />
+            <v-btn color="primary" size="small" @click="downloadPdf">
+              <v-icon icon="mdi-cloud-download" size="small" class="me-1" />
               PDF 다운로드
-            </CButton>
+            </v-btn>
           </div>
 
           <!-- 작업 버튼 그룹: 스캔본 교체 업로드 & 시스템 재생성 -->
@@ -552,35 +557,35 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 class="d-none"
                 @change="onScanFileSelect"
               />
-              <CButton
+              <v-btn
                 color="info"
-                variant="outline"
-                size="sm"
+                variant="outlined"
+                size="small"
                 :disabled="scanUploadLoading"
                 @click="scanFileInputRef?.click()"
               >
                 <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
-                <CIcon v-else name="cilCloudUpload" class="me-1" />
+                <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
                 실물날인 스캔본(PDF) 업로드/교체
-              </CButton>
+              </v-btn>
             </template>
             <small v-else-if="isDispatched" class="text-muted">
               (발송 완료된 공문의 스캔본 교체는 관리자만 가능)
             </small>
 
             <!-- 시스템 양식 PDF 재생성 (발송 완료 시 무조건 금지, 결재 승인 시 관리자만) -->
-            <CButton
+            <v-btn
               v-if="canRegeneratePdf"
               color="warning"
-              variant="outline"
-              size="sm"
+              variant="outlined"
+              size="small"
               :disabled="pdfLoading"
               @click="onGeneratePdf"
             >
               <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-              <CIcon v-else name="cilReload" class="me-1" />
+              <v-icon v-else icon="mdi-refresh" size="small" class="me-1" />
               시스템 PDF 재생성
-            </CButton>
+            </v-btn>
             <small v-else-if="isDispatched" class="text-muted ms-1">
               (발송 완료되어 증빙 보호를 위해 PDF 재생성 불가)
             </small>
@@ -602,31 +607,31 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               class="d-none"
               @change="onScanFileSelect"
             />
-            <CButton
+            <v-btn
               v-if="canDocsCreate"
               color="info"
-              variant="outline"
-              size="sm"
+              variant="outlined"
+              size="small"
               :disabled="scanUploadLoading"
               @click="scanFileInputRef?.click()"
             >
               <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
-              <CIcon v-else name="cilCloudUpload" class="me-1" />
+              <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
               스캔본(PDF) 직접 업로드
-            </CButton>
+            </v-btn>
 
             <!-- 시스템 PDF 생성 -->
-            <CButton
+            <v-btn
               v-if="canDocsCreate"
               color="primary"
-              size="sm"
+              size="small"
               :disabled="pdfLoading"
               @click="onGeneratePdf"
             >
               <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-              <CIcon v-else name="cilFile" class="me-1" />
+              <v-icon v-else icon="mdi-file-pdf-box" size="small" class="me-1" />
               시스템 양식 PDF 생성
-            </CButton>
+            </v-btn>
           </div>
         </div>
       </CCardBody>
@@ -635,25 +640,25 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <!-- Action Buttons -->
     <CRow>
       <CCol class="d-flex justify-content-between">
-        <CButton color="secondary" variant="outline" @click="goToList">
-          <CIcon name="cilList" class="me-1" />
+        <v-btn color="secondary" variant="outlined" @click="goToList">
+          <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
           목록으로
-        </CButton>
+        </v-btn>
         <div>
-          <CButton
+          <v-btn
             v-if="canDocsDelete"
-            color="danger"
-            variant="outline"
+            color="error"
+            variant="outlined"
             class="me-2"
             @click="confirmDelete"
           >
-            <CIcon name="cilTrash" class="me-1" />
+            <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
             삭제
-          </CButton>
-          <CButton v-if="canDocsUpdate" color="primary" @click="goToEdit">
-            <CIcon name="cilPencil" class="me-1" />
+          </v-btn>
+          <v-btn v-if="canDocsUpdate" color="success" @click="goToEdit">
+            <v-icon icon="mdi-pencil" size="small" class="me-1" />
             수정
-          </CButton>
+          </v-btn>
         </div>
       </CCol>
     </CRow>

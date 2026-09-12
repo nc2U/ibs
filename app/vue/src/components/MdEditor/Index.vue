@@ -9,6 +9,7 @@ const props = defineProps({
   codeTheme: { type: String, default: 'atom' },
   height: { type: Number, default: 250 },
   placeholder: { type: String, default: '' },
+  preview: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -27,6 +28,7 @@ const theme = computed(() => (store.theme === 'dark' ? 'dark' : 'light'))
     :style="`height: ${height}px`"
     :theme="theme"
     :placeholder="placeholder"
+    :preview="preview"
     :noMermaid="false"
   />
 </template>
