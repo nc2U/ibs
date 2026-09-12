@@ -248,6 +248,20 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         # 단독/각자 대표이사인 경우: 결재선 0개 반환 (상신 즉시 자동 승인 처리)
         return []
 
+    # 🌟 기안자가 해당 문서/인장의 최종 전결권자(예: 현장소장, 본부장 등) 본인인 경우:
+    # 이미 최종 전결 권한을 가진 자가 직접 기안했으므로 추가 상신 단계 없이 즉시 자동 종결(0단계)
+    is_drafter_final_authority = False
+    if effective_final_duty and drafter_duty and drafter_duty.id == effective_final_duty.id:
+        is_drafter_final_authority = True
+    elif effective_final_level and assignment and assignment.department and assignment.department.level <= effective_final_level:
+        # 기안자 자신이 해당 전결 레벨 부서의 책임자인 경우
+        mgr_user, _ = _get_department_manager(assignment.department, set())
+        if mgr_user and mgr_user.id == drafter_user.id:
+            is_drafter_final_authority = True
+
+    if is_drafter_final_authority:
+        return []
+
     # (1) 일반/중간관리자 기안 시 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
     if assignment and assignment.department:
         current_dept = assignment.department

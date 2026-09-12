@@ -658,6 +658,54 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             seal=letter.seal,
         )
 
+        is_instant_approval = letter.is_solo_approval or not steps
+
+        if is_instant_approval:
+            # 승인(전결)권자 직접 기안인 경우: 1개의 승인된 Step 생성 후 즉시 최종 승인 처리
+            role_label = '승인권자 승인'
+            if letter.seal and letter.seal.final_approval_duty:
+                role_label = f'{letter.seal.final_approval_duty.name} 승인'
+            elif assignment and assignment.duty:
+                role_label = f'{assignment.duty.name} 승인'
+
+            step = ApprovalStep.objects.create(
+                document=doc,
+                step_order=1,
+                role_label=role_label,
+                condition='OR',
+                status=ApprovalStep.STATUS_APPROVED,
+            )
+            step.approvers.set([request.user])
+
+            doc.status = ApprovalDocument.STATUS_APPROVED
+            doc.completed_at = timezone.now()
+            doc.content_hash = doc.compute_hash()
+            doc.doc_number = doc.generate_doc_number()
+            doc.save(update_fields=['status', 'completed_at', 'content_hash', 'doc_number'])
+
+            # 공문 상태 최종 승인 동기화
+            letter.approval_document = doc
+            letter.approval_status = 'approved'
+            letter.save(update_fields=['approval_document', 'approval_status'])
+
+            # 공문서 PDF 자동 생성
+            try:
+                pdf_file = generate_official_letter_pdf(letter)
+                letter.pdf_file = pdf_file
+                letter.save(update_fields=['pdf_file'])
+            except Exception as e:
+                logger.warning('공문 PDF 자동 생성 실패 (letter pk=%s): %s', letter.pk, e)
+
+            # 전자결재 품의서 PDF 생성 비동기 태스크
+            from approval.tasks import generate_approval_pdf_task
+            generate_approval_pdf_task.delay(doc.pk)
+
+            return Response({
+                'detail': '승인(전결)권자 직접 기안으로 전자결재가 즉시 최종 승인 처리되었습니다.',
+                'approval_document_id': doc.pk,
+                'approval_status': letter.approval_status,
+            })
+
         for step_data in steps:
             step = ApprovalStep.objects.create(
                 document=doc,

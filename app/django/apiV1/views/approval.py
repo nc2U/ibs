@@ -315,13 +315,37 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 ).exists():
                     is_ceo = True
 
-            if is_ceo:
-                # 단독/각자 대표이사 본인 기안인 경우 → 승인된 Step 생성 후 즉시 최종 승인 처리
+            # 연동된 공문이 있는 경우 공문의 is_solo_approval 여부 확인
+            official_letter_id = (document.content or {}).get('official_letter_id')
+            official_letter = None
+            is_letter_solo = False
+            if official_letter_id:
+                from docs.models import OfficialLetter
+                official_letter = OfficialLetter.objects.filter(pk=official_letter_id).first()
+                if official_letter and official_letter.is_solo_approval:
+                    is_letter_solo = True
+
+            # 전결권자(현장소장, 본부장 등) 직접 기안 여부 판단
+            effective_final_duty = document.doc_type.final_approval_duty
+            drafter_duty = assignment.duty if assignment and assignment.duty else None
+            is_final_authority = False
+            if effective_final_duty and drafter_duty and drafter_duty.id == effective_final_duty.id:
+                is_final_authority = True
+            elif document.doc_type.final_dept_level and assignment and assignment.department and assignment.department.level <= document.doc_type.final_dept_level:
+                mgr_user, _ = _get_department_manager(assignment.department, set())
+                if mgr_user and mgr_user.id == request.user.id:
+                    is_final_authority = True
+
+            if is_ceo or is_letter_solo or is_final_authority:
+                # 단독/각자 대표이사 또는 승인(전결)권자 직접 기안인 경우 → 승인된 Step 생성 후 즉시 최종 승인 처리
                 document.steps.all().delete()
+                role_label = '대표이사 승인' if is_ceo else (
+                    f'{drafter_duty.name} 승인' if drafter_duty else '전결권자 승인'
+                )
                 step = ApprovalStep.objects.create(
                     document=document,
                     step_order=1,
-                    role_label='대표이사 승인',
+                    role_label=role_label,
                     condition='OR',
                     status=ApprovalStep.STATUS_APPROVED,
                 )
@@ -334,6 +358,20 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 document.save()
                 document.doc_number = document.generate_doc_number()
                 document.save(update_fields=['doc_number'])
+
+                # 연동 공문 동기화 및 PDF 생성
+                if official_letter:
+                    from docs.utils import generate_official_letter_pdf
+                    official_letter.approval_document = document
+                    official_letter.approval_status = 'approved'
+                    official_letter.save(update_fields=['approval_document', 'approval_status'])
+                    try:
+                        pdf_file = generate_official_letter_pdf(official_letter)
+                        official_letter.pdf_file = pdf_file
+                        official_letter.save(update_fields=['pdf_file'])
+                    except Exception as e:
+                        logger.warning('공문 PDF 자동 생성 실패 (letter pk=%s): %s', official_letter.pk, e)
+
                 generate_approval_pdf_task.delay(document.pk)
                 serializer = ApprovalDocumentSerializer(document, context={'request': request})
                 return Response(serializer.data)

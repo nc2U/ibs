@@ -79,9 +79,9 @@ class DocsAppSecurityTests(TestCase):
         self.role_staff = Role.objects.create(name='일반직원', creator=self.admin_user)
         self.role_staff.permissions.add(self.perm_read, self.perm_create, self.perm_update, self.perm_delete)
 
-        # 워크스페이스 생성
+        # 워크스페이스 생성 (type='1': 본사 관리 워크스페이스로 설정하여 IsStaffOrReadOnly 통과)
         self.workspace = IssueProject.objects.create(
-            company=self.company_a, name='문서 워크스페이스', slug='docs-ws', creator=self.admin_user
+            company=self.company_a, name='문서 워크스페이스', slug='docs-ws', type='1', creator=self.admin_user
         )
         # 멤버십 등록 (author, team, sales, granted)
         for u in [self.author_user, self.team_user, self.sales_user, self.granted_user]:
@@ -237,3 +237,48 @@ class DocsAppSecurityTests(TestCase):
         res_seq_ok = self.client.get(f'/api/v1/official-letter/next_document_number/?company={self.company_a.pk}')
         self.assertEqual(res_seq_ok.status_code, status.HTTP_200_OK)
         self.assertIn('next_document_number', res_seq_ok.data)
+
+    def test_official_letter_solo_approval_instant_completion(self):
+        """승인(전결)권자 직접 기안(is_solo_approval=True) 시 전자결재 즉시 최종 승인 처리 검증"""
+        from approval.models import DocCategory, DocumentType, ApprovalDocument, ApprovalStep
+
+        category = DocCategory.objects.create(name='공문카테고리', code='OFFICIAL_CAT')
+        doc_type = DocumentType.objects.create(
+            category=category,
+            name='공문발송품의',
+            code='OFFICIAL_LETTER_TYPE',
+            form_template_key='OFFICIAL_LETTER',
+            route_type=DocumentType.ROUTE_ORGANIZATION,
+        )
+
+        solo_letter = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-SOLO-001',
+            title='[대표이사전결] 긴급 협약서 송부',
+            recipient_name='한국토지주택공사',
+            drafter_name='대표이사',
+            content='긴급 협약서를 송부합니다.',
+            issue_date=date(2026, 3, 1),
+            is_solo_approval=True,
+            creator=self.author_user
+        )
+
+        self.client.force_authenticate(user=self.author_user)
+        res = self.client.post(f'/api/v1/official-letter/{solo_letter.pk}/submit_approval/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('즉시 최종 승인', res.data.get('detail', ''))
+
+        solo_letter.refresh_from_db()
+        self.assertEqual(solo_letter.approval_status, 'approved')
+        self.assertIsNotNone(solo_letter.approval_document)
+
+        app_doc = solo_letter.approval_document
+        self.assertEqual(app_doc.status, ApprovalDocument.STATUS_APPROVED)
+        self.assertIsNotNone(app_doc.completed_at)
+        self.assertTrue(bool(app_doc.doc_number))
+
+        # 승인된 Step이 1개 생성되었는지 검증
+        self.assertEqual(app_doc.steps.count(), 1)
+        step = app_doc.steps.first()
+        self.assertEqual(step.status, ApprovalStep.STATUS_APPROVED)
+        self.assertIn(self.author_user, step.approvers.all())

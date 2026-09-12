@@ -82,8 +82,8 @@ class ApprovalRouteBuilderTestCase(TestCase):
         # 🌟 핵심 검증: 라벨이 '경영지원팀 팀장' 대신 '대표이사 최종 승인'으로 승격되었는지 확인
         self.assertEqual(step1['role_label'], '대표이사 최종 승인')
 
-    def test_self_approval_prevention_promotes_to_higher_authority(self):
-        """전결권자(팀장) 본인이 기안 시, 셀프 승인을 방지하고 상위 대표이사로 상향 승격되는지 검증"""
+    def test_self_approval_final_authority_drafter_returns_empty_routes(self):
+        """최종 전결권자(팀장 전결 문서의 팀장) 본인이 직접 기안 시, 추가 상신 단계 없이 즉시 자동 종결(0단계) 검증"""
         # 팀장 본인을 기안자로 지정
         user_leader = User.objects.create_user(username='leader', email='leader@example.com')
         staff_leader = Staff.objects.create(
@@ -103,16 +103,13 @@ class ApprovalRouteBuilderTestCase(TestCase):
             final_approval_duty=self.duty_team_leader
         )
 
-        # 팀장이 기안한 경우
+        # 전결권자 본인이 기안한 경우: 결재선 0개 반환 (즉시 완료 대상)
         routes = build_dynamic_approval_route(
             doc_type=doc_type_tl,
             drafter_user=user_leader,
             drafter_assignment=assign_leader,
         )
-
-        # 셀프 승인되지 않고 상위 대표이사 결재선으로 상향 승격되어야 함
-        self.assertEqual(len(routes), 1)
-        self.assertEqual(routes[0]['approver_ids'], [self.user_ceo.id])
+        self.assertEqual(len(routes), 0)
 
     def test_ceo_drafter_returns_empty_routes_for_instant_approval(self):
         """단독/각자 대표이사가 직접 기안하는 경우 상신 즉시 완료를 위해 route_steps가 빈 리스트(0개)로 반환되는지 검증"""
@@ -124,10 +121,11 @@ class ApprovalRouteBuilderTestCase(TestCase):
 
     def test_joint_ceo_drafter_generates_and_step_for_other_ceos(self):
         """공동대표 체제에서 대표이사 A가 기안하는 경우, 기안자 본인은 제외되고 다른 공동대표 B가 AND 결재선으로 형성되는지 검증"""
-        from company.models import Executive
+        from company.models import Executive, ExecutiveRank
+        rank_ceo = ExecutiveRank.objects.create(company=self.company, code='E1', name='대표이사', sort_order=1)
         # 홍대표(ceo1)를 공동대표로 등록
         Executive.objects.create(
-            company=self.company, staff=self.staff_ceo, represent_type='joint'
+            company=self.company, staff=self.staff_ceo, rank=rank_ceo, represent_type='joint'
         )
 
         # 제2의 공동대표(ceo2) 등록
@@ -142,7 +140,7 @@ class ApprovalRouteBuilderTestCase(TestCase):
             duty=self.duty_ceo, is_primary=True
         )
         Executive.objects.create(
-            company=self.company, staff=staff_ceo2, represent_type='joint'
+            company=self.company, staff=staff_ceo2, rank=rank_ceo, represent_type='joint'
         )
 
         # 홍대표(ceo1)가 기안한 경우
