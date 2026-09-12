@@ -355,7 +355,7 @@ const goBack = () => {
       </CCol>
     </CRow>
 
-    <CForm :validated="validated" @submit.prevent="onSubmit">
+    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
       <CRow>
         <!-- 좌측: 공문서 작성/수정 폼 (lg: 6, xl: 7) -->
         <CCol lg="6" xl="7">
@@ -429,9 +429,8 @@ const goBack = () => {
                           v-model="form.recipient_name"
                           placeholder="수신처 명칭 (예: 주식회사 한국건설, 서초구청장 등)"
                           required
-                          :invalid="validated && !form.recipient_name"
+                          :feedback-invalid="'수신처명을 입력해주세요.'"
                         />
-                        <CFormFeedback invalid>수신처명을 입력해주세요.</CFormFeedback>
                       </CCol>
                     </CRow>
                   </CCol>
@@ -441,11 +440,21 @@ const goBack = () => {
                         발신 요청(예정)일
                       </CFormLabel>
                       <CCol>
-                        <DatePicker
-                          v-model="form.issue_date"
-                          placeholder="발신 요청일 선택"
-                          required
-                        />
+                        <div
+                          :class="{
+                            'is-invalid-wrapper': validated && !form.issue_date,
+                            'is-valid-wrapper': validated && !!form.issue_date,
+                          }"
+                        >
+                          <DatePicker
+                            v-model="form.issue_date"
+                            placeholder="발신 요청일 선택"
+                            required
+                          />
+                        </div>
+                        <div v-if="validated && !form.issue_date" class="text-danger small mt-1">
+                          발신 요청(예정)일을 선택해주세요.
+                        </div>
                       </CCol>
                     </CRow>
                   </CCol>
@@ -491,9 +500,8 @@ const goBack = () => {
                           placeholder="공문 제목을 명확하고 간결하게 입력하세요"
                           class="fw-semibold title-input"
                           required
-                          :invalid="validated && !form.title"
+                          :feedback-invalid="'공문 제목을 입력해주세요.'"
                         />
-                        <CFormFeedback invalid>공문 제목을 입력해주세요.</CFormFeedback>
                       </CCol>
                     </CRow>
                   </CCol>
@@ -505,12 +513,20 @@ const goBack = () => {
                 <CFormLabel class="fw-bold">
                   본문 내용 <span class="text-danger">*</span>
                 </CFormLabel>
-                <MdEditor
-                  v-model="form.content"
-                  placeholder="공문 본문 내용을 입력하세요. (상단 툴바를 이용해 표, 굵게, 글머리 기호 등을 자유롭게 작성할 수 있습니다.)"
-                  :height="360"
-                  :preview="false"
-                />
+                <div
+                  class="md-editor-validation-wrapper"
+                  :class="{
+                    'is-invalid-editor': validated && !form.content,
+                    'is-valid-editor': validated && !!form.content,
+                  }"
+                >
+                  <MdEditor
+                    v-model="form.content"
+                    placeholder="공문 본문 내용을 입력하세요. (상단 툴바를 이용해 표, 굵게, 글머리 기호 등을 자유롭게 작성할 수 있습니다.)"
+                    :height="360"
+                    :preview="false"
+                  />
+                </div>
                 <div v-if="validated && !form.content" class="text-danger small mt-1">
                   공문 본문 내용을 입력해주세요.
                 </div>
@@ -955,7 +971,7 @@ const goBack = () => {
                           size="sm"
                           placeholder="예: 홍길동"
                           required
-                          :invalid="validated && !form.drafter_name"
+                          :feedback-invalid="'기안/담당자명을 입력해주세요.'"
                         />
                       </div>
                       <div style="min-width: 140px; max-width: 180px" class="flex-grow-1">
@@ -1178,5 +1194,39 @@ const goBack = () => {
 .letter-meta-box {
   background-color: #f8fafc;
   border-color: #e2e8f0 !important;
+}
+
+/* DatePicker 유효성 검사 테두리 스타일 */
+.is-invalid-wrapper :deep(.dp__input) {
+  border-color: var(--cui-form-invalid-border-color, #e55353) !important;
+  box-shadow: 0 0 0 0.25rem rgba(229, 83, 83, 0.25);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23e55353'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23e55353' stroke='none'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.is-valid-wrapper :deep(.dp__input) {
+  border-color: var(--cui-form-valid-border-color, #2eb85c) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%232eb85c' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* MdEditor 유효성 검사 테두리 스타일 */
+.md-editor-validation-wrapper {
+  border-radius: 6px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.is-invalid-editor :deep(.md-editor) {
+  border: 1.5px solid var(--cui-form-invalid-border-color, #e55353) !important;
+  border-radius: 6px;
+}
+
+.is-valid-editor :deep(.md-editor) {
+  border: 1.5px solid var(--cui-form-valid-border-color, #2eb85c) !important;
+  border-radius: 6px;
 }
 </style>
