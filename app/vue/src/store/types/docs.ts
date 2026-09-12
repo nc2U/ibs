@@ -286,6 +286,11 @@ export interface PatchLetter {
   sender_address?: string
   content?: string
   attachment_text?: string
+  seal?: number | null
+  co_seal?: number | null
+  sender_display_type?: 'company_only' | 'company_rep' | 'co_rep'
+  sender_duty_title?: string
+  sender_name?: string
   disclosure_type?: '1' | '2' | '3'
   dispatch_method?: string
   tracking_number?: string
