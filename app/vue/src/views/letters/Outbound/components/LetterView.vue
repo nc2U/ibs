@@ -8,7 +8,9 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { usePerms } from '@/composables/usePerms.ts'
 
 import { useAccount } from '@/store/pinia/account'
+import { useCompany } from '@/store/pinia/company'
 import { markdownRender } from '@/utils/helper.ts'
+import LetterA4Preview from './LetterA4Preview.vue'
 
 const props = defineProps<{
   letter: OfficialLetter | null
@@ -29,6 +31,79 @@ const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 const router = useRouter()
 const docStore = useDocs()
 const accStore = useAccount()
+const comStore = useCompany()
+
+const currentCompany = computed(() => comStore.company)
+const sealList = computed(() => comStore.sealList)
+
+// 대표이사 정보 분석 (단독 / 공동대표)
+const representativesList = computed(() => {
+  if (!currentCompany.value?.ceo) return []
+  const parts = currentCompany.value.ceo
+    .replace(/;/g, ',')
+    .split(',')
+    .map((p: string) => p.trim())
+    .filter(Boolean)
+  const isJoint = parts.length > 1 || props.letter?.sender_display_type === 'co_rep'
+  return parts.map((name: string) => ({
+    title: isJoint ? '공동대표이사' : '대표이사',
+    name,
+  }))
+})
+
+const representativeName = computed(() => {
+  return (
+    representativesList.value[0]?.name ||
+    currentCompany.value?.representative_name ||
+    currentCompany.value?.ceo?.split(',')?.[0]?.trim() ||
+    ''
+  )
+})
+
+const selectedSeal = computed(() => {
+  if (!props.letter?.seal) return null
+  return sealList.value.find(item => item.pk === props.letter?.seal) || null
+})
+const selectedSealImage = computed(() => {
+  return props.letter?.seal_detail?.seal_image || selectedSeal.value?.seal_image || null
+})
+
+const selectedCoSeal = computed(() => {
+  if (!props.letter?.co_seal) return null
+  return sealList.value.find(item => item.pk === props.letter?.co_seal) || null
+})
+const selectedCoSealImage = computed(() => {
+  return props.letter?.co_seal_detail?.seal_image || selectedCoSeal.value?.seal_image || null
+})
+
+const approverDutyTitle = computed(() => {
+  if (props.letter?.sender_duty_title) return props.letter.sender_duty_title
+  if (selectedSeal.value?.internal_manager_duty) return selectedSeal.value.internal_manager_duty
+  return selectedSeal.value?.final_approval_duty_name || '대표이사'
+})
+
+const cleanDrafterName = computed(() => {
+  const name = props.letter?.drafter_name || ''
+  return name.replace(/대표이사|대표|사장|소장|본부장|팀장/g, '').trim()
+})
+
+const finalApproverName = computed(() => {
+  if (props.letter?.sender_name) return props.letter.sender_name
+  if (selectedSeal.value?.internal_manager_name) {
+    return selectedSeal.value.internal_manager_name
+  }
+  if (['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value)) {
+    return cleanDrafterName.value || representativeName.value || '전결권자'
+  }
+  return representativeName.value || cleanDrafterName.value || '대표이사'
+})
+
+const senderContact = computed(() => {
+  const phone = currentCompany.value?.phone || '-'
+  const fax = currentCompany.value?.fax || '-'
+  const email = currentCompany.value?.email || ''
+  return { phone, fax, email }
+})
 
 const showDeleteModal = ref(false)
 const pdfLoading = ref(false)
@@ -40,6 +115,15 @@ const isDispatched = computed(() => !!props.letter?.dispatched_at)
 
 // 결재완료 여부
 const isApproved = computed(() => props.letter?.approval_status === 'approved')
+
+// 전자결재 연동 여부 및 단독/직접 발송 모드 판단
+const hasApprovalDoc = computed(() => {
+  return (
+    !!props.letter?.approval_document ||
+    (!!props.letter?.approval_status && props.letter.approval_status !== 'none')
+  )
+})
+const isManualMode = computed(() => !hasApprovalDoc.value)
 
 // 관리자 여부 (슈퍼유저 또는 work_manager)
 const isManager = computed(() => {
@@ -245,57 +329,133 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       </CCol>
     </CRow>
 
-    <!-- Approval Integration Banner -->
-    <CCard class="mb-4 border-primary">
-      <CCardBody class="d-flex justify-content-between align-items-center py-2 px-3">
-        <div class="d-flex align-items-center">
-          <v-icon icon="mdi-shield-check" size="large" class="text-primary me-2" />
-          <div>
-            <strong>전자결재 연동 상태: </strong>
-            <CBadge v-if="letter.approval_status === 'approved'" color="success" class="ms-1">
-              결재 승인완료 ({{ letter.approval_document_detail?.doc_number || '공문' }})
-            </CBadge>
-            <CBadge v-else-if="letter.approval_status === 'pending'" color="warning" class="ms-1">
-              결재 진행중
-            </CBadge>
-            <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger" class="ms-1">
-              결재 반려
-            </CBadge>
-            <CBadge v-else color="secondary" class="ms-1"> 미상신 (임시/초안) </CBadge>
+    <!-- Status Banner: 발송완료 / 전자결재 연동 / 단독발송 구분 -->
+    <CCard
+      class="mb-4"
+      :class="
+        isDispatched
+          ? 'border-success'
+          : hasApprovalDoc
+            ? 'border-primary'
+            : 'border-secondary'
+      "
+    >
+      <CCardBody class="d-flex flex-wrap justify-content-between align-items-center py-2 px-3 gap-2">
+        <!-- 1. 이미 대외 발송 완료된 경우 -->
+        <template v-if="isDispatched">
+          <div class="d-flex align-items-center">
+            <v-icon icon="mdi-truck-check" size="large" class="text-success me-2" />
+            <div>
+              <strong class="text-success">대외 발송 완료 공문: </strong>
+              <span class="text-muted ms-1">
+                {{ formatDateTime(letter.dispatched_at) }} 발송 완료 (증빙 보관 및 수정/삭제 불가)
+              </span>
+              <CBadge
+                v-if="letter.approval_document_detail"
+                color="info"
+                class="ms-2"
+              >
+                결재승인 ({{ letter.approval_document_detail.doc_number }})
+              </CBadge>
+            </div>
           </div>
-        </div>
-        <div>
-          <v-btn
-            v-if="letter.approval_document"
-            color="info"
-            variant="outlined"
-            size="small"
-            class="me-2"
-            @click="goToApprovalDetail(letter.approval_document)"
-          >
-            <v-icon icon="mdi-open-in-new" size="small" class="me-1" />
-            결재 문서 보기
-          </v-btn>
-          <v-btn
-            v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
-            color="primary"
-            size="small"
-            :disabled="approvalLoading"
-            @click="onSubmitApproval"
-          >
-            <CSpinner v-if="approvalLoading" size="sm" class="me-1" />
-            <v-icon v-else icon="mdi-send" size="small" class="me-1" />
-            {{ letter.approval_status === 'rejected' ? '전자결재 재상신' : '전자결재 상신하기' }}
-          </v-btn>
-        </div>
+          <div v-if="letter.approval_document">
+            <v-btn
+              color="info"
+              variant="outlined"
+              size="small"
+              @click="goToApprovalDetail(letter.approval_document)"
+            >
+              <v-icon icon="mdi-open-in-new" size="small" class="me-1" />
+              연동 결재문서 보기
+            </v-btn>
+          </div>
+        </template>
+
+        <!-- 2. 전자결재 연동 공문인 경우 (진행중 / 승인 / 반려 / 상신대기) -->
+        <template v-else-if="hasApprovalDoc">
+          <div class="d-flex align-items-center">
+            <v-icon icon="mdi-shield-check" size="large" class="text-primary me-2" />
+            <div>
+              <strong>전자결재 연동 상태: </strong>
+              <CBadge v-if="letter.approval_status === 'approved'" color="success" class="ms-1">
+                결재 승인완료 ({{ letter.approval_document_detail?.doc_number || '공문' }})
+              </CBadge>
+              <CBadge v-else-if="letter.approval_status === 'pending'" color="warning" class="ms-1">
+                결재 진행중
+              </CBadge>
+              <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger" class="ms-1">
+                결재 반려
+              </CBadge>
+              <CBadge v-else color="secondary" class="ms-1"> 미상신 (임시/초안) </CBadge>
+            </div>
+          </div>
+          <div>
+            <v-btn
+              v-if="letter.approval_document"
+              color="info"
+              variant="outlined"
+              size="small"
+              class="me-2"
+              @click="goToApprovalDetail(letter.approval_document)"
+            >
+              <v-icon icon="mdi-open-in-new" size="small" class="me-1" />
+              결재 문서 보기
+            </v-btn>
+            <v-btn
+              v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
+              color="primary"
+              size="small"
+              :disabled="approvalLoading"
+              @click="onSubmitApproval"
+            >
+              <CSpinner v-if="approvalLoading" size="sm" class="me-1" />
+              <v-icon v-else icon="mdi-send" size="small" class="me-1" />
+              {{ letter.approval_status === 'rejected' ? '전자결재 재상신' : '전자결재 상신하기' }}
+            </v-btn>
+          </div>
+        </template>
+
+        <!-- 3. 단독 / 직접 발송 모드로 등록된 공문인 경우 (미발송 상태) -->
+        <template v-else>
+          <div class="d-flex align-items-center">
+            <v-icon icon="mdi-file-sign" size="large" class="text-secondary me-2" />
+            <div>
+              <strong class="text-dark">단독 / 직접 발송 공문: </strong>
+              <span class="text-muted ms-1" style="font-size: 0.85rem">
+                (사내 전자결재 생략 문서 • 직인 실물/전자날인 후 직접 시행·발송)
+              </span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <!-- 혹시 전자결재로 전환하여 상신하고 싶을 때를 위한 옵션 버튼 -->
+            <v-btn
+              color="secondary"
+              variant="text"
+              size="small"
+              :disabled="approvalLoading"
+              class="text-none"
+              title="필요 시 전자결재 문서로 전환하여 품의합니다"
+              @click="onSubmitApproval"
+            >
+              <CSpinner v-if="approvalLoading" size="sm" class="me-1" />
+              <v-icon v-else icon="mdi-arrow-right-top" size="small" class="me-1" />
+              전자결재로 전환 상신
+            </v-btn>
+          </div>
+        </template>
       </CCardBody>
     </CCard>
 
-    <!-- Letter Header -->
-    <CCard class="mb-4">
-      <CCardHeader class="d-flex justify-content-between align-items-center">
-        <div>
-          <CBadge color="primary" class="me-2">{{ letter.document_number }}</CBadge>
+    <!-- Main Content & A4 Preview (2-Column Responsive Layout) -->
+    <CRow>
+      <!-- 좌측: 공문 상세 정보 & 관리 카드 영역 (lg: 6, xl: 7) -->
+      <CCol lg="6" xl="7">
+        <!-- Letter Header -->
+        <CCard class="mb-4">
+          <CCardHeader class="d-flex justify-content-between align-items-center">
+            <div>
+              <CBadge color="primary" class="me-2">{{ letter.document_number }}</CBadge>
           <strong>{{ letter.title }}</strong>
         </div>
         <div>
@@ -663,35 +823,61 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       </CCardBody>
     </CCard>
 
-    <!-- Action Buttons -->
-    <CRow>
-      <CCol class="d-flex justify-content-between align-items-center">
-        <v-btn color="secondary" variant="outlined" @click="goToList">
-          <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
-          목록으로
-        </v-btn>
-        <div class="d-flex align-items-center">
-          <small v-if="isDispatched" class="text-muted me-3">
-            (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
-          </small>
-          <small v-else-if="isApproved && !isManager" class="text-muted me-3">
-            (결재 승인 완료되어 관리자만 수정 및 삭제가 가능합니다)
-          </small>
-          <v-btn
-            v-if="canDeleteLetter"
-            color="error"
-            variant="outlined"
-            class="me-2"
-            @click="confirmDelete"
-          >
-            <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
-            삭제
-          </v-btn>
-          <v-btn v-if="canEditLetter" color="success" @click="goToEdit">
-            <v-icon icon="mdi-pencil" size="small" class="me-1" />
-            수정
-          </v-btn>
-        </div>
+        <!-- Action Buttons -->
+        <CRow class="mb-4">
+          <CCol class="d-flex justify-content-between align-items-center">
+            <v-btn color="secondary" variant="outlined" @click="goToList">
+              <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
+              목록으로
+            </v-btn>
+            <div class="d-flex align-items-center">
+              <small v-if="isDispatched" class="text-muted me-3">
+                (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
+              </small>
+              <small v-else-if="isApproved && !isManager" class="text-muted me-3">
+                (결재 승인 완료되어 관리자만 수정 및 삭제가 가능합니다)
+              </small>
+              <v-btn
+                v-if="canDeleteLetter"
+                color="error"
+                variant="outlined"
+                class="me-2"
+                @click="confirmDelete"
+              >
+                <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
+                삭제
+              </v-btn>
+              <v-btn v-if="canEditLetter" color="success" @click="goToEdit">
+                <v-icon icon="mdi-pencil" size="small" class="me-1" />
+                수정
+              </v-btn>
+            </div>
+          </CCol>
+        </CRow>
+      </CCol>
+
+      <!-- 우측: A4 인쇄 미리보기 컴포넌트 (lg: 6, xl: 5 / lg 이상에서 표출) -->
+      <CCol lg="6" xl="5" class="d-none d-lg-block">
+        <LetterA4Preview
+          :form="letter"
+          :current-company="currentCompany"
+          :selected-seal="selectedSeal"
+          :selected-seal-image="selectedSealImage"
+          :selected-co-seal="selectedCoSeal"
+          :selected-co-seal-image="selectedCoSealImage"
+          :representatives-list="representativesList"
+          :representative-name="representativeName"
+          :approver-duty-title="approverDutyTitle"
+          :final-approver-name="finalApproverName"
+          :approval-mode="letter.approval_document ? 'approval' : 'manual'"
+          :is-solo-approval="!!letter.is_solo_approval"
+          :sender-contact="senderContact"
+          :clean-drafter-name="cleanDrafterName"
+          :next-doc-number="letter.document_number || ''"
+          :attachment-input-mode="letter.attachments && letter.attachments.length > 0 ? 'file' : 'text'"
+          :pending-attachments="[]"
+          :is-view-mode="true"
+        />
       </CCol>
     </CRow>
 

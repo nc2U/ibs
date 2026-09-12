@@ -633,6 +633,8 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         from approval.tasks import notify_approvers_task
         letter = self.get_object()
 
+        if letter.dispatched_at:
+            return Response({'detail': '이미 대외 발송이 완료된 공문은 전자결재를 상신할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         if letter.approval_status == 'pending':
             return Response({'detail': '이미 결재가 진행 중인 공문입니다.'}, status=status.HTTP_400_BAD_REQUEST)
         if letter.approval_status == 'approved':

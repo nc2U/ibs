@@ -6,25 +6,47 @@ import type { Company, CompanySeal } from '@/store/types/settings'
 import type { OfficialLetter } from '@/store/types/docs'
 import type { LocalAttachmentItem } from './LetterForm.vue'
 
-defineProps<{
-  form: OfficialLetter
-  currentCompany?: Company | null
-  selectedSeal?: CompanySeal | null
-  selectedSealImage?: string | null
-  selectedCoSeal?: CompanySeal | null
-  selectedCoSealImage?: string | null
-  representativesList: Array<{ title: string; name: string }>
-  representativeName: string
-  approverDutyTitle: string
-  finalApproverName: string
-  approvalMode: 'approval' | 'manual'
-  isSoloApproval: boolean
-  senderContact: { phone: string; fax: string; email: string }
-  cleanDrafterName: string
-  nextDocNumber: string
-  attachmentInputMode: 'file' | 'text'
-  pendingAttachments: LocalAttachmentItem[]
-}>()
+withDefaults(
+  defineProps<{
+    form: OfficialLetter
+    currentCompany?: Company | null
+    selectedSeal?: CompanySeal | null
+    selectedSealImage?: string | null
+    selectedCoSeal?: CompanySeal | null
+    selectedCoSealImage?: string | null
+    representativesList?: Array<{ title: string; name: string }>
+    representativeName?: string
+    approverDutyTitle?: string
+    finalApproverName?: string
+    approvalMode?: 'approval' | 'manual'
+    isSoloApproval?: boolean
+    senderContact?: { phone: string; fax: string; email: string }
+    cleanDrafterName?: string
+    nextDocNumber?: string
+    attachmentInputMode?: 'file' | 'text'
+    pendingAttachments?: LocalAttachmentItem[]
+    isViewMode?: boolean
+  }>(),
+  {
+    currentCompany: null,
+    selectedSeal: null,
+    selectedSealImage: null,
+    selectedCoSeal: null,
+    selectedCoSealImage: null,
+    representativesList: () => [],
+    representativeName: '',
+    approverDutyTitle: '대표이사',
+    finalApproverName: '',
+    approvalMode: 'approval',
+    isSoloApproval: false,
+    senderContact: () => ({ phone: '-', fax: '-', email: '' }),
+    cleanDrafterName: '',
+    nextDocNumber: '',
+    attachmentInputMode: 'file',
+    pendingAttachments: () => [],
+    isViewMode: false,
+  },
+)
 
 const accStore = useAccount()
 </script>
@@ -34,9 +56,11 @@ const accStore = useAccount()
     <div class="d-flex justify-content-between align-items-center mb-2">
       <span class="fw-bold text-secondary">
         <v-icon icon="mdi-printer-outline" class="me-1" />
-        실시간 인쇄 미리보기 (A4 Live Preview)
+        {{ isViewMode ? '공문서 인쇄 미리보기 (A4)' : '실시간 인쇄 미리보기 (A4 Live Preview)' }}
       </span>
-      <CBadge color="info">실시간 반영중</CBadge>
+      <CBadge :color="isViewMode ? 'secondary' : 'info'">
+        {{ isViewMode ? 'A4 표준서식' : '실시간 반영중' }}
+      </CBadge>
     </div>
 
     <!-- A4 종이 프리뷰 컨테이너 (A4 비율 210:297 고정) -->

@@ -752,7 +752,7 @@ const goBack = () => {
                       @update:model-value="(val: any) => (form.sender_display_type = val)"
                     >
                       <v-btn value="company_only" size="small" class="px-3 text-none">
-                        회사명 + 인장
+                        회사명 + 인장 표기
                       </v-btn>
                       <v-btn value="company_rep" size="small" class="px-3 text-none">
                         회사명 + 발송 승인자 직책·성명
@@ -912,7 +912,7 @@ const goBack = () => {
                       <CFormInput
                         v-model="form.sender_duty_title"
                         size="sm"
-                        :placeholder="`기본값: ${selectedSeal?.internal_manager_duty || approverDutyTitle}`"
+                        :placeholder="`직책을 입력하세요. (기본값: ${selectedSeal?.internal_manager_duty || approverDutyTitle})`"
                       />
                     </CCol>
                     <CCol md="6">
@@ -923,7 +923,7 @@ const goBack = () => {
                       <CFormInput
                         v-model="form.sender_name"
                         size="sm"
-                        :placeholder="`기본값: ${selectedSeal?.internal_manager_name || representativeName}`"
+                        :placeholder="`이름을 입력하세요. (기본값: ${selectedSeal?.internal_manager_name || representativeName})`"
                       />
                     </CCol>
                     <CCol md="12">
