@@ -76,9 +76,7 @@
       }
 
       .document-container {
-          display: flex;
-          flex-direction: column;
-          min-height: 25.5cm; /* A4(29.7cm) - 상하면 마진(2.5+1.6cm) = 25.6cm 기준 가용 높이 */
+          width: 100%;
       }
 
       .recipient-section {
@@ -171,9 +169,13 @@
           line-height: 1.6;
       }
 
-      /* 서명과 메타 정보를 묶어 항상 페이지 최하단 바닥으로 밀착시키고 페이지 쪼개짐 방지 */
+      /* 서명과 메타 정보 섹션 (페이지 넘김 방지 및 정상 블록 흐름) */
+      .document-bottom-spacer {
+          width: 100%;
+      }
+
       .document-bottom {
-          margin-top: auto;
+          width: 100%;
           break-inside: avoid;
           page-break-inside: avoid;
       }
@@ -346,6 +348,9 @@
       </div>
     {% endif %}
   </div>
+
+  <!-- Dynamic Spacer to push document-bottom to the bottom of the last page -->
+  <div class="document-bottom-spacer"{% if bottom_spacer_height %} style="height: {{ bottom_spacer_height }}px;"{% endif %}></div>
 
   <!-- Bottom Section (Signature + Meta) -->
   <div class="document-bottom">

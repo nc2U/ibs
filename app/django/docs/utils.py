@@ -278,13 +278,36 @@ def generate_official_letter_pdf(letter):
         'sender_contact': sender_contact,
     }
 
-    # HTML 템플릿 렌더링
+    # 1차 렌더링: 최종 페이지의 document-bottom 위치 측정하여 바닥 밀착용 spacer 계산
     html_string = render_to_string('pdf/official_letter.html', context)
+    doc = HTML(string=html_string, base_url='/').render()
 
-    # PDF 생성
-    html = HTML(string=html_string, base_url='/')
+    def _find_bottom_box(box):
+        elem = getattr(box, 'element', None)
+        if elem is not None and getattr(box, 'element_tag', None) == 'div' and elem.get('class') == 'document-bottom':
+            return box
+        for child in getattr(box, 'children', []):
+            res = _find_bottom_box(child)
+            if res is not None:
+                return res
+        return None
+
+    if doc.pages:
+        last_page = doc.pages[-1]
+        b_box = _find_bottom_box(last_page._page_box)
+        if b_box is not None:
+            # @page margin-bottom: 1.6cm = 1.6 * 96 / 2.54 px
+            bottom_margin = 1.6 * 96 / 2.54
+            target_y = last_page.height - bottom_margin - b_box.height
+            needed_spacer = int(target_y - b_box.position_y)
+            if needed_spacer > 0:
+                context['bottom_spacer_height'] = needed_spacer
+                html_string = render_to_string('pdf/official_letter.html', context)
+                doc = HTML(string=html_string, base_url='/').render()
+
+    # 최종 PDF 파일 버퍼에 작성
     pdf_buffer = io.BytesIO()
-    html.write_pdf(target=pdf_buffer)
+    doc.write_pdf(target=pdf_buffer)
 
     # ContentFile 생성
     pdf_buffer.seek(0)

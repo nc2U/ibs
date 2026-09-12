@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
@@ -8,6 +8,7 @@ import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import { markdownRender } from '@/utils/helper.ts'
 
 const props = defineProps<{
   company: number
@@ -52,7 +53,9 @@ const approverDutyTitle = computed(() => {
 const finalApproverName = computed(() => {
   // 현장소장/본부장 등 전결인 경우: 기안자 본인이 전결권자 직접 기안 시 기안자 성명이 최종 승인권자
   if (['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value)) {
-    return cleanDrafterName.value || form.value.drafter_name || representativeName.value || '전결권자'
+    return (
+      cleanDrafterName.value || form.value.drafter_name || representativeName.value || '전결권자'
+    )
   }
   return representativeName.value || cleanDrafterName.value || '대표이사'
 })
@@ -276,7 +279,7 @@ const goBack = () => {
     <CRow class="mb-4">
       <CCol>
         <h4 class="mb-0">
-          <CIcon name="cilEnvelopeLetter" class="me-2" />
+          <v-icon icon="mdi-email-outline" size="small" class="me-2" />
           {{ isEdit ? '공문 수정' : '공문 작성' }}
         </h4>
         <small v-if="!isEdit && nextDocNumber" class="text-muted">
@@ -290,16 +293,19 @@ const goBack = () => {
         <!-- 좌측: 공문서 작성/수정 폼 (lg: 6, xl: 7) -->
         <CCol lg="6" xl="7">
           <!-- 1. 공문서 서식 영역 (PDF 템플릿과 동일 순서) -->
-          <CCard class="mb-4 border-primary">
-            <CCardHeader class="bg-primary text-white d-flex align-items-center">
-              <CIcon name="cilDescription" class="me-2" />
+          <CCard class="mb-4" :class="isEdit ? 'border-success' : 'border-primary'">
+            <CCardHeader
+              class="text-white d-flex align-items-center"
+              :class="isEdit ? 'bg-success' : 'bg-primary'"
+            >
+              <v-icon icon="mdi-file-document-outline" size="small" class="me-2" />
               <strong>공문서 서식 (PDF 인쇄 영역)</strong>
             </CCardHeader>
             <CCardBody>
               <!-- 수신 / (경유) / 참조 / 제목 (상단 4행 고정 서식) -->
               <div class="p-3 bg-light rounded mb-4 border">
                 <h6 class="text-primary mb-3">
-                  <CIcon name="cilAddressBook" class="me-1" />
+                  <v-icon icon="mdi-card-account-mail" size="small" class="me-1" />
                   수신 및 제목 정보
                 </h6>
                 <CRow class="mb-3">
@@ -314,25 +320,7 @@ const goBack = () => {
                     <CFormFeedback invalid>수신처명을 입력해주세요.</CFormFeedback>
                   </CCol>
                   <CCol md="6">
-                    <CFormLabel>경유</CFormLabel>
-                    <CFormInput
-                      v-model="form.via"
-                      placeholder="경유 기관 또는 부서 (없을 시 빈칸)"
-                    />
-                  </CCol>
-                </CRow>
-                <CRow class="mb-3">
-                  <CCol md="6">
-                    <CFormLabel>참조</CFormLabel>
-                    <CFormInput
-                      v-model="form.recipient_reference"
-                      placeholder="참조 부서 또는 직위 (예: 대표이사 귀하)"
-                    />
-                  </CCol>
-                  <CCol md="6">
-                    <CFormLabel>
-                      발신 요청(예정)일 <span class="text-danger">*</span>
-                    </CFormLabel>
+                    <CFormLabel> 발신 요청(예정)일 <span class="text-danger">*</span> </CFormLabel>
                     <DatePicker v-model="form.issue_date" placeholder="발신 요청일 선택" required />
                     <CFormText class="text-muted">
                       {{
@@ -341,6 +329,22 @@ const goBack = () => {
                           : '발신 예정일자입니다. 실제 대외 발송 처리 시 발송일로 확정됩니다.'
                       }}
                     </CFormText>
+                  </CCol>
+                </CRow>
+                <CRow class="mb-3">
+                  <CCol md="6">
+                    <CFormLabel>경유</CFormLabel>
+                    <CFormInput
+                      v-model="form.via"
+                      placeholder="경유 기관 또는 부서 (없을 시 빈칸)"
+                    />
+                  </CCol>
+                  <CCol md="6">
+                    <CFormLabel>참조</CFormLabel>
+                    <CFormInput
+                      v-model="form.recipient_reference"
+                      placeholder="참조 부서 또는 직위 (예: 대표이사 귀하)"
+                    />
                   </CCol>
                 </CRow>
                 <CRow>
@@ -372,7 +376,8 @@ const goBack = () => {
                   공문 본문 내용을 입력해주세요.
                 </div>
                 <CFormText class="text-muted mt-1 d-block">
-                  마크다운 서식(표, 글머리 기호, 굵은 글씨 등)은 공문 인쇄 및 PDF 생성 시 표준 서식으로 자동 반영됩니다.
+                  마크다운 서식(표, 글머리 기호, 굵은 글씨 등)은 공문 인쇄 및 PDF 생성 시 표준
+                  서식으로 자동 반영됩니다.
                 </CFormText>
               </div>
 
@@ -390,7 +395,7 @@ const goBack = () => {
                       "
                       @click="attachmentInputMode = 'file'"
                     >
-                      <CIcon name="cilPaperclip" class="me-1" />
+                      <v-icon icon="mdi-paperclip" size="small" class="me-1" />
                       파일 직접 첨부 (권장)
                     </button>
                     <button
@@ -401,7 +406,7 @@ const goBack = () => {
                       "
                       @click="attachmentInputMode = 'text'"
                     >
-                      <CIcon name="cilText" class="me-1" />
+                      <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
                       텍스트 직접 입력
                     </button>
                   </div>
@@ -411,7 +416,7 @@ const goBack = () => {
                 <div v-if="attachmentInputMode === 'file'">
                   <CAlert color="info" class="py-2 mb-3">
                     <small>
-                      <CIcon name="cilInfo" class="me-1" />
+                      <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                       <strong>권장 사항:</strong> 공문서 위변조 방지 및 수신처의 원활한 열람을 위해
                       가급적 <strong>PDF 파일</strong>로 변환하여 첨부하는 것을 권장합니다.
                       (부득이한 경우 한글, 엑셀, 이미지, 압축파일 등도 첨부 가능)
@@ -421,7 +426,7 @@ const goBack = () => {
                   <!-- 기존 등록된 첨부파일 (수정 시) -->
                   <div v-if="form.attachments && form.attachments.length > 0" class="mb-3">
                     <div class="fw-bold small text-muted mb-2">
-                      <CIcon name="cilCheckCircle" class="me-1 text-success" />
+                      <v-icon icon="mdi-check-circle" size="small" class="me-1 text-success" />
                       현재 등록된 첨부파일 ({{ form.attachments.length }}개):
                     </div>
                     <div
@@ -449,22 +454,22 @@ const goBack = () => {
                         </CBadge>
                         <small class="text-muted ms-2">[{{ att.file_name }}]</small>
                       </div>
-                      <CButton
-                        color="danger"
-                        variant="ghost"
-                        size="sm"
+                      <v-btn
+                        color="error"
+                        variant="text"
+                        size="small"
                         title="첨부파일 삭제"
                         @click="deleteExistingAttachment(att.pk as number)"
                       >
-                        <CIcon name="cilTrash" /> 삭제
-                      </CButton>
+                        <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" /> 삭제
+                      </v-btn>
                     </div>
                   </div>
 
                   <!-- 새로 추가 대기 중인 파일 목록 -->
                   <div v-if="pendingAttachments.length > 0" class="mb-3">
                     <div class="fw-bold small text-primary mb-2">
-                      <CIcon name="cilPlus" class="me-1" />
+                      <v-icon icon="mdi-plus" size="small" class="me-1" />
                       신규 추가할 첨부파일 ({{ pendingAttachments.length }}개):
                     </div>
                     <div
@@ -489,15 +494,14 @@ const goBack = () => {
                             }}
                           </CBadge>
                         </div>
-                        <CButton
-                          color="danger"
-                          variant="ghost"
-                          size="sm"
-                          class="py-0"
+                        <v-btn
+                          color="error"
+                          variant="text"
+                          size="x-small"
                           @click="removePendingAttachment(idx)"
                         >
-                          <CIcon name="cilX" class="me-1" /> 제외
-                        </CButton>
+                          <v-icon icon="mdi-close" size="small" class="me-1" /> 제외
+                        </v-btn>
                       </div>
 
                       <CRow class="g-2 align-items-end mb-2">
@@ -524,7 +528,7 @@ const goBack = () => {
                         </CCol>
                         <CCol md="2">
                           <div class="small text-muted text-truncate py-1" :title="att.file.name">
-                            <CIcon name="cilFile" class="me-1" />
+                            <v-icon icon="mdi-file-outline" size="small" class="me-1" />
                             {{ att.file.name }}
                           </div>
                         </CCol>
@@ -549,15 +553,15 @@ const goBack = () => {
                     class="d-none"
                     @change="onFileSelect"
                   />
-                  <CButton
+                  <v-btn
                     color="primary"
-                    variant="outline"
-                    size="sm"
+                    variant="outlined"
+                    size="small"
                     @click="fileInputRef?.click()"
                   >
-                    <CIcon name="cilCloudUpload" class="me-1" />
+                    <v-icon icon="mdi-cloud-upload" size="small" class="me-1" />
                     파일 추가하기 (다중 선택 가능)
-                  </CButton>
+                  </v-btn>
                 </div>
 
                 <!-- 텍스트 직접 입력 모드 -->
@@ -578,7 +582,7 @@ const goBack = () => {
               <div class="p-3 bg-light rounded border">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h6 class="text-primary mb-0">
-                    <CIcon name="cilPen" class="me-1" />
+                    <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
                     발신 명의, 직인 날인 및 기안 정보
                   </h6>
                   <!-- 발송 유형 선택 토글 -->
@@ -589,7 +593,7 @@ const goBack = () => {
                       :class="approvalMode === 'approval' ? 'btn-primary' : 'btn-outline-primary'"
                       @click="approvalMode = 'approval'"
                     >
-                      <CIcon name="cilShieldAlt" class="me-1" />
+                      <v-icon icon="mdi-shield-check" size="small" class="me-1" />
                       전자결재 상신 발송
                     </button>
                     <button
@@ -598,7 +602,7 @@ const goBack = () => {
                       :class="approvalMode === 'manual' ? 'btn-primary' : 'btn-outline-primary'"
                       @click="approvalMode = 'manual'"
                     >
-                      <CIcon name="cilPencil" class="me-1" />
+                      <v-icon icon="mdi-pencil" size="small" class="me-1" />
                       수동(직접) 발송
                     </button>
                   </div>
@@ -607,7 +611,7 @@ const goBack = () => {
                 <!-- 전자결재 모드 안내 -->
                 <CAlert v-if="approvalMode === 'approval'" color="light" class="border py-2 mb-3">
                   <small class="text-primary">
-                    <CIcon name="cilInfo" class="me-1" />
+                    <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                     <strong>전자결재 연동 모드:</strong> 결재선 상신 및 최종 승인 시 결재선의
                     기안자, 검토자, 최종 결재권자(대표이사/임원 등)의 직위와 성명이 공문서 하단
                     결재선에 자동으로 표기됩니다.
@@ -617,7 +621,7 @@ const goBack = () => {
                 <!-- 수동 발송 모드 안내 -->
                 <CAlert v-else color="warning" class="py-2 mb-3">
                   <small>
-                    <CIcon name="cilWarning" class="me-1" />
+                    <v-icon icon="mdi-alert-outline" size="small" class="me-1" />
                     <strong>수동(직접) 발송 모드:</strong> 전자결재를 거치지 않고 직접 발송하는
                     공문입니다. 공문서 하단 결재/담당란에 인쇄될 기안/담당자 정보를 아래에 직접
                     입력해주세요.
@@ -648,11 +652,11 @@ const goBack = () => {
                         />
                         <div>
                           <small class="text-success fw-semibold d-block">
-                            <CIcon name="cilCheckCircle" class="me-1" />
+                            <v-icon icon="mdi-check-circle" size="small" class="me-1" />
                             등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.
                           </small>
                           <small v-if="approvalMode === 'approval'" class="text-primary">
-                            <CIcon name="cilShieldAlt" class="me-1" />
+                            <v-icon icon="mdi-shield-check" size="small" class="me-1" />
                             <strong>전결 승인 규정: </strong>
                             <span v-if="selectedSeal?.final_approval_duty_name">
                               {{ selectedSeal.final_approval_duty_name }} 전결 가능
@@ -669,7 +673,8 @@ const goBack = () => {
                     </div>
                     <div v-else class="mt-1">
                       <small class="text-muted">
-                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지 마십시오.
+                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지
+                        마십시오.
                       </small>
                     </div>
                   </CCol>
@@ -683,17 +688,24 @@ const goBack = () => {
                       <option value="3">비공개 (영업비밀/대외비)</option>
                     </CFormSelect>
                     <div class="mt-1">
-                      <small v-if="form.disclosure_type === '3'" class="text-danger d-block fw-semibold">
-                        <CIcon name="cilLockLocked" class="me-1" />
+                      <small
+                        v-if="form.disclosure_type === '3'"
+                        class="text-danger d-block fw-semibold"
+                      >
+                        <v-icon icon="mdi-lock-outline" size="small" class="me-1" />
                         영업비밀·대외비 문서: 외부 유출 및 제3자 정보공개가 전면 제한됩니다.
                       </small>
-                      <small v-else-if="form.disclosure_type === '2'" class="text-warning-emphasis d-block fw-semibold">
-                        <CIcon name="cilShieldAlt" class="me-1" />
+                      <small
+                        v-else-if="form.disclosure_type === '2'"
+                        class="text-warning-emphasis d-block fw-semibold"
+                      >
+                        <v-icon icon="mdi-shield-check" size="small" class="me-1" />
                         부분공개: 개인정보·계약단가 등 특정 비공개 대상 정보 외의 부분만 공개됩니다.
                       </small>
                       <small v-else class="text-secondary d-block">
-                        <CIcon name="cilWarning" class="me-1 text-warning" />
-                        개인정보(주민번호·연락처 등), 계약단가, 영업비밀 등이 포함된 경우 <strong>'부분공개'</strong> 또는 <strong>'비공개'</strong>로 지정하십시오.
+                        <v-icon icon="mdi-alert-outline" size="small" class="me-1 text-warning" />
+                        개인정보(주민번호·연락처 등), 계약단가, 영업비밀 등이 포함된 경우
+                        <strong>'부분공개'</strong> 또는 <strong>'비공개'</strong>로 지정하십시오.
                       </small>
                     </div>
                   </CCol>
@@ -702,12 +714,17 @@ const goBack = () => {
                   <CCol v-if="approvalMode === 'manual'" md="4">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                       <CFormLabel class="mb-0">
-                        기안/담당자명 <span v-if="!form.is_solo_approval" class="text-danger">*</span>
+                        기안/담당자명
+                        <span v-if="!form.is_solo_approval" class="text-danger">*</span>
                       </CFormLabel>
                     </div>
                     <CFormInput
                       v-model="form.drafter_name"
-                      :placeholder="form.is_solo_approval ? `${approverDutyTitle} 직접 기안 (담당 생략)` : '기안/담당자명 (예: 홍길동)'"
+                      :placeholder="
+                        form.is_solo_approval
+                          ? `${approverDutyTitle} 직접 기안 (담당 생략)`
+                          : '기안/담당자명 (예: 홍길동)'
+                      "
                       :required="!form.is_solo_approval"
                       :invalid="validated && !form.is_solo_approval && !form.drafter_name"
                     />
@@ -734,7 +751,8 @@ const goBack = () => {
                       />
                     </div>
                     <CFormText class="text-muted">
-                      {{ approverDutyTitle }} 등 최종 승인(전결)권자가 직접 기안하여 발송할 경우 체크하면 하단 담당란이 생략됩니다.
+                      {{ approverDutyTitle }} 등 최종 승인(전결)권자가 직접 기안하여 발송할 경우
+                      체크하면 하단 담당란이 생략됩니다.
                     </CFormText>
                   </CCol>
                   <CCol v-if="!form.is_solo_approval" md="6">
@@ -768,13 +786,13 @@ const goBack = () => {
           <!-- 2. 발송 및 대장 관리 메타 영역 (공문서에는 인쇄되지 않는 업무 관리 데이터) -->
           <CCard class="mb-4">
             <CCardHeader class="bg-secondary text-white d-flex align-items-center">
-              <CIcon name="cilFolderOpen" class="me-2" />
+              <v-icon icon="mdi-folder-open-outline" class="me-2" />
               <strong>발송 및 대장 관리 정보 (시스템 관리용 메타데이터)</strong>
             </CCardHeader>
             <CCardBody>
               <CAlert color="info" class="py-2 mb-3">
                 <small>
-                  <CIcon name="cilInfo" class="me-1" />
+                  <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                   아래 정보는 공문서 본문에는 인쇄되지 않으며, 우편 라벨 출력, 등기번호 추적 및 발송
                   대장 이력 관리에 사용됩니다.
                 </small>
@@ -831,18 +849,18 @@ const goBack = () => {
           <!-- Actions -->
           <CRow class="mb-4">
             <CCol class="d-flex justify-content-between">
-              <CButton color="secondary" variant="outline" @click="goBack">
-                <CIcon name="cilArrowLeft" class="me-1" />
+              <v-btn color="secondary" variant="outlined" @click="goBack">
+                <v-icon icon="mdi-arrow-left" class="me-1" />
                 취소
-              </CButton>
-              <CButton
+              </v-btn>
+              <v-btn
                 type="submit"
                 :color="isEdit ? 'success' : 'primary'"
                 :disabled="!accStore.isStaff && canOLManage"
               >
-                <CIcon name="cilSave" class="me-1" />
+                <v-icon icon="mdi-content-save-outline" class="me-1" />
                 {{ isEdit ? '수정 저장' : '공문 저장' }}
-              </CButton>
+              </v-btn>
             </CCol>
           </CRow>
         </CCol>
@@ -852,7 +870,7 @@ const goBack = () => {
           <div class="sticky-top" style="top: 20px; z-index: 10">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="fw-bold text-secondary">
-                <CIcon name="cilPrint" class="me-1" />
+                <v-icon icon="mdi-printer-outline" class="me-1" />
                 실시간 인쇄 미리보기 (A4 Live Preview)
               </span>
               <CBadge color="info">실시간 반영중</CBadge>
@@ -922,19 +940,25 @@ const goBack = () => {
 
                 <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원) -->
                 <div
-                  class="preview-content my-2 px-1"
+                  class="preview-content markdown-content my-2 p-3"
                   style="
                     flex: 1 1 auto;
                     min-height: 0;
                     overflow-y: auto;
                     font-size: 0.82rem;
                     line-height: 1.7;
-                    white-space: pre-wrap;
                     word-break: break-all;
                     text-align: justify;
                   "
                 >
-                  {{ form.content || '공문 본문 내용이 여기에 실시간으로 표시됩니다.' }}
+                  <div
+                    v-if="form.content"
+                    class="preview-markdown-body"
+                    v-html="markdownRender(form.content)"
+                  />
+                  <div v-else class="text-muted">
+                    공문 본문 내용이 여기에 실시간으로 표시됩니다.
+                  </div>
 
                   <!-- 붙임 목록 -->
                   <div v-if="attachmentInputMode === 'file'" class="mt-3 pt-2">
@@ -999,14 +1023,20 @@ const goBack = () => {
                   <!-- 5. 결재선 및 시행 메타 -->
                   <div
                     class="preview-bottom pt-2"
-                    style="font-size: 0.72rem; line-height: 1.4; border-top: 2px solid #333333;"
+                    style="font-size: 0.72rem; line-height: 1.4; border-top: 2px solid #333333"
                   >
                     <!-- 시행/접수/주소/연락처 및 상단 결재선 통합 테이블 (완전 수직 정렬) -->
-                    <table class="w-100" style="color: #444; border-collapse: collapse; font-size: 0.72rem">
+                    <table
+                      class="w-100"
+                      style="color: #444; border-collapse: collapse; font-size: 0.72rem"
+                    >
                       <tbody>
                         <!-- 1행: 결재선 (시행/우편/전화와 동일한 테이블 1행에 배치하여 좌측선 100% 칼정렬) -->
                         <tr class="border-bottom">
-                          <td class="pb-1" style="width: 40px; vertical-align: bottom; padding-left: 0">
+                          <td
+                            class="pb-1"
+                            style="width: 40px; vertical-align: bottom; padding-left: 0"
+                          >
                             <template v-if="!isSoloApproval">
                               <span class="text-secondary">담당</span>
                             </template>
@@ -1022,7 +1052,9 @@ const goBack = () => {
                                   : cleanDrafterName || form.drafter_name || '담당자'
                               }}</span>
                             </template>
-                            <span v-else class="text-muted fst-italic">({{ approverDutyTitle }} 직접 기안)</span>
+                            <span v-else class="text-muted fst-italic"
+                              >({{ approverDutyTitle }} 직접 기안)</span
+                            >
                           </td>
                           <td colspan="2" class="text-end pb-1" style="vertical-align: bottom">
                             <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
@@ -1030,7 +1062,12 @@ const goBack = () => {
                                 결재 승인 시 자동 확정
                               </span>
                               <span v-else>
-                                {{ ['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle) ? '전결' : '시행' }} {{ form.issue_date || '발신일자' }}
+                                {{
+                                  ['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle)
+                                    ? '전결'
+                                    : '시행'
+                                }}
+                                {{ form.issue_date || '발신일자' }}
                               </span>
                             </div>
                             <div>
@@ -1042,7 +1079,16 @@ const goBack = () => {
                           </td>
                         </tr>
                         <tr>
-                          <td style="width: 40px; font-weight: bold; padding-left: 0; padding-top: 4px">시행</td>
+                          <td
+                            style="
+                              width: 40px;
+                              font-weight: bold;
+                              padding-left: 0;
+                              padding-top: 4px;
+                            "
+                          >
+                            시행
+                          </td>
                           <td style="width: 140px; padding-top: 4px">
                             {{ form.document_number || nextDocNumber || '자동채번' }}
                           </td>
@@ -1126,5 +1172,37 @@ const goBack = () => {
   border: 1px solid #ced4da;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
+}
+
+:deep(.preview-markdown-body) {
+  width: 100%;
+}
+
+:deep(.preview-markdown-body p) {
+  margin-bottom: 0.5rem;
+}
+
+:deep(.preview-markdown-body table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.75rem;
+}
+
+:deep(.preview-markdown-body th),
+:deep(.preview-markdown-body td) {
+  border: 1px solid #ced4da;
+  padding: 3px 6px;
+  text-align: center;
+}
+
+:deep(.preview-markdown-body th) {
+  background-color: #f8f9fa;
+}
+
+:deep(.preview-markdown-body center) {
+  display: block;
+  text-align: center;
+  margin: 0.5rem 0;
 }
 </style>
