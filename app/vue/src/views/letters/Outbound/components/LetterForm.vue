@@ -940,7 +940,7 @@ const goBack = () => {
 
                 <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원) -->
                 <div
-                  class="preview-content markdown-content my-2 p-3"
+                  class="preview-content my-2 p-3"
                   style="
                     flex: 1 1 auto;
                     min-height: 0;
@@ -1166,16 +1166,26 @@ const goBack = () => {
   aspect-ratio: 210 / 297;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
-  color: #111111;
+  background-color: #ffffff !important;
+  color: #111111 !important;
   font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   border: 1px solid #ced4da;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
 }
 
+.preview-content {
+  background-color: transparent !important;
+  color: #111111 !important;
+}
+
 :deep(.preview-markdown-body) {
   width: 100%;
+  color: #111111 !important;
+}
+
+:deep(.preview-markdown-body *) {
+  color: inherit;
 }
 
 :deep(.preview-markdown-body p) {
@@ -1187,6 +1197,7 @@ const goBack = () => {
   border-collapse: collapse;
   margin: 0.5rem 0;
   font-size: 0.75rem;
+  background-color: #ffffff;
 }
 
 :deep(.preview-markdown-body th),
@@ -1194,10 +1205,12 @@ const goBack = () => {
   border: 1px solid #ced4da;
   padding: 3px 6px;
   text-align: center;
+  color: #111111 !important;
 }
 
 :deep(.preview-markdown-body th) {
-  background-color: #f8f9fa;
+  background-color: #f8f9fa !important;
+  color: #111111 !important;
 }
 
 :deep(.preview-markdown-body center) {

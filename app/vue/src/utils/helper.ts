@@ -77,7 +77,7 @@ export const isValidate = (event: Event) => {
   } else return false
 }
 
-const md = new MarkdownIt('default', { html: true })
+const md = new MarkdownIt('default', { html: true, breaks: true })
 
 export const markdownRender = (content: string) => {
   const result = md.render(content)
