@@ -150,8 +150,9 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
                 use_celery = True
                 task_id = None
 
-                # 파일을 공유 디렉토리(django 루트의 tmp 폴더)에 임시 저장
-                tmp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tmp')
+                # 파일을 web과 celery가 공유하는 media 볼륨 디렉토리에 임시 저장
+                from django.conf import settings
+                tmp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_seals')
                 os.makedirs(tmp_dir, exist_ok=True)
                 tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext, dir=tmp_dir)
                 try:
