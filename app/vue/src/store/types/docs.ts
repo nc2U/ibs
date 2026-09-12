@@ -234,6 +234,16 @@ export interface OfficialLetter {
     seal_type_desc: string
     seal_image: string | null
   } | null
+  co_seal?: number | null
+  co_seal_detail?: {
+    pk: number
+    name: string
+    seal_type: string
+    seal_type_desc: string
+    seal_image: string | null
+  } | null
+  sender_display_type?: 'company_only' | 'company_rep' | 'co_rep'
+  sender_display_type_desc?: string
   pdf_file?: string | null
   disclosure_type?: '1' | '2' | '3'
   disclosure_type_desc?: string

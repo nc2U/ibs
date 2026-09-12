@@ -244,6 +244,13 @@ def generate_official_letter_pdf(letter):
         except Exception:
             pass
 
+    co_seal_url = None
+    if letter.co_seal and letter.co_seal.seal_image:
+        try:
+            co_seal_url = letter.co_seal.seal_image.url
+        except Exception:
+            pass
+
     # 결재선 추출
     approval_line = get_letter_approval_line(letter)
 
@@ -263,12 +270,14 @@ def generate_official_letter_pdf(letter):
     import re
     letter_content_html = ''
     if letter.content:
-        # 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 마크다운 파서가 이를 1개 문단 분리로 축약하지 않도록 빈 문단 보존
         normalized_content = letter.content.replace('\r\n', '\n')
+        # 1) 행 시작의 숫자+마침표('1. ', '2. ')가 마크다운 <ol> 리스트로 자동 변환되어 숫자와 텍스트가 분리되는 현상 방지
+        list_escaped = re.sub(r'(?m)^(\s*\d+)\.\s+', r'\1\\. ', normalized_content)
+        # 2) 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 마크다운 파서가 이를 1개 문단 분리로 축약하지 않도록 빈 문단 보존
         preprocessed_content = re.sub(
             r'\n{3,}',
             lambda m: '\n\n' + ('<p class="empty-line">&nbsp;</p>\n\n' * (len(m.group(0)) - 2)),
-            normalized_content
+            list_escaped
         )
         raw_html = markdown2.markdown(
             preprocessed_content,
@@ -287,6 +296,11 @@ def generate_official_letter_pdf(letter):
                 parts[i] = '\n'.join(new_lines)
         letter_content_html = ''.join(parts)
 
+    # 대표이사 정보 (발신 명의 표기용)
+    reps_info = company.get_representatives_info() if hasattr(company, 'get_representatives_info') else []
+    rep_single_name = reps_info[0]['name'] if reps_info else company.get_representative_staff_name()
+    rep_single_title = reps_info[0]['title'] if reps_info else '대표이사'
+
     # 템플릿 컨텍스트 준비
     context = {
         'letter': letter,
@@ -294,6 +308,11 @@ def generate_official_letter_pdf(letter):
         'company': company,
         'logo_url': logo_url,
         'seal_url': seal_url,
+        'co_seal_url': co_seal_url,
+        'sender_display_type': getattr(letter, 'sender_display_type', 'company_only'),
+        'reps_info': reps_info,
+        'rep_single_name': rep_single_name,
+        'rep_single_title': rep_single_title,
         'approval_line': approval_line,
         'sender_contact': sender_contact,
     }

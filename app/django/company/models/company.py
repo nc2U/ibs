@@ -68,6 +68,46 @@ class Company(models.Model):
 
         return ''
 
+    def get_representatives_info(self):
+        """
+        회사의 대표이사 목록 및 대표권 형태(단독 / 공동 / 각자) 반환
+        Returns:
+            list[dict]: [{'title': '대표이사'|'공동대표이사', 'name': '홍길동', 'represent_type': 'sole'|'joint'|'each'}]
+        """
+        reps = []
+        execs = list(self.executives.filter(
+            represent_type__in=['sole', 'joint', 'each']
+        ).select_related('staff', 'rank').order_by('rank__sort_order', 'id'))
+
+        is_joint = any(e.represent_type == 'joint' for e in execs) or len(execs) > 1
+
+        if execs:
+            for e in execs:
+                name = e.staff.name if e.staff else e.name
+                if name and name.strip():
+                    default_title = '공동대표이사' if (e.represent_type == 'joint' or (is_joint and e.represent_type != 'each')) else '대표이사'
+                    rank_title = e.rank.name if e.rank and '대표' in e.rank.name else default_title
+                    reps.append({
+                        'title': rank_title,
+                        'name': name.strip(),
+                        'represent_type': e.represent_type,
+                    })
+
+        if not reps and self.ceo:
+            ceo_parts = [p.strip() for p in self.ceo.replace(';', ',').split(',') if p.strip()]
+            from company.models.staff import Staff
+            for p in ceo_parts:
+                matched_staff = Staff.objects.filter(name=p).first()
+                p_name = matched_staff.name if matched_staff else p
+                title = '공동대표이사' if len(ceo_parts) > 1 else '대표이사'
+                reps.append({
+                    'title': title,
+                    'name': p_name.strip(),
+                    'represent_type': 'joint' if len(ceo_parts) > 1 else 'sole',
+                })
+
+        return reps
+
     def save(self, *args, **kwargs):
         if self.is_default:
             Company.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)

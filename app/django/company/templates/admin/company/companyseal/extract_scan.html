@@ -1,0 +1,300 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label='company' %}">회사 관리</a>
+  &rsaquo; <a href="{% url 'admin:company_companyseal_changelist' %}">회사 인장</a>
+  &rsaquo; 스캔 문서에서 인장 자동 추출
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" style="max-width: 960px;">
+  <div class="module" style="background: #fff; padding: 24px; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <h2 style="margin-top: 0; margin-bottom: 8px; color: #333;">📄 스캔 A4 문서에서 인장 자동 추출 및 등록</h2>
+    <p style="color: #666; font-size: 13px; line-height: 1.6; margin-bottom: 24px;">
+      A4 용지에 날인하여 스캔한 <strong>PDF 파일</strong> 또는 <strong>이미지(JPG/PNG)</strong>를 업로드하세요.<br>
+      A4 용지 상단/하단 또는 여러 영역에 찍힌 <strong>다중 인장(1개, 2개 이상)</strong>을 자동으로 감지하여 <strong>배경이 투명한 고품질 인장(PNG)</strong>으로 일괄 변환·등록합니다.
+    </p>
+
+    {% if task_id %}
+      <!-- Celery 비동기 작업 진행 중 화면 (실시간 프로그레스 & 폴링) -->
+      <div id="async-loading-box" style="text-align: center; padding: 50px 20px;">
+        <div class="spinner" style="display: inline-block; width: 44px; height: 44px; border: 4px solid #f3f3f3; border-top: 4px solid #417690; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+        <h3 id="task-message" style="color: #333; margin-bottom: 10px;">스캔 파일 분석 및 인장 추출 작업 중...</h3>
+        <p style="color: #666; font-size: 13px;">Celery 백그라운드 워커에서 고해상도 PDF 렌더링 및 인주(붉은색) 감지 알고리즘을 실행하고 있습니다.</p>
+        <div id="error-message" style="display: none; color: #d32f2f; font-weight: bold; margin-top: 15px; padding: 12px; background: #ffebee; border-radius: 4px;"></div>
+      </div>
+
+      <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+
+      <!-- 감지 완료 시 동적으로 렌더링할 폼 영역 -->
+      <div id="result-container" style="display: none;"></div>
+
+      <script>
+        (function() {
+          const taskId = "{{ task_id }}";
+          const statusUrl = "{% url 'admin:company_companyseal_extract_scan_status' task_id=task_id %}";
+          const companyId = "{{ target_company.id }}";
+          const companyName = "{{ target_company.name }}";
+          const csrfToken = "{{ csrf_token }}";
+
+          const sealTypes = [
+            {% for code, label in seal_types %}
+              { code: "{{ code }}", label: "{{ label }}" },
+            {% endfor %}
+          ];
+
+          const duties = [
+            {% for duty in duties %}
+              { id: "{{ duty.id }}", name: "{{ duty.name }}" },
+            {% endfor %}
+          ];
+
+          function pollStatus() {
+            fetch(statusUrl)
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'SUCCESS') {
+                  const seals = data.seals || (data.result && data.result.seals) || [];
+                  renderResultForm(seals);
+                } else if (data.status === 'FAILURE') {
+                  document.querySelector('.spinner').style.display = 'none';
+                  const errBox = document.getElementById('error-message');
+                  errBox.innerText = '인장 추출에 실패했습니다: ' + (data.error || '알 수 없는 오류');
+                  errBox.style.display = 'block';
+                } else {
+                  // 계속 폴링 (800ms)
+                  setTimeout(pollStatus, 800);
+                }
+              })
+              .catch(err => {
+                setTimeout(pollStatus, 1500);
+              });
+          }
+
+          function renderResultForm(seals) {
+            document.getElementById('async-loading-box').style.display = 'none';
+            const container = document.getElementById('result-container');
+            container.style.display = 'block';
+
+            if (seals.length === 0) {
+              container.innerHTML = `
+                <div style="background: #ffebee; color: #c62828; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+                  문서에서 붉은색 인장을 찾을 수 없습니다. 다시 시도해주세요.
+                </div>
+                <a href="{% url 'admin:company_companyseal_extract_scan' %}" class="button" style="background: #417690; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px;">&larr; 다시 파일 업로드</a>
+              `;
+              return;
+            }
+
+            let sealItemsHtml = '';
+            seals.forEach((seal, idx) => {
+              const defaultName = idx === 0 ? '대표이사 법인인감' : `사용인감 ${idx}호`;
+              let sealTypeOptions = '';
+              sealTypes.forEach(st => {
+                const selected = (idx === 0 && st.code === 'CORP_SEAL') || (idx > 0 && st.code === 'USAGE_SEAL') ? 'selected' : '';
+                sealTypeOptions += `<option value="${st.code}" ${selected}>${st.label} (${st.code})</option>`;
+              });
+
+              let dutyOptions = '<option value="">대표이사 결재 필수 (전결 불가)</option>';
+              duties.forEach(d => {
+                dutyOptions += `<option value="${d.id}">${d.name} 전결 가능</option>`;
+              });
+
+              sealItemsHtml += `
+                <div style="display: flex; gap: 20px; padding: 18px; border: 1px solid #ccd; border-radius: 6px; background: #fafafa; align-items: center;">
+                  <div style="width: 140px; text-align: center; flex-shrink: 0;">
+                    <div style="width: 130px; height: 130px; margin: 0 auto 6px; background-color: #fff; background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                      <img src="${seal.preview_base64}" alt="인장 미리보기" style="max-width: 115px; max-height: 115px; object-fit: contain;">
+                    </div>
+                    <small style="color: #666; font-weight: bold;">[도장 ${seal.index}] ${seal.position_hint}</small>
+                    <input type="hidden" name="seal_b64_${idx}" value="${seal.preview_base64}">
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                      <div>
+                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">인장 명칭 <span style="color: red;">*</span></label>
+                        <input type="text" name="name_${idx}" required value="${defaultName}" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">인장 종류 <span style="color: red;">*</span></label>
+                        <select name="seal_type_${idx}" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                          ${sealTypeOptions}
+                        </select>
+                      </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div>
+                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">관리 책임자 / 부서</label>
+                        <input type="text" name="manager_${idx}" value="대표이사" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                      </div>
+                      <div>
+                        <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">최소 전결 직책</label>
+                        <select name="final_duty_${idx}" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                          ${dutyOptions}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+
+            container.innerHTML = `
+              <form method="post" action="{% url 'admin:company_companyseal_extract_scan' %}">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                <input type="hidden" name="step" value="save">
+                <input type="hidden" name="company_id" value="${companyId}">
+                <input type="hidden" name="seal_count" value="${seals.length}">
+
+                <div style="background: #eef5f9; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; color: #1b5e20; border-left: 4px solid #28a745;">
+                  <strong>${companyName}</strong> 문서에서 <strong>총 ${seals.length}개의 인장</strong>이 감지되었습니다! 투명 배경을 확인하고 인장 정보를 입력 후 등록하세요.
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 24px; margin-bottom: 28px;">
+                  ${sealItemsHtml}
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 18px;">
+                  <a href="{% url 'admin:company_companyseal_extract_scan' %}" class="button" style="background: #888; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px;">&larr; 다시 스캔 파일 선택</a>
+                  <button type="submit" class="button default" style="background: #28a745; color: #fff; padding: 10px 24px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
+                    ✓ ${seals.length}개 인장 일괄 등록 완료
+                  </button>
+                </div>
+              </form>
+            `;
+          }
+
+          pollStatus();
+        })();
+      </script>
+
+    {% elif not detected_seals %}
+      <!-- 1단계: 파일 업로드 폼 -->
+      <form method="post" enctype="multipart/form-data" action="">
+        {% csrf_token %}
+        <input type="hidden" name="step" value="upload">
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #333;">
+            1. 인장을 등록할 회사 <span style="color: red;">*</span>
+          </label>
+          <select name="company_id" required style="width: 100%; max-width: 400px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+            <option value="">-- 회사를 선택하세요 --</option>
+            {% for comp in companies %}
+              <option value="{{ comp.id }}" {% if comp.is_default %}selected{% endif %}>{{ comp.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #333;">
+            2. 스캔 A4 파일 (PDF 또는 이미지) <span style="color: red;">*</span>
+          </label>
+          <div style="border: 2px dashed #417690; padding: 30px; text-align: center; border-radius: 6px; background: #f8fafc;">
+            <input type="file" name="scan_file" accept=".pdf,.png,.jpg,.jpeg" required style="font-size: 14px;">
+            <p style="margin-top: 10px; margin-bottom: 0; font-size: 12px; color: #777;">
+              * 지원 포맷: PDF, PNG, JPG / 최대 크기: 20MB
+            </p>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 18px;">
+          <a href="{% url 'admin:company_companyseal_changelist' %}" class="button" style="background: #888; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px;">취소</a>
+          <button type="submit" class="button default" style="background: #417690; color: #fff; padding: 10px 24px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
+            인장 감지 및 투명화 실행 &rarr;
+          </button>
+        </div>
+      </form>
+
+    {% else %}
+      <!-- 2단계: 동기 Fallback 감지 결과 확인 및 등록 폼 -->
+      <form method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="step" value="save">
+        <input type="hidden" name="company_id" value="{{ target_company.id }}">
+        <input type="hidden" name="seal_count" value="{{ detected_seals|length }}">
+
+        <div style="background: #eef5f9; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; color: #1b5e20; border-left: 4px solid #28a745;">
+          <strong>{{ target_company.name }}</strong> 문서에서 <strong>총 {{ detected_seals|length }}개의 인장</strong>이 성공적으로 감지되었습니다! 투명 배경을 확인하고 인장 정보를 입력 후 등록하세요.
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 24px; margin-bottom: 28px;">
+          {% for seal in detected_seals %}
+            <div style="display: flex; gap: 20px; padding: 18px; border: 1px solid #ccd; border-radius: 6px; background: #fafafa; align-items: center;">
+              <!-- 투명 인장 미리보기 (바둑판 체크 배경으로 투명도 강조) -->
+              <div style="width: 140px; text-align: center; flex-shrink: 0;">
+                <div style="width: 130px; height: 130px; margin: 0 auto 6px; background-color: #fff; background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  <img src="{{ seal.preview_base64 }}" alt="인장 미리보기" style="max-width: 115px; max-height: 115px; object-fit: contain;">
+                </div>
+                <small style="color: #666; font-weight: bold;">[도장 {{ seal.index }}] {{ seal.position_hint }}</small>
+                <input type="hidden" name="seal_b64_{{ forloop.counter0 }}" value="{{ seal.preview_base64 }}">
+              </div>
+
+              <!-- 인장 정보 설정 폼 -->
+              <div style="flex: 1;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                  <div>
+                    <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">
+                      인장 명칭 <span style="color: red;">*</span>
+                    </label>
+                    <input type="text" name="name_{{ forloop.counter0 }}" required
+                           value="{% if forloop.first %}대표이사 법인인감{% else %}사용인감 {{ forloop.counter0 }}호{% endif %}"
+                           placeholder="예: 대표이사 법인인감, 분양 전용 사용인감"
+                           style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">
+                      인장 종류 <span style="color: red;">*</span>
+                    </label>
+                    <select name="seal_type_{{ forloop.counter0 }}" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                      {% for code, label in seal_types %}
+                        <option value="{{ code }}" {% if forloop.parentloop.first and code == 'CORP_SEAL' %}selected{% elif not forloop.parentloop.first and code == 'USAGE_SEAL' %}selected{% endif %}>
+                          {{ label }} ({{ code }})
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">
+                      관리 책임자 / 부서
+                    </label>
+                    <input type="text" name="manager_{{ forloop.counter0 }}" value="대표이사" placeholder="예: 경영지원팀, 총무과"
+                           style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444;">
+                      최소 전결 직책
+                    </label>
+                    <select name="final_duty_{{ forloop.counter0 }}" style="width: 100%; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                      <option value="">대표이사 결재 필수 (전결 불가)</option>
+                      {% for duty in duties %}
+                        <option value="{{ duty.id }}">{{ duty.name }} 전결 가능</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 18px;">
+          <a href="{% url 'admin:company_companyseal_extract_scan' %}" class="button" style="background: #888; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px;">&larr; 다시 스캔 파일 선택</a>
+          <button type="submit" class="button default" style="background: #28a745; color: #fff; padding: 10px 24px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
+            ✓ {{ detected_seals|length }}개 인장 일괄 등록 완료
+          </button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

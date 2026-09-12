@@ -81,14 +81,23 @@ const md = new MarkdownIt('default', { html: true, breaks: true })
 
 export const markdownRender = (content: string) => {
   if (!content) return ''
-  // 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 마크다운 파서가 이를 1개 문단 분리로 축약하지 않도록 빈 문단 보존
   const normalized = content.replace(/\r\n/g, '\n')
-  const preprocessed = normalized.replace(/\n{3,}/g, match => {
+  // 1) 행 시작의 숫자+마침표('1. ', '2. ')가 마크다운 <ol> 리스트로 자동 변환되어 숫자와 텍스트가 분리되는 현상 방지
+  const listEscaped = normalized.replace(/^(\s*\d+)\.\s+/gm, '$1\\. ')
+  // 2) 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 빈 문단 보존
+  const preprocessed = listEscaped.replace(/\n{3,}/g, match => {
     const extraEmptyLines = match.length - 2
     return '\n\n' + '<p class="empty-line">&nbsp;</p>\n\n'.repeat(extraEmptyLines)
   })
-  const result = md.render(preprocessed)
-  return DOMPurify.sanitize(result)
+  const rendered = md.render(preprocessed)
+  // 3) HTML 태그 외부의 2개 이상 연속 스페이스('  +')를 &nbsp;로 변환하여 다중 띄어쓰기(스페이스바) 보존
+  const parts = rendered.split(/(<[^>]+>)/g)
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i].startsWith('<')) {
+      parts[i] = parts[i].replace(/  +/g, match => '&nbsp;'.repeat(match.length))
+    }
+  }
+  return DOMPurify.sanitize(parts.join(''))
 }
 
 interface Item {

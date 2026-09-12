@@ -31,18 +31,43 @@ const accStore = useAccount()
 const comStore = useCompany()
 const sealList = computed(() => comStore.sealList)
 const currentCompany = computed(() => comStore.company)
+
+// 대표이사 정보 분석 (단독 / 공동대표)
+const representativesList = computed(() => {
+  if (!currentCompany.value?.ceo) return []
+  const parts = currentCompany.value.ceo
+    .replace(/;/g, ',')
+    .split(',')
+    .map((p: string) => p.trim())
+    .filter(Boolean)
+  const isJoint = parts.length > 1 || form.value.sender_display_type === 'co_rep'
+  return parts.map((name: string) => ({
+    title: isJoint ? '공동대표이사' : '대표이사',
+    name,
+  }))
+})
+
 const representativeName = computed(() => {
   return (
+    representativesList.value[0]?.name ||
     currentCompany.value?.representative_name ||
     currentCompany.value?.ceo?.split(',')?.[0]?.trim() ||
     ''
   )
 })
+
 const selectedSeal = computed(() => {
   if (!form.value.seal) return null
   return sealList.value.find(item => item.pk === form.value.seal) || null
 })
 const selectedSealImage = computed(() => selectedSeal.value?.seal_image || null)
+
+// 공동대표 보조 인장
+const selectedCoSeal = computed(() => {
+  if (!form.value.co_seal) return null
+  return sealList.value.find(item => item.pk === form.value.co_seal) || null
+})
+const selectedCoSealImage = computed(() => selectedCoSeal.value?.seal_image || null)
 
 // 최종 승인(전결)권자의 직위/직책 명칭 (예: '대표이사', '현장소장', '본부장' 등)
 const approverDutyTitle = computed(() => {
@@ -132,6 +157,8 @@ const form = ref<OfficialLetter>({
   issue_date: new Date().toISOString().substring(0, 10),
   disclosure_type: '1',
   seal: null,
+  co_seal: null,
+  sender_display_type: 'company_only',
   is_solo_approval: false,
   drafter_name: '',
   drafter_position: '',
@@ -160,6 +187,8 @@ watch(
         sender_zipcode: letter.sender_zipcode || '',
         sender_address: letter.sender_address || '',
         disclosure_type: letter.disclosure_type || '1',
+        sender_display_type: letter.sender_display_type || 'company_only',
+        co_seal: letter.co_seal || null,
         is_solo_approval: !!letter.is_solo_approval,
         dispatch_method: letter.dispatch_method || 'email',
         tracking_number: letter.tracking_number || '',
@@ -469,7 +498,7 @@ const goBack = () => {
                     v-model="attachmentInputMode"
                     mandatory
                     density="compact"
-                    color="blue-grey-lighten-1"
+                    color="blue-grey-darken-1"
                   >
                     <v-btn value="file" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-paperclip" size="small" class="me-1" />
@@ -655,7 +684,7 @@ const goBack = () => {
                     v-model="approvalMode"
                     mandatory
                     density="compact"
-                    color="blue-grey-lighten-1"
+                    color="blue-grey-darken-1"
                   >
                     <v-btn value="approval" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-shield-check" size="small" class="me-1" />
@@ -688,9 +717,60 @@ const goBack = () => {
                   </small>
                 </CAlert>
 
+                <!-- 발신 명의 표기 방식 선택 (Vuetify 세그먼트 버튼) -->
+                <div class="mb-3 p-2 bg-more-white rounded border">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold text-body" style="font-size: 0.85rem">
+                      <v-icon icon="mdi-format-title" size="small" class="me-1 text-primary" />
+                      공문서 하단 발신 명의 표기 형태
+                    </span>
+                    <v-btn-toggle
+                      v-model="form.sender_display_type"
+                      mandatory
+                      density="compact"
+                      color="blue-grey-lighten-1"
+                      @update:model-value="(val: any) => (form.sender_display_type = val)"
+                    >
+                      <v-btn value="company_only" size="small" class="px-3 text-none">
+                        회사명 (주식회사 OOO)
+                      </v-btn>
+                      <v-btn value="company_rep" size="small" class="px-3 text-none">
+                        회사명 + 발송자 직책·성명
+                      </v-btn>
+                      <v-btn value="co_rep" size="small" class="px-3 text-none">
+                        공동대표 병기 (인장 2개)
+                      </v-btn>
+                    </v-btn-toggle>
+                  </div>
+                  <small class="text-muted d-block" style="font-size: 0.76rem">
+                    <template v-if="form.sender_display_type === 'company_only'">
+                      • 일반 대외 공문 기본형: 회사명 우측에 직인(인감) 1개가 날인됩니다.
+                    </template>
+                    <template v-else-if="form.sender_display_type === 'company_rep'">
+                      • 격식/계약성 공문형: '회사명 {{ approverDutyTitle }}
+                      {{ finalApproverName }} [직인]' 형태로 날인됩니다.
+                    </template>
+                    <template v-else>
+                      • 공동대표 체제 전용: 두 명의 공동대표이사 직함·성명 및 인장 2개가 좌우로
+                      나란히 날인됩니다.
+                    </template>
+                  </small>
+                </div>
+
                 <CRow class="mb-3">
-                  <CCol :md="approvalMode === 'manual' ? 4 : 6">
-                    <CFormLabel>날인 인감 (직인)</CFormLabel>
+                  <!-- 제1 날인 인감 -->
+                  <CCol
+                    :md="
+                      form.sender_display_type === 'co_rep' ? 6 : approvalMode === 'manual' ? 4 : 6
+                    "
+                  >
+                    <CFormLabel>
+                      {{
+                        form.sender_display_type === 'co_rep'
+                          ? '공동대표 인장 1'
+                          : '날인 인감 (직인)'
+                      }}
+                    </CFormLabel>
                     <CFormSelect
                       :value="form.seal || ''"
                       @change="
@@ -706,14 +786,18 @@ const goBack = () => {
                       <div class="d-flex align-items-center mb-1">
                         <img
                           :src="selectedSealImage"
-                          alt="인장"
+                          alt="인장1"
                           style="width: 40px; height: 40px; object-fit: contain"
                           class="border rounded p-1 bg-white me-2"
                         />
                         <div>
                           <small class="text-success fw-semibold d-block">
                             <v-icon icon="mdi-check-circle" size="small" class="me-1" />
-                            등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.
+                            {{
+                              form.sender_display_type === 'co_rep'
+                                ? '대표 1 인장 자동 합성'
+                                : '등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.'
+                            }}
                           </small>
                           <small v-if="approvalMode === 'approval'" class="text-primary">
                             <v-icon icon="mdi-shield-check" size="small" class="me-1" />
@@ -739,8 +823,50 @@ const goBack = () => {
                     </div>
                   </CCol>
 
+                  <!-- 공동대표 인장 2 (공동대표 병기 모드일 때만 활성화) -->
+                  <CCol v-if="form.sender_display_type === 'co_rep'" md="6">
+                    <CFormLabel>공동대표 인장 2 (보조 직인)</CFormLabel>
+                    <CFormSelect
+                      :value="form.co_seal || ''"
+                      @change="
+                        form.co_seal = Number(($event.target as HTMLSelectElement).value) || null
+                      "
+                    >
+                      <option value="">보조 인장 미선택 / (직인생략 / 실물날인)</option>
+                      <option v-for="s in sealList" :key="s.pk" :value="s.pk">
+                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}) - 전자날인
+                      </option>
+                    </CFormSelect>
+                    <div v-if="selectedCoSealImage" class="mt-2">
+                      <div class="d-flex align-items-center mb-1">
+                        <img
+                          :src="selectedCoSealImage"
+                          alt="인장2"
+                          style="width: 40px; height: 40px; object-fit: contain"
+                          class="border rounded p-1 bg-white me-2"
+                        />
+                        <div>
+                          <small class="text-success fw-semibold d-block">
+                            <v-icon icon="mdi-check-circle" size="small" class="me-1" />
+                            대표 2 인장 자동 합성 날인
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </CCol>
+
                   <!-- 공개 구분 선택 -->
-                  <CCol :md="approvalMode === 'manual' ? 4 : 6">
+                  <CCol
+                    :md="
+                      form.sender_display_type === 'co_rep'
+                        ? approvalMode === 'manual'
+                          ? 6
+                          : 12
+                        : approvalMode === 'manual'
+                          ? 4
+                          : 6
+                    "
+                  >
                     <CFormLabel>공개 구분 <span class="text-danger">*</span></CFormLabel>
                     <CFormSelect v-model="form.disclosure_type">
                       <option value="1">공개</option>
@@ -1000,7 +1126,7 @@ const goBack = () => {
                   </table>
                 </div>
 
-                <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원, 다중 띄어쓰기/공백 보존) -->
+                <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원) -->
                 <div
                   class="preview-content my-2 p-3"
                   style="
@@ -1011,7 +1137,6 @@ const goBack = () => {
                     line-height: 1.7;
                     word-break: break-all;
                     text-align: justify;
-                    white-space: pre-wrap;
                   "
                 >
                   <div
@@ -1061,26 +1186,111 @@ const goBack = () => {
                 <div class="preview-bottom-wrapper mt-auto">
                   <!-- 4. 하단 서명 / 직인 날인 -->
                   <div class="preview-signature text-center my-2">
-                    <div
-                      class="fw-bold d-inline-flex align-items-center"
-                      style="font-size: 1.05rem"
-                    >
-                      <span>{{ currentCompany?.name || '회사명' }}</span>
-                      <span v-if="selectedSealImage" class="ms-2">
-                        <img
-                          :src="selectedSealImage"
-                          alt="직인"
-                          style="width: 36px; height: 36px; object-fit: contain"
-                        />
-                      </span>
-                      <span
-                        v-else
-                        class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                        style="width: 30px; height: 30px; font-size: 0.75rem"
+                    <!-- 공동대표 병기 모드 (가로 나란히 나열) -->
+                    <template v-if="form.sender_display_type === 'co_rep'">
+                      <div class="fw-bold mb-1" style="font-size: 1.05rem">
+                        {{ currentCompany?.name || '회사명' }}
+                      </div>
+                      <div class="d-inline-flex align-items-center justify-content-center gap-4">
+                        <!-- 공동대표 1 -->
+                        <div
+                          class="fw-bold d-inline-flex align-items-center"
+                          style="font-size: 0.95rem"
+                        >
+                          <span
+                            >{{ representativesList[0]?.title || '공동대표이사' }}
+                            {{ representativesList[0]?.name || finalApproverName }}</span
+                          >
+                          <span v-if="selectedSealImage" class="ms-2">
+                            <img
+                              :src="selectedSealImage"
+                              alt="인장1"
+                              style="width: 32px; height: 32px; object-fit: contain"
+                            />
+                          </span>
+                          <span
+                            v-else
+                            class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 26px; height: 26px; font-size: 0.7rem"
+                          >
+                            (인)
+                          </span>
+                        </div>
+                        <!-- 공동대표 2 -->
+                        <div
+                          class="fw-bold d-inline-flex align-items-center"
+                          style="font-size: 0.95rem"
+                        >
+                          <span
+                            >{{ representativesList[1]?.title || '공동대표이사' }}
+                            {{ representativesList[1]?.name || '대표2' }}</span
+                          >
+                          <span v-if="selectedCoSealImage" class="ms-2">
+                            <img
+                              :src="selectedCoSealImage"
+                              alt="인장2"
+                              style="width: 32px; height: 32px; object-fit: contain"
+                            />
+                          </span>
+                          <span
+                            v-else
+                            class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 26px; height: 26px; font-size: 0.7rem"
+                          >
+                            (인)
+                          </span>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- 회사명 + 대표직함·성명 표기 모드 -->
+                    <template v-else-if="form.sender_display_type === 'company_rep'">
+                      <div
+                        class="fw-bold d-inline-flex align-items-center"
+                        style="font-size: 1.05rem"
                       >
-                        (인)
-                      </span>
-                    </div>
+                        <span>{{ currentCompany?.name || '회사명' }}</span>
+                        <span class="ms-3">{{ approverDutyTitle }} {{ finalApproverName }}</span>
+                        <span v-if="selectedSealImage" class="ms-2">
+                          <img
+                            :src="selectedSealImage"
+                            alt="직인"
+                            style="width: 36px; height: 36px; object-fit: contain"
+                          />
+                        </span>
+                        <span
+                          v-else
+                          class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                          style="width: 30px; height: 30px; font-size: 0.75rem"
+                        >
+                          (인)
+                        </span>
+                      </div>
+                    </template>
+
+                    <!-- 기본형: 회사명만 표기 모드 -->
+                    <template v-else>
+                      <div
+                        class="fw-bold d-inline-flex align-items-center"
+                        style="font-size: 1.05rem"
+                      >
+                        <span>{{ currentCompany?.name || '회사명' }}</span>
+                        <span v-if="selectedSealImage" class="ms-2">
+                          <img
+                            :src="selectedSealImage"
+                            alt="직인"
+                            style="width: 36px; height: 36px; object-fit: contain"
+                          />
+                        </span>
+                        <span
+                          v-else
+                          class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                          style="width: 30px; height: 30px; font-size: 0.75rem"
+                        >
+                          (인)
+                        </span>
+                      </div>
+                    </template>
                   </div>
 
                   <!-- 5. 결재선 및 시행 메타 -->
@@ -1253,6 +1463,28 @@ const goBack = () => {
 
 :deep(.preview-markdown-body p) {
   margin-bottom: 0.5rem;
+}
+
+:deep(.preview-markdown-body ol),
+:deep(.preview-markdown-body ul) {
+  padding-left: 1.25rem;
+  margin: 0.4rem 0 0.6rem 0;
+}
+
+:deep(.preview-markdown-body li) {
+  margin-bottom: 0.35rem;
+  line-height: 1.7;
+}
+
+:deep(.preview-markdown-body li > p) {
+  margin-bottom: 0.25rem;
+}
+
+:deep(.preview-markdown-body blockquote) {
+  border-left: 3px solid #888;
+  padding-left: 10px;
+  margin: 0.5rem 0;
+  color: #555;
 }
 
 :deep(.preview-markdown-body p.empty-line) {

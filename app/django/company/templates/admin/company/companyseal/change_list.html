@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:company_companyseal_extract_scan' %}" class="btn btn-high btn-success" style="background-color: #28a745; color: #fff; font-weight: bold; border-radius: 4px; padding: 6px 12px; margin-right: 8px;">
+      <span class="fas fa-stamp"></span> 📄 스캔 PDF/이미지에서 인장 자동 추출
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

@@ -418,6 +418,8 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
     seal_detail = serializers.SerializerMethodField(read_only=True)
+    co_seal_detail = serializers.SerializerMethodField(read_only=True)
+    sender_display_type_desc = serializers.CharField(source='get_sender_display_type_display', read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
@@ -436,7 +438,10 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'drafter_name', 'drafter_position', 'is_solo_approval',
                   'sender_zipcode', 'sender_address',
                   'content', 'attachment_text', 'attachments',
-                  'issue_date', 'effective_issue_date', 'seal', 'seal_detail', 'pdf_file',
+                  'issue_date', 'effective_issue_date',
+                  'seal', 'seal_detail', 'co_seal', 'co_seal_detail',
+                  'sender_display_type', 'sender_display_type_desc',
+                  'pdf_file',
                   'disclosure_type', 'disclosure_type_desc',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
@@ -451,6 +456,17 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                 'seal_type': obj.seal.seal_type,
                 'seal_type_desc': obj.seal.get_seal_type_display(),
                 'seal_image': obj.seal.seal_image.url if obj.seal.seal_image else None,
+            }
+        return None
+
+    def get_co_seal_detail(self, obj):
+        if obj.co_seal:
+            return {
+                'pk': obj.co_seal.pk,
+                'name': obj.co_seal.name,
+                'seal_type': obj.co_seal.seal_type,
+                'seal_type_desc': obj.co_seal.get_seal_type_display(),
+                'seal_image': obj.co_seal.seal_image.url if obj.co_seal.seal_image else None,
             }
         return None
 

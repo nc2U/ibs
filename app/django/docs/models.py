@@ -331,6 +331,20 @@ class OfficialLetter(models.Model):
     content = models.TextField('내용')  # 내용
     seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL, null=True, blank=True,
                              related_name='official_letters', verbose_name='날인 인감')
+    co_seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='co_official_letters', verbose_name='공동대표 보조 인감',
+                                help_text='공동대표 체제 시 두 번째 대표이사의 날인 인감')
+
+    SENDER_DISPLAY_CHOICES = (
+        ('company_only', '회사명만 표기 (주식회사 OOO)'),
+        ('company_rep', '회사명 + 대표직함 및 성명 표기 (주식회사 OOO 대표이사 홍길동)'),
+        ('co_rep', '공동대표 병기 (공동대표이사 A & B 나란히 날인)'),
+    )
+    sender_display_type = models.CharField(
+        '발신 명의 표기 방식', max_length=20, choices=SENDER_DISPLAY_CHOICES, default='company_only',
+        help_text='공문서 하단 중앙 발신 명의 및 인장 날인 형태 선택'
+    )
+
     issue_date = models.DateField(
         '발신 요청일(예정일)',
         help_text='기안자가 희망하는 발신 예정일/요청일. 실제 공문서 시행일자는 최종 결재 승인일(또는 발송 완료일)로 자동 확정됩니다.'

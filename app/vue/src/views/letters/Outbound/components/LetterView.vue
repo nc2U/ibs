@@ -722,7 +722,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
   background-color: #fafafa;
   border-radius: 4px;
   line-height: 1.8;
-  white-space: pre-wrap;
 }
 
 :deep(.markdown-content) {

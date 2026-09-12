@@ -225,6 +225,29 @@
           object-fit: contain;
       }
 
+      .rep-title-name {
+          margin-left: 14px;
+          font-size: 13pt;
+          letter-spacing: 1px;
+      }
+
+      .co-reps-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 32px;
+          margin-top: 4px;
+          margin-bottom: 12px;
+      }
+
+      .co-rep-item {
+          display: inline-flex;
+          align-items: center;
+          font-size: 13pt;
+          font-weight: bold;
+          letter-spacing: 1px;
+      }
+
       .meta-section {
           border-top: 2px solid #333;
           font-size: 0.8em;
@@ -358,16 +381,63 @@
     <!-- Signature Section -->
     <div class="signature-section">
       <div class="sender-info">
-        <div class="sender-company">
-          {{ company.name }}
-          {% if seal_url %}
-            <img src="{{ seal_url }}" alt="인감" class="stamp-image">
-          {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
-            <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
-          {% else %}
-            <span class="stamp-placeholder">(인)</span>
-          {% endif %}
-        </div>
+        {% if sender_display_type == 'co_rep' or co_seal_url %}
+          <!-- 공동대표 병기 모드 (가로 나란히 나열) -->
+          <div class="sender-company" style="margin-bottom: 8px;">
+            {{ company.name }}
+          </div>
+          <div class="co-reps-container">
+            <!-- 공동대표 1 -->
+            <div class="co-rep-item">
+              <span>{{ reps_info.0.title|default:"공동대표이사" }} {{ reps_info.0.name|default:rep_single_name }}</span>
+              {% if seal_url %}
+                <img src="{{ seal_url }}" alt="인감1" class="stamp-image">
+              {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+                <span class="stamp-placeholder" style="border:none; font-size:9pt;">(직인생략)</span>
+              {% else %}
+                <span class="stamp-placeholder">(인)</span>
+              {% endif %}
+            </div>
+            <!-- 공동대표 2 -->
+            <div class="co-rep-item">
+              <span>{{ reps_info.1.title|default:"공동대표이사" }} {{ reps_info.1.name|default:"" }}</span>
+              {% if co_seal_url %}
+                <img src="{{ co_seal_url }}" alt="인감2" class="stamp-image">
+              {% elif letter.co_seal and letter.co_seal.seal_type == 'OMIT' %}
+                <span class="stamp-placeholder" style="border:none; font-size:9pt;">(직인생략)</span>
+              {% else %}
+                <span class="stamp-placeholder">(인)</span>
+              {% endif %}
+            </div>
+          </div>
+
+        {% elif sender_display_type == 'company_rep' %}
+          <!-- 회사명 + 대표직함 및 성명 모드 -->
+          <div class="sender-company">
+            {{ company.name }}
+            <span class="rep-title-name">{{ rep_single_title }} {{ rep_single_name }}</span>
+            {% if seal_url %}
+              <img src="{{ seal_url }}" alt="인감" class="stamp-image">
+            {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+              <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
+            {% else %}
+              <span class="stamp-placeholder">(인)</span>
+            {% endif %}
+          </div>
+
+        {% else %}
+          <!-- 기본: 회사명만 표기 모드 (주식회사 OOO [인장]) -->
+          <div class="sender-company">
+            {{ company.name }}
+            {% if seal_url %}
+              <img src="{{ seal_url }}" alt="인감" class="stamp-image">
+            {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+              <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
+            {% else %}
+              <span class="stamp-placeholder">(인)</span>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
     </div>
 
