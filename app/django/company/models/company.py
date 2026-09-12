@@ -184,6 +184,11 @@ class CompanySeal(models.Model):
         '전결 부서 레벨', null=True, blank=True,
         help_text='예: 1=본부장 전결, 2=팀장/소장 전결 가능 (미지정 시 대표이사까지 상신)'
     )
+    route_template = models.ForeignKey(
+        'approval.RouteTemplate', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='linked_seals', verbose_name='연동 전결 결재선 템플릿',
+        help_text='부서/현장 직인(DEPT_SEAL)을 전자결재 공문에 사용하기 위해 연동할 수동 결재선 템플릿'
+    )
     is_active = models.BooleanField('사용 가능 여부', default=True)
     description = models.TextField('관리 비고/이력', blank=True, default='', help_text='교부 사유, 회수 이력 등')
     created = models.DateTimeField('등록일시', auto_now_add=True)

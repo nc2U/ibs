@@ -52,14 +52,28 @@ class CompanySealSerializer(serializers.ModelSerializer):
     seal_type_desc = serializers.CharField(source='get_seal_type_display', read_only=True)
     custody_type_desc = serializers.CharField(source='get_custody_type_display', read_only=True)
     internal_manager_name = serializers.CharField(source='internal_manager.name', read_only=True, allow_null=True)
+    internal_manager_duty = serializers.SerializerMethodField(read_only=True)
     final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True, allow_null=True)
+    route_template_name = serializers.CharField(source='route_template.role_label', read_only=True, allow_null=True)
 
     class Meta:
         model = CompanySeal
         fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'purpose', 'seal_image',
-                  'custody_type', 'custody_type_desc', 'custodian', 'internal_manager', 'internal_manager_name',
+                  'custody_type', 'custody_type_desc', 'custodian',
+                  'internal_manager', 'internal_manager_name', 'internal_manager_duty',
                   'valid_from', 'valid_until', 'final_approval_duty', 'final_approval_duty_name',
-                  'final_dept_level', 'is_active', 'description', 'created', 'manager')
+                  'final_dept_level', 'route_template', 'route_template_name',
+                  'is_active', 'description', 'created', 'manager')
+
+    def get_internal_manager_duty(self, obj):
+        if obj.internal_manager:
+            duty = getattr(obj.internal_manager, 'duty', None)
+            if duty:
+                return duty.name
+            pos = getattr(obj.internal_manager, 'position', None)
+            if pos:
+                return pos.name
+        return ''
 
 
 class StaffsInDepartmentSerializer(serializers.ModelSerializer):

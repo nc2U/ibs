@@ -244,6 +244,8 @@ export interface OfficialLetter {
   } | null
   sender_display_type?: 'company_only' | 'company_rep' | 'co_rep'
   sender_display_type_desc?: string
+  sender_duty_title?: string
+  sender_name?: string
   pdf_file?: string | null
   disclosure_type?: '1' | '2' | '3'
   disclosure_type_desc?: string

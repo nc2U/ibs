@@ -296,10 +296,35 @@ def generate_official_letter_pdf(letter):
                 parts[i] = '\n'.join(new_lines)
         letter_content_html = ''.join(parts)
 
-    # 대표이사 정보 (발신 명의 표기용)
+    # 대표이사/발송자 정보 (발신 명의 표기용)
     reps_info = company.get_representatives_info() if hasattr(company, 'get_representatives_info') else []
-    rep_single_name = reps_info[0]['name'] if reps_info else company.get_representative_staff_name()
-    rep_single_title = reps_info[0]['title'] if reps_info else '대표이사'
+    default_rep_name = reps_info[0]['name'] if reps_info else company.get_representative_staff_name()
+    default_rep_title = reps_info[0]['title'] if reps_info else '대표이사'
+
+    # 발신자 직책 및 성명 결정:
+    # 1. 공문에 직접 명시된 sender_duty_title / sender_name (단독/수동 발송 시 지정값)
+    # 2. 전자결재 승인 건인 경우 최종 승인(전결)권자 직책/성명
+    # 3. 인장에 등록된 사내 총괄 관리책임자(internal_manager) 정보
+    # 4. 기본값 (대표이사 정보)
+    rep_single_title = getattr(letter, 'sender_duty_title', '') or ''
+    rep_single_name = getattr(letter, 'sender_name', '') or ''
+
+    if not rep_single_name and letter.approval_document and approval_line.get('final_approver'):
+        final_info = approval_line['final_approver']
+        rep_single_title = final_info.get('display_title') or default_rep_title
+        rep_single_name = final_info.get('name') or default_rep_name
+
+    if not rep_single_name and letter.seal and getattr(letter.seal, 'internal_manager', None):
+        mgr = letter.seal.internal_manager
+        mgr_duty = getattr(mgr, 'duty', None)
+        mgr_pos = getattr(mgr, 'position', None)
+        rep_single_title = (mgr_duty.name if mgr_duty else (mgr_pos.name if mgr_pos else '')) or default_rep_title
+        rep_single_name = mgr.name
+
+    if not rep_single_title:
+        rep_single_title = default_rep_title
+    if not rep_single_name:
+        rep_single_name = default_rep_name
 
     # 템플릿 컨텍스트 준비
     context = {

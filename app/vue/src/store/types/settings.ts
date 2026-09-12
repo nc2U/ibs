@@ -45,12 +45,15 @@ export interface CompanySeal {
   custodian?: string
   internal_manager?: number | null
   internal_manager_name?: string | null
+  internal_manager_duty?: string | null
   valid_from?: string | null
   valid_until?: string | null
   manager?: string
   final_approval_duty?: number | null
   final_approval_duty_name?: string | null
   final_dept_level?: number | null
+  route_template?: number | null
+  route_template_name?: string | null
   is_active: boolean
   description?: string
   created?: string

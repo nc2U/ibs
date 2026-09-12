@@ -156,6 +156,34 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     동일인이 하위 직책과 상위 직책을 겸직(예: 팀장 겸 대표이사, 팀장 겸 본부장)하는 경우,
     동일 결재선 내에서 최상위 직함(대표이사, 본부장)으로 자동 승격(Highest Role Promotion)하여 표기합니다.
     """
+    # 0. 인장에 고정 결재선 템플릿(route_template)이 연동된 경우 최우선 적용
+    if seal and getattr(seal, 'route_template', None):
+        tmpl = seal.route_template
+        # 만약 동일 doc_type 내에서 step_order가 있는 경우 해당 doc_type의 전체 템플릿 로드
+        doc_type_target = tmpl.doc_type
+        templates = doc_type_target.route_templates.order_by('step_order').prefetch_related('approvers')
+        if templates.exists():
+            return [
+                {
+                    'step_order': t.step_order,
+                    'role_label': t.role_label,
+                    'approvers': list(t.approvers.all()),
+                    'approver_ids': list(t.approvers.values_list('id', flat=True)),
+                    'condition': t.condition,
+                }
+                for t in templates
+            ]
+        else:
+            return [
+                {
+                    'step_order': tmpl.step_order,
+                    'role_label': tmpl.role_label,
+                    'approvers': list(tmpl.approvers.all()),
+                    'approver_ids': list(tmpl.approvers.values_list('id', flat=True)),
+                    'condition': tmpl.condition,
+                }
+            ]
+
     # 1. 고정 템플릿 방식인 경우
     if doc_type.route_type == DocumentType.ROUTE_TEMPLATE:
         templates = doc_type.route_templates.order_by('step_order').prefetch_related('approvers')

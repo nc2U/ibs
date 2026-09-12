@@ -441,6 +441,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'issue_date', 'effective_issue_date',
                   'seal', 'seal_detail', 'co_seal', 'co_seal_detail',
                   'sender_display_type', 'sender_display_type_desc',
+                  'sender_duty_title', 'sender_name',
                   'pdf_file',
                   'disclosure_type', 'disclosure_type_desc',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',

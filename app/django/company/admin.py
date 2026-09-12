@@ -74,12 +74,13 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = (
         'id', 'company', 'seal_type', 'name', 'purpose', 'custody_type',
         'custodian', 'internal_manager', 'final_approval_duty', 'final_dept_level',
-        'valid_until', 'is_active', 'created'
+        'route_template', 'valid_until', 'is_active', 'created'
     )
     list_display_links = ('name',)
     list_editable = ('is_active',)
     list_filter = ('company', 'seal_type', 'custody_type', 'final_approval_duty', 'is_active')
     search_fields = ('name', 'purpose', 'custodian', 'internal_manager__name')
+    raw_id_fields = ('internal_manager', 'route_template')
 
     def get_urls(self):
         from django.urls import path

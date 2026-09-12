@@ -7,8 +7,8 @@ import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
-import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   company: number
@@ -56,6 +56,18 @@ const representativeName = computed(() => {
   )
 })
 
+// 모드별 선택 가능한 인장 목록 필터링:
+// 전자결재 모드(approval)인 경우 부서/현장 직인(DEPT_SEAL)은 연동 결재선(route_template)이 있거나 책임자/전결직책이 완비된 인장만 허용
+const availableSealList = computed(() => {
+  return sealList.value.filter(s => {
+    if (approvalMode.value === 'approval' && s.seal_type === 'DEPT_SEAL') {
+      // 부서장 직인은 연동 결재선 템플릿이 있거나 전결 직책이 있는 경우에만 전자결재 노출
+      return !!s.route_template || !!s.final_approval_duty
+    }
+    return true
+  })
+})
+
 const selectedSeal = computed(() => {
   if (!form.value.seal) return null
   return sealList.value.find(item => item.pk === form.value.seal) || null
@@ -71,17 +83,25 @@ const selectedCoSealImage = computed(() => selectedCoSeal.value?.seal_image || n
 
 // 최종 승인(전결)권자의 직위/직책 명칭 (예: '대표이사', '현장소장', '본부장' 등)
 const approverDutyTitle = computed(() => {
+  if (form.value.sender_duty_title) return form.value.sender_duty_title
+  if (selectedSeal.value?.internal_manager_duty) return selectedSeal.value.internal_manager_duty
   return selectedSeal.value?.final_approval_duty_name || '대표이사'
 })
 
 // 최종 승인(전결)권자 성명
 const finalApproverName = computed(() => {
-  // 현장소장/본부장 등 전결인 경우: 기안자 본인이 전결권자 직접 기안 시 기안자 성명이 최종 승인권자
+  if (form.value.sender_name) return form.value.sender_name
+  // 1순위: 선택된 인장의 사내 총괄 관리책임자 성명
+  if (selectedSeal.value?.internal_manager_name) {
+    return selectedSeal.value.internal_manager_name
+  }
+  // 2순위: 전결 직책이 있는 인장인 경우
   if (['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value)) {
     return (
       cleanDrafterName.value || form.value.drafter_name || representativeName.value || '전결권자'
     )
   }
+  // 3순위: 기본 대표이사 성명
   return representativeName.value || cleanDrafterName.value || '대표이사'
 })
 
@@ -159,6 +179,8 @@ const form = ref<OfficialLetter>({
   seal: null,
   co_seal: null,
   sender_display_type: 'company_only',
+  sender_duty_title: '',
+  sender_name: '',
   is_solo_approval: false,
   drafter_name: '',
   drafter_position: '',
@@ -175,6 +197,8 @@ const form = ref<OfficialLetter>({
 const validated = ref(false)
 // 경유/참조 필드 펼침 상태 (입력된 값이 있으면 기본 오픈)
 const showViaRef = ref(false)
+// 발신지 주소 직접 입력(현장/지사) 펼침 상태 (입력된 값이 있으면 기본 오픈)
+const showCustomAddress = ref(false)
 
 watch(
   () => props.letter,
@@ -188,6 +212,8 @@ watch(
         sender_address: letter.sender_address || '',
         disclosure_type: letter.disclosure_type || '1',
         sender_display_type: letter.sender_display_type || 'company_only',
+        sender_duty_title: letter.sender_duty_title || '',
+        sender_name: letter.sender_name || '',
         co_seal: letter.co_seal || null,
         is_solo_approval: !!letter.is_solo_approval,
         dispatch_method: letter.dispatch_method || 'email',
@@ -213,6 +239,10 @@ watch(
       // 경유나 참조 값이 있으면 펼침 상태로 유지
       if (letter.via || letter.recipient_reference) {
         showViaRef.value = true
+      }
+      // 발신지 주소 입력값이 있으면 펼침 상태로 유지
+      if (letter.sender_address || letter.sender_zipcode) {
+        showCustomAddress.value = true
       }
       // 신규 작성 시 회사의 공식 장부에 등록된 직원 성명(staff_name)으로 기본 기안자명 준비
       const currentUserName =
@@ -531,7 +561,7 @@ const goBack = () => {
                     <div
                       v-for="(att, idx) in form.attachments"
                       :key="att.pk"
-                      class="p-2 mb-2 bg-white rounded border d-flex justify-content-between align-items-center"
+                      class="p-2 mb-2 bg-more-white rounded border d-flex justify-content-between align-items-center"
                     >
                       <div>
                         <span class="badge bg-secondary me-2">붙임 {{ idx + 1 }}</span>
@@ -574,7 +604,7 @@ const goBack = () => {
                     <div
                       v-for="(att, idx) in pendingAttachments"
                       :key="idx"
-                      class="p-3 mb-2 bg-white rounded border position-relative"
+                      class="p-3 mb-2 bg-more-white rounded border position-relative"
                     >
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
@@ -674,12 +704,18 @@ const goBack = () => {
 
               <!-- 발신 명의, 날인 및 기안자 정보 -->
               <div class="p-3 bg-light rounded border">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h6 class="text-primary mb-0">
-                    <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
-                    발신 명의, 직인 날인 및 기안 정보
-                  </h6>
-                  <!-- 발송 유형 선택 토글 (Vuetify 세그먼트 컨트롤) -->
+                <!-- 1. 발송 유형 및 발신 명의 표기 형태 (상단 핵심 컨트롤) -->
+                <div
+                  class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom"
+                >
+                  <div class="d-flex align-items-center">
+                    <v-icon icon="mdi-draw-pen" color="primary" size="small" class="me-2" />
+                    <strong class="text-primary" style="font-size: 0.95rem">
+                      발신 명의 및 직인 설정
+                    </strong>
+                  </div>
+
+                  <!-- 발송 방식 토글 (전자결재 vs 단독/직접) -->
                   <v-btn-toggle
                     v-model="approvalMode"
                     mandatory
@@ -697,32 +733,15 @@ const goBack = () => {
                   </v-btn-toggle>
                 </div>
 
-                <!-- 전자결재 모드 안내 -->
-                <CAlert v-if="approvalMode === 'approval'" color="light" class="border py-2 mb-3">
-                  <small class="text-primary">
-                    <v-icon icon="mdi-information-outline" size="small" class="me-1" />
-                    <strong>전자결재 연동 모드:</strong> 결재선 상신 및 최종 승인 시 결재선의
-                    기안자, 검토자, 최종 결재권자(대표이사 / 임원 등)의 직위와 성명이 공문서 하단
-                    결재선에 자동으로 표기됩니다.
-                  </small>
-                </CAlert>
-
-                <!-- 수동 발송 모드 안내 -->
-                <CAlert v-else color="warning" class="py-2 mb-3">
-                  <small>
-                    <v-icon icon="mdi-alert-outline" size="small" class="me-1" />
-                    <strong>수동(직접) 발송 모드:</strong> 전자결재를 거치지 않고 직접 발송하는
-                    공문입니다. 공문서 하단 결재 / 담당란에 인쇄될 기안 / 담당자 정보를 아래에 직접
-                    입력해주세요.
-                  </small>
-                </CAlert>
-
-                <!-- 발신 명의 표기 방식 선택 (Vuetify 세그먼트 버튼) -->
-                <div class="mb-3 p-2 bg-more-white rounded border">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-semibold text-body" style="font-size: 0.85rem">
+                <!-- 1. 발신 명의 및 날인 직인 일체형 설정 카드 -->
+                <div class="mb-3 p-3 bg-more-white rounded border">
+                  <!-- 발신 명의 표기 형태 선택 (회사명만 / 회사명+직책성명 / 공동대표 병기) -->
+                  <div
+                    class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"
+                  >
+                    <span class="small fw-semibold text-secondary">
                       <v-icon icon="mdi-format-title" size="small" class="me-1 text-primary" />
-                      공문서 하단 발신 명의 표기 형태
+                      하단 발신 명의 형태
                     </span>
                     <v-btn-toggle
                       v-model="form.sender_display_type"
@@ -732,246 +751,308 @@ const goBack = () => {
                       @update:model-value="(val: any) => (form.sender_display_type = val)"
                     >
                       <v-btn value="company_only" size="small" class="px-3 text-none">
-                        회사명 (주식회사 OOO)
+                        회사명 + 인장
                       </v-btn>
                       <v-btn value="company_rep" size="small" class="px-3 text-none">
-                        회사명 + 발송자 직책·성명
+                        회사명 + 발송 승인자 직책·성명
                       </v-btn>
                       <v-btn value="co_rep" size="small" class="px-3 text-none">
-                        공동대표 병기 (인장 2개)
+                        공동대표 병기 (각각 날인)
                       </v-btn>
                     </v-btn-toggle>
                   </div>
-                  <small class="text-muted d-block" style="font-size: 0.76rem">
+                  <small class="text-muted d-block mb-3" style="font-size: 0.76rem">
                     <template v-if="form.sender_display_type === 'company_only'">
-                      • 일반 대외 공문 기본형: 회사명 우측에 직인(인감) 1개가 날인됩니다.
+                      • 일반 대외 공문 기본형: '{{ currentCompany?.name || '회사명' }} [직인]'
+                      형태로 날인됩니다.
                     </template>
                     <template v-else-if="form.sender_display_type === 'company_rep'">
-                      • 격식/계약성 공문형: '회사명 {{ approverDutyTitle }}
-                      {{ finalApproverName }} [직인]' 형태로 날인됩니다.
+                      • 격식/계약성 공문형: '{{ currentCompany?.name || '회사명' }}
+                      {{ approverDutyTitle }} {{ finalApproverName }} [직인]' 형태로 날인됩니다.
                     </template>
                     <template v-else>
-                      • 공동대표 체제 전용: 두 명의 공동대표이사 직함·성명 및 인장 2개가 좌우로
-                      나란히 날인됩니다.
+                      • 공동대표 체제 전용: 2인의 공동대표이사 직함·성명 및 인장 2개가 좌우 나란히
+                      날인됩니다.
                     </template>
                   </small>
-                </div>
 
-                <CRow class="mb-3">
-                  <!-- 제1 날인 인감 -->
-                  <CCol
-                    :md="
-                      form.sender_display_type === 'co_rep' ? 6 : approvalMode === 'manual' ? 4 : 6
-                    "
-                  >
-                    <CFormLabel>
-                      {{
-                        form.sender_display_type === 'co_rep'
-                          ? '공동대표 인장 1'
-                          : '날인 인감 (직인)'
-                      }}
-                    </CFormLabel>
-                    <CFormSelect
-                      :value="form.seal || ''"
-                      @change="
-                        form.seal = Number(($event.target as HTMLSelectElement).value) || null
-                      "
-                    >
-                      <option value="">인장 미선택 / (직인생략 / 출력 후 실물날인)</option>
-                      <option v-for="s in sealList" :key="s.pk" :value="s.pk">
-                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
-                          s.purpose ? ` [${s.purpose}]` : ''
-                        }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
-                      </option>
-                    </CFormSelect>
-                    <div v-if="selectedSealImage" class="mt-2">
-                      <div class="d-flex align-items-center mb-1">
+                  <hr class="my-2 border-light" />
+
+                  <!-- 날인 인감 선택 (인장 1 & 공동대표 인장 2) -->
+                  <CRow class="g-2 align-items-start">
+                    <!-- 제1 날인 인감 -->
+                    <CCol md="6">
+                      <CFormLabel class="small fw-semibold mb-1">
+                        <v-icon icon="mdi-seal" size="small" class="me-1 text-secondary" />
+                        {{
+                          form.sender_display_type === 'co_rep'
+                            ? '공동대표 인장 1'
+                            : '날인 인감 (직인)'
+                        }}
+                      </CFormLabel>
+                      <CFormSelect
+                        :value="form.seal || ''"
+                        @change="
+                          form.seal = Number(($event.target as HTMLSelectElement).value) || null
+                        "
+                      >
+                        <option value="">인장 미선택 / (직인생략 / 출력 후 실물날인)</option>
+                        <option v-for="s in availableSealList" :key="s.pk" :value="s.pk">
+                          {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
+                            s.purpose ? ` [${s.purpose}]` : ''
+                          }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
+                        </option>
+                      </CFormSelect>
+
+                      <!-- 인장 뱃지 및 메타 정보 -->
+                      <div
+                        v-if="selectedSeal"
+                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-light rounded border"
+                      >
                         <img
+                          v-if="selectedSealImage"
                           :src="selectedSealImage"
                           alt="인장1"
-                          style="width: 40px; height: 40px; object-fit: contain"
-                          class="border rounded p-1 bg-white me-2"
+                          style="width: 36px; height: 36px; object-fit: contain"
+                          class="border rounded p-1 bg-more-white"
                         />
-                        <div>
-                          <small class="text-success fw-semibold d-block">
-                            <v-icon icon="mdi-check-circle" size="small" class="me-1" />
-                            {{
-                              form.sender_display_type === 'co_rep'
-                                ? '대표 1 인장 자동 합성'
-                                : '등록된 직인 이미지가 PDF에 자동 합성 날인됩니다.'
-                            }}
-                          </small>
-                          <small v-if="selectedSeal?.purpose" class="text-muted d-block">
-                            용도: {{ selectedSeal.purpose }}
-                          </small>
-                          <small v-if="approvalMode === 'approval'" class="text-primary">
-                            <v-icon icon="mdi-shield-check" size="small" class="me-1" />
-                            <strong>전결 승인 규정: </strong>
-                            <span v-if="selectedSeal?.final_approval_duty_name">
-                              {{ selectedSeal.final_approval_duty_name }} 전결 가능
-                            </span>
-                            <span v-else-if="selectedSeal?.final_dept_level">
-                              {{ selectedSeal.final_dept_level }}레벨 부서장 전결 가능
-                            </span>
-                            <span v-else class="text-danger fw-semibold">
-                              대표이사 결재 필수 (전결 불가)
-                            </span>
-                          </small>
+                        <div class="flex-grow-1">
+                          <div class="d-flex flex-wrap gap-1 align-items-center">
+                            <CBadge color="success" class="me-1">
+                              <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
+                              PDF 전자날인
+                            </CBadge>
+                            <CBadge v-if="selectedSeal.purpose" color="info">
+                              용도: {{ selectedSeal.purpose }}
+                            </CBadge>
+                            <CBadge v-if="selectedSeal.internal_manager_name" color="secondary">
+                              책임자: {{ selectedSeal.internal_manager_duty }}
+                              {{ selectedSeal.internal_manager_name }}
+                            </CBadge>
+                            <CBadge
+                              v-if="approvalMode === 'approval' && selectedSeal.route_template_name"
+                              color="primary"
+                            >
+                              결재선: {{ selectedSeal.route_template_name }}
+                            </CBadge>
+                            <CBadge
+                              v-else-if="
+                                approvalMode === 'approval' && selectedSeal.final_approval_duty_name
+                              "
+                              color="primary"
+                            >
+                              {{ selectedSeal.final_approval_duty_name }} 전결
+                            </CBadge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div v-else class="mt-1">
-                      <small class="text-muted">
-                        * 종이 출력 후 실물 도장을 직접 날인하여 발송할 경우 인장을 선택하지
-                        마십시오.
-                      </small>
-                    </div>
-                  </CCol>
+                    </CCol>
 
-                  <!-- 공동대표 인장 2 (공동대표 병기 모드일 때만 활성화) -->
-                  <CCol v-if="form.sender_display_type === 'co_rep'" md="6">
-                    <CFormLabel>공동대표 인장 2 (보조 직인)</CFormLabel>
-                    <CFormSelect
-                      :value="form.co_seal || ''"
-                      @change="
-                        form.co_seal = Number(($event.target as HTMLSelectElement).value) || null
-                      "
-                    >
-                      <option value="">보조 인장 미선택 / (직인생략 / 실물날인)</option>
-                      <option v-for="s in sealList" :key="s.pk" :value="s.pk">
-                        {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
-                          s.purpose ? ` [${s.purpose}]` : ''
-                        }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
-                      </option>
-                    </CFormSelect>
-                    <div v-if="selectedCoSealImage" class="mt-2">
-                      <div class="d-flex align-items-center mb-1">
+                    <!-- 제2 날인 인감 (공동대표 병기 모드일 때만 활성화) -->
+                    <CCol v-if="form.sender_display_type === 'co_rep'" md="6">
+                      <CFormLabel class="small fw-semibold mb-1">
+                        <v-icon icon="mdi-seal" size="small" class="me-1 text-secondary" />
+                        공동대표 인장 2 (보조 직인)
+                      </CFormLabel>
+                      <CFormSelect
+                        :value="form.co_seal || ''"
+                        @change="
+                          form.co_seal = Number(($event.target as HTMLSelectElement).value) || null
+                        "
+                      >
+                        <option value="">보조 인장 미선택 / (직인생략 / 실물날인)</option>
+                        <option v-for="s in availableSealList" :key="s.pk" :value="s.pk">
+                          {{ s.name }} ({{ s.seal_type_desc || s.seal_type }}){{
+                            s.purpose ? ` [${s.purpose}]` : ''
+                          }}{{ s.custody_type === 'external' ? ' (외부교부)' : '' }} - 전자날인
+                        </option>
+                      </CFormSelect>
+
+                      <div
+                        v-if="selectedCoSeal"
+                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-light rounded border"
+                      >
                         <img
+                          v-if="selectedCoSealImage"
                           :src="selectedCoSealImage"
                           alt="인장2"
-                          style="width: 40px; height: 40px; object-fit: contain"
-                          class="border rounded p-1 bg-white me-2"
+                          style="width: 36px; height: 36px; object-fit: contain"
+                          class="border rounded p-1 bg-more-white"
                         />
-                        <div>
-                          <small class="text-success fw-semibold d-block">
-                            <v-icon icon="mdi-check-circle" size="small" class="me-1" />
-                            대표 2 인장 자동 합성 날인
-                          </small>
+                        <div class="flex-grow-1">
+                          <div class="d-flex flex-wrap gap-1 align-items-center">
+                            <CBadge color="success" class="me-1">
+                              <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
+                              대표 2 전자날인
+                            </CBadge>
+                            <CBadge v-if="selectedCoSeal.purpose" color="info">
+                              용도: {{ selectedCoSeal.purpose }}
+                            </CBadge>
+                            <CBadge v-if="selectedCoSeal.internal_manager_name" color="secondary">
+                              책임자: {{ selectedCoSeal.internal_manager_duty }}
+                              {{ selectedCoSeal.internal_manager_name }}
+                            </CBadge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CCol>
+                    </CCol>
+                  </CRow>
 
-                  <!-- 공개 구분 선택 -->
-                  <CCol
-                    :md="
-                      form.sender_display_type === 'co_rep'
-                        ? approvalMode === 'manual'
-                          ? 6
-                          : 12
-                        : approvalMode === 'manual'
-                          ? 4
-                          : 6
-                    "
+                  <!-- 단독/직접 발송 시: 발송 승인자 직접 지정 (회사명 + 직책·성명 선택 시) -->
+                  <CRow
+                    v-if="approvalMode === 'manual' && form.sender_display_type === 'company_rep'"
+                    class="mb-3 p-2 bg-light rounded border align-items-center g-2"
                   >
-                    <CFormLabel>공개 구분 <span class="text-danger">*</span></CFormLabel>
-                    <CFormSelect v-model="form.disclosure_type">
-                      <option value="1">공개</option>
-                      <option value="2">부분공개</option>
-                      <option value="3">비공개 (영업비밀/대외비)</option>
-                    </CFormSelect>
-                    <div class="mt-1">
-                      <small
-                        v-if="form.disclosure_type === '3'"
-                        class="text-danger d-block fw-semibold"
-                      >
-                        <v-icon icon="mdi-lock-outline" size="small" class="me-1" />
-                        영업비밀·대외비 문서: 외부 유출 및 제3자 정보공개가 전면 제한됩니다.
-                      </small>
-                      <small
-                        v-else-if="form.disclosure_type === '2'"
-                        class="text-warning-emphasis d-block fw-semibold"
-                      >
-                        <v-icon icon="mdi-shield-check" size="small" class="me-1" />
-                        부분공개: 개인정보·계약단가 등 특정 비공개 대상 정보 외의 부분만 공개됩니다.
-                      </small>
-                      <small v-else class="text-secondary d-block">
-                        <v-icon icon="mdi-alert-outline" size="small" class="me-1 text-warning" />
-                        개인정보(주민번호·연락처 등), 계약단가, 영업비밀 등이 포함된 경우
-                        <strong>'부분공개'</strong> 또는 <strong>'비공개'</strong>로 지정하십시오.
-                      </small>
-                    </div>
-                  </CCol>
-
-                  <!-- 수동 발송일 때만 기안자명 노출 -->
-                  <CCol v-if="approvalMode === 'manual'" md="4">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <CFormLabel class="mb-0">
-                        기안/담당자명
-                        <span v-if="!form.is_solo_approval" class="text-danger">*</span>
+                    <CCol md="6">
+                      <CFormLabel class="small fw-semibold text-primary mb-1">
+                        <v-icon icon="mdi-badge-account" size="small" class="me-1" />
+                        발송 승인자 직책
                       </CFormLabel>
-                    </div>
-                    <CFormInput
-                      v-model="form.drafter_name"
-                      :placeholder="
-                        form.is_solo_approval
-                          ? `${approverDutyTitle} 직접 기안 (담당 생략)`
-                          : '기안/담당자명 (예: 홍길동)'
-                      "
-                      :required="!form.is_solo_approval"
-                      :invalid="validated && !form.is_solo_approval && !form.drafter_name"
-                    />
-                    <CFormFeedback invalid>기안/담당자명을 입력해주세요.</CFormFeedback>
-                    <CFormText class="text-muted">
-                      {{
-                        form.is_solo_approval
-                          ? `공문서 하단 담당란이 생략되고 '${approverDutyTitle} ${finalApproverName}' 단독 승인/시행으로 표기됩니다.`
-                          : "공문서 하단 담당란에 '담당 [성명]'으로 표기됩니다."
-                      }}
-                    </CFormText>
-                  </CCol>
-                </CRow>
+                      <CFormInput
+                        v-model="form.sender_duty_title"
+                        size="sm"
+                        :placeholder="`기본값: ${selectedSeal?.internal_manager_duty || approverDutyTitle}`"
+                      />
+                    </CCol>
+                    <CCol md="6">
+                      <CFormLabel class="small fw-semibold text-primary mb-1">
+                        <v-icon icon="mdi-account" size="small" class="me-1" />
+                        발송 승인자 성명
+                      </CFormLabel>
+                      <CFormInput
+                        v-model="form.sender_name"
+                        size="sm"
+                        :placeholder="`기본값: ${selectedSeal?.internal_manager_name || representativeName}`"
+                      />
+                    </CCol>
+                    <CCol md="12">
+                      <small class="text-muted" style="font-size: 0.74rem">
+                        * 비워두면 인장의 전결/책임자 기준({{
+                          selectedSeal?.internal_manager_duty || approverDutyTitle
+                        }}
+                        {{ selectedSeal?.internal_manager_name || representativeName }})이 자동
+                        적용됩니다.
+                      </small>
+                    </CCol>
+                  </CRow>
+                </div>
 
-                <!-- 수동 발송 시: 직무별 승인(전결)권자 직접 기안 토글 및 담당 직위 -->
-                <CRow v-if="approvalMode === 'manual'" class="mb-3">
-                  <CCol md="6">
-                    <CFormLabel>승인(전결)권자 직접 기안 여부</CFormLabel>
-                    <div class="border rounded p-2 bg-white d-flex align-items-center">
+                <!-- 4. 수동 발송 모드 시 기안자 및 단독결재 설정 -->
+                <div v-if="approvalMode === 'manual'" class="mb-3 p-2 bg-more-white rounded border">
+                  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <!-- 좌측: 일반적인 기안/담당자 정보 입력 (단독 기안 아닐 때) -->
+                    <div
+                      v-if="!form.is_solo_approval"
+                      class="d-flex flex-wrap align-items-center gap-2 flex-grow-1"
+                    >
+                      <div style="min-width: 160px; max-width: 220px" class="flex-grow-1">
+                        <CFormLabel class="small fw-semibold mb-1">
+                          기안/담당자명 <span class="text-danger">*</span>
+                        </CFormLabel>
+                        <CFormInput
+                          v-model="form.drafter_name"
+                          size="sm"
+                          placeholder="예: 홍길동"
+                          required
+                          :invalid="validated && !form.drafter_name"
+                        />
+                      </div>
+                      <div style="min-width: 140px; max-width: 180px" class="flex-grow-1">
+                        <CFormLabel class="small fw-semibold mb-1">담당 직책</CFormLabel>
+                        <CFormInput
+                          v-model="form.drafter_position"
+                          size="sm"
+                          placeholder="예: 팀장, 소장, 본부장"
+                        />
+                      </div>
+                    </div>
+                    <!-- 단독 기안일 때 좌측 안내 문구 -->
+                    <div v-else class="text-muted small py-2 flex-grow-1">
+                      <v-icon
+                        icon="mdi-information-outline"
+                        size="small"
+                        class="me-1 text-primary"
+                      />
+                      승인권자({{ approverDutyTitle }}) 직접 기안으로 하단 담당자란이 생략됩니다.
+                    </div>
+
+                    <!-- 우측 끝 항상 고정 정렬: 승인권자 직접 기안(단독결재) 체크박스 -->
+                    <div class="text-end ms-auto ps-2 border-start">
                       <CFormCheck
                         id="is_solo_approval_check"
                         v-model="form.is_solo_approval"
-                        :label="`${approverDutyTitle} 직접 기안 (담당자란 생략)`"
+                        :label="`승인권자(${approverDutyTitle}) 직접 기안`"
+                        class="small fw-semibold justify-content-end mb-1"
                       />
+                      <small class="text-muted d-block text-end" style="font-size: 0.73rem">
+                        (예외: 담당자란 생략 단독 승인/시행)
+                      </small>
                     </div>
-                    <CFormText class="text-muted">
-                      {{ approverDutyTitle }} 등 최종 승인(전결)권자가 직접 기안하여 발송할 경우
-                      체크하면 하단 담당란이 생략됩니다.
-                    </CFormText>
-                  </CCol>
-                  <CCol v-if="!form.is_solo_approval" md="6">
-                    <CFormLabel>담당 직위/직책</CFormLabel>
-                    <CFormInput
-                      v-model="form.drafter_position"
-                      placeholder="직위/직책 (예: 과장, 대리, 팀장)"
-                    />
-                    <CFormText class="text-muted">기안 담당자의 직위/직책입니다.</CFormText>
-                  </CCol>
-                </CRow>
+                  </div>
+                </div>
 
-                <CRow>
-                  <CCol md="4">
-                    <CFormLabel>발신 우편번호 (현장/지사)</CFormLabel>
-                    <CFormInput v-model="form.sender_zipcode" placeholder="예: 12345" />
-                  </CCol>
-                  <CCol md="8">
-                    <CFormLabel>발신 도로명 주소 (현장/지사)</CFormLabel>
-                    <CFormInput
-                      v-model="form.sender_address"
-                      placeholder="특정 현장/지사 주소 발송 시 입력 (비워두면 본사 기본주소 자동 적용)"
-                    />
-                    <CFormText class="text-muted">비워두면 본사 기본 주소가 인쇄됩니다.</CFormText>
-                  </CCol>
-                </CRow>
+                <hr class="my-2 text-muted" />
+
+                <!-- 5. 하단 부가 설정 (발신지 주소 토글 & 공개 구분) -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <!-- 좌측: 발신지 주소 직접 지정 (현장/지사) 토글 -->
+                  <div>
+                    <v-btn
+                      variant="text"
+                      density="compact"
+                      size="small"
+                      color="secondary"
+                      class="px-1 text-none"
+                      @click="showCustomAddress = !showCustomAddress"
+                    >
+                      <v-icon
+                        :icon="showCustomAddress ? 'mdi-chevron-up' : 'mdi-map-marker-plus-outline'"
+                        size="small"
+                        class="me-1"
+                      />
+                      {{
+                        showCustomAddress ? '발신지 주소 접기' : '발신 주소 변경 (현장/지사 발송)'
+                      }}
+                    </v-btn>
+                    <small
+                      v-if="!showCustomAddress"
+                      class="text-muted ms-2"
+                      style="font-size: 0.75rem"
+                    >
+                      (기본: {{ currentCompany?.name || '본사' }} 기본 주소 인쇄)
+                    </small>
+                  </div>
+
+                  <!-- 우측: 공개 구분 선택 (컴팩트 인라인 배치) -->
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="small fw-semibold text-secondary text-nowrap">
+                      공개 구분 <span class="text-danger">*</span>
+                    </span>
+                    <CFormSelect v-model="form.disclosure_type" size="sm" style="width: 140px">
+                      <option value="1">공개</option>
+                      <option value="2">부분공개</option>
+                      <option value="3">비공개 (대외비)</option>
+                    </CFormSelect>
+                  </div>
+                </div>
+
+                <!-- 6. 발신 주소 펼침 영역 -->
+                <div v-if="showCustomAddress" class="mt-2 p-2 bg-more-white rounded border">
+                  <CRow class="g-2">
+                    <CCol md="4">
+                      <CFormLabel class="small mb-1">발신 우편번호</CFormLabel>
+                      <CFormInput v-model="form.sender_zipcode" size="sm" placeholder="예: 12345" />
+                    </CCol>
+                    <CCol md="8">
+                      <CFormLabel class="small mb-1">발신 도로명 주소</CFormLabel>
+                      <CFormInput
+                        v-model="form.sender_address"
+                        size="sm"
+                        placeholder="특정 현장/지사 주소 발송 시 입력"
+                      />
+                    </CCol>
+                  </CRow>
+                </div>
               </div>
             </CCardBody>
           </CCard>

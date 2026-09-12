@@ -344,6 +344,14 @@ class OfficialLetter(models.Model):
         '발신 명의 표기 방식', max_length=20, choices=SENDER_DISPLAY_CHOICES, default='company_only',
         help_text='공문서 하단 중앙 발신 명의 및 인장 날인 형태 선택'
     )
+    sender_duty_title = models.CharField(
+        '발신 명의 표기 직책', max_length=20, blank=True, default='',
+        help_text='예: 대표이사, 본부장, 현장소장 (단독/직접 발송 시 지정, 미지정 시 결재선/기본값 자동 산출)'
+    )
+    sender_name = models.CharField(
+        '발신 명의 표기 성명', max_length=30, blank=True, default='',
+        help_text='예: 유용식, 고창균 (단독/직접 발송 시 지정, 미지정 시 결재선/기본값 자동 산출)'
+    )
 
     issue_date = models.DateField(
         '발신 요청일(예정일)',
