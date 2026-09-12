@@ -722,6 +722,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
   background-color: #fafafa;
   border-radius: 4px;
   line-height: 1.8;
+  white-space: pre-wrap;
 }
 
 :deep(.markdown-content) {
@@ -733,10 +734,16 @@ const formatDateTime = (dateStr: string | null | undefined) => {
   margin-bottom: 0.75rem;
 }
 
+:deep(.markdown-content p.empty-line) {
+  margin-bottom: 0.75rem;
+  line-height: 1.8;
+}
+
 :deep(.markdown-content table) {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
+  white-space: normal;
 }
 
 :deep(.markdown-content th),

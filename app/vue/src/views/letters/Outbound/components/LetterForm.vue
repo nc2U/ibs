@@ -938,7 +938,7 @@ const goBack = () => {
                   </table>
                 </div>
 
-                <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원) -->
+                <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원, 다중 띄어쓰기/공백 보존) -->
                 <div
                   class="preview-content my-2 p-3"
                   style="
@@ -949,6 +949,7 @@ const goBack = () => {
                     line-height: 1.7;
                     word-break: break-all;
                     text-align: justify;
+                    white-space: pre-wrap;
                   "
                 >
                   <div
@@ -1192,12 +1193,18 @@ const goBack = () => {
   margin-bottom: 0.5rem;
 }
 
+:deep(.preview-markdown-body p.empty-line) {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
 :deep(.preview-markdown-body table) {
   width: 100%;
   border-collapse: collapse;
   margin: 0.5rem 0;
   font-size: 0.75rem;
   background-color: #ffffff;
+  white-space: normal;
 }
 
 :deep(.preview-markdown-body th),

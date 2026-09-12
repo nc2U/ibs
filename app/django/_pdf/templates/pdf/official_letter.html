@@ -103,7 +103,7 @@
       .content-wrapper {
           flex: 1 0 auto;
           border-top: 2px solid #333;
-          padding: 15px 20px 0 20px;
+          padding: 20px 15px;
       }
 
       .content-section {
@@ -117,11 +117,18 @@
           text-indent: 1em;
       }
 
+      .content-section p.empty-line {
+          margin-bottom: 0.6em;
+          text-indent: 0;
+          line-height: 1.8;
+      }
+
       .content-section table {
           width: 100%;
           border-collapse: collapse;
           margin: 12px 0;
           font-size: 9.5pt;
+          white-space: normal;
       }
 
       .content-section th,
@@ -155,7 +162,7 @@
       }
 
       .attachment-section {
-          margin-top: 25px;
+          margin-top: 60px;
           font-size: 0.95em;
       }
 
@@ -322,13 +329,7 @@
 
   <!-- Content & Attachment Wrapper -->
   <div class="content-wrapper">
-    <div class="content-section">
-      {% if letter_content_html %}
-        {{ letter_content_html|safe }}
-      {% else %}
-        {{ letter.content|linebreaks }}
-      {% endif %}
-    </div>
+    <div class="content-section">{% if letter_content_html %}{{ letter_content_html|safe }}{% else %}{{ letter.content|linebreaks }}{% endif %}</div>
 
     {% if letter.attachments.exists %}
       <div class="attachment-section">

@@ -260,12 +260,32 @@ def generate_official_letter_pdf(letter):
 
     # 공문 본문 마크다운 -> HTML 변환 (표, 줄바꿈 유지)
     import markdown2
+    import re
     letter_content_html = ''
     if letter.content:
-        letter_content_html = markdown2.markdown(
-            letter.content,
+        # 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 마크다운 파서가 이를 1개 문단 분리로 축약하지 않도록 빈 문단 보존
+        normalized_content = letter.content.replace('\r\n', '\n')
+        preprocessed_content = re.sub(
+            r'\n{3,}',
+            lambda m: '\n\n' + ('<p class="empty-line">&nbsp;</p>\n\n' * (len(m.group(0)) - 2)),
+            normalized_content
+        )
+        raw_html = markdown2.markdown(
+            preprocessed_content,
             extras=['tables', 'break-on-newline', 'crlf']
         )
+        # HTML 태그 외부의 2개 이상 연속 스페이스('  +')를 &nbsp;로 변환하여 PDF 렌더링 시 다중 띄어쓰기 보존
+        parts = re.split(r'(<[^>]+>)', raw_html)
+        for i in range(len(parts)):
+            if not parts[i].startswith('<'):
+                lines = parts[i].split('\n')
+                new_lines = []
+                for l in lines:
+                    if l.strip():
+                        l = re.sub(r'  +', lambda m: '&nbsp;' * len(m.group(0)), l)
+                    new_lines.append(l)
+                parts[i] = '\n'.join(new_lines)
+        letter_content_html = ''.join(parts)
 
     # 템플릿 컨텍스트 준비
     context = {

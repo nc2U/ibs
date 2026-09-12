@@ -80,7 +80,14 @@ export const isValidate = (event: Event) => {
 const md = new MarkdownIt('default', { html: true, breaks: true })
 
 export const markdownRender = (content: string) => {
-  const result = md.render(content)
+  if (!content) return ''
+  // 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 마크다운 파서가 이를 1개 문단 분리로 축약하지 않도록 빈 문단 보존
+  const normalized = content.replace(/\r\n/g, '\n')
+  const preprocessed = normalized.replace(/\n{3,}/g, match => {
+    const extraEmptyLines = match.length - 2
+    return '\n\n' + '<p class="empty-line">&nbsp;</p>\n\n'.repeat(extraEmptyLines)
+  })
+  const result = md.render(preprocessed)
   return DOMPurify.sanitize(result)
 }
 
