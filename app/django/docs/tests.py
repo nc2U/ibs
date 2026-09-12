@@ -282,3 +282,36 @@ class DocsAppSecurityTests(TestCase):
         step = app_doc.steps.first()
         self.assertEqual(step.status, ApprovalStep.STATUS_APPROVED)
         self.assertIn(self.author_user, step.approvers.all())
+
+    def test_official_letter_markdown_pdf_generation(self):
+        """마크다운 본문(표, 리스트, 강조)이 포함된 공문 PDF 생성 검증"""
+        from docs.utils import generate_official_letter_pdf
+
+        md_content = """
+1. 귀 사의 무궁한 발전을 기원합니다.
+2. 아래와 같이 일정 및 내역을 송부하오니 확인 바랍니다.
+
+| 구분 | 품목 | 수량 | 비고 |
+| :--- | :--- | :--- | :--- |
+| 1 | 계약서 원본 | 1부 | 직인 날인 |
+| 2 | 사업자등록증 | 1부 | 사본 |
+
+* **특이사항**: 기한 내 회신 요망.
+"""
+        letter_md = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-MD-001',
+            title='[공문] 마크다운 표 및 서식 송부 건',
+            recipient_name='한국토지주택공사',
+            drafter_name='담당자',
+            content=md_content,
+            issue_date=date(2026, 3, 1),
+            creator=self.author_user
+        )
+
+        pdf_file = generate_official_letter_pdf(letter_md)
+        self.assertIsNotNone(pdf_file)
+        self.assertTrue(pdf_file.name.endswith('.pdf'))
+        # PDF 파일 바이너리 내용 존재 확인
+        self.assertGreater(len(pdf_file.read()), 1000)
+

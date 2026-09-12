@@ -7,6 +7,7 @@ import { useAccount } from '@/store/pinia/account.ts'
 import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import MdEditor from '@/components/MdEditor/Index.vue'
 
 const props = defineProps<{
   company: number
@@ -361,16 +362,16 @@ const goBack = () => {
                 <CFormLabel class="fw-bold">
                   본문 내용 <span class="text-danger">*</span>
                 </CFormLabel>
-                <CFormTextarea
+                <MdEditor
                   v-model="form.content"
-                  placeholder="공문 본문 내용을 입력하세요"
-                  rows="12"
-                  required
-                  :invalid="validated && !form.content"
+                  placeholder="공문 본문 내용을 입력하세요. (상단 툴바를 이용해 표, 굵게, 글머리 기호 등을 자유롭게 작성할 수 있습니다.)"
+                  :height="360"
                 />
-                <CFormFeedback invalid>공문 본문 내용을 입력해주세요.</CFormFeedback>
-                <CFormText class="text-muted">
-                  줄 바꿈은 인쇄 시 그대로 반영됩니다. 문단을 구분하려면 빈 줄을 추가하세요.
+                <div v-if="validated && !form.content" class="text-danger small mt-1">
+                  공문 본문 내용을 입력해주세요.
+                </div>
+                <CFormText class="text-muted mt-1 d-block">
+                  마크다운 서식(표, 글머리 기호, 굵은 글씨 등)은 공문 인쇄 및 PDF 생성 시 표준 서식으로 자동 반영됩니다.
                 </CFormText>
               </div>
 

@@ -8,6 +8,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { usePerms } from '@/composables/usePerms.ts'
 
 import { useAccount } from '@/store/pinia/account'
+import { markdownRender } from '@/utils/helper.ts'
 
 const props = defineProps<{
   letter: OfficialLetter | null
@@ -112,7 +113,9 @@ const onDelete = () => {
 const onGeneratePdf = async () => {
   if (props.letter?.pk) {
     if (isDispatched.value) {
-      alert('이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.')
+      alert(
+        '이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.',
+      )
       return
     }
     if (isApproved.value && !isManager.value) {
@@ -138,7 +141,11 @@ const onScanFileSelect = async (event: Event) => {
     }
 
     if (isDispatched.value) {
-      if (!confirm('이미 발송 완료된 공문서입니다. 등록 시 기존 최종 발송본 파일이 대체됩니다. 계속하시겠습니까?')) {
+      if (
+        !confirm(
+          '이미 발송 완료된 공문서입니다. 등록 시 기존 최종 발송본 파일이 대체됩니다. 계속하시겠습니까?',
+        )
+      ) {
         target.value = ''
         return
       }
@@ -313,7 +320,14 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                             : 'success'
                       "
                     >
-                      {{ letter.disclosure_type_desc || (letter.disclosure_type === '3' ? '비공개' : letter.disclosure_type === '2' ? '부분공개' : '공개') }}
+                      {{
+                        letter.disclosure_type_desc ||
+                        (letter.disclosure_type === '3'
+                          ? '비공개'
+                          : letter.disclosure_type === '2'
+                            ? '부분공개'
+                            : '공개')
+                      }}
                     </CBadge>
                   </td>
                 </tr>
@@ -324,7 +338,10 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                       {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
                       <CBadge color="success" class="ms-1">발송완료</CBadge>
                     </span>
-                    <span v-else-if="letter.approval_status === 'approved'" class="fw-bold text-primary">
+                    <span
+                      v-else-if="letter.approval_status === 'approved'"
+                      class="fw-bold text-primary"
+                    >
                       {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
                       <CBadge color="primary" class="ms-1">승인확정</CBadge>
                     </span>
@@ -353,7 +370,11 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   <th style="width: 100px">날인 인감</th>
                   <td>
                     <div v-if="letter.seal_detail" class="d-flex align-items-center">
-                      <span class="me-2">{{ letter.seal_detail.name }} ({{ letter.seal_detail.seal_type_desc }})</span>
+                      <span class="me-2"
+                        >{{ letter.seal_detail.name }} ({{
+                          letter.seal_detail.seal_type_desc
+                        }})</span
+                      >
                       <img
                         v-if="letter.seal_detail.seal_image"
                         :src="letter.seal_detail.seal_image"
@@ -368,8 +389,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 <tr>
                   <th>기안/담당자</th>
                   <td>
-                    <span>{{ letter.drafter_name }} {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span>
-                    <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1">승인권자 직접기안</CBadge>
+                    <span
+                      >{{ letter.drafter_name }}
+                      {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span
+                    >
+                    <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1"
+                      >승인권자 직접기안</CBadge
+                    >
                   </td>
                 </tr>
                 <tr v-if="letter.sender_address">
@@ -393,9 +419,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <strong>공문 본문</strong>
       </CCardHeader>
       <CCardBody>
-        <div class="letter-content" style="white-space: pre-wrap; line-height: 1.8">
-          {{ letter.content }}
-        </div>
+        <div class="letter-content bg-more-white markdown-content" v-html="markdownRender(letter.content)" />
       </CCardBody>
     </CCard>
 
@@ -455,7 +479,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 <tr>
                   <th style="width: 120px">발송 방법</th>
                   <td>
-                    <CBadge color="dark">{{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}</CBadge>
+                    <CBadge color="dark">{{
+                      letter.dispatch_method_desc || letter.dispatch_method || '이메일'
+                    }}</CBadge>
                   </td>
                 </tr>
                 <tr>
@@ -500,7 +526,10 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         </div>
       </CCardHeader>
       <CCardBody>
-        <div v-if="letter.pdf_file" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div
+          v-if="letter.pdf_file"
+          class="d-flex flex-wrap align-items-center justify-content-between gap-2"
+        >
           <div class="d-flex align-items-center">
             <CBadge color="success" class="me-3 p-2">
               <CIcon name="cilFile" class="me-1" />
@@ -652,8 +681,49 @@ const formatDateTime = (dateStr: string | null | undefined) => {
 <style scoped>
 .letter-content {
   min-height: 200px;
-  padding: 1rem;
+  padding: 1.25rem;
   background-color: #fafafa;
   border-radius: 4px;
+  line-height: 1.8;
+}
+
+:deep(.markdown-content) {
+  font-size: 0.95rem;
+  color: #2c3e50;
+}
+
+:deep(.markdown-content p) {
+  margin-bottom: 0.75rem;
+}
+
+:deep(.markdown-content table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+:deep(.markdown-content th),
+:deep(.markdown-content td) {
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+:deep(.markdown-content th) {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+:deep(.markdown-content ul),
+:deep(.markdown-content ol) {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+:deep(.markdown-content blockquote) {
+  border-left: 4px solid #ced4da;
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: #6c757d;
 }
 </style>

@@ -110,13 +110,50 @@
 
       .content-section {
           text-align: justify;
-          white-space: pre-wrap;
           word-wrap: break-word;
+          line-height: 1.8;
       }
 
       .content-section p {
-          margin-bottom: 0.5em;
+          margin-bottom: 0.6em;
           text-indent: 1em;
+      }
+
+      .content-section table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0;
+          font-size: 9.5pt;
+      }
+
+      .content-section th,
+      .content-section td {
+          border: 1px solid #444;
+          padding: 5px 8px;
+          text-align: center;
+          vertical-align: middle;
+      }
+
+      .content-section th {
+          background-color: #f2f2f2;
+          font-weight: bold;
+      }
+
+      .content-section ul,
+      .content-section ol {
+          padding-left: 20px;
+          margin: 6px 0;
+      }
+
+      .content-section li {
+          margin-bottom: 3px;
+      }
+
+      .content-section blockquote {
+          border-left: 3px solid #888;
+          padding-left: 10px;
+          margin: 8px 0;
+          color: #555;
       }
 
       .attachment-section {
@@ -284,7 +321,11 @@
   <!-- Content & Attachment Wrapper -->
   <div class="content-wrapper">
     <div class="content-section">
-      {{ letter.content|linebreaks }}
+      {% if letter_content_html %}
+        {{ letter_content_html|safe }}
+      {% else %}
+        {{ letter.content|linebreaks }}
+      {% endif %}
     </div>
 
     {% if letter.attachments.exists %}

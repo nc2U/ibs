@@ -258,9 +258,19 @@ def generate_official_letter_pdf(letter):
         'email': (drafter_staff.email if drafter_staff and drafter_staff.email else getattr(company, 'email', '')) or '',
     }
 
+    # 공문 본문 마크다운 -> HTML 변환 (표, 줄바꿈 유지)
+    import markdown2
+    letter_content_html = ''
+    if letter.content:
+        letter_content_html = markdown2.markdown(
+            letter.content,
+            extras=['tables', 'break-on-newline', 'crlf']
+        )
+
     # 템플릿 컨텍스트 준비
     context = {
         'letter': letter,
+        'letter_content_html': letter_content_html,
         'company': company,
         'logo_url': logo_url,
         'seal_url': seal_url,
