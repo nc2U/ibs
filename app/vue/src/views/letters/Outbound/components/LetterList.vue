@@ -114,12 +114,12 @@ const formatDate = (dateStr: string | undefined) => {
             placeholder="문서번호, 제목, 수신처..."
             @keyup.enter="onFilter"
           />
-          <CButton color="primary" @click="onFilter">
-            <CIcon name="cilSearch" />
-          </CButton>
-          <CButton color="secondary" @click="resetFilter">
-            <CIcon name="cilReload" />
-          </CButton>
+          <v-btn color="light" @click="onFilter" flat>
+            <v-icon icon="mdi-magnify" size="small" />
+          </v-btn>
+          <v-btn color="light" @click="resetFilter" flat>
+            <v-icon icon="mdi-refresh" size="small" />
+          </v-btn>
         </CInputGroup>
       </CCol>
     </CRow>
@@ -128,10 +128,10 @@ const formatDate = (dateStr: string | undefined) => {
     <CRow class="mb-3">
       <CCol class="d-flex justify-content-between align-items-center">
         <span class="text-muted">총 {{ letterCount }}건</span>
-        <CButton v-if="canDocsCreate" color="primary" @click="goToCreate">
-          <CIcon name="cilPlus" class="me-1" />
+        <v-btn v-if="canDocsCreate" color="primary" @click="goToCreate">
+          <v-icon icon="mdi-plus" size="small" class="me-1" />
           공문 작성
-        </CButton>
+        </v-btn>
       </CCol>
     </CRow>
 
@@ -161,10 +161,14 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
           <CTableDataCell>
             {{ letter.title }}
-            <CIcon
-              v-if="letter.has_attachments || (letter.attachments && letter.attachments.length > 0) || letter.attachment_text"
-              name="cilPaperclip"
-              size="sm"
+            <v-icon
+              v-if="
+                letter.has_attachments ||
+                (letter.attachments && letter.attachments.length > 0) ||
+                letter.attachment_text
+              "
+              icon="mdi-paperclip"
+              size="small"
               class="text-muted ms-1"
             />
           </CTableDataCell>
@@ -173,7 +177,11 @@ const formatDate = (dateStr: string | undefined) => {
             <CBadge color="dark" class="me-1">
               {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
             </CBadge>
-            <small v-if="letter.tracking_number" class="text-muted d-block" style="font-size: 0.75rem">
+            <small
+              v-if="letter.tracking_number"
+              class="text-muted d-block"
+              style="font-size: 0.75rem"
+            >
               {{ letter.tracking_number }}
             </small>
           </CTableDataCell>
@@ -189,7 +197,7 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
           <CTableDataCell class="text-center">
             <CBadge v-if="letter.pdf_file" color="success">
-              <CIcon name="cilFile" />
+              <v-icon icon="mdi-file-pdf-box" size="small" />
             </CBadge>
             <CBadge v-else color="secondary">-</CBadge>
           </CTableDataCell>
