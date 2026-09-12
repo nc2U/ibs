@@ -297,10 +297,10 @@
         {% if company.ceo %}대표이사 {{ company.ceo }}{% endif %}
         {% if company.tax_number %} | 사업자등록번호 {{ company.tax_number }}{% endif %}
         <br>
+        {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
         {% if company.address1 %}{{ company.address1 }}{% endif %}
         {% if company.address2 %} {{ company.address2 }}{% endif %}
         {% if company.address3 %} ({{ company.address3 }}){% endif %}
-        {% if company.zipcode %} [{{ company.zipcode }}]{% endif %}
       </div>
     {% endif %}
   </div>

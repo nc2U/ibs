@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { markdownRender } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -8,7 +9,6 @@ import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
-import { markdownRender } from '@/utils/helper.ts'
 
 const props = defineProps<{
   company: number
@@ -146,6 +146,8 @@ const form = ref<OfficialLetter>({
 })
 
 const validated = ref(false)
+// 경유/참조 필드 펼침 상태 (입력된 값이 있으면 기본 오픈)
+const showViaRef = ref(false)
 
 watch(
   () => props.letter,
@@ -177,6 +179,11 @@ watch(
         attachmentInputMode.value = 'text'
       } else {
         attachmentInputMode.value = 'file'
+      }
+
+      // 경유나 참조 값이 있으면 펼침 상태로 유지
+      if (letter.via || letter.recipient_reference) {
+        showViaRef.value = true
       }
       // 신규 작성 시 회사의 공식 장부에 등록된 직원 성명(staff_name)으로 기본 기안자명 준비
       const currentUserName =
@@ -293,70 +300,142 @@ const goBack = () => {
         <!-- 좌측: 공문서 작성/수정 폼 (lg: 6, xl: 7) -->
         <CCol lg="6" xl="7">
           <!-- 1. 공문서 서식 영역 (PDF 템플릿과 동일 순서) -->
-          <CCard class="mb-4" :class="isEdit ? 'border-success' : 'border-primary'">
+          <CCard class="mb-4 shadow-sm border">
             <CCardHeader
-              class="text-white d-flex align-items-center"
-              :class="isEdit ? 'bg-success' : 'bg-primary'"
+              class="py-3 bg-transparent border-bottom d-flex justify-content-between align-items-center"
             >
-              <v-icon icon="mdi-file-document-outline" size="small" class="me-2" />
-              <strong>공문서 서식 (PDF 인쇄 영역)</strong>
+              <div class="d-flex align-items-center">
+                <v-icon
+                  icon="mdi-file-document-outline"
+                  size="small"
+                  :color="isEdit ? 'success' : 'primary'"
+                  class="me-2"
+                />
+                <strong class="text-body" style="font-size: 0.95rem">
+                  공문서 서식 (PDF 인쇄 영역)
+                </strong>
+              </div>
+              <CBadge
+                :color="isEdit ? 'success' : 'primary'"
+                shape="rounded-pill"
+                class="px-2 py-1 font-monospace"
+                style="font-size: 0.72rem"
+              >
+                {{ isEdit ? '수정 모드' : '신규 작성' }}
+              </CBadge>
             </CCardHeader>
             <CCardBody>
-              <!-- 수신 / (경유) / 참조 / 제목 (상단 4행 고정 서식) -->
-              <div class="p-3 bg-light rounded mb-4 border">
-                <h6 class="text-primary mb-3">
-                  <v-icon icon="mdi-card-account-mail" size="small" class="me-1" />
-                  수신 및 제목 정보
-                </h6>
-                <CRow class="mb-3">
-                  <CCol md="6">
-                    <CFormLabel> 수신 <span class="text-danger">*</span></CFormLabel>
-                    <CFormInput
-                      v-model="form.recipient_name"
-                      placeholder="수신처 명칭 (예: OO주식회사, 구청장 등)"
-                      required
-                      :invalid="validated && !form.recipient_name"
+              <!-- 수신 / (경유) / 참조 / 제목 (정돈된 공문서 서식 레이아웃) -->
+              <div class="letter-meta-box p-3 rounded mb-4 border bg-light">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom"
+                >
+                  <div class="d-flex align-items-center">
+                    <v-icon
+                      icon="mdi-card-account-mail"
+                      color="primary"
+                      size="small"
+                      class="me-2"
                     />
-                    <CFormFeedback invalid>수신처명을 입력해주세요.</CFormFeedback>
+                    <strong class="text-primary" style="font-size: 0.95rem">
+                      수신 및 제목 정보
+                    </strong>
+                  </div>
+                  <!-- 경유/참조 토글 버튼 -->
+                  <v-btn
+                    variant="text"
+                    density="compact"
+                    size="small"
+                    color="info"
+                    class="px-2 text-none"
+                    @click="showViaRef = !showViaRef"
+                  >
+                    <v-icon
+                      :icon="showViaRef ? 'mdi-chevron-up' : 'mdi-plus-circle-outline'"
+                      size="small"
+                      class="me-1"
+                    />
+                    {{ showViaRef ? '경유·참조 접기' : '경유·참조 추가' }}
+                  </v-btn>
+                </div>
+
+                <!-- 1행: 수신처(메인) & 발신 요청/예정일 -->
+                <CRow class="mb-3 align-items-start">
+                  <CCol md="6">
+                    <CRow>
+                      <CFormLabel class="col-md-2 col-form-label required"> 수신 </CFormLabel>
+                      <CCol>
+                        <CFormInput
+                          v-model="form.recipient_name"
+                          placeholder="수신처 명칭 (예: 주식회사 한국건설, 서초구청장 등)"
+                          required
+                          :invalid="validated && !form.recipient_name"
+                        />
+                        <CFormFeedback invalid>수신처명을 입력해주세요.</CFormFeedback>
+                      </CCol>
+                    </CRow>
                   </CCol>
                   <CCol md="6">
-                    <CFormLabel> 발신 요청(예정)일 <span class="text-danger">*</span> </CFormLabel>
-                    <DatePicker v-model="form.issue_date" placeholder="발신 요청일 선택" required />
-                    <CFormText class="text-muted">
-                      {{
-                        approvalMode === 'approval'
-                          ? '결재권자에게 요청하는 발신 희망일입니다. 실제 공문서 시행일자는 최종 승인일에 자동으로 확정됩니다.'
-                          : '발신 예정일자입니다. 실제 대외 발송 처리 시 발송일로 확정됩니다.'
-                      }}
-                    </CFormText>
+                    <CRow>
+                      <CFormLabel class="col-md-2 col-form-label required">
+                        발신 요청(예정)일
+                      </CFormLabel>
+                      <CCol>
+                        <DatePicker
+                          v-model="form.issue_date"
+                          placeholder="발신 요청일 선택"
+                          required
+                        />
+                      </CCol>
+                    </CRow>
                   </CCol>
                 </CRow>
-                <CRow class="mb-3">
-                  <CCol md="6">
-                    <CFormLabel>경유</CFormLabel>
-                    <CFormInput
-                      v-model="form.via"
-                      placeholder="경유 기관 또는 부서 (없을 시 빈칸)"
-                    />
+
+                <!-- 2행: 경유 & 참조 (토글 펼침 또는 값이 있을 때 노출) -->
+                <CRow
+                  v-if="showViaRef"
+                  class="mb-3 pt-2 pb-1 border border-light-subtle rounded mx-0"
+                >
+                  <CCol md="6" class="py-1">
+                    <CRow>
+                      <CFormLabel class="col-2 col-form-label">경유</CFormLabel>
+                      <CCol>
+                        <CFormInput
+                          v-model="form.via"
+                          placeholder="경유 기관 또는 부서 (예: 총무과, 감리단 등)"
+                        />
+                      </CCol>
+                    </CRow>
                   </CCol>
-                  <CCol md="6">
-                    <CFormLabel>참조</CFormLabel>
-                    <CFormInput
-                      v-model="form.recipient_reference"
-                      placeholder="참조 부서 또는 직위 (예: 대표이사 귀하)"
-                    />
+                  <CCol md="6" class="py-1">
+                    <CRow>
+                      <CFormLabel class="col-2 col-form-label">참조</CFormLabel>
+                      <CCol>
+                        <CFormInput
+                          v-model="form.recipient_reference"
+                          placeholder="참조 부서 또는 직위 (예: 대표이사 귀하, 회계팀)"
+                        />
+                      </CCol>
+                    </CRow>
                   </CCol>
                 </CRow>
-                <CRow>
+
+                <!-- 3행: 제목 (시각적 위계 강화 - 굵은 글씨 및 또렷한 서식) -->
+                <CRow class="mt-2">
                   <CCol md="12">
-                    <CFormLabel> 제목 <span class="text-danger">*</span></CFormLabel>
-                    <CFormInput
-                      v-model="form.title"
-                      placeholder="공문 제목을 입력하세요"
-                      required
-                      :invalid="validated && !form.title"
-                    />
-                    <CFormFeedback invalid>제목을 입력해주세요.</CFormFeedback>
+                    <CRow>
+                      <CFormLabel class="col-md-1 col-form-label required"> 제목 </CFormLabel>
+                      <CCol>
+                        <CFormInput
+                          v-model="form.title"
+                          placeholder="공문 제목을 명확하고 간결하게 입력하세요"
+                          class="fw-semibold title-input"
+                          required
+                          :invalid="validated && !form.title"
+                        />
+                        <CFormFeedback invalid>공문 제목을 입력해주세요.</CFormFeedback>
+                      </CCol>
+                    </CRow>
                   </CCol>
                 </CRow>
               </div>
@@ -375,7 +454,7 @@ const goBack = () => {
                 <div v-if="validated && !form.content" class="text-danger small mt-1">
                   공문 본문 내용을 입력해주세요.
                 </div>
-                <CFormText class="text-muted mt-1 d-block">
+                <CFormText class="text-muted">
                   마크다운 서식(표, 글머리 기호, 굵은 글씨 등)은 공문 인쇄 및 PDF 생성 시 표준
                   서식으로 자동 반영됩니다.
                 </CFormText>
@@ -385,31 +464,22 @@ const goBack = () => {
               <div class="mb-4 p-3 bg-light rounded border">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <CFormLabel class="fw-bold mb-0"> 붙임 (첨부 서류 목록) </CFormLabel>
-                  <!-- 붙임 방식 토글 -->
-                  <div class="btn-group btn-group-sm">
-                    <button
-                      type="button"
-                      class="btn"
-                      :class="
-                        attachmentInputMode === 'file' ? 'btn-primary' : 'btn-outline-primary'
-                      "
-                      @click="attachmentInputMode = 'file'"
-                    >
+                  <!-- 붙임 방식 토글 (Vuetify 세그먼트 컨트롤) -->
+                  <v-btn-toggle
+                    v-model="attachmentInputMode"
+                    mandatory
+                    density="compact"
+                    color="blue-grey-lighten-1"
+                  >
+                    <v-btn value="file" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-paperclip" size="small" class="me-1" />
-                      파일 직접 첨부 (권장)
-                    </button>
-                    <button
-                      type="button"
-                      class="btn"
-                      :class="
-                        attachmentInputMode === 'text' ? 'btn-primary' : 'btn-outline-primary'
-                      "
-                      @click="attachmentInputMode = 'text'"
-                    >
+                      파일 첨부 (권장)
+                    </v-btn>
+                    <v-btn value="text" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
                       텍스트 직접 입력
-                    </button>
-                  </div>
+                    </v-btn>
+                  </v-btn-toggle>
                 </div>
 
                 <!-- 파일 직접 첨부 모드 -->
@@ -508,9 +578,9 @@ const goBack = () => {
                         <CCol md="7">
                           <CFormLabel class="small fw-semibold mb-1">
                             붙임 명칭
-                            <span class="text-muted fw-normal"
-                              >(공문서 본문에 인쇄될 공식 명칭)</span
-                            >
+                            <span class="text-muted fw-normal">
+                              (공문서 본문에 인쇄될 공식 명칭)
+                            </span>
                           </CFormLabel>
                           <CFormInput
                             v-model="att.name"
@@ -553,12 +623,7 @@ const goBack = () => {
                     class="d-none"
                     @change="onFileSelect"
                   />
-                  <v-btn
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    @click="fileInputRef?.click()"
-                  >
+                  <v-btn color="info" size="small" @click="fileInputRef?.click()">
                     <v-icon icon="mdi-cloud-upload" size="small" class="me-1" />
                     파일 추가하기 (다중 선택 가능)
                   </v-btn>
@@ -585,27 +650,22 @@ const goBack = () => {
                     <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
                     발신 명의, 직인 날인 및 기안 정보
                   </h6>
-                  <!-- 발송 유형 선택 토글 -->
-                  <div class="btn-group btn-group-sm">
-                    <button
-                      type="button"
-                      class="btn"
-                      :class="approvalMode === 'approval' ? 'btn-primary' : 'btn-outline-primary'"
-                      @click="approvalMode = 'approval'"
-                    >
+                  <!-- 발송 유형 선택 토글 (Vuetify 세그먼트 컨트롤) -->
+                  <v-btn-toggle
+                    v-model="approvalMode"
+                    mandatory
+                    density="compact"
+                    color="blue-grey-lighten-1"
+                  >
+                    <v-btn value="approval" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-shield-check" size="small" class="me-1" />
                       전자결재 상신 발송
-                    </button>
-                    <button
-                      type="button"
-                      class="btn"
-                      :class="approvalMode === 'manual' ? 'btn-primary' : 'btn-outline-primary'"
-                      @click="approvalMode = 'manual'"
-                    >
+                    </v-btn>
+                    <v-btn value="manual" size="small" class="px-3 text-none">
                       <v-icon icon="mdi-pencil" size="small" class="me-1" />
-                      수동(직접) 발송
-                    </button>
-                  </div>
+                      단독 / 직접 발송
+                    </v-btn>
+                  </v-btn-toggle>
                 </div>
 
                 <!-- 전자결재 모드 안내 -->
@@ -613,7 +673,7 @@ const goBack = () => {
                   <small class="text-primary">
                     <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                     <strong>전자결재 연동 모드:</strong> 결재선 상신 및 최종 승인 시 결재선의
-                    기안자, 검토자, 최종 결재권자(대표이사/임원 등)의 직위와 성명이 공문서 하단
+                    기안자, 검토자, 최종 결재권자(대표이사 / 임원 등)의 직위와 성명이 공문서 하단
                     결재선에 자동으로 표기됩니다.
                   </small>
                 </CAlert>
@@ -623,7 +683,7 @@ const goBack = () => {
                   <small>
                     <v-icon icon="mdi-alert-outline" size="small" class="me-1" />
                     <strong>수동(직접) 발송 모드:</strong> 전자결재를 거치지 않고 직접 발송하는
-                    공문입니다. 공문서 하단 결재/담당란에 인쇄될 기안/담당자 정보를 아래에 직접
+                    공문입니다. 공문서 하단 결재 / 담당란에 인쇄될 기안 / 담당자 정보를 아래에 직접
                     입력해주세요.
                   </small>
                 </CAlert>
@@ -784,10 +844,11 @@ const goBack = () => {
           </CCard>
 
           <!-- 2. 발송 및 대장 관리 메타 영역 (공문서에는 인쇄되지 않는 업무 관리 데이터) -->
-          <CCard class="mb-4">
-            <CCardHeader class="bg-secondary text-white d-flex align-items-center">
-              <v-icon icon="mdi-folder-open-outline" class="me-2" />
-              <strong>발송 및 대장 관리 정보 (시스템 관리용 메타데이터)</strong>
+          <CCard class="mb-4 shadow-sm border">
+            <CCardHeader class="py-3 bg-transparent border-bottom d-flex align-items-center">
+              <v-icon icon="mdi-folder-open-outline" size="small" color="secondary" class="me-2" />
+              <strong class="text-body" style="font-size: 0.95rem"> 발송 및 대장 관리 정보 </strong>
+              <small class="text-muted ms-2">(시스템 관리용 메타데이터)</small>
             </CCardHeader>
             <CCardBody>
               <CAlert color="info" class="py-2 mb-3">
@@ -891,13 +952,14 @@ const goBack = () => {
                   </div>
                   <div class="text-muted" style="font-size: 0.72rem; line-height: 1.3">
                     <span v-if="currentCompany?.ceo">대표이사 {{ currentCompany.ceo }} | </span>
-                    <span v-if="currentCompany?.tax_number"
-                      >사업자등록번호 {{ currentCompany.tax_number }}</span
-                    >
+                    <span v-if="currentCompany?.tax_number">
+                      사업자등록번호 {{ currentCompany.tax_number }}
+                    </span>
                     <br />
                     <span>
-                      {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
                       <span v-if="currentCompany?.zipcode">[{{ currentCompany.zipcode }}]</span>
+                      {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
+                      {{ currentCompany?.address3 || '' }}
                     </span>
                   </div>
                   <!-- 영문 그라데이션 띠 -->
@@ -1224,5 +1286,16 @@ const goBack = () => {
   display: block;
   text-align: center;
   margin: 0.5rem 0;
+}
+
+.title-input {
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.letter-meta-box {
+  background-color: #f8fafc;
+  border-color: #e2e8f0 !important;
 }
 </style>
