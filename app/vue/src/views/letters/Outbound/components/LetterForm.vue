@@ -9,6 +9,8 @@ import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import DaumPostcode from '@/components/DaumPostcode/index.vue'
+import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import LetterA4Preview from './LetterA4Preview.vue'
 
 const props = defineProps<{
@@ -200,6 +202,89 @@ const validated = ref(false)
 const showViaRef = ref(false)
 // 발신지 주소 직접 입력(현장/지사) 펼침 상태 (입력된 값이 있으면 기본 오픈)
 const showCustomAddress = ref(false)
+// DaumPostcode 컴포넌트 ref
+const refPostCode = ref()
+
+// 주소 상세 입력을 위한 분리 상태 및 DOM ref
+// DaumPostcode에서 반환된 기본 도로명/지번 주소(address1)와 참고항목(address3: 법정동, 공동주택명 등)
+const senderAddress1 = ref('')
+const senderAddress3 = ref('')
+const senderAddressDetail = ref('')
+const senderDetailInputRef = ref<any>(null)
+
+const recipientAddress1 = ref('')
+const recipientAddress3 = ref('')
+const recipientAddressDetail = ref('')
+const recipientDetailInputRef = ref<any>(null)
+
+// 화면 노출용 기본 주소 표기 (예: 인천 연수구 능허대로 287)
+const senderAddressBase = computed(() => {
+  return senderAddress1.value
+})
+
+const recipientAddressBase = computed(() => {
+  return recipientAddress1.value
+})
+
+// 표준 주소 조합 함수: [기본주소] [상세주소] [(법정동/참고항목)]
+// 예: 인천 연수구 능허대로 287 대성빌딩 4층 (동춘동)
+const composeAddress = (addr1: string, detail: string, addr3: string) => {
+  const parts: string[] = []
+  if (addr1.trim()) parts.push(addr1.trim())
+  if (detail.trim()) parts.push(detail.trim())
+  if (addr3.trim()) {
+    const cleanRef = addr3.trim()
+    const formattedRef = cleanRef.startsWith('(') ? cleanRef : `(${cleanRef})`
+    parts.push(formattedRef)
+  }
+  return parts.join(' ')
+}
+
+// 상세주소 입력 시 form 필드와 동기화
+const updateSenderAddress = () => {
+  form.value.sender_address = composeAddress(
+    senderAddress1.value,
+    senderAddressDetail.value,
+    senderAddress3.value,
+  )
+}
+
+const updateRecipientAddress = () => {
+  form.value.recipient_address = composeAddress(
+    recipientAddress1.value,
+    recipientAddressDetail.value,
+    recipientAddress3.value,
+  )
+}
+
+const addressCallback = (data: AddressData) => {
+  const { formNum, zipcode, address1, address3 } = callAddress(data)
+
+  if (formNum === 1) {
+    // 1: 발신지(현장/지사) 주소
+    form.value.sender_zipcode = zipcode
+    senderAddress1.value = address1.trim()
+    senderAddress3.value = address3.trim()
+    senderAddressDetail.value = ''
+    updateSenderAddress()
+    // 상세주소 입력창으로 포커스 이동
+    setTimeout(() => {
+      senderDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
+        senderDetailInputRef.value?.focus?.()
+    }, 100)
+  } else if (formNum === 2) {
+    // 2: 수신처(발송지) 주소
+    recipientAddress1.value = address1.trim()
+    recipientAddress3.value = address3.trim()
+    recipientAddressDetail.value = ''
+    updateRecipientAddress()
+    // 상세주소 입력창으로 포커스 이동
+    setTimeout(() => {
+      recipientDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
+        recipientDetailInputRef.value?.focus?.()
+    }, 100)
+  }
+}
 
 watch(
   () => props.letter,
@@ -220,6 +305,12 @@ watch(
         dispatch_method: letter.dispatch_method || 'email',
         tracking_number: letter.tracking_number || '',
       }
+      senderAddress1.value = letter.sender_address || ''
+      senderAddress3.value = ''
+      senderAddressDetail.value = ''
+      recipientAddress1.value = letter.recipient_address || ''
+      recipientAddress3.value = ''
+      recipientAddressDetail.value = ''
       // 전자결재 연동 여부에 따라 모드 자동 설정
       if (
         letter.approval_document ||
@@ -1056,16 +1147,48 @@ const goBack = () => {
                 <!-- 6. 발신 주소 펼침 영역 -->
                 <div v-if="showCustomAddress" class="mt-2 p-2 bg-more-white rounded border">
                   <CRow class="g-2">
-                    <CCol md="4">
+                    <CCol :xs="12" :md="4">
                       <CFormLabel class="small mb-1">발신 우편번호</CFormLabel>
-                      <CFormInput v-model="form.sender_zipcode" size="sm" placeholder="예: 12345" />
+                      <CInputGroup size="sm">
+                        <CFormInput
+                          v-model="form.sender_zipcode"
+                          size="sm"
+                          placeholder="우편번호"
+                          readonly
+                          style="cursor: pointer"
+                          @click="refPostCode?.initiate(1)"
+                        />
+                        <CButton
+                          type="button"
+                          color="secondary"
+                          variant="outline"
+                          size="sm"
+                          @click="refPostCode?.initiate(1)"
+                        >
+                          <v-icon icon="mdi-magnify" size="small" class="me-1" />
+                          검색
+                        </CButton>
+                      </CInputGroup>
                     </CCol>
-                    <CCol md="8">
-                      <CFormLabel class="small mb-1">발신 도로명 주소</CFormLabel>
+                    <CCol :xs="12" :md="4">
+                      <CFormLabel class="small mb-1">기본 도로명 주소</CFormLabel>
                       <CFormInput
-                        v-model="form.sender_address"
+                        v-model="senderAddressBase"
                         size="sm"
-                        placeholder="특정 현장/지사 주소 발송 시 입력"
+                        placeholder="주소 검색 시 자동 입력"
+                        readonly
+                        style="cursor: pointer"
+                        @click="refPostCode?.initiate(1)"
+                      />
+                    </CCol>
+                    <CCol :xs="12" :md="4">
+                      <CFormLabel class="small mb-1">상세 주소 (현장 사무실 등)</CFormLabel>
+                      <CFormInput
+                        ref="senderDetailInputRef"
+                        v-model="senderAddressDetail"
+                        size="sm"
+                        placeholder="동·호수, 상세 사무소명"
+                        @input="updateSenderAddress"
                       />
                     </CCol>
                   </CRow>
@@ -1082,7 +1205,7 @@ const goBack = () => {
               <small class="text-muted ms-2">(시스템 관리용 메타데이터)</small>
             </CCardHeader>
             <CCardBody>
-              <CAlert color="info" class="py-2 mb-3">
+              <CAlert color="success" class="py-2 mb-3">
                 <small>
                   <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                   아래 정보는 공문서 본문에는 인쇄되지 않으며, 우편 라벨 출력, 등기번호 추적 및 발송
@@ -1091,14 +1214,37 @@ const goBack = () => {
               </CAlert>
 
               <CRow class="mb-3">
-                <CCol md="6">
-                  <CFormLabel>수신처 주소 (우편/등기 발송지)</CFormLabel>
+                <CCol :xs="12" :md="4">
+                  <CFormLabel>수신처 기본 주소</CFormLabel>
+                  <CInputGroup>
+                    <CFormInput
+                      v-model="recipientAddressBase"
+                      placeholder="주소 검색 시 자동 입력"
+                      readonly
+                      style="cursor: pointer"
+                      @click="refPostCode?.initiate(2)"
+                    />
+                    <CButton
+                      type="button"
+                      color="secondary"
+                      variant="outline"
+                      @click="refPostCode?.initiate(2)"
+                    >
+                      <v-icon icon="mdi-magnify" size="small" class="me-1" />
+                      주소 검색
+                    </CButton>
+                  </CInputGroup>
+                </CCol>
+                <CCol :xs="12" :md="4">
+                  <CFormLabel>상세 주소</CFormLabel>
                   <CFormInput
-                    v-model="form.recipient_address"
-                    placeholder="우편 발송지 주소 (봉투 라벨 인쇄용)"
+                    ref="recipientDetailInputRef"
+                    v-model="recipientAddressDetail"
+                    placeholder="층·호수·부서명"
+                    @input="updateRecipientAddress"
                   />
                 </CCol>
-                <CCol md="6">
+                <CCol :xs="12" :md="4">
                   <CFormLabel>수신처 연락처/담당자</CFormLabel>
                   <CFormInput
                     v-model="form.recipient_contact"
@@ -1108,7 +1254,7 @@ const goBack = () => {
               </CRow>
 
               <CRow class="mb-2">
-                <CCol md="4">
+                <CCol :xs="12" :md="4">
                   <CFormLabel>발송 방법</CFormLabel>
                   <CFormSelect v-model="form.dispatch_method">
                     <option value="email">이메일</option>
@@ -1119,14 +1265,14 @@ const goBack = () => {
                     <option value="etc">기타</option>
                   </CFormSelect>
                 </CCol>
-                <CCol md="4">
+                <CCol :xs="12" :md="4">
                   <CFormLabel>등기 / 송장 번호</CFormLabel>
                   <CFormInput
                     v-model="form.tracking_number"
                     placeholder="13자리 등기번호 또는 택배 송장번호"
                   />
                 </CCol>
-                <CCol md="4">
+                <CCol :xs="12" :md="4">
                   <CFormLabel>발송 완료일자</CFormLabel>
                   <DatePicker
                     :model-value="form.dispatched_at ? form.dispatched_at.substring(0, 10) : ''"
@@ -1181,6 +1327,9 @@ const goBack = () => {
         </CCol>
       </CRow>
     </CForm>
+
+    <!-- 우편번호 및 도로명 주소 검색 레이어 모달 -->
+    <DaumPostcode ref="refPostCode" @address-callback="addressCallback" />
   </div>
 </template>
 
@@ -1217,7 +1366,9 @@ const goBack = () => {
 /* MdEditor 유효성 검사 테두리 스타일 */
 .md-editor-validation-wrapper {
   border-radius: 6px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .is-invalid-editor :deep(.md-editor) {
