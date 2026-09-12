@@ -333,14 +333,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     <CCard
       class="mb-4"
       :class="
-        isDispatched
-          ? 'border-success'
-          : hasApprovalDoc
-            ? 'border-primary'
-            : 'border-secondary'
+        isDispatched ? 'border-success' : hasApprovalDoc ? 'border-primary' : 'border-secondary'
       "
     >
-      <CCardBody class="d-flex flex-wrap justify-content-between align-items-center py-2 px-3 gap-2">
+      <CCardBody
+        class="d-flex flex-wrap justify-content-between align-items-center py-2 px-3 gap-2"
+      >
         <!-- 1. 이미 대외 발송 완료된 경우 -->
         <template v-if="isDispatched">
           <div class="d-flex align-items-center">
@@ -350,11 +348,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               <span class="text-muted ms-1">
                 {{ formatDateTime(letter.dispatched_at) }} 발송 완료 (증빙 보관 및 수정/삭제 불가)
               </span>
-              <CBadge
-                v-if="letter.approval_document_detail"
-                color="info"
-                class="ms-2"
-              >
+              <CBadge v-if="letter.approval_document_detail" color="info" class="ms-2">
                 결재승인 ({{ letter.approval_document_detail.doc_number }})
               </CBadge>
             </div>
@@ -456,372 +450,372 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           <CCardHeader class="d-flex justify-content-between align-items-center">
             <div>
               <CBadge color="primary" class="me-2">{{ letter.document_number }}</CBadge>
-          <strong>{{ letter.title }}</strong>
-        </div>
-        <div>
-          <small class="text-muted">
-            작성자: {{ letter.creator?.username || '-' }} | 작성일:
-            {{ formatDateTime(letter.created) }}
-          </small>
-        </div>
-      </CCardHeader>
-    </CCard>
-
-    <!-- Letter Info (수신 & 발신/날인) -->
-    <CRow>
-      <CCol md="6">
-        <CCard class="mb-4">
-          <CCardHeader>
-            <v-icon icon="mdi-card-account-mail" size="small" class="me-1" />
-            <strong>수신 정보</strong>
+              <strong>{{ letter.title }}</strong>
+            </div>
+            <div>
+              <small class="text-muted">
+                작성자: {{ letter.creator?.username || '-' }} | 작성일:
+                {{ formatDateTime(letter.created) }}
+              </small>
+            </div>
           </CCardHeader>
-          <CCardBody>
-            <table class="table table-borderless mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 100px">수신처명</th>
-                  <td class="fw-bold">{{ letter.recipient_name }}</td>
-                </tr>
-                <tr>
-                  <th>경유</th>
-                  <td>{{ letter.via || '-' }}</td>
-                </tr>
-                <tr>
-                  <th>참조</th>
-                  <td>{{ letter.recipient_reference || '-' }}</td>
-                </tr>
-                <tr>
-                  <th>공개구분</th>
-                  <td>
-                    <CBadge
-                      :color="
-                        letter.disclosure_type === '3'
-                          ? 'danger'
-                          : letter.disclosure_type === '2'
-                            ? 'warning'
-                            : 'success'
-                      "
-                    >
-                      {{
-                        letter.disclosure_type_desc ||
-                        (letter.disclosure_type === '3'
-                          ? '비공개'
-                          : letter.disclosure_type === '2'
-                            ? '부분공개'
-                            : '공개')
-                      }}
-                    </CBadge>
-                  </td>
-                </tr>
-                <tr>
-                  <th>시행(발신)일</th>
-                  <td>
-                    <span v-if="letter.dispatched_at" class="fw-bold text-success">
-                      {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
-                      <CBadge color="success" class="ms-1">발송완료</CBadge>
-                    </span>
-                    <span
-                      v-else-if="letter.approval_status === 'approved'"
-                      class="fw-bold text-primary"
-                    >
-                      {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
-                      <CBadge color="primary" class="ms-1">승인확정</CBadge>
-                    </span>
-                    <span v-else class="text-secondary">
-                      {{ formatDate(letter.issue_date) }}
-                      <small class="text-muted ms-1">(발신 요청일)</small>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </CCardBody>
         </CCard>
-      </CCol>
 
-      <CCol md="6">
-        <CCard class="mb-4">
-          <CCardHeader>
-            <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
-            <strong>발신 및 날인 정보</strong>
-          </CCardHeader>
-          <CCardBody>
-            <table class="table table-borderless mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 100px">날인 인감</th>
-                  <td>
-                    <div v-if="letter.seal_detail" class="d-flex align-items-center">
-                      <span class="me-2"
-                        >{{ letter.seal_detail.name }} ({{
-                          letter.seal_detail.seal_type_desc
-                        }})</span
-                      >
-                      <img
-                        v-if="letter.seal_detail.seal_image"
-                        :src="letter.seal_detail.seal_image"
-                        alt="인장"
-                        style="width: 28px; height: 28px; object-fit: contain"
-                        class="border rounded p-1 bg-white"
-                      />
-                    </div>
-                    <span v-else class="text-muted">(직인생략 또는 미선택)</span>
-                  </td>
-                </tr>
-                <tr>
-                  <th>기안/담당자</th>
-                  <td>
-                    <span
-                      >{{ letter.drafter_name }}
-                      {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span
-                    >
-                    <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1"
-                      >승인권자 직접기안</CBadge
-                    >
-                  </td>
-                </tr>
-                <tr v-if="letter.sender_address">
-                  <th>발신지주소</th>
-                  <td>
-                    <span v-if="letter.sender_zipcode">({{ letter.sender_zipcode }}) </span>
-                    {{ letter.sender_address }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
-
-    <!-- Letter Content -->
-    <CCard class="mb-4">
-      <CCardHeader>
-        <v-icon icon="mdi-file-document-outline" size="small" class="me-1" />
-        <strong>공문 본문</strong>
-      </CCardHeader>
-      <CCardBody>
-        <div
-          class="letter-content bg-more-white markdown-content text-body"
-          v-html="markdownRender(letter.content)"
-        />
-      </CCardBody>
-    </CCard>
-
-    <!-- Attachment Section (붙임 텍스트 및 첨부파일) -->
-    <CCard class="mb-4">
-      <CCardHeader>
-        <v-icon icon="mdi-paperclip" size="small" class="me-1" />
-        <strong>붙임 (첨부 서류 및 파일)</strong>
-      </CCardHeader>
-      <CCardBody>
-        <div v-if="letter.attachment_text" class="mb-3 p-3 bg-light rounded border">
-          <div class="fw-bold mb-1">인쇄용 붙임 목록:</div>
-          <div style="white-space: pre-wrap">{{ letter.attachment_text }}</div>
-        </div>
-
-        <div v-if="letter.attachments && letter.attachments.length > 0">
-          <div class="fw-bold mb-2">첨부 파일 목록:</div>
-          <ul class="list-group">
-            <li
-              v-for="att in letter.attachments"
-              :key="att.pk"
-              class="list-group-item d-flex justify-content-between align-items-center"
-            >
-              <div>
-                <v-icon icon="mdi-file-outline" size="small" class="me-2 text-primary" />
-                <strong>{{ att.name || att.file_name }}</strong>
-                <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
-              </div>
-              <v-btn
-                v-if="typeof att.file === 'string'"
-                :href="att.file"
-                target="_blank"
-                color="primary"
-                variant="outlined"
-                size="x-small"
-              >
-                <v-icon icon="mdi-cloud-download" size="small" class="me-1" /> 다운로드
-              </v-btn>
-            </li>
-          </ul>
-        </div>
-        <div v-else-if="!letter.attachment_text" class="text-muted">
-          등록된 붙임 서류나 첨부파일이 없습니다.
-        </div>
-      </CCardBody>
-    </CCard>
-
-    <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
-    <CCard class="mb-4 border-secondary">
-      <CCardHeader class="bg-light">
-        <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
-        <strong>발송 및 대장 관리 메타 정보</strong>
-      </CCardHeader>
-      <CCardBody>
+        <!-- Letter Info (수신 & 발신/날인) -->
         <CRow>
           <CCol md="6">
-            <table class="table table-borderless mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 120px">발송 방법</th>
-                  <td>
-                    <CBadge color="dark">{{
-                      letter.dispatch_method_desc || letter.dispatch_method || '이메일'
-                    }}</CBadge>
-                  </td>
-                </tr>
-                <tr>
-                  <th>등기/송장 번호</th>
-                  <td>{{ letter.tracking_number || '-' }}</td>
-                </tr>
-                <tr>
-                  <th>발송 완료일시</th>
-                  <td>{{ formatDateTime(letter.dispatched_at) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <CCard class="mb-4">
+              <CCardHeader>
+                <v-icon icon="mdi-card-account-mail" size="small" class="me-1" />
+                <strong>수신 정보</strong>
+              </CCardHeader>
+              <CCardBody>
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <th style="width: 100px">수신처명</th>
+                      <td class="fw-bold">{{ letter.recipient_name }}</td>
+                    </tr>
+                    <tr>
+                      <th>경유</th>
+                      <td>{{ letter.via || '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>참조</th>
+                      <td>{{ letter.recipient_reference || '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>공개구분</th>
+                      <td>
+                        <CBadge
+                          :color="
+                            letter.disclosure_type === '3'
+                              ? 'danger'
+                              : letter.disclosure_type === '2'
+                                ? 'warning'
+                                : 'success'
+                          "
+                        >
+                          {{
+                            letter.disclosure_type_desc ||
+                            (letter.disclosure_type === '3'
+                              ? '비공개'
+                              : letter.disclosure_type === '2'
+                                ? '부분공개'
+                                : '공개')
+                          }}
+                        </CBadge>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>시행(발신)일</th>
+                      <td>
+                        <span v-if="letter.dispatched_at" class="fw-bold text-success">
+                          {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
+                          <CBadge color="success" class="ms-1">발송완료</CBadge>
+                        </span>
+                        <span
+                          v-else-if="letter.approval_status === 'approved'"
+                          class="fw-bold text-primary"
+                        >
+                          {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
+                          <CBadge color="primary" class="ms-1">승인확정</CBadge>
+                        </span>
+                        <span v-else class="text-secondary">
+                          {{ formatDate(letter.issue_date) }}
+                          <small class="text-muted ms-1">(발신 요청일)</small>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CCardBody>
+            </CCard>
           </CCol>
+
           <CCol md="6">
-            <table class="table table-borderless mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 120px">우편 발송지</th>
-                  <td>{{ letter.recipient_address || '-' }}</td>
-                </tr>
-                <tr>
-                  <th>수신처 연락처</th>
-                  <td>{{ letter.recipient_contact || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <CCard class="mb-4">
+              <CCardHeader>
+                <v-icon icon="mdi-draw-pen" size="small" class="me-1" />
+                <strong>발신 및 날인 정보</strong>
+              </CCardHeader>
+              <CCardBody>
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <th style="width: 100px">날인 인감</th>
+                      <td>
+                        <div v-if="letter.seal_detail" class="d-flex align-items-center">
+                          <span class="me-2"
+                            >{{ letter.seal_detail.name }} ({{
+                              letter.seal_detail.seal_type_desc
+                            }})</span
+                          >
+                          <img
+                            v-if="letter.seal_detail.seal_image"
+                            :src="letter.seal_detail.seal_image"
+                            alt="인장"
+                            style="width: 28px; height: 28px; object-fit: contain"
+                            class="border rounded p-1 bg-white"
+                          />
+                        </div>
+                        <span v-else class="text-muted">(직인생략 또는 미선택)</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>기안/담당자</th>
+                      <td>
+                        <span
+                          >{{ letter.drafter_name }}
+                          {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span
+                        >
+                        <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1"
+                          >승인권자 직접기안</CBadge
+                        >
+                      </td>
+                    </tr>
+                    <tr v-if="letter.sender_address">
+                      <th>발신지주소</th>
+                      <td>
+                        <span v-if="letter.sender_zipcode">({{ letter.sender_zipcode }}) </span>
+                        {{ letter.sender_address }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CCardBody>
+            </CCard>
           </CCol>
         </CRow>
-      </CCardBody>
-    </CCard>
 
-    <!-- PDF Section (최종 발송본 PDF 관리) -->
-    <CCard class="mb-4">
-      <CCardHeader class="d-flex justify-content-between align-items-center">
-        <strong>
-          <v-icon icon="mdi-file-pdf-box" size="small" class="me-1" />
-          공문 PDF 파일 (최종 발송/보관본)
-        </strong>
-        <div>
-          <CBadge v-if="isDispatched" color="dark">대외 발송완료 (재생성 금지)</CBadge>
-          <CBadge v-else-if="isApproved" color="secondary">결재승인완료 (재생성 제한)</CBadge>
-        </div>
-      </CCardHeader>
-      <CCardBody>
-        <div
-          v-if="letter.pdf_file"
-          class="d-flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <div class="d-flex align-items-center">
-            <CBadge color="success" class="me-3 p-2">
-              <v-icon icon="mdi-check-circle" size="small" class="me-1" />
-              최종 PDF 등록됨
-            </CBadge>
-            <v-btn
-              color="dark"
-              class="text-body"
-              size="small"
-              variant="outlined"
-              @click="downloadPdf"
-            >
-              <v-icon icon="mdi-cloud-download" color="red" size="small" class="me-1" />
-              PDF 다운로드
-            </v-btn>
-          </div>
-
-          <!-- 작업 버튼 그룹: 스캔본 교체 업로드 & 시스템 재생성 -->
-          <div class="d-flex align-items-center gap-2">
-            <!-- 실물 날인 스캔본 직접 업로드 / 교체 (발송 후는 관리자만) -->
-            <template v-if="canUploadScan">
-              <input
-                ref="scanFileInputRef"
-                type="file"
-                accept=".pdf"
-                class="d-none"
-                @change="onScanFileSelect"
-              />
-              <v-btn
-                color="success"
-                size="small"
-                :disabled="scanUploadLoading"
-                @click="scanFileInputRef?.click()"
-              >
-                <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
-                <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
-                실물날인 스캔본(PDF) 업로드/교체
-              </v-btn>
-            </template>
-            <small v-else-if="isDispatched" class="text-muted">
-              (발송 완료된 공문의 스캔본 교체는 관리자만 가능)
-            </small>
-
-            <!-- 시스템 양식 PDF 재생성 (발송 완료 시 무조건 금지, 결재 승인 시 관리자만) -->
-            <v-btn
-              v-if="canRegeneratePdf"
-              color="warning"
-              size="small"
-              :disabled="pdfLoading"
-              @click="onGeneratePdf"
-            >
-              <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-              <v-icon v-else icon="mdi-refresh" size="small" class="me-1" />
-              시스템 PDF 재생성
-            </v-btn>
-            <small v-else-if="isDispatched" class="text-muted ms-1">
-              (발송 완료되어 증빙 보호를 위해 PDF 재생성 불가)
-            </small>
-            <small v-else-if="isApproved" class="text-muted ms-1">
-              (최종 결재 승인되어 관리자만 시스템 PDF 재생성 가능)
-            </small>
-          </div>
-        </div>
-
-        <!-- PDF 미생성 상태 -->
-        <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-          <span class="text-muted">PDF 파일이 아직 생성되거나 등록되지 않았습니다.</span>
-          <div class="d-flex align-items-center gap-2">
-            <!-- 직접 스캔본 업로드 -->
-            <input
-              ref="scanFileInputRef"
-              type="file"
-              accept=".pdf"
-              class="d-none"
-              @change="onScanFileSelect"
+        <!-- Letter Content -->
+        <CCard class="mb-4">
+          <CCardHeader>
+            <v-icon icon="mdi-file-document-outline" size="small" class="me-1" />
+            <strong>공문 본문</strong>
+          </CCardHeader>
+          <CCardBody>
+            <div
+              class="letter-content bg-more-white markdown-content text-body"
+              v-html="markdownRender(letter.content)"
             />
-            <v-btn
-              v-if="canDocsCreate"
-              color="info"
-              variant="outlined"
-              size="small"
-              :disabled="scanUploadLoading"
-              @click="scanFileInputRef?.click()"
-            >
-              <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
-              <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
-              스캔본(PDF) 직접 업로드
-            </v-btn>
+          </CCardBody>
+        </CCard>
 
-            <!-- 시스템 PDF 생성 -->
-            <v-btn
-              v-if="canDocsCreate"
-              color="primary"
-              size="small"
-              :disabled="pdfLoading"
-              @click="onGeneratePdf"
+        <!-- Attachment Section (붙임 텍스트 및 첨부파일) -->
+        <CCard class="mb-4">
+          <CCardHeader>
+            <v-icon icon="mdi-paperclip" size="small" class="me-1" />
+            <strong>붙임 (첨부 서류 및 파일)</strong>
+          </CCardHeader>
+          <CCardBody>
+            <div v-if="letter.attachment_text" class="mb-3 p-3 bg-light rounded border">
+              <div class="fw-bold mb-1">인쇄용 붙임 목록:</div>
+              <div style="white-space: pre-wrap">{{ letter.attachment_text }}</div>
+            </div>
+
+            <div v-if="letter.attachments && letter.attachments.length > 0">
+              <div class="fw-bold mb-2">첨부 파일 목록:</div>
+              <ul class="list-group">
+                <li
+                  v-for="att in letter.attachments"
+                  :key="att.pk"
+                  class="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <v-icon icon="mdi-file-outline" size="small" class="me-2 text-primary" />
+                    <strong>{{ att.name || att.file_name }}</strong>
+                    <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
+                  </div>
+                  <v-btn
+                    v-if="typeof att.file === 'string'"
+                    :href="att.file"
+                    target="_blank"
+                    color="primary"
+                    variant="outlined"
+                    size="x-small"
+                  >
+                    <v-icon icon="mdi-cloud-download" size="small" class="me-1" /> 다운로드
+                  </v-btn>
+                </li>
+              </ul>
+            </div>
+            <div v-else-if="!letter.attachment_text" class="text-muted">
+              등록된 붙임 서류나 첨부파일이 없습니다.
+            </div>
+          </CCardBody>
+        </CCard>
+
+        <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
+        <CCard class="mb-4 border-secondary">
+          <CCardHeader class="bg-light">
+            <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
+            <strong>발송 및 대장 관리 메타 정보</strong>
+          </CCardHeader>
+          <CCardBody>
+            <CRow>
+              <CCol md="6">
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <th style="width: 120px">발송 방법</th>
+                      <td>
+                        <CBadge color="dark">{{
+                          letter.dispatch_method_desc || letter.dispatch_method || '이메일'
+                        }}</CBadge>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>등기/송장 번호</th>
+                      <td>{{ letter.tracking_number || '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>발송 완료일시</th>
+                      <td>{{ formatDateTime(letter.dispatched_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CCol>
+              <CCol md="6">
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <th style="width: 120px">우편 발송지</th>
+                      <td>{{ letter.recipient_address || '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>수신처 연락처</th>
+                      <td>{{ letter.recipient_contact || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CCol>
+            </CRow>
+          </CCardBody>
+        </CCard>
+
+        <!-- PDF Section (최종 발송본 PDF 관리) -->
+        <CCard class="mb-4">
+          <CCardHeader class="d-flex justify-content-between align-items-center">
+            <strong>
+              <v-icon icon="mdi-file-pdf-box" size="small" class="me-1" />
+              공문 PDF 파일 (최종 발송/보관본)
+            </strong>
+            <div>
+              <CBadge v-if="isDispatched" color="dark">대외 발송완료 (재생성 금지)</CBadge>
+              <CBadge v-else-if="isApproved" color="secondary">결재승인완료 (재생성 제한)</CBadge>
+            </div>
+          </CCardHeader>
+          <CCardBody>
+            <div
+              v-if="letter.pdf_file"
+              class="d-flex flex-wrap align-items-center justify-content-between gap-2"
             >
-              <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
-              <v-icon v-else icon="mdi-file-pdf-box" size="small" class="me-1" />
-              시스템 양식 PDF 생성
-            </v-btn>
-          </div>
-        </div>
-      </CCardBody>
-    </CCard>
+              <div class="d-flex align-items-center">
+                <CBadge color="success" class="me-3 p-2">
+                  <v-icon icon="mdi-check-circle" size="small" class="me-1" />
+                  최종 PDF 등록됨
+                </CBadge>
+                <v-btn
+                  color="dark"
+                  class="text-body"
+                  size="small"
+                  variant="outlined"
+                  @click="downloadPdf"
+                >
+                  <v-icon icon="mdi-cloud-download" color="red" size="small" class="me-1" />
+                  PDF 다운로드
+                </v-btn>
+              </div>
+
+              <!-- 작업 버튼 그룹: 스캔본 교체 업로드 & 시스템 재생성 -->
+              <div class="d-flex align-items-center gap-2">
+                <!-- 실물 날인 스캔본 직접 업로드 / 교체 (발송 후는 관리자만) -->
+                <template v-if="canUploadScan">
+                  <input
+                    ref="scanFileInputRef"
+                    type="file"
+                    accept=".pdf"
+                    class="d-none"
+                    @change="onScanFileSelect"
+                  />
+                  <v-btn
+                    color="success"
+                    size="small"
+                    :disabled="scanUploadLoading"
+                    @click="scanFileInputRef?.click()"
+                  >
+                    <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
+                    <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
+                    실물날인 스캔본(PDF) 업로드/교체
+                  </v-btn>
+                </template>
+                <small v-else-if="isDispatched" class="text-muted">
+                  (발송 완료된 공문의 스캔본 교체는 관리자만 가능)
+                </small>
+
+                <!-- 시스템 양식 PDF 재생성 (발송 완료 시 무조건 금지, 결재 승인 시 관리자만) -->
+                <v-btn
+                  v-if="canRegeneratePdf"
+                  color="warning"
+                  size="small"
+                  :disabled="pdfLoading"
+                  @click="onGeneratePdf"
+                >
+                  <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
+                  <v-icon v-else icon="mdi-refresh" size="small" class="me-1" />
+                  시스템 PDF 재생성
+                </v-btn>
+                <small v-else-if="isDispatched" class="text-muted ms-1">
+                  (발송 완료되어 증빙 보호를 위해 PDF 재생성 불가)
+                </small>
+                <small v-else-if="isApproved" class="text-muted ms-1">
+                  (최종 결재 승인되어 관리자만 시스템 PDF 재생성 가능)
+                </small>
+              </div>
+            </div>
+
+            <!-- PDF 미생성 상태 -->
+            <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <span class="text-muted">PDF 파일이 아직 생성되거나 등록되지 않았습니다.</span>
+              <div class="d-flex align-items-center gap-2">
+                <!-- 직접 스캔본 업로드 -->
+                <input
+                  ref="scanFileInputRef"
+                  type="file"
+                  accept=".pdf"
+                  class="d-none"
+                  @change="onScanFileSelect"
+                />
+                <v-btn
+                  v-if="canDocsCreate"
+                  color="info"
+                  variant="outlined"
+                  size="small"
+                  :disabled="scanUploadLoading"
+                  @click="scanFileInputRef?.click()"
+                >
+                  <CSpinner v-if="scanUploadLoading" size="sm" class="me-1" />
+                  <v-icon v-else icon="mdi-cloud-upload" size="small" class="me-1" />
+                  스캔본(PDF) 직접 업로드
+                </v-btn>
+
+                <!-- 시스템 PDF 생성 -->
+                <v-btn
+                  v-if="canDocsCreate"
+                  color="info"
+                  size="small"
+                  :disabled="pdfLoading"
+                  @click="onGeneratePdf"
+                >
+                  <CSpinner v-if="pdfLoading" size="sm" class="me-1" />
+                  <v-icon v-else icon="mdi-file-pdf-box" size="small" class="me-1" />
+                  시스템 양식 PDF 생성
+                </v-btn>
+              </div>
+            </div>
+          </CCardBody>
+        </CCard>
 
         <!-- Action Buttons -->
         <CRow class="mb-4">
@@ -874,7 +868,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           :sender-contact="senderContact"
           :clean-drafter-name="cleanDrafterName"
           :next-doc-number="letter.document_number || ''"
-          :attachment-input-mode="letter.attachments && letter.attachments.length > 0 ? 'file' : 'text'"
+          :attachment-input-mode="
+            letter.attachments && letter.attachments.length > 0 ? 'file' : 'text'
+          "
           :pending-attachments="[]"
           :is-view-mode="true"
         />
