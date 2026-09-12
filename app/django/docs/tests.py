@@ -315,3 +315,55 @@ class DocsAppSecurityTests(TestCase):
         # PDF 파일 바이너리 내용 존재 확인
         self.assertGreater(len(pdf_file.read()), 1000)
 
+    def test_dispatched_and_approved_letter_restrictions(self):
+        """발송 완료 및 결재 승인된 공문의 수정/삭제 제한 검증"""
+        from django.utils import timezone
+
+        # 1. 발송 완료된 공문 (dispatched_at 설정)
+        dispatched_letter = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-DISPATCHED-001',
+            title='[발송완료] 회신 건',
+            recipient_name='한국토지주택공사',
+            drafter_name='담당자',
+            content='발송 완료된 내용입니다.',
+            issue_date=date(2026, 3, 1),
+            dispatched_at=timezone.now(),
+            creator=self.author_user
+        )
+
+        # 발송 완료 공문은 일반 사용자 및 관리자 모두 삭제/수정 차단 (400 Bad Request)
+        self.client.force_authenticate(user=self.admin_user)
+        res_del = self.client.delete(f'/api/v1/official-letter/{dispatched_letter.pk}/')
+        self.assertEqual(res_del.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_update = self.client.patch(f'/api/v1/official-letter/{dispatched_letter.pk}/', {'title': '임의수정'})
+        self.assertEqual(res_update.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 2. 결재 승인된 공문 (approval_status='approved', 아직 미발송)
+        approved_letter = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-APPROVED-001',
+            title='[결재완료] 승인 건',
+            recipient_name='한국토지주택공사',
+            drafter_name='담당자',
+            content='결재 승인된 내용입니다.',
+            issue_date=date(2026, 3, 1),
+            approval_status='approved',
+            creator=self.author_user
+        )
+
+        # 일반 사용자는 수정/삭제 차단 (403 Forbidden)
+        self.client.force_authenticate(user=self.author_user)
+        res_author_del = self.client.delete(f'/api/v1/official-letter/{approved_letter.pk}/')
+        self.assertEqual(res_author_del.status_code, status.HTTP_403_FORBIDDEN)
+
+        res_author_up = self.client.patch(f'/api/v1/official-letter/{approved_letter.pk}/', {'title': '일반사용자수정'})
+        self.assertEqual(res_author_up.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 관리자는 미발송 결재 승인 공문 수정 가능 (200 OK)
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin_up = self.client.patch(f'/api/v1/official-letter/{approved_letter.pk}/', {'title': '관리자수정'})
+        self.assertEqual(res_admin_up.status_code, status.HTTP_200_OK)
+
+

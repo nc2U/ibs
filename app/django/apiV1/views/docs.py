@@ -6,6 +6,7 @@ from django.utils import timezone
 from django_filters import BooleanFilter, ModelChoiceFilter, CharFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -501,7 +502,29 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
+        letter = self.get_object()
+        # 1. 발송 완료된 공문은 자료 유실 및 법적 분쟁 방지를 위해 수정 전면 금지
+        if letter.dispatched_at is not None:
+            raise ValidationError('이미 대외 발송이 완료된 공문서는 내용을 수정할 수 없습니다.')
+
+        # 2. 결재 승인 완료된 공문은 관리자만 수정 가능
+        is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
+        if letter.approval_status == 'approved' and not is_manager:
+            raise PermissionDenied('최종 결재 승인된 공문서는 관리자만 수정할 수 있습니다.')
+
         serializer.save(updator=self.request.user)
+
+    def perform_destroy(self, instance):
+        # 1. 발송 완료된 공문은 법적 증빙 문서로 삭제 전면 금지
+        if instance.dispatched_at is not None:
+            raise ValidationError('이미 대외 발송이 완료된 공문서는 법적 증빙 문서로 삭제할 수 없습니다.')
+
+        # 2. 결재 승인 완료된 공문은 관리자만 삭제 가능
+        is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
+        if instance.approval_status == 'approved' and not is_manager:
+            raise PermissionDenied('최종 결재 승인된 공문서는 관리자만 삭제할 수 있습니다.')
+
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):

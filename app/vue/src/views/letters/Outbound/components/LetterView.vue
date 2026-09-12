@@ -65,6 +65,28 @@ const canUploadScan = computed(() => {
   return true
 })
 
+// 공문 수정 가능 여부:
+// 1. 발송 완료 시: 위·변조 방지 및 증빙 보호를 위해 관리자 포함 전면 금지
+// 2. 결재 승인 완료 시: 관리자만 가능
+// 3. 그 외: docs.update 권한자 가능
+const canEditLetter = computed(() => {
+  if (isDispatched.value) return false
+  if (!canDocsUpdate.value) return false
+  if (isApproved.value) return isManager.value
+  return true
+})
+
+// 공문 삭제 가능 여부:
+// 1. 발송 완료 시: 법적 증빙 문서로 관리자 포함 전면 삭제 금지
+// 2. 결재 승인 완료 시: 관리자만 가능
+// 3. 그 외: docs.delete 권한자 가능
+const canDeleteLetter = computed(() => {
+  if (isDispatched.value) return false
+  if (!canDocsDelete.value) return false
+  if (isApproved.value) return isManager.value
+  return true
+})
+
 const letterNav = computed(() => docStore.getLetterNav)
 
 const prevPk = computed(() => {
@@ -540,8 +562,14 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               <v-icon icon="mdi-check-circle" size="small" class="me-1" />
               최종 PDF 등록됨
             </CBadge>
-            <v-btn color="primary" size="small" @click="downloadPdf">
-              <v-icon icon="mdi-cloud-download" size="small" class="me-1" />
+            <v-btn
+              color="dark"
+              class="text-body"
+              size="small"
+              variant="outlined"
+              @click="downloadPdf"
+            >
+              <v-icon icon="mdi-cloud-download" color="red" size="small" class="me-1" />
               PDF 다운로드
             </v-btn>
           </div>
@@ -558,8 +586,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 @change="onScanFileSelect"
               />
               <v-btn
-                color="info"
-                variant="outlined"
+                color="success"
                 size="small"
                 :disabled="scanUploadLoading"
                 @click="scanFileInputRef?.click()"
@@ -577,7 +604,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
             <v-btn
               v-if="canRegeneratePdf"
               color="warning"
-              variant="outlined"
               size="small"
               :disabled="pdfLoading"
               @click="onGeneratePdf"
@@ -639,14 +665,20 @@ const formatDateTime = (dateStr: string | null | undefined) => {
 
     <!-- Action Buttons -->
     <CRow>
-      <CCol class="d-flex justify-content-between">
+      <CCol class="d-flex justify-content-between align-items-center">
         <v-btn color="secondary" variant="outlined" @click="goToList">
           <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
           목록으로
         </v-btn>
-        <div>
+        <div class="d-flex align-items-center">
+          <small v-if="isDispatched" class="text-muted me-3">
+            (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
+          </small>
+          <small v-else-if="isApproved && !isManager" class="text-muted me-3">
+            (결재 승인 완료되어 관리자만 수정 및 삭제가 가능합니다)
+          </small>
           <v-btn
-            v-if="canDocsDelete"
+            v-if="canDeleteLetter"
             color="error"
             variant="outlined"
             class="me-2"
@@ -655,7 +687,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
             <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
             삭제
           </v-btn>
-          <v-btn v-if="canDocsUpdate" color="success" @click="goToEdit">
+          <v-btn v-if="canEditLetter" color="success" @click="goToEdit">
             <v-icon icon="mdi-pencil" size="small" class="me-1" />
             수정
           </v-btn>
@@ -669,8 +701,8 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       <template #default>
         <p>이 공문을 삭제하시겠습니까?</p>
         <p class="text-muted mb-0">
-          <small>문서번호: {{ letter.document_number }}</small
-          ><br />
+          <small>문서번호: {{ letter.document_number }}</small>
+          <br />
           <small>제목: {{ letter.title }}</small>
         </p>
       </template>
