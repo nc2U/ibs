@@ -366,4 +366,50 @@ class DocsAppSecurityTests(TestCase):
         res_admin_up = self.client.patch(f'/api/v1/official-letter/{approved_letter.pk}/', {'title': '관리자수정'})
         self.assertEqual(res_admin_up.status_code, status.HTTP_200_OK)
 
+    def test_official_letter_filter_by_approval_status(self):
+        """대외 공문 필터링(결재상태 및 발송완료) 검증"""
+        from django.utils import timezone
+
+        # 1. 발송완료 공문 (dispatched_at 존재)
+        OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-DISP-002',
+            title='발송완료 공문',
+            recipient_name='테스트수신처',
+            drafter_name='담당자',
+            content='내용',
+            issue_date=date(2026, 3, 1),
+            approval_status='approved',
+            dispatched_at=timezone.now(),
+            creator=self.author_user,
+        )
+
+        # 2. 결재진행중 공문
+        OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-PEND-001',
+            title='결재대기 공문',
+            recipient_name='테스트수신처',
+            drafter_name='담당자',
+            content='내용',
+            issue_date=date(2026, 3, 1),
+            approval_status='pending',
+            creator=self.author_user,
+        )
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 발송완료 필터
+        res_dispatched = self.client.get('/api/v1/official-letter/?approval_status=dispatched')
+        self.assertEqual(res_dispatched.status_code, status.HTTP_200_OK)
+        for item in res_dispatched.data['results']:
+            self.assertIsNotNone(item['dispatched_at'])
+
+        # 결재대기 필터
+        res_pending = self.client.get('/api/v1/official-letter/?approval_status=pending')
+        self.assertEqual(res_pending.status_code, status.HTTP_200_OK)
+        for item in res_pending.data['results']:
+            self.assertEqual(item['approval_status'], 'pending')
+
+
 

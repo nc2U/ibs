@@ -454,6 +454,14 @@ class OfficialLetterFilterSet(FilterSet):
                                 queryset=Company.objects.all(), label='회사')
     issue_date_from = DateFilter(field_name='issue_date', lookup_expr='gte', label='발신일(시작)')
     issue_date_to = DateFilter(field_name='issue_date', lookup_expr='lte', label='발신일(종료)')
+    approval_status = CharFilter(method='filter_approval_status', label='결재/발송 상태')
+
+    def filter_approval_status(self, queryset, name, value):
+        if not value:
+            return queryset
+        if value == 'dispatched':
+            return queryset.filter(dispatched_at__isnull=False)
+        return queryset.filter(approval_status=value)
 
     class Meta:
         model = OfficialLetter
