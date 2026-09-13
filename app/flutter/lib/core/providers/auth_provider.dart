@@ -1,44 +1,17 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/user_model.dart';
 import 'dio_provider.dart';
 
+part 'auth_provider.freezed.dart';
+
 // ── 인증 상태 모델 ─────────────────────────────────────────────────────────────
-sealed class AuthState {
-  const AuthState();
-  const factory AuthState.authenticated({required String accessToken}) = Authenticated;
-  const factory AuthState.unauthenticated() = Unauthenticated;
-  const factory AuthState.loading() = Loading;
-
-  T maybeWhen<T>({
-    T Function(String accessToken)? authenticated,
-    T Function()? unauthenticated,
-    T Function()? loading,
-    required T Function() orElse,
-  }) {
-    final self = this;
-    if (self is Authenticated && authenticated != null) {
-      return authenticated(self.accessToken);
-    } else if (self is Unauthenticated && unauthenticated != null) {
-      return unauthenticated();
-    } else if (self is Loading && loading != null) {
-      return loading();
-    }
-    return orElse();
-  }
-}
-
-class Authenticated extends AuthState {
-  final String accessToken;
-  const Authenticated({required this.accessToken});
-}
-
-class Unauthenticated extends AuthState {
-  const Unauthenticated();
-}
-
-class Loading extends AuthState {
-  const Loading();
+@freezed
+class AuthState with _$AuthState {
+  const factory AuthState.authenticated({required String accessToken}) = _Authenticated;
+  const factory AuthState.unauthenticated() = _Unauthenticated;
+  const factory AuthState.loading() = _Loading;
 }
 
 // ── AuthNotifier ───────────────────────────────────────────────────────────────
