@@ -159,14 +159,14 @@ const canUploadScan = computed(() => {
 // 공문 수정 가능 여부:
 // 1. 발송 완료 시: 전면 금지
 // 2. 결재 진행 중 시: 결재 심의 중이므로 수정 금지 (기안 회수 또는 반려 후 수정 가능)
-// 3. 결재 최종 승인 완료 시: 관리자(슈퍼유저/work_manager)만 제한적 수정 가능
+// 3. 결재 최종 승인 완료 시: 위·변조 방지 및 결재 효력 보존을 위해 관리자 포함 수정 전면 금지
 // 4. 전자결재 모드인 경우: 미상신('none') 또는 반려('rejected') 상태에서만 일반 수정 가능
 // 5. 단독/직접 발송 모드인 경우: 발송 전까지 수정 가능
 const canEditLetter = computed(() => {
   if (isDispatched.value) return false
   if (isPending.value) return false
+  if (isApproved.value) return false
   if (!canDocsUpdate.value) return false
-  if (isApproved.value) return isManager.value
   return true
 })
 

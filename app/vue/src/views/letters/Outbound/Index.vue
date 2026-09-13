@@ -52,9 +52,21 @@ const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 watch(
   () => route.params.letterId,
-  val => {
-    if (val) fetchLetter(Number(val))
-    else docStore.removeLetter()
+  async val => {
+    if (val) {
+      await fetchLetter(Number(val))
+      // 결재 진행 중이거나 결재 승인 완료된 문서는 수정 페이지 접근 시 보기 화면으로 자동 리다이렉트
+      if (route.name?.includes('수정') && letter.value) {
+        if (letter.value.approval_status === 'pending' || letter.value.approval_status === 'approved' || letter.value.dispatched_at) {
+          router.replace({
+            name: `${mainViewName.value} - 보기`,
+            params: { letterId: val },
+          })
+        }
+      }
+    } else {
+      docStore.removeLetter()
+    }
   },
 )
 

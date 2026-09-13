@@ -163,11 +163,9 @@ const isApprovalPending = computed(() => props.letter?.approval_status === 'pend
 const isApprovalApproved = computed(() => props.letter?.approval_status === 'approved')
 const isApprovalRejected = computed(() => props.letter?.approval_status === 'rejected')
 
-// 결재가 진행 중인 문서는 전면 수정 비활성화, 최종 승인된 문서는 관리자만 수정 가능
-const isManager = computed(() => !!accStore.superAuth || !!accStore.workManager)
+// 결재가 진행 중이거나 최종 승인된 문서는 위·변조 방지를 위해 수정 전면 비활성화
 const canOLManage = computed(() => {
-  if (isApprovalPending.value) return false
-  if (isApprovalApproved.value && !isManager.value) return false
+  if (isApprovalPending.value || isApprovalApproved.value) return false
   return isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)
 })
 
