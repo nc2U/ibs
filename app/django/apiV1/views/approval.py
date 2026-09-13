@@ -567,6 +567,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         document.steps.all().delete()
         document.save()
 
+        # 연동된 공문(OfficialLetter) 상태 동기화 (기안 회수 시 미상신/임시 상태로 복귀)
+        official_letter_id = (document.content or {}).get('official_letter_id')
+        if official_letter_id:
+            from docs.models import OfficialLetter
+            OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='none')
+
         # 결재자들에게 회수 알림 비동기 발송
         if approver_ids:
             try:

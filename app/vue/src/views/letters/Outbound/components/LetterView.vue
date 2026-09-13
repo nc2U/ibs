@@ -116,7 +116,13 @@ const isDispatched = computed(() => !!props.letter?.dispatched_at)
 // 결재완료 여부
 const isApproved = computed(() => props.letter?.approval_status === 'approved')
 
-// 전자결재 연동 여부 및 단독/직접 발송 모드 판단
+// 결재 진행중 여부
+const isPending = computed(() => props.letter?.approval_status === 'pending')
+
+// 결재 반려 여부
+const isRejected = computed(() => props.letter?.approval_status === 'rejected')
+
+// 결재 문서 존재 여부
 const hasApprovalDoc = computed(() => {
   return (
     props.letter?.approval_mode === 'approval' ||
@@ -151,11 +157,14 @@ const canUploadScan = computed(() => {
 })
 
 // 공문 수정 가능 여부:
-// 1. 발송 완료 시: 위·변조 방지 및 증빙 보호를 위해 관리자 포함 전면 금지
-// 2. 결재 승인 완료 시: 관리자만 가능
-// 3. 그 외: docs.update 권한자 가능
+// 1. 발송 완료 시: 전면 금지
+// 2. 결재 진행 중 시: 결재 심의 중이므로 수정 금지 (기안 회수 또는 반려 후 수정 가능)
+// 3. 결재 최종 승인 완료 시: 관리자(슈퍼유저/work_manager)만 제한적 수정 가능
+// 4. 전자결재 모드인 경우: 미상신('none') 또는 반려('rejected') 상태에서만 일반 수정 가능
+// 5. 단독/직접 발송 모드인 경우: 발송 전까지 수정 가능
 const canEditLetter = computed(() => {
   if (isDispatched.value) return false
+  if (isPending.value) return false
   if (!canDocsUpdate.value) return false
   if (isApproved.value) return isManager.value
   return true
@@ -280,7 +289,11 @@ const downloadPdf = () => {
   }
 }
 
+import { useApproval } from '@/store/pinia/approval'
+
+const appStore = useApproval()
 const approvalLoading = ref(false)
+const cancelLoading = ref(false)
 
 const onSubmitApproval = async () => {
   if (props.letter?.pk) {
@@ -289,6 +302,20 @@ const onSubmitApproval = async () => {
       await docStore.submitApproval(props.letter.pk)
     } finally {
       approvalLoading.value = false
+    }
+  }
+}
+
+const onCancelApproval = async () => {
+  if (props.letter?.approval_document && confirm('전자결재 기안을 회수하시겠습니까?\n회수 시 결재 진행이 취소되고 문서를 수정하여 다시 상신할 수 있습니다.')) {
+    cancelLoading.value = true
+    try {
+      await appStore.cancelDocument(props.letter.approval_document)
+      if (props.letter?.pk) {
+        await docStore.fetchLetter(props.letter.pk)
+      }
+    } finally {
+      cancelLoading.value = false
     }
   }
 }
@@ -396,6 +423,19 @@ const formatDateTime = (dateStr: string | null | undefined) => {
             >
               <v-icon icon="mdi-open-in-new" size="small" class="me-1" />
               결재 문서 보기
+            </v-btn>
+            <v-btn
+              v-if="letter.approval_status === 'pending'"
+              color="warning"
+              variant="outlined"
+              size="small"
+              class="me-2"
+              :disabled="cancelLoading"
+              @click="onCancelApproval"
+            >
+              <CSpinner v-if="cancelLoading" size="sm" class="me-1" />
+              <v-icon v-else icon="mdi-undo-variant" size="small" class="me-1" />
+              기안 회수
             </v-btn>
             <v-btn
               v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
@@ -829,8 +869,11 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               <small v-if="isDispatched" class="text-muted me-3">
                 (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
               </small>
-              <small v-else-if="isApproved && !isManager" class="text-muted me-3">
-                (결재 승인 완료되어 관리자만 수정 및 삭제가 가능합니다)
+              <small v-else-if="isPending" class="text-muted me-3">
+                (전자결재가 진행 중인 공문입니다. 기안을 회수하거나 반려된 후에 수정할 수 있습니다)
+              </small>
+              <small v-else-if="isApproved" class="text-muted me-3">
+                (최종 결재 승인되어 내용 수정이 불가합니다)
               </small>
               <v-btn
                 v-if="canDeleteLetter"

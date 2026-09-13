@@ -157,7 +157,29 @@ const senderContact = computed(() => {
 })
 
 const isEdit = computed(() => !!props.letter?.pk)
-const canOLManage = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
+
+// 결재 진행 상태 확인
+const isApprovalPending = computed(() => props.letter?.approval_status === 'pending')
+const isApprovalApproved = computed(() => props.letter?.approval_status === 'approved')
+const isApprovalRejected = computed(() => props.letter?.approval_status === 'rejected')
+
+// 결재가 진행 중인 문서는 전면 수정 비활성화, 최종 승인된 문서는 관리자만 수정 가능
+const isManager = computed(() => !!accStore.superAuth || !!accStore.workManager)
+const canOLManage = computed(() => {
+  if (isApprovalPending.value) return false
+  if (isApprovalApproved.value && !isManager.value) return false
+  return isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)
+})
+
+// 수정 모드이면서 전자결재 연동 이력이 있는 경우 발송 모드(전자결재 vs 단독) 변경 토글 잠금
+const isApprovalModeLocked = computed(() => {
+  return (
+    isEdit.value &&
+    (props.letter?.approval_mode === 'approval' ||
+      !!props.letter?.approval_document ||
+      (!!props.letter?.approval_status && props.letter.approval_status !== 'none'))
+  )
+})
 
 const router = useRouter()
 const docStore = useDocs()
@@ -835,21 +857,27 @@ const goBack = () => {
                   </div>
 
                   <!-- 발송 방식 토글 (전자결재 vs 단독/직접) -->
-                  <v-btn-toggle
-                    v-model="approvalMode"
-                    mandatory
-                    density="compact"
-                    color="blue-grey-darken-1"
-                  >
-                    <v-btn value="approval" size="small" class="px-3 text-none">
-                      <v-icon icon="mdi-shield-check" size="small" class="me-1" />
-                      전자결재 상신 발송
-                    </v-btn>
-                    <v-btn value="manual" size="small" class="px-3 text-none">
-                      <v-icon icon="mdi-pencil" size="small" class="me-1" />
-                      단독 / 직접 발송
-                    </v-btn>
-                  </v-btn-toggle>
+                  <div class="d-flex align-items-center gap-2">
+                    <small v-if="isApprovalModeLocked" class="text-muted">
+                      (전자결재 연동 문서는 발송 방식을 변경할 수 없습니다)
+                    </small>
+                    <v-btn-toggle
+                      v-model="approvalMode"
+                      mandatory
+                      density="compact"
+                      color="blue-grey-darken-1"
+                      :disabled="isApprovalModeLocked"
+                    >
+                      <v-btn value="approval" size="small" class="px-3 text-none">
+                        <v-icon icon="mdi-shield-check" size="small" class="me-1" />
+                        전자결재 상신 발송
+                      </v-btn>
+                      <v-btn value="manual" size="small" class="px-3 text-none">
+                        <v-icon icon="mdi-pencil" size="small" class="me-1" />
+                        단독 / 직접 발송
+                      </v-btn>
+                    </v-btn-toggle>
+                  </div>
                 </div>
 
                 <!-- 1. 발신 명의 및 날인 직인 일체형 설정 카드 -->
@@ -1304,37 +1332,65 @@ const goBack = () => {
               </v-btn>
 
               <!-- 전자결재 상신 발송 모드: 임시저장(초안) & 즉시 전자결재 상신 분기 제공 -->
-              <div v-if="approvalMode === 'approval'" class="d-flex gap-2">
+              <div v-if="approvalMode === 'approval'" class="d-flex align-items-center gap-2">
+                <small v-if="!canOLManage" class="text-muted">
+                  {{
+                    isApprovalPending
+                      ? '(결재 진행 중인 문서는 수정할 수 없습니다)'
+                      : isApprovalApproved
+                        ? '(결재 승인 완료되어 수정할 수 없습니다)'
+                        : ''
+                  }}
+                </small>
+                <!-- 이미 승인된 문서를 관리자가 수정하는 경우 전자결재 재상신 불필요 (수정 저장만 노출) -->
                 <v-btn
-                  color="secondary"
+                  v-if="isApprovalApproved"
+                  color="success"
                   variant="flat"
-                  :disabled="!accStore.isStaff && canOLManage"
+                  :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
                   @click="onSubmit(false)"
                 >
                   <v-icon icon="mdi-content-save-outline" class="me-1" />
-                  {{ isEdit ? '수정 임시저장' : '임시저장' }}
+                  수정 저장
                 </v-btn>
-                <v-btn
-                  color="primary"
-                  variant="flat"
-                  :disabled="!accStore.isStaff && canOLManage"
-                  @click="onSubmit(true)"
-                >
-                  <v-icon icon="mdi-send-check-outline" class="me-1" />
-                  전자결재 상신
-                </v-btn>
+
+                <!-- 그 외(미상신/반려)의 경우 임시저장과 전자결재 상신 2개 버튼 제공 -->
+                <template v-else>
+                  <v-btn
+                    color="light"
+                    variant="flat"
+                    :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                    @click="onSubmit(false)"
+                  >
+                    <v-icon icon="mdi-content-save-outline" class="me-1" />
+                    {{ isEdit ? '수정 임시저장' : '임시저장' }}
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                    @click="onSubmit(true)"
+                  >
+                    <v-icon icon="mdi-send-check-outline" class="me-1" />
+                    {{ isApprovalRejected ? '전자결재 재상신' : '전자결재 상신' }}
+                  </v-btn>
+                </template>
               </div>
 
               <!-- 단독 / 직접 발송 모드: 단일 공문 저장 버튼 -->
-              <v-btn
-                v-else
-                type="submit"
-                :color="isEdit ? 'success' : 'primary'"
-                :disabled="!accStore.isStaff && canOLManage"
-              >
-                <v-icon icon="mdi-content-save-outline" class="me-1" />
-                {{ isEdit ? '수정 저장' : '공문 저장' }}
-              </v-btn>
+              <div v-else class="d-flex align-items-center gap-2">
+                <small v-if="!canOLManage" class="text-muted">
+                  (수정 권한이 없거나 수정할 수 없는 상태입니다)
+                </small>
+                <v-btn
+                  type="submit"
+                  :color="isEdit ? 'success' : 'primary'"
+                  :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                >
+                  <v-icon icon="mdi-content-save-outline" class="me-1" />
+                  {{ isEdit ? '수정 저장' : '공문 저장' }}
+                </v-btn>
+              </div>
             </CCol>
           </CRow>
         </CCol>

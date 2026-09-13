@@ -515,10 +515,20 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         if letter.dispatched_at is not None:
             raise ValidationError('이미 대외 발송이 완료된 공문서는 내용을 수정할 수 없습니다.')
 
-        # 2. 결재 승인 완료된 공문은 관리자만 수정 가능
+        # 2. 전자결재 진행 중인 공문은 결재 심의 중이므로 수정 전면 금지 (기안 회수 또는 반려 후 수정 가능)
+        if letter.approval_status == 'pending':
+            raise ValidationError('전자결재가 진행 중인 공문서는 수정할 수 없습니다. 기안을 회수하거나 반려된 후에 수정해 주세요.')
+
+        # 3. 결재 최종 승인 완료된 공문은 관리자만 오탈자 등 제한적 수정 가능
         is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
         if letter.approval_status == 'approved' and not is_manager:
             raise PermissionDenied('최종 결재 승인된 공문서는 관리자만 수정할 수 있습니다.')
+
+        # 4. 전자결재 이력이 있는 문서(approval_mode='approval' 또는 approval_document 연동)는 단독/직접 발송으로 변경 금지
+        validated_data = serializer.validated_data
+        requested_mode = validated_data.get('approval_mode')
+        if requested_mode == 'manual' and (letter.approval_document or letter.approval_mode == 'approval'):
+            raise ValidationError('전자결재 문서로 등록된 공문은 단독/직접 발송 방식으로 변경할 수 없습니다.')
 
         serializer.save(updator=self.request.user)
 
