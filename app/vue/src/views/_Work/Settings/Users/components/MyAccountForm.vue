@@ -435,11 +435,6 @@ onBeforeRouteUpdate(async to => {
     </CRow>
   </div>
 
-  <ConfirmModal ref="refConfirmModal">
-    <template #default> 내 계정 정보를 저장하시겠습니까?</template>
-    <template #footer>
-      <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
-    </template>
-  </ConfirmModal>
+  <ConfirmModal ref="refConfirmModal" item-name="내 프로필" @confirm-func="onSubmitConfirm" />
   <AlertModal ref="refAlertModal"></AlertModal>
 </template>

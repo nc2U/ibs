@@ -10,16 +10,27 @@ const props = defineProps({
 const emit = defineEmits(['confirm-func'])
 
 const visible = ref(false)
-const headerMessage = ref(`${props.itemName} 삭제 확인`)
+const headerMessage = ref(`${props.itemName} 저장 확인`)
 const bodyMessage = ref('')
-const headIcon = ref('mdi-alert-octagram')
-const headerColor = ref('red-lighten-2')
+const headIcon = ref('mdi-alert-box')
+const headerColor = ref('red-lighten-3')
+const submitBtnText = ref('확인')
+const submitBtnColor = ref('red-lighten-2')
 
-const callModal = (head?: string, body?: string, icon?: string, color?: string) => {
+const callModal = (
+  head?: string,
+  body?: string,
+  icon?: string,
+  color?: string,
+  btnText?: string,
+  btnColor?: string,
+) => {
   if (head) headerMessage.value = head
   if (body) bodyMessage.value = body
   if (icon) headIcon.value = icon
   if (color) headerColor.value = color
+  if (btnText) submitBtnText.value = btnText
+  if (btnColor) submitBtnColor.value = btnColor
   visible.value = true
 }
 const close = () => (visible.value = false)
@@ -51,12 +62,14 @@ onBeforeMount(() => {
     </CModalHeader>
     <CModalBody class="text-body" style="line-height: 26px">
       <slot>
-        {{ bodyMessage || `이 ${itemName}을(를) 삭제 하시겠습니까?` }}
+        {{ bodyMessage || `이 ${itemName}을(를) 저장 하시겠습니까?` }}
       </slot>
     </CModalBody>
     <CModalFooter>
       <slot name="footer">
-        <v-btn size="small" color="red-darken-3" @click="emit('confirm-func')">삭제</v-btn>
+        <v-btn size="small" :color="submitBtnColor" @click="emit('confirm-func')">
+          {{ submitBtnText }}
+        </v-btn>
       </slot>
       <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
     </CModalFooter>
