@@ -601,15 +601,35 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
     def download_pdf(self, request, pk=None):
         letter = self.get_object()
 
-        if not letter.pdf_file:
-            return Response({'error': 'PDF가 생성되지 않았습니다.'},
-                            status=status.HTTP_404_NOT_FOUND)
+        # PDF 파일이 없거나 스토리지에 실제 파일이 존재하지 않는 경우 자동 생성 시도
+        need_generation = not letter.pdf_file
+        if letter.pdf_file:
+            try:
+                if not letter.pdf_file.storage.exists(letter.pdf_file.name):
+                    need_generation = True
+            except Exception:
+                need_generation = True
 
-        return FileResponse(
-            letter.pdf_file.open('rb'),
-            as_attachment=True,
-            filename=letter.get_pdf_filename()
-        )
+        if need_generation:
+            try:
+                pdf_file = generate_official_letter_pdf(letter)
+                letter.pdf_file = pdf_file
+                letter.save(update_fields=['pdf_file'])
+            except Exception as e:
+                logger.exception('공문 PDF 자동 생성 실패 (letter pk=%s): %s', letter.pk, e)
+                return Response({'error': 'PDF 파일을 찾을 수 없으며 생성을 실패했습니다.'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            return FileResponse(
+                letter.pdf_file.open('rb'),
+                as_attachment=True,
+                filename=letter.get_pdf_filename()
+            )
+        except Exception as e:
+            logger.exception('공문 PDF 다운로드 실패 (letter pk=%s): %s', letter.pk, e)
+            return Response({'error': 'PDF 파일을 읽을 수 없습니다.'},
+                            status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def next_document_number(self, request):

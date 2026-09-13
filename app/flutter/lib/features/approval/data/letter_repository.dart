@@ -63,24 +63,44 @@ class LetterRepository {
 
   /// 공문 PDF 다운로드 (임시 파일로 저장 후 파일 경로 반환)
   Future<String> downloadLetterPdf(int id, String documentNumber, {String? pdfUrl}) async {
-    final downloadUrl = (pdfUrl != null && pdfUrl.isNotEmpty)
-        ? pdfUrl
-        : ApiEndpoints.resolve(ApiEndpoints.officialLetterDownloadPdf, {'id': id});
+    final apiDownloadUrl = ApiEndpoints.resolve(ApiEndpoints.officialLetterDownloadPdf, {'id': id});
 
-    final res = await _dio.get(
-      downloadUrl,
-      options: Options(
-        responseType: ResponseType.bytes,
-        headers: {'Accept': 'application/pdf, */*'},
-      ),
-    );
+    Response<List<int>> res;
+    if (pdfUrl != null && pdfUrl.isNotEmpty) {
+      try {
+        res = await _dio.get<List<int>>(
+          pdfUrl,
+          options: Options(
+            responseType: ResponseType.bytes,
+            headers: {'Accept': 'application/pdf, */*'},
+          ),
+        );
+      } catch (e) {
+        // S3 Presigned URL 만료 또는 파일 부재 시 백엔드 download_pdf 엔드포인트로 폴백
+        res = await _dio.get<List<int>>(
+          apiDownloadUrl,
+          options: Options(
+            responseType: ResponseType.bytes,
+            headers: {'Accept': 'application/pdf, */*'},
+          ),
+        );
+      }
+    } else {
+      res = await _dio.get<List<int>>(
+        apiDownloadUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': 'application/pdf, */*'},
+        ),
+      );
+    }
 
     final tempDir = await getTemporaryDirectory();
     final sanitizedNumber = (documentNumber.isNotEmpty ? documentNumber : '공문_$id')
         .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
     final filePath = '${tempDir.path}/$sanitizedNumber.pdf';
     final file = File(filePath);
-    await file.writeAsBytes(res.data as List<int>);
+    await file.writeAsBytes(res.data!);
     return filePath;
   }
 

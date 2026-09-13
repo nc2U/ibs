@@ -411,5 +411,26 @@ class DocsAppSecurityTests(TestCase):
         for item in res_pending.data['results']:
             self.assertEqual(item['approval_status'], 'pending')
 
+    def test_official_letter_download_pdf_auto_generates_when_missing(self):
+        """PDF 파일이 없거나 스토리지에 유실된 경우 download_pdf 호출 시 자동 생성하여 반환하는지 검증"""
+        letter_no_pdf = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-NOPDF-001',
+            title='PDF 미생성 공문',
+            recipient_name='테스트수신처',
+            drafter_name='담당자',
+            content='내용입니다.',
+            issue_date=date(2026, 3, 1),
+            creator=self.author_user,
+        )
+
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.get(f'/api/v1/official-letter/{letter_no_pdf.pk}/download_pdf/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+        letter_no_pdf.refresh_from_db()
+        self.assertTrue(bool(letter_no_pdf.pdf_file))
+
+
 
 
