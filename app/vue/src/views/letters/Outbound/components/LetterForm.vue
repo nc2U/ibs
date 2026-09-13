@@ -453,7 +453,7 @@ const goBack = () => {
           <!-- 1. 공문서 서식 영역 (PDF 템플릿과 동일 순서) -->
           <CCard class="mb-4 shadow-sm border">
             <CCardHeader
-              class="py-3 bg-transparent border-bottom d-flex justify-content-between align-items-center"
+              class="py-3 bg-more-light border-bottom d-flex justify-content-between align-items-center"
             >
               <div class="d-flex align-items-center">
                 <v-icon
@@ -862,7 +862,7 @@ const goBack = () => {
                         회사명 + 인장 표기
                       </v-btn>
                       <v-btn value="company_rep" size="small" class="px-3 text-none">
-                        회사명 + 발송 승인자 직책·성명
+                        회사명 + 발송 승인자 표기
                       </v-btn>
                       <v-btn value="co_rep" size="small" class="px-3 text-none">
                         공동대표 병기 (각각 날인)
@@ -1199,7 +1199,7 @@ const goBack = () => {
 
           <!-- 2. 발송 및 대장 관리 메타 영역 (공문서에는 인쇄되지 않는 업무 관리 데이터) -->
           <CCard class="mb-4 shadow-sm border">
-            <CCardHeader class="py-3 bg-transparent border-bottom d-flex align-items-center">
+            <CCardHeader class="py-3 bg-more-light border-bottom d-flex align-items-center">
               <v-icon icon="mdi-folder-open-outline" size="small" color="secondary" class="me-2" />
               <strong class="text-body" style="font-size: 0.95rem"> 발송 및 대장 관리 정보 </strong>
               <small class="text-muted ms-2">(시스템 관리용 메타데이터)</small>

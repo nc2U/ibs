@@ -22,6 +22,7 @@ import '../../features/approval/data/models/approval_model.dart';
 import '../../features/approval/presentation/approval_main_screen.dart';
 import '../../features/approval/presentation/approval_detail_screen.dart';
 import '../../features/approval/presentation/approval_draft_screen.dart';
+import '../../features/approval/presentation/official_letter_detail_screen.dart';
 import '../../features/chat/data/models/chat_model.dart';
 import '../../features/chat/presentation/chat_room_list_screen.dart';
 import '../../features/chat/presentation/chat_room_screen.dart';
@@ -197,6 +198,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (ctx, state) {
                   final editDoc = state.extra as ApprovalDocumentModel?;
                   return ApprovalDraftScreen(editDoc: editDoc);
+                },
+              ),
+              GoRoute(
+                path: 'letters/:letterId',
+                builder: (ctx, state) {
+                  final id = int.tryParse(state.pathParameters['letterId'] ?? '') ?? 0;
+                  return OfficialLetterDetailScreen(letterId: id);
                 },
               ),
               GoRoute(

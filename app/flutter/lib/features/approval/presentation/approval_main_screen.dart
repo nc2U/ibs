@@ -10,6 +10,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/approval_repository.dart';
 import '../providers/approval_providers.dart';
+import 'official_letter_tab_view.dart';
 import 'widgets/approval_doc_card.dart';
 
 class ApprovalMainScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,7 @@ class ApprovalMainScreen extends ConsumerStatefulWidget {
 
 class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
     with TickerProviderStateMixin {
+  int _mainCategoryMode = 0; // 0: 사내 결재, 1: 대외 공문
   late TabController _tabController;
   int _completedSubTab = 0; // 0: 승인완료, 1: 참조/공람
 
@@ -197,14 +199,14 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
         bottom: false,
         child: Column(
           children: [
-            // ── 상단 고정 헤더 바 (업무 탭의 워크스페이스 바와 동일한 색상/구분선 패턴) ──
+            // ── 상단 고정 헤더 바 ──
             Container(
               color: context.colors.bgSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Icon(
-                    Icons.draw_rounded,
+                    _mainCategoryMode == 0 ? Icons.draw_rounded : Icons.mark_email_read_outlined,
                     size: 18,
                     color: context.colors.accentApproval,
                   ),
@@ -217,8 +219,74 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                     ),
                   ),
                   const Spacer(),
-                  // ⚡ 대기함 탭일 때만 [다중 선택 / 취소] 액션 버튼 노출
-                  if (isPendingTab && pendingCount > 0) ...[
+                  // ── [ 사내 결재 | 대외 공문 ] 컴팩트 세그먼트 토글 ──
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.colors.bgCard,
+                      border: Border.all(color: context.colors.border, width: 0.8),
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            if (_mainCategoryMode != 0) {
+                              setState(() {
+                                _mainCategoryMode = 0;
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            color: _mainCategoryMode == 0
+                                ? context.colors.accentApproval
+                                : Colors.transparent,
+                            child: Text(
+                              '사내 결재',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: _mainCategoryMode == 0 ? FontWeight.bold : FontWeight.normal,
+                                color: _mainCategoryMode == 0
+                                    ? Colors.white
+                                    : context.colors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
+                            if (_mainCategoryMode != 1) {
+                              setState(() {
+                                _mainCategoryMode = 1;
+                                _isSelectionMode = false;
+                                _selectedDocIds.clear();
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            color: _mainCategoryMode == 1
+                                ? context.colors.accentApproval
+                                : Colors.transparent,
+                            child: Text(
+                              '대외 공문',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: _mainCategoryMode == 1 ? FontWeight.bold : FontWeight.normal,
+                                color: _mainCategoryMode == 1
+                                    ? Colors.white
+                                    : context.colors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ⚡ 대기함 탭일 때만 [다중 선택 / 취소] 액션 버튼 노출 (사내 결재 모드일 때)
+                  if (_mainCategoryMode == 0 && isPendingTab && pendingCount > 0) ...[
+                    const SizedBox(width: 8),
                     InkWell(
                       onTap: () {
                         setState(() {
@@ -272,88 +340,96 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
             ),
             Divider(color: context.colors.border, height: 1),
 
-            // ── 상단 탭바 (대기함 | 기안함 | 문서함 | [전체]) ───────────────
-            Container(
-              decoration: BoxDecoration(
-                color: context.colors.bgSurface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: context.colors.border,
-                    width: 0.8,
-                  ),
-                ),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: false,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: context.colors.bgCard,
+            // ── 모드에 따른 본문 표시 (0: 사내 결재 탭바 + TabBarView, 1: 대외 공문 뷰) ──
+            if (_mainCategoryMode == 0) ...[
+              // ── 상단 탭바 (대기함 | 기안함 | 문서함 | [전체]) ───────────────
+              Container(
+                decoration: BoxDecoration(
+                  color: context.colors.bgSurface,
                   border: Border(
                     bottom: BorderSide(
-                      color: context.colors.accentApproval,
-                      width: 3.0,
+                      color: context.colors.border,
+                      width: 0.8,
                     ),
                   ),
                 ),
-                labelColor: context.colors.textPrimary,
-                unselectedLabelColor: context.colors.textMuted,
-                labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
-                unselectedLabelStyle: AppTextStyles.bodyMd,
-                dividerColor: Colors.transparent,
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('대기함'),
-                        if (pendingCount > 0) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: context.colors.error,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '$pendingCount',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: false,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: context.colors.bgCard,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: context.colors.accentApproval,
+                        width: 3.0,
+                      ),
                     ),
                   ),
-                  const Tab(text: '기안함'),
-                  const Tab(text: '문서함'),
-                  const Tab(text: '전체'),
-                ],
+                  labelColor: context.colors.textPrimary,
+                  unselectedLabelColor: context.colors.textMuted,
+                  labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
+                  unselectedLabelStyle: AppTextStyles.bodyMd,
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('대기함'),
+                          if (pendingCount > 0) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: context.colors.error,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$pendingCount',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Tab(text: '기안함'),
+                    const Tab(text: '문서함'),
+                    const Tab(text: '전체'),
+                  ],
+                ),
               ),
-            ),
 
-            // ── 탭 뷰 본문 ─────────────────────────────────────────────
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // ── 0. 결재 대기함 ──────────────────────────────────────────
-                  _buildPendingTab(),
+              // ── 탭 뷰 본문 ─────────────────────────────────────────────
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // ── 0. 결재 대기함 ──────────────────────────────────────────
+                    _buildPendingTab(),
 
-                  // ── 1. 내 기안함 ──────────────────────────────────────────
-                  _buildDraftedTab(),
+                    // ── 1. 내 기안함 ──────────────────────────────────────────
+                    _buildDraftedTab(),
 
-                  // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
-                  _buildApprovedTab(),
+                    // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
+                    _buildApprovedTab(),
 
-                  // ── 3. 전체 문서함 (보안등급 필터링 적용) ───────────────────
-                  _buildAllDocumentsTab(),
-                ],
+                    // ── 3. 전체 문서함 (보안등급 필터링 적용) ───────────────────
+                    _buildAllDocumentsTab(),
+                  ],
+                ),
               ),
-            ),
+            ] else ...[
+              // ── 1: 대외 공문 관리 뷰 ───────────────────────────────────
+              const Expanded(
+                child: OfficialLetterTabView(),
+              ),
+            ],
           ],
         ),
       ),
@@ -428,7 +504,8 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
               ),
             )
           : null,
-      floatingActionButton: (!_isSelectionMode &&
+      floatingActionButton: (_mainCategoryMode == 0 &&
+              !_isSelectionMode &&
               (ref.watch(currentUserProvider).valueOrNull?.hasStaff == true ||
                   ref.watch(currentUserProvider).valueOrNull?.isStaff == true ||
                   ref.watch(currentUserProvider).valueOrNull?.isSuperuser == true))
