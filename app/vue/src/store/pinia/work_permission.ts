@@ -145,9 +145,26 @@ export const usePermission = defineStore('permission', () => {
     return c.startsWith('hq.')
   }
 
+  // 실제 Staff(직원) 인스턴스 등록이 필수인 권한 판별 (슈퍼유저 제외한 일반 유저는 Staff 등록 필수)
+  const requiresStaff = (c: PermissionCode) => {
+    return (
+      c === PERM.HQ_HR_WORK_CREATE ||
+      c === PERM.HQ_HR_WORK_UPDATE ||
+      c === PERM.HQ_HR_WORK_DELETE
+    )
+  }
+
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[], projectIdentifier?: number | string) => {
     const check = (c: PermissionCode) => {
+      // 슈퍼유저는 전체 권한 허용
+      if (accountStore.superAuth) return true
+
+      // Staff 인스턴스 연결이 필수인 권한의 경우, 미등록 일반 사용자는 차단
+      if (requiresStaff(c) && !accountStore.userInfo?.has_staff) {
+        return false
+      }
+
       // 대상 프로젝트 객체 찾기
       const targetProj =
         projectIdentifier !== undefined
@@ -167,9 +184,6 @@ export const usePermission = defineStore('permission', () => {
       if (targetProj?.status === '9' && !c.startsWith('project.')) {
         return false
       }
-
-      // 슈퍼유저는 전체 권한 허용
-      if (accountStore.superAuth) return true
 
       // 1. 업무 관리자(workManager)인 경우: 일반 워크스페이스/프로젝트 권한은 허용하되, 본사 관리(HQ) 권한은 제외
       if (accountStore.workManager && !isHqPerm(c)) return true
@@ -203,21 +217,21 @@ export const usePermission = defineStore('permission', () => {
   const canGlobal = (code: PermissionCode | PermissionCode[]) => {
     if (accountStore.superAuth) return true
 
-    if (accountStore.workManager) {
-      if (Array.isArray(code)) {
-        if (code.some(c => isHqPerm(c))) {
-          return code.every(c => globalPermSet.value.has(c))
-        }
+    const checkOne = (c: PermissionCode) => {
+      // Staff 인스턴스 연결이 필수인 권한의 경우, 미등록 일반 사용자는 차단
+      if (requiresStaff(c) && !accountStore.userInfo?.has_staff) {
+        return false
+      }
+
+      if (accountStore.workManager && !isHqPerm(c)) {
         return true
       }
-      if (isHqPerm(code)) {
-        return globalPermSet.value.has(code)
-      }
-      return true
+
+      return globalPermSet.value.has(c)
     }
 
-    if (Array.isArray(code)) return code.every(c => globalPermSet.value.has(c))
-    return globalPermSet.value.has(code)
+    if (Array.isArray(code)) return code.every(c => checkOne(c))
+    return checkOne(code)
   }
 
   return {
