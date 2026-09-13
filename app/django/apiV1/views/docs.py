@@ -692,15 +692,18 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             'body': f"[대외 공문 발송 품의]\n\n• 수신처: {letter.recipient_name}\n• 참조: {letter.recipient_reference or '-'}\n• 기안/담당: {letter.drafter_name}{f' ({letter.drafter_position})' if letter.drafter_position else ''}\n• 시행일자: {letter.issue_date}\n\n[공문 본문]\n{letter.content}",
         }
 
-        doc = ApprovalDocument.objects.create(
+        doc = ApprovalDocument(
             title=f'[공문 발송 품의] {letter.title}',
             doc_type=doc_type,
             drafter=request.user,
             drafter_assignment=assignment,
             content=content_payload,
             status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
             submitted_at=timezone.now(),
         )
+        doc.content_hash = doc.compute_hash()
+        doc.save()
 
         # 동적 결재선 빌드 및 저장 (공문 인장에 지정된 전결 기준 자동 연동)
         steps = build_dynamic_approval_route(

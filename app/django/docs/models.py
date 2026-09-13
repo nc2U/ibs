@@ -399,6 +399,15 @@ class OfficialLetter(models.Model):
 
     pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path, storage=default_storage,
                                 null=True, blank=True)  # 생성된 PDF
+    APPROVAL_MODE_CHOICES = (
+        ('approval', '전자결재 상신 발송'),
+        ('manual', '단독 / 직접 발송'),
+    )
+    approval_mode = models.CharField(
+        '발송 결재 방식', max_length=10, choices=APPROVAL_MODE_CHOICES,
+        default='approval', db_index=True,
+        help_text='approval: 사내 전자결재 품의 연동, manual: 전자결재 생략 단독/직접 발송'
+    )
     APPROVAL_STATUS_CHOICES = (
         ('none', '미상신'),
         ('pending', '결재진행중'),

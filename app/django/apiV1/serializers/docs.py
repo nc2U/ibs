@@ -420,6 +420,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     seal_detail = serializers.SerializerMethodField(read_only=True)
     co_seal_detail = serializers.SerializerMethodField(read_only=True)
     sender_display_type_desc = serializers.CharField(source='get_sender_display_type_display', read_only=True)
+    approval_mode_desc = serializers.CharField(source='get_approval_mode_display', read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     dispatch_method_desc = serializers.CharField(source='get_dispatch_method_display', read_only=True)
@@ -445,6 +446,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'pdf_file',
                   'disclosure_type', 'disclosure_type_desc',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
+                  'approval_mode', 'approval_mode_desc',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
         read_only_fields = ('document_number', 'pdf_file', 'effective_issue_date')

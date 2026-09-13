@@ -82,7 +82,11 @@ const pageSelect = (page: number) => {
   fetchLetterList(letterFilter.value)
 }
 
-const onSubmit = async (payload: OfficialLetter, attachmentsToUpload?: LocalAttachmentItem[]) => {
+const onSubmit = async (
+  payload: OfficialLetter,
+  attachmentsToUpload?: LocalAttachmentItem[],
+  isDirectSubmit?: boolean,
+) => {
   if (company.value) {
     const data = { ...payload, company: company.value }
     let letterPk: number | null = null
@@ -107,6 +111,11 @@ const onSubmit = async (payload: OfficialLetter, attachmentsToUpload?: LocalAtta
         if (att.quantity) formData.append('quantity', att.quantity)
         await docStore.uploadLetterAttachment(letterPk, formData)
       }
+    }
+
+    // 전자결재 상신 버튼으로 저장한 경우 백엔드 전자결재 상신 즉시 연계 실행
+    if (letterPk && isDirectSubmit) {
+      await docStore.submitApproval(letterPk)
     }
 
     if (letterPk) {

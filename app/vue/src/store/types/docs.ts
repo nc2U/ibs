@@ -253,6 +253,8 @@ export interface OfficialLetter {
   dispatch_method_desc?: string
   tracking_number?: string
   dispatched_at?: string | null
+  approval_mode?: 'approval' | 'manual'
+  approval_mode_desc?: string
   approval_document?: number | null
   approval_document_detail?: {
     pk: number
@@ -273,6 +275,7 @@ export interface OfficialLetter {
 
 export interface PatchLetter {
   pk: number
+  approval_mode?: 'approval' | 'manual'
   title?: string
   recipient_name?: string
   recipient_address?: string

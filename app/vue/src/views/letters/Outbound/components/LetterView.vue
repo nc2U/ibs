@@ -119,6 +119,7 @@ const isApproved = computed(() => props.letter?.approval_status === 'approved')
 // 전자결재 연동 여부 및 단독/직접 발송 모드 판단
 const hasApprovalDoc = computed(() => {
   return (
+    props.letter?.approval_mode === 'approval' ||
     !!props.letter?.approval_document ||
     (!!props.letter?.approval_status && props.letter.approval_status !== 'none')
   )

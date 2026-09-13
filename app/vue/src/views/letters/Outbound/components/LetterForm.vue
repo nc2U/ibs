@@ -26,7 +26,11 @@ export interface LocalAttachmentItem {
 }
 
 const emit = defineEmits<{
-  onSubmit: [payload: OfficialLetter, attachmentsToUpload?: LocalAttachmentItem[]]
+  onSubmit: [
+    payload: OfficialLetter,
+    attachmentsToUpload?: LocalAttachmentItem[],
+    isDirectSubmit?: boolean,
+  ]
 }>()
 
 const { can, PERM } = usePerms()
@@ -189,6 +193,7 @@ const form = ref<OfficialLetter>({
   drafter_position: '',
   sender_zipcode: '',
   sender_address: '',
+  approval_mode: 'approval',
   // 발송 관리 메타 정보
   recipient_address: '',
   recipient_contact: '',
@@ -302,6 +307,7 @@ watch(
         sender_name: letter.sender_name || '',
         co_seal: letter.co_seal || null,
         is_solo_approval: !!letter.is_solo_approval,
+        approval_mode: letter.approval_mode || 'approval',
         dispatch_method: letter.dispatch_method || 'email',
         tracking_number: letter.tracking_number || '',
       }
@@ -311,8 +317,10 @@ watch(
       recipientAddress1.value = letter.recipient_address || ''
       recipientAddress3.value = ''
       recipientAddressDetail.value = ''
-      // 전자결재 연동 여부에 따라 모드 자동 설정
-      if (
+      // 발송 유형 모드 복원: approval_mode가 지정되어 있으면 이를 최우선으로 적용
+      if (letter.approval_mode) {
+        approvalMode.value = letter.approval_mode
+      } else if (
         letter.approval_document ||
         (letter.approval_status && letter.approval_status !== 'none')
       ) {
@@ -387,8 +395,11 @@ const deleteExistingAttachment = async (attachmentId: number) => {
   }
 }
 
-const onSubmit = () => {
+const onSubmit = (isDirectSubmit = false) => {
   validated.value = true
+
+  // 발송 유형 모드 동기화
+  form.value.approval_mode = approvalMode.value
 
   // 전자결재 모드일 때는 기안자명이 비어있을 경우 직원 성명으로 자동 보정
   if (approvalMode.value === 'approval' && !form.value.drafter_name) {
@@ -420,7 +431,7 @@ const onSubmit = () => {
     return
   }
 
-  emit('onSubmit', form.value, pendingAttachments.value)
+  emit('onSubmit', form.value, pendingAttachments.value, isDirectSubmit)
 }
 
 const goBack = () => {
@@ -1291,7 +1302,32 @@ const goBack = () => {
                 <v-icon icon="mdi-arrow-left" class="me-1" />
                 취소
               </v-btn>
+
+              <!-- 전자결재 상신 발송 모드: 임시저장(초안) & 즉시 전자결재 상신 분기 제공 -->
+              <div v-if="approvalMode === 'approval'" class="d-flex gap-2">
+                <v-btn
+                  color="secondary"
+                  variant="flat"
+                  :disabled="!accStore.isStaff && canOLManage"
+                  @click="onSubmit(false)"
+                >
+                  <v-icon icon="mdi-content-save-outline" class="me-1" />
+                  {{ isEdit ? '수정 임시저장' : '임시저장' }}
+                </v-btn>
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  :disabled="!accStore.isStaff && canOLManage"
+                  @click="onSubmit(true)"
+                >
+                  <v-icon icon="mdi-send-check-outline" class="me-1" />
+                  전자결재 상신
+                </v-btn>
+              </div>
+
+              <!-- 단독 / 직접 발송 모드: 단일 공문 저장 버튼 -->
               <v-btn
+                v-else
                 type="submit"
                 :color="isEdit ? 'success' : 'primary'"
                 :disabled="!accStore.isStaff && canOLManage"
