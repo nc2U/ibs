@@ -101,10 +101,10 @@ dependency_overrides:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/app_icon_light.png"
   min_sdk_android: 21
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
+  adaptive_icon_foreground: "assets/images/app_icon_light_foreground.png"
 
 flutter_native_splash:
   color: "#FFFFFF"
@@ -126,7 +126,7 @@ flutter_native_splash:
 flutter:
 
   # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
+  # included with your application so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
 
