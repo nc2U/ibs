@@ -299,10 +299,13 @@
           color: #111;
       }
 
+      .final-approver-cell {
+          padding-top: 0;
+      }
+
       .approval-final-date {
-          font-size: 7.5pt;
-          color: #555;
-          margin-top: 1px;
+          font-size: 0.8em;
+          margin-top: 0;
       }
   </style>
   <title>{{ letter.document_number }} - {{ letter.title }}</title>
@@ -469,7 +472,7 @@
           <td class="final-approver-cell" style="text-align: right; white-space: nowrap;">
             {% if approval_line.final_date %}
               <div class="approval-final-date" style="margin-bottom: 1px;">
-                <small>{{ approval_line.date_label|default:"승인" }} {{ approval_line.final_date }}</small>
+                <span>{{ approval_line.date_label|default:"승인" }} {{ approval_line.final_date }}</span>
               </div>
             {% endif %}
             <div>

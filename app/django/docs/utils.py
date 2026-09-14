@@ -103,12 +103,7 @@ def get_letter_approval_line(letter):
             # Staff가 등록되지 않은 비정상 계정의 경우에만 최소한의 식별용 표시
             name = getattr(getattr(user, 'profile', None), 'name', '') or user.username
 
-        # 1. 대표이사/임원 확인 (ExecutiveRank)
-        if staff and hasattr(staff, 'executive') and staff.executive and staff.executive.rank:
-            rank_name = staff.executive.rank.name
-            return rank_name, name
-
-        # 2. 보직의 직책(DutyTitle) 확인
+        # 1. 직책(DutyTitle) 확인 (보직 배령 또는 staff.duty)
         duty_obj = None
         if assignment and assignment.duty:
             duty_obj = assignment.duty
@@ -117,6 +112,11 @@ def get_letter_approval_line(letter):
 
         if duty_obj and duty_obj.name:
             return duty_obj.name, name
+
+        # 2. 직책이 없으나 임원인 경우 임원 직위(ExecutiveRank) 확인 (사장, 전무, 상무 등)
+        if staff and hasattr(staff, 'executive') and staff.executive and staff.executive.rank:
+            rank_name = staff.executive.rank.name
+            return rank_name, name
 
         # 3. 직책이 없는 일반 팀원인 경우
         # 최종 결재권자인 경우는 직위라도 표기, 중간 단계인 경우는 직책 없으면 이름만
