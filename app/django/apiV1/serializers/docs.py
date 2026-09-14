@@ -430,6 +430,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     next_pk = serializers.SerializerMethodField(read_only=True)
 
     effective_issue_date = serializers.DateField(read_only=True)
+    dispatched_at = serializers.DateTimeField(required=False, allow_null=True)
 
     class Meta:
         model = OfficialLetter

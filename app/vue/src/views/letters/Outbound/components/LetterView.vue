@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
+import { markdownRender } from '@/utils/helper.ts'
+import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs'
 import { useDocs } from '@/store/pinia/docs'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { usePerms } from '@/composables/usePerms.ts'
-
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
-import { markdownRender } from '@/utils/helper.ts'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import LetterA4Preview from './LetterA4Preview.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import DaumPostcode from '@/components/DaumPostcode/index.vue'
 
 const props = defineProps<{
   letter: OfficialLetter | null
@@ -307,7 +309,12 @@ const onSubmitApproval = async () => {
 }
 
 const onCancelApproval = async () => {
-  if (props.letter?.approval_document && confirm('전자결재 기안을 회수하시겠습니까?\n회수 시 결재 진행이 취소되고 문서를 수정하여 다시 상신할 수 있습니다.')) {
+  if (
+    props.letter?.approval_document &&
+    confirm(
+      '전자결재 기안을 회수하시겠습니까?\n회수 시 결재 진행이 취소되고 문서를 수정하여 다시 상신할 수 있습니다.',
+    )
+  ) {
     cancelLoading.value = true
     try {
       await appStore.cancelDocument(props.letter.approval_document)
@@ -322,6 +329,101 @@ const onCancelApproval = async () => {
 
 const goToApprovalDetail = (docId: number) => {
   router.push({ name: '결재 문서함 - 보기', params: { docId } })
+}
+
+// ── 발송 및 대장 관리 메타 정보 수정 모달 상태 ────────────────
+const showDispatchModal = ref(false)
+const dispatchSaving = ref(false)
+const refDispatchPostCode = ref()
+const recipientDetailInputRef = ref()
+const recipientAddress1 = ref('')
+const recipientAddress3 = ref('')
+const recipientAddressDetail = ref('')
+
+const dispatchForm = ref({
+  dispatch_method: 'email',
+  tracking_number: '',
+  dispatched_at: null as string | null,
+  recipient_address: '',
+  recipient_contact: '',
+})
+
+const recipientAddressBase = computed(() => recipientAddress1.value)
+
+const composeAddress = (addr1: string, detail: string, addr3: string) => {
+  const parts: string[] = []
+  if (addr1.trim()) parts.push(addr1.trim())
+  if (detail.trim()) parts.push(detail.trim())
+  if (addr3.trim()) {
+    const cleanRef = addr3.trim()
+    const formattedRef = cleanRef.startsWith('(') ? cleanRef : `(${cleanRef})`
+    parts.push(formattedRef)
+  }
+  return parts.join(' ')
+}
+
+const updateRecipientAddress = () => {
+  dispatchForm.value.recipient_address = composeAddress(
+    recipientAddress1.value,
+    recipientAddressDetail.value,
+    recipientAddress3.value,
+  )
+}
+
+const postCodeCallback = (data: AddressData) => {
+  const { address1, address3 } = callAddress(data)
+  recipientAddress1.value = address1.trim()
+  recipientAddress3.value = address3.trim()
+  recipientAddressDetail.value = ''
+  updateRecipientAddress()
+  setTimeout(() => {
+    recipientDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
+      recipientDetailInputRef.value?.focus?.()
+  }, 100)
+}
+
+const openDispatchModal = () => {
+  if (!props.letter) return
+  dispatchForm.value = {
+    dispatch_method: props.letter.dispatch_method || 'email',
+    tracking_number: props.letter.tracking_number || '',
+    dispatched_at: props.letter.dispatched_at ? props.letter.dispatched_at.substring(0, 10) : null,
+    recipient_address: props.letter.recipient_address || '',
+    recipient_contact: props.letter.recipient_contact || '',
+  }
+  recipientAddress1.value = props.letter.recipient_address || ''
+  recipientAddress3.value = ''
+  recipientAddressDetail.value = ''
+  showDispatchModal.value = true
+}
+
+const setTodayDispatched = () => {
+  dispatchForm.value.dispatched_at = new Date().toISOString().substring(0, 10)
+}
+
+const clearDispatchedDate = () => {
+  dispatchForm.value.dispatched_at = null
+}
+
+const saveDispatchMeta = async () => {
+  if (!props.letter?.pk) return
+  dispatchSaving.value = true
+  try {
+    const payload = {
+      pk: props.letter.pk,
+      dispatch_method: dispatchForm.value.dispatch_method,
+      tracking_number: dispatchForm.value.tracking_number,
+      dispatched_at: dispatchForm.value.dispatched_at
+        ? `${dispatchForm.value.dispatched_at}T00:00:00`
+        : null,
+      recipient_address: dispatchForm.value.recipient_address,
+      recipient_contact: dispatchForm.value.recipient_contact,
+    }
+    await docStore.patchLetter(props.letter.pk, payload)
+    showDispatchModal.value = false
+  } finally {
+    dispatchSaving.value = false
+  }
 }
 
 const formatDate = (dateStr: string | null | undefined) => {
@@ -689,9 +791,23 @@ const formatDateTime = (dateStr: string | null | undefined) => {
 
         <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
         <CCard class="mb-4 border-secondary">
-          <CCardHeader class="bg-light">
-            <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
-            <strong>발송 및 대장 관리 메타 정보</strong>
+          <CCardHeader class="bg-light d-flex justify-content-between align-items-center">
+            <div>
+              <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
+              <strong>발송 및 대장 관리 메타 정보</strong>
+            </div>
+            <div>
+              <v-btn
+                v-if="canDocsUpdate"
+                color="primary"
+                variant="tonal"
+                size="small"
+                @click="openDispatchModal"
+              >
+                <v-icon icon="mdi-pencil-box-outline" size="small" class="me-1" />
+                발송 대장 정보 등록/수정
+              </v-btn>
+            </div>
           </CCardHeader>
           <CCardBody>
             <CRow>
@@ -933,6 +1049,138 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         </p>
       </template>
     </ConfirmModal>
+
+    <!-- 발송 및 대장 관리 메타 정보 수정 모달 -->
+    <CModal
+      :visible="showDispatchModal"
+      size="lg"
+      alignment="center"
+      backdrop="static"
+      @close="showDispatchModal = false"
+    >
+      <CModalHeader>
+        <CModalTitle class="d-flex align-items-center">
+          <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-2 text-primary" />
+          발송 및 대장 관리 정보 등록/수정
+        </CModalTitle>
+      </CModalHeader>
+      <CModalBody>
+        <CAlert color="info" class="py-2 mb-3">
+          <small>
+            <v-icon icon="mdi-information-outline" size="small" class="me-1" />
+            이 정보는 공문서 본문 내용(제목, 내용, 인장 등)에 영향을 주지 않으며, 우편 발송 및 대장
+            관리를 위한 메타데이터입니다.
+          </small>
+        </CAlert>
+
+        <!-- 1. 발송 방법, 등기번호, 발송 완료일자 -->
+        <CRow class="mb-3">
+          <CCol :xs="12" :md="4">
+            <CFormLabel>발송 방법</CFormLabel>
+            <CFormSelect v-model="dispatchForm.dispatch_method">
+              <option value="email">이메일</option>
+              <option value="registered_mail">등기우편</option>
+              <option value="direct">인편/직접교부</option>
+              <option value="courier">퀵/택배</option>
+              <option value="fax">팩스</option>
+              <option value="etc">기타</option>
+            </CFormSelect>
+          </CCol>
+          <CCol :xs="12" :md="4">
+            <CFormLabel>등기 / 송장 번호</CFormLabel>
+            <CFormInput
+              v-model="dispatchForm.tracking_number"
+              placeholder="등기번호 또는 택배 송장번호"
+            />
+          </CCol>
+          <CCol :xs="12" :md="4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <CFormLabel class="mb-0">발송 완료일자</CFormLabel>
+              <div class="d-flex gap-1">
+                <v-btn
+                  variant="text"
+                  density="compact"
+                  size="x-small"
+                  color="primary"
+                  @click="setTodayDispatched"
+                >
+                  오늘
+                </v-btn>
+                <v-btn
+                  v-if="dispatchForm.dispatched_at"
+                  variant="text"
+                  density="compact"
+                  size="x-small"
+                  color="secondary"
+                  @click="clearDispatchedDate"
+                >
+                  초기화
+                </v-btn>
+              </div>
+            </div>
+            <DatePicker
+              :model-value="dispatchForm.dispatched_at || ''"
+              placeholder="실제 발송 완료일 선택"
+              @update:model-value="dispatchForm.dispatched_at = $event || null"
+            />
+          </CCol>
+        </CRow>
+
+        <!-- 2. 수신처 우편 발송지 및 연락처 -->
+        <CRow class="mb-2">
+          <CCol :xs="12" :md="5">
+            <CFormLabel>수신처 기본 주소</CFormLabel>
+            <CInputGroup>
+              <CFormInput
+                v-model="recipientAddressBase"
+                placeholder="주소 검색 시 자동 입력"
+                readonly
+                style="cursor: pointer"
+                @click="refDispatchPostCode?.initiate(2)"
+              />
+              <CButton
+                type="button"
+                color="secondary"
+                variant="outline"
+                @click="refDispatchPostCode?.initiate(2)"
+              >
+                <v-icon icon="mdi-magnify" size="small" class="me-1" />
+                검색
+              </CButton>
+            </CInputGroup>
+          </CCol>
+          <CCol :xs="12" :md="4">
+            <CFormLabel>상세 주소</CFormLabel>
+            <CFormInput
+              ref="recipientDetailInputRef"
+              v-model="recipientAddressDetail"
+              placeholder="층·호수·부서명"
+              @input="updateRecipientAddress"
+            />
+          </CCol>
+          <CCol :xs="12" :md="3">
+            <CFormLabel>수신처 연락처/담당</CFormLabel>
+            <CFormInput
+              v-model="dispatchForm.recipient_contact"
+              placeholder="전화번호 또는 담당자"
+            />
+          </CCol>
+        </CRow>
+
+        <!-- Daum Postcode Component -->
+        <DaumPostcode ref="refDispatchPostCode" @address-callback="postCodeCallback" />
+      </CModalBody>
+      <CModalFooter>
+        <v-btn color="secondary" variant="outlined" @click="showDispatchModal = false">
+          취소
+        </v-btn>
+        <v-btn color="success" variant="flat" :disabled="dispatchSaving" @click="saveDispatchMeta">
+          <CSpinner v-if="dispatchSaving" size="sm" class="me-1" />
+          <v-icon v-else icon="mdi-content-save-outline" class="me-1" />
+          발송 정보 저장
+        </v-btn>
+      </CModalFooter>
+    </CModal>
   </div>
 
   <div v-else class="text-center py-5">

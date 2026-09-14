@@ -511,21 +511,30 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         letter = self.get_object()
-        # 1. 발송 완료된 공문은 자료 유실 및 법적 분쟁 방지를 위해 수정 전면 금지
-        if letter.dispatched_at is not None:
-            raise ValidationError('이미 대외 발송이 완료된 공문서는 내용을 수정할 수 없습니다.')
+        validated_data = serializer.validated_data
 
-        # 2. 전자결재 진행 중인 공문은 결재 심의 중이므로 수정 전면 금지 (기안 회수 또는 반려 후 수정 가능)
-        if letter.approval_status == 'pending':
+        # 발송 및 대장 관리 메타 필드 목록 (공문서 본문 내용이 아니며 사후 기록/수정 가능)
+        dispatch_fields = {
+            'dispatch_method', 'tracking_number', 'dispatched_at',
+            'recipient_address', 'recipient_contact'
+        }
+        requested_fields = set(validated_data.keys())
+        is_dispatch_meta_only = requested_fields and requested_fields.issubset(dispatch_fields)
+
+        # 1. 발송 완료된 공문: 본문 서식 변경은 전면 금지, 관리 대장 정보(등기번호, 완료일시 등)만 수정 가능
+        if letter.dispatched_at is not None and not is_dispatch_meta_only:
+            raise ValidationError('이미 대외 발송이 완료된 공문서의 본문 내용은 수정할 수 없습니다.')
+
+        # 2. 전자결재 진행 중인 공문은 결재 심의 중이므로 본문 수정 금지 (기안 회수 또는 반려 후 수정 가능)
+        if letter.approval_status == 'pending' and not is_dispatch_meta_only:
             raise ValidationError('전자결재가 진행 중인 공문서는 수정할 수 없습니다. 기안을 회수하거나 반려된 후에 수정해 주세요.')
 
-        # 3. 결재 최종 승인 완료된 공문은 관리자만 오탈자 등 제한적 수정 가능
+        # 3. 결재 최종 승인 완료된 공문: 본문 서식 수정은 관리자만 가능, 발송 대장 정보 수정은 일반 사용자(작성/관리자)도 허용
         is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
-        if letter.approval_status == 'approved' and not is_manager:
+        if letter.approval_status == 'approved' and not is_manager and not is_dispatch_meta_only:
             raise PermissionDenied('최종 결재 승인된 공문서는 관리자만 수정할 수 있습니다.')
 
         # 4. 전자결재 이력이 있는 문서(approval_mode='approval' 또는 approval_document 연동)는 단독/직접 발송으로 변경 금지
-        validated_data = serializer.validated_data
         requested_mode = validated_data.get('approval_mode')
         if requested_mode == 'manual' and (letter.approval_document or letter.approval_mode == 'approval'):
             raise ValidationError('전자결재 문서로 등록된 공문은 단독/직접 발송 방식으로 변경할 수 없습니다.')

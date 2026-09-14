@@ -468,8 +468,8 @@
           </td>
           <td class="final-approver-cell" style="text-align: right; white-space: nowrap;">
             {% if approval_line.final_date %}
-              <div class="approval-final-date" style="margin-bottom: 2px;">
-                <span>{{ approval_line.date_label|default:"승인" }} {{ approval_line.final_date }}</span>
+              <div class="approval-final-date" style="margin-bottom: 1px;">
+                <small>{{ approval_line.date_label|default:"승인" }} {{ approval_line.final_date }}</small>
               </div>
             {% endif %}
             <div>
