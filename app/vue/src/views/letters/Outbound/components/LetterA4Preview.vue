@@ -139,16 +139,13 @@ const accStore = useAccount()
             class="preview-markdown-body"
             v-html="markdownRender(form.content)"
           />
-          <div v-else class="text-muted">
-            공문 본문 내용이 여기에 실시간으로 표시됩니다.
-          </div>
+          <div v-else class="text-muted">공문 본문 내용이 여기에 실시간으로 표시됩니다.</div>
 
           <!-- 붙임 목록 -->
           <div v-if="attachmentInputMode === 'file'" class="mt-3 pt-2">
             <div
               v-if="
-                (form.attachments && form.attachments.length > 0) ||
-                pendingAttachments.length > 0
+                (form.attachments && form.attachments.length > 0) || pendingAttachments.length > 0
               "
             >
               <div class="fw-bold mb-1" style="font-size: 0.78rem">붙임:</div>
@@ -164,8 +161,8 @@ const accStore = useAccount()
                 :key="'new-' + idx"
                 style="font-size: 0.78rem; padding-left: 10px"
               >
-                {{ (form.attachments?.length || 0) + idx + 1 }}.
-                {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.
+                {{ (form.attachments?.length || 0) + idx + 1 }}. {{ att.name || att.file.name }}
+                {{ att.quantity || '1부' }}.
               </div>
             </div>
           </div>
@@ -188,10 +185,7 @@ const accStore = useAccount()
               </div>
               <div class="d-inline-flex align-items-center justify-content-center gap-4">
                 <!-- 공동대표 1 -->
-                <div
-                  class="fw-bold d-inline-flex align-items-center"
-                  style="font-size: 0.95rem"
-                >
+                <div class="fw-bold d-inline-flex align-items-center" style="font-size: 0.95rem">
                   <span
                     >{{ representativesList[0]?.title || '공동대표이사' }}
                     {{ representativesList[0]?.name || finalApproverName }}</span
@@ -212,10 +206,7 @@ const accStore = useAccount()
                   </span>
                 </div>
                 <!-- 공동대표 2 -->
-                <div
-                  class="fw-bold d-inline-flex align-items-center"
-                  style="font-size: 0.95rem"
-                >
+                <div class="fw-bold d-inline-flex align-items-center" style="font-size: 0.95rem">
                   <span
                     >{{ representativesList[1]?.title || '공동대표이사' }}
                     {{ representativesList[1]?.name || '대표2' }}</span
@@ -287,19 +278,13 @@ const accStore = useAccount()
             class="preview-bottom pt-2"
             style="font-size: 0.72rem; line-height: 1.4; border-top: 2px solid #333333"
           >
-            <table
-              class="w-100"
-              style="color: #444; border-collapse: collapse; font-size: 0.72rem"
-            >
+            <table class="w-100" style="color: #444; border-collapse: collapse; font-size: 0.72rem">
               <tbody>
                 <!-- 1행: 결재선 -->
-                <tr class="border-bottom">
-                  <td
-                    class="pb-1"
-                    style="width: 40px; vertical-align: bottom; padding-left: 0"
-                  >
+                <tr>
+                  <td class="pb-1" style="width: 40px; vertical-align: bottom; padding-left: 0">
                     <template v-if="!isSoloApproval">
-                      <span class="text-secondary">담당</span>
+                      <span>담당</span>
                     </template>
                   </td>
                   <td colspan="2" class="pb-1" style="vertical-align: bottom">
@@ -313,9 +298,9 @@ const accStore = useAccount()
                           : cleanDrafterName || form.drafter_name || '담당자'
                       }}</span>
                     </template>
-                    <span v-else class="text-muted fst-italic"
-                      >({{ approverDutyTitle }} 직접 기안)</span
-                    >
+                    <span v-else class="text-muted fst-italic">
+                      ({{ approverDutyTitle }} 직접 기안)
+                    </span>
                   </td>
                   <td colspan="2" class="text-end pb-1" style="vertical-align: bottom">
                     <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
@@ -332,7 +317,7 @@ const accStore = useAccount()
                       </span>
                     </div>
                     <div>
-                      <span class="me-1 text-secondary">
+                      <span class="me-1">
                         {{ approverDutyTitle }}
                       </span>
                       <span class="fw-bold text-dark">{{ finalApproverName }}</span>
@@ -340,14 +325,7 @@ const accStore = useAccount()
                   </td>
                 </tr>
                 <tr>
-                  <td
-                    style="
-                      width: 40px;
-                      font-weight: bold;
-                      padding-left: 0;
-                      padding-top: 4px;
-                    "
-                  >
+                  <td style="width: 40px; font-weight: bold; padding-left: 0; padding-top: 4px">
                     시행
                   </td>
                   <td style="width: 140px; padding-top: 4px">
@@ -371,9 +349,7 @@ const accStore = useAccount()
                       {{ form.sender_address }}
                     </span>
                     <span v-else>
-                      <span v-if="currentCompany?.zipcode"
-                        >({{ currentCompany.zipcode }})
-                      </span>
+                      <span v-if="currentCompany?.zipcode">({{ currentCompany.zipcode }}) </span>
                       {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
                       {{ currentCompany?.address3 || '' }}
                     </span>
