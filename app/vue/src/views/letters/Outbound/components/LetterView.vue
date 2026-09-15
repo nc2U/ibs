@@ -174,12 +174,12 @@ const canEditLetter = computed(() => {
 
 // 공문 삭제 가능 여부:
 // 1. 발송 완료 시: 법적 증빙 문서로 관리자 포함 전면 삭제 금지
-// 2. 결재 승인 완료 시: 관리자만 가능
-// 3. 그 외: docs.delete 권한자 가능
+// 2. 결재 승인 완료 시: 결재 효력 보존 및 대장 일치를 위해 삭제 금지 (관리자 포함)
+// 3. 그 외 (미상신 또는 반려 상태): docs.delete 권한자 가능
 const canDeleteLetter = computed(() => {
   if (isDispatched.value) return false
+  if (isApproved.value) return false
   if (!canDocsDelete.value) return false
-  if (isApproved.value) return isManager.value
   return true
 })
 
@@ -855,7 +855,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <CCard class="mb-4">
           <CCardHeader class="d-flex justify-content-between align-items-center">
             <strong>
-              <v-icon icon="mdi-file-pdf-box" size="small" class="me-1" />
+              <v-icon icon="mdi-file-pdf-box" size="small" class="me-1 text-danger" />
               공문 PDF 파일 (최종 발송/보관본)
             </strong>
             <div>
@@ -866,27 +866,15 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           <CCardBody>
             <div
               v-if="letter.pdf_file"
-              class="d-flex flex-wrap align-items-center justify-content-between gap-2"
+              class="d-flex flex-wrap align-items-center justify-content-between gap-3"
             >
-              <div class="d-flex align-items-center">
-                <CBadge color="success" class="me-3 p-2">
+              <!-- 좌측: 상태 뱃지 및 보조 관리 옵션(스캔본 등록/교체, 시스템 재생성) -->
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <v-chip color="success" class="p-2 me-1">
                   <v-icon icon="mdi-check-circle" size="small" class="me-1" />
                   최종 PDF 등록됨
-                </CBadge>
-                <v-btn
-                  color="dark"
-                  class="text-body"
-                  size="small"
-                  variant="outlined"
-                  @click="downloadPdf"
-                >
-                  <v-icon icon="mdi-cloud-download" color="red" size="small" class="me-1" />
-                  PDF 다운로드
-                </v-btn>
-              </div>
+                </v-chip>
 
-              <!-- 작업 버튼 그룹: 스캔본 교체 업로드 & 시스템 재생성 -->
-              <div class="d-flex align-items-center gap-2">
                 <!-- 실물 날인 스캔본 직접 업로드 / 교체 (발송 후는 관리자만) -->
                 <template v-if="canUploadScan">
                   <input
@@ -930,10 +918,24 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   (최종 결재 승인되어 관리자만 시스템 PDF 재생성 가능)
                 </small>
               </div>
+
+              <!-- 우측: 가장 자주 사용되고 중요한 [PDF 다운로드] 버튼 강조 배치 -->
+              <div>
+                <v-btn
+                  color="light"
+                  size="default"
+                  class="font-weight-medium"
+                  elevation="1"
+                  @click="downloadPdf"
+                >
+                  <v-icon icon="mdi-cloud-download" color="danger" size="small" class="me-2" />
+                  PDF 다운로드
+                </v-btn>
+              </div>
             </div>
 
             <!-- PDF 미생성 상태 -->
-            <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-3">
               <span class="text-muted">PDF 파일이 아직 생성되거나 등록되지 않았습니다.</span>
               <div class="d-flex align-items-center gap-2">
                 <!-- 직접 스캔본 업로드 -->
@@ -946,7 +948,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 />
                 <v-btn
                   v-if="canDocsCreate"
-                  color="info"
+                  color="secondary"
                   variant="outlined"
                   size="small"
                   :disabled="scanUploadLoading"
@@ -960,7 +962,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 <!-- 시스템 PDF 생성 -->
                 <v-btn
                   v-if="canDocsCreate"
-                  color="info"
+                  color="primary"
                   size="small"
                   :disabled="pdfLoading"
                   @click="onGeneratePdf"
@@ -977,33 +979,46 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <!-- Action Buttons -->
         <CRow class="mb-4">
           <CCol class="d-flex justify-content-between align-items-center">
-            <v-btn color="secondary" variant="outlined" @click="goToList">
-              <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
-              목록으로
-            </v-btn>
-            <div class="d-flex align-items-center">
-              <small v-if="isDispatched" class="text-muted me-3">
-                (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
-              </small>
-              <small v-else-if="isPending" class="text-muted me-3">
-                (전자결재가 진행 중인 공문입니다. 기안을 회수하거나 반려된 후에 수정할 수 있습니다)
-              </small>
-              <small v-else-if="isApproved" class="text-muted me-3">
-                (최종 결재 승인되어 내용 수정이 불가합니다)
-              </small>
+            <!-- 좌측: 위험 작업인 삭제 버튼 (미상신 또는 반려 상태에서만 노출) -->
+            <div>
               <v-btn
                 v-if="canDeleteLetter"
                 color="error"
                 variant="outlined"
-                class="me-2"
+                size="small"
                 @click="confirmDelete"
               >
                 <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
                 삭제
               </v-btn>
-              <v-btn v-if="canEditLetter" color="success" @click="goToEdit">
+            </div>
+
+            <!-- 우측: 상태 안내 및 가장 접근이 쉬운 [수정], [목록으로] 순차 배치 -->
+            <div class="d-flex align-items-center gap-2">
+              <small v-if="isDispatched" class="text-muted me-2">
+                (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
+              </small>
+              <small v-else-if="isPending" class="text-muted me-2">
+                (전자결재가 진행 중인 공문입니다. 기안을 회수하거나 반려된 후에 수정할 수 있습니다)
+              </small>
+              <small v-else-if="isApproved" class="text-muted me-2">
+                (최종 결재 승인되어 내용 수정이 불가합니다)
+              </small>
+
+              <v-btn v-if="canEditLetter" color="success" size="default" @click="goToEdit">
                 <v-icon icon="mdi-pencil" size="small" class="me-1" />
                 수정
+              </v-btn>
+
+              <v-btn
+                color="secondary"
+                variant="outlined"
+                size="default"
+                class="ms-1"
+                @click="goToList"
+              >
+                <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
+                목록으로
               </v-btn>
             </div>
           </CCol>
@@ -1171,14 +1186,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <DaumPostcode ref="refDispatchPostCode" @address-callback="postCodeCallback" />
       </CModalBody>
       <CModalFooter>
-        <v-btn color="secondary" variant="outlined" @click="showDispatchModal = false">
-          취소
-        </v-btn>
-        <v-btn color="success" variant="flat" :disabled="dispatchSaving" @click="saveDispatchMeta">
+        <v-btn color="success" size="small" :disabled="dispatchSaving" @click="saveDispatchMeta">
           <CSpinner v-if="dispatchSaving" size="sm" class="me-1" />
           <v-icon v-else icon="mdi-content-save-outline" class="me-1" />
           발송 정보 저장
         </v-btn>
+        <v-btn color="light" size="small" @click="showDispatchModal = false" flat> 취소 </v-btn>
       </CModalFooter>
     </CModal>
   </div>

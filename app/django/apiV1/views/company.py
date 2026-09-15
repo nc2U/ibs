@@ -75,9 +75,12 @@ class CompanySealViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        # 공문서 작성 및 전자결재 시 일반 임직원도 소속 회사 인장을 조회할 수 있도록
+        # 조회(list, retrieve)는 인증 및 소속 회사 필터(CompanyDataFilterMixin)만 통과하면 허용
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class DepartmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
