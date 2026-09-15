@@ -797,13 +797,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               <strong>발송 및 대장 관리 메타 정보</strong>
             </div>
             <div>
-              <v-btn
-                v-if="canDocsUpdate"
-                color="primary"
-                variant="tonal"
-                size="small"
-                @click="openDispatchModal"
-              >
+              <v-btn v-if="canDocsUpdate" color="success" size="small" @click="openDispatchModal">
                 <v-icon icon="mdi-pencil-box-outline" size="small" class="me-1" />
                 발송 대장 정보 등록/수정
               </v-btn>
