@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
+import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'

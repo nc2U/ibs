@@ -170,84 +170,22 @@ def get_project_transactions(params, user=None):
     ).order_by('-deal_date', '-created_at')
 
 
-def prefetch_project_transactions(instances, params):
-    """지정된 거래 목록(instances)에 대해서만 분개를 수동 prefetch 맵핑합니다."""
+def prefetch_project_transactions(instances, params=None):
+    """지정된 거래 목록(instances)에 대해서만 분개를 수동 prefetch 맵핑합니다.
+
+    검색/필터 조건에 의해 매칭된 거래(BankTransaction)의 전체 분개 내역이 온전히
+    표시되도록, 거래에 속한 모든 분개를 가져옵니다.
+    """
     transaction_ids = [t.transaction_id for t in instances]
     if not transaction_ids:
         for tx in instances:
             tx.prefetched_accounting_entries = []
         return instances
 
-    # 요청 파라미터에서 필터 조건 추출
-    account_id = params.get('account')
-    account_category = params.get('account_category')
-    account_name = params.get('account_name')
-    contract = params.get('contract')
-    search = params.get('search')
-
-    # get_project_transactions 조건과 동일한 분개 필터 조건 조립
-    entry_filters = Q()
-
-    if account_id:
-        try:
-            account = ProjectAccount.objects.get(pk=account_id)
-            active_accounts = ProjectAccount.objects.filter(
-                code__startswith=account.code, is_active=True
-            ).values_list('pk', flat=True)
-            entry_filters &= Q(account_id__in=active_accounts)
-        except ProjectAccount.DoesNotExist:
-            pass
-
-    if account_category:
-        account_ids = ProjectAccount.objects.filter(
-            category=account_category, is_active=True
-        ).values_list('pk', flat=True)
-        entry_filters &= Q(account_id__in=account_ids)
-
-    if account_name:
-        matched_codes = list(ProjectAccount.objects.filter(
-            name__icontains=account_name, is_active=True
-        ).values_list('code', flat=True))
-
-        if matched_codes:
-            account_q = Q()
-            for code in matched_codes:
-                account_q |= Q(code__startswith=code)
-            account_ids = ProjectAccount.objects.filter(
-                account_q, is_active=True
-            ).values_list('pk', flat=True)
-            entry_filters &= Q(account_id__in=account_ids)
-
-    if contract:
-        entry_filters &= Q(contract_id=contract)
-
-    if search:
-        search_q = Q()
-        matched_codes = list(ProjectAccount.objects.filter(
-            name__icontains=search, is_active=True
-        ).values_list('code', flat=True))
-
-        if matched_codes:
-            account_q = Q()
-            for code in matched_codes:
-                account_q |= Q(code__startswith=code)
-            account_ids = ProjectAccount.objects.filter(
-                account_q, is_active=True
-            ).values_list('pk', flat=True)
-            search_q |= Q(account_id__in=account_ids)
-
-        search_q |= Q(trader__icontains=search)
-        entry_filters &= search_q
-
     # 페이징된 instances 대상 분개 쿼리 실행
     entries_qs = ProjectAccountingEntry.objects.filter(
         transaction_id__in=transaction_ids
     ).select_related('account', 'contract', 'contractor')
-
-    if entry_filters:
-        entries_qs = entries_qs.filter(entry_filters)
-    elif search:
-        entries_qs = entries_qs.filter(trader__icontains=search)
 
     entries_map = defaultdict(list)
     for entry in entries_qs:
