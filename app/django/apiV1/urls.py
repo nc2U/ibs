@@ -233,6 +233,8 @@ router.register(r'image', docs.ImageViewSet)
 router.register(r'docs-trash-can', docs.DocsInTrashViewSet, basename='docs-trash-can')
 router.register(r'official-letter', docs.OfficialLetterViewSet)
 router.register(r'official-letter-attachment', docs.OfficialLetterAttachmentViewSet)
+router.register(r'inbound-letter', docs.InboundLetterViewSet)
+router.register(r'inbound-letter-attachment', docs.InboundLetterAttachmentViewSet)
 
 # forum
 router.register(r'forum', forum.ForumViewSet)

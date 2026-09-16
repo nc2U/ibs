@@ -14,6 +14,9 @@ import type {
   TrashDocs as TP,
   OfficialLetter,
   PatchLetter,
+  InboundLetter,
+  PatchInboundLetter,
+  InboundLetterStatus,
 } from '@/store/types/docs'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 
@@ -53,6 +56,21 @@ export type LetterFilter = {
   issue_date_from?: string
   issue_date_to?: string
   creator?: number | ''
+  ordering?: string
+  search?: string
+  page?: number
+  limit?: number | ''
+}
+
+export type InboundLetterFilter = {
+  company?: number | ''
+  received_date_from?: string
+  received_date_to?: string
+  reply_due_date_from?: string
+  reply_due_date_to?: string
+  status?: InboundLetterStatus | ''
+  recipient_dept?: number | ''
+  recipient_manager?: number | ''
   ordering?: string
   search?: string
   page?: number
@@ -580,6 +598,135 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // Inbound Official Letter (수신 공문)
+  const inboundLetter = ref<InboundLetter | null>(null)
+  const inboundLetterList = ref<InboundLetter[]>([])
+  const inboundLetterCount = ref(0)
+
+  const getInboundLetterNav = computed(() =>
+    inboundLetterList.value.map(l => ({
+      pk: l.pk,
+      prev_pk: l.prev_pk,
+      next_pk: l.next_pk,
+    })),
+  )
+
+  const inboundLetterPages = (itemsPerPage: number) =>
+    Math.ceil(inboundLetterCount.value / itemsPerPage)
+
+  const fetchInboundLetter = async (pk: number) =>
+    api
+      .get(`/inbound-letter/${pk}/`)
+      .then(res => (inboundLetter.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const removeInboundLetter = () => (inboundLetter.value = null)
+
+  const fetchInboundLetterList = async (payload: InboundLetterFilter) => {
+    const limit = payload.limit || 10
+    const page = payload.page || 1
+    let url = `/inbound-letter/?limit=${limit}&page=${page}`
+
+    const {
+      company,
+      received_date_from,
+      received_date_to,
+      reply_due_date_from,
+      reply_due_date_to,
+      status,
+      recipient_dept,
+      recipient_manager,
+    } = payload
+    if (company) url += `&company=${company}`
+    if (received_date_from) url += `&received_date_from=${received_date_from}`
+    if (received_date_to) url += `&received_date_to=${received_date_to}`
+    if (reply_due_date_from) url += `&reply_due_date_from=${reply_due_date_from}`
+    if (reply_due_date_to) url += `&reply_due_date_to=${reply_due_date_to}`
+    if (status) url += `&status=${status}`
+    if (recipient_dept) url += `&recipient_dept=${recipient_dept}`
+    if (recipient_manager) url += `&recipient_manager=${recipient_manager}`
+    if (payload.ordering) url += `&ordering=${payload.ordering}`
+    if (payload.search) url += `&search=${payload.search}`
+
+    return await api
+      .get(url)
+      .then(res => {
+        inboundLetterList.value = res.data.results
+        inboundLetterCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const removeInboundLetterList = () => (inboundLetterList.value = [])
+
+  const createInboundLetter = (payload: FormData | InboundLetter) => {
+    const headers = payload instanceof FormData ? config_headers : undefined
+    return api
+      .post('/inbound-letter/', payload, headers)
+      .then(async res => {
+        await fetchInboundLetterList({ company: res.data.company, page: 1 })
+        message()
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const updateInboundLetter = (pk: number, payload: FormData | InboundLetter) => {
+    const headers = payload instanceof FormData ? config_headers : undefined
+    return api
+      .put(`/inbound-letter/${pk}/`, payload, headers)
+      .then(async res => {
+        await fetchInboundLetterList({ company: res.data.company, page: 1 })
+        await fetchInboundLetter(res.data.pk)
+        message()
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const patchInboundLetter = async (pk: number, payload: PatchInboundLetter) =>
+    api
+      .patch(`/inbound-letter/${pk}/`, payload)
+      .then(res => fetchInboundLetter(res.data.pk))
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteInboundLetter = (pk: number, filter: InboundLetterFilter) =>
+    api
+      .delete(`/inbound-letter/${pk}/`)
+      .then(() =>
+        fetchInboundLetterList(filter).then(() =>
+          message('warning', '', '해당 수신 공문이 삭제되었습니다.'),
+        ),
+      )
+      .catch(err => errorHandle(err.response.data))
+
+  const getNextReceiptNumber = async (company: number) =>
+    api
+      .get(`/inbound-letter/next_receipt_number/?company=${company}`)
+      .then(res => res.data.next_receipt_number)
+      .catch(err => errorHandle(err.response.data))
+
+  const uploadInboundAttachment = async (letterId: number, formData: FormData) =>
+    api
+      .post('/inbound-letter-attachment/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(async res => {
+        await fetchInboundLetter(letterId)
+        message('success', '', '첨부파일이 등록되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteInboundAttachment = async (attachmentId: number, letterId: number) =>
+    api
+      .delete(`/inbound-letter-attachment/${attachmentId}/`)
+      .then(async () => {
+        await fetchInboundLetter(letterId)
+        message('warning', '', '첨부파일이 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     docTypes,
 
@@ -674,5 +821,23 @@ export const useDocs = defineStore('docs', () => {
     submitApproval,
     uploadLetterAttachment,
     deleteLetterAttachment,
+
+    // Inbound Letter (수신 공문)
+    inboundLetter,
+    inboundLetterList,
+    inboundLetterCount,
+    getInboundLetterNav,
+    inboundLetterPages,
+    fetchInboundLetter,
+    removeInboundLetter,
+    fetchInboundLetterList,
+    removeInboundLetterList,
+    createInboundLetter,
+    updateInboundLetter,
+    patchInboundLetter,
+    deleteInboundLetter,
+    getNextReceiptNumber,
+    uploadInboundAttachment,
+    deleteInboundAttachment,
   }
 })

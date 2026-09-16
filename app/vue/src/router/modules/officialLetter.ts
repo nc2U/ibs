@@ -35,6 +35,20 @@ const officialLetter = {
       name: '수신 공문 관리',
       component: () => import('@/views/letters/Inbound/Index.vue'),
       meta: { title: '수신 공문 관리', auth: true },
+      children: [
+        {
+          path: ':letterId(\\d+)',
+          name: '수신 공문 관리 - 보기',
+        },
+        {
+          path: 'create',
+          name: '수신 공문 관리 - 작성',
+        },
+        {
+          path: ':letterId(\\d+)/edit',
+          name: '수신 공문 관리 - 수정',
+        },
+      ],
     },
   ],
 }

@@ -10,7 +10,8 @@ from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work import SimpleIssueProjectSerializer
 from docs.models import (Category, LawsuitCase, Document, Link, File, Image,
-                         OfficialLetter, OfficialLetterAttachment)
+                         OfficialLetter, OfficialLetterAttachment,
+                         InboundLetter, InboundLetterAttachment)
 
 User = get_user_model()
 
@@ -523,3 +524,113 @@ class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
 
     def get_has_attachments(self, obj):
         return bool(obj.attachment_text or obj.attachments.exists())
+
+
+# Inbound Official Letter (수신 공문) ----------------------------------------------------
+
+class InboundLetterAttachmentSerializer(serializers.ModelSerializer):
+    """수신 공문 첨부파일 시리얼라이저"""
+    file_name = serializers.SerializerMethodField(read_only=True)
+    file_size = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InboundLetterAttachment
+        fields = ('pk', 'letter', 'file', 'name', 'file_name', 'file_size', 'quantity', 'ordering', 'created')
+        read_only_fields = ('created',)
+
+    def get_file_name(self, obj):
+        return obj.file.name.split('/')[-1] if obj.file else ''
+
+    def get_file_size(self, obj):
+        try:
+            return obj.file.size if obj.file else 0
+        except Exception:
+            return 0
+
+
+class InboundLetterSerializer(serializers.ModelSerializer):
+    """수신 공문 상세 및 등록/수정 시리얼라이저"""
+    company_name = serializers.SlugField(source='company', read_only=True)
+    recipient_dept_name = serializers.SlugField(source='recipient_dept', read_only=True)
+    recipient_manager_name = serializers.SlugField(source='recipient_manager', read_only=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    d_day = serializers.IntegerField(read_only=True)
+    attachments = InboundLetterAttachmentSerializer(many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updator = SimpleUserSerializer(read_only=True)
+    approval_document_detail = serializers.SerializerMethodField(read_only=True)
+    prev_pk = serializers.SerializerMethodField(read_only=True)
+    next_pk = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InboundLetter
+        fields = (
+            'pk', 'company', 'company_name', 'receipt_number', 'document_number',
+            'sender_name', 'sender_contact', 'received_date', 'reply_due_date', 'd_day',
+            'title', 'content', 'scan_file',
+            'recipient_dept', 'recipient_dept_name',
+            'recipient_manager', 'recipient_manager_name',
+            'status', 'status_desc',
+            'approval_document', 'approval_document_detail',
+            'attachments',
+            'creator', 'updator', 'created', 'updated',
+            'prev_pk', 'next_pk',
+        )
+        read_only_fields = ('receipt_number',)
+
+    def get_approval_document_detail(self, obj):
+        if obj.approval_document:
+            return {
+                'pk': obj.approval_document.pk,
+                'doc_number': obj.approval_document.doc_number,
+                'title': obj.approval_document.title,
+                'status': obj.approval_document.status,
+                'status_desc': obj.approval_document.get_status_display(),
+            }
+        return None
+
+    def get_prev_pk(self, obj):
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(InboundLetter.objects.all())
+        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-pk').first()
+        return prev_obj.pk if prev_obj else None
+
+    def get_next_pk(self, obj):
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(InboundLetter.objects.all())
+        next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
+        return next_obj.pk if next_obj else None
+
+
+class SimpleInboundLetterSerializer(serializers.ModelSerializer):
+    """수신 공문 목록용 경량 시리얼라이저"""
+    recipient_dept_name = serializers.SlugField(source='recipient_dept', read_only=True)
+    recipient_manager_name = serializers.SlugField(source='recipient_manager', read_only=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    d_day = serializers.IntegerField(read_only=True)
+    has_scan = serializers.SerializerMethodField(read_only=True)
+    has_attachments = serializers.SerializerMethodField(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = InboundLetter
+        fields = (
+            'pk', 'receipt_number', 'document_number', 'sender_name',
+            'received_date', 'reply_due_date', 'd_day', 'title',
+            'recipient_dept', 'recipient_dept_name',
+            'recipient_manager', 'recipient_manager_name',
+            'status', 'status_desc',
+            'has_scan', 'has_attachments',
+            'approval_document', 'creator', 'created',
+        )
+
+    def get_has_scan(self, obj):
+        return bool(obj.scan_file)
+
+    def get_has_attachments(self, obj):
+        return obj.attachments.exists()
+

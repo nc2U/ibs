@@ -3,7 +3,8 @@ from import_export.admin import ImportExportMixin
 
 from .models import (
     Category, LawsuitCase, Document, Link, File, Image,
-    LetterSequence, OfficialLetter
+    LetterSequence, OfficialLetter,
+    InboundSequence, InboundLetter, InboundLetterAttachment
 )
 
 
@@ -87,3 +88,29 @@ class OfficialLetterAdmin(ImportExportMixin, admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(InboundSequence)
+class InboundSequenceAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'year', 'last_sequence')
+    list_display_links = ('company',)
+    list_filter = ('company', 'year')
+    search_fields = ('company__name',)
+
+
+class InboundLetterAttachmentInline(admin.TabularInline):
+    from .models import InboundLetterAttachment
+    model = InboundLetterAttachment
+    extra = 1
+
+
+@admin.register(InboundLetter)
+class InboundLetterAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'receipt_number', 'document_number', 'company', 'sender_name', 'title', 'received_date', 'reply_due_date', 'status')
+    list_display_links = ('receipt_number', 'title')
+    list_filter = ('company', 'status', 'received_date', 'recipient_dept')
+    search_fields = ('receipt_number', 'document_number', 'sender_name', 'title', 'content')
+    readonly_fields = ('receipt_number', 'created', 'updated')
+    date_hierarchy = 'received_date'
+    inlines = (InboundLetterAttachmentInline,)
+

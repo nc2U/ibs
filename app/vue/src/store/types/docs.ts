@@ -300,3 +300,72 @@ export interface PatchLetter {
   dispatched_at?: string | null
   issue_date?: string
 }
+
+// Inbound Official Letter (수신 공문) Types
+export interface InboundLetterAttachment {
+  pk?: number
+  letter?: number
+  file: File | string
+  name?: string
+  file_name?: string
+  file_size?: number
+  quantity?: string
+  ordering?: number
+  created?: string
+}
+
+export type InboundLetterStatus = 'received' | 'in_progress' | 'replied' | 'closed'
+
+export interface InboundLetter {
+  pk?: number
+  company: number | null
+  company_name?: string
+  receipt_number?: string
+  document_number: string
+  sender_name: string
+  sender_contact?: string
+  received_date: string
+  reply_due_date?: string | null
+  d_day?: number | null
+  title: string
+  content?: string
+  scan_file?: string | null
+  recipient_dept?: number | null
+  recipient_dept_name?: string
+  recipient_manager?: number | null
+  recipient_manager_name?: string
+  status: InboundLetterStatus
+  status_desc?: string
+  approval_document?: number | null
+  approval_document_detail?: {
+    pk: number
+    doc_number: string
+    title: string
+    status: string
+    status_desc: string
+  } | null
+  attachments?: InboundLetterAttachment[]
+  has_scan?: boolean
+  has_attachments?: boolean
+  creator?: SimpleUser
+  updator?: SimpleUser
+  created?: string
+  updated?: string
+  prev_pk?: number | null
+  next_pk?: number | null
+}
+
+export interface PatchInboundLetter {
+  pk: number
+  document_number?: string
+  sender_name?: string
+  sender_contact?: string
+  received_date?: string
+  reply_due_date?: string | null
+  title?: string
+  content?: string
+  recipient_dept?: number | null
+  recipient_manager?: number | null
+  status?: InboundLetterStatus
+}
+

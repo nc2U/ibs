@@ -26,7 +26,7 @@ class Category(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['id']
+        ordering = ['order', 'id']
         verbose_name = '01. 카테고리'
         verbose_name_plural = '01. 카테고리'
 
@@ -503,3 +503,192 @@ class OfficialLetterAttachment(models.Model):
 
 
 file_cleanup_signals(OfficialLetterAttachment, file_field_names=['file'])
+
+
+# ============================================================
+# 수신 공문 관리 (Inbound Official Letter)
+# ============================================================
+
+class InboundSequence(models.Model):
+    """회사별 연도별 수신 공문 접수번호 시퀀스 관리"""
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE,
+                                related_name='inbound_sequences', verbose_name='회사')
+    year = models.PositiveIntegerField('연도')
+    last_sequence = models.PositiveIntegerField('마지막 번호', default=0)
+
+    class Meta:
+        ordering = ['-year']
+        unique_together = ['company', 'year']
+        verbose_name = '08. 수신공문 접수번호 시퀀스'
+        verbose_name_plural = '08. 수신공문 접수번호 시퀀스'
+
+    def __str__(self):
+        return f'{self.company.name} - {self.year} (수신접수)'
+
+    @classmethod
+    def _get_prefix(cls, company):
+        import re
+        prefix = company.short_name.strip() if getattr(company, 'short_name', None) else ''
+        if not prefix and getattr(company, 'name', None):
+            prefix = re.sub(r'\(주\)|주식회사|\s+', '', company.name)
+        return prefix
+
+    @classmethod
+    def peek_next_receipt_number(cls, company):
+        """다음에 발급될 예상 사내 접수번호 조회 (시퀀스를 증가시키지 않음)"""
+        current_year = timezone.now().year
+        sequence = cls.objects.filter(company=company, year=current_year).first()
+        next_seq = (sequence.last_sequence + 1) if sequence else 1
+        prefix = cls._get_prefix(company)
+        if prefix:
+            return f'{prefix}-접수-{current_year}-{next_seq:03d}'
+        return f'접수-{current_year}-{next_seq:03d}'
+
+    @classmethod
+    def get_next_receipt_number(cls, company):
+        """다음 사내 접수번호 생성 ([회사약칭]-접수-YYYY-NNN 형식, 시퀀스 원자적 증가)"""
+        current_year = timezone.now().year
+
+        sequence, created = cls.objects.get_or_create(
+            company=company,
+            year=current_year,
+            defaults={'last_sequence': 0}
+        )
+
+        sequence.last_sequence += 1
+        sequence.save()
+
+        prefix = cls._get_prefix(company)
+        if prefix:
+            return f'{prefix}-접수-{current_year}-{sequence.last_sequence:03d}'
+        return f'접수-{current_year}-{sequence.last_sequence:03d}'
+
+
+def get_inbound_scan_path(instance, filename):
+    return f'inbound_letters/{instance.company_id}/scans/{filename}'
+
+
+class InboundLetter(models.Model):
+    """수신 공문 대장 모델"""
+    company = models.ForeignKey(
+        'company.Company', on_delete=models.CASCADE,
+        related_name='inbound_letters', verbose_name='회사'
+    )
+    receipt_number = models.CharField(
+        '사내 접수번호', max_length=50, unique=True, db_index=True,
+        blank=True, help_text='미입력 시 [회사약칭]-접수-YYYY-NNN 자동 발번'
+    )
+    document_number = models.CharField(
+        '발신처 문서번호', max_length=100, db_index=True,
+        help_text='발신 기관/업체에서 부여한 원본 공문 문서번호'
+    )
+    sender_name = models.CharField('발신처(기관/업체명)', max_length=100, db_index=True)
+    sender_contact = models.CharField('발신처 연락처/담당자', max_length=100, blank=True, default='')
+
+    received_date = models.DateField('접수일자', default=timezone.now, db_index=True)
+    reply_due_date = models.DateField(
+        '회신 기한', null=True, blank=True, db_index=True,
+        help_text='대외 회신이 필요한 경우 답변 마감 기한 (D-Day 모니터링 연동)'
+    )
+
+    title = models.CharField('수신 공문 제목', max_length=255, db_index=True)
+    content = models.TextField('주요 내용 및 요약', blank=True, default='')
+
+    scan_file = models.FileField(
+        '공문 원본 스캔본', upload_to=get_inbound_scan_path,
+        storage=default_storage, null=True, blank=True,
+        help_text='접수된 원본 공문서 스캔 PDF 파일'
+    )
+
+    recipient_dept = models.ForeignKey(
+        'company.Department', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='assigned_inbound_letters',
+        verbose_name='배부/주관 부서'
+    )
+    recipient_manager = models.ForeignKey(
+        'company.Staff', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='managed_inbound_letters',
+        verbose_name='처리 담당자'
+    )
+
+    STATUS_CHOICES = (
+        ('received', '접수'),
+        ('in_progress', '처리중'),
+        ('replied', '회신완료'),
+        ('closed', '종결'),
+    )
+    status = models.CharField(
+        '처리 상태', max_length=20, choices=STATUS_CHOICES,
+        default='received', db_index=True
+    )
+
+    approval_document = models.ForeignKey(
+        'approval.ApprovalDocument', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='related_inbound_letters',
+        verbose_name='연동 전자결재 품의'
+    )
+
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, verbose_name='접수 등록자', related_name='created_inbound_letters'
+    )
+    updator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='수정자', related_name='updated_inbound_letters'
+    )
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('수정일시', auto_now=True)
+
+    class Meta:
+        ordering = ['-received_date', '-created']
+        verbose_name = '09. 수신 공문'
+        verbose_name_plural = '09. 수신 공문'
+
+    def __str__(self):
+        return f'[{self.receipt_number}] {self.title} ({self.sender_name})'
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_number:
+            self.receipt_number = InboundSequence.get_next_receipt_number(self.company)
+        super().save(*args, **kwargs)
+
+    @property
+    def d_day(self):
+        """회신 기한 D-Day 계산 (null이면 None, 당일이면 0, 지난 경우 음수, 남은 경우 양수)"""
+        if not self.reply_due_date:
+            return None
+        today = timezone.localdate()
+        return (self.reply_due_date - today).days
+
+
+file_cleanup_signals(InboundLetter, file_field_names=['scan_file'])
+
+
+def get_inbound_attachment_path(instance, filename):
+    return f'inbound_letters/{instance.letter.company_id}/attachments/{filename}'
+
+
+class InboundLetterAttachment(models.Model):
+    """수신 공문 첨부파일 모델"""
+    letter = models.ForeignKey(
+        InboundLetter, on_delete=models.CASCADE,
+        related_name='attachments', verbose_name='수신 공문'
+    )
+    file = models.FileField('첨부파일', upload_to=get_inbound_attachment_path, storage=default_storage)
+    name = models.CharField('첨부 명칭', max_length=255, blank=True, default='',
+                            help_text='미입력 시 파일명 사용')
+    quantity = models.CharField('수량/부수', max_length=50, blank=True, default='1부')
+    ordering = models.PositiveSmallIntegerField('표시 순서', default=1)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+
+    class Meta:
+        ordering = ['ordering', 'id']
+        verbose_name = '10. 수신 공문 첨부파일'
+        verbose_name_plural = '10. 수신 공문 첨부파일'
+
+    def __str__(self):
+        return self.name or self.file.name
+
+
+file_cleanup_signals(InboundLetterAttachment, file_field_names=['file'])
+

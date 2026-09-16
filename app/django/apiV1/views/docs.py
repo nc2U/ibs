@@ -17,13 +17,16 @@ from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
 from company.models import Company
 from work.models import IssueProject
 from docs.models import (LetterSequence, Category, LawsuitCase, Document, Link,
-                         File, Image, OfficialLetter, OfficialLetterAttachment)
+                         File, Image, OfficialLetter, OfficialLetterAttachment,
+                         InboundSequence, InboundLetter, InboundLetterAttachment)
 from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
 from ..serializers.docs import (CategorySerializer, LawSuitCaseSerializer,
                                 SimpleLawSuitCaseSerializer, DocumentSerializer, LinkSerializer,
                                 FileSerializer, ImageSerializer, DocumentInTrashSerializer,
-                                OfficialLetterSerializer, OfficialLetterAttachmentSerializer)
+                                OfficialLetterSerializer, OfficialLetterAttachmentSerializer,
+                                InboundLetterSerializer, SimpleInboundLetterSerializer,
+                                InboundLetterAttachmentSerializer)
 
 
 # DocsItem --------------------------------------------------------------------------
@@ -828,4 +831,109 @@ class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
             'destroy': 'docs.delete',
         }
         return mapping.get(self.action, None)
+
+
+# Inbound Letter ViewSets ------------------------------------------------------------------
+
+class InboundLetterFilterSet(FilterSet):
+    company = ModelChoiceFilter(field_name='company',
+                                queryset=Company.objects.all(), label='회사')
+    received_date_from = DateFilter(field_name='received_date', lookup_expr='gte', label='접수일(시작)')
+    received_date_to = DateFilter(field_name='received_date', lookup_expr='lte', label='접수일(종료)')
+    reply_due_date_from = DateFilter(field_name='reply_due_date', lookup_expr='gte', label='회신기한(시작)')
+    reply_due_date_to = DateFilter(field_name='reply_due_date', lookup_expr='lte', label='회신기한(종료)')
+    status = CharFilter(field_name='status', label='처리 상태')
+    recipient_dept = CharFilter(field_name='recipient_dept', label='배부 부서')
+    recipient_manager = CharFilter(field_name='recipient_manager', label='담당자')
+
+    class Meta:
+        model = InboundLetter
+        fields = ('company', 'received_date_from', 'received_date_to',
+                  'reply_due_date_from', 'reply_due_date_to',
+                  'status', 'recipient_dept', 'recipient_manager')
+
+
+class InboundLetterViewSet(viewsets.ModelViewSet):
+    queryset = InboundLetter.objects.select_related(
+        'company', 'recipient_dept', 'recipient_manager', 'creator', 'updator', 'approval_document'
+    ).prefetch_related('attachments')
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationOneHundred
+    filterset_class = InboundLetterFilterSet
+    search_fields = ('receipt_number', 'document_number', 'sender_name',
+                     'sender_contact', 'title', 'content')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SimpleInboundLetterSerializer
+        return InboundLetterSerializer
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'docs.read',
+            'retrieve': 'docs.read',
+            'create': 'docs.create',
+            'update': 'docs.update',
+            'partial_update': 'docs.update',
+            'destroy': 'docs.delete',
+            'next_receipt_number': 'docs.read',
+        }
+        return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        if hasattr(user, 'staff') and user.staff.company:
+            return queryset.filter(company=user.staff.company)
+        return queryset.none()
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def next_receipt_number(self, request):
+        company_id = request.query_params.get('company')
+        if not company_id:
+            return Response({'error': '회사 ID가 필요합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if not hasattr(user, 'staff') or not user.staff.company_id or str(user.staff.company_id) != str(company_id):
+                return Response({'error': '해당 회사의 접수 번호를 조회할 권한이 없습니다.'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            company = Company.objects.get(pk=company_id)
+            next_number = InboundSequence.peek_next_receipt_number(company)
+            return Response({'next_receipt_number': next_number})
+        except Company.DoesNotExist:
+            return Response({'error': '회사를 찾을 수 없습니다.'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+
+class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
+    queryset = InboundLetterAttachment.objects.all()
+    serializer_class = InboundLetterAttachmentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    filterset_fields = ('letter',)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'docs.read',
+            'retrieve': 'docs.read',
+            'create': 'docs.create',
+            'update': 'docs.update',
+            'partial_update': 'docs.update',
+            'destroy': 'docs.delete',
+        }
+        return mapping.get(self.action, None)
+
 
