@@ -84,7 +84,7 @@ export const useDocs = defineStore('docs', () => {
 
   const fetchCategoryList = (type: number) =>
     api
-      .get(`/category/?doc_type=${type}`)
+      .get(`/category/?doc_type=${type}&active=true`)
       .then(res => (categoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
