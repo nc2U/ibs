@@ -18,7 +18,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#9E9E9E",
-      "name": "서식",
+      "name": "계약(약정)서",
       "parent": null,
       "order": 2,
       "active": true,
@@ -31,7 +31,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#558B2F",
-      "name": "수신공문",
+      "name": "고시공고·의사록",
       "parent": null,
       "order": 3,
       "active": true,
@@ -44,7 +44,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#43A047",
-      "name": "계약서",
+      "name": "인허가·등록증",
       "parent": null,
       "order": 4,
       "active": true,
@@ -57,7 +57,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#5C6BC0",
-      "name": "보고서",
+      "name": "도면·기술도서",
       "parent": null,
       "order": 5,
       "active": true,
@@ -70,7 +70,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#607D8B",
-      "name": "인허가·등록증",
+      "name": "회사소개 자료",
       "parent": null,
       "order": 6,
       "active": true,
@@ -83,7 +83,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#8D6E63",
-      "name": "고시·공고",
+      "name": "표준 서식",
       "parent": null,
       "order": 7,
       "active": true,
@@ -96,7 +96,7 @@
     "fields": {
       "doc_type": "1",
       "color": "#BDBDBD",
-      "name": "참고자료",
+      "name": "기타 참고자료",
       "parent": null,
       "order": 8,
       "active": true,
@@ -109,10 +109,10 @@
     "fields": {
       "doc_type": "1",
       "color": "#A1887F",
-      "name": "홍보자료",
+      "name": "--deprecated",
       "parent": null,
-      "order": 1,
-      "active": true,
+      "order": 9,
+      "active": false,
       "default": false
     }
   },
@@ -122,10 +122,10 @@
     "fields": {
       "doc_type": "1",
       "color": "#9E9D24",
-      "name": "기타",
+      "name": "--deprecated",
       "parent": null,
-      "order": 2,
-      "active": true,
+      "order": 10,
+      "active": false,
       "default": false
     }
   },
@@ -137,7 +137,7 @@
       "color": "#A1887F",
       "name": "소장·신청서",
       "parent": null,
-      "order": 3,
+      "order": 1,
       "active": true,
       "default": false
     }
@@ -150,7 +150,7 @@
       "color": "#9E9D24",
       "name": "당사자 제출문서",
       "parent": null,
-      "order": 4,
+      "order": 2,
       "active": true,
       "default": false
     }
@@ -163,7 +163,7 @@
       "color": "#689F38",
       "name": "상대방 제출문서",
       "parent": null,
-      "order": 5,
+      "order": 3,
       "active": true,
       "default": false
     }
@@ -176,7 +176,7 @@
       "color": "#9E9E9E",
       "name": "법원 수신문서",
       "parent": null,
-      "order": 6,
+      "order": 4,
       "active": true,
       "default": false
     }
@@ -189,7 +189,7 @@
       "color": "#66BB6A",
       "name": "판결·결정문",
       "parent": null,
-      "order": 1,
+      "order": 5,
       "active": true,
       "default": false
     }
@@ -202,7 +202,7 @@
       "color": "#9575CD",
       "name": "사건위임계약",
       "parent": null,
-      "order": 2,
+      "order": 6,
       "active": true,
       "default": false
     }
@@ -9848,7 +9848,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-08-25T14:09:27.228Z",
+      "updated": "2026-09-06T13:42:25.185Z",
       "creator": 1,
       "permissions": [
         1,
@@ -9920,7 +9920,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-08-25T14:13:37.094Z",
+      "updated": "2026-09-06T13:44:23.388Z",
       "creator": 1,
       "permissions": [
         7,
@@ -9970,7 +9970,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:48:04Z",
-      "updated": "2026-08-25T14:13:58.318Z",
+      "updated": "2026-09-06T13:45:42.840Z",
       "creator": 1,
       "permissions": [
         11,
@@ -10017,10 +10017,11 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:14Z",
-      "updated": "2026-08-25T14:14:10.553Z",
+      "updated": "2026-09-06T13:47:02.942Z",
       "creator": 1,
       "permissions": [
         1,
+        2,
         3,
         4,
         5,
@@ -10088,7 +10089,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:59:24Z",
-      "updated": "2026-08-25T14:14:24.900Z",
+      "updated": "2026-09-06T13:48:49.925Z",
       "creator": 1,
       "permissions": [
         7,
@@ -10138,9 +10139,20 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-08-30T12:36:11.452Z",
+      "updated": "2026-09-06T13:50:50.634Z",
       "creator": 1,
-      "permissions": []
+      "permissions": [
+        11,
+        12,
+        19,
+        39,
+        41,
+        46,
+        47,
+        49,
+        51,
+        53
+      ]
     }
   },
   {
@@ -10156,7 +10168,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.184Z",
-      "updated": "2026-08-25T14:15:17.062Z",
+      "updated": "2026-09-06T13:52:27.163Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10168,6 +10180,7 @@
         61,
         62,
         63,
+        64,
         65,
         66,
         67
@@ -10187,7 +10200,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-08-28T06:57:16.798Z",
+      "updated": "2026-09-06T13:52:51.318Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10212,7 +10225,7 @@
       "user_visible": "ALL",
       "order": 2,
       "created": "2026-07-23T17:09:02.168Z",
-      "updated": "2026-08-25T14:16:07.190Z",
+      "updated": "2026-09-06T13:54:20.966Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10246,7 +10259,11 @@
         82,
         83,
         84,
-        85
+        85,
+        86,
+        88,
+        89,
+        90
       ]
     }
   },
@@ -10263,7 +10280,7 @@
       "user_visible": "ALL",
       "order": 3,
       "created": "2026-07-23T17:10:33.447Z",
-      "updated": "2026-08-28T06:54:07.760Z",
+      "updated": "2026-09-06T13:59:32.134Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10292,12 +10309,16 @@
         77,
         78,
         79,
-        80,
         81,
         82,
         83,
         84,
-        85
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
       ]
     }
   },
@@ -10314,7 +10335,7 @@
       "user_visible": "PRJ",
       "order": 4,
       "created": "2026-07-23T17:24:27.264Z",
-      "updated": "2026-08-28T06:56:35.154Z",
+      "updated": "2026-09-06T14:01:04.659Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10326,9 +10347,9 @@
         71,
         72,
         73,
-        78,
-        79,
-        80
+        83,
+        84,
+        85
       ]
     }
   },
@@ -10336,7 +10357,7 @@
     "model": "work.role",
     "pk": 12,
     "fields": {
-      "name": "[PR] 수납담당",
+      "name": "[PR] 분양담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
       "is_for_dev_project": true,
@@ -10345,7 +10366,7 @@
       "user_visible": "PRJ",
       "order": 5,
       "created": "2026-07-23T17:27:25.976Z",
-      "updated": "2026-08-28T06:56:36.037Z",
+      "updated": "2026-09-06T14:02:52.012Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10354,9 +10375,10 @@
         74,
         75,
         76,
+        77,
         78,
         79,
-        80
+        83
       ]
     }
   },
@@ -10364,7 +10386,7 @@
     "model": "work.role",
     "pk": 13,
     "fields": {
-      "name": "[PR] 회계담당",
+      "name": "[PR] 수납담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
       "is_for_dev_project": true,
@@ -10373,7 +10395,35 @@
       "user_visible": "PRJ",
       "order": 6,
       "created": "2026-08-23T15:41:04.082Z",
-      "updated": "2026-08-28T06:56:36.916Z",
+      "updated": "2026-09-06T14:01:11.073Z",
+      "creator": 1,
+      "permissions": [
+        42,
+        43,
+        44,
+        79,
+        80,
+        81,
+        83,
+        84,
+        85
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 14,
+    "fields": {
+      "name": "[PR] 회계담당",
+      "category": "ibs_pr_manage",
+      "is_confidential": false,
+      "is_for_dev_project": true,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "PRJ",
+      "order": 7,
+      "created": "2026-08-23T18:05:04.246Z",
+      "updated": "2026-09-06T14:04:02.454Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10384,17 +10434,20 @@
         65,
         66,
         74,
-        75,
-        76,
+        77,
         78,
         79,
-        80
+        80,
+        81,
+        83,
+        84,
+        85
       ]
     }
   },
   {
     "model": "work.role",
-    "pk": 14,
+    "pk": 15,
     "fields": {
       "name": "[PR] 부지담당",
       "category": "ibs_pr_manage",
@@ -10403,22 +10456,22 @@
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
-      "order": 7,
-      "created": "2026-08-23T18:05:04.246Z",
-      "updated": "2026-08-30T12:37:20.453Z",
+      "order": 8,
+      "created": "2026-08-30T12:36:40.766Z",
+      "updated": "2026-09-06T14:01:24.881Z",
       "creator": 1,
       "permissions": [
         42,
-        78,
-        82,
         83,
-        84
+        87,
+        88,
+        89
       ]
     }
   },
   {
     "model": "work.role",
-    "pk": 15,
+    "pk": 16,
     "fields": {
       "name": "[PR] 관계자",
       "category": "ibs_pr_manage",
@@ -10428,16 +10481,17 @@
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 8,
-      "created": "2026-08-30T12:36:40.766Z",
-      "updated": "2026-08-30T12:39:34.797Z",
+      "created": "2026-09-06T13:55:53.172Z",
+      "updated": "2026-09-06T14:04:34.255Z",
       "creator": 1,
       "permissions": [
         42,
         63,
         68,
         74,
-        78,
-        82
+        79,
+        83,
+        87
       ]
     }
   },
@@ -11540,6 +11594,81 @@
     "model": "work.permission",
     "pk": 74,
     "fields": {
+      "module": "sales",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "sales.read",
+      "name": "분양 대행 조회",
+      "is_default": false,
+      "description": "대행사/팀/인력 명단 조회• 계약 배정 실적 현황 조회 "
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 75,
+    "fields": {
+      "module": "sales",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "sales.manage",
+      "name": "분양 조직/인력 관리",
+      "is_default": false,
+      "description": "인력 관리 및 MGM 연계 / 서류 등록 및 검증(verify)      "
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 76,
+    "fields": {
+      "module": "sales",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "sales.policy",
+      "name": "분양 수수료 정책",
+      "is_default": false,
+      "description": "차수/타입별 수수료 단가(R값, 대행 수수료) 설정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 77,
+    "fields": {
+      "module": "sales",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "sales.settle",
+      "name": "분양 수수료 정산",
+      "is_default": false,
+      "description": "정산 관리 / 실적 집계 실행 / 환수금 상계 및 정산 확정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 78,
+    "fields": {
+      "module": "sales",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "sales.payout",
+      "name": "분양 수수료 지급",
+      "is_default": false,
+      "description": "개인별 지급 상태 변경(승인/보류/완료) / 은행 이체 CSV 파일 반출"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 79,
+    "fields": {
       "module": "payment",
       "is_for_workspace": false,
       "is_for_hq": true,
@@ -11553,7 +11682,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 75,
+    "pk": 80,
     "fields": {
       "module": "payment",
       "is_for_workspace": false,
@@ -11568,7 +11697,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 76,
+    "pk": 81,
     "fields": {
       "module": "payment",
       "is_for_workspace": false,
@@ -11583,7 +11712,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 77,
+    "pk": 82,
     "fields": {
       "module": "payment",
       "is_for_workspace": false,
@@ -11598,7 +11727,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 78,
+    "pk": 83,
     "fields": {
       "module": "notice",
       "is_for_workspace": false,
@@ -11613,7 +11742,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 79,
+    "pk": 84,
     "fields": {
       "module": "notice",
       "is_for_workspace": false,
@@ -11628,7 +11757,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 80,
+    "pk": 85,
     "fields": {
       "module": "notice",
       "is_for_workspace": false,
@@ -11643,7 +11772,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 81,
+    "pk": 86,
     "fields": {
       "module": "notice",
       "is_for_workspace": false,
@@ -11658,7 +11787,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 82,
+    "pk": 87,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
@@ -11673,7 +11802,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 83,
+    "pk": 88,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
@@ -11688,7 +11817,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 84,
+    "pk": 89,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
@@ -11703,7 +11832,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 85,
+    "pk": 90,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
