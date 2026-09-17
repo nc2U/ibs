@@ -113,3 +113,102 @@ class MeetingSerializerTests(TestCase):
         self.assertEqual(files.count(), 1)
         # Check that the file was created (the name is renamed by Django)
         self.assertTrue(files.first().file.name.endswith('.txt'))
+
+
+from rest_framework.test import APIClient
+from project.models import Project, SiteOwner, SiteContract, SiteContractFile
+
+
+class SiteContractAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='site_testuser', password='password', is_superuser=True)
+        self.client.force_authenticate(user=self.user)
+        self.company = Company.objects.create(name='Test Company 2')
+        self.issue_project = IssueProject.objects.create(
+            company=self.company,
+            name='Test Project 2',
+            slug='test-project-2',
+            creator=self.user,
+        )
+        self.project = Project.objects.create(
+            issue_project=self.issue_project,
+            name='Test Project 2',
+            kind='2',
+            start_year=2026,
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24,
+        )
+        self.owner = SiteOwner.objects.create(
+            project=self.project,
+            owner='홍길동',
+            phone1='010-1234-5678',
+        )
+
+    def test_create_site_contract_with_multiple_files(self):
+        file1 = SimpleUploadedFile("contract_main.pdf", b"pdf content 1")
+        file2 = SimpleUploadedFile("id_card.png", b"png content 2")
+        file3 = SimpleUploadedFile("bank_book.pdf", b"pdf content 3")
+
+        data = {
+            'project': self.project.pk,
+            'owner': self.owner.pk,
+            'contract_date': '2026-06-01',
+            'total_price': 500000000,
+            'contract_area': 330.5,
+            'acc_bank': '국민은행',
+            'acc_number': '123-456-789',
+            'acc_owner': '홍길동',
+            'new_files': [file1, file2, file3],
+        }
+        response = self.client.post('/api/v1/site-contract/', data, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+
+        self.assertEqual(SiteContract.objects.count(), 1)
+        contract = SiteContract.objects.first()
+        self.assertEqual(contract.site_cont_files.count(), 3)
+        file_names = list(contract.site_cont_files.values_list('file_name', flat=True))
+        self.assertIn('contract_main.pdf', file_names)
+        self.assertIn('id_card.png', file_names)
+        self.assertIn('bank_book.pdf', file_names)
+
+    def test_update_site_contract_add_and_delete_files(self):
+        contract = SiteContract.objects.create(
+            project=self.project,
+            owner=self.owner,
+            contract_date='2026-06-01',
+            total_price=500000000,
+            contract_area=330.5,
+            creator=self.user,
+        )
+        file_a = SiteContractFile.objects.create(
+            site_contract=contract,
+            file=SimpleUploadedFile("file_a.pdf", b"content a"),
+            creator=self.user,
+        )
+        file_b = SiteContractFile.objects.create(
+            site_contract=contract,
+            file=SimpleUploadedFile("file_b.pdf", b"content b"),
+            creator=self.user,
+        )
+        self.assertEqual(contract.site_cont_files.count(), 2)
+
+        file_new = SimpleUploadedFile("file_c.pdf", b"content c")
+        update_data = {
+            'note': '업데이트된 비고',
+            'del_files': [file_a.pk],
+            'new_files': [file_new],
+        }
+        response = self.client.patch(f'/api/v1/site-contract/{contract.pk}/', update_data, format='multipart')
+        self.assertEqual(response.status_code, 200, response.data)
+
+        contract.refresh_from_db()
+        self.assertEqual(contract.note, '업데이트된 비고')
+        # file_a가 삭제되고 file_c가 추가되어 총 2개 (file_b, file_c)
+        remaining_files = contract.site_cont_files.all()
+        self.assertEqual(remaining_files.count(), 2)
+        remaining_names = list(remaining_files.values_list('file_name', flat=True))
+        self.assertNotIn('file_a.pdf', remaining_names)
+        self.assertIn('file_b.pdf', remaining_names)
+        self.assertIn('file_c.pdf', remaining_names)

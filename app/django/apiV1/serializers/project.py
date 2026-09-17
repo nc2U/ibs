@@ -582,12 +582,23 @@ class SiteContractSerializer(serializers.ModelSerializer):
         # 불필요한 재조회 없이 FK를 통해 직접 update 실행
         SiteOwner.objects.filter(pk=site_contract.owner_id).update(use_consent=True)
 
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # 1. 다중 파일 업로드 처리
+        uploaded_files = []
+        if request and hasattr(request, 'FILES'):
+            uploaded_files = request.FILES.getlist('new_files') or request.FILES.getlist('newFiles')
+            for f in uploaded_files:
+                SiteContractFile.objects.create(site_contract=site_contract, file=f, creator=user)
+
+        # 2. 단일 파일 업로드 하위 호환성
         new_file = self.initial_data.get('newFile', None)
-        if new_file:
-            request = self.context.get('request')
-            user = request.user if request else None
-            cont_file = SiteContractFile(site_contract=site_contract, file=new_file, creator=user)
-            cont_file.save()
+        if not new_file and request and hasattr(request, 'FILES'):
+            new_file = request.FILES.get('file') or request.FILES.get('new_file')
+        if new_file and new_file not in uploaded_files:
+            SiteContractFile.objects.create(site_contract=site_contract, file=new_file, creator=user)
+
         return site_contract
 
     @transaction.atomic
@@ -605,10 +616,21 @@ class SiteContractSerializer(serializers.ModelSerializer):
             data = request.data
             user = request.user
 
+            # 1. 다중 파일 업로드 처리
+            uploaded_files = []
+            if hasattr(request, 'FILES'):
+                uploaded_files = request.FILES.getlist('new_files') or request.FILES.getlist('newFiles')
+                for f in uploaded_files:
+                    SiteContractFile.objects.create(site_contract=instance, file=f, creator=user)
+
+            # 2. 단일 파일 업로드 하위 호환성
             new_file = data.get('newFile')
-            if new_file:
+            if not new_file and hasattr(request, 'FILES'):
+                new_file = request.FILES.get('file') or request.FILES.get('new_file')
+            if new_file and new_file not in uploaded_files:
                 SiteContractFile.objects.create(site_contract=instance, file=new_file, creator=user)
 
+            # 3. 단일 파일 교체 (editFile + cngFile)
             edit_file = data.get('editFile', None)  # pk of file to edit
             cng_file = data.get('cngFile', None)  # new file to replace
 
@@ -623,12 +645,29 @@ class SiteContractSerializer(serializers.ModelSerializer):
                     logger.exception("계약 파일 교체 중 오류 발생 (contract=%s, edit_file=%s)", instance.pk, edit_file)
                     raise serializers.ValidationError('An error occurred while replacing the file.')
 
-            del_file = data.get('delFile', None)
-            if del_file:
-                try:
-                    file_to_delete = SiteContractFile.objects.get(pk=del_file, site_contract=instance)
-                    file_to_delete.delete()
-                except SiteContractFile.DoesNotExist:
-                    raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
+            # 4. 다중 파일 삭제 처리 (del_files, delFiles, files_del)
+            def get_del_ids(d, key):
+                if hasattr(d, 'getlist'):
+                    vals = d.getlist(key)
+                else:
+                    vals = d.get(key, [])
+                if not isinstance(vals, list):
+                    vals = [vals] if vals else []
+                res = []
+                for v in vals:
+                    if isinstance(v, str) and ',' in v:
+                        res.extend([int(p.strip()) for p in v.split(',') if p.strip().isdigit()])
+                    elif str(v).isdigit():
+                        res.append(int(v))
+                return res
+
+            del_ids = get_del_ids(data, 'del_files') or get_del_ids(data, 'delFiles') or get_del_ids(data, 'files_del')
+            if del_ids:
+                SiteContractFile.objects.filter(pk__in=del_ids, site_contract=instance).delete()
+
+            # 5. 단일 파일 삭제 하위 호환성 (delFile, del_file)
+            del_file = data.get('delFile', None) or data.get('del_file', None)
+            if del_file and str(del_file).isdigit() and int(del_file) not in del_ids:
+                SiteContractFile.objects.filter(pk=int(del_file), site_contract=instance).delete()
 
         return instance

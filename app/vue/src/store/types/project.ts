@@ -298,6 +298,18 @@ export interface Relation {
   acquisition_date: null | string
 }
 
+export interface SiteContractFile {
+  pk: number
+  file: string
+  file_name: string
+  file_size: number
+  created: string
+  creator: {
+    pk: number
+    username: string
+  }
+}
+
 export interface SiteContract {
   pk: number | null
   project: number | null
@@ -326,17 +338,7 @@ export interface SiteContract {
   acc_number: string
   acc_owner: string
   note: string
-  site_cont_files: {
-    pk: number
-    file: string
-    file_name: string
-    file_size: number
-    created: string
-    creator: {
-      pk: number
-      username: string
-    }
-  }[]
+  site_cont_files: SiteContractFile[]
   creator?: {
     pk: number
     username: string
@@ -347,6 +349,8 @@ export interface SiteContract {
   }
   created?: string
   updated?: string
+  new_files?: File[]
+  del_files?: number[]
   newFile?: File | string
   editFile?: string
   cngFile?: File

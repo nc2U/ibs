@@ -115,12 +115,27 @@ const onCreate = (payload: FormData) => siteStore.createSiteCont(payload)
 
 const onUpdate = (pk: number, payload: FormData) => siteStore.updateSiteCont(pk, payload)
 
-const multiSubmit = (payload: SiteContract) => {
-  const { pk, ...data } = payload as { [key: string]: any }
+const multiSubmit = (payload: SiteContract | FormData) => {
+  if (payload instanceof FormData) {
+    const pk = payload.get('pk')
+    if (pk) onUpdate(Number(pk), payload)
+    else onCreate(payload)
+    return
+  }
 
+  const { pk, ...data } = payload as { [key: string]: any }
   const form = new FormData()
 
-  for (const key in data) form.set(key, data[key] ?? '')
+  for (const key in data) {
+    if (key === 'site_cont_files') continue
+    if (key === 'new_files' && Array.isArray(data[key])) {
+      data[key].forEach((file: File) => form.append('new_files', file))
+    } else if (key === 'del_files' && Array.isArray(data[key])) {
+      data[key].forEach((id: number) => form.append('del_files', id.toString()))
+    } else if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
+      form.set(key, data[key])
+    }
+  }
 
   if (pk) onUpdate(pk, form)
   else onCreate(form)

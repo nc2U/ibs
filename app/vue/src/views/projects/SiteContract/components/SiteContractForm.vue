@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, watch, onBeforeMount, type PropType } from 'vue'
+import { useStore } from '@/store'
 import { isValidate } from '@/utils/helper'
+import { humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useSite } from '@/store/pinia/project_site'
 import type { SiteContract, SiteOwner } from '@/store/types/project'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import AttatchFile from '@/components/AttatchFile/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -89,14 +90,12 @@ const formsCheck = computed(() => {
     const w = form.acc_owner === props.contract.acc_owner
     const x = form.note === props.contract.note
 
-    const y = !newFile.value
-    const z = !editFile.value
-    const a1 = !cngFile.value
-    const b1 = !delFile.value
+    const y = newFiles.value.length === 0
+    const b1 = delFiles.value.length === 0
 
     const sky = a && b && c && d && e && f && g && h && i
     const sea = j && k && l && m && n && o && p && q && r
-    const air = s && t && u && v && w && x && y && z && a1 && b1
+    const air = s && t && u && v && w && x && y && b1
 
     return sky && sea && air
   }
@@ -120,25 +119,68 @@ watch(
 
 watch(getAreaByOwner, val => (form.contract_area = val))
 
-const newFile = ref<File | ''>('')
-const editFile = ref<number | ''>('')
-const cngFile = ref<File | ''>('')
-const delFile = ref<number | undefined>(undefined)
+const appStore = useStore()
+const isDark = computed(() => appStore.theme === 'dark')
 
-const fileControl = (payload: any) => {
-  if (payload.newFile) newFile.value = payload.newFile
-  else newFile.value = ''
+// 새로 추가할 파일 목록
+const newFiles = ref<File[]>([])
+// 삭제 대기 중인 기존 파일 PK 목록
+const delFiles = ref<number[]>([])
 
-  if (payload.editFile) {
-    editFile.value = payload.editFile
-    cngFile.value = payload.cngFile
-  } else {
-    editFile.value = ''
-    cngFile.value = ''
+// 파일 인풋 ref 및 제한
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const fileErrorMessage = ref('')
+const maxFileSize = 100 * 1024 * 1024 // 100MB
+const maxTotalSize = 200 * 1024 * 1024 // 200MB
+
+// 총 새로 추가된 파일 용량
+const totalNewFileSize = computed(() => {
+  return newFiles.value.reduce((acc, f) => acc + (f.size || 0), 0)
+})
+
+// 파일 추가 핸들러 (복수 파일 선택 지원)
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  fileErrorMessage.value = ''
+  if (!target.files || target.files.length === 0) return
+
+  const files = Array.from(target.files)
+  for (const file of files) {
+    if (file.size > maxFileSize) {
+      fileErrorMessage.value = `[${file.name}] 파일 크기가 제한(${humanizeFileSize(maxFileSize)})을 초과합니다.`
+      continue
+    }
+    if (totalNewFileSize.value + file.size > maxTotalSize) {
+      fileErrorMessage.value = `총 첨부파일 용량이 제한(${humanizeFileSize(maxTotalSize)})을 초과합니다.`
+      break
+    }
+    const isDuplicate = newFiles.value.some(f => f.name === file.name && f.size === file.size)
+    if (!isDuplicate) {
+      newFiles.value.push(file)
+    }
   }
 
-  if (payload.delFile) delFile.value = payload.delFile
-  else delFile.value = undefined
+  target.value = ''
+}
+
+// 새로 추가된 파일 목록에서 제거
+const removeNewFile = (index: number) => {
+  newFiles.value.splice(index, 1)
+}
+
+// 기존 파일 삭제/복구 토글
+const toggleDeleteExistingFile = (pk: number) => {
+  const idx = delFiles.value.indexOf(pk)
+  if (idx > -1) {
+    delFiles.value.splice(idx, 1)
+  } else {
+    delFiles.value.push(pk)
+  }
+}
+
+// 삭제 대기 중 여부 확인
+const isMarkedForDeletion = (pk: number) => {
+  return delFiles.value.includes(pk)
 }
 
 const onSubmit = (event: Event) => {
@@ -154,10 +196,8 @@ const onSubmit = (event: Event) => {
 const multiSubmit = (payload: SiteContract) => {
   emit('multi-submit', {
     ...payload,
-    newFile: newFile.value,
-    editFile: editFile.value,
-    cngFile: cngFile.value,
-    delFile: delFile.value,
+    new_files: newFiles.value,
+    del_files: delFiles.value,
   })
   emit('close')
 }
@@ -520,13 +560,161 @@ onBeforeMount(() => dataSetup())
           </CCol>
         </CRow>
 
-        <AttatchFile
-          ref="RefSiteContFile"
-          label-name="계약서 파일"
-          :attatch-files="form.site_cont_files"
-          :deleted="delFile"
-          @file-control="fileControl"
-        />
+        <CRow class="mb-3 py-2 px-1 rounded" :class="{ 'bg-light': !isDark, 'bg-dark': isDark }">
+          <CFormLabel class="col-sm-2 col-form-label"> 계약서 및 첨부파일 </CFormLabel>
+          <CCol sm="10">
+            <!-- 파일 선택 영역 -->
+            <div class="d-flex align-items-center mb-2">
+              <input
+                ref="fileInputRef"
+                type="file"
+                multiple
+                class="d-none"
+                @change="handleFileSelect"
+              />
+              <v-btn
+                color="primary"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-paperclip"
+                @click="fileInputRef?.click()"
+              >
+                파일 선택 (복수 가능)
+              </v-btn>
+              <span class="text-caption text-grey ml-3">
+                토지매매계약서, 인감증명서, 위임장, 등기부등본 등 관련 서류를 복수로 등록할 수
+                있습니다.
+              </span>
+            </div>
+
+            <!-- 파일 에러 메시지 -->
+            <div v-if="fileErrorMessage" class="text-danger small mb-2">
+              <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+              {{ fileErrorMessage }}
+            </div>
+
+            <!-- 기존 등록된 파일 목록 -->
+            <div v-if="form.site_cont_files && form.site_cont_files.length > 0" class="mb-3">
+              <div class="text-caption text-medium-emphasis mb-1 font-weight-bold">
+                <v-icon icon="mdi-folder-outline" size="14" class="mr-1" />
+                등록된 계약서 / 첨부 서류 ({{ form.site_cont_files.length }}개)
+              </div>
+              <v-list density="compact" class="py-0 border rounded bg-transparent">
+                <v-list-item
+                  v-for="file in form.site_cont_files"
+                  :key="file.pk"
+                  class="px-3 py-1"
+                  :class="{
+                    'text-decoration-line-through text-grey bg-grey-lighten-4': isMarkedForDeletion(
+                      file.pk,
+                    ),
+                  }"
+                >
+                  <template #prepend>
+                    <v-icon
+                      :icon="
+                        isMarkedForDeletion(file.pk)
+                          ? 'mdi-file-remove'
+                          : 'mdi-file-document-outline'
+                      "
+                      :color="isMarkedForDeletion(file.pk) ? 'grey' : 'primary'"
+                      size="18"
+                      class="mr-2"
+                    />
+                  </template>
+
+                  <v-list-item-title class="text-body-2">
+                    <a
+                      v-if="!isMarkedForDeletion(file.pk)"
+                      :href="file.file"
+                      target="_blank"
+                      class="text-decoration-none text-primary font-weight-medium"
+                    >
+                      {{ file.file_name }}
+                    </a>
+                    <span v-else>{{ file.file_name }}</span>
+                    <span class="text-caption text-grey ml-2">
+                      ({{ humanizeFileSize(file.file_size) }})
+                    </span>
+                    <span v-if="file.creator?.username" class="text-caption text-grey ml-2">
+                      · {{ file.creator.username }}
+                    </span>
+                    <span v-if="file.created" class="text-caption text-grey ml-1">
+                      · {{ file.created.substring(0, 10) }}
+                    </span>
+                    <v-chip
+                      v-if="isMarkedForDeletion(file.pk)"
+                      color="error"
+                      size="x-small"
+                      class="ml-2"
+                      variant="outlined"
+                    >
+                      삭제 대기
+                    </v-chip>
+                  </v-list-item-title>
+
+                  <template #append>
+                    <v-btn
+                      density="compact"
+                      :icon="isMarkedForDeletion(file.pk) ? 'mdi-undo' : 'mdi-delete-outline'"
+                      :color="isMarkedForDeletion(file.pk) ? 'info' : 'error'"
+                      variant="text"
+                      size="small"
+                      @click="toggleDeleteExistingFile(file.pk)"
+                    >
+                      <v-tooltip activator="parent" location="top">
+                        {{ isMarkedForDeletion(file.pk) ? '삭제 취소' : '삭제' }}
+                      </v-tooltip>
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </div>
+
+            <!-- 새로 추가된 파일 목록 -->
+            <div v-if="newFiles.length > 0">
+              <div
+                class="text-caption text-medium-emphasis mb-1 font-weight-bold d-flex justify-content-between"
+              >
+                <span>
+                  <v-icon icon="mdi-cloud-upload-outline" size="14" class="mr-1" />
+                  추가할 파일 ({{ newFiles.length }}개, 총 {{ humanizeFileSize(totalNewFileSize) }})
+                </span>
+              </div>
+              <v-list density="compact" class="py-0 border rounded bg-transparent">
+                <v-list-item
+                  v-for="(nFile, idx) in newFiles"
+                  :key="`${nFile.name}-${idx}`"
+                  class="px-3 py-1"
+                >
+                  <template #prepend>
+                    <v-icon icon="mdi-file-plus-outline" color="success" size="18" class="mr-2" />
+                  </template>
+
+                  <v-list-item-title class="text-body-2">
+                    {{ nFile.name }}
+                    <span class="text-caption text-grey ml-2">
+                      ({{ humanizeFileSize(nFile.size) }})
+                    </span>
+                  </v-list-item-title>
+
+                  <template #append>
+                    <v-btn
+                      density="compact"
+                      icon="mdi-close"
+                      color="grey"
+                      variant="text"
+                      size="small"
+                      @click="removeNewFile(idx)"
+                    >
+                      <v-tooltip activator="parent" location="top">제거</v-tooltip>
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </div>
+          </CCol>
+        </CRow>
       </div>
     </CModalBody>
 

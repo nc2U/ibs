@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { type SiteContract } from '@/store/types/project'
-import { numFormat } from '@/utils/baseMixins'
+import { numFormat, humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
@@ -63,17 +63,63 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
       {{ contract.remain_pay_is_paid ? '완료' : '' }}
     </CTableDataCell>
     <CTableDataCell>
-      <span v-if="!!contract.site_cont_files.length" class="pointer">
+      <!-- 파일이 없는 경우 -->
+      <span v-if="!contract.site_cont_files || contract.site_cont_files.length === 0">
+        <v-icon icon="mdi-download-box-outline" color="secondary" />
+        <v-tooltip activator="parent" location="top">미등록</v-tooltip>
+      </span>
+      <!-- 파일이 1개인 경우 -->
+      <span v-else-if="contract.site_cont_files.length === 1" class="pointer">
         <a :href="contract.site_cont_files[0].file" target="_blank">
           <v-icon icon="mdi-download-box" color="primary" />
         </a>
         <v-tooltip activator="parent" location="top">
-          {{ contract.site_cont_files[0]?.file_name }} 다운로드
+          {{ contract.site_cont_files[0]?.file_name }} ({{
+            humanizeFileSize(contract.site_cont_files[0]?.file_size)
+          }}) 다운로드
         </v-tooltip>
       </span>
-      <span v-else>
-        <v-icon icon="mdi-download-box-outline" color="secondary" />
-        <v-tooltip activator="parent" location="top">미등록</v-tooltip>
+      <!-- 파일이 복수(2개 이상)인 경우 -->
+      <span v-else class="pointer">
+        <v-menu location="bottom end">
+          <template #activator="{ props: menuProps }">
+            <v-badge
+              :content="contract.site_cont_files.length"
+              color="info"
+              offset-x="-2"
+              offset-y="-2"
+            >
+              <v-icon
+                v-bind="menuProps"
+                icon="mdi-folder-download"
+                color="primary"
+                class="cursor-pointer"
+              />
+            </v-badge>
+            <v-tooltip activator="parent" location="top">
+              첨부파일 {{ contract.site_cont_files.length }}개 (클릭하여 선택 다운로드)
+            </v-tooltip>
+          </template>
+          <v-list density="compact" class="py-1">
+            <v-list-item
+              v-for="f in contract.site_cont_files"
+              :key="f.pk"
+              :href="f.file"
+              target="_blank"
+              class="px-3"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-file-document-outline" size="18" color="primary" class="mr-2" />
+              </template>
+              <v-list-item-title class="text-caption">
+                {{ f.file_name }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="text-caption text-grey">
+                {{ humanizeFileSize(f.file_size) }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </span>
     </CTableDataCell>
     <CTableDataCell v-if="canSiteUpdate">
