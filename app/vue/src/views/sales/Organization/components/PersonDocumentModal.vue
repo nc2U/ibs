@@ -227,7 +227,10 @@ defineExpose({ open })
           <CTableBody>
             <CTableRow v-for="doc in documents" :key="doc.id">
               <CTableDataCell>
-                <CBadge :color="docTypeBadgeColor[doc.doc_type] || 'secondary'" shape="rounded-pill">
+                <CBadge
+                  :color="docTypeBadgeColor[doc.doc_type] || 'secondary'"
+                  shape="rounded-pill"
+                >
                   {{ doc.doc_type_display || docTypeLabels[doc.doc_type] }}
                 </CBadge>
               </CTableDataCell>
@@ -251,19 +254,11 @@ defineExpose({ open })
                 {{ doc.created_at ? doc.created_at.substring(0, 10) : '-' }}
               </CTableDataCell>
               <CTableDataCell>
-                <CBadge
-                  v-if="doc.is_verified"
-                  color="success"
-                  class="px-2 py-1"
-                >
+                <CBadge v-if="doc.is_verified" color="success" class="px-2 py-1">
                   <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
                   검증완료
                 </CBadge>
-                <CBadge
-                  v-else
-                  color="warning"
-                  class="px-2 py-1 text-dark"
-                >
+                <CBadge v-else color="warning" class="px-2 py-1 text-dark">
                   <v-icon icon="mdi-clock-outline" size="x-small" class="me-1" />
                   확인대기
                 </CBadge>

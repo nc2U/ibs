@@ -157,6 +157,14 @@ def render_and_save_approval_pdf(document_pk):
         # 기존 중복 파일명이 겹치지 않도록 깔끔하게 저장 (upload_to='approval/pdf/%Y/%m/' 적용)
         document.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
         print(f'✅ PDF generated and saved to S3: {document.pdf_file.name}')
+
+        # 자동 아카이빙 후속 연동 (PDF 생성 후 첨부파일 추가)
+        try:
+            from approval.services.document_service import archive_to_docs
+            archive_to_docs(document)
+        except Exception as e:
+            print(f'⚠️ 아카이빙 PDF 연동 실패: {e}')
+
         return document.pdf_file.url if document.pdf_file else None
     except Exception as e:
         print(f'❌ render_and_save_approval_pdf failed for doc {document_pk}: {e}')

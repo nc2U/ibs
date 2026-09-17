@@ -89,18 +89,21 @@ const handleDeleteConfirm = () => {
   showDeleteModal.value = false
 }
 
-// 전자결재 품의 상신 연계 (추후 Phase 3 양방향 고도화 시 활용)
+// 전자결재 품의 상신 연계
 const goToApprovalDraft = () => {
-  // 전자결재 기안 화면으로 수신공문 메타 전달 이동
+  if (props.letter?.approval_document) {
+    router.push({
+      name: '전체 문서함 - 보기',
+      params: { docId: props.letter.approval_document },
+    })
+    return
+  }
   router.push({
-    name: '전자결재 - 기안작성',
+    name: '기안 문서함 - 작성',
     query: {
       inbound_letter: props.letter?.pk,
-      title: `[수신공문 처리품의] ${props.letter?.title || ''}`,
+      title: `[수신 공문 보고] ${props.letter?.title || ''}`,
     },
-  }).catch(() => {
-    // 라우트가 다른 이름일 경우 일반 알림
-    alert('전자결재 기안 모듈 연동 준비 중입니다.')
   })
 }
 
@@ -156,10 +159,19 @@ const updateStatus = (newStatus: string) => {
           color="success"
           variant="outline"
           size="sm"
+          :disabled="letter.status === 'closed'"
           @click="goToApprovalDraft"
         >
-          <v-icon icon="mdi-file-document-edit-outline" size="small" class="me-1" />
-          처리품의 상신
+          <v-icon
+            :icon="
+              letter.approval_document
+                ? 'mdi-file-document-check-outline'
+                : 'mdi-file-document-edit-outline'
+            "
+            size="small"
+            class="me-1"
+          />
+          {{ letter.approval_document ? '연동 품의서 확인' : '처리품의 상신' }}
         </CButton>
         <CButton
           v-if="canDocsUpdate"
@@ -171,12 +183,7 @@ const updateStatus = (newStatus: string) => {
           <v-icon icon="mdi-reply" size="small" class="me-1" />
           회신 공문 작성
         </CButton>
-        <CButton
-          v-if="canDocsUpdate"
-          color="primary"
-          size="sm"
-          @click="goToEdit"
-        >
+        <CButton v-if="canDocsUpdate" color="primary" size="sm" @click="goToEdit">
           <v-icon icon="mdi-pencil" size="small" class="me-1" />
           수정
         </CButton>
@@ -217,9 +224,15 @@ const updateStatus = (newStatus: string) => {
           <div class="text-end">
             <div class="d-flex align-items-center gap-2 justify-content-end mb-1">
               <CBadge v-if="letter.status === 'received'" color="info" class="fs-6">접수</CBadge>
-              <CBadge v-else-if="letter.status === 'in_progress'" color="warning" class="fs-6">처리중</CBadge>
-              <CBadge v-else-if="letter.status === 'replied'" color="primary" class="fs-6">회신완료</CBadge>
-              <CBadge v-else-if="letter.status === 'closed'" color="secondary" class="fs-6">종결</CBadge>
+              <CBadge v-else-if="letter.status === 'in_progress'" color="warning" class="fs-6"
+                >처리중</CBadge
+              >
+              <CBadge v-else-if="letter.status === 'replied'" color="primary" class="fs-6"
+                >회신완료</CBadge
+              >
+              <CBadge v-else-if="letter.status === 'closed'" color="secondary" class="fs-6"
+                >종결</CBadge
+              >
             </div>
             <CBadge
               v-if="letter.reply_due_date"
@@ -236,9 +249,7 @@ const updateStatus = (newStatus: string) => {
 
         <!-- 메타 정보 행 -->
         <CRow class="small text-muted g-2">
-          <CCol md="3">
-            <strong>접수일자:</strong> {{ formatDate(letter.received_date) }}
-          </CCol>
+          <CCol md="3"> <strong>접수일자:</strong> {{ formatDate(letter.received_date) }} </CCol>
           <CCol md="3">
             <strong>배부 부서:</strong>
             <span class="badge bg-white text-dark border ms-1">
@@ -249,8 +260,9 @@ const updateStatus = (newStatus: string) => {
             <strong>처리 담당자:</strong> {{ letter.recipient_manager_name || '미지정' }}
           </CCol>
           <CCol md="3" class="text-end">
-            <strong>등록일시:</strong> {{ formatDateTime(letter.created) }}
-            ({{ letter.creator?.username || '-' }})
+            <strong>등록일시:</strong> {{ formatDateTime(letter.created) }} ({{
+              letter.creator?.username || '-'
+            }})
           </CCol>
         </CRow>
       </CCardBody>
@@ -273,15 +285,15 @@ const updateStatus = (newStatus: string) => {
             >
               {{ letter.content }}
             </div>
-            <div v-else class="text-muted py-4 text-center">
-              등록된 본문 요약 내용이 없습니다.
-            </div>
+            <div v-else class="text-muted py-4 text-center">등록된 본문 요약 내용이 없습니다.</div>
           </CCardBody>
         </CCard>
 
         <!-- 공문서 원본 스캔본 (PDF Preview) -->
         <CCard class="mb-4">
-          <CCardHeader class="bg-light fw-semibold d-flex justify-content-between align-items-center">
+          <CCardHeader
+            class="bg-light fw-semibold d-flex justify-content-between align-items-center"
+          >
             <div>
               <v-icon icon="mdi-file-pdf-box" class="text-danger me-1" />
               공문서 원본 스캔본
@@ -324,7 +336,10 @@ const updateStatus = (newStatus: string) => {
             동봉 / 붙임 첨부파일 ({{ letter.attachments?.length || 0 }})
           </CCardHeader>
           <CCardBody class="p-0">
-            <ul v-if="letter.attachments && letter.attachments.length > 0" class="list-group list-group-flush">
+            <ul
+              v-if="letter.attachments && letter.attachments.length > 0"
+              class="list-group list-group-flush"
+            >
               <li
                 v-for="att in letter.attachments"
                 :key="att.pk"
@@ -351,9 +366,7 @@ const updateStatus = (newStatus: string) => {
                 </a>
               </li>
             </ul>
-            <div v-else class="text-center text-muted py-4 small">
-              동봉된 첨부파일이 없습니다.
-            </div>
+            <div v-else class="text-center text-muted py-4 small">동봉된 첨부파일이 없습니다.</div>
           </CCardBody>
         </CCard>
 
@@ -427,12 +440,54 @@ const updateStatus = (newStatus: string) => {
                 {{ letter.approval_document_detail.status_desc }}
               </span>
               <router-link
-                :to="{ name: '전자결재 - 상세', params: { docId: letter.approval_document_detail.pk } }"
+                :to="{
+                  name: '전체 문서함 - 보기',
+                  params: { docId: letter.approval_document_detail.pk },
+                }"
                 class="btn btn-sm btn-outline-success"
               >
                 품의서 열기
               </router-link>
             </div>
+          </CCardBody>
+        </CCard>
+
+        <!-- 연동 발송(회신) 공문 정보 -->
+        <CCard
+          v-if="letter.reply_letters && letter.reply_letters.length > 0"
+          class="mb-4 border-primary"
+        >
+          <CCardHeader class="bg-primary text-white fw-semibold">
+            <v-icon icon="mdi-reply-all" size="small" class="me-1" />
+            연동 발송(회신) 공문 ({{ letter.reply_letters.length }})
+          </CCardHeader>
+          <CCardBody class="p-0 small">
+            <ul class="list-group list-group-flush">
+              <li
+                v-for="reply in letter.reply_letters"
+                :key="reply.pk"
+                class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+              >
+                <div class="text-truncate me-2">
+                  <div class="fw-semibold text-truncate">{{ reply.title }}</div>
+                  <small class="text-muted">
+                    {{ reply.document_number || '문서번호 미발번' }}
+                    <span v-if="reply.dispatched_at" class="ms-1 text-success">
+                      • 발송완료 ({{ formatDate(reply.dispatched_at) }})
+                    </span>
+                    <span v-else class="ms-1 text-secondary">
+                      • {{ reply.approval_status_desc || '결재 미완료' }}
+                    </span>
+                  </small>
+                </div>
+                <router-link
+                  :to="{ name: '발송 공문 관리 - 보기', params: { letterId: reply.pk } }"
+                  class="btn btn-sm btn-outline-primary"
+                >
+                  보기
+                </router-link>
+              </li>
+            </ul>
           </CCardBody>
         </CCard>
       </CCol>

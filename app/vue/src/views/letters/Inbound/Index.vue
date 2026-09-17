@@ -61,7 +61,8 @@ const fetchLetter = (pk: number) => docStore.fetchInboundLetter(pk)
 const fetchLetterList = (payload: InboundLetterFilter) => docStore.fetchInboundLetterList(payload)
 const createLetter = (payload: FormData) => docStore.createInboundLetter(payload)
 const updateLetter = (pk: number, payload: FormData) => docStore.updateInboundLetter(pk, payload)
-const deleteLetter = (pk: number, filter: InboundLetterFilter) => docStore.deleteInboundLetter(pk, filter)
+const deleteLetter = (pk: number, filter: InboundLetterFilter) =>
+  docStore.deleteInboundLetter(pk, filter)
 const patchLetter = (pk: number, payload: any) => docStore.patchInboundLetter(pk, payload)
 
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]

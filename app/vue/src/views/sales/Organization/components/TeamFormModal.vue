@@ -134,7 +134,12 @@ defineExpose({ open })
 
           <CCol md="3">
             <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput v-model.number="form.order" type="number" min="1" @keydown.enter.prevent="submit" />
+            <CFormInput
+              v-model.number="form.order"
+              type="number"
+              min="1"
+              @keydown.enter.prevent="submit"
+            />
           </CCol>
 
           <CCol md="3" class="d-flex align-items-center pt-4">
@@ -143,10 +148,18 @@ defineExpose({ open })
         </CRow>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="primary" size="small" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
+        <v-btn
+          color="primary"
+          size="small"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          @click="submit"
+        >
           {{ isEdit ? '수정 저장' : '등록하기' }}
         </v-btn>
-        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
+        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+          >취소</v-btn
+        >
       </CModalFooter>
     </template>
   </FormModal>

@@ -30,7 +30,9 @@ const open = async (payout: CommissionPayout) => {
     params.append('limit', '500')
     const [payoutRes, clawbackRes] = await Promise.all([
       import('@/api').then(m => m.default.get(`/sales-payout/?${params}`)),
-      import('@/api').then(m => m.default.get(`/sales-clawback/?sales_person=${payout.sales_person}`)),
+      import('@/api').then(m =>
+        m.default.get(`/sales-clawback/?sales_person=${payout.sales_person}`),
+      ),
     ])
     historyList.value = payoutRes.data.results ?? payoutRes.data
     clawbackList.value = clawbackRes.data.results ?? clawbackRes.data
@@ -103,7 +105,9 @@ const payStatusColor = (status: string) => {
           <v-icon icon="mdi-cash-refund" size="small" class="text-danger" />
           <span class="small fw-semibold text-danger">
             환수 이력 {{ clawbackList.length }}건 — 총 {{ totalClawback.toLocaleString() }}원
-            <span class="text-muted fw-normal">(미상계: {{ clawbackList.filter(c => !c.is_settled).length }}건)</span>
+            <span class="text-muted fw-normal"
+              >(미상계: {{ clawbackList.filter(c => !c.is_settled).length }}건)</span
+            >
           </span>
         </div>
 
@@ -130,14 +134,24 @@ const payStatusColor = (status: string) => {
                 <span class="text-muted">#{{ p.period }}</span>
               </CTableDataCell>
               <CTableDataCell class="font-monospace">{{ p.contract_count }}건</CTableDataCell>
-              <CTableDataCell class="text-end font-monospace">{{ p.commission_amount.toLocaleString() }}원</CTableDataCell>
-              <CTableDataCell class="text-end font-monospace">{{ p.base_pay.toLocaleString() }}원</CTableDataCell>
+              <CTableDataCell class="text-end font-monospace"
+                >{{ p.commission_amount.toLocaleString() }}원</CTableDataCell
+              >
+              <CTableDataCell class="text-end font-monospace"
+                >{{ p.base_pay.toLocaleString() }}원</CTableDataCell
+              >
               <CTableDataCell class="text-end font-monospace text-danger">
-                <span v-if="p.deduction_amount > 0">-{{ p.deduction_amount.toLocaleString() }}원</span>
+                <span v-if="p.deduction_amount > 0"
+                  >-{{ p.deduction_amount.toLocaleString() }}원</span
+                >
                 <span v-else class="text-muted">-</span>
               </CTableDataCell>
-              <CTableDataCell class="text-end font-monospace fw-bold">{{ p.gross_amount.toLocaleString() }}원</CTableDataCell>
-              <CTableDataCell class="text-end font-monospace text-danger">{{ p.total_tax.toLocaleString() }}원</CTableDataCell>
+              <CTableDataCell class="text-end font-monospace fw-bold"
+                >{{ p.gross_amount.toLocaleString() }}원</CTableDataCell
+              >
+              <CTableDataCell class="text-end font-monospace text-danger"
+                >{{ p.total_tax.toLocaleString() }}원</CTableDataCell
+              >
               <CTableDataCell class="text-end font-monospace fw-bold text-success table-success">
                 {{ p.net_amount.toLocaleString() }}원
               </CTableDataCell>
@@ -173,7 +187,9 @@ const payStatusColor = (status: string) => {
             </CTableHead>
             <CTableBody>
               <CTableRow v-for="c in clawbackList" :key="c.id">
-                <CTableDataCell class="small text-start ps-3">{{ c.contract_serial || `#${c.contract}` }}</CTableDataCell>
+                <CTableDataCell class="small text-start ps-3">{{
+                  c.contract_serial || `#${c.contract}`
+                }}</CTableDataCell>
                 <CTableDataCell class="text-end font-monospace text-danger fw-bold">
                   {{ c.amount.toLocaleString() }}원
                 </CTableDataCell>
@@ -183,7 +199,9 @@ const payStatusColor = (status: string) => {
                     {{ c.is_settled ? '상계 완료' : '미상계' }}
                   </CBadge>
                 </CTableDataCell>
-                <CTableDataCell class="small text-muted">{{ c.created_at?.slice(0, 10) }}</CTableDataCell>
+                <CTableDataCell class="small text-muted">{{
+                  c.created_at?.slice(0, 10)
+                }}</CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>

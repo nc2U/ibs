@@ -296,9 +296,7 @@ const onSaved = async () => {
                       <span v-if="item.mapping.sales_person_name" class="fw-bold text-primary">
                         {{ item.mapping.sales_person_name }}
                       </span>
-                      <CBadge v-else color="info" shape="rounded-pill">
-                        외주 대행
-                      </CBadge>
+                      <CBadge v-else color="info" shape="rounded-pill"> 외주 대행 </CBadge>
                     </template>
                     <CBadge v-else color="secondary" shape="rounded-pill"> 미배정 </CBadge>
                   </CTableDataCell>

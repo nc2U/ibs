@@ -584,7 +584,13 @@ const onPeriodSaved = async () => {
           </CCardHeader>
 
           <CCardBody class="p-0">
-            <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+            <CTable
+              hover
+              responsive
+              bordered
+              align="middle"
+              class="mb-0 text-center text-body small"
+            >
               <colgroup>
                 <col style="width: 10%" />
                 <col style="width: 12%" />
@@ -621,7 +627,9 @@ const onPeriodSaved = async () => {
                       {{ c.is_settled ? '상계 완료' : '미상계' }}
                     </CBadge>
                   </CTableDataCell>
-                  <CTableDataCell class="text-start small text-muted">{{ c.reason }}</CTableDataCell>
+                  <CTableDataCell class="text-start small text-muted">{{
+                    c.reason
+                  }}</CTableDataCell>
                   <CTableDataCell class="small text-muted">
                     {{ c.created_at?.slice(0, 10) }}
                   </CTableDataCell>
@@ -668,7 +676,8 @@ const onPeriodSaved = async () => {
           <CAlert color="warning" class="py-2 px-3 mb-2 small border-warning">
             <div class="fw-bold mb-1 d-flex align-items-center">
               <v-icon icon="mdi-alert" size="small" class="text-warning mr-1" />
-              조직/인력 구조 점검 결과 (주의 {{ orgHealthResult.warning_count }}건 / 오류 {{ orgHealthResult.error_count }}건)
+              조직/인력 구조 점검 결과 (주의 {{ orgHealthResult.warning_count }}건 / 오류
+              {{ orgHealthResult.error_count }}건)
             </div>
             <ul class="mb-0 ps-3">
               <li v-for="(item, idx) in orgHealthResult.items" :key="idx" class="mt-1">
@@ -679,7 +688,8 @@ const onPeriodSaved = async () => {
             </ul>
           </CAlert>
           <div class="small text-secondary mb-2">
-            * 주의 항목(팀장 부재 등)은 상위 본부장 합산 수령 또는 대행사 귀속 이익으로 자동 처리됩니다.
+            * 주의 항목(팀장 부재 등)은 상위 본부장 합산 수령 또는 대행사 귀속 이익으로 자동
+            처리됩니다.
           </div>
         </div>
 

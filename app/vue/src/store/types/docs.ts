@@ -263,6 +263,14 @@ export interface OfficialLetter {
     status: string
     status_desc: string
   } | null
+  parent_inbound_letter?: number | null
+  parent_inbound_letter_detail?: {
+    pk: number
+    receipt_number: string
+    document_number: string
+    title: string
+    sender_name: string
+  } | null
   approval_status?: 'none' | 'pending' | 'approved' | 'rejected'
   approval_status_desc?: string
   creator?: SimpleUser
@@ -294,6 +302,7 @@ export interface PatchLetter {
   sender_display_type?: 'company_only' | 'company_rep' | 'co_rep'
   sender_duty_title?: string
   sender_name?: string
+  parent_inbound_letter?: number | null
   disclosure_type?: '1' | '2' | '3'
   dispatch_method?: string
   tracking_number?: string
@@ -345,6 +354,14 @@ export interface InboundLetter {
     status_desc: string
   } | null
   attachments?: InboundLetterAttachment[]
+  reply_letters?: {
+    pk: number
+    document_number: string
+    title: string
+    dispatched_at: string | null
+    approval_status: string
+    approval_status_desc: string
+  }[]
   has_scan?: boolean
   has_attachments?: boolean
   creator?: SimpleUser
@@ -368,4 +385,3 @@ export interface PatchInboundLetter {
   recipient_manager?: number | null
   status?: InboundLetterStatus
 }
-

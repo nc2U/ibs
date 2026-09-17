@@ -21,11 +21,7 @@ export interface LocalAttachmentItem {
 }
 
 const emit = defineEmits<{
-  onSubmit: [
-    payload: FormData,
-    attachmentsToUpload?: LocalAttachmentItem[],
-    pk?: number,
-  ]
+  onSubmit: [payload: FormData, attachmentsToUpload?: LocalAttachmentItem[], pk?: number]
 }>()
 
 const router = useRouter()
@@ -208,8 +204,10 @@ const handleSubmit = () => {
   if (form.value.reply_due_date) formData.append('reply_due_date', form.value.reply_due_date)
   formData.append('title', form.value.title)
   formData.append('content', form.value.content || '')
-  if (form.value.recipient_dept) formData.append('recipient_dept', String(form.value.recipient_dept))
-  if (form.value.recipient_manager) formData.append('recipient_manager', String(form.value.recipient_manager))
+  if (form.value.recipient_dept)
+    formData.append('recipient_dept', String(form.value.recipient_dept))
+  if (form.value.recipient_manager)
+    formData.append('recipient_manager', String(form.value.recipient_manager))
   formData.append('status', form.value.status)
 
   if (scanFile.value) {
@@ -234,9 +232,7 @@ const handleSubmit = () => {
         </span>
       </div>
       <div class="d-flex gap-2">
-        <CButton color="secondary" variant="ghost" @click="goBack">
-          취소
-        </CButton>
+        <CButton color="secondary" variant="ghost" @click="goBack"> 취소 </CButton>
         <CButton color="primary" :disabled="isSubmitting" @click="handleSubmit">
           <v-icon icon="mdi-content-save" size="small" class="me-1" />
           {{ isEdit ? '수정 저장' : '접수 등록' }}
@@ -344,9 +340,17 @@ const handleSubmit = () => {
                 실물 또는 전자 수신된 공식 공문서 스캔본(PDF)을 등록하세요.
               </p>
 
-              <div v-if="existingScanFile && !scanFile" class="d-flex align-items-center gap-2 mb-2">
+              <div
+                v-if="existingScanFile && !scanFile"
+                class="d-flex align-items-center gap-2 mb-2"
+              >
                 <CBadge color="success">현재 등록됨</CBadge>
-                <a :href="existingScanFile" target="_blank" class="text-decoration-none small text-truncate" style="max-width: 300px;">
+                <a
+                  :href="existingScanFile"
+                  target="_blank"
+                  class="text-decoration-none small text-truncate"
+                  style="max-width: 300px"
+                >
                   원본 스캔 파일 다운로드 / 열기
                 </a>
               </div>
@@ -522,8 +526,10 @@ const handleSubmit = () => {
               <v-icon icon="mdi-information-outline" size="small" class="me-1 text-primary" />
               수신 공문 처리 프로세스
             </div>
-            1. 접수 등록 후 상세 화면에서 <strong>[처리품의 상신]</strong>을 통해 전자결재와 즉시 연계할 수 있습니다.<br />
-            2. 회신 공문이 필요한 경우 해당 품의 승인 후 <strong>[발송 공문]</strong>으로 연계 작성할 수 있습니다.
+            1. 접수 등록 후 상세 화면에서 <strong>[처리품의 상신]</strong>을 통해 전자결재와 즉시
+            연계할 수 있습니다.<br />
+            2. 회신 공문이 필요한 경우 해당 품의 승인 후 <strong>[발송 공문]</strong>으로 연계
+            작성할 수 있습니다.
           </CCardBody>
         </CCard>
       </CCol>

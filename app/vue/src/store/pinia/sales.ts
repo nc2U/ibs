@@ -260,11 +260,7 @@ export const useSales = defineStore('sales', () => {
       })
       .catch(err => errorHandle(err))
 
-  const toggleSettlementApproval = (
-    id: number,
-    approvalNote?: string,
-    isApproved?: boolean,
-  ) =>
+  const toggleSettlementApproval = (id: number, approvalNote?: string, isApproved?: boolean) =>
     api
       .post(`/sales-contract-agent/${id}/toggle-approval/`, {
         approval_note: approvalNote,
@@ -392,7 +388,6 @@ export const useSales = defineStore('sales', () => {
         console.warn('fetchClawbackList failed:', err?.message || err)
       })
   }
-
 
   return {
     agencyList,

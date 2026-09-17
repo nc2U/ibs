@@ -198,8 +198,20 @@ const downloadBankingCsv = () => {
   }
 
   const headers = [
-    '순번', '입금은행', '입금계좌번호', '예금주', '실지급액(세후)',
-    '세전총액', '원천세(3.3%)', '성명', '소속팀', '직책', '지급상태', '지급일자', '정산회차', '비고/메모',
+    '순번',
+    '입금은행',
+    '입금계좌번호',
+    '예금주',
+    '실지급액(세후)',
+    '세전총액',
+    '원천세(3.3%)',
+    '성명',
+    '소속팀',
+    '직책',
+    '지급상태',
+    '지급일자',
+    '정산회차',
+    '비고/메모',
   ]
 
   const rows = targets.map((p, index) => [
@@ -337,7 +349,9 @@ const agencyPayStatusColor = (status: string) => {
                   >
                     <v-icon icon="mdi-account-group" size="small" class="mr-1" />
                     개인 지급 명세
-                    <CBadge color="light" text-color="dark" class="ml-1">{{ payoutList.length }}</CBadge>
+                    <CBadge color="light" text-color="dark" class="ml-1">{{
+                      payoutList.length
+                    }}</CBadge>
                   </v-btn>
                   <v-btn
                     size="small"
@@ -347,7 +361,9 @@ const agencyPayStatusColor = (status: string) => {
                   >
                     <v-icon icon="mdi-domain" size="small" class="mr-1" />
                     대행사 지급 명세
-                    <CBadge color="light" text-color="dark" class="ml-1">{{ agencyPayoutList.length }}</CBadge>
+                    <CBadge color="light" text-color="dark" class="ml-1">{{
+                      agencyPayoutList.length
+                    }}</CBadge>
                   </v-btn>
                 </div>
               </CCol>
@@ -355,10 +371,12 @@ const agencyPayStatusColor = (status: string) => {
               <!-- 건수 -->
               <CCol md="3" lg="5" class="text-lg-end">
                 <span v-if="activeTab === 'person'" class="small text-muted">
-                  조회: <strong>{{ filteredPayouts.length }}</strong>명
+                  조회: <strong>{{ filteredPayouts.length }}</strong
+                  >명
                 </span>
                 <span v-else class="small text-muted">
-                  조회: <strong>{{ filteredAgencyPayouts.length }}</strong>개사
+                  조회: <strong>{{ filteredAgencyPayouts.length }}</strong
+                  >개사
                 </span>
               </CCol>
             </CRow>
@@ -402,29 +420,57 @@ const agencyPayStatusColor = (status: string) => {
                     :checked="isAllSelected"
                     @change="toggleSelectAll"
                   />
-                  <label for="checkAll" class="form-check-label small fw-bold text-dark cursor-pointer">
+                  <label
+                    for="checkAll"
+                    class="form-check-label small fw-bold text-dark cursor-pointer"
+                  >
                     전체 선택
                   </label>
                 </div>
 
                 <template v-if="selectedPayoutIds.length > 0">
                   <CBadge color="primary" class="px-2 py-1">
-                    선택 {{ selectedPayoutIds.length }}명 ({{ selectedTotalAmount.toLocaleString() }}원)
+                    선택 {{ selectedPayoutIds.length }}명 ({{
+                      selectedTotalAmount.toLocaleString()
+                    }}원)
                   </CBadge>
 
                   <template v-if="can(PERM.SALES_PAYOUT)">
-                    <v-btn size="small" color="primary" variant="flat" :disabled="isBatchLoading" @click="batchUpdateStatus('2', '지급승인')">
+                    <v-btn
+                      size="small"
+                      color="primary"
+                      variant="flat"
+                      :disabled="isBatchLoading"
+                      @click="batchUpdateStatus('2', '지급승인')"
+                    >
                       <v-icon icon="mdi-check" size="small" class="mr-1" />선택 승인
                     </v-btn>
-                    <v-btn size="small" color="success" variant="flat" :disabled="isBatchLoading" @click="batchUpdateStatus('3', '지급완료')">
+                    <v-btn
+                      size="small"
+                      color="success"
+                      variant="flat"
+                      :disabled="isBatchLoading"
+                      @click="batchUpdateStatus('3', '지급완료')"
+                    >
                       <v-icon icon="mdi-cash-check" size="small" class="mr-1" />선택 지급완료
                     </v-btn>
-                    <v-btn size="small" color="warning" variant="flat" :disabled="isBatchLoading" @click="batchUpdateStatus('4', '지급보류')">
+                    <v-btn
+                      size="small"
+                      color="warning"
+                      variant="flat"
+                      :disabled="isBatchLoading"
+                      @click="batchUpdateStatus('4', '지급보류')"
+                    >
                       <v-icon icon="mdi-pause-circle" size="small" class="mr-1" />선택 보류
                     </v-btn>
                   </template>
 
-                  <v-btn size="small" color="secondary" variant="tonal" @click="selectedPayoutIds = []">
+                  <v-btn
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    @click="selectedPayoutIds = []"
+                  >
                     선택 해제
                   </v-btn>
                 </template>
@@ -435,14 +481,22 @@ const agencyPayStatusColor = (status: string) => {
                 <v-btn size="small" color="success" variant="flat" @click="downloadBankingCsv">
                   <v-icon icon="mdi-file-delimited" size="small" class="mr-1" />
                   은행 이체용 CSV
-                  <span v-if="selectedPayoutIds.length > 0" class="ml-1">({{ selectedPayoutIds.length }}명)</span>
+                  <span v-if="selectedPayoutIds.length > 0" class="ml-1"
+                    >({{ selectedPayoutIds.length }}명)</span
+                  >
                 </v-btn>
               </div>
             </CCardHeader>
 
             <!-- 개인 지급 명세 테이블 -->
             <CCardBody class="p-0">
-              <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+              <CTable
+                hover
+                responsive
+                bordered
+                align="middle"
+                class="mb-0 text-center text-body small"
+              >
                 <colgroup>
                   <col style="width: 3%" />
                   <col style="width: 8%" />
@@ -507,14 +561,24 @@ const agencyPayStatusColor = (status: string) => {
                     </CTableDataCell>
 
                     <!-- 계좌 정보 -->
-                    <CTableDataCell class="fw-semibold">{{ payout.bank_name || '-' }}</CTableDataCell>
-                    <CTableDataCell class="font-monospace text-left">{{ payout.account_number }}</CTableDataCell>
+                    <CTableDataCell class="fw-semibold">{{
+                      payout.bank_name || '-'
+                    }}</CTableDataCell>
+                    <CTableDataCell class="font-monospace text-left">{{
+                      payout.account_number
+                    }}</CTableDataCell>
                     <CTableDataCell>{{ payout.account_holder }}</CTableDataCell>
 
                     <!-- 금액 정보 -->
-                    <CTableDataCell class="text-right font-monospace">{{ payout.gross_amount.toLocaleString() }}원</CTableDataCell>
-                    <CTableDataCell class="text-right font-monospace text-danger">{{ payout.total_tax.toLocaleString() }}원</CTableDataCell>
-                    <CTableDataCell class="text-right font-monospace fw-bold text-primary table-primary">
+                    <CTableDataCell class="text-right font-monospace"
+                      >{{ payout.gross_amount.toLocaleString() }}원</CTableDataCell
+                    >
+                    <CTableDataCell class="text-right font-monospace text-danger"
+                      >{{ payout.total_tax.toLocaleString() }}원</CTableDataCell
+                    >
+                    <CTableDataCell
+                      class="text-right font-monospace fw-bold text-primary table-primary"
+                    >
                       {{ payout.net_amount.toLocaleString() }}원
                     </CTableDataCell>
 
@@ -530,7 +594,9 @@ const agencyPayStatusColor = (status: string) => {
                           'border-warning text-warning fw-bold': payout.pay_status === '4',
                           'border-secondary text-secondary': payout.pay_status === '1',
                         }"
-                        @change="changePayoutStatus(payout, ($event.target as HTMLSelectElement).value)"
+                        @change="
+                          changePayoutStatus(payout, ($event.target as HTMLSelectElement).value)
+                        "
                       >
                         <option value="1">지급대기</option>
                         <option value="2">지급승인</option>
@@ -539,7 +605,13 @@ const agencyPayStatusColor = (status: string) => {
                       </select>
                       <CBadge
                         v-else
-                        :color="payout.pay_status === '3' ? 'success' : payout.pay_status === '2' ? 'primary' : 'secondary'"
+                        :color="
+                          payout.pay_status === '3'
+                            ? 'success'
+                            : payout.pay_status === '2'
+                              ? 'primary'
+                              : 'secondary'
+                        "
                       >
                         {{ payout.pay_status_display }}
                       </CBadge>
@@ -555,10 +627,22 @@ const agencyPayStatusColor = (status: string) => {
                     <!-- 이력/상세 버튼 -->
                     <CTableDataCell>
                       <div class="d-flex gap-1 justify-content-center">
-                        <v-btn size="x-small" variant="tonal" color="secondary" @click="openPersonHistory(payout)" title="전 회차 이력">
+                        <v-btn
+                          size="x-small"
+                          variant="tonal"
+                          color="secondary"
+                          @click="openPersonHistory(payout)"
+                          title="전 회차 이력"
+                        >
                           <v-icon icon="mdi-history" size="x-small" />
                         </v-btn>
-                        <v-btn size="x-small" variant="tonal" color="info" @click="openPayoutDetail(payout)" title="이번 회차 상세">
+                        <v-btn
+                          size="x-small"
+                          variant="tonal"
+                          color="info"
+                          @click="openPayoutDetail(payout)"
+                          title="이번 회차 상세"
+                        >
                           내역
                         </v-btn>
                       </div>
@@ -583,8 +667,12 @@ const agencyPayStatusColor = (status: string) => {
             <CCol sm="6" lg="3">
               <CCard class="shadow-sm h-100 border-start border-start-4 border-start-info">
                 <CCardBody>
-                  <div class="text-body-secondary small fw-semibold">총 대행사 정산액 (VAT 포함)</div>
-                  <div class="fs-4 fw-bold text-info">{{ agencyTotalAmount.toLocaleString() }}원</div>
+                  <div class="text-body-secondary small fw-semibold">
+                    총 대행사 정산액 (VAT 포함)
+                  </div>
+                  <div class="fs-4 fw-bold text-info">
+                    {{ agencyTotalAmount.toLocaleString() }}원
+                  </div>
                   <div class="small text-muted">{{ filteredAgencyPayouts.length }}개사</div>
                 </CCardBody>
               </CCard>
@@ -593,8 +681,12 @@ const agencyPayStatusColor = (status: string) => {
               <CCard class="shadow-sm h-100 border-start border-start-4 border-start-success">
                 <CCardBody>
                   <div class="text-body-secondary small fw-semibold">지급 완료액</div>
-                  <div class="fs-4 fw-bold text-success">{{ agencyPaidAmount.toLocaleString() }}원</div>
-                  <div class="small text-success">{{ filteredAgencyPayouts.filter(ap => ap.pay_status === '3').length }}개사 완료</div>
+                  <div class="fs-4 fw-bold text-success">
+                    {{ agencyPaidAmount.toLocaleString() }}원
+                  </div>
+                  <div class="small text-success">
+                    {{ filteredAgencyPayouts.filter(ap => ap.pay_status === '3').length }}개사 완료
+                  </div>
                 </CCardBody>
               </CCard>
             </CCol>
@@ -602,8 +694,12 @@ const agencyPayStatusColor = (status: string) => {
               <CCard class="shadow-sm h-100 border-start border-start-4 border-start-warning">
                 <CCardBody>
                   <div class="text-body-secondary small fw-semibold">미지급 잔액</div>
-                  <div class="fs-4 fw-bold text-warning">{{ (agencyTotalAmount - agencyPaidAmount).toLocaleString() }}원</div>
-                  <div class="small text-muted">{{ filteredAgencyPayouts.filter(ap => ap.pay_status !== '3').length }}개사 대기</div>
+                  <div class="fs-4 fw-bold text-warning">
+                    {{ (agencyTotalAmount - agencyPaidAmount).toLocaleString() }}원
+                  </div>
+                  <div class="small text-muted">
+                    {{ filteredAgencyPayouts.filter(ap => ap.pay_status !== '3').length }}개사 대기
+                  </div>
                 </CCardBody>
               </CCard>
             </CCol>
@@ -612,8 +708,14 @@ const agencyPayStatusColor = (status: string) => {
                 <CCardBody>
                   <div class="text-body-secondary small fw-semibold">직영 / 외주 구분</div>
                   <div class="small mt-1">
-                    <CBadge color="primary" class="mr-1">직영 {{ agencyPayoutList.filter(ap => ap.is_direct_managed).length }}개</CBadge>
-                    <CBadge color="success">외주 {{ agencyPayoutList.filter(ap => !ap.is_direct_managed).length }}개</CBadge>
+                    <CBadge color="primary" class="mr-1"
+                      >직영
+                      {{ agencyPayoutList.filter(ap => ap.is_direct_managed).length }}개</CBadge
+                    >
+                    <CBadge color="success"
+                      >외주
+                      {{ agencyPayoutList.filter(ap => !ap.is_direct_managed).length }}개</CBadge
+                    >
                   </div>
                 </CCardBody>
               </CCard>
@@ -635,12 +737,21 @@ const agencyPayStatusColor = (status: string) => {
                 placeholder="대행사명, 사업자번호, 예금주..."
                 style="max-width: 220px"
               />
-              <span class="small text-muted ms-auto">조회: <strong>{{ filteredAgencyPayouts.length }}</strong>개사</span>
+              <span class="small text-muted ms-auto"
+                >조회: <strong>{{ filteredAgencyPayouts.length }}</strong
+                >개사</span
+              >
             </CCardHeader>
 
             <!-- 대행사 지급 명세 테이블 -->
             <CCardBody class="p-0">
-              <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
+              <CTable
+                hover
+                responsive
+                bordered
+                align="middle"
+                class="mb-0 text-center text-body small"
+              >
                 <colgroup>
                   <col style="width: 14%" />
                   <col style="width: 8%" />
@@ -670,20 +781,30 @@ const agencyPayStatusColor = (status: string) => {
 
                 <CTableBody>
                   <CTableRow v-for="ap in filteredAgencyPayouts" :key="ap.id">
-                    <CTableDataCell class="fw-bold text-start ps-3">{{ ap.agency_name }}</CTableDataCell>
+                    <CTableDataCell class="fw-bold text-start ps-3">{{
+                      ap.agency_name
+                    }}</CTableDataCell>
                     <CTableDataCell>
                       <CBadge :color="ap.is_direct_managed ? 'primary' : 'success'">
                         {{ ap.is_direct_managed ? '직영' : '외주' }}
                       </CBadge>
                     </CTableDataCell>
-                    <CTableDataCell class="font-monospace">{{ ap.contract_count }}건</CTableDataCell>
-                    <CTableDataCell class="text-end font-monospace">{{ ap.agency_fee_sum.toLocaleString() }}원</CTableDataCell>
-                    <CTableDataCell class="text-end font-monospace">{{ ap.vat_amount.toLocaleString() }}원</CTableDataCell>
+                    <CTableDataCell class="font-monospace"
+                      >{{ ap.contract_count }}건</CTableDataCell
+                    >
+                    <CTableDataCell class="text-end font-monospace"
+                      >{{ ap.agency_fee_sum.toLocaleString() }}원</CTableDataCell
+                    >
+                    <CTableDataCell class="text-end font-monospace"
+                      >{{ ap.vat_amount.toLocaleString() }}원</CTableDataCell
+                    >
                     <CTableDataCell class="text-end font-monospace fw-bold text-info table-info">
                       {{ ap.total_amount.toLocaleString() }}원
                     </CTableDataCell>
                     <CTableDataCell>{{ ap.bank_name || '-' }}</CTableDataCell>
-                    <CTableDataCell class="font-monospace small">{{ ap.account_number || '-' }}</CTableDataCell>
+                    <CTableDataCell class="font-monospace small">{{
+                      ap.account_number || '-'
+                    }}</CTableDataCell>
                     <CTableDataCell>{{ ap.account_holder || '-' }}</CTableDataCell>
 
                     <!-- 대행사 지급 상태 -->
@@ -693,7 +814,9 @@ const agencyPayStatusColor = (status: string) => {
                         :value="ap.pay_status"
                         class="form-select form-select-sm"
                         :class="agencyPayStatusColor(ap.pay_status)"
-                        @change="changeAgencyPayStatus(ap, ($event.target as HTMLSelectElement).value)"
+                        @change="
+                          changeAgencyPayStatus(ap, ($event.target as HTMLSelectElement).value)
+                        "
                       >
                         <option value="1">지급대기</option>
                         <option value="2">지급승인</option>
@@ -702,7 +825,13 @@ const agencyPayStatusColor = (status: string) => {
                       </select>
                       <CBadge
                         v-else
-                        :color="ap.pay_status === '3' ? 'success' : ap.pay_status === '2' ? 'primary' : 'secondary'"
+                        :color="
+                          ap.pay_status === '3'
+                            ? 'success'
+                            : ap.pay_status === '2'
+                              ? 'primary'
+                              : 'secondary'
+                        "
                       >
                         {{ ap.pay_status_display }}
                       </CBadge>

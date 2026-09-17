@@ -164,9 +164,7 @@ onBeforeMount(() => formDataSetup())
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="companyShortName" class="col-md-2 col-form-label">
-          회사 약칭
-        </CFormLabel>
+        <CFormLabel for="companyShortName" class="col-md-2 col-form-label"> 회사 약칭 </CFormLabel>
 
         <CCol md="4">
           <CFormInput
@@ -176,7 +174,9 @@ onBeforeMount(() => formDataSetup())
             placeholder="공문 등에 표기될 약칭 (예: 대영IBS)"
             maxlength="20"
           />
-          <small class="text-muted">공문서 번호 접두사 등으로 활용됩니다. (미입력 시 회사명에서 자동 추출)</small>
+          <small class="text-muted"
+            >공문서 번호 접두사 등으로 활용됩니다. (미입력 시 회사명에서 자동 추출)</small
+          >
         </CCol>
       </CRow>
 

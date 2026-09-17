@@ -60,6 +60,13 @@ class ApprovalDocument(models.Model):
         null=True, blank=True, related_name='approval_documents',
         verbose_name='워크스페이스'
     )
+    # 연동 수신공문 (선택: 수신공문 처리품의인 경우)
+    related_inbound_letter = models.ForeignKey(
+        'docs.InboundLetter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='approval_documents',
+        verbose_name='연동 수신공문',
+        help_text='수신공문 처리 보고 및 대응 품의인 경우 해당 수신공문 연결'
+    )
     # 참조자 (공람자) 목록
     observers = models.ManyToManyField(
         settings.AUTH_USER_MODEL, blank=True,

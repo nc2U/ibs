@@ -56,9 +56,7 @@ const sortedActivityEvents = computed(() => {
     const groupEvents = eventsByGroup.get(key)
     if (groupEvents) {
       eventsByGroup.delete(key)
-      groupEvents.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
+      groupEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       groupEvents.forEach((e, idx) => {
         sorted.push({
           act: e,
@@ -119,11 +117,7 @@ const getTargetRoute = (act: ActLogEntry) => {
         </span>
       </CAlert>
 
-      <CRow
-        v-for="({ act, inGroup }, i) in sortedActivityEvents"
-        :key="act.pk"
-        class="pl-3"
-      >
+      <CRow v-for="({ act, inGroup }, i) in sortedActivityEvents" :key="act.pk" class="pl-3">
         <CCol :class="{ 'ml-4': inGroup }">
           <v-icon
             v-if="inGroup"

@@ -238,7 +238,8 @@ defineExpose({ open })
                 </option>
               </CFormSelect>
               <div class="form-text text-muted small">
-                * 외주 대행사의 경우 상담사 및 팀을 개별 관리하지 않고 대행사에 계약 건을 직접 배정합니다.
+                * 외주 대행사의 경우 상담사 및 팀을 개별 관리하지 않고 대행사에 계약 건을 직접
+                배정합니다.
               </div>
             </CCol>
           </template>
@@ -259,7 +260,10 @@ defineExpose({ open })
                 </CBadge>
               </div>
               <div v-if="selectedPersonTeamWarning" class="mt-1">
-                <CAlert color="warning" class="py-1 px-2 mb-0 small text-body-secondary border-warning">
+                <CAlert
+                  color="warning"
+                  class="py-1 px-2 mb-0 small text-body-secondary border-warning"
+                >
                   <v-icon icon="mdi-alert" size="small" class="text-warning mr-1" />
                   {{ selectedPersonTeamWarning }}
                 </CAlert>

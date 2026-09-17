@@ -102,6 +102,7 @@ class RouteTemplateSerializer(serializers.ModelSerializer):
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
+    target_doc_category_name = serializers.CharField(source='target_doc_category.name', read_only=True, allow_null=True)
     route_templates = RouteTemplateSerializer(many=True, read_only=True)
     policy_rules = ApprovalPolicyRuleSerializer(many=True, read_only=True)
     route_type_desc = serializers.CharField(source='get_route_type_display', read_only=True)
@@ -110,7 +111,8 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DocumentType
-        fields = ('id', 'category', 'category_name', 'name', 'code', 'description',
+        fields = ('id', 'category', 'category_name', 'target_doc_category', 'target_doc_category_name',
+                  'name', 'code', 'description',
                   'form_template_key', 'default_security_level', 'default_security_level_desc',
                   'route_type', 'route_type_desc',
                   'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
@@ -188,7 +190,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name', 'drafter',
                   'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
                   'attachment_count', 'observer_count', 'security_level', 'security_level_desc',
-                  'status', 'status_desc', 'current_step',
+                  'status', 'status_desc', 'current_step', 'related_inbound_letter',
                   'created_at', 'submitted_at', 'completed_at')
 
 
@@ -210,6 +212,20 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     drafter_assignment_desc = serializers.SerializerMethodField()
     content = serializers.DictField(required=False, default=dict)
     pdf_url = serializers.SerializerMethodField()
+    related_inbound_letter_detail = serializers.SerializerMethodField(read_only=True)
+
+    def get_related_inbound_letter_detail(self, obj):
+        if obj.related_inbound_letter:
+            return {
+                'pk': obj.related_inbound_letter.pk,
+                'receipt_number': obj.related_inbound_letter.receipt_number,
+                'document_number': obj.related_inbound_letter.document_number,
+                'title': obj.related_inbound_letter.title,
+                'sender_name': obj.related_inbound_letter.sender_name,
+                'status': obj.related_inbound_letter.status,
+                'status_desc': obj.related_inbound_letter.get_status_display(),
+            }
+        return None
 
     def get_drafter_name(self, obj):
         if obj.drafter:
@@ -356,7 +372,8 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name',
                   'doc_type_detail', 'content', 'attachment', 'attachments', 'observers', 'observer_ids',
                   'drafter', 'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
-                  'workspace', 'security_level', 'security_level_desc',
+                  'workspace', 'related_inbound_letter', 'related_inbound_letter_detail',
+                  'security_level', 'security_level_desc',
                   'status', 'status_desc', 'current_step', 'content_hash',
                   'pdf_url', 'created_at', 'submitted_at', 'completed_at',
                   'steps')

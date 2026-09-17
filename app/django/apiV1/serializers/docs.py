@@ -432,6 +432,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
 
     effective_issue_date = serializers.DateField(read_only=True)
     dispatched_at = serializers.DateTimeField(required=False, allow_null=True)
+    parent_inbound_letter_detail = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = OfficialLetter
@@ -450,8 +451,20 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
                   'approval_mode', 'approval_mode_desc',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
+                  'parent_inbound_letter', 'parent_inbound_letter_detail',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
         read_only_fields = ('document_number', 'pdf_file', 'effective_issue_date')
+
+    def get_parent_inbound_letter_detail(self, obj):
+        if obj.parent_inbound_letter:
+            return {
+                'pk': obj.parent_inbound_letter.pk,
+                'receipt_number': obj.parent_inbound_letter.receipt_number,
+                'document_number': obj.parent_inbound_letter.document_number,
+                'title': obj.parent_inbound_letter.title,
+                'sender_name': obj.parent_inbound_letter.sender_name,
+            }
+        return None
 
     def get_seal_detail(self, obj):
         if obj.seal:
@@ -520,7 +533,7 @@ class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
                   'dispatch_method', 'dispatch_method_desc',
                   'tracking_number', 'dispatched_at', 'has_attachments',
                   'approval_document', 'approval_status',
-                  'approval_status_desc', 'creator', 'created')
+                  'approval_status_desc', 'parent_inbound_letter', 'creator', 'created')
 
     def get_has_attachments(self, obj):
         return bool(obj.attachment_text or obj.attachments.exists())
@@ -556,6 +569,7 @@ class InboundLetterSerializer(serializers.ModelSerializer):
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     d_day = serializers.IntegerField(read_only=True)
     attachments = InboundLetterAttachmentSerializer(many=True, read_only=True)
+    reply_letters = serializers.SerializerMethodField(read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
@@ -572,11 +586,24 @@ class InboundLetterSerializer(serializers.ModelSerializer):
             'recipient_manager', 'recipient_manager_name',
             'status', 'status_desc',
             'approval_document', 'approval_document_detail',
-            'attachments',
+            'attachments', 'reply_letters',
             'creator', 'updator', 'created', 'updated',
             'prev_pk', 'next_pk',
         )
         read_only_fields = ('receipt_number',)
+
+    def get_reply_letters(self, obj):
+        return [
+            {
+                'pk': letter.pk,
+                'document_number': letter.document_number,
+                'title': letter.title,
+                'dispatched_at': letter.dispatched_at,
+                'approval_status': letter.approval_status,
+                'approval_status_desc': letter.get_approval_status_display(),
+            }
+            for letter in obj.reply_letters.all()
+        ]
 
     def get_approval_document_detail(self, obj):
         if obj.approval_document:

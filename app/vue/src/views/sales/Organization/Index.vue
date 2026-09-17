@@ -102,41 +102,42 @@ const onDataChanged = async () => {
   <ContentBody>
     <CCardBody class="p-3 p-md-4 pb-5">
       <div v-if="!project" class="py-5 text-center text-muted">
-      <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
-      <h5>프로젝트를 먼저 선택해 주세요.</h5>
-      <p class="mb-0 text-secondary">
-        상단 프로젝트 선택 메뉴에서 관리하실 프로젝트를 선택하시면 분양 대행 조직 및 인력을 관리할 수 있습니다.
-      </p>
-    </div>
+        <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
+        <h5>프로젝트를 먼저 선택해 주세요.</h5>
+        <p class="mb-0 text-secondary">
+          상단 프로젝트 선택 메뉴에서 관리하실 프로젝트를 선택하시면 분양 대행 조직 및 인력을 관리할
+          수 있습니다.
+        </p>
+      </div>
 
-    <CRow v-else>
-      <!-- 좌측: 영업 조직 (대행사 및 팀 트리) -->
-      <CCol lg="4" xl="3">
-        <AgencyTeamTree
-          :project="project"
-          :selected-agency-id="selectedAgencyId"
-          :selected-team-id="selectedTeamId"
-          @select-agency="onSelectAgency"
-          @select-team="onSelectTeam"
-          @add-agency="openAddAgency"
-          @edit-agency="openEditAgency"
-          @add-team="openAddTeam"
-          @edit-team="openEditTeam"
-        />
-      </CCol>
+      <CRow v-else>
+        <!-- 좌측: 영업 조직 (대행사 및 팀 트리) -->
+        <CCol lg="4" xl="3">
+          <AgencyTeamTree
+            :project="project"
+            :selected-agency-id="selectedAgencyId"
+            :selected-team-id="selectedTeamId"
+            @select-agency="onSelectAgency"
+            @select-team="onSelectTeam"
+            @add-agency="openAddAgency"
+            @edit-agency="openEditAgency"
+            @add-team="openAddTeam"
+            @edit-team="openEditTeam"
+          />
+        </CCol>
 
-      <!-- 우측: 영업 인력 목록 -->
-      <CCol lg="8" xl="9">
-        <PersonList
-          :project="project"
-          :selected-agency-id="selectedAgencyId"
-          :selected-team-id="selectedTeamId"
-          @add-person="openAddPerson"
-          @edit-person="openEditPerson"
-          @open-docs="openDocModal"
-        />
-      </CCol>
-    </CRow>
+        <!-- 우측: 영업 인력 목록 -->
+        <CCol lg="8" xl="9">
+          <PersonList
+            :project="project"
+            :selected-agency-id="selectedAgencyId"
+            :selected-team-id="selectedTeamId"
+            @add-person="openAddPerson"
+            @edit-person="openEditPerson"
+            @open-docs="openDocModal"
+          />
+        </CCol>
+      </CRow>
     </CCardBody>
 
     <!-- 모달 다이얼로그들 -->
@@ -157,9 +158,6 @@ const onDataChanged = async () => {
       @saved="onDataChanged"
       @open-docs="openDocModal"
     />
-    <PersonDocumentModal
-      ref="docModalRef"
-      @updated="onDataChanged"
-    />
+    <PersonDocumentModal ref="docModalRef" @updated="onDataChanged" />
   </ContentBody>
 </template>

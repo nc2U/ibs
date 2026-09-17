@@ -172,9 +172,9 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = ApprovalDocument.objects.select_related(
-            'doc_type', 'doc_type__category', 'drafter', 'drafter__profile',
+            'doc_type', 'doc_type__category', 'doc_type__target_doc_category', 'drafter', 'drafter__profile',
             'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__staff__position',
-            'workspace'
+            'workspace', 'related_inbound_letter'
         ).prefetch_related(
             'attachments__creator__profile',
             'observers__profile',
@@ -225,11 +225,34 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 staff__user=user
             ).first()
 
-        serializer.save(
+        doc = serializer.save(
             drafter=user,
             drafter_assignment=assignment,
             status=ApprovalDocument.STATUS_DRAFT
         )
+        inbound = doc.related_inbound_letter
+        if not inbound and (doc.content or {}).get('inbound_letter_id'):
+            from docs.models import InboundLetter
+            inbound = InboundLetter.objects.filter(pk=doc.content['inbound_letter_id']).first()
+            if inbound:
+                doc.related_inbound_letter = inbound
+                doc.save(update_fields=['related_inbound_letter'])
+        if inbound and inbound.approval_document != doc:
+            inbound.approval_document = doc
+            inbound.save(update_fields=['approval_document'])
+
+    def perform_update(self, serializer):
+        doc = serializer.save()
+        inbound = doc.related_inbound_letter
+        if not inbound and (doc.content or {}).get('inbound_letter_id'):
+            from docs.models import InboundLetter
+            inbound = InboundLetter.objects.filter(pk=doc.content['inbound_letter_id']).first()
+            if inbound:
+                doc.related_inbound_letter = inbound
+                doc.save(update_fields=['related_inbound_letter'])
+        if inbound and inbound.approval_document != doc:
+            inbound.approval_document = doc
+            inbound.save(update_fields=['approval_document'])
 
     # ── GET /approval-document/my_assignments/ ───────────────
     @action(detail=False, methods=['get'])
@@ -359,6 +382,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 document.doc_number = document.generate_doc_number()
                 document.save(update_fields=['doc_number'])
 
+                # 연동 수신공문 동기화
+                if document.related_inbound_letter:
+                    inbound = document.related_inbound_letter
+                    inbound.approval_document = document
+                    inbound.status = 'in_progress'
+                    inbound.save(update_fields=['approval_document', 'status'])
+
                 # 연동 공문 동기화 및 PDF 생성
                 if official_letter:
                     from docs.utils import generate_official_letter_pdf
@@ -372,6 +402,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.warning('공문 PDF 자동 생성 실패 (letter pk=%s): %s', official_letter.pk, e)
 
+                # 자동 아카이빙 처리
+                from approval.services.document_service import archive_to_docs
+                archive_to_docs(document)
+
                 generate_approval_pdf_task.delay(document.pk)
                 serializer = ApprovalDocumentSerializer(document, context={'request': request})
                 return Response(serializer.data)
@@ -384,6 +418,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         # 서비스 레이어로 위임: 결재선 생성 + content_hash + 상태 전이 원자적 처리
         submit_document(document, route_steps)
+
+        # 연동 수신공문 동기화
+        if document.related_inbound_letter:
+            inbound = document.related_inbound_letter
+            inbound.approval_document = document
+            inbound.status = 'in_progress'
+            inbound.save(update_fields=['approval_document', 'status'])
 
         # 1단계 결재자에게 알림
         first_step = document.steps.order_by('step_order').first()
@@ -473,6 +514,11 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             if official_letter_id:
                 from docs.models import OfficialLetter
                 OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='rejected')
+
+            # 연동된 수신공문(InboundLetter) 상태 동기화 (반려 시 접수 상태로 복귀)
+            if document.related_inbound_letter:
+                document.related_inbound_letter.status = 'received'
+                document.related_inbound_letter.save(update_fields=['status'])
 
             try:
                 notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
@@ -572,6 +618,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if official_letter_id:
             from docs.models import OfficialLetter
             OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='none')
+
+        # 연동된 수신공문(InboundLetter) 상태 동기화 (기안 회수 시 접수 상태로 복귀)
+        if document.related_inbound_letter:
+            inbound = document.related_inbound_letter
+            inbound.approval_document = None
+            inbound.status = 'received'
+            inbound.save(update_fields=['approval_document', 'status'])
 
         # 결재자들에게 회수 알림 비동기 발송
         if approver_ids:

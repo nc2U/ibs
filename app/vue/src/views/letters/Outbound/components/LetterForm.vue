@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { markdownRender } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
@@ -179,6 +179,7 @@ const isApprovalModeLocked = computed(() => {
   )
 })
 
+const route = useRoute()
 const router = useRouter()
 const docStore = useDocs()
 
@@ -214,12 +215,27 @@ const form = ref<OfficialLetter>({
   sender_zipcode: '',
   sender_address: '',
   approval_mode: 'approval',
+  parent_inbound_letter: null,
   // 발송 관리 메타 정보
   recipient_address: '',
   recipient_contact: '',
   dispatch_method: 'email',
   tracking_number: '',
   dispatched_at: null,
+})
+
+onMounted(() => {
+  if (!props.letter?.pk && route.query) {
+    if (route.query.reply_to_inbound) {
+      form.value.parent_inbound_letter = Number(route.query.reply_to_inbound)
+    }
+    if (route.query.recipient_name) {
+      form.value.recipient_name = String(route.query.recipient_name)
+    }
+    if (route.query.title) {
+      form.value.title = String(route.query.title)
+    }
+  }
 })
 
 const validated = ref(false)
@@ -476,6 +492,20 @@ const goBack = () => {
         </small>
       </CCol>
     </CRow>
+
+    <!-- 수신 공문 회신 작성 안내 배너 -->
+    <CAlert
+      v-if="form.parent_inbound_letter"
+      color="primary"
+      class="d-flex align-items-center mb-4 shadow-sm"
+    >
+      <v-icon icon="mdi-reply" size="large" class="me-3" />
+      <div>
+        <strong>수신 공문 연동 회신 작성:</strong>
+        접수된 수신 공문(ID: {{ form.parent_inbound_letter }})에 대한 공식 답변/회신 공문입니다.
+        대외 발송 완료 시 해당 수신 공문의 상태가 자동으로 <strong>'회신완료'</strong>로 전환됩니다.
+      </div>
+    </CAlert>
 
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
       <CRow>

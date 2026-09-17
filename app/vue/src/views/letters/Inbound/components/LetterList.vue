@@ -188,11 +188,15 @@ const getDDayText = (dDay: number | null | undefined) => {
       <CTableHead color="light">
         <CTableRow>
           <CTableHeaderCell class="text-center" style="width: 130px">접수번호</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 140px">발신처 문서번호</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 140px"
+            >발신처 문서번호</CTableHeaderCell
+          >
           <CTableHeaderCell class="text-center" style="width: 140px">발신처</CTableHeaderCell>
           <CTableHeaderCell>제목</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 105px">접수일자</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 130px">회신기한 (D-Day)</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 130px"
+            >회신기한 (D-Day)</CTableHeaderCell
+          >
           <CTableHeaderCell class="text-center" style="width: 110px">배부 부서</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 90px">담당자</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 85px">상태</CTableHeaderCell>

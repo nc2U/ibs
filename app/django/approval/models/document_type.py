@@ -70,6 +70,7 @@ class DocumentType(models.Model):
         ('BUSINESS_REVIEW', '사업 검토서 (BUSINESS_REVIEW)'),
         ('BUSINESS_APPROVAL', '사업추진 승인서 (BUSINESS_APPROVAL)'),
         ('PROJECT_DECISION', '프로젝트 주요 의사결정서 (PROJECT_DECISION)'),
+        ('INBOUND_REPORT', '수신 공문 처리 보고 / 품의 (INBOUND_REPORT)'),
     )
 
     SECURITY_SECRET = '1'
@@ -85,6 +86,11 @@ class DocumentType(models.Model):
         '결재 양식 템플릿', max_length=50,
         choices=FORM_TEMPLATE_CHOICES, default='GENERAL',
         help_text='매칭할 전자결재 양식 템플릿 (웹/모바일 공통 적용)'
+    )
+    target_doc_category = models.ForeignKey(
+        'docs.Category', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='auto_archive_doc_types', verbose_name='승인 후 자동 보관 카테고리',
+        help_text='최종 승인 완료 시 결재 완료본 PDF가 일반 문서 자료실의 지정 카테고리로 자동 등재됩니다.'
     )
     default_security_level = models.CharField(
         '기본 보안 등급', max_length=1,

@@ -38,6 +38,7 @@ const form = ref({
   title: '',
   security_level: '2' as '1' | '2' | '3',
 })
+const relatedInboundLetterId = ref<number | null>(null)
 const dynamicContent = ref<Record<string, string>>({})
 const selectedObservers = ref<number[]>([])
 const selectedFiles = ref<File[]>([])
@@ -244,6 +245,12 @@ const buildFormData = () => {
   for (const file of selectedFiles.value) {
     fd.append('files', file)
   }
+
+  // 연동 수신공문 ID 추가
+  if (relatedInboundLetterId.value) {
+    fd.append('related_inbound_letter', String(relatedInboundLetterId.value))
+  }
+
   return fd
 }
 
@@ -330,7 +337,24 @@ onMounted(async () => {
       form.value.security_level = (document.value.security_level as '1' | '2' | '3') || '2'
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
       selectedObservers.value = (document.value.observers || []).map(o => o.id)
+      if (document.value.related_inbound_letter) {
+        relatedInboundLetterId.value = document.value.related_inbound_letter
+      }
       updateRoutePreview()
+    }
+  } else if (route.query) {
+    if (route.query.title) {
+      form.value.title = String(route.query.title)
+    }
+    if (route.query.inbound_letter) {
+      relatedInboundLetterId.value = Number(route.query.inbound_letter)
+      const inboundDocType = forDraftDocTypeList.value.find(
+        d => d.form_template_key === 'INBOUND_REPORT' || d.code === 'INBOUND_REPORT',
+      )
+      if (inboundDocType) {
+        form.value.doc_type = inboundDocType.id
+        onDocTypeChange()
+      }
     }
   }
 })
@@ -361,6 +385,20 @@ const applyExampleTitle = (title: string) => {
           :validated="validated"
           @submit.prevent="handleSubmit($event, 'draft')"
         >
+          <!-- 수신 공문 연동 안내 배너 -->
+          <CAlert
+            v-if="relatedInboundLetterId"
+            color="info"
+            class="d-flex align-items-center mb-4 shadow-sm"
+          >
+            <v-icon icon="mdi-inbox-arrow-down" size="large" class="me-3 text-primary" />
+            <div>
+              <strong>수신 공문 연동 기안:</strong>
+              접수된 수신 공문(ID: {{ relatedInboundLetterId }})의 처리 보고 및 대응 품의
+              문서입니다.
+            </div>
+          </CAlert>
+
           <!-- 기안 부서 / 보직 선택 (보직이 있는 경우) -->
           <CRow v-if="myAssignments.length > 0" class="mb-3">
             <CFormLabel class="col-sm-3 col-form-label"> 기안 부서/직책 </CFormLabel>

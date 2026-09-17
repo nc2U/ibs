@@ -61,6 +61,8 @@ export interface DocumentType {
   id: number
   category?: number | null
   category_name?: string | null
+  target_doc_category?: number | null
+  target_doc_category_name?: string | null
   name: string
   code: string
   description: string
@@ -158,6 +160,16 @@ export interface ApprovalDocument {
   observer_count?: number
   drafter: SimpleUser
   workspace?: number | null
+  related_inbound_letter?: number | null
+  related_inbound_letter_detail?: {
+    pk: number
+    receipt_number: string
+    document_number: string
+    title: string
+    sender_name: string
+    status: string
+    status_desc: string
+  } | null
   security_level?: SecurityLevel
   security_level_desc?: string
   status: DocumentStatus
@@ -176,6 +188,7 @@ export interface PatchApprovalDocument {
   drafter_assignment?: number | null
   content?: Record<string, unknown>
   workspace?: number | null
+  related_inbound_letter?: number | null
   security_level?: SecurityLevel
   observer_ids?: number[]
 }

@@ -138,13 +138,7 @@ const handleRowClick = (item: ApprovalDocument) => {
             <tr>
               <th class="text-left" style="width: 100px">유형</th>
               <th class="text-left">문서 제목</th>
-              <th
-                v-if="activeTab !== 'drafted'"
-                class="text-center"
-                style="width: 90px"
-              >
-                기안자
-              </th>
+              <th v-if="activeTab !== 'drafted'" class="text-center" style="width: 90px">기안자</th>
               <th v-else class="text-center" style="width: 90px">상태</th>
               <th class="text-right" style="width: 90px">
                 {{ activeTab === 'pending' ? '도착일' : '일시' }}
@@ -172,17 +166,11 @@ const handleRowClick = (item: ApprovalDocument) => {
                 <span class="text-body-2 font-weight-medium text-decoration-none">
                   {{ cutString(item.title, 35) }}
                 </span>
-                <span
-                  v-if="item.attachment_count"
-                  class="ml-1 text-caption text-medium-emphasis"
-                >
+                <span v-if="item.attachment_count" class="ml-1 text-caption text-medium-emphasis">
                   <v-icon icon="mdi-paperclip" size="12" />
                 </span>
               </td>
-              <td
-                v-if="activeTab !== 'drafted'"
-                class="text-center text-truncate text-caption"
-              >
+              <td v-if="activeTab !== 'drafted'" class="text-center text-truncate text-caption">
                 {{ item.drafter?.full_name || item.drafter?.username || '-' }}
               </td>
               <td v-else class="text-center">
@@ -200,10 +188,7 @@ const handleRowClick = (item: ApprovalDocument) => {
               </td>
             </tr>
             <tr v-if="!currentList.length">
-              <td
-                colspan="4"
-                class="text-center text-medium-emphasis py-4 text-caption"
-              >
+              <td colspan="4" class="text-center text-medium-emphasis py-4 text-caption">
                 {{
                   activeTab === 'pending'
                     ? '결재 대기 중인 문서가 없습니다.'

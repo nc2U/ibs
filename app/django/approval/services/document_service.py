@@ -85,4 +85,105 @@ def finalize_approval(document: ApprovalDocument) -> ApprovalDocument:
     document.completed_at = timezone.now()
     document.doc_number = document.generate_doc_number()
     document.save(update_fields=['status', 'completed_at', 'doc_number'])
+
+    # 문서 유형에 대상 자료실 카테고리가 지정된 경우 일반 문서로 자동 아카이빙
+    try:
+        archive_to_docs(document)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning('결재 문서 자동 아카이빙 실패 (doc %s): %s', document.pk, e)
+
     return document
+
+
+def archive_to_docs(document: ApprovalDocument):
+    """
+    최종 승인된 ApprovalDocument의 doc_type에 target_doc_category가 지정되어 있을 경우
+    docs.models.Document (일반 문서)로 자동 아카이빙(보관)합니다.
+    """
+    if not document.doc_type or not document.doc_type.target_doc_category:
+        return None
+
+    if document.status != ApprovalDocument.STATUS_APPROVED:
+        return None
+
+    from docs.models import Document, File
+    from work.models import IssueProject
+
+    target_category = document.doc_type.target_doc_category
+    identifier = f"[전자결재:{document.pk}]"
+
+    # 중복 아카이빙 방지: 이미 생성된 문서가 있는지 확인
+    existing = Document.objects.filter(description__startswith=identifier).first()
+    if existing:
+        # PDF 파일이 뒤늦게 생성되었으나 기존에 파일 등록이 안 된 경우 추가
+        if document.pdf_file and document.pdf_file.name:
+            if not existing.files.filter(description__contains="전자결재 최종 승인 문서").exists():
+                File.objects.create(
+                    docs=existing,
+                    file=document.pdf_file,
+                    file_name=f"{document.doc_number or document.title}.pdf",
+                    file_type="application/pdf",
+                    creator=document.drafter,
+                    description=f"전자결재 최종 승인 문서 ({document.doc_number})",
+                )
+        return existing
+
+    # 워크스페이스 결정
+    workspace = document.workspace
+    if not workspace:
+        company = None
+        if document.drafter_assignment and document.drafter_assignment.company:
+            company = document.drafter_assignment.company
+        elif hasattr(document.drafter, 'staff') and document.drafter.staff.company:
+            company = document.drafter.staff.company
+
+        if company:
+            workspace = (
+                IssueProject.objects.filter(company=company, type='1').first() or
+                IssueProject.objects.filter(company=company).first()
+            )
+        if not workspace:
+            workspace = IssueProject.objects.first()
+
+    if not workspace:
+        return None
+
+    execution_date = document.completed_at.date() if document.completed_at else timezone.localdate()
+
+    doc_record = Document.objects.create(
+        issue_project=workspace,
+        category=target_category,
+        doc_type=target_category.doc_type or '1',
+        title=document.title,
+        execution_date=execution_date,
+        description=f"{identifier} {document.doc_number or ''} {document.title}"[:255],
+        creator=document.drafter,
+        security_level=document.security_level if hasattr(document, 'security_level') else Document.SECURITY_COMPANY,
+    )
+
+    # 1. 승인된 PDF 파일 등록 (생성되어 있을 경우)
+    if document.pdf_file and document.pdf_file.name:
+        File.objects.create(
+            docs=doc_record,
+            file=document.pdf_file,
+            file_name=f"{document.doc_number or document.title}.pdf",
+            file_type="application/pdf",
+            creator=document.drafter,
+            description=f"전자결재 최종 승인 문서 ({document.doc_number})",
+        )
+
+    # 2. 첨부파일 등록
+    for att in document.attachments.all():
+        if att.file:
+            File.objects.create(
+                docs=doc_record,
+                file=att.file,
+                file_name=att.file_name or att.file.name.split('/')[-1],
+                file_type=att.file_type or '',
+                file_size=att.file_size,
+                creator=att.creator or document.drafter,
+                description="결재 첨부파일",
+            )
+
+    return doc_record

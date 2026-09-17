@@ -423,6 +423,12 @@ class OfficialLetter(models.Model):
         '결재 상태', max_length=10, choices=APPROVAL_STATUS_CHOICES,
         default='none', db_index=True
     )
+    parent_inbound_letter = models.ForeignKey(
+        'docs.InboundLetter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='reply_letters',
+        verbose_name='회신 대상 수신공문',
+        help_text='이 공문이 특정 수신 공문에 대한 회신(답신)인 경우 연결'
+    )
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, verbose_name='작성자', related_name='created_letters')  # 메타데이터
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

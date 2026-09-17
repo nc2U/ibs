@@ -30,9 +30,7 @@ const activeNewsProjects = computed(() =>
 
 const { can, PERM } = usePerms()
 const canNewsRead = computed(() => can(PERM.NEWS_READ))
-const canNewsManage = computed(
-  () => activeNewsProjects.value.length > 0 && can(PERM.NEWS_MANAGE),
-)
+const canNewsManage = computed(() => activeNewsProjects.value.length > 0 && can(PERM.NEWS_MANAGE))
 
 provide('navMenu', navMenu)
 provide('query', route?.query)

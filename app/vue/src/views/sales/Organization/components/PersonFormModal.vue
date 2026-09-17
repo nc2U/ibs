@@ -346,7 +346,9 @@ defineExpose({ open })
           >
             {{ isEdit ? '수정 저장' : '등록하기' }}
           </v-btn>
-          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()">취소</v-btn>
+          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+            >취소</v-btn
+          >
         </div>
       </CModalFooter>
     </template>

@@ -88,7 +88,8 @@ defineExpose({ open, close })
             <div
               class="border rounded p-3 flex-fill cursor-pointer transition-all"
               :class="{
-                'border-success bg-success-subtle text-success fw-bold': form.is_settlement_approved,
+                'border-success bg-success-subtle text-success fw-bold':
+                  form.is_settlement_approved,
                 'border-light text-muted': !form.is_settlement_approved,
               }"
               @click="form.is_settlement_approved = true"
@@ -150,7 +151,8 @@ defineExpose({ open, close })
             placeholder="예: 계약금 2차 분납 500만원 미납 (입금 확인 후 승인 예정), 인감증명서 미징구 등"
           />
           <div class="form-text text-secondary mt-1">
-            * 입력하신 보류 사유는 실적 목록에 표시되며, 차후 서류 완비 시 언제든 [승인]으로 전환할 수 있습니다.
+            * 입력하신 보류 사유는 실적 목록에 표시되며, 차후 서류 완비 시 언제든 [승인]으로 전환할
+            수 있습니다.
           </div>
         </div>
       </CModalBody>

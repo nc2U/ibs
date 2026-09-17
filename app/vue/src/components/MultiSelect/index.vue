@@ -23,7 +23,9 @@ const emit = defineEmits(['update:modelValue'])
   <Multiselect
     :mode="mode"
     autocomplete="label"
-    :style="invalid ? { '--ms-border-color': '#dc3545', '--ms-border-color-active': '#dc3545' } : {}"
+    :style="
+      invalid ? { '--ms-border-color': '#dc3545', '--ms-border-color-active': '#dc3545' } : {}
+    "
     :classes="{
       caret: 'multiselect-caret mr-4',
       search: 'form-control multiselect-search',

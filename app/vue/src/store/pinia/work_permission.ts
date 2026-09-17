@@ -148,9 +148,7 @@ export const usePermission = defineStore('permission', () => {
   // 실제 Staff(직원) 인스턴스 등록이 필수인 권한 판별 (슈퍼유저 제외한 일반 유저는 Staff 등록 필수)
   const requiresStaff = (c: PermissionCode) => {
     return (
-      c === PERM.HQ_HR_WORK_CREATE ||
-      c === PERM.HQ_HR_WORK_UPDATE ||
-      c === PERM.HQ_HR_WORK_DELETE
+      c === PERM.HQ_HR_WORK_CREATE || c === PERM.HQ_HR_WORK_UPDATE || c === PERM.HQ_HR_WORK_DELETE
     )
   }
 

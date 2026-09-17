@@ -91,7 +91,11 @@ defineExpose({ open })
         <CRow class="g-3">
           <CCol md="12">
             <CFormLabel>정산 회차명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.title" placeholder="예: 2026년 9월 1회차 수수료 정산" required />
+            <CFormInput
+              v-model="form.title"
+              placeholder="예: 2026년 9월 1회차 수수료 정산"
+              required
+            />
           </CCol>
 
           <CCol md="6">

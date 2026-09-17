@@ -510,7 +510,12 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         return queryset.none()
 
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        letter = serializer.save(creator=self.request.user)
+        if letter.dispatched_at and letter.parent_inbound_letter:
+            parent = letter.parent_inbound_letter
+            if parent.status != 'replied':
+                parent.status = 'replied'
+                parent.save(update_fields=['status'])
 
     def perform_update(self, serializer):
         letter = self.get_object()
@@ -542,7 +547,12 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         if requested_mode == 'manual' and (letter.approval_document or letter.approval_mode == 'approval'):
             raise ValidationError('전자결재 문서로 등록된 공문은 단독/직접 발송 방식으로 변경할 수 없습니다.')
 
-        serializer.save(updator=self.request.user)
+        updated_letter = serializer.save(updator=self.request.user)
+        if updated_letter.dispatched_at and updated_letter.parent_inbound_letter:
+            parent = updated_letter.parent_inbound_letter
+            if parent.status != 'replied':
+                parent.status = 'replied'
+                parent.save(update_fields=['status'])
 
     def perform_destroy(self, instance):
         # 1. 발송 완료된 공문은 법적 증빙 문서로 삭제 전면 금지
@@ -856,7 +866,7 @@ class InboundLetterFilterSet(FilterSet):
 class InboundLetterViewSet(viewsets.ModelViewSet):
     queryset = InboundLetter.objects.select_related(
         'company', 'recipient_dept', 'recipient_manager', 'creator', 'updator', 'approval_document'
-    ).prefetch_related('attachments')
+    ).prefetch_related('attachments', 'reply_letters')
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = InboundLetterFilterSet
@@ -878,6 +888,7 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             'partial_update': 'docs.update',
             'destroy': 'docs.delete',
             'next_receipt_number': 'docs.read',
+            'submit_approval': 'docs.update',
         }
         return mapping.get(self.action, None)
 
@@ -916,6 +927,171 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         except Company.DoesNotExist:
             return Response({'error': '회사를 찾을 수 없습니다.'},
                             status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'])
+    def submit_approval(self, request, pk=None):
+        """수신 공문을 전자결재(ApprovalDocument)로 상신"""
+        from approval.models import ApprovalDocument, DocumentType, ApprovalStep, ApprovalAttachment
+        from company.models import StaffAssignment
+        from approval.services.route_builder import build_dynamic_approval_route
+        from approval.tasks import notify_approvers_task, generate_approval_pdf_task
+        from approval.services.document_service import archive_to_docs
+        from work.models import IssueProject
+
+        letter = self.get_object()
+
+        if letter.status == 'closed':
+            return Response({'detail': '이미 종결 처리된 수신 공문은 전자결재를 상신할 수 없습니다.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if letter.approval_document and letter.approval_document.status in (
+            ApprovalDocument.STATUS_PENDING, ApprovalDocument.STATUS_APPROVED
+        ):
+            return Response({'detail': '이미 전자결재가 진행 중이거나 최종 승인되었습니다.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # INBOUND_REPORT 양식의 DocumentType 조회 (없으면 첫번째 활성 유형)
+        doc_type = DocumentType.objects.filter(form_template_key='INBOUND_REPORT', is_active=True).first()
+        if not doc_type:
+            doc_type = DocumentType.objects.filter(is_active=True).first()
+        if not doc_type:
+            return Response({'detail': '사용 가능한 전자결재 문서 유형이 없습니다.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # 기안자 보직 조회
+        assignment = StaffAssignment.objects.filter(staff__user=request.user, is_primary=True).first()
+        if not assignment:
+            assignment = StaffAssignment.objects.filter(staff__user=request.user).first()
+
+        content_payload = {
+            'inbound_letter_id': letter.pk,
+            'sender_name': letter.sender_name,
+            'sender_contact': letter.sender_contact or '',
+            'receipt_number': letter.receipt_number,
+            'document_number': letter.document_number or '',
+            'received_date': str(letter.received_date),
+            'reply_due_date': str(letter.reply_due_date) if letter.reply_due_date else '',
+            'letter_subject': letter.title,
+            'letter_content': letter.content or '',
+            'body': f"[수신 공문 처리 보고 및 대응 품의]\n\n• 발신처: {letter.sender_name}\n• 발신 문서번호: {letter.document_number or '-'}\n• 접수번호: {letter.receipt_number}\n• 접수일자: {letter.received_date}\n• 회신기한: {letter.reply_due_date or '기한 없음'}\n\n[수신 내용]\n{letter.content or '-'}",
+        }
+
+        workspace = None
+        if letter.company:
+            workspace = IssueProject.objects.filter(company=letter.company, type='1').first() or IssueProject.objects.filter(company=letter.company).first()
+
+        doc = ApprovalDocument(
+            title=f'[수신 공문 보고] {letter.title}',
+            doc_type=doc_type,
+            drafter=request.user,
+            drafter_assignment=assignment,
+            workspace=workspace,
+            related_inbound_letter=letter,
+            content=content_payload,
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+            submitted_at=timezone.now(),
+        )
+        doc.content_hash = doc.compute_hash()
+        doc.save()
+
+        # 스캔본 및 첨부파일을 결재 문서 첨부파일로 복사
+        if letter.scan_file:
+            ApprovalAttachment.objects.create(
+                document=doc,
+                file=letter.scan_file,
+                file_name=letter.scan_file.name.split('/')[-1],
+                creator=request.user,
+            )
+        for att in letter.attachments.all():
+            if att.file:
+                ApprovalAttachment.objects.create(
+                    document=doc,
+                    file=att.file,
+                    file_name=att.file_name or att.file.name.split('/')[-1],
+                    file_size=att.file_size,
+                    creator=request.user,
+                )
+
+        steps = build_dynamic_approval_route(
+            doc_type=doc_type,
+            drafter_user=request.user,
+            drafter_assignment=assignment,
+            content=content_payload,
+        )
+
+        is_ceo = False
+        company = assignment.company if assignment else letter.company
+        if company:
+            from apiV1.views.approval import _get_company_ceos
+            ceo_users = _get_company_ceos(company, set())
+            is_ceo = request.user in ceo_users or any(u.id == request.user.id for u in ceo_users)
+        if not is_ceo and assignment and assignment.duty and (assignment.duty.code == 'CEO' or '대표' in assignment.duty.name):
+            is_ceo = True
+
+        effective_final_duty = doc_type.final_approval_duty
+        drafter_duty = assignment.duty if assignment and assignment.duty else None
+        is_final_authority = False
+        if effective_final_duty and drafter_duty and drafter_duty.id == effective_final_duty.id:
+            is_final_authority = True
+
+        is_instant_approval = (is_ceo or is_final_authority or not steps)
+
+        if is_instant_approval:
+            role_label = '대표이사 승인' if is_ceo else (f'{drafter_duty.name} 승인' if drafter_duty else '전결권자 승인')
+            step = ApprovalStep.objects.create(
+                document=doc,
+                step_order=1,
+                role_label=role_label,
+                condition='OR',
+                status=ApprovalStep.STATUS_APPROVED,
+            )
+            step.approvers.set([request.user])
+
+            doc.status = ApprovalDocument.STATUS_APPROVED
+            doc.completed_at = timezone.now()
+            doc.content_hash = doc.compute_hash()
+            doc.doc_number = doc.generate_doc_number()
+            doc.save(update_fields=['status', 'completed_at', 'content_hash', 'doc_number'])
+
+            letter.approval_document = doc
+            letter.status = 'in_progress'
+            letter.save(update_fields=['approval_document', 'status'])
+
+            archive_to_docs(doc)
+            generate_approval_pdf_task.delay(doc.pk)
+
+            return Response({
+                'detail': '승인(전결)권자 직접 기안으로 전자결재가 즉시 최종 승인 처리되었습니다.',
+                'approval_document_id': doc.pk,
+                'status': letter.status,
+            })
+
+        for step_data in steps:
+            step = ApprovalStep.objects.create(
+                document=doc,
+                step_order=step_data['step_order'],
+                role_label=step_data['role_label'],
+                condition=step_data.get('condition', 'AND'),
+                status='pending',
+            )
+            step.approvers.set(step_data['approvers'])
+
+        letter.approval_document = doc
+        letter.status = 'in_progress'
+        letter.save(update_fields=['approval_document', 'status'])
+
+        first_step = doc.steps.filter(step_order=1).first()
+        if first_step:
+            try:
+                notify_approvers_task.delay(doc.pk, first_step.pk)
+            except Exception:
+                notify_approvers_task(doc.pk, first_step.pk)
+
+        return Response({
+            'detail': '수신 공문 처리 보고가 전자결재로 성공적으로 상신되었습니다.',
+            'approval_document_id': doc.pk,
+            'status': letter.status,
+        })
 
 
 class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):

@@ -727,6 +727,16 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const submitInboundApproval = async (pk: number) =>
+    api
+      .post(`/inbound-letter/${pk}/submit_approval/`)
+      .then(async res => {
+        await fetchInboundLetter(pk)
+        message('success', '', res.data.detail || '전자결재가 상신되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     docTypes,
 
@@ -839,5 +849,6 @@ export const useDocs = defineStore('docs', () => {
     getNextReceiptNumber,
     uploadInboundAttachment,
     deleteInboundAttachment,
+    submitInboundApproval,
   }
 })
