@@ -24,8 +24,8 @@ from ..serializers.company import (
 
 class CompanyDataFilterMixin:
     """
-    인사/조직 데이터의 소속 회사(user.staff.company) 격리 필터 믹스인.
-    슈퍼유저 또는 work_manager는 모든 회사 데이터를 조회/관리할 수 있으며,
+    인사/조직 데이터의 소속 회사(user.staff.company 또는 본사 워크스페이스 멤버십) 격리 필터 믹스인.
+    슈퍼유저는 모든 회사 데이터를 조회/관리할 수 있으며,
     일반 사용자는 자신이 소속된 회사의 데이터만 조회/관리할 수 있습니다.
     소속 회사가 없는 경우 빈 쿼리셋을 반환합니다.
     """
@@ -35,20 +35,43 @@ class CompanyDataFilterMixin:
         qs = super().get_queryset()
         if not user or not user.is_authenticated:
             return qs.none()
-        if user.is_superuser or getattr(user, 'work_manager', False):
+        if user.is_superuser:
             return qs
+
+        company_ids = set()
         staff = getattr(user, 'staff', None)
         if staff and staff.company_id:
-            return qs.filter(company_id=staff.company_id)
+            company_ids.add(staff.company_id)
+
+        from work.models.project import IssueProject
+        member_companies = IssueProject.objects.filter(
+            type='1',
+            members__user=user
+        ).values_list('company_id', flat=True)
+        company_ids.update(member_companies)
+
+        if company_ids:
+            return qs.filter(company_id__in=company_ids)
         return qs.none()
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+        if not user.is_superuser:
             staff = getattr(user, 'staff', None)
             if staff and staff.company:
                 serializer.save(company=staff.company)
                 return
+            from work.models.project import IssueProject
+            member_companies = list(IssueProject.objects.filter(
+                type='1',
+                members__user=user
+            ).values_list('company_id', flat=True))
+            if len(member_companies) == 1:
+                from company.models import Company
+                comp = Company.objects.filter(pk=member_companies[0]).first()
+                if comp:
+                    serializer.save(company=comp)
+                    return
         serializer.save()
 
 
@@ -93,9 +116,10 @@ class DepartmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class JobGradeViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -108,9 +132,10 @@ class JobGradeViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class PositionViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -123,9 +148,10 @@ class PositionViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class DutyTitleViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -138,9 +164,10 @@ class DutyTitleViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class ExecutiveRankViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -153,9 +180,10 @@ class ExecutiveRankViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class ExecutiveViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -168,10 +196,10 @@ class ExecutiveViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') \
-            else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' \
-            if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' \
-            if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class StaffFilter(FilterSet):
@@ -198,9 +226,10 @@ class StaffViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class StaffAssignmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -215,9 +244,10 @@ class StaffAssignmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.hr_work.read' if self.action in ('list',
-                                                    'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
-            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in (
+            'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else None
 
 
 class PersonnelOrderViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):

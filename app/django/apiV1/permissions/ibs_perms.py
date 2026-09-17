@@ -37,6 +37,14 @@ class HqProjectModulePermission(permissions.BasePermission):
     """
 
     @classmethod
+    def _is_hq_member_or_staff(cls, user):
+        """사용자가 본사 워크스페이스(type='1')의 멤버이거나 소속 회사 Staff인지 확인"""
+        if getattr(user, 'staff', None) is not None:
+            return True
+        from work.models.project import Member
+        return Member.objects.filter(user=user, project__type='1').exists()
+
+    @classmethod
     def _get_all_hq_user_permissions(cls, user):
         """모든 type='1' 본사업무 워크스페이스의 권한을 합집합으로 반환"""
         from work.models.project import IssueProject
@@ -61,10 +69,27 @@ class HqProjectModulePermission(permissions.BasePermission):
         req_company = request.data.get('company') if hasattr(request, 'data') and isinstance(request.data, dict) else None
         if req_company is not None:
             staff = getattr(request.user, 'staff', None)
-            if not staff:
-                return False
-            if str(staff.company_id) != str(req_company) and getattr(staff.company, 'name', '') != str(req_company):
-                return False
+            staff_match = (
+                staff is not None and (
+                    str(staff.company_id) == str(req_company) or
+                    getattr(staff.company, 'name', '') == str(req_company)
+                )
+            )
+            if not staff_match:
+                from work.models.project import IssueProject
+                member_match = IssueProject.objects.filter(
+                    type='1',
+                    company_id=req_company if str(req_company).isdigit() else None,
+                    members__user=request.user
+                ).exists()
+                if not member_match and not str(req_company).isdigit():
+                    member_match = IssueProject.objects.filter(
+                        type='1',
+                        company__name=str(req_company),
+                        members__user=request.user
+                    ).exists()
+                if not member_match:
+                    return False
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -78,12 +103,28 @@ class HqProjectModulePermission(permissions.BasePermission):
 
         required_perm = getattr(view, 'required_permission', None)
 
-        # 4. required_permission 미선언 ViewSet은 인증만 확인
+        # 4. required_permission 미선언 ViewSet 또는 기본 조회 허용(None) ViewSet
         if not required_perm:
+            # 본사 워크스페이스(type='1')의 멤버이거나 소속 회사 임직원(staff)이어야 함
+            # 외부 사용자나 HQ 소속이 전혀 없는 work_manager 등은 차단(403)
+            if not self._is_hq_member_or_staff(request.user):
+                return False
             return True
 
         # 5. 권한 코드 검사
-        if issue_project:
+        if not issue_project and req_company:
+            from work.models.project import IssueProject
+            filter_kwargs = {'type': '1'}
+            if str(req_company).isdigit():
+                filter_kwargs['company_id'] = req_company
+            else:
+                filter_kwargs['company__name'] = str(req_company)
+            target_hq_ip = IssueProject.objects.filter(**filter_kwargs).first()
+            if target_hq_ip:
+                user_perms = set(target_hq_ip.get_user_permissions(request.user))
+            else:
+                user_perms = self._get_all_hq_user_permissions(request.user)
+        elif issue_project:
             user_perms = set(issue_project.get_user_permissions(request.user))
         else:
             user_perms = self._get_all_hq_user_permissions(request.user)
@@ -107,8 +148,16 @@ class HqProjectModulePermission(permissions.BasePermission):
                 obj_company_id = getattr(obj_company, 'pk', None)
         if obj_company_id is not None:
             staff = getattr(request.user, 'staff', None)
-            if not staff or staff.company_id != obj_company_id:
-                return False
+            staff_match = staff is not None and staff.company_id == obj_company_id
+            if not staff_match:
+                from work.models.project import IssueProject
+                member_match = IssueProject.objects.filter(
+                    type='1',
+                    company_id=obj_company_id,
+                    members__user=request.user
+                ).exists()
+                if not member_match:
+                    return False
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -123,9 +172,18 @@ class HqProjectModulePermission(permissions.BasePermission):
 
         required_perm = getattr(view, 'required_permission', None)
         if not required_perm:
+            if not self._is_hq_member_or_staff(request.user):
+                return False
             return request.method in permissions.SAFE_METHODS
 
-        if issue_project:
+        if not issue_project and obj_company_id:
+            from work.models.project import IssueProject
+            target_hq_ip = IssueProject.objects.filter(type='1', company_id=obj_company_id).first()
+            if target_hq_ip:
+                user_perms = set(target_hq_ip.get_user_permissions(request.user))
+            else:
+                user_perms = self._get_all_hq_user_permissions(request.user)
+        elif issue_project:
             user_perms = set(issue_project.get_user_permissions(request.user))
         else:
             user_perms = self._get_all_hq_user_permissions(request.user)
