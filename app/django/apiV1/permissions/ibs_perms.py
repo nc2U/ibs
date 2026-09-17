@@ -1,4 +1,4 @@
-from rest_framework import permissions
+from rest_framework import permissions, exceptions
 
 from apiV1.permissions._utils import (get_project_pk_from_request, resolve_issue_project,
                                       is_project_locked, is_project_closed)
@@ -65,31 +65,11 @@ class HqProjectModulePermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        # 소속 회사 이외의 회사 데이터 생성 차단 (PK 또는 회사명 지원)
-        req_company = request.data.get('company') if hasattr(request, 'data') and isinstance(request.data, dict) else None
-        if req_company is not None:
-            staff = getattr(request.user, 'staff', None)
-            staff_match = (
-                staff is not None and (
-                    str(staff.company_id) == str(req_company) or
-                    getattr(staff.company, 'name', '') == str(req_company)
-                )
-            )
-            if not staff_match:
-                from work.models.project import IssueProject
-                member_match = IssueProject.objects.filter(
-                    type='1',
-                    company_id=req_company if str(req_company).isdigit() else None,
-                    members__user=request.user
-                ).exists()
-                if not member_match and not str(req_company).isdigit():
-                    member_match = IssueProject.objects.filter(
-                        type='1',
-                        company__name=str(req_company),
-                        members__user=request.user
-                    ).exists()
-                if not member_match:
-                    return False
+        req_company = None
+        if hasattr(request, 'data') and isinstance(request.data, dict):
+            req_company = request.data.get('company')
+        if not req_company and hasattr(request, 'query_params'):
+            req_company = request.query_params.get('company')
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -103,15 +83,7 @@ class HqProjectModulePermission(permissions.BasePermission):
 
         required_perm = getattr(view, 'required_permission', None)
 
-        # 4. required_permission 미선언 ViewSet 또는 기본 조회 허용(None) ViewSet
-        if not required_perm:
-            # 본사 워크스페이스(type='1')의 멤버이거나 소속 회사 임직원(staff)이어야 함
-            # 외부 사용자나 HQ 소속이 전혀 없는 work_manager 등은 차단(403)
-            if not self._is_hq_member_or_staff(request.user):
-                return False
-            return True
-
-        # 5. 권한 코드 검사
+        # 본사 사용자 권한 계산
         if not issue_project and req_company:
             from work.models.project import IssueProject
             filter_kwargs = {'type': '1'}
@@ -129,7 +101,50 @@ class HqProjectModulePermission(permissions.BasePermission):
         else:
             user_perms = self._get_all_hq_user_permissions(request.user)
 
-        return required_perm in user_perms
+        # 3. 조회 요청 (SAFE_METHODS: GET, HEAD, OPTIONS)
+        # 본사 관리 권한을 보유하고 있거나, 본사 워크스페이스 멤버이거나, Staff이면 조회 허용
+        if request.method in permissions.SAFE_METHODS:
+            if required_perm:
+                if required_perm in user_perms:
+                    return True
+                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
+                    return True
+                return False
+            else:
+                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
+                    return True
+                return False
+
+        # 4. 쓰기 요청 (Write: POST, PUT, PATCH, DELETE) — [권한 + 재직 Staff 이중 검증] 정책
+        # 4-1. 본사 기능 권한(Role) 확인
+        if required_perm and required_perm not in user_perms:
+            raise exceptions.PermissionDenied("해당 본사 업무를 수행할 수 있는 권한이 없습니다.")
+
+        # 4-2. 재직 임직원(Staff) 이중 검증
+        staff = getattr(request.user, 'staff', None)
+        if staff is None:
+            raise exceptions.PermissionDenied(
+                "본사 입출금 거래 및 업무 데이터를 등록·수정·삭제하려면 해당 회사의 임직원(Staff)으로 등록되어 있어야 합니다. 관리자에게 직원 등록을 요청하세요."
+            )
+
+        if str(staff.status) != '1':
+            raise exceptions.PermissionDenied(
+                "재직 중인 임직원(Staff)만 본사 거래 및 업무를 등록·수정할 수 있습니다. (현재 인사 상태: 재직 아님)"
+            )
+
+        # 4-3. 소속 회사 일치 검사
+        if req_company is not None:
+            staff_match = (
+                str(staff.company_id) == str(req_company) or
+                getattr(staff.company, 'name', '') == str(req_company)
+            )
+            if not staff_match:
+                company_name = getattr(staff.company, 'name', f'회사 ID {staff.company_id}')
+                raise exceptions.PermissionDenied(
+                    f"소속 회사({company_name})와 일치하지 않는 회사의 본사 데이터는 등록·수정할 수 없습니다."
+                )
+
+        return True
 
     def has_object_permission(self, request, view, obj) -> bool:
         # 1. 미인증 요청 차단
@@ -140,24 +155,11 @@ class HqProjectModulePermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        # 타사 소속 객체 접근 차단
         obj_company_id = getattr(obj, 'company_id', None)
         if obj_company_id is None and hasattr(obj, 'company'):
             obj_company = getattr(obj, 'company', None)
             if obj_company is not None:
                 obj_company_id = getattr(obj_company, 'pk', None)
-        if obj_company_id is not None:
-            staff = getattr(request.user, 'staff', None)
-            staff_match = staff is not None and staff.company_id == obj_company_id
-            if not staff_match:
-                from work.models.project import IssueProject
-                member_match = IssueProject.objects.filter(
-                    type='1',
-                    company_id=obj_company_id,
-                    members__user=request.user
-                ).exists()
-                if not member_match:
-                    return False
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -171,10 +173,6 @@ class HqProjectModulePermission(permissions.BasePermission):
                 return False
 
         required_perm = getattr(view, 'required_permission', None)
-        if not required_perm:
-            if not self._is_hq_member_or_staff(request.user):
-                return False
-            return request.method in permissions.SAFE_METHODS
 
         if not issue_project and obj_company_id:
             from work.models.project import IssueProject
@@ -188,7 +186,38 @@ class HqProjectModulePermission(permissions.BasePermission):
         else:
             user_perms = self._get_all_hq_user_permissions(request.user)
 
-        return required_perm in user_perms
+        # 3. 조회 요청 (SAFE_METHODS)
+        if request.method in permissions.SAFE_METHODS:
+            if required_perm:
+                if required_perm in user_perms:
+                    return True
+                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
+                    return True
+                return False
+            else:
+                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
+                    return True
+                return False
+
+        # 4. 쓰기 요청 (Write) — 이중 검증
+        if required_perm and required_perm not in user_perms:
+            raise exceptions.PermissionDenied("해당 객체를 수정·삭제할 본사 권한이 없습니다.")
+
+        staff = getattr(request.user, 'staff', None)
+        if staff is None:
+            raise exceptions.PermissionDenied(
+                "본사 객체를 수정·삭제하려면 해당 회사의 임직원(Staff)으로 등록되어 있어야 합니다."
+            )
+        if str(staff.status) != '1':
+            raise exceptions.PermissionDenied(
+                "재직 중인 임직원(Staff)만 본사 객체를 수정·삭제할 수 있습니다. (현재 인사 상태: 재직 아님)"
+            )
+        if obj_company_id is not None and staff.company_id != obj_company_id:
+            raise exceptions.PermissionDenied(
+                "소속 회사와 일치하지 않는 객체는 수정·삭제할 수 없습니다."
+            )
+
+        return True
 
 
 class IbsModulePermission(ProjectPermission):

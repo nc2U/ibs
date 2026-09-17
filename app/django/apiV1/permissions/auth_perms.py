@@ -47,7 +47,10 @@ class IsStaffOrReadOnly(permissions.BasePermission):
             if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
             else:
-                return request.user.member_set.filter(project__type='1').exists()
+                return (
+                    getattr(request.user, 'staff', None) is not None or
+                    request.user.member_set.filter(project__type='1').exists()
+                )
 
 
 class IsProjectStaffOnly(permissions.BasePermission):
