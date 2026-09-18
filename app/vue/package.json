@@ -50,7 +50,7 @@
     "js-cookie": "^3.0.8",
     "markdown-it": "^14.3.0",
     "maska": "^3.2.0",
-    "md-editor-v3": "^5.8.5",
+    "md-editor-v3": "^6.5.4",
     "mosha-vue-toastify": "^1.0.23",
     "nprogress": "^0.2.0",
     "pinia": "^3.0.4",
