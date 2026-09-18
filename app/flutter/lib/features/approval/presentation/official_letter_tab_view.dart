@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../providers/letter_providers.dart';
+import 'inbound_letter_tab_view.dart';
 import 'widgets/letter_card.dart';
 
 class OfficialLetterTabView extends ConsumerStatefulWidget {
@@ -17,29 +18,131 @@ class OfficialLetterTabView extends ConsumerStatefulWidget {
 }
 
 class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
-  final TextEditingController _searchController = TextEditingController();
+  int _subMode = 0; // 0: 발신 공문, 1: 수신 공문
+  final TextEditingController _outboundSearchController = TextEditingController();
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _outboundSearchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+
+    return Column(
+      children: [
+        // ── [ 발신 공문 | 수신 공문 ] 서브 세그먼트 바 ──
+        Container(
+          color: colors.bgSurface,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          child: Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: colors.bgInput,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colors.borderSubtle, width: 0.8),
+            ),
+            padding: const EdgeInsets.all(2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (_subMode != 0) setState(() => _subMode = 0);
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _subMode == 0 ? colors.accentApproval : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.outbox_rounded,
+                            size: 15,
+                            color: _subMode == 0 ? Colors.white : colors.textMuted,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '발신 공문',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _subMode == 0 ? FontWeight.bold : FontWeight.w500,
+                              color: _subMode == 0 ? Colors.white : colors.textSecond,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (_subMode != 1) setState(() => _subMode = 1);
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _subMode == 1 ? colors.accentApproval : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.move_to_inbox_rounded,
+                            size: 15,
+                            color: _subMode == 1 ? Colors.white : colors.textMuted,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '수신 공문',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _subMode == 1 ? FontWeight.bold : FontWeight.w500,
+                              color: _subMode == 1 ? Colors.white : colors.textSecond,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── 선택된 모드에 따른 뷰 표시 ──
+        Expanded(
+          child: _subMode == 0 ? _buildOutboundView(context) : const InboundLetterTabView(),
+        ),
+      ],
+    );
+  }
+
+  /// ── [0: 발신 공문] 서브 뷰 ──
+  Widget _buildOutboundView(BuildContext context) {
+    final colors = context.colors;
     final currentStatus = ref.watch(letterFilterStatusProvider);
     final lettersAsync = ref.watch(officialLettersProvider);
 
     return Column(
       children: [
-        // ── 상단 검색 및 상태 필터 칩 영역 ──
+        // 상단 검색 및 상태 필터 칩
         Container(
           color: colors.bgSurface,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
           child: Column(
             children: [
-              // 검색 입력창
+              // 검색창
               Container(
                 height: 38,
                 decoration: BoxDecoration(
@@ -48,17 +151,17 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                   border: Border.all(color: colors.borderSubtle, width: 0.8),
                 ),
                 child: TextField(
-                  controller: _searchController,
+                  controller: _outboundSearchController,
                   style: TextStyle(fontSize: 13, color: colors.textPrimary),
                   decoration: InputDecoration(
                     hintText: '공문 제목, 수신처, 문서번호 검색',
                     hintStyle: TextStyle(fontSize: 12.5, color: colors.textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
-                    suffixIcon: _searchController.text.isNotEmpty
+                    suffixIcon: _outboundSearchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 16),
                             onPressed: () {
-                              _searchController.clear();
+                              _outboundSearchController.clear();
                               ref.read(letterSearchQueryProvider.notifier).state = '';
                             },
                           )
@@ -117,7 +220,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
         ),
         Divider(color: colors.border, height: 1),
 
-        // ── 공문 목록 리스트뷰 ──
+        // 발신 공문 목록 리스트뷰
         Expanded(
           child: lettersAsync.when(
             loading: () => const Center(
@@ -143,7 +246,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                                 size: 48, color: colors.textMuted.withAlpha(100)),
                             const SizedBox(height: 12),
                             Text(
-                              '등록된 대외 공문이 없습니다.',
+                              '등록된 발신 공문이 없습니다.',
                               style: AppTextStyles.bodyMd.copyWith(color: colors.textMuted),
                             ),
                           ],
@@ -163,8 +266,9 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     final letter = letters[index];
                     return LetterCard(
                       letter: letter,
-                      onTap: () {
-                        context.push('${AppRoutes.approval}/letters/${letter.id}');
+                      onTap: () async {
+                        await context.push('${AppRoutes.approval}/letters/${letter.id}');
+                        ref.invalidate(officialLettersProvider);
                       },
                     );
                   },

@@ -61,12 +61,18 @@ abstract class ApiEndpoints {
   static const String approvalDelegations      = '/api/v1/approval-delegation/';
   static const String approvalDelegationDetail = '/api/v1/approval-delegation/{id}/';
 
-  // ── Official Letter (대외 공문) ──────────────────────
+  // ── Official Letter (대외 공문 - 발신) ─────────────
   static const String officialLetters           = '/api/v1/official-letter/';
   static const String officialLetterDetail     = '/api/v1/official-letter/{id}/';
   static const String officialLetterDownloadPdf = '/api/v1/official-letter/{id}/download_pdf/';
   static const String officialLetterSubmitApproval = '/api/v1/official-letter/{id}/submit_approval/';
   static const String officialLetterUploadPdf   = '/api/v1/official-letter/{id}/upload_pdf/';
+
+  // ── Inbound Official Letter (대외 공문 - 수신) ───────
+  static const String inboundLetters               = '/api/v1/inbound-letter/';
+  static const String inboundLetterDetail         = '/api/v1/inbound-letter/{id}/';
+  static const String inboundLetterSubmitApproval = '/api/v1/inbound-letter/{id}/submit_approval/';
+  static const String inboundLetterAttachments    = '/api/v1/inbound-letter-attachment/';
 
   /// URL 패턴에서 {id}/{slug} 등을 실제 값으로 치환
   static String resolve(String pattern, Map<String, dynamic> params) {
