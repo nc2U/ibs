@@ -29,11 +29,21 @@
   /* ── 상단 헤더 & 타이틀 ── */
   .company-header {
     text-align: center;
-    font-size: 13pt;
-    font-weight: 700;
-    color: #444;
+    font-size: 11pt;
+    font-weight: 500;
+    color: #333;
     letter-spacing: 2px;
     margin-bottom: 2mm;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .company-logo-img {
+    max-height: 36px;
+    max-width: 150px;
+    object-fit: contain;
+    margin-bottom: 1mm;
   }
   .doc-main-title {
     text-align: center;
@@ -265,12 +275,18 @@
 </head>
 <body>
 
-<!-- 1. 상단 회사명 및 대제목 -->
+<!-- 1. 상단 회사 로고/회사명 및 대제목 -->
 <div class="company-header">
-  {% if document.drafter_assignment and document.drafter_assignment.company %}
+  {% if logo_url %}
+    <img src="{{ logo_url }}" alt="Company Logo" class="company-logo-img">
+  {% elif document.logo_url %}
+    <img src="{{ document.logo_url }}" alt="Company Logo" class="company-logo-img">
+  {% elif company and company.name %}
+    {{ company.name }}
+  {% elif document.company and document.company.name %}
+    {{ document.company.name }}
+  {% elif document.drafter_assignment and document.drafter_assignment.company %}
     {{ document.drafter_assignment.company.name }}
-  {% else %}
-    (주) 아이비에스건설
   {% endif %}
 </div>
 <h1 class="doc-main-title">{{ document.doc_type.name }}</h1>
@@ -623,8 +639,8 @@
     <div class="hash-code">{{ document.content_hash }}</div>
   </div>
   <div style="text-align: right;">
-    <div>발급 시스템: <strong>IBS 통합건설관리시스템</strong></div>
-    <div>출력일시: {{ "now"|date:"Y-m-d H:i:s" }}</div>
+    <div>발급 시스템: <strong>IBS 워크스페이스 시스템</strong></div>
+    <div>출력일시: {% now "Y-m-d H:i:s" %}</div>
   </div>
 </div>
 

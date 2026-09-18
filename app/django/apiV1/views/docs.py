@@ -707,10 +707,16 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         if not doc_type:
             return Response({'detail': '사용 가능한 전자결재 문서 유형이 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 기안자 보직 조회
-        assignment = StaffAssignment.objects.filter(staff__user=request.user, is_primary=True).first()
-        if not assignment:
-            assignment = StaffAssignment.objects.filter(staff__user=request.user).first()
+        # 기안자 보직 조회 (공문 발행 회사와 일치하는 보직 우선 탐색)
+        assignment = StaffAssignment.objects.filter(
+            staff__user=request.user, company=letter.company, is_primary=True
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user, company=letter.company
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user, is_primary=True
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user
+        ).first()
 
         # ApprovalDocument 생성
         content_payload = {

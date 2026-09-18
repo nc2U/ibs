@@ -664,6 +664,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         html_string = render_to_string('approval/pdf_document.html', {
             'document': document,
             'steps': document.steps.all().prefetch_related('actions__approver__profile', 'approvers__profile'),
+            'company': document.company,
+            'logo_url': document.logo_url,
             'settings': settings,
         })
         base_url = getattr(settings, 'DOMAIN_HOST', 'http://localhost')

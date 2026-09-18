@@ -125,6 +125,66 @@ class ApprovalDocument(models.Model):
         seq = DocNumberSequence.next_number(self.doc_type, year)
         return f'{self.doc_type.code}-{year}-{seq:04d}'
 
+    @property
+    def company(self):
+        """
+        문서의 소속 회사 반환
+        - 1순위: 기안 보직(drafter_assignment)의 회사
+        - 2순위: 연동 공문(OfficialLetter)의 회사
+        - 3순위: 연동 수신공문(InboundLetter)의 회사
+        - 4순위: 기안자(drafter.staff)의 회사
+        - 5순위: 연결된 워크스페이스(workspace)의 회사
+        - 6순위: 기본 회사(is_default=True) 또는 첫 번째 등록 회사
+        """
+        if self.drafter_assignment_id and getattr(self.drafter_assignment, 'company', None):
+            return self.drafter_assignment.company
+
+        # 연동 공문(OfficialLetter) 확인
+        official_letter_id = (self.content or {}).get('official_letter_id')
+        if official_letter_id:
+            try:
+                from docs.models import OfficialLetter
+                letter = OfficialLetter.objects.select_related('company').filter(pk=official_letter_id).first()
+                if letter and letter.company:
+                    return letter.company
+            except Exception:
+                pass
+
+        # 연동 수신공문(InboundLetter) 확인
+        if self.related_inbound_letter_id and getattr(self.related_inbound_letter, 'company', None):
+            return self.related_inbound_letter.company
+
+        # 기안자의 Staff 소속 회사 확인
+        drafter_staff = getattr(self.drafter, 'staff', None)
+        if drafter_staff and getattr(drafter_staff, 'company', None):
+            return drafter_staff.company
+
+        # 워크스페이스 회사 확인
+        if self.workspace_id and getattr(self.workspace, 'company', None):
+            return self.workspace.company
+
+        # 기본 회사 또는 첫 번째 회사
+        try:
+            from company.models import Company
+            return Company.objects.filter(is_default=True).first() or Company.objects.first()
+        except Exception:
+            return None
+
+    @property
+    def logo_url(self):
+        """회사의 공식 로고 URL 반환 (없으면 None)"""
+        company = self.company
+        if not company:
+            return None
+        try:
+            from company.models import Logo
+            logo = Logo.objects.filter(company=company).first()
+            if logo and logo.generic_logo:
+                return logo.generic_logo.url
+        except Exception:
+            pass
+        return None
+
     def save(self, *args, **kwargs):
         # 1. 보안등급 기본값: doc_type.default_security_level 자동 적용
         if not self.security_level and self.doc_type_id:
