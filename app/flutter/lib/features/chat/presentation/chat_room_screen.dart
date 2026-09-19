@@ -874,37 +874,62 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (isMe) ...[
-                Text(
-                  _formatTime(msg.created),
-                  style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (msg.unreadCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${msg.unreadCount}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFEAB308), // 카카오톡 스타일 옐로우
+                          ),
+                        ),
+                      ),
+                    Text(
+                      _formatTime(msg.created),
+                      style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 6),
               ],
               Flexible(
                 child: GestureDetector(
-                  // 🎯 카카오톡 스타일 더블탭 시 답장 모드 진입
-                  onDoubleTap: () => setState(() => _replyTarget = msg),
-                  // 🎯 롱프레스 시 복사 / 전달 / 답장 바텀시트
-                  onLongPress: () => _showMessageActionMenu(msg),
+                  // 🎯 카카오톡 스타일 더블탭 시 답장 모드 진입 (삭제된 메시지는 제외)
+                  onDoubleTap: msg.isDeleted ? null : () => setState(() => _replyTarget = msg),
+                  // 🎯 롱프레스 시 복사 / 전달 / 답장 바텀시트 (삭제된 메시지는 제외)
+                  onLongPress: msg.isDeleted ? null : () => _showMessageActionMenu(msg),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isMe
-                          ? (context.isDarkMode
-                              ? const Color(0xFF2B3A55) // 다크: 슬레이트 네이비
-                              : const Color(0xFFE2EEFC)) // 라이트: 소프트 파스텔 연청색
-                          : context.colors.bgCard,
+                      color: msg.isDeleted
+                          ? (context.isDarkMode ? Colors.white.withAlpha(12) : Colors.black.withAlpha(8))
+                          : (isMe
+                              ? (context.isDarkMode
+                                  ? const Color(0xFF2B3A55) // 다크: 슬레이트 네이비
+                                  : const Color(0xFFE2EEFC)) // 라이트: 소프트 파스텔 연청색
+                              : context.colors.bgCard),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(14),
                         topRight: const Radius.circular(14),
                         bottomLeft: Radius.circular(isMe ? 14 : 2),
                         bottomRight: Radius.circular(isMe ? 2 : 14),
                       ),
-                      border: isMe
-                          ? (context.isDarkMode
-                              ? Border.all(color: const Color(0xFF3D4F72), width: 0.8)
-                              : Border.all(color: const Color(0xFFC7DEFA), width: 0.8))
-                          : Border.all(color: context.colors.border, width: 0.8),
+                      border: msg.isDeleted
+                          ? Border.all(
+                              color: context.isDarkMode ? Colors.white12 : Colors.black12,
+                              width: 0.8,
+                            )
+                          : (isMe
+                              ? (context.isDarkMode
+                                  ? Border.all(color: const Color(0xFF3D4F72), width: 0.8)
+                                  : Border.all(color: const Color(0xFFC7DEFA), width: 0.8))
+                              : Border.all(color: context.colors.border, width: 0.8)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withAlpha(isMe ? 6 : 8),
@@ -917,7 +942,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ↩️ 답장 원본 인용 프리뷰 박스
-                        if (msg.replyToDetail != null) ...[
+                        if (msg.replyToDetail != null && !msg.isDeleted) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             margin: const EdgeInsets.only(bottom: 6),
@@ -962,9 +987,27 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               ),
               if (!isMe) ...[
                 const SizedBox(width: 6),
-                Text(
-                  _formatTime(msg.created),
-                  style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (msg.unreadCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${msg.unreadCount}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFEAB308),
+                          ),
+                        ),
+                      ),
+                    Text(
+                      _formatTime(msg.created),
+                      style: TextStyle(fontSize: 10, color: context.colors.textMuted),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -975,6 +1018,29 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   }
 
   Widget _buildMessageContent(BuildContext context, ChatMessageModel msg, bool isMe) {
+    // 🚫 삭제된 메시지 렌더링
+    if (msg.isDeleted) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.block_rounded,
+            size: 14,
+            color: context.colors.textMuted,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '삭제된 메시지입니다.',
+            style: TextStyle(
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              color: context.colors.textMuted,
+            ),
+          ),
+        ],
+      );
+    }
+
     final myTextColor = context.isDarkMode ? Colors.white : const Color(0xFF0F2E5C);
     final mySubTextColor = context.isDarkMode ? Colors.white.withAlpha(200) : const Color(0xFF3B629B);
 

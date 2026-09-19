@@ -152,6 +152,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'type': 'delete_message',
             'message_id': event['message_id'],
             'room_id': event['room_id'],
+            'is_soft': event.get('is_soft', False),
+            'content': '삭제된 메시지입니다.' if event.get('is_soft') else '',
         }))
 
     # ── Database Sync Helpers ─────────────────────────────────────────

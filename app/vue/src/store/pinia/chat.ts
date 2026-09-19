@@ -182,8 +182,29 @@ export const useChat = defineStore('chat', () => {
           }
         } else if (payload.type === 'delete_message') {
           const messageId = payload.message_id
+          const isSoft = payload.is_soft
           if (messageId) {
-            messages.value = messages.value.filter(m => m.id !== messageId)
+            if (isSoft) {
+              const target = messages.value.find(m => m.id === messageId)
+              if (target) {
+                target.is_deleted = true
+                target.content = '삭제된 메시지입니다.'
+                target.file = null
+                target.file_name = ''
+                target.file_size = 0
+              }
+            } else {
+              messages.value = messages.value.filter(m => m.id !== messageId)
+            }
+          }
+        } else if (payload.type === 'read') {
+          const lastReadId = payload.last_message_id
+          if (lastReadId) {
+            messages.value.forEach(m => {
+              if (m.id <= lastReadId && m.unread_count && m.unread_count > 0) {
+                m.unread_count = Math.max(0, m.unread_count - 1)
+              }
+            })
           }
         } else if (payload.type === 'error') {
           console.error('[WebSocket Chat Error]', payload.message)

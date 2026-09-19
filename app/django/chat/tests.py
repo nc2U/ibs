@@ -165,4 +165,37 @@ class ChatMessageAPITests(APITestCase):
         from chat.models import ChatMessage
         self.assertTrue(ChatMessage.objects.filter(id=self.msg2.id).exists())
 
+    def test_direct_chat_smart_delete(self):
+        """1:1 대화방: 상대방이 안 읽었으면 완전 삭제, 이미 읽었으면 소프트 삭제 검증"""
+        from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+        direct_room = ChatRoom.objects.create(room_type='direct', created_by=self.user1)
+        m1 = ChatRoomMember.objects.create(room=direct_room, user=self.user1, last_read_message_id=0)
+        m2 = ChatRoomMember.objects.create(room=direct_room, user=self.user2, last_read_message_id=0)
+
+        # 1) 상대방이 아직 안 읽은 메시지 -> 완전 삭제
+        msg_unread = ChatMessage.objects.create(room=direct_room, sender=self.user1, content='안 읽은 메시지')
+        self.client.force_authenticate(user=self.user1)
+        res1 = self.client.delete(f'/api/v1/chat-message/{msg_unread.id}/')
+        self.assertEqual(res1.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ChatMessage.objects.filter(id=msg_unread.id).exists())
+
+        # 2) 상대방이 이미 읽은 메시지 -> 소프트 삭제
+        msg_read = ChatMessage.objects.create(room=direct_room, sender=self.user1, content='이미 읽은 메시지')
+        m2.last_read_message_id = msg_read.id
+        m2.save()
+
+        res2 = self.client.delete(f'/api/v1/chat-message/{msg_read.id}/')
+        self.assertEqual(res2.status_code, status.HTTP_204_NO_CONTENT)
+        msg_after = ChatMessage.objects.get(id=msg_read.id)
+        self.assertTrue(msg_after.is_deleted)
+        self.assertEqual(msg_after.content, '삭제된 메시지입니다.')
+
+        # 3) 조회 시 serializer도 정상 처리 검증
+        res_list = self.client.get(f'/api/v1/chat-message/?room={direct_room.id}')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        found = [m for m in res_list.data['results'] if m['id'] == msg_read.id]
+        self.assertEqual(len(found), 1)
+        self.assertTrue(found[0]['is_deleted'])
+        self.assertEqual(found[0]['content'], '삭제된 메시지입니다.')
+
 

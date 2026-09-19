@@ -19,6 +19,7 @@ class ChatRoomMemberSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender = SimpleUserSerializer(read_only=True)
     reply_to_detail = serializers.SerializerMethodField(read_only=True)
+    unread_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ChatMessage
@@ -26,20 +27,58 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'id', 'room', 'sender', 'message_type', 'content',
             'file', 'file_name', 'file_size',
             'ref_id', 'ref_title', 'ref_sub',
-            'reply_to', 'reply_to_detail', 'created'
+            'reply_to', 'reply_to_detail', 'is_deleted',
+            'unread_count', 'created'
         )
-        read_only_fields = ('created',)
+        read_only_fields = ('created', 'is_deleted')
 
     def get_reply_to_detail(self, obj):
         if not obj.reply_to:
             return None
         target = obj.reply_to
+        if target.is_deleted:
+            return {
+                'id': target.id,
+                'sender_name': target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음'),
+                'content': '삭제된 메시지입니다.',
+                'message_type': target.message_type,
+            }
         return {
             'id': target.id,
             'sender_name': target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음'),
             'content': target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]'),
             'message_type': target.message_type,
         }
+
+    def get_unread_count(self, obj):
+        room = obj.room
+        if room.room_type == 'self':
+            return 0
+
+        # 방별 멤버십(user_id, last_read_message_id) 캐싱
+        room_memberships = getattr(room, '_cached_memberships_list', None)
+        if room_memberships is None:
+            room_memberships = list(room.memberships.values('user_id', 'last_read_message_id'))
+            room._cached_memberships_list = room_memberships
+
+        # 발신자를 제외한 멤버들 중 아직 이 메시지를 안 읽은(last_read_message_id < obj.id) 멤버 수
+        sender_id = obj.sender_id
+        return sum(
+            1 for m in room_memberships
+            if m['user_id'] != sender_id and m['last_read_message_id'] < obj.id
+        )
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.is_deleted:
+            ret['content'] = '삭제된 메시지입니다.'
+            ret['file'] = None
+            ret['file_name'] = ''
+            ret['file_size'] = 0
+            ret['ref_id'] = None
+            ret['ref_title'] = ''
+            ret['ref_sub'] = ''
+        return ret
 
 
 class ChatRoomListSerializer(serializers.ModelSerializer):

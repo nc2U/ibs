@@ -53,5 +53,7 @@ export interface ChatMessage {
     content: string
     message_type: ChatMessageType
   } | null
+  is_deleted?: boolean
+  unread_count?: number
   created: string
 }

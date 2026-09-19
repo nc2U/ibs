@@ -144,6 +144,7 @@ class ChatMessage(models.Model):
         verbose_name='답장 대상 메시지'
     )
 
+    is_deleted = models.BooleanField('삭제 여부', default=False, db_index=True)
     created = models.DateTimeField('전송일시', auto_now_add=True, db_index=True)
 
     class Meta:

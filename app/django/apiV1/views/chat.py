@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models import Q, Prefetch, Subquery, OuterRef, Count
 from django.db.models.functions import Coalesce
 from rest_framework import viewsets, permissions, status, exceptions
@@ -220,6 +222,22 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if int(last_message_id) > membership.last_read_message_id:
             membership.last_read_message_id = int(last_message_id)
             membership.save(update_fields=['last_read_message_id'])
+
+        # WebSocket으로 읽음 위치 실시간 브로드캐스팅
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_room_{room.id}',
+                {
+                    'type': 'broadcast_read',
+                    'user_id': request.user.pk,
+                    'last_message_id': membership.last_read_message_id,
+                }
+            )
+        except Exception:
+            pass
 
         return Response({'success': True, 'last_read_message_id': membership.last_read_message_id})
 
@@ -452,13 +470,26 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             pass
 
     def perform_destroy(self, instance):
-        """메시지 삭제: 작성자 본인만 삭제 가능 + 첨부파일 정리 및 WS 브로드캐스팅"""
+        """
+        스마트 메시지 삭제:
+        1. 작성자 본인만 삭제 가능
+        2. 삭제 방식 판별:
+           - 나와의 채팅(self): 항상 완전 삭제
+           - 1:1 대화(direct): 상대방이 아직 안 읽었으면 완전 삭제, 이미 읽었으면 소프트 삭제
+           - 단체 대화(channel, group): 전송 후 5분 이내 완전 삭제, 5분 경과 후 소프트 삭제
+        3. 첨부파일은 스토리지에서 즉시 물리 삭제
+        4. 웹소켓 브로드캐스팅:
+           - 완전 삭제: type='delete_message', message_id=..., is_soft=False
+           - 소프트 삭제: type='delete_message', message_id=..., is_soft=True, content='삭제된 메시지입니다.'
+        """
         user = self.request.user
         if instance.sender_id != user.pk:
             raise exceptions.PermissionDenied('본인이 작성한 메시지만 삭제할 수 있습니다.')
 
         msg_id = instance.id
-        room_id = instance.room_id
+        room = instance.room
+        room_id = room.id
+        now = timezone.now()
 
         # 첨부파일이 있으면 실제 파일도 스토리지에서 삭제
         if instance.file:
@@ -467,12 +498,46 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             except Exception:
                 pass
 
-        instance.delete()
+        should_hard_delete = False
 
-        # WebSocket 채널 그룹으로 삭제 브로드캐스팅
-        self._broadcast_deleted_message(room_id, msg_id)
+        if room.room_type == 'self':
+            should_hard_delete = True
+        elif room.room_type == 'direct':
+            # 상대방의 last_read_message_id 확인
+            other_member = room.memberships.exclude(user=user).first()
+            if not other_member or other_member.last_read_message_id < msg_id:
+                # 상대방이 아직 안 읽었음 -> 완전 삭제
+                should_hard_delete = True
+            else:
+                # 상대방이 이미 읽었음 -> 소프트 삭제
+                should_hard_delete = False
+        else:
+            # 단체 대화방 (channel, group): 5분 기준
+            time_diff = now - instance.created
+            if time_diff <= timedelta(minutes=5):
+                should_hard_delete = True
+            else:
+                should_hard_delete = False
 
-    def _broadcast_deleted_message(self, room_id, msg_id):
+        if should_hard_delete:
+            instance.delete()
+            self._broadcast_deleted_message(room_id, msg_id, is_soft=False)
+        else:
+            instance.is_deleted = True
+            instance.content = '삭제된 메시지입니다.'
+            instance.file = None
+            instance.file_name = ''
+            instance.file_size = 0
+            instance.ref_id = None
+            instance.ref_title = ''
+            instance.ref_sub = ''
+            instance.save(update_fields=[
+                'is_deleted', 'content', 'file', 'file_name', 'file_size',
+                'ref_id', 'ref_title', 'ref_sub'
+            ])
+            self._broadcast_deleted_message(room_id, msg_id, is_soft=True)
+
+    def _broadcast_deleted_message(self, room_id, msg_id, is_soft=False):
         """채널 레이어를 통해 대화방 WebSocket 그룹에 메시지 삭제 이벤트 전송"""
         try:
             from channels.layers import get_channel_layer
@@ -484,6 +549,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                     'type': 'broadcast_delete_message',
                     'message_id': msg_id,
                     'room_id': room_id,
+                    'is_soft': is_soft,
                 }
             )
         except Exception:

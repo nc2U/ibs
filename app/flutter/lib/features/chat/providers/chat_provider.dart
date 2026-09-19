@@ -141,8 +141,38 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
         }
       } else if (type == 'delete_message') {
         final deletedId = json['message_id'] as int?;
+        final isSoft = json['is_soft'] as bool? ?? false;
         if (deletedId != null) {
-          state = state.whenData((msgs) => msgs.where((m) => m.id != deletedId).toList());
+          state = state.whenData((msgs) {
+            if (isSoft) {
+              return msgs.map((m) {
+                if (m.id == deletedId) {
+                  return m.copyWith(
+                    isDeleted: true,
+                    content: '삭제된 메시지입니다.',
+                    file: null,
+                    fileName: '',
+                    fileSize: 0,
+                  );
+                }
+                return m;
+              }).toList();
+            } else {
+              return msgs.where((m) => m.id != deletedId).toList();
+            }
+          });
+        }
+      } else if (type == 'read') {
+        final lastReadId = json['last_message_id'] as int?;
+        if (lastReadId != null) {
+          state = state.whenData((msgs) {
+            return msgs.map((m) {
+              if (m.id <= lastReadId && m.unreadCount > 0) {
+                return m.copyWith(unreadCount: (m.unreadCount - 1).clamp(0, 999));
+              }
+              return m;
+            }).toList();
+          });
         }
       }
     } catch (_) {}
@@ -223,7 +253,6 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   Future<void> deleteMessage(int messageId) async {
     try {
       await _repo.deleteMessage(messageId, roomId: roomId);
-      state = state.whenData((msgs) => msgs.where((m) => m.id != messageId).toList());
       _ref.invalidate(chatRoomsProvider);
     } catch (e) {
       rethrow;

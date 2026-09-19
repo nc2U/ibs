@@ -181,6 +181,8 @@ class ChatMessageModel {
   final String refSub;
   final int? replyTo;
   final ChatReplyDetail? replyToDetail;
+  final bool isDeleted;
+  final int unreadCount;
   final DateTime created;
 
   ChatMessageModel({
@@ -197,8 +199,48 @@ class ChatMessageModel {
     required this.refSub,
     this.replyTo,
     this.replyToDetail,
+    this.isDeleted = false,
+    this.unreadCount = 0,
     required this.created,
   });
+
+  ChatMessageModel copyWith({
+    int? id,
+    int? roomId,
+    SimpleUserModel? sender,
+    ChatMessageType? messageType,
+    String? content,
+    String? file,
+    String? fileName,
+    int? fileSize,
+    int? refId,
+    String? refTitle,
+    String? refSub,
+    int? replyTo,
+    ChatReplyDetail? replyToDetail,
+    bool? isDeleted,
+    int? unreadCount,
+    DateTime? created,
+  }) {
+    return ChatMessageModel(
+      id: id ?? this.id,
+      roomId: roomId ?? this.roomId,
+      sender: sender ?? this.sender,
+      messageType: messageType ?? this.messageType,
+      content: content ?? this.content,
+      file: file ?? this.file,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      refId: refId ?? this.refId,
+      refTitle: refTitle ?? this.refTitle,
+      refSub: refSub ?? this.refSub,
+      replyTo: replyTo ?? this.replyTo,
+      replyToDetail: replyToDetail ?? this.replyToDetail,
+      isDeleted: isDeleted ?? this.isDeleted,
+      unreadCount: unreadCount ?? this.unreadCount,
+      created: created ?? this.created,
+    );
+  }
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     ChatMessageType parseMsgType(String? type) {
@@ -238,6 +280,8 @@ class ChatMessageModel {
       replyToDetail: json['reply_to_detail'] != null
           ? ChatReplyDetail.fromJson(json['reply_to_detail'] as Map<String, dynamic>)
           : null,
+      isDeleted: json['is_deleted'] as bool? ?? false,
+      unreadCount: json['unread_count'] as int? ?? 0,
       created: DateTime.parse(json['created'] as String),
     );
   }
