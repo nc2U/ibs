@@ -17,6 +17,7 @@ export { default as LegalReviewDetail } from './LegalReviewDetail.vue'
 export { default as BusinessReviewDetail } from './BusinessReviewDetail.vue'
 export { default as BusinessApprovalDetail } from './BusinessApprovalDetail.vue'
 export { default as ProjectDecisionDetail } from './ProjectDecisionDetail.vue'
+export { default as InboundReportDetail } from './InboundReportDetail.vue'
 export { default as FallbackDetail } from './FallbackDetail.vue'
 
 /**
@@ -87,4 +88,8 @@ export const STATIC_DETAIL_REGISTRY: Record<string, Component> = {
   PROJECT_KEY_DECISION: defineAsyncComponent(() => import('./ProjectDecisionDetail.vue')),
   DECISION_PROPOSAL: defineAsyncComponent(() => import('./ProjectDecisionDetail.vue')),
   KEY_DECISION: defineAsyncComponent(() => import('./ProjectDecisionDetail.vue')),
+
+  INBOUND_REPORT: defineAsyncComponent(() => import('./InboundReportDetail.vue')),
+  INBOUND: defineAsyncComponent(() => import('./InboundReportDetail.vue')),
+  INBOUND_LETTER: defineAsyncComponent(() => import('./InboundReportDetail.vue')),
 }

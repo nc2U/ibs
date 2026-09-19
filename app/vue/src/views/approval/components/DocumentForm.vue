@@ -460,9 +460,12 @@ const applyExampleTitle = (title: string) => {
                   v-for="q in quickDocTypes"
                   :key="q.docType.id"
                   size="sm"
-                  :color="form.doc_type === q.docType.id ? 'primary' : 'light'"
+                  :color="form.doc_type === q.docType.id ? 'primary' : 'secondary'"
                   :variant="form.doc_type === q.docType.id ? undefined : 'ghost'"
-                  class="border py-0 px-2 rounded-pill small"
+                  :class="[
+                    'border py-0 px-2 rounded-pill small',
+                    form.doc_type === q.docType.id ? 'text-white' : 'text-body bg-more-light',
+                  ]"
                   style="font-size: 0.78rem"
                   @click="selectQuickDocType(q.docType)"
                 >
