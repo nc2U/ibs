@@ -74,7 +74,11 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             )
         else:
             instance._cached_my_membership = None
-        return super().to_representation(instance)
+
+        ret = super().to_representation(instance)
+        if instance.room_type == 'self' and not ret.get('title'):
+            ret['title'] = '나와의 채팅'
+        return ret
 
     def get_last_message(self, obj):
         # prefetch_related('messages') → last_messages_prefetch to_attr 활용 시 쿼리 0회

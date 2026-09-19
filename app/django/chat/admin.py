@@ -12,13 +12,13 @@ class ChatRoomAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """
         보안 정책:
-        - 1:1 DM(direct)은 프라이버시 보호를 위해 일반 스태프 어드민 목록에서 제외
+        - 1:1 DM(direct) 및 나와의 채팅(self)은 프라이버시 보호를 위해 일반 스태프 어드민 목록에서 제외
         - 오직 시스템 최고관리자(superuser)만 감사(Audit) 목적으로 전체 열람 가능
         """
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.exclude(room_type='direct')
+        return qs.exclude(room_type__in=['direct', 'self'])
 
 
 @admin.register(ChatRoomMember)
@@ -31,7 +31,7 @@ class ChatRoomMemberAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.exclude(room__room_type='direct')
+        return qs.exclude(room__room_type__in=['direct', 'self'])
 
 
 @admin.register(ChatMessage)
@@ -44,16 +44,17 @@ class ChatMessageAdmin(admin.ModelAdmin):
         """
         보안 정책:
         - 일반 스태프 관리자는 공용 채널/그룹방 메시지만 열람 가능
-        - 1:1 DM 메시지는 일반 어드민에 미노출
+        - 1:1 DM 및 나와의 채팅 메시지는 일반 어드민에 미노출
         """
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.exclude(room__room_type='direct')
+        return qs.exclude(room__room_type__in=['direct', 'self'])
 
     @admin.display(description='메시지 내용')
     def masked_content(self, obj):
-        """1:1 대화인 경우 마스킹 텍스트 안내 표출"""
-        if obj.room and obj.room.room_type == 'direct':
-            return format_html('<span style="color: #888; font-style: italic;">🔒 [1:1 비밀 대화] {}</span>', obj.content[:30] if len(obj.content) > 30 else obj.content)
+        """비공개(1:1, 나와의 채팅) 대화인 경우 마스킹 텍스트 안내 표출"""
+        if obj.room and obj.room.room_type in ['direct', 'self']:
+            tag = '1:1 비밀 대화' if obj.room.room_type == 'direct' else '나와의 채팅 메모'
+            return format_html('<span style="color: #888; font-style: italic;">🔒 [{}] {}</span>', tag, obj.content[:30] if len(obj.content) > 30 else obj.content)
         return obj.content[:50]

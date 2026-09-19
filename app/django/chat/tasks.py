@@ -21,6 +21,10 @@ def send_chat_push_notification(self, message_id):
         sender = msg.sender
         sender_name = sender.profile.name if (sender and hasattr(sender, 'profile') and sender.profile.name) else (sender.username if sender else '알 수 없음')
 
+        # 나와의 채팅(self)은 본인 개인 메모/보관함이므로 푸시 알림 발송 생략
+        if room.room_type == 'self':
+            return f"Self chat push notification skipped for message #{message_id}"
+
         # 알림 수신 대상자 (발신자 제외 & 알림 켜진 멤버)
         if room.room_type == 'direct':
             target_memberships = room.memberships.exclude(user=sender).filter(is_muted=False)

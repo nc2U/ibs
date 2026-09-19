@@ -104,6 +104,36 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             defaults={'is_admin': True}
         )
 
+    @action(detail=False, methods=['get', 'post'], url_path='get-or-create-self')
+    def get_or_create_self(self, request):
+        """
+        나와의 채팅 (개인 메모 및 파일 보관함) 대화방 조회 또는 자동 개설
+        - 카카오톡의 '나와의 채팅', 슬랙의 '자신과의 DM' 역할
+        - 모바일(Flutter) ↔ PC 웹(Vue) 간 빠른 파일/도면 전송, 리치카드 프리뷰 및 개인 메모용
+        """
+        user = request.user
+        room, created = ChatRoom.objects.get_or_create(
+            created_by=user,
+            room_type='self',
+            defaults={
+                'title': '나와의 채팅',
+                'description': '나만의 개인 메모 및 파일 보관함',
+            }
+        )
+        if created:
+            ChatRoomMember.objects.get_or_create(
+                room=room,
+                user=user,
+                defaults={'is_admin': True, 'is_pinned': True}
+            )
+        else:
+            # 숨김(나가기) 상태였을 경우 다시 복구
+            room.memberships.filter(user=user, is_hidden=True).update(is_hidden=False)
+
+        serializer = ChatRoomListSerializer(room, context={'request': request})
+        res_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=res_status)
+
     @action(detail=False, methods=['post'], url_path='get-or-create-dm')
     def get_or_create_dm(self, request):
         """특정 사용자와의 1:1 DM 대화방 조회 또는 자동 생성"""
@@ -114,8 +144,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if not target_user_id:
             return Response({'error': 'target_user_id가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 자기 자신에게 보낸 경우 '나와의 채팅'으로 자동 연결
         if int(target_user_id) == request.user.pk:
-            return Response({'error': '자기 자신과의 DM은 지원하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return self.get_or_create_self(request)
 
         target_user = User.objects.filter(pk=target_user_id, is_active=True, is_system=False).first()
         if not target_user:
@@ -152,10 +183,11 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         대화방 나가기 / 내 목록에서 숨기기
         - 1:1 DM: 내 멤버십을 is_hidden = True 처리하여 목록에서 숨김 (상대방 기록은 유지)
         - 비공개 그룹방: 멤버십 삭제
+        - 워크스페이스 공용 채널 및 나와의 채팅방: 나가기 불가
         """
         room = self.get_object()
-        if room.room_type == 'channel':
-            return Response({'error': '워크스페이스 공용 채널은 나갈 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        if room.room_type in ['channel', 'self']:
+            return Response({'error': '워크스페이스 공용 채널 및 나와의 채팅방은 나갈 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         membership = room.memberships.filter(user=request.user).first()
         if not membership:

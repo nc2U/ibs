@@ -9,11 +9,13 @@ class ChatRoom(models.Model):
     - channel: 워크스페이스 공용 공개 채널 (#전체대화방, #현장소통방 등)
     - group: 특정 멤버들만의 비공개 소그룹 채팅방
     - direct: 1:1 비밀 다이렉트 메시지 (DM)
+    - self: 나와의 채팅 (개인 메모 및 파일 보관함)
     """
     ROOM_TYPE_CHOICES = (
         ('channel', '워크스페이스 공용 채널'),
         ('group', '비공개 그룹 채팅방'),
         ('direct', '1:1 다이렉트 메시지 (DM)'),
+        ('self', '나와의 채팅'),
     )
 
     project = models.ForeignKey(
@@ -55,13 +57,21 @@ class ChatRoom(models.Model):
                 fields=['project'],
                 condition=models.Q(room_type='channel', project__isnull=False),
                 name='unique_project_channel'
-            )
+            ),
+            models.UniqueConstraint(
+                fields=['created_by'],
+                condition=models.Q(room_type='self'),
+                name='unique_user_self_chat'
+            ),
         ]
 
     def __str__(self):
         if self.room_type == 'channel':
             ws_name = self.project.name if self.project else '전사'
             return f"#{self.title or '일반'} ({ws_name})"
+        if self.room_type == 'self':
+            creator_name = self.created_by.username if self.created_by else '알 수 없음'
+            return f"나와의 채팅 ({creator_name})"
         return self.title or f"채팅방 #{self.pk}"
 
 
