@@ -265,9 +265,13 @@ export const useChat = defineStore('chat', () => {
     }
   }
 
-  const deleteMessage = async (messageId: number) => {
+  const deleteMessage = async (messageId: number, roomId?: number) => {
     try {
-      await api.delete(`/chat-message/${messageId}/`, { hideProgress: true } as any)
+      const targetRoomId = roomId || currentRoom.value?.id
+      await api.delete(`/chat-message/${messageId}/`, {
+        params: targetRoomId ? { room: targetRoomId } : {},
+        hideProgress: true,
+      } as any)
       messages.value = messages.value.filter(m => m.id !== messageId)
     } catch (e) {
       throw e

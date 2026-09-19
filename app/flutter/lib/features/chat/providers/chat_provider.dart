@@ -222,7 +222,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   /// 🗑️ 메시지 / 첨부파일 삭제
   Future<void> deleteMessage(int messageId) async {
     try {
-      await _repo.deleteMessage(messageId);
+      await _repo.deleteMessage(messageId, roomId: roomId);
       state = state.whenData((msgs) => msgs.where((m) => m.id != messageId).toList());
       _ref.invalidate(chatRoomsProvider);
     } catch (e) {

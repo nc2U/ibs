@@ -345,6 +345,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
 
         my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
         return ChatMessage.objects.filter(
+            Q(sender=user) |
             Q(room__members=user) |
             Q(room__room_type='channel', room__project_id__in=my_project_ids)
         ).distinct().select_related(

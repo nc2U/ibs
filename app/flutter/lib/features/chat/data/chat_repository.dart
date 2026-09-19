@@ -123,7 +123,10 @@ class ChatRepository {
   }
 
   /// 8. 메시지/파일 삭제
-  Future<void> deleteMessage(int messageId) async {
-    await _dio.delete('/api/v1/chat-message/$messageId/');
+  Future<void> deleteMessage(int messageId, {int? roomId}) async {
+    await _dio.delete(
+      '/api/v1/chat-message/$messageId/',
+      queryParameters: roomId != null ? {'room': roomId} : null,
+    );
   }
 }
