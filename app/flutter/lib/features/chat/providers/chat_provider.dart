@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../data/chat_repository.dart';
 import '../data/models/chat_model.dart';
@@ -19,6 +20,24 @@ final totalUnreadChatCountProvider = FutureProvider.autoDispose<int>((ref) async
   return repo.fetchTotalUnread();
 });
 
+/// 2-1. 1:1 DM 가능 대상자 목록 프로바이더 (본사 재직 스태프 + 활성 워크스페이스 멤버 전체)
+final allMembersProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/api/v1/chat-room/available-users/');
+  final dynamic data = res.data;
+
+  List<dynamic> list = [];
+  if (data is List) {
+    list = data;
+  } else if (data is Map<String, dynamic> && data['results'] is List) {
+    list = data['results'] as List<dynamic>;
+  }
+
+  return list
+      .map((json) => UserModel.fromJson(json as Map<String, dynamic>))
+      .toList();
+});
+
 /// 3. 특정 대화방의 실시간 WebSocket & 메시지 목록 StateNotifier
 class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>> {
   final int roomId;
@@ -26,8 +45,8 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   final Ref _ref;
   WebSocketChannel? _channel;
   StreamSubscription? _sub;
-  bool _isTyping = false;
-  String _typingUser = '';
+  final bool _isTyping = false;
+  final String _typingUser = '';
 
   ChatRoomNotifier(this.roomId, this._repo, this._ref) : super(const AsyncValue.loading()) {
     _init();

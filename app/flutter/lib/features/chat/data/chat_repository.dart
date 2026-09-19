@@ -104,6 +104,19 @@ class ChatRepository {
     return ChatMessageModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// 6-1. 텍스트/링크 메시지 전송 (REST API 백업)
+  Future<ChatMessageModel> sendTextMessage({
+    required int roomId,
+    required String content,
+  }) async {
+    final response = await _dio.post('/api/v1/chat-message/', data: {
+      'room': roomId,
+      'message_type': 'text',
+      'content': content,
+    });
+    return ChatMessageModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 7. 대화방 나가기 / 목록에서 숨기기
   Future<void> leaveRoom(int roomId) async {
     await _dio.post('/api/v1/chat-room/$roomId/leave/');

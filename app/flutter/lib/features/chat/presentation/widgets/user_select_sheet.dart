@@ -4,31 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../data/chat_repository.dart';
 import '../../providers/chat_provider.dart';
-
-/// 1:1 DM 가능 대상자 목록 프로바이더 (본사 재직 스태프 + 활성 워크스페이스 멤버 전체)
-final allMembersProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/api/v1/chat-room/available-users/');
-  final dynamic data = res.data;
-
-  List<dynamic> list = [];
-  if (data is List) {
-    list = data;
-  } else if (data is Map<String, dynamic> && data['results'] is List) {
-    list = data['results'] as List<dynamic>;
-  }
-
-  return list
-      .map((json) => UserModel.fromJson(json as Map<String, dynamic>))
-      .toList();
-});
 
 /// 1:1 대화 상대 선택 바텀시트 모달
 class UserSelectSheet extends ConsumerStatefulWidget {
