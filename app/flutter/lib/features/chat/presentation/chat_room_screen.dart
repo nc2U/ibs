@@ -878,7 +878,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (msg.unreadCount > 0)
+                    if (!msg.isDeleted && msg.unreadCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 2),
                         child: Text(
@@ -987,27 +987,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               ),
               if (!isMe) ...[
                 const SizedBox(width: 6),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (msg.unreadCount > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          '${msg.unreadCount}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFEAB308),
-                          ),
-                        ),
-                      ),
-                    Text(
-                      _formatTime(msg.created),
-                      style: TextStyle(fontSize: 10, color: context.colors.textMuted),
-                    ),
-                  ],
+                Text(
+                  _formatTime(msg.created),
+                  style: TextStyle(fontSize: 10, color: context.colors.textMuted),
                 ),
               ],
             ],
