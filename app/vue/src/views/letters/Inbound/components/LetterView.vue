@@ -51,6 +51,23 @@ const getDDayText = (dDay: number | null | undefined) => {
   return `${dDay}일 남음 (D-${dDay})`
 }
 
+const scanFileExt = computed(() => {
+  if (!props.letter?.scan_file) return ''
+  const cleanUrl = props.letter.scan_file.split('?')[0].split('#')[0]
+  const parts = cleanUrl.split('.')
+  return parts.length > 1 ? parts.pop()!.toLowerCase() : ''
+})
+
+const isScanPdf = computed(() => scanFileExt.value === 'pdf')
+const isScanHwp = computed(() => ['hwp', 'hwpx'].includes(scanFileExt.value))
+const isScanImage = computed(() => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(scanFileExt.value))
+
+const scanFileName = computed(() => {
+  if (!props.letter?.scan_file) return ''
+  const cleanUrl = props.letter.scan_file.split('?')[0].split('#')[0]
+  return decodeURIComponent(cleanUrl.split('/').pop() || '')
+})
+
 const goToList = () => {
   router.push({ name: props.viewRoute })
 }
@@ -295,8 +312,23 @@ const updateStatus = (newStatus: string) => {
             class="bg-light fw-semibold d-flex justify-content-between align-items-center"
           >
             <div>
-              <v-icon icon="mdi-file-pdf-box" class="text-danger me-1" />
-              공문서 원본 스캔본
+              <v-icon
+                :icon="
+                  isScanPdf
+                    ? 'mdi-file-pdf-box'
+                    : isScanHwp
+                      ? 'mdi-file-document-outline'
+                      : isScanImage
+                        ? 'mdi-file-image'
+                        : 'mdi-file-document'
+                "
+                :class="isScanPdf ? 'text-danger' : isScanHwp ? 'text-primary' : 'text-secondary'"
+                class="me-1"
+              />
+              공문서 원본 파일
+              <CBadge v-if="scanFileExt" color="info" class="ms-1 text-uppercase">
+                {{ scanFileExt }}
+              </CBadge>
             </div>
             <a
               v-if="letter.scan_file"
@@ -306,11 +338,12 @@ const updateStatus = (newStatus: string) => {
               class="btn btn-sm btn-outline-primary"
             >
               <v-icon icon="mdi-download" size="small" class="me-1" />
-              스캔 파일 다운로드
+              원본 파일 다운로드
             </a>
           </CCardHeader>
           <CCardBody class="p-0">
-            <div v-if="letter.scan_file" style="height: 680px; width: 100%">
+            <!-- 1. PDF 파일: 인라인 뷰어 -->
+            <div v-if="letter.scan_file && isScanPdf" style="height: 680px; width: 100%">
               <iframe
                 :src="`${letter.scan_file}#toolbar=1&navpanes=0`"
                 width="100%"
@@ -318,10 +351,76 @@ const updateStatus = (newStatus: string) => {
                 style="border: none"
               />
             </div>
+
+            <!-- 2. 한글 파일 (HWP / HWPX): 관공서 공문 배너 및 바로 열기/다운로드 안내 -->
+            <div
+              v-else-if="letter.scan_file && isScanHwp"
+              class="py-5 px-4 text-center bg-light d-flex flex-column align-items-center justify-content-center"
+              style="min-height: 400px"
+            >
+              <v-icon icon="mdi-file-document-outline" size="64" class="text-primary mb-3" />
+              <h5 class="fw-bold mb-1">한글 공문서 원본 파일 (.{{ scanFileExt }})</h5>
+              <p class="text-muted small mb-3 text-truncate" style="max-width: 480px">
+                {{ scanFileName }}
+              </p>
+              <CAlert color="info" class="text-start small py-2 px-3 mb-4" style="max-width: 520px">
+                <v-icon icon="mdi-information-outline" class="me-1" />
+                관공서 및 공공기관의 한글(HWP/HWPX) 공문서 원본입니다. 보안 및 수정제한이 걸려 있을 수 있으므로 다운로드 후 한컴오피스 또는 공공서식 한글 뷰어로 열람하세요.
+              </CAlert>
+              <div class="d-flex gap-2">
+                <a
+                  :href="letter.scan_file"
+                  target="_blank"
+                  download
+                  class="btn btn-primary px-4"
+                >
+                  <v-icon icon="mdi-download" class="me-1" />
+                  한글 파일 다운로드 / 열기
+                </a>
+              </div>
+            </div>
+
+            <!-- 3. 이미지 파일 (JPG/PNG 등): 인라인 이미지 뷰어 -->
+            <div
+              v-else-if="letter.scan_file && isScanImage"
+              class="p-3 text-center bg-light overflow-auto"
+              style="max-height: 680px"
+            >
+              <img
+                :src="letter.scan_file"
+                alt="공문서 원본 이미지"
+                class="img-fluid border shadow-sm rounded"
+                style="max-width: 100%"
+              />
+            </div>
+
+            <!-- 4. 기타 파일 형식 -->
+            <div
+              v-else-if="letter.scan_file"
+              class="py-5 px-4 text-center bg-light d-flex flex-column align-items-center justify-content-center"
+              style="min-height: 350px"
+            >
+              <v-icon icon="mdi-file-document" size="64" class="text-secondary mb-3" />
+              <h5 class="fw-bold mb-1">공문서 원본 파일 ({{ scanFileExt ? '.' + scanFileExt : '등록됨' }})</h5>
+              <p class="text-muted small mb-3 text-truncate" style="max-width: 480px">
+                {{ scanFileName }}
+              </p>
+              <a
+                :href="letter.scan_file"
+                target="_blank"
+                download
+                class="btn btn-outline-primary px-4"
+              >
+                <v-icon icon="mdi-download" class="me-1" />
+                파일 다운로드
+              </a>
+            </div>
+
+            <!-- 5. 파일 미등록 시 -->
             <div v-else class="py-5 text-center text-muted">
-              <v-icon icon="mdi-file-pdf-box" size="48" class="opacity-25 mb-2 text-danger" />
-              <div>등록된 공문서 원본 스캔본이 없습니다.</div>
-              <small>공문서 실물 또는 PDF를 스캔하여 등록할 수 있습니다.</small>
+              <v-icon icon="mdi-file-document-outline" size="48" class="opacity-25 mb-2 text-primary" />
+              <div>등록된 공문서 원본 파일이 없습니다.</div>
+              <small>공문서 원본 파일(PDF, HWP, HWPX, 이미지 등)을 등록할 수 있습니다.</small>
             </div>
           </CCardBody>
         </CCard>

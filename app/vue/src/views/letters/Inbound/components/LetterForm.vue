@@ -330,14 +330,14 @@ const handleSubmit = () => {
             공문 원본 스캔 및 붙임 파일
           </CCardHeader>
           <CCardBody>
-            <!-- 공문서 원본 스캔 (PDF) -->
+            <!-- 공문서 원본 파일 (PDF, HWP, HWPX, 이미지) -->
             <div class="mb-4 p-3 border rounded bg-light">
               <label class="form-label fw-bold d-block mb-1">
-                <v-icon icon="mdi-file-pdf-box" class="text-danger me-1" />
-                공문서 원본 스캔 파일 (PDF)
+                <v-icon icon="mdi-file-document-outline" class="text-primary me-1" />
+                공문서 원본 파일 (PDF, HWP, HWPX, 이미지 등)
               </label>
               <p class="text-muted small mb-2">
-                실물 또는 전자 수신된 공식 공문서 스캔본(PDF)을 등록하세요.
+                실물 또는 전자 수신된 공식 공문서 원본 파일(PDF, 한글 HWP/HWPX, 스캔 이미지 등)을 등록하세요.
               </p>
 
               <div
@@ -351,7 +351,7 @@ const handleSubmit = () => {
                   class="text-decoration-none small text-truncate"
                   style="max-width: 300px"
                 >
-                  원본 스캔 파일 다운로드 / 열기
+                  원본 공문 파일 다운로드 / 열기
                 </a>
               </div>
 
@@ -359,7 +359,7 @@ const handleSubmit = () => {
                 <input
                   ref="scanFileInput"
                   type="file"
-                  accept=".pdf,application/pdf"
+                  accept=".pdf,.hwp,.hwpx,.jpg,.jpeg,.png,.tif,.tiff,application/pdf,application/x-hwp,application/haansofthwp,application/vnd.hancom.hwp,application/vnd.hancom.hwpx,image/*"
                   class="form-control"
                   @change="onScanFileChange"
                 />

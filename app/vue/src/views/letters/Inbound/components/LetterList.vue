@@ -109,6 +109,15 @@ const getDDayText = (dDay: number | null | undefined) => {
   if (dDay === 0) return 'D-Day'
   return `D-${dDay}`
 }
+
+const getScanFileIcon = (fileUrl: string | null | undefined) => {
+  if (!fileUrl) return 'mdi-file-document-outline'
+  const ext = fileUrl.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return 'mdi-file-pdf-box'
+  if (ext === 'hwp' || ext === 'hwpx') return 'mdi-file-document-outline'
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(ext || '')) return 'mdi-file-image'
+  return 'mdi-file-document'
+}
 </script>
 
 <template>
@@ -264,7 +273,7 @@ const getDDayText = (dDay: number | null | undefined) => {
           </CTableDataCell>
           <CTableDataCell class="text-center">
             <CBadge v-if="item.has_scan || item.scan_file" color="success">
-              <v-icon icon="mdi-file-pdf-box" size="small" />
+              <v-icon :icon="getScanFileIcon(item.scan_file)" size="small" />
             </CBadge>
             <span v-else class="text-muted">-</span>
           </CTableDataCell>
