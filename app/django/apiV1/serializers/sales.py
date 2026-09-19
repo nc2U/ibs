@@ -68,8 +68,15 @@ class SalesPersonSerializer(serializers.ModelSerializer):
             'join_date', 'quit_date', 'notes', 'documents_count', 'documents',
             'created_at', 'updated_at'
         )
+        extra_kwargs = {
+            # C-1 수정: 주민등록번호(PII)는 쓰기 전용으로 처리하여 API 응답 노출 방지
+            'id_number': {'write_only': True},
+        }
 
     def get_documents_count(self, obj):
+        # annotated 값(annotate_documents_count)이 있으면 우선 사용 (N+1 방지)
+        if hasattr(obj, 'annotate_documents_count'):
+            return obj.annotate_documents_count
         return obj.documents.count()
 
 

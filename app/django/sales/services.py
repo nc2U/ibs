@@ -20,7 +20,8 @@ sales/services.py
 """
 from __future__ import annotations
 
-from django.db.models import Sum
+from django.db import transaction
+from django.db.models import Count, Q, Sum
 
 from sales.models import (
     CommissionClawback,
@@ -39,23 +40,53 @@ from sales.models import (
 # 내부 헬퍼
 # ─────────────────────────────────────────────
 
-def _resolve_policy(mapping: ContractSalesAgent, project) -> CommissionPolicy | None:
+
+def _resolve_policy(
+    mapping: ContractSalesAgent,
+    cached_policies: list[CommissionPolicy],
+) -> CommissionPolicy | None:
     """
-    계약 매핑에 명시된 정책 우선 사용.
-    없으면 유니트 타입→ 전체 공통 순으로 활성 정책 탐색.
+    계약 매핑에 명시된 정책을 우선 사용.
+    없으면 사전 로드된 정책 목록(cached_policies)에서 계약일 기준으로 탐색.
+
+    탐색 순서:
+      1) 유니트 타입이 일치하는 정책 중 계약일 유효 정책
+      2) 유니트 타입이 미지정(전체 공통)인 정책 중 계약일 유효 정책
+
+    N+1 방지: 루프 외부에서 미리 가져온 리스트를 메모리 탐색으로 처리.
+    날짜 검증(C-2 수정): contract_date가 start_date~end_date 구간에 포함될 때만 적용.
     """
     if mapping.policy_id:
         return mapping.policy
 
-    unit_type = getattr(mapping.contract, 'unit_type', None)
-    return (
-        CommissionPolicy.objects.filter(
-            project=project, unit_type=unit_type, is_active=True
-        ).first()
-        or CommissionPolicy.objects.filter(
-            project=project, unit_type__isnull=True, is_active=True
-        ).first()
-    )
+    unit_type_id = getattr(mapping.contract.unit_type, 'pk', None) if mapping.contract.unit_type else None
+    contract_date = mapping.contract_date
+
+    # 계약일이 없으면 날짜 비교 불가 → 정책 미적용
+    if not contract_date:
+        return None
+
+    # 1차: 유니트 타입 매칭 정책 탐색 (start_date DESC 정렬 기준, 가장 최신 적용)
+    for policy in cached_policies:
+        if policy.unit_type_id != unit_type_id:
+            continue
+        if policy.start_date > contract_date:
+            continue
+        if policy.end_date and policy.end_date < contract_date:
+            continue
+        return policy
+
+    # 2차: 전체 공통 정책 폴백 탐색
+    for policy in cached_policies:
+        if policy.unit_type_id is not None:
+            continue
+        if policy.start_date > contract_date:
+            continue
+        if policy.end_date and policy.end_date < contract_date:
+            continue
+        return policy
+
+    return None
 
 
 def _find_leader(team) -> SalesPerson | None:
@@ -159,32 +190,56 @@ def validate_org_health(project) -> dict:
     직영 영업 조직 무결성 검사.
     에러를 발생시키지 않고 문제 항목 목록을 반환한다.
     severity: 'error' (계약 정산 누락), 'warning' (fee 귀속 발생)
+
+    N+1 수정: 팀마다 개별 COUNT/EXISTS를 호출하던 방식 →
+             팀별 duty 분포를 한 번에 집계 후 메모리에서 판별.
     """
-    from django.db.models import Q
-    from django.utils import timezone
+    from django.utils import timezone as tz
     from sales.models import SalesAgency, SalesTeam, SalesPerson, CommissionPolicy
     from items.models import UnitType
 
     items = []
+    today = tz.localdate()
+
     direct_agencies = SalesAgency.objects.filter(
         project=project, is_direct_managed=True, is_active=True
     )
 
     for agency in direct_agencies:
         # 하위 팀이 없는 최하위 팀(leaf team)만 검사
-        leaf_teams = SalesTeam.objects.filter(
+        leaf_teams = list(SalesTeam.objects.filter(
             agency=agency, is_active=True, sub_teams__isnull=True
-        )
-        for team in leaf_teams:
-            has_counselors = SalesPerson.objects.filter(team=team, duty='1', status='1').exists()
-            if not has_counselors:
-                continue  # 상담사 없는 팀은 검사 불필요
+        ).select_related('parent'))
 
-            has_leader = SalesPerson.objects.filter(team=team, duty='2', status='1').exists()
-            search_team = team.parent if team.parent else team
-            has_director = SalesPerson.objects.filter(
-                team=search_team, duty__in=('3', '4'), status='1'
-            ).exists()
+        if not leaf_teams:
+            continue
+
+        leaf_team_ids = [t.pk for t in leaf_teams]
+
+        # ── N+1 제거: 팀별 duty 분포를 한 번에 집계 ──
+        # 자신 팀 + 상위 팀(parent)까지 한 번에 커버하기 위해 agency 전체 재직자 집계
+        duty_counts = (
+            SalesPerson.objects
+            .filter(team__agency=agency, status='1')
+            .values('team_id', 'duty')
+            .annotate(cnt=Count('id'))
+        )
+        # {team_id: {duty: count}} 형태로 변환
+        duty_map: dict[int, dict[str, int]] = {}
+        for row in duty_counts:
+            duty_map.setdefault(row['team_id'], {})[row['duty']] = row['cnt']
+
+        for team in leaf_teams:
+            # 상담사(duty='1')가 없는 팀은 검사 불필요
+            if not duty_map.get(team.pk, {}).get('1', 0):
+                continue
+
+            has_leader = bool(duty_map.get(team.pk, {}).get('2', 0))
+            search_team_id = team.parent_id if team.parent_id else team.pk
+            has_director = bool(
+                duty_map.get(search_team_id, {}).get('3', 0)
+                or duty_map.get(search_team_id, {}).get('4', 0)
+            )
 
             if not has_leader and not has_director:
                 items.append({
@@ -220,15 +275,18 @@ def validate_org_health(project) -> dict:
                     ),
                 })
 
-    # 수수료 정책 미등록 타입 확인
-    from django.utils import timezone as tz
-    from django.db.models import Q as Q2
-    today = tz.localdate()
+    # ── 수수료 정책 미등록 타입 확인 ──
+    # 유니트 타입별 정책 존재 여부를 한 번에 확인
+    active_policy_type_ids = set(
+        CommissionPolicy.objects
+        .filter(project=project, is_active=True, start_date__lte=today)
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
+        .values_list('unit_type_id', flat=True)
+    )
+    has_common_policy = None in active_policy_type_ids  # unit_type__isnull=True인 공통 정책
+
     for ut in UnitType.objects.filter(project=project):
-        has_policy = CommissionPolicy.objects.filter(
-            project=project, is_active=True, start_date__lte=today
-        ).filter(Q2(unit_type=ut) | Q2(unit_type__isnull=True)).exists()
-        if not has_policy:
+        if ut.pk not in active_policy_type_ids and not has_common_policy:
             items.append({
                 'type': 'NO_POLICY',
                 'severity': 'error',
@@ -252,10 +310,14 @@ def validate_org_health(project) -> dict:
 # 퍼블릭 서비스 함수
 # ─────────────────────────────────────────────
 
+@transaction.atomic
 def generate_period_payouts(period: SettlementPeriod) -> dict:
     """
     정산 회차(period)에 해당하는 기간 내 계약 매핑을 조회하고,
     직영/외주 분기에 따라 CommissionPayout 또는 AgencyPayout을 자동 생성/갱신한다.
+
+    @transaction.atomic: Celery/Management Command 등 View 외부에서 직접 호출 시에도
+                         실패 시 전체 롤백을 보장한다. (H-3 수정)
 
     Returns:
         {
@@ -266,6 +328,15 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
             'total_agency_amount': int,  # 외주 총 지급액 (VAT 포함)
         }
     """
+    # ── H-1 수정: 정책 사전 캐싱 (루프 내 N+1 방지) ──
+    # is_active인 정책을 모두 로드하여 메모리 탐색으로 처리.
+    # start_date DESC 정렬로 가장 최신 정책이 먼저 매칭됨.
+    cached_policies = list(
+        CommissionPolicy.objects.filter(
+            project=period.project, is_active=True
+        ).order_by('-start_date').select_related('unit_type')
+    )
+
     # ── 이중 정산 방지: 이미 다른 정산 회차에 포함된 계약건 제외 ──
     other_settled_contract_ids = set(
         PayoutContractDetail.objects.filter(
@@ -300,6 +371,7 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
     # ── 재계산 시 기존 회차의 Payout 및 상세 내역 초기화 ──
     period.payouts.all().delete()
+
     period.agency_payouts.all().delete()
 
     # ── 직영 매핑: person_id → {person, [(contract, fee, role_type)]} ──
@@ -318,7 +390,7 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         if not agency:
             continue
         is_direct = agency.is_direct_managed
-        policy = _resolve_policy(m, period.project)
+        policy = _resolve_policy(m, cached_policies)
 
         if is_direct and m.sales_person:
             direct_contract_count += 1

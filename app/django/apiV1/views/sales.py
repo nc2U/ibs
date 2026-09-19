@@ -29,6 +29,29 @@ def get_accessible_project_ids(user):
     return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
+def _sync_period_status(period: SettlementPeriod) -> None:
+    """
+    직영(CommissionPayout) 및 외주(AgencyPayout) 전체 지급 상태를 확인하여
+    정산 회차(SettlementPeriod)의 상태를 자동 동기화한다.
+
+    - 전원 '지급 완료(3)' → 회차 상태 '3'으로 갱신
+    - 일부 미완료 상태에서 '3'이었던 경우 → 회차 상태 '2(확정)'로 복귀
+    M-3 수정: 외주 AgencyPayout도 동기화 대상에 포함.
+    """
+    if period.status not in ('2', '3'):
+        return
+    has_pending = (
+        period.payouts.exclude(pay_status='3').exists()
+        or period.agency_payouts.exclude(pay_status='3').exists()
+    )
+    if not has_pending and period.status == '2':
+        period.status = '3'
+        period.save(update_fields=['status', 'updated_at'])
+    elif has_pending and period.status == '3':
+        period.status = '2'
+        period.save(update_fields=['status', 'updated_at'])
+
+
 class SalesAgencyViewSet(viewsets.ModelViewSet):
     """분양 대행사 ViewSet"""
     queryset = SalesAgency.objects.all()
@@ -264,11 +287,25 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='confirm-settlement')
     def confirm_settlement(self, request, pk=None):
-        """정산 회차 확정 (상태: 정산 확정)"""
+        """정산 회차 확정 (상태: 정산 확정).
+        '작성 중(1)' 상태에서만 '확정(2)'으로 전환 가능하며,
+        이미 '지급 완료(3)' 또는 '확정(2)' 상태인 회차는 재처리 방지.
+        """
         period = self.get_object()
+        if period.status == '3':
+            return Response(
+                {'detail': f'[{period.title}] 이미 지급 완료된 회차는 확정 처리할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if period.status == '2':
+            return Response(
+                {'detail': f'[{period.title}] 이미 확정된 회차입니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
         period.status = '2'  # 확정
-        period.save()
+        period.save(update_fields=['status', 'updated_at'])
         return Response({'detail': f'[{period.title}] 정산이 확정되었습니다.'})
+
 
 
 class CommissionPayoutViewSet(viewsets.ModelViewSet):
@@ -308,19 +345,12 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
                 payout.paid_date = timezone.localdate()
             payout.save()
 
-            # 회차 내 모든 지급 대상의 완료 여부에 따라 회차 상태 자동 동기화
-            period = payout.period
-            if period.status in ('2', '3'):
-                remaining = period.payouts.exclude(pay_status='3').exists()
-                if not remaining and period.status == '2':
-                    period.status = '3'  # 전원 지급 완료
-                    period.save()
-                elif remaining and period.status == '3':
-                    period.status = '2'  # 일부 보류/대기 시 확정 상태 복귀
-                    period.save()
+            # 회차 내 모든 지급 대상(직영+외주)의 완료 여부에 따라 회차 상태 자동 동기화
+            _sync_period_status(payout.period)
 
             return Response({'detail': '지급 상태가 업데이트되었습니다.', 'pay_status': pay_status})
         return Response({'detail': '올바르지 않은 상태값입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class CommissionClawbackViewSet(viewsets.ModelViewSet):
@@ -438,5 +468,10 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
             if pay_status == '3' and not payout.paid_date:
                 payout.paid_date = timezone.localdate()
             payout.save()
+
+            # 회차 내 모든 지급 대상(직영+외주)의 완료 여부에 따라 회차 상태 자동 동기화
+            _sync_period_status(payout.period)
+
             return Response({'detail': '지급 상태가 업데이트되었습니다.', 'pay_status': pay_status})
         return Response({'detail': '올바르지 않은 상태값입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+

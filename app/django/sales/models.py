@@ -151,7 +151,7 @@ class CommissionPolicy(models.Model):
     director_fee = models.PositiveIntegerField('본부장 건당 수수료 (원)', default=0)
     agency_fee = models.PositiveIntegerField('대행사 건당 수수료 (원)', default=0)
     pay_condition = models.CharField('지급 조건', max_length=2, choices=PAY_CONDITION_CHOICES, default='1')
-    start_date = models.DateField('적용 시작일')
+    start_date = models.DateField('적용 시작일', db_index=True)
     end_date = models.DateField('적용 종료일', null=True, blank=True)
     is_active = models.BooleanField('활성 여부', default=True)
     created_at = models.DateTimeField('등록일시', auto_now_add=True)
@@ -194,13 +194,13 @@ class ContractSalesAgent(models.Model):
         null=True, blank=True, related_name='contract_mappings',
         verbose_name='적용 수수료 정책'
     )
-    contract_date = models.DateField('영업 성과 인정일', null=True, blank=True)
+    contract_date = models.DateField('영업 성과 인정일', null=True, blank=True, db_index=True)
     mgm_name = models.CharField('MGM/중개사 성명', max_length=50, blank=True, default='')
     mgm_phone = models.CharField('MGM 연락처', max_length=20, blank=True, default='')
     mgm_fee = models.PositiveIntegerField('MGM 지급 수수료 (원)', default=0)
     note = models.CharField('비고', max_length=255, blank=True, default='')
     is_settlement_approved = models.BooleanField(
-        '수수료 정산 승인', default=True,
+        '수수료 정산 승인', default=True, db_index=True,
         help_text='서류 완비 및 완납 확인 후 승인 시 정산 대상에 포함'
     )
     approval_note = models.CharField(
@@ -315,7 +315,7 @@ class CommissionPayout(models.Model):
     local_income_tax = models.PositiveIntegerField('지방소득세 (0.3%)', default=0)
     total_tax = models.PositiveIntegerField('원천징수 합계 (3.3%)', default=0)
     net_amount = models.PositiveBigIntegerField('실지급액 (세후)', default=0)
-    pay_status = models.CharField('지급 상태', max_length=2, choices=PAY_STATUS_CHOICES, default='1')
+    pay_status = models.CharField('지급 상태', max_length=2, choices=PAY_STATUS_CHOICES, default='1', db_index=True)
     paid_date = models.DateField('실제 지급일', null=True, blank=True)
     bank_name = models.CharField('입금 은행', max_length=30, blank=True, default='')
     account_number = models.CharField('입금 계좌', max_length=50, blank=True, default='')
@@ -558,8 +558,8 @@ class SalesPersonDocument(models.Model):
 
     class Meta:
         ordering = ['sales_person', 'doc_type', '-created_at']
-        verbose_name = '10. 영업 인력 제출 서류'
-        verbose_name_plural = '10. 영업 인력 제출 서류 목록'
+        verbose_name = '12. 영업 인력 제출 서류'
+        verbose_name_plural = '12. 영업 인력 제출 서류 목록'
 
     def __str__(self):
         return f'{self.sales_person.name} - {self.title or self.get_doc_type_display()}'
