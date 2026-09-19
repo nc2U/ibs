@@ -147,6 +147,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'last_message_id': event['last_message_id'],
         }))
 
+    async def broadcast_delete_message(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'delete_message',
+            'message_id': event['message_id'],
+            'room_id': event['room_id'],
+        }))
+
     # ── Database Sync Helpers ─────────────────────────────────────────
 
     @database_sync_to_async

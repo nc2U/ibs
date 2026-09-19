@@ -1,6 +1,6 @@
 from django.db.models import Q, Prefetch, Subquery, OuterRef, Count
 from django.db.models.functions import Coalesce
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -313,27 +313,44 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return ChatMessage.objects.none()
+
         room_id = self.request.query_params.get('room')
-        if not room_id or not user.is_authenticated:
-            return ChatMessage.objects.none()
-
-        # 방 접근 권한 검증: 1) 내가 멤버인 방 또는 2) 내 워크스페이스 공용 채널
-        room = ChatRoom.objects.filter(pk=room_id).first()
-        if not room:
-            return ChatMessage.objects.none()
-
-        if room.room_type == 'channel':
-            my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-            if room.project_id not in my_project_ids and not user.is_superuser:
-                return ChatMessage.objects.none()
-        else:
-            if not room.members.filter(pk=user.pk).exists() and not user.is_superuser:
+        if room_id:
+            # 방 접근 권한 검증: 1) 내가 멤버인 방 또는 2) 내 워크스페이스 공용 채널
+            room = ChatRoom.objects.filter(pk=room_id).first()
+            if not room:
                 return ChatMessage.objects.none()
 
-        return ChatMessage.objects.filter(room_id=room_id).select_related(
-            'sender', 'sender__profile',
+            if room.room_type == 'channel':
+                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+                if room.project_id not in my_project_ids and not user.is_superuser:
+                    return ChatMessage.objects.none()
+            else:
+                if not room.members.filter(pk=user.pk).exists() and not user.is_superuser:
+                    return ChatMessage.objects.none()
+
+            return ChatMessage.objects.filter(room_id=room_id).select_related(
+                'sender', 'sender__profile',
+                'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+            ).order_by('-created')  # 역순 정렬 후 클라이언트에서 뒤집어 사용
+
+        # room 파라미터가 없는 경우 (단일 메시지 삭제/조회 등 detail 액션 지원)
+        if user.is_superuser:
+            return ChatMessage.objects.all().select_related(
+                'sender', 'sender__profile', 'room',
+                'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+            )
+
+        my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+        return ChatMessage.objects.filter(
+            Q(room__members=user) |
+            Q(room__room_type='channel', room__project_id__in=my_project_ids)
+        ).distinct().select_related(
+            'sender', 'sender__profile', 'room',
             'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
-        ).order_by('-created')  # 역순 정렬 후 클라이언트에서 뒤집어 사용
+        )
 
     def list(self, request, *args, **kwargs):
         """
@@ -432,4 +449,45 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         except Exception:
             # 채널 레이어 오류 시 메시지 저장 자체는 성공이므로 조용히 무시
             pass
+
+    def perform_destroy(self, instance):
+        """메시지 삭제: 본인 또는 방 관리자 또는 슈퍼유저만 삭제 가능 + 첨부파일 정리 및 WS 브로드캐스팅"""
+        user = self.request.user
+        is_owner = instance.sender_id == user.pk
+        is_room_admin = instance.room.memberships.filter(user=user, is_admin=True).exists()
+        if not (is_owner or is_room_admin or user.is_superuser):
+            raise exceptions.PermissionDenied('본인이 작성한 메시지만 삭제할 수 있습니다.')
+
+        msg_id = instance.id
+        room_id = instance.room_id
+
+        # 첨부파일이 있으면 실제 파일도 스토리지에서 삭제
+        if instance.file:
+            try:
+                instance.file.delete(save=False)
+            except Exception:
+                pass
+
+        instance.delete()
+
+        # WebSocket 채널 그룹으로 삭제 브로드캐스팅
+        self._broadcast_deleted_message(room_id, msg_id)
+
+    def _broadcast_deleted_message(self, room_id, msg_id):
+        """채널 레이어를 통해 대화방 WebSocket 그룹에 메시지 삭제 이벤트 전송"""
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_room_{room_id}',
+                {
+                    'type': 'broadcast_delete_message',
+                    'message_id': msg_id,
+                    'room_id': room_id,
+                }
+            )
+        except Exception:
+            pass
+
 

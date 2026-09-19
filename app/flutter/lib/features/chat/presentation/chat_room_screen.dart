@@ -415,8 +415,17 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     );
   }
 
-  // 💬 말풍선 롱프레스 메뉴 (답장 / 복사 / 전달)
+  // 💬 말풍선 롱프레스 메뉴 (답장 / 복사 / 전달 / 삭제)
   void _showMessageActionMenu(ChatMessageModel msg) {
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final currentUserId = currentUser?.pk ?? 0;
+    final currentUsername = currentUser?.username ?? '';
+    final isMe = (msg.sender != null && currentUserId > 0 && msg.sender!.pk == currentUserId) ||
+        (msg.sender != null && msg.sender!.username == currentUsername);
+    final isSuperuser = currentUser?.isSuperuser ?? false;
+    final isRoomAdmin = widget.initialRoom != null && widget.initialRoom!.createdBy == currentUserId;
+    final canDelete = isMe || isSuperuser || isRoomAdmin;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.bgSurface,
@@ -455,8 +464,82 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 _showForwardRoomDialog(msg);
               },
             ),
+            if (canDelete) ...[
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                title: const Text('삭제하기', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showDeleteConfirmDialog(msg);
+                },
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  // 🗑️ 메시지 삭제 확인 다이얼로그
+  void _showDeleteConfirmDialog(ChatMessageModel msg) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.bgSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text(
+          '메시지 삭제',
+          style: AppTextStyles.titleSm.copyWith(
+            fontWeight: FontWeight.bold,
+            color: context.colors.textPrimary,
+          ),
+        ),
+        content: Text(
+          '이 메시지를 삭제하시겠습니까?\n삭제된 메시지는 대화방 참여자 모두에게서 삭제되며 복구할 수 없습니다.',
+          style: AppTextStyles.bodyMd.copyWith(
+            color: context.colors.textSecond,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              '취소',
+              style: TextStyle(color: context.colors.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(chatRoomNotifierProvider(widget.roomId).notifier).deleteMessage(msg.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('메시지가 삭제되었습니다.'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('메시지 삭제에 실패했습니다: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -924,6 +1007,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
         onTap: () {
           if (fileUrl.isNotEmpty) launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication);
         },
+        onLongPress: () => _showMessageActionMenu(msg),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

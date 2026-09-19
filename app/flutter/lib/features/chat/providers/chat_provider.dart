@@ -139,6 +139,11 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
             'last_message_id': newMsg.id,
           }));
         }
+      } else if (type == 'delete_message') {
+        final deletedId = json['message_id'] as int?;
+        if (deletedId != null) {
+          state = state.whenData((msgs) => msgs.where((m) => m.id != deletedId).toList());
+        }
       }
     } catch (_) {}
   }
@@ -212,6 +217,17 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
       'type': 'typing',
       'is_typing': isTyping,
     }));
+  }
+
+  /// 🗑️ 메시지 / 첨부파일 삭제
+  Future<void> deleteMessage(int messageId) async {
+    try {
+      await _repo.deleteMessage(messageId);
+      state = state.whenData((msgs) => msgs.where((m) => m.id != messageId).toList());
+      _ref.invalidate(chatRoomsProvider);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override

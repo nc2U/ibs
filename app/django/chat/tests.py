@@ -97,3 +97,72 @@ class ChatRoomAPITests(APITestCase):
                 title='나와의 채팅 2'
             )
 
+
+class ChatMessageAPITests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='user1', email='user1@test.com', password='password123')
+        self.user2 = User.objects.create_user(username='user2', email='user2@test.com', password='password123')
+        self.superuser = User.objects.create_superuser(username='super', email='super@test.com', password='password123')
+
+        self.company = Company.objects.create(name='(주)대영아이비에스')
+        self.project = IssueProject.objects.create(
+            company=self.company,
+            name='채팅 워크스페이스',
+            slug='chat-ws-2',
+            status='1',
+            chat_channel_enabled=True,
+            creator=self.user1
+        )
+        Member.objects.create(project=self.project, user=self.user1)
+        Member.objects.create(project=self.project, user=self.user2)
+
+        from chat.models import ChatRoomMember, ChatMessage
+        self.room = ChatRoom.objects.create(
+            project=self.project,
+            room_type='group',
+            title='테스트 대화방',
+            created_by=self.user1
+        )
+        ChatRoomMember.objects.create(room=self.room, user=self.user1, is_admin=True)
+        ChatRoomMember.objects.create(room=self.room, user=self.user2, is_admin=False)
+
+        self.msg1 = ChatMessage.objects.create(
+            room=self.room,
+            sender=self.user1,
+            content='user1이 보낸 메시지'
+        )
+        self.msg2 = ChatMessage.objects.create(
+            room=self.room,
+            sender=self.user2,
+            content='user2가 보낸 메시지'
+        )
+
+    def test_delete_own_message(self):
+        """자신이 작성한 메시지 삭제 성공 검증"""
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.delete(f'/api/v1/chat-message/{self.msg1.id}/')
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+
+        from chat.models import ChatMessage
+        self.assertFalse(ChatMessage.objects.filter(id=self.msg1.id).exists())
+
+    def test_delete_other_user_message_forbidden(self):
+        """타인이 작성한 메시지를 일반 멤버가 삭제 시도 시 403 차단 검증"""
+        self.client.force_authenticate(user=self.user2)
+        res = self.client.delete(f'/api/v1/chat-message/{self.msg1.id}/')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        from chat.models import ChatMessage
+        self.assertTrue(ChatMessage.objects.filter(id=self.msg1.id).exists())
+
+    def test_room_admin_or_superuser_can_delete_message(self):
+        """방 관리자 또는 슈퍼유저는 메시지 삭제 가능 검증"""
+        # 1) 방 관리자(user1)가 user2의 메시지 삭제
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.delete(f'/api/v1/chat-message/{self.msg2.id}/')
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+
+        from chat.models import ChatMessage
+        self.assertFalse(ChatMessage.objects.filter(id=self.msg2.id).exists())
+
+

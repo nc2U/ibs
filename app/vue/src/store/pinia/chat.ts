@@ -180,6 +180,11 @@ export const useChat = defineStore('chat', () => {
               api.post(`/chat-room/${roomId}/read/`, {}, { hideProgress: true } as any)
             }
           }
+        } else if (payload.type === 'delete_message') {
+          const messageId = payload.message_id
+          if (messageId) {
+            messages.value = messages.value.filter(m => m.id !== messageId)
+          }
         } else if (payload.type === 'error') {
           console.error('[WebSocket Chat Error]', payload.message)
         }
@@ -260,6 +265,15 @@ export const useChat = defineStore('chat', () => {
     }
   }
 
+  const deleteMessage = async (messageId: number) => {
+    try {
+      await api.delete(`/chat-message/${messageId}/`, { hideProgress: true } as any)
+      messages.value = messages.value.filter(m => m.id !== messageId)
+    } catch (e) {
+      throw e
+    }
+  }
+
   return {
     isDrawerOpen,
     rooms,
@@ -287,5 +301,6 @@ export const useChat = defineStore('chat', () => {
     exitAndHideRoom,
     sendMessage,
     uploadFile,
+    deleteMessage,
   }
 })
