@@ -4,7 +4,7 @@ export interface ChatUser {
   email?: string
 }
 
-export type ChatRoomType = 'channel' | 'group' | 'direct'
+export type ChatRoomType = 'channel' | 'group' | 'direct' | 'self'
 export type ChatMessageType =
   'text' | 'image' | 'file' | 'issue' | 'meeting' | 'approval' | 'system'
 

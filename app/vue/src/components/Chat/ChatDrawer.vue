@@ -4,7 +4,7 @@ import { useChat } from '@/store/pinia/chat'
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
 import type { ChatRoom, ChatMessage } from '@/store/types/chat'
-1
+
 const chatStore = useChat()
 const accountStore = useAccount()
 const store = useStore()
@@ -15,7 +15,7 @@ const currentRoom = computed(() => chatStore.currentRoom)
 const messages = computed(() => chatStore.messages)
 const allUsers = computed(() => chatStore.usersList)
 const isLoadingUsers = computed(() => chatStore.isLoadingUsers)
-1
+
 const activeTab = ref<'channel' | 'direct'>('channel')
 const inputMessage = ref('')
 const messageContainer = ref<HTMLElement | null>(null)
@@ -27,6 +27,7 @@ const userSearchQuery = ref('')
 const isMembersDrawerOpen = ref(false)
 
 const getRoomDisplayName = (room: ChatRoom) => {
+  if (room.room_type === 'self') return '나와의 채팅'
   if (room.room_type === 'direct' && room.members?.length) {
     // 1:1 DM인 경우: 현재 사용자가 아니며, 시스템 계정이 아닌 상대방을 우선 탐색
     const other =
@@ -123,6 +124,19 @@ const startDmWithUser = async (user: any) => {
     isUserSelectModalOpen.value = false
     await chatStore.getOrCreateDm(user.pk)
   } catch (_) {}
+}
+
+const handleSelectSelfChat = async () => {
+  try {
+    await chatStore.getOrCreateSelf()
+  } catch (_) {
+    alert('나와의 채팅방을 불러오는데 실패했습니다.')
+  }
+}
+
+const startSelfChatFromModal = async () => {
+  isUserSelectModalOpen.value = false
+  await handleSelectSelfChat()
 }
 
 const confirmLeaveRoom = async (room: ChatRoom) => {
@@ -337,11 +351,13 @@ const formatTime = (dateStr: string) => {
                 currentRoom
                   ? currentRoom.room_type === 'channel'
                     ? 'mdi-pound'
-                    : 'mdi-account'
+                    : currentRoom.room_type === 'self'
+                      ? 'mdi-bookmark-check'
+                      : 'mdi-account'
                   : 'mdi-chat-processing-outline'
               "
               size="small"
-              color="primary"
+              :color="currentRoom?.room_type === 'self' ? 'info' : 'primary'"
               class="mr-2"
             />
             <span class="font-weight-bold text-truncate room-header-title" style="max-width: 260px">
@@ -356,9 +372,9 @@ const formatTime = (dateStr: string) => {
             </span>
           </div>
           <div class="d-flex align-items-center">
-            <!-- 대화방 진입 시: 참여 멤버 목록 버튼 -->
+            <!-- 대화방 진입 시: 참여 멤버 목록 버튼 (나와의 채팅 제외) -->
             <v-btn
-              v-if="currentRoom"
+              v-if="currentRoom && currentRoom.room_type !== 'self'"
               icon="mdi-account-group-outline"
               variant="text"
               size="small"
@@ -485,9 +501,64 @@ const formatTime = (dateStr: string) => {
 
             <!-- 1:1 DM 목록 -->
             <div v-else>
+              <!-- ── 나와의 채팅 (최상단 고정 아이템) ── -->
+              <div class="mb-2">
+                <v-list-item
+                  class="rounded-lg mb-1 chat-room-item self-chat-highlight border"
+                  :class="{
+                    'border-info bg-blue-grey-darken-4': isDark,
+                    'border-info bg-light-blue-lighten-5': !isDark,
+                  }"
+                  @click="handleSelectSelfChat"
+                >
+                  <template #prepend>
+                    <v-avatar color="info" variant="flat" size="36" class="mr-3">
+                      <v-icon icon="mdi-bookmark-check" size="small" color="white" />
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title class="font-weight-bold text-sm d-flex align-items-center">
+                    나와의 채팅
+                    <v-chip
+                      size="x-small"
+                      color="info"
+                      variant="flat"
+                      class="ml-1 font-weight-medium px-1.5"
+                    >
+                      나
+                    </v-chip>
+                  </v-list-item-title>
+                  <v-list-item-subtitle class="text-xs text-truncate">
+                    {{
+                      chatStore.selfRoom?.last_message?.content ||
+                      '나만의 메모, 사진, 도면 파일을 보관해보세요'
+                    }}
+                  </v-list-item-subtitle>
+                  <template #append>
+                    <div class="text-right">
+                      <div v-if="chatStore.selfRoom?.last_message" class="text-xs timestamp-text">
+                        {{ formatTime(chatStore.selfRoom.last_message.created) }}
+                      </div>
+                      <v-icon
+                        icon="mdi-pin"
+                        size="x-small"
+                        color="info"
+                        class="mt-1"
+                        title="상단 고정"
+                      />
+                    </div>
+                  </template>
+                </v-list-item>
+              </div>
+
+              <!-- 일반 1:1 대화 섹션 구분선 -->
+              <div class="d-flex align-items-center px-1 my-2">
+                <span class="text-xs text-muted font-weight-medium">1:1 대화</span>
+                <v-divider class="ml-2" />
+              </div>
+
               <div
                 v-if="chatStore.directRooms.length === 0"
-                class="text-center py-8 text-sm empty-state-text"
+                class="text-center py-6 text-sm empty-state-text"
               >
                 <v-icon icon="mdi-message-outline" size="large" class="mb-2 opacity-50" /><br />
                 진행 중인 1:1 대화가 없습니다.<br />
@@ -580,8 +651,38 @@ const formatTime = (dateStr: string) => {
 
           <!-- 메시지 리스트 -->
           <div ref="messageContainer" class="flex-grow-1 overflow-y-auto p-3 chat-messages-area">
-            <div v-if="messages.length === 0" class="text-center py-8 text-xs empty-state-text">
-              대화가 시작되었습니다. 메시지를 남겨보세요! 👋
+            <!-- 메시지 없음 안내 (Empty State) -->
+            <div v-if="messages.length === 0" class="text-center py-6 px-3">
+              <div
+                v-if="currentRoom?.room_type === 'self'"
+                class="p-4 rounded-lg border text-start"
+                :class="{
+                  'bg-blue-grey-darken-4 border-info': isDark,
+                  'bg-light-blue-lighten-5 border-info': !isDark,
+                }"
+              >
+                <div class="d-flex align-items-center mb-2 font-weight-bold text-sm text-info">
+                  <v-icon icon="mdi-lightbulb-on-outline" size="small" class="mr-1.5" />
+                  나와의 채팅 활용 팁
+                </div>
+                <ul class="text-xs text-muted mb-0 pl-3" style="line-height: 1.7">
+                  <li>
+                    <strong>도면/사진 보관</strong>: 모바일(Flutter)과 PC 웹 간 현장 사진, 도면,
+                    공문 파일을 자유롭게 전송·다운로드하세요.
+                  </li>
+                  <li>
+                    <strong>리치 카드 확인</strong>: 결재 문서나 업무(Issue) 공유 카드를 미리
+                    보내보고 형태를 사전 확인할 수 있습니다.
+                  </li>
+                  <li>
+                    <strong>개인 메모장</strong>: 중요한 일정, To-Do, 아이디어를 빠르게 기록해
+                    두세요.
+                  </li>
+                </ul>
+              </div>
+              <div v-else class="text-xs empty-state-text py-4">
+                대화가 시작되었습니다. 메시지를 남겨보세요! 👋
+              </div>
             </div>
 
             <div
@@ -803,6 +904,18 @@ const formatTime = (dateStr: string) => {
           />
         </v-card-title>
         <v-card-text class="p-3">
+          <!-- 나와의 채팅 바로가기 버튼 -->
+          <v-btn
+            block
+            variant="tonal"
+            color="info"
+            prepend-icon="mdi-bookmark-check"
+            class="mb-3 text-none justify-start font-weight-bold"
+            @click="startSelfChatFromModal"
+          >
+            나와의 채팅 바로가기 (내게 쓰기)
+          </v-btn>
+
           <v-text-field
             v-model="userSearchQuery"
             placeholder="이름 또는 아이디 검색"
@@ -1326,5 +1439,18 @@ const formatTime = (dateStr: string) => {
 .dark-theme .user-select-modal-card {
   background-color: #1e222d !important;
   color: #f1f5f9 !important;
+}
+
+/* 나와의 채팅 하이라이트 아이템 */
+.self-chat-highlight {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.self-chat-highlight:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+.dark-drawer .self-chat-highlight:hover {
+  filter: brightness(1.15);
 }
 </style>

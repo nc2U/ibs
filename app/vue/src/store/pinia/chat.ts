@@ -17,14 +17,15 @@ export const useChat = defineStore('chat', () => {
   let ws: WebSocket | null = null
 
   const channelRooms = computed(() => rooms.value.filter(r => r.room_type === 'channel'))
-  const directRooms = computed(() => rooms.value.filter(r => r.room_type !== 'channel'))
+  const selfRoom = computed(() => rooms.value.find(r => r.room_type === 'self'))
+  const directRooms = computed(() => rooms.value.filter(r => r.room_type !== 'channel' && r.room_type !== 'self'))
 
   // 각 탭별 안 읽은 메시지 수 합계
   const channelUnreadCount = computed(() =>
     channelRooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0),
   )
   const directUnreadCount = computed(() =>
-    directRooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0),
+    rooms.value.filter(r => r.room_type !== 'channel').reduce((acc, r) => acc + (r.unread_count || 0), 0),
   )
 
   const toggleDrawer = () => {
@@ -81,6 +82,18 @@ export const useChat = defineStore('chat', () => {
   const getOrCreateDm = async (targetUserId: number) => {
     try {
       const res = await api.post('/chat-room/get-or-create-dm/', { target_user_id: targetUserId })
+      const room = res.data
+      await fetchRooms()
+      await enterRoom(room)
+      return room
+    } catch (e) {
+      throw e
+    }
+  }
+
+  const getOrCreateSelf = async () => {
+    try {
+      const res = await api.get('/chat-room/get-or-create-self/')
       const room = res.data
       await fetchRooms()
       await enterRoom(room)
@@ -245,6 +258,7 @@ export const useChat = defineStore('chat', () => {
     isDrawerOpen,
     rooms,
     channelRooms,
+    selfRoom,
     directRooms,
     channelUnreadCount,
     directUnreadCount,
@@ -261,6 +275,7 @@ export const useChat = defineStore('chat', () => {
     fetchUsers,
     fetchTotalUnread,
     getOrCreateDm,
+    getOrCreateSelf,
     enterRoom,
     leaveRoom,
     exitAndHideRoom,
