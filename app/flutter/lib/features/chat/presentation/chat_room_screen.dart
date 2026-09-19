@@ -422,9 +422,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     final currentUsername = currentUser?.username ?? '';
     final isMe = (msg.sender != null && currentUserId > 0 && msg.sender!.pk == currentUserId) ||
         (msg.sender != null && msg.sender!.username == currentUsername);
-    final isSuperuser = currentUser?.isSuperuser ?? false;
-    final isRoomAdmin = widget.initialRoom != null && widget.initialRoom!.createdBy == currentUserId;
-    final canDelete = isMe || isSuperuser || isRoomAdmin;
+    final canDelete = isMe;
 
     showModalBottomSheet(
       context: context,

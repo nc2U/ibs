@@ -155,14 +155,14 @@ class ChatMessageAPITests(APITestCase):
         from chat.models import ChatMessage
         self.assertTrue(ChatMessage.objects.filter(id=self.msg1.id).exists())
 
-    def test_room_admin_or_superuser_can_delete_message(self):
-        """방 관리자 또는 슈퍼유저는 메시지 삭제 가능 검증"""
-        # 1) 방 관리자(user1)가 user2의 메시지 삭제
+    def test_non_author_cannot_delete_even_if_admin(self):
+        """방 관리자라도 타인이 작성한 메시지는 삭제할 수 없음(403 차단) 검증"""
+        # 방 관리자(user1)가 user2의 메시지 삭제 시도 -> 403 차단
         self.client.force_authenticate(user=self.user1)
         res = self.client.delete(f'/api/v1/chat-message/{self.msg2.id}/')
-        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
         from chat.models import ChatMessage
-        self.assertFalse(ChatMessage.objects.filter(id=self.msg2.id).exists())
+        self.assertTrue(ChatMessage.objects.filter(id=self.msg2.id).exists())
 
 

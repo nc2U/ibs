@@ -452,11 +452,9 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             pass
 
     def perform_destroy(self, instance):
-        """메시지 삭제: 본인 또는 방 관리자 또는 슈퍼유저만 삭제 가능 + 첨부파일 정리 및 WS 브로드캐스팅"""
+        """메시지 삭제: 작성자 본인만 삭제 가능 + 첨부파일 정리 및 WS 브로드캐스팅"""
         user = self.request.user
-        is_owner = instance.sender_id == user.pk
-        is_room_admin = instance.room.memberships.filter(user=user, is_admin=True).exists()
-        if not (is_owner or is_room_admin or user.is_superuser):
+        if instance.sender_id != user.pk:
             raise exceptions.PermissionDenied('본인이 작성한 메시지만 삭제할 수 있습니다.')
 
         msg_id = instance.id
