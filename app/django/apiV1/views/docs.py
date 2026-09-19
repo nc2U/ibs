@@ -968,6 +968,15 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         if not assignment:
             assignment = StaffAssignment.objects.filter(staff__user=request.user).first()
 
+        # 클라이언트에서 전송한 추가 품의 정보 (선택사항)
+        req_data = request.data if isinstance(request.data, dict) else {}
+        action_type = req_data.get('action_type', 'REPLY_LETTER')
+        review_opinion = (req_data.get('review_opinion') or '').strip()
+        reply_planned_date = req_data.get('reply_planned_date', '')
+        action_budget = req_data.get('action_budget') or 0
+
+        default_body = f"[수신 공문 처리 보고 및 대응 품의]\n\n• 발신처: {letter.sender_name}\n• 발신 문서번호: {letter.document_number or '-'}\n• 접수번호: {letter.receipt_number}\n• 접수일자: {letter.received_date}\n• 회신기한: {letter.reply_due_date or '기한 없음'}\n\n[수신 내용]\n{letter.content or '-'}"
+
         content_payload = {
             'inbound_letter_id': letter.pk,
             'sender_name': letter.sender_name,
@@ -976,9 +985,15 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             'document_number': letter.document_number or '',
             'received_date': str(letter.received_date),
             'reply_due_date': str(letter.reply_due_date) if letter.reply_due_date else '',
+            'action_type': action_type,
             'letter_subject': letter.title,
             'letter_content': letter.content or '',
-            'body': f"[수신 공문 처리 보고 및 대응 품의]\n\n• 발신처: {letter.sender_name}\n• 발신 문서번호: {letter.document_number or '-'}\n• 접수번호: {letter.receipt_number}\n• 접수일자: {letter.received_date}\n• 회신기한: {letter.reply_due_date or '기한 없음'}\n\n[수신 내용]\n{letter.content or '-'}",
+            'letter_summary': letter.content or '',
+            'review_opinion': review_opinion if review_opinion else default_body,
+            'reply_planned_date': str(reply_planned_date) if reply_planned_date else '',
+            'action_budget': action_budget,
+            'amount': action_budget,
+            'body': review_opinion if review_opinion else default_body,
         }
 
         workspace = None
@@ -988,6 +1003,7 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         doc = ApprovalDocument(
             title=f'[수신 공문 보고] {letter.title}',
             doc_type=doc_type,
+            security_level=doc_type.default_security_level or ApprovalDocument.SECURITY_DEPT,
             drafter=request.user,
             drafter_assignment=assignment,
             workspace=workspace,

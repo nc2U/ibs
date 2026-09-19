@@ -200,6 +200,19 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   final _option3Controller = TextEditingController();
   final _actionPlanController = TextEditingController();
 
+  // 수신 공문 처리 보고 (INBOUND_REPORT)
+  final _inboundSenderNameController = TextEditingController();
+  final _inboundDocNumberController = TextEditingController();
+  final _inboundReceiptNumberController = TextEditingController();
+  DateTime? _inboundReceivedDate = DateTime.now();
+  DateTime? _inboundReplyDueDate;
+  String _inboundActionType = 'REPLY_LETTER';
+  final _inboundLetterSubjectController = TextEditingController();
+  final _inboundLetterSummaryController = TextEditingController();
+  final _inboundReviewOpinionController = TextEditingController();
+  DateTime? _inboundReplyPlannedDate;
+  final _inboundActionBudgetController = TextEditingController();
+
   // 실시간 결재선 미리보기 상태
   List<RoutePreviewStepModel> _previewSteps = [];
   bool _isPreviewLoading = false;
@@ -392,6 +405,27 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['option_3'] != null) _option3Controller.text = c['option_3'].toString();
     if (c['recommendation'] != null) _purposeController.text = c['recommendation'].toString();
     if (c['action_plan'] != null) _actionPlanController.text = c['action_plan'].toString();
+
+    // 17. 수신 공문 처리 보고 (INBOUND_REPORT)
+    if (c['sender_name'] != null) _inboundSenderNameController.text = c['sender_name'].toString();
+    if (c['document_number'] != null) _inboundDocNumberController.text = c['document_number'].toString();
+    if (c['receipt_number'] != null) _inboundReceiptNumberController.text = c['receipt_number'].toString();
+    if (c['received_date'] != null) _inboundReceivedDate = DateTime.tryParse(c['received_date'].toString());
+    if (c['reply_due_date'] != null) _inboundReplyDueDate = DateTime.tryParse(c['reply_due_date'].toString());
+    if (c['action_type'] != null) _inboundActionType = c['action_type'].toString();
+    if (c['letter_subject'] != null) _inboundLetterSubjectController.text = c['letter_subject'].toString();
+    if (c['letter_summary'] != null) {
+      _inboundLetterSummaryController.text = c['letter_summary'].toString();
+    } else if (c['letter_content'] != null) {
+      _inboundLetterSummaryController.text = c['letter_content'].toString();
+    }
+    if (c['review_opinion'] != null) {
+      _inboundReviewOpinionController.text = c['review_opinion'].toString();
+    } else if (c['body'] != null) {
+      _inboundReviewOpinionController.text = c['body'].toString();
+    }
+    if (c['reply_planned_date'] != null) _inboundReplyPlannedDate = DateTime.tryParse(c['reply_planned_date'].toString());
+    if (c['action_budget'] != null) _inboundActionBudgetController.text = c['action_budget'].toString();
   }
 
   @override
@@ -484,6 +518,13 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     _option2Controller.dispose();
     _option3Controller.dispose();
     _actionPlanController.dispose();
+    _inboundSenderNameController.dispose();
+    _inboundDocNumberController.dispose();
+    _inboundReceiptNumberController.dispose();
+    _inboundLetterSubjectController.dispose();
+    _inboundLetterSummaryController.dispose();
+    _inboundReviewOpinionController.dispose();
+    _inboundActionBudgetController.dispose();
     super.dispose();
   }
 
@@ -590,6 +631,21 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       map['send_due_date'] = _sendDueDate?.toIso8601String().split('T').first;
       map['seal_type'] = _sealType;
       map['seal_count'] = int.tryParse(_sealCountController.text) ?? 1;
+    } else if (normKey == 'INBOUND_REPORT' || normKey == 'INBOUND' || normKey == 'INBOUND_LETTER') {
+      final budget = num.tryParse(_inboundActionBudgetController.text.replaceAll(',', '').trim()) ?? 0;
+      map['sender_name'] = _inboundSenderNameController.text.trim();
+      map['document_number'] = _inboundDocNumberController.text.trim();
+      map['receipt_number'] = _inboundReceiptNumberController.text.trim();
+      map['received_date'] = _inboundReceivedDate?.toIso8601String().split('T').first;
+      map['reply_due_date'] = _inboundReplyDueDate?.toIso8601String().split('T').first;
+      map['action_type'] = _inboundActionType;
+      map['letter_subject'] = _inboundLetterSubjectController.text.trim();
+      map['letter_summary'] = _inboundLetterSummaryController.text.trim();
+      map['review_opinion'] = _inboundReviewOpinionController.text.trim();
+      map['reply_planned_date'] = _inboundReplyPlannedDate?.toIso8601String().split('T').first;
+      map['action_budget'] = budget;
+      map['amount'] = budget;
+      map['body'] = _inboundReviewOpinionController.text.trim();
     } else if (normKey == 'GENERAL' || normKey == 'BIZ_APPROVAL') {
       final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
       map['purpose'] = _purposeController.text.trim();
@@ -1206,6 +1262,8 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                     _buildBusinessApprovalFormFields(context)
                   else if (normKey == 'PROJECT_DECISION' || normKey == 'PROJECT_KEY_DECISION' || normKey == 'DECISION_PROPOSAL' || normKey == 'KEY_DECISION')
                     _buildProjectDecisionFormFields(context)
+                  else if (normKey == 'INBOUND_REPORT' || normKey == 'INBOUND' || normKey == 'INBOUND_LETTER')
+                    _buildInboundReportFormFields(context)
                   else
                     _buildGeneralFormFields(context),
                 ],
@@ -1693,6 +1751,167 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 controller: _sealCountController,
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration(context, '날인 부수'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInboundReportFormFields(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _inboundSenderNameController,
+                decoration: _inputDecoration(context, '발신처 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '발신처를 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _inboundDocNumberController,
+                decoration: _inputDecoration(context, '발신 문서번호'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _inboundReceiptNumberController,
+                decoration: _inputDecoration(context, '사내 접수번호'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _inboundReceivedDate ?? now,
+                    firstDate: now.subtract(const Duration(days: 365)),
+                    lastDate: now.add(const Duration(days: 365)),
+                  );
+                  if (d != null) setState(() => _inboundReceivedDate = d);
+                },
+                child: InputDecorator(
+                  decoration: _inputDecoration(context, '접수일자'),
+                  child: Text(
+                    _inboundReceivedDate != null
+                        ? '${_inboundReceivedDate!.year}-${_inboundReceivedDate!.month.toString().padLeft(2, '0')}-${_inboundReceivedDate!.day.toString().padLeft(2, '0')}'
+                        : '선택 안됨',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _inboundReplyDueDate ?? now,
+                    firstDate: now.subtract(const Duration(days: 365)),
+                    lastDate: now.add(const Duration(days: 365)),
+                  );
+                  if (d != null) setState(() => _inboundReplyDueDate = d);
+                },
+                child: InputDecorator(
+                  decoration: _inputDecoration(context, '회신 마감기한'),
+                  child: Text(
+                    _inboundReplyDueDate != null
+                        ? '${_inboundReplyDueDate!.year}-${_inboundReplyDueDate!.month.toString().padLeft(2, '0')}-${_inboundReplyDueDate!.day.toString().padLeft(2, '0')}'
+                        : '기한 없음',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _inboundActionType,
+                decoration: _inputDecoration(context, '처리 방향'),
+                items: const [
+                  DropdownMenuItem(value: 'REPLY_LETTER', child: Text('회신 공문 발송')),
+                  DropdownMenuItem(value: 'INTERNAL_ACTION', child: Text('내부 조치 (회신불요)')),
+                  DropdownMenuItem(value: 'RECEIPT_ONLY', child: Text('단순 접수/공람')),
+                  DropdownMenuItem(value: 'BUDGET_ACTION', child: Text('예산 집행/조치')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _inboundActionType = v);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _inboundLetterSubjectController,
+          decoration: _inputDecoration(context, '수신공문 제목 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '수신공문 제목을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _inboundLetterSummaryController,
+          maxLines: 3,
+          decoration: _inputDecoration(context, '수신 내용 요약'),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _inboundReviewOpinionController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '검토의견 및 조치계획 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '검토의견 및 조치계획을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _inboundReplyPlannedDate ?? now,
+                    firstDate: now.subtract(const Duration(days: 30)),
+                    lastDate: now.add(const Duration(days: 365)),
+                  );
+                  if (d != null) setState(() => _inboundReplyPlannedDate = d);
+                },
+                child: InputDecorator(
+                  decoration: _inputDecoration(context, '회신 예정일'),
+                  child: Text(
+                    _inboundReplyPlannedDate != null
+                        ? '${_inboundReplyPlannedDate!.year}-${_inboundReplyPlannedDate!.month.toString().padLeft(2, '0')}-${_inboundReplyPlannedDate!.day.toString().padLeft(2, '0')}'
+                        : '선택 안됨',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _inboundActionBudgetController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '조치 소요예산 (원)'),
               ),
             ),
           ],

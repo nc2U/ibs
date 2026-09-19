@@ -4,6 +4,7 @@ from approval.models import (
     RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 from django.contrib.auth import get_user_model
+from company.models import StaffAssignment
 import json
 
 User = get_user_model()

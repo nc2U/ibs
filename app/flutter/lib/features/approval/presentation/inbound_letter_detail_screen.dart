@@ -12,6 +12,7 @@ import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/inbound_letter_repository.dart';
 import '../data/models/inbound_letter_model.dart';
 import '../providers/inbound_letter_providers.dart';
+import 'widgets/inbound_report_submit_sheet.dart';
 
 class InboundLetterDetailScreen extends ConsumerStatefulWidget {
   final int letterId;
@@ -90,36 +91,20 @@ class _InboundLetterDetailScreenState
     }
   }
 
-  Future<void> _submitApproval() async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _submitApproval(InboundLetterModel letter) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.bgCard,
-        title: const Text('전자결재 상신'),
-        content: const Text('이 수신 공문을 전자결재 보고/품의로 상신하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.accentApproval,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('상신 진행'),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => InboundReportSubmitBottomSheet(letter: letter),
     );
 
-    if (confirmed != true) return;
+    if (result == null) return;
 
     setState(() => _isSubmittingApproval = true);
     try {
       final repo = ref.read(inboundLetterRepositoryProvider);
-      final res = await repo.submitApproval(widget.letterId);
+      final res = await repo.submitApproval(widget.letterId, data: result);
       if (mounted) {
         ref.invalidate(inboundLetterDetailProvider(widget.letterId));
         ref.invalidate(inboundLettersProvider);
@@ -247,7 +232,7 @@ class _InboundLetterDetailScreenState
                 // 6. 하단 액션 버튼 (전자결재 상신)
                 if (letter.status != 'closed' && letter.approvalDocument == null)
                   ElevatedButton.icon(
-                    onPressed: _isSubmittingApproval ? null : _submitApproval,
+                    onPressed: _isSubmittingApproval ? null : () => _submitApproval(letter),
                     icon: _isSubmittingApproval
                         ? const SizedBox(
                             width: 18,

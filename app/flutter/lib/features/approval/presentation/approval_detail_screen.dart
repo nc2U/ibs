@@ -335,6 +335,8 @@ class ApprovalDetailScreen extends ConsumerWidget {
             _buildBusinessApprovalContent(context, content)
           else if (normKey == 'PROJECT_DECISION' || normKey == 'PROJECT_KEY_DECISION' || normKey == 'DECISION_PROPOSAL' || normKey == 'KEY_DECISION')
             _buildProjectDecisionContent(context, content)
+          else if (normKey == 'INBOUND_REPORT' || normKey == 'INBOUND' || normKey == 'INBOUND_LETTER')
+            _buildInboundReportContent(context, content)
           else if (normKey == 'GENERAL' || normKey == 'BIZ_APPROVAL')
             _buildGeneralProposalContent(context, content)
           else
@@ -1259,6 +1261,67 @@ class ApprovalDetailScreen extends ConsumerWidget {
             Expanded(child: _buildContentItem(context, '날인 부수', '${c['seal_count'] ?? 1} 부')),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildInboundReportContent(BuildContext context, Map<String, dynamic> c) {
+    String actionTypeName = '대외 회신(답신) 공문 발송 필요';
+    final at = c['action_type']?.toString();
+    if (at == 'INTERNAL_ACTION') {
+      actionTypeName = '내부 조치 및 처리 (회신 불필요)';
+    } else if (at == 'RECEIPT_ONLY') {
+      actionTypeName = '단순 접수 및 부서 공람 / 보고';
+    } else if (at == 'BUDGET_ACTION') {
+      actionTypeName = '예산 집행 및 시정·보수 조치 수반';
+    } else if (at == 'OTHER') {
+      actionTypeName = '기타';
+    } else if (at != null && at.isNotEmpty && at != 'REPLY_LETTER') {
+      actionTypeName = at;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildContentItem(context, '발신처', c['sender_name']?.toString() ?? '-')),
+            Expanded(child: _buildContentItem(context, '발신 문서번호', c['document_number']?.toString() ?? '-')),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(child: _buildContentItem(context, '사내 접수번호', c['receipt_number']?.toString() ?? '-')),
+            Expanded(child: _buildContentItem(context, '접수일자', c['received_date']?.toString() ?? '-')),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(child: _buildContentItem(context, '회신 마감기한', c['reply_due_date']?.toString() ?? '기한 없음')),
+            Expanded(child: _buildContentItem(context, '처리 방향', actionTypeName)),
+          ],
+        ),
+        _buildContentItem(context, '수신공문 제목', c['letter_subject']?.toString() ?? '-'),
+        if (c['letter_summary'] != null && c['letter_summary'].toString().isNotEmpty)
+          _buildContentItem(context, '수신 내용 요약', c['letter_summary'].toString(), isMultiline: true)
+        else if (c['letter_content'] != null && c['letter_content'].toString().isNotEmpty)
+          _buildContentItem(context, '수신 내용 요약', c['letter_content'].toString(), isMultiline: true),
+        _buildContentItem(
+          context,
+          '검토 및 조치계획',
+          (c['review_opinion'] ?? c['body'] ?? '-').toString(),
+          isMultiline: true,
+        ),
+        if ((c['reply_planned_date'] != null && c['reply_planned_date'].toString().isNotEmpty) ||
+            (c['action_budget'] != null && c['action_budget'] != 0))
+          Row(
+            children: [
+              if (c['reply_planned_date'] != null && c['reply_planned_date'].toString().isNotEmpty)
+                Expanded(child: _buildContentItem(context, '회신 예정일', c['reply_planned_date'].toString())),
+              if (c['action_budget'] != null && c['action_budget'] != 0)
+                Expanded(child: _buildContentItem(context, '조치 소요예산', _formatCurrency(c['action_budget']))),
+            ],
+          ),
       ],
     );
   }

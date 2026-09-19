@@ -95,10 +95,10 @@ class InboundLetterRepository {
   }
 
   /// 수신 공문 전자결재 상신
-  Future<Map<String, dynamic>> submitApproval(int id) async {
+  Future<Map<String, dynamic>> submitApproval(int id, {Map<String, dynamic>? data}) async {
     try {
       final url = ApiEndpoints.resolve(ApiEndpoints.inboundLetterSubmitApproval, {'id': id});
-      final res = await _dio.post(url);
+      final res = await _dio.post(url, data: data);
       return res.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? '전자결재 상신에 실패했습니다.');

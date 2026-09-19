@@ -1,3 +1,4 @@
+import logging
 from django.db.models import Q
 from django.utils import timezone
 from django_filters.rest_framework import FilterSet, CharFilter, NumberFilter, DateFilter
@@ -18,9 +19,11 @@ from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 from approval.services import build_dynamic_approval_route, submit_document, finalize_approval
-from approval.services.route_builder import _get_company_ceos
+from approval.services.route_builder import _get_company_ceos, _get_department_manager
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
+
+logger = logging.getLogger(__name__)
 
 
 def get_active_delegator_ids(user):
