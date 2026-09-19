@@ -382,9 +382,13 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             from channels.layers import get_channel_layer
             from asgiref.sync import async_to_sync
 
-            profile = getattr(msg.sender, 'profile', None) if msg.sender else None
-            sender_name = (profile.name if profile and profile.name else None) or (msg.sender.username if msg.sender else '시스템')
-            sender_avatar = profile.avatar.url if (profile and profile.avatar) else None
+            try:
+                profile = msg.sender.profile if msg.sender else None
+                sender_name = (profile.name if profile and profile.name else None) or (msg.sender.username if msg.sender else '시스템')
+                sender_avatar = profile.image.url if (profile and profile.image) else None
+            except Exception:
+                sender_name = msg.sender.username if msg.sender else '시스템'
+                sender_avatar = None
 
             reply_to_detail = None
             if msg.reply_to:

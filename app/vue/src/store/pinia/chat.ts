@@ -176,6 +176,8 @@ export const useChat = defineStore('chat', () => {
               api.post(`/chat-room/${roomId}/read/`, {}, { hideProgress: true } as any)
             }
           }
+        } else if (payload.type === 'error') {
+          console.error('[WebSocket Chat Error]', payload.message)
         }
       } catch (_) {}
     }

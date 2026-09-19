@@ -206,10 +206,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             except ChatMessage.DoesNotExist:
                 pass
 
-        # sender 프로필 정보 (이름, 아바타)
-        profile = getattr(user, 'profile', None)
-        sender_name = (profile.name if profile and profile.name else None) or user.username
-        sender_avatar = profile.avatar.url if (profile and profile.avatar) else None
+        # sender 프로필 정보 (이름, 이미지)
+        try:
+            profile = user.profile
+            sender_name = profile.name or user.username
+            sender_avatar = profile.image.url if profile.image else None
+        except Exception:
+            sender_name = user.username
+            sender_avatar = None
 
         return {
             'id': msg.id,
