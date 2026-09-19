@@ -60,8 +60,29 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             'last_message', 'unread_count', 'is_pinned', 'is_muted'
         )
 
+    def to_representation(self, instance):
+        """
+        membership 조회를 한 번만 수행하여 캐시.
+        prefetch_related('memberships')가 ViewSet queryset에 적용되어 있을 때 추가 쿼리 없음.
+        """
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # prefetch 결과 활용: all() 대신 리스트 순회로 DB 히트 없음
+            memberships = instance.memberships.all()
+            instance._cached_my_membership = next(
+                (m for m in memberships if m.user_id == request.user.pk), None
+            )
+        else:
+            instance._cached_my_membership = None
+        return super().to_representation(instance)
+
     def get_last_message(self, obj):
-        msg = obj.messages.order_by('-created').first()
+        # prefetch_related('messages') → last_messages_prefetch to_attr 활용 시 쿼리 0회
+        prefetched = getattr(obj, 'last_messages_prefetch', None)
+        if prefetched is not None:
+            msg = prefetched[0] if prefetched else None
+        else:
+            msg = obj.messages.order_by('-created').first()
         if not msg:
             return None
         return {
@@ -76,34 +97,35 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return 0
-        membership = obj.memberships.filter(user=request.user).first()
+        membership = getattr(obj, '_cached_my_membership', None)
         last_read_id = membership.last_read_message_id if membership else 0
         return obj.messages.filter(id__gt=last_read_id).exclude(sender=request.user).count()
 
     def get_members(self, obj):
         if obj.room_type == 'channel' and obj.project:
             # 워크스페이스 공용 채널인 경우 워크스페이스 구성원 자동 연동
-            all_mems = obj.project.all_members()
+            all_mems = getattr(obj, '_cached_all_members', None)
+            if all_mems is None:
+                all_mems = obj.project.all_members()
+                obj._cached_all_members = all_mems
             return [m['user'] for m in all_mems]
         return SimpleUserSerializer(obj.members.all(), many=True).data
 
     def get_member_count(self, obj):
         if obj.room_type == 'channel' and obj.project:
-            return len(obj.project.all_members())
+            all_mems = getattr(obj, '_cached_all_members', None)
+            if all_mems is None:
+                all_mems = obj.project.all_members()
+                obj._cached_all_members = all_mems
+            return len(all_mems)
         return obj.members.count()
 
     def get_is_pinned(self, obj):
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
-        membership = obj.memberships.filter(user=request.user).first()
+        membership = getattr(obj, '_cached_my_membership', None)
         return membership.is_pinned if membership else False
 
     def get_is_muted(self, obj):
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
-        membership = obj.memberships.filter(user=request.user).first()
+        membership = getattr(obj, '_cached_my_membership', None)
         return membership.is_muted if membership else False
 
 
@@ -118,3 +140,4 @@ class ChatRoomDetailSerializer(serializers.ModelSerializer):
             'id', 'project', 'project_name', 'room_type', 'title', 'description',
             'created_by', 'created', 'updated', 'memberships'
         )
+

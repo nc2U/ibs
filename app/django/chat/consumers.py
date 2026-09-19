@@ -2,6 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
+from django.db import transaction
 
 from chat.models import ChatRoom, ChatRoomMember, ChatMessage
 
@@ -69,16 +70,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # DB에 메시지 저장
-            msg = await self.save_message(
-                room_id=self.room_id,
-                user=self.user,
-                content=content,
-                message_type=message_type,
-                ref_id=ref_id,
-                ref_title=ref_title,
-                ref_sub=ref_sub,
-                reply_to_id=reply_to_id,
-            )
+            try:
+                msg = await self.save_message(
+                    room_id=self.room_id,
+                    user=self.user,
+                    content=content,
+                    message_type=message_type,
+                    ref_id=ref_id,
+                    ref_title=ref_title,
+                    ref_sub=ref_sub,
+                    reply_to_id=reply_to_id,
+                )
+            except Exception as e:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': f'메시지 저장 실패: {str(e)}',
+                }))
+                return
 
             # 같은 대화방 모든 접속자에게 브로드캐스팅
             await self.channel_layer.group_send(
@@ -160,6 +168,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return room.members.filter(pk=user.pk).exists()
 
     @database_sync_to_async
+    @transaction.atomic
     def save_message(self, room_id, user, content, message_type, ref_id, ref_title, ref_sub, reply_to_id):
         room = ChatRoom.objects.get(pk=room_id)
         msg = ChatMessage.objects.create(
@@ -197,12 +206,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             except ChatMessage.DoesNotExist:
                 pass
 
+        # sender 프로필 정보 (이름, 아바타)
+        profile = getattr(user, 'profile', None)
+        sender_name = (profile.name if profile and profile.name else None) or user.username
+        sender_avatar = profile.avatar.url if (profile and profile.avatar) else None
+
         return {
             'id': msg.id,
             'room_id': room.id,
             'sender': {
                 'pk': user.pk,
                 'username': user.username,
+                'name': sender_name,
+                'avatar': sender_avatar,
             },
             'message_type': msg.message_type,
             'content': msg.content,
@@ -223,3 +239,4 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if int(last_message_id) > membership.last_read_message_id:
             membership.last_read_message_id = int(last_message_id)
             membership.save(update_fields=['last_read_message_id'])
+
