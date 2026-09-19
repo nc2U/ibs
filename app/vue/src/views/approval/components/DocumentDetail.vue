@@ -243,13 +243,14 @@ onMounted(() => fetchDocument(docId.value))
         <div class="d-flex gap-2 flex-wrap">
           <v-btn
             v-if="document.pdf_url"
-            color="light"
+            color=""
             size="small"
             :href="document.pdf_url"
             target="_blank"
-            class="no-underline text-muted"
+            class="no-underline text-dark"
           >
-            <v-icon icon="mdi-download" color="error" class="me-1" />PDF
+            <v-icon icon="mdi-download" color="error" class="me-1" />
+            PDF 다운로드
           </v-btn>
           <v-btn
             v-if="canSubmit"

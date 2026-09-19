@@ -337,7 +337,8 @@ const handleSubmit = () => {
                 공문서 원본 파일 (PDF, HWP, HWPX, 이미지 등)
               </label>
               <p class="text-muted small mb-2">
-                실물 또는 전자 수신된 공식 공문서 원본 파일(PDF, 한글 HWP/HWPX, 스캔 이미지 등)을 등록하세요.
+                실물 또는 전자 수신된 공식 공문서 원본 파일(PDF, 한글 HWP/HWPX, 스캔 이미지 등)을
+                등록하세요.
               </p>
 
               <div

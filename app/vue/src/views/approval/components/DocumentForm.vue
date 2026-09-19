@@ -351,7 +351,10 @@ onMounted(async () => {
       const inboundId = Number(route.query.inbound_letter)
       relatedInboundLetterId.value = inboundId
       const inboundDocType = forDraftDocTypeList.value.find(
-        d => d.form_template_key === 'INBOUND_REPORT' || d.code === 'INBOUND_REPORT' || d.code === 'IR',
+        d =>
+          d.form_template_key === 'INBOUND_REPORT' ||
+          d.code === 'INBOUND_REPORT' ||
+          d.code === 'IR',
       )
       if (inboundDocType) {
         form.value.doc_type = inboundDocType.id

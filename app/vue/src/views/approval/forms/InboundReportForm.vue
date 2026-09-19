@@ -121,10 +121,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label">접수일자</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="receivedDate"
-          placeholder="접수일자"
-        />
+        <DatePicker v-model="receivedDate" placeholder="접수일자" />
       </CCol>
     </CRow>
 
@@ -132,10 +129,7 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-2 col-form-label">회신 마감기한</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="replyDueDate"
-          placeholder="회신 마감기한"
-        />
+        <DatePicker v-model="replyDueDate" placeholder="회신 마감기한" />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required">처리 방향</CFormLabel>
       <CCol sm="4">
@@ -197,10 +191,7 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-2 col-form-label">회신 예정일</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="replyPlannedDate"
-          placeholder="회신 공문 발송 예정일"
-        />
+        <DatePicker v-model="replyPlannedDate" placeholder="회신 공문 발송 예정일" />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label">조치 소요예산</CFormLabel>
       <CCol sm="4">
@@ -215,7 +206,10 @@ onMounted(() => {
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
-        <div v-if="formattedBudget && formattedBudget !== '0'" class="form-text text-end text-primary fw-semibold">
+        <div
+          v-if="formattedBudget && formattedBudget !== '0'"
+          class="form-text text-end text-primary fw-semibold"
+        >
           {{ formattedBudget }} 원
         </div>
       </CCol>

@@ -60,7 +60,9 @@ const scanFileExt = computed(() => {
 
 const isScanPdf = computed(() => scanFileExt.value === 'pdf')
 const isScanHwp = computed(() => ['hwp', 'hwpx'].includes(scanFileExt.value))
-const isScanImage = computed(() => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(scanFileExt.value))
+const isScanImage = computed(() =>
+  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(scanFileExt.value),
+)
 
 const scanFileName = computed(() => {
   if (!props.letter?.scan_file) return ''
@@ -365,15 +367,11 @@ const updateStatus = (newStatus: string) => {
               </p>
               <CAlert color="info" class="text-start small py-2 px-3 mb-4" style="max-width: 520px">
                 <v-icon icon="mdi-information-outline" class="me-1" />
-                관공서 및 공공기관의 한글(HWP/HWPX) 공문서 원본입니다. 보안 및 수정제한이 걸려 있을 수 있으므로 다운로드 후 한컴오피스 또는 공공서식 한글 뷰어로 열람하세요.
+                관공서 및 공공기관의 한글(HWP/HWPX) 공문서 원본입니다. 보안 및 수정제한이 걸려 있을
+                수 있으므로 다운로드 후 한컴오피스 또는 공공서식 한글 뷰어로 열람하세요.
               </CAlert>
               <div class="d-flex gap-2">
-                <a
-                  :href="letter.scan_file"
-                  target="_blank"
-                  download
-                  class="btn btn-primary px-4"
-                >
+                <a :href="letter.scan_file" target="_blank" download class="btn btn-primary px-4">
                   <v-icon icon="mdi-download" class="me-1" />
                   한글 파일 다운로드 / 열기
                 </a>
@@ -401,7 +399,9 @@ const updateStatus = (newStatus: string) => {
               style="min-height: 350px"
             >
               <v-icon icon="mdi-file-document" size="64" class="text-secondary mb-3" />
-              <h5 class="fw-bold mb-1">공문서 원본 파일 ({{ scanFileExt ? '.' + scanFileExt : '등록됨' }})</h5>
+              <h5 class="fw-bold mb-1">
+                공문서 원본 파일 ({{ scanFileExt ? '.' + scanFileExt : '등록됨' }})
+              </h5>
               <p class="text-muted small mb-3 text-truncate" style="max-width: 480px">
                 {{ scanFileName }}
               </p>
@@ -418,7 +418,11 @@ const updateStatus = (newStatus: string) => {
 
             <!-- 5. 파일 미등록 시 -->
             <div v-else class="py-5 text-center text-muted">
-              <v-icon icon="mdi-file-document-outline" size="48" class="opacity-25 mb-2 text-primary" />
+              <v-icon
+                icon="mdi-file-document-outline"
+                size="48"
+                class="opacity-25 mb-2 text-primary"
+              />
               <div>등록된 공문서 원본 파일이 없습니다.</div>
               <small>공문서 원본 파일(PDF, HWP, HWPX, 이미지 등)을 등록할 수 있습니다.</small>
             </div>

@@ -18,14 +18,18 @@ export const useChat = defineStore('chat', () => {
 
   const channelRooms = computed(() => rooms.value.filter(r => r.room_type === 'channel'))
   const selfRoom = computed(() => rooms.value.find(r => r.room_type === 'self'))
-  const directRooms = computed(() => rooms.value.filter(r => r.room_type !== 'channel' && r.room_type !== 'self'))
+  const directRooms = computed(() =>
+    rooms.value.filter(r => r.room_type !== 'channel' && r.room_type !== 'self'),
+  )
 
   // 각 탭별 안 읽은 메시지 수 합계
   const channelUnreadCount = computed(() =>
     channelRooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0),
   )
   const directUnreadCount = computed(() =>
-    rooms.value.filter(r => r.room_type !== 'channel').reduce((acc, r) => acc + (r.unread_count || 0), 0),
+    rooms.value
+      .filter(r => r.room_type !== 'channel')
+      .reduce((acc, r) => acc + (r.unread_count || 0), 0),
   )
 
   const toggleDrawer = () => {

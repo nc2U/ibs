@@ -4,23 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import type { ApprovalDelegation } from '@/store/types/approval'
-import {
-  CBadge,
-  CCard,
-  CCardBody,
-  CCardHeader,
-  CButton,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CForm,
-  CFormInput,
-  CFormTextarea,
-  CFormSwitch,
-  CTableHead,
-} from '@coreui/vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const approvalStore = useApproval()
 const accStore = useAccount()
@@ -35,7 +19,7 @@ const editingId = ref<number | null>(null)
 const formValidated = ref(false)
 
 const form = ref({
-  delegatee_id: '' as number | '',
+  delegatee_id: null as number | null,
   start_date: '',
   end_date: '',
   reason: '',
@@ -60,7 +44,7 @@ const openCreateModal = () => {
   const today = new Date().toISOString().split('T')[0]
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   form.value = {
-    delegatee_id: '',
+    delegatee_id: null,
     start_date: today,
     end_date: nextWeek,
     reason: '',
@@ -73,7 +57,7 @@ const openCreateModal = () => {
 const openEditModal = (item: ApprovalDelegation) => {
   editingId.value = item.id ?? null
   form.value = {
-    delegatee_id: item.delegatee?.id ?? (item.delegatee_id || ''),
+    delegatee_id: item.delegatee?.id ?? (item.delegatee_id || null),
     start_date: item.start_date,
     end_date: item.end_date,
     reason: item.reason ?? '',
@@ -86,6 +70,11 @@ const openEditModal = (item: ApprovalDelegation) => {
 const handleSubmit = async () => {
   if (!form.value.delegatee_id || !form.value.start_date || !form.value.end_date) {
     formValidated.value = true
+    return
+  }
+
+  if (form.value.start_date > form.value.end_date) {
+    alert('위임 종료일은 위임 시작일과 같거나 이후여야 합니다.')
     return
   }
 
@@ -142,10 +131,10 @@ const toggleActive = async (item: ApprovalDelegation) => {
           <v-icon icon="mdi-shield-account-outline" class="me-1" color="primary" />
           결재 권한 위임(대결) 설정 목록
         </h6>
-        <CButton color="primary" size="sm" @click="openCreateModal">
+        <v-btn color="primary" @click="openCreateModal">
           <v-icon icon="mdi-plus" size="16" class="me-1" />
           신규 대결자 지정
-        </CButton>
+        </v-btn>
       </CCardHeader>
 
       <CCardBody class="p-0">
@@ -159,12 +148,12 @@ const toggleActive = async (item: ApprovalDelegation) => {
               <CTableHeaderCell class="text-start" style="width: 160px">
                 수임자 (대결자)
               </CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 220px">
+              <CTableHeaderCell class="text-center" style="width: 240px">
                 위임 기간
               </CTableHeaderCell>
               <CTableHeaderCell class="text-start">부재 및 위임 사유</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 120px">상태</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 140px">관리</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 140px">상태</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 180px">관리</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -182,8 +171,9 @@ const toggleActive = async (item: ApprovalDelegation) => {
                   size="x-small"
                   color="primary"
                   class="ms-1"
-                  >본인</v-chip
                 >
+                  본인
+                </v-chip>
               </CTableDataCell>
               <CTableDataCell class="fw-semibold text-primary">
                 {{ item.delegatee?.full_name ?? item.delegatee?.username }}
@@ -192,25 +182,32 @@ const toggleActive = async (item: ApprovalDelegation) => {
                   size="x-small"
                   color="success"
                   class="ms-1"
-                  >수임(대결)</v-chip
                 >
+                  수임(대결)
+                </v-chip>
               </CTableDataCell>
-              <CTableDataCell class="text-center small">
+              <CTableDataCell class="text-center">
                 {{ item.start_date }} ~ {{ item.end_date }}
               </CTableDataCell>
               <CTableDataCell class="small text-truncate" style="max-width: 250px">
                 {{ item.reason || '-' }}
               </CTableDataCell>
               <CTableDataCell class="text-center">
-                <CBadge v-if="item.is_valid_now" color="success">진행중 (유효)</CBadge>
-                <CBadge v-else-if="item.is_active" color="info">대기 / 예정</CBadge>
-                <CBadge v-else color="secondary">비활성 (해제)</CBadge>
+                <v-chip v-if="item.is_valid_now" color="success" size="x-small" variant="elevated">
+                  진행중 (유효)
+                </v-chip>
+                <v-chip v-else-if="item.is_active" color="info" size="x-small" variant="elevated">
+                  대기 / 예정
+                </v-chip>
+                <v-chip v-else color="warning" size="x-small" variant="elevated">
+                  비활성 (해제)
+                </v-chip>
               </CTableDataCell>
               <CTableDataCell class="text-center">
                 <div class="d-flex justify-content-center gap-1">
                   <v-btn
-                    size="x-small"
-                    variant="text"
+                    size="small"
+                    variant="outlined"
                     :color="item.is_active ? 'warning' : 'success'"
                     :title="item.is_active ? '위임 일시정지' : '위임 활성화'"
                     @click="toggleActive(item)"
@@ -218,17 +215,17 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     {{ item.is_active ? '해제' : '활성' }}
                   </v-btn>
                   <v-btn
-                    size="x-small"
-                    variant="text"
-                    color="primary"
+                    size="small"
+                    variant="elevated"
+                    color="success"
                     title="수정"
                     @click="openEditModal(item)"
                   >
                     수정
                   </v-btn>
                   <v-btn
-                    size="x-small"
-                    variant="text"
+                    size="small"
+                    variant="elevated"
                     color="error"
                     title="삭제"
                     @click="handleDelete(item.id!)"
@@ -244,7 +241,12 @@ const toggleActive = async (item: ApprovalDelegation) => {
     </CCard>
 
     <!-- 대결자 등록 / 수정 모달 -->
-    <CModal :visible="isModalOpen" backdrop="static" @close="isModalOpen = false">
+    <CModal
+      :visible="isModalOpen"
+      backdrop="static"
+      @close="isModalOpen = false"
+      alignment="center"
+    >
       <CModalHeader>
         <CModalTitle class="h6 mb-0 fw-bold">
           {{ editingId ? '결재 위임(대결) 설정 수정' : '신규 결재 위임(대결) 지정' }}
@@ -254,15 +256,15 @@ const toggleActive = async (item: ApprovalDelegation) => {
         <CForm :validated="formValidated">
           <!-- 대결자 선택 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold"
-              >대결자 (수임자) 선택 <span class="text-danger">*</span></label
-            >
-            <v-select
+            <label class="form-label small fw-semibold required"> 대결자 (수임자) 선택 </label>
+            <v-autocomplete
               v-model="form.delegatee_id"
               :items="availableUsers"
               item-title="title"
               item-value="value"
-              placeholder="대결을 위임할 직원을 선택하세요"
+              placeholder="대결을 위임할 직원을 검색 또는 선택하세요"
+              persistent-placeholder
+              clearable
               density="compact"
               variant="outlined"
               hide-details
@@ -275,16 +277,18 @@ const toggleActive = async (item: ApprovalDelegation) => {
           <!-- 위임 기간 -->
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label class="form-label small fw-semibold"
-                >위임 시작일 <span class="text-danger">*</span></label
-              >
-              <CFormInput v-model="form.start_date" type="date" size="sm" required />
+              <label class="form-label small fw-semibold required"> 위임 시작일 </label>
+              <DatePicker v-model="form.start_date" placeholder="위임 시작일" required />
+              <div v-if="formValidated && !form.start_date" class="text-danger small mt-1">
+                위임 시작일을 선택해 주세요.
+              </div>
             </div>
             <div class="col-6">
-              <label class="form-label small fw-semibold"
-                >위임 종료일 <span class="text-danger">*</span></label
-              >
-              <CFormInput v-model="form.end_date" type="date" size="sm" required />
+              <label class="form-label small fw-semibold required"> 위임 종료일 </label>
+              <DatePicker v-model="form.end_date" placeholder="위임 종료일" required />
+              <div v-if="formValidated && !form.end_date" class="text-danger small mt-1">
+                위임 종료일을 선택해 주세요.
+              </div>
             </div>
           </div>
 
@@ -307,10 +311,10 @@ const toggleActive = async (item: ApprovalDelegation) => {
         </CForm>
       </CModalBody>
       <CModalFooter>
-        <CButton color="secondary" size="sm" @click="isModalOpen = false">취소</CButton>
-        <CButton color="primary" size="sm" @click="handleSubmit">
+        <v-btn color="primary" size="small" @click="handleSubmit">
           {{ editingId ? '수정 저장' : '위임 등록' }}
-        </CButton>
+        </v-btn>
+        <v-btn color="light" size="small" @click="isModalOpen = false" flat>취소</v-btn>
       </CModalFooter>
     </CModal>
   </div>

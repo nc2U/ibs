@@ -115,7 +115,8 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
   const ext = fileUrl.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase()
   if (ext === 'pdf') return 'mdi-file-pdf-box'
   if (ext === 'hwp' || ext === 'hwpx') return 'mdi-file-document-outline'
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(ext || '')) return 'mdi-file-image'
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(ext || ''))
+    return 'mdi-file-image'
   return 'mdi-file-document'
 }
 </script>

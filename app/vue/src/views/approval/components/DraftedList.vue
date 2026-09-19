@@ -112,7 +112,7 @@ onMounted(fetchMyDrafted)
         총 <strong>{{ filteredList.length }}</strong>
         건
       </span>
-      <v-btn color="primary" size="small" @click="router.push({ name: '기안 문서함 - 작성' })">
+      <v-btn color="primary" @click="router.push({ name: '기안 문서함 - 작성' })">
         <v-icon icon="mdi-plus" class="me-1" />새 기안
       </v-btn>
     </CCol>
