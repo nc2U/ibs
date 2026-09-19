@@ -18,14 +18,22 @@ class ShareActionChoiceSheet extends ConsumerWidget {
     required this.payload,
   });
 
-  static Future<void> show(BuildContext context, SharePayload payload) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ShareActionChoiceSheet(payload: payload),
-    );
+  static bool _isShowing = false;
+
+  static Future<void> show(BuildContext context, SharePayload payload) async {
+    if (_isShowing) return;
+    _isShowing = true;
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ShareActionChoiceSheet(payload: payload),
+      );
+    } finally {
+      _isShowing = false;
+    }
   }
 
   String _formatFileSize(int bytes) {

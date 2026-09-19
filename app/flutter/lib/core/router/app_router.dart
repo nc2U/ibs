@@ -47,11 +47,14 @@ abstract class AppRoutes {
   static const profile      = '/profile';
 }
 
+final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'rootNavigatorKey');
+
 // ── 라우터 프로바이더 ─────────────────────────────────────────────────────────
 final appRouterProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: false,
 
@@ -60,19 +63,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final uri = state.uri;
       final path = uri.path;
 
-      // 외부 앱(시놀로지 드라이브, 카카오톡 등)에서 파일 공유 시 들어오는 file:/// 또는 /private/... 딥링크 가로채기
+      // 외부 앱(시놀로지 드라이브, 카카오톡, 시스템 공유 등)에서 파일 공유 시 들어오는 file:/// 또는 /private/... 딥링크 가로채기
+      final rawUriString = uri.toString();
       if (path.startsWith('/private') ||
           path.startsWith('/var') ||
           uri.scheme == 'file' ||
-          uri.scheme.startsWith('sharemedia')) {
+          uri.scheme.startsWith('sharemedia') ||
+          rawUriString.contains('/Documents/Inbox/')) {
         String filePath = '';
         try {
-          filePath = uri.toFilePath(windows: false);
-        } catch (_) {
+          if (uri.isScheme('file')) {
+            filePath = uri.toFilePath(windows: false);
+          }
+        } catch (_) {}
+        if (filePath.isEmpty) {
           filePath = path;
         }
-        ref.read(pendingSharePayloadProvider.notifier).setFromPath(filePath.isNotEmpty ? filePath : path);
-        return isAuthenticated ? AppRoutes.home : AppRoutes.login;
+        debugPrint('📥 [AppRouter] External share deep link intercepted: $filePath (uri=$uri)');
+        ref.read(pendingSharePayloadProvider.notifier).setFromPath(filePath);
+        return isAuthenticated
+            ? (state.matchedLocation.isNotEmpty && state.matchedLocation != AppRoutes.login
+                ? state.matchedLocation
+                : AppRoutes.home)
+            : AppRoutes.login;
       }
 
       final onLogin = state.matchedLocation == AppRoutes.login;

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notification_provider.dart';
-import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/providers/badge_provider.dart';
@@ -13,7 +12,6 @@ import '../../../core/providers/dio_provider.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/services/sse_notification_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
-import '../../../core/widgets/share_action_choice_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../approval/providers/approval_providers.dart';
 import '../../chat/providers/chat_provider.dart';
@@ -107,15 +105,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       FcmService.initialize(dio);
     });
 
-    // 외부 앱에서 공유된 파일/링크가 있을 때 작업 선택 모달(메신저로 전송 vs 사내 문서 등록) 자동 팝업
-    ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
-      if (next != null && next.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!context.mounted) return;
-          ShareActionChoiceSheet.show(context, next);
-        });
-      }
-    });
+
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,

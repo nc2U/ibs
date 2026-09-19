@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../providers/share_payload_provider.dart';
+import '../router/app_router.dart';
+import 'share_action_choice_sheet.dart';
 
 /// 외부 앱(카카오톡, 메일, 시놀로지/구글 드라이브 등)에서
 /// [공유] 또는 [다음으로 열기]로 유입된 파일/링크를 감지하여
-/// pendingSharePayloadProvider에 등록하는 전역 리스너 위젯
+/// pendingSharePayloadProvider에 등록하고 모달을 띄우는 전역 리스너 위젯
 class ShareIntentListener extends ConsumerStatefulWidget {
   final Widget child;
   const ShareIntentListener({super.key, required this.child});
@@ -48,6 +50,7 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
     final List<String> links = [];
     String? defaultTitle;
 
+    debugPrint('📥 [ShareIntentListener] _handleSharedMedia with ${sharedList.length} items');
     for (final item in sharedList) {
       var rawPath = item.path;
 
@@ -60,7 +63,14 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
         if (rawPath.startsWith('file://')) {
           rawPath = rawPath.substring(7);
         }
-        final cleanPath = Uri.decodeFull(rawPath);
+        var cleanPath = rawPath;
+        try {
+          cleanPath = Uri.decodeFull(rawPath);
+        } catch (_) {
+          try {
+            cleanPath = Uri.decodeComponent(rawPath);
+          } catch (_) {}
+        }
 
         try {
           final file = File(cleanPath);
@@ -74,11 +84,14 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
           ));
 
           defaultTitle ??= fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [ShareIntentListener] Failed to parse shared file: $e');
+        }
       }
     }
 
     if (platformFiles.isNotEmpty || links.isNotEmpty) {
+      debugPrint('📥 [ShareIntentListener] Setting payload: ${platformFiles.length} files, ${links.length} links');
       ref.read(pendingSharePayloadProvider.notifier).setPayload(
         SharePayload(
           files: platformFiles,
@@ -97,6 +110,27 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
 
   @override
   Widget build(BuildContext context) {
+    // 외부 앱에서 공유된 파일/링크가 등록되었을 때 최상단 네비게이터에 액션 선택 시트 표출
+    ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
+      if (next != null && next.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navContext = rootNavigatorKey.currentContext;
+          if (navContext != null && navContext.mounted) {
+            ShareActionChoiceSheet.show(navContext, next);
+          }
+        });
+      }
+    });
+
+    // 앱 실행(콜드 스타트) 시 이미 유입되어 대기 중인 공유 파일/링크가 있는 경우 자동 팝업
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navContext = rootNavigatorKey.currentContext;
+      final pending = ref.read(pendingSharePayloadProvider);
+      if (pending != null && pending.isNotEmpty && navContext != null && navContext.mounted) {
+        ShareActionChoiceSheet.show(navContext, pending);
+      }
+    });
+
     return widget.child;
   }
 }
