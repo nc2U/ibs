@@ -566,7 +566,74 @@
       </tr>
     </table>
 
-  <!-- E. 일반 품의서 및 기타 서식 -->
+  <!-- E. 수신 공문 처리 보고 (INBOUND_REPORT) 양식인 경우 -->
+  {% elif document.content.inbound_letter_id or document.related_inbound_letter or document.doc_type.form_template_key == 'INBOUND_REPORT' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">발 신 처</th>
+        <td style="width:32%;"><strong>{{ document.content.sender_name|default:document.related_inbound_letter.sender_name|default:"-" }}</strong></td>
+        <th style="width:18%;">발신 문서번호</th>
+        <td style="width:32%;">{{ document.content.document_number|default:document.related_inbound_letter.document_number|default:"-" }}</td>
+      </tr>
+      <tr>
+        <th>사내 접수번호</th>
+        <td>{{ document.content.receipt_number|default:document.related_inbound_letter.receipt_number|default:"-" }}</td>
+        <th>접수 일자</th>
+        <td>{{ document.content.received_date|default:document.related_inbound_letter.received_date|default:"-" }}</td>
+      </tr>
+      <tr>
+        <th>회신 마감기한</th>
+        <td>
+          {% if document.content.reply_due_date or document.related_inbound_letter.reply_due_date %}
+            <strong style="color: #c62828;">{{ document.content.reply_due_date|default:document.related_inbound_letter.reply_due_date }}</strong>
+          {% else %}
+            기한 없음
+          {% endif %}
+        </td>
+        <th>처리 방향</th>
+        <td>
+          <strong>
+            {% if document.content.action_type == 'REPLY_LETTER' %}대외 회신(답신) 공문 발송
+            {% elif document.content.action_type == 'INTERNAL_ACTION' %}내부 조치 및 처리 (회신 불필요)
+            {% elif document.content.action_type == 'RECEIPT_ONLY' %}단순 접수 및 부서 공람
+            {% elif document.content.action_type == 'BUDGET_ACTION' %}예산 집행 및 시정·보수 조치 수반
+            {% else %}{{ document.content.action_type|default:"대외 회신 공문 발송" }}{% endif %}
+          </strong>
+        </td>
+      </tr>
+      <tr>
+        <th>수신공문 제목</th>
+        <td colspan="3" style="font-weight: 700; color: #111;">
+          {{ document.content.letter_subject|default:document.related_inbound_letter.title|default:document.title }}
+        </td>
+      </tr>
+      {% if document.content.letter_summary or document.content.letter_content or document.related_inbound_letter.content %}
+      <tr>
+        <th>수신 내용 요약</th>
+        <td colspan="3" style="background: #fafafa; padding: 8px; line-height: 1.6;">
+          {{ document.content.letter_summary|default:document.content.letter_content|default:document.related_inbound_letter.content|linebreaks }}
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <th>검토 및 조치계획<br>(기안 내용)</th>
+        <td colspan="3" style="min-height: 35mm; padding: 10px; line-height: 1.8;">
+          {{ document.content.review_opinion|default:document.content.body|default:document.title|linebreaks }}
+        </td>
+      </tr>
+      {% if document.content.reply_planned_date or document.content.action_budget %}
+      <tr>
+        <th>회신 예정일</th>
+        <td>{{ document.content.reply_planned_date|default:"-" }}</td>
+        <th>조치 소요예산</th>
+        <td style="font-weight: 700; color: #1565c0;">
+          {% if document.content.action_budget %}{{ document.content.action_budget }} 원{% else %}비소요 (0원){% endif %}
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+
+  <!-- F. 일반 품의서 및 기타 서식 -->
   {% else %}
     <div style="padding:4px 0 8px;">
       {{ document.content.body|default:document.title|linebreaks }}

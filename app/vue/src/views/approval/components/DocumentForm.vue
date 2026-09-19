@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import type { DocumentType } from '@/store/types/approval'
+import api from '@/api'
 import { STATIC_FORM_REGISTRY } from '@/views/approval/forms'
 import { FORM_GUIDES, DEFAULT_GUIDE, type FormGuide } from '../data/formGuides'
 
@@ -347,13 +348,35 @@ onMounted(async () => {
       form.value.title = String(route.query.title)
     }
     if (route.query.inbound_letter) {
-      relatedInboundLetterId.value = Number(route.query.inbound_letter)
+      const inboundId = Number(route.query.inbound_letter)
+      relatedInboundLetterId.value = inboundId
       const inboundDocType = forDraftDocTypeList.value.find(
-        d => d.form_template_key === 'INBOUND_REPORT' || d.code === 'INBOUND_REPORT',
+        d => d.form_template_key === 'INBOUND_REPORT' || d.code === 'INBOUND_REPORT' || d.code === 'IR',
       )
       if (inboundDocType) {
         form.value.doc_type = inboundDocType.id
         onDocTypeChange()
+      }
+
+      // 수신 공문 정보 사전 로드 및 폼 필드 자동 채움
+      try {
+        const { data: letter } = await api.get(`/inbound-letter/${inboundId}/`)
+        if (letter) {
+          dynamicContent.value = {
+            inbound_letter_id: letter.pk,
+            sender_name: letter.sender_name || '',
+            document_number: letter.document_number || '',
+            receipt_number: letter.receipt_number || '',
+            received_date: letter.received_date || '',
+            reply_due_date: letter.reply_due_date || '',
+            action_type: 'REPLY_LETTER',
+            letter_subject: letter.title || '',
+            letter_summary: letter.content || '',
+            review_opinion: '',
+          }
+        }
+      } catch (err) {
+        console.error('Failed to prefetch inbound letter:', err)
       }
     }
   }

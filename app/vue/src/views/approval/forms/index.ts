@@ -18,6 +18,7 @@ export { default as LegalReviewForm } from './LegalReviewForm.vue'
 export { default as BusinessReviewForm } from './BusinessReviewForm.vue'
 export { default as BusinessApprovalForm } from './BusinessApprovalForm.vue'
 export { default as ProjectDecisionForm } from './ProjectDecisionForm.vue'
+export { default as InboundReportForm } from './InboundReportForm.vue'
 
 /**
  * STATIC 폼 컴포넌트 레지스트리
@@ -68,4 +69,7 @@ export const STATIC_FORM_REGISTRY: Record<string, Component> = {
   PROJECT_KEY_DECISION: defineAsyncComponent(() => import('./ProjectDecisionForm.vue')),
   DECISION_PROPOSAL: defineAsyncComponent(() => import('./ProjectDecisionForm.vue')),
   KEY_DECISION: defineAsyncComponent(() => import('./ProjectDecisionForm.vue')),
+  INBOUND_REPORT: defineAsyncComponent(() => import('./InboundReportForm.vue')),
+  INBOUND: defineAsyncComponent(() => import('./InboundReportForm.vue')),
+  INBOUND_LETTER: defineAsyncComponent(() => import('./InboundReportForm.vue')),
 }
