@@ -28,6 +28,8 @@ class LoadingShimmer extends StatelessWidget {
         : const Color(0xFFF8FAFC); // Slate 50
     final cardBgColor = isDark ? context.colors.bgCard : context.colors.bgCard;
 
+    final isCompact = itemHeight < 72;
+
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -36,7 +38,9 @@ class LoadingShimmer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemBuilder: (_, __) => Container(
         height: itemHeight,
-        padding: const EdgeInsets.all(14),
+        padding: isCompact
+            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+            : const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: cardBgColor,
           borderRadius: BorderRadius.zero,
@@ -45,90 +49,134 @@ class LoadingShimmer extends StatelessWidget {
         child: Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              height: itemHeight - 28 > 0 ? itemHeight - 28 : itemHeight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // 1. 상단 뱃지 라인
-                  Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: 42,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: 55,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // 2. 제목 라인
-                  Container(
-                    width: double.infinity,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  // 3. 하단 정보 라인
-                  Row(
-                    children: [
-                      Container(
-                        width: 70,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 60,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: 40,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          child: isCompact
+              ? _buildCompactShimmer(baseColor)
+              : _buildCardShimmer(baseColor, itemHeight - 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactShimmer(Color baseColor) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: baseColor,
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: 120,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardShimmer(Color baseColor, double availableHeight) {
+    return SizedBox(
+      height: availableHeight > 0 ? availableHeight : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 1. 상단 뱃지 라인
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 42,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 55,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
+          ),
+          // 2. 제목 라인
+          Container(
+            width: double.infinity,
+            height: 16,
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // 3. 하단 정보 라인
+          Row(
+            children: [
+              Container(
+                width: 70,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 60,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 40,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
