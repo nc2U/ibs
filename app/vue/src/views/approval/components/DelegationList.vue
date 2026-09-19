@@ -142,18 +142,18 @@ const toggleActive = async (item: ApprovalDelegation) => {
           <CTableHead color="light">
             <CTableRow class="bg-more-light">
               <CTableHeaderCell class="text-center" style="width: 70px">No</CTableHeaderCell>
-              <CTableHeaderCell class="text-start" style="width: 160px">
+              <CTableHeaderCell class="text-start" style="width: 150px">
                 위임자 (원권한자)
               </CTableHeaderCell>
-              <CTableHeaderCell class="text-start" style="width: 160px">
+              <CTableHeaderCell class="text-start" style="width: 150px">
                 수임자 (대결자)
               </CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 240px">
                 위임 기간
               </CTableHeaderCell>
               <CTableHeaderCell class="text-start">부재 및 위임 사유</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 140px">상태</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 180px">관리</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px">상태</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 160px">관리</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -206,8 +206,8 @@ const toggleActive = async (item: ApprovalDelegation) => {
               <CTableDataCell class="text-center">
                 <div class="d-flex justify-content-center gap-1">
                   <v-btn
-                    size="small"
-                    variant="outlined"
+                    size="x-small"
+                    variant="elevated"
                     :color="item.is_active ? 'warning' : 'success'"
                     :title="item.is_active ? '위임 일시정지' : '위임 활성화'"
                     @click="toggleActive(item)"
@@ -215,7 +215,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     {{ item.is_active ? '해제' : '활성' }}
                   </v-btn>
                   <v-btn
-                    size="small"
+                    size="x-small"
                     variant="elevated"
                     color="success"
                     title="수정"
@@ -224,7 +224,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     수정
                   </v-btn>
                   <v-btn
-                    size="small"
+                    size="x-small"
                     variant="elevated"
                     color="error"
                     title="삭제"
