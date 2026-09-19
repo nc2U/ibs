@@ -397,7 +397,7 @@ class OfficialLetter(models.Model):
                                        help_text='등기우편 번호, 송장번호, 팩스 확인번호 등')
     dispatched_at = models.DateTimeField('발송 완료일시', null=True, blank=True)
 
-    pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path, storage=default_storage,
+    pdf_file = models.FileField('PDF 파일', max_length=500, upload_to=get_letter_pdf_path, storage=default_storage,
                                 null=True, blank=True)  # 생성된 PDF
     APPROVAL_MODE_CHOICES = (
         ('approval', '전자결재 상신 발송'),
@@ -491,7 +491,7 @@ class OfficialLetterAttachment(models.Model):
         OfficialLetter, on_delete=models.CASCADE,
         related_name='attachments', verbose_name='공문'
     )
-    file = models.FileField('첨부파일', upload_to=get_letter_attachment_path, storage=default_storage)
+    file = models.FileField('첨부파일', max_length=500, upload_to=get_letter_attachment_path, storage=default_storage)
     name = models.CharField('붙임 명칭', max_length=255, blank=True, default='',
                             help_text='공문에 표기될 명칭 (미입력 시 파일명 사용)')
     quantity = models.CharField('수량/부수', max_length=50, blank=True, default='1부',
@@ -601,7 +601,7 @@ class InboundLetter(models.Model):
     content = models.TextField('주요 내용 및 요약', blank=True, default='')
 
     scan_file = models.FileField(
-        '공문 원본 스캔본', upload_to=get_inbound_scan_path,
+        '공문 원본 스캔본', max_length=500, upload_to=get_inbound_scan_path,
         storage=default_storage, null=True, blank=True,
         help_text='접수된 원본 공문서 스캔 PDF 파일'
     )
@@ -680,7 +680,7 @@ class InboundLetterAttachment(models.Model):
         InboundLetter, on_delete=models.CASCADE,
         related_name='attachments', verbose_name='수신 공문'
     )
-    file = models.FileField('첨부파일', upload_to=get_inbound_attachment_path, storage=default_storage)
+    file = models.FileField('첨부파일', max_length=500, upload_to=get_inbound_attachment_path, storage=default_storage)
     name = models.CharField('첨부 명칭', max_length=255, blank=True, default='',
                             help_text='미입력 시 파일명 사용')
     quantity = models.CharField('수량/부수', max_length=50, blank=True, default='1부')

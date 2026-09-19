@@ -1,4 +1,6 @@
 from django.contrib import admin
+from import_export.admin import ImportExportMixin
+
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
     RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment,
@@ -7,7 +9,7 @@ from approval.models import (
 
 
 @admin.register(DocCategory)
-class DocCategoryAdmin(admin.ModelAdmin):
+class DocCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('order', 'code', 'name', 'description', 'is_active')
     list_display_links = ('code', 'name')
     list_editable = ('order', 'is_active')
@@ -26,7 +28,7 @@ class RouteTemplateInline(admin.TabularInline):
 
 
 @admin.register(DocumentType)
-class DocumentTypeAdmin(admin.ModelAdmin):
+class DocumentTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('category', 'code', 'name', 'form_template_key', 'route_type', 'final_approval_duty',
                     'final_dept_level', 'is_active', 'created_at')
     list_filter = ('category', 'form_template_key', 'route_type', 'is_active')
@@ -37,7 +39,7 @@ class DocumentTypeAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalPolicyRule)
-class ApprovalPolicyRuleAdmin(admin.ModelAdmin):
+class ApprovalPolicyRuleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'doc_type', 'name', 'min_amount', 'max_amount', 'final_approval_duty',
                     'final_dept_level', 'priority')
     list_display_links = ('name',)
@@ -47,7 +49,7 @@ class ApprovalPolicyRuleAdmin(admin.ModelAdmin):
 
 
 @admin.register(RouteTemplate)
-class RouteTemplateAdmin(admin.ModelAdmin):
+class RouteTemplateAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'doc_type', 'step_order', 'role_label', 'condition')
     list_display_links = ('role_label',)
     list_filter = ('doc_type', 'condition')
@@ -77,7 +79,7 @@ class ApprovalAttachmentInline(admin.TabularInline):
 
 
 @admin.register(ApprovalDocument)
-class ApprovalDocumentAdmin(admin.ModelAdmin):
+class ApprovalDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('doc_number', 'title', 'doc_type', 'drafter', 'drafter_assignment', 'status', 'created_at',
                     'submitted_at', 'completed_at')
     list_filter = ('status', 'doc_type', 'created_at')
@@ -88,7 +90,7 @@ class ApprovalDocumentAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalStep)
-class ApprovalStepAdmin(admin.ModelAdmin):
+class ApprovalStepAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'document', 'step_order', 'role_label', 'condition', 'status')
     list_filter = ('status', 'condition')
     search_fields = ('role_label', 'document__title', 'document__doc_number')
@@ -97,12 +99,15 @@ class ApprovalStepAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalAction)
-class ApprovalActionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'get_document', 'step', 'approver', 'is_delegated', 'delegated_from', 'action', 'comment', 'acted_at')
+class ApprovalActionAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'get_document', 'step', 'approver', 'is_delegated', 'delegated_from', 'action', 'comment',
+                    'acted_at')
     list_filter = ('action', 'is_delegated', 'acted_at')
-    search_fields = ('approver__username', 'delegated_from__username', 'comment', 'content_hash', 'step__document__title',
+    search_fields = ('approver__username', 'delegated_from__username', 'comment', 'content_hash',
+                     'step__document__title',
                      'step__document__doc_number')
-    readonly_fields = ('step', 'approver', 'action', 'comment', 'content_hash', 'is_delegated', 'delegated_from', 'acted_at')
+    readonly_fields = ('step', 'approver', 'action', 'comment', 'content_hash', 'is_delegated', 'delegated_from',
+                       'acted_at')
 
     @admin.display(description='결재 문서')
     def get_document(self, obj):
@@ -110,7 +115,7 @@ class ApprovalActionAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalDelegation)
-class ApprovalDelegationAdmin(admin.ModelAdmin):
+class ApprovalDelegationAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'delegator', 'delegatee', 'start_date', 'end_date', 'reason', 'is_active', 'created_at')
     list_filter = ('is_active', 'start_date', 'end_date')
     search_fields = ('delegator__username', 'delegatee__username', 'reason')
@@ -118,14 +123,14 @@ class ApprovalDelegationAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalAttachment)
-class ApprovalAttachmentAdmin(admin.ModelAdmin):
+class ApprovalAttachmentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'document', 'file_name', 'file_type', 'file_size', 'creator', 'created_at')
     list_filter = ('created_at',)
     search_fields = ('file_name', 'document__title', 'document__doc_number')
 
 
 @admin.register(DocNumberSequence)
-class DocNumberSequenceAdmin(admin.ModelAdmin):
+class DocNumberSequenceAdmin(ImportExportMixin, admin.ModelAdmin):
     """채번 시퀀스 현황 조회 (읽기 전용 모니터링용)"""
     list_display = ('doc_type', 'year', 'last_number')
     list_filter = ('doc_type', 'year')
@@ -137,4 +142,3 @@ class DocNumberSequenceAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser  # 슈퍼유저만 삭제 가능 (초기화 목적)
-
