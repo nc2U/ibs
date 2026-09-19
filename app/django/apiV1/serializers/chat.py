@@ -146,7 +146,7 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             'id': msg.id,
             'sender_name': msg.sender.username if msg.sender else '시스템',
             'message_type': msg.message_type,
-            'content': msg.content if msg.message_type == 'text' else (msg.ref_title or f"[{msg.get_message_type_display()}]"),
+            'content': '삭제된 메시지입니다.' if msg.is_deleted else (msg.content if msg.message_type == 'text' else (msg.ref_title or f"[{msg.get_message_type_display()}]")),
             'created': msg.created,
         }
 

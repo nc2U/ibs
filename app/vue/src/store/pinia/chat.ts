@@ -3,8 +3,13 @@ import { ref, computed } from 'vue'
 import api from '@/api'
 import Cookies from 'js-cookie'
 import type { ChatRoom, ChatMessage } from '@/store/types/chat'
+import { useAccount } from '@/store/pinia/account'
 
 export const useChat = defineStore('chat', () => {
+  const accountStore = useAccount()
+  const getMyUserId = () => accountStore.userInfo?.pk || 0
+  const getMyUsername = () => accountStore.userInfo?.username || ''
+
   const isDrawerOpen = ref(false)
   const rooms = ref<ChatRoom[]>([])
   const currentRoom = ref<ChatRoom | null>(null)
@@ -120,8 +125,10 @@ export const useChat = defineStore('chat', () => {
       // 백엔드에서 order_by('created')로 오래된 순 -> 최신 순 정렬되어 오므로 그대로 할당
       messages.value = res.data.results || res.data
 
-      // 읽음 처리
-      await api.post(`/chat-room/${room.id}/read/`, {}, { hideProgress: true } as any)
+      // 읽음 처리 (마지막 메시지 ID 전달)
+      const lastMsg = messages.value.length ? messages.value[messages.value.length - 1] : null
+      const lastId = lastMsg?.id || 0
+      await api.post(`/chat-room/${room.id}/read/`, { last_message_id: lastId }, { hideProgress: true } as any)
       room.unread_count = 0
       fetchTotalUnread()
     } catch (_) {}
@@ -176,8 +183,27 @@ export const useChat = defineStore('chat', () => {
             if (!messages.value.some(m => m.id === msg.id)) {
               messages.value.push(msg)
             }
-            if (currentRoom.value && currentRoom.value.id === roomId) {
-              api.post(`/chat-room/${roomId}/read/`, {}, { hideProgress: true } as any)
+            const myId = getMyUserId()
+            const myUsername = getMyUsername()
+            const isMe =
+              (msg.sender?.pk && myId > 0 && msg.sender.pk === myId) ||
+              (msg.sender?.username && myUsername && msg.sender.username === myUsername)
+
+            // 내가 보낸 메시지가 아닐 때(상대방 메시지)에만 읽음 처리 전송
+            if (!isMe && currentRoom.value && currentRoom.value.id === roomId) {
+              api.post(
+                `/chat-room/${roomId}/read/`,
+                { last_message_id: msg.id },
+                { hideProgress: true } as any,
+              )
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(
+                  JSON.stringify({
+                    type: 'read',
+                    last_message_id: msg.id,
+                  }),
+                )
+              }
             }
           }
         } else if (payload.type === 'delete_message') {
@@ -192,14 +218,21 @@ export const useChat = defineStore('chat', () => {
                 target.file = null
                 target.file_name = ''
                 target.file_size = 0
+                target.ref_id = null
+                target.ref_title = ''
+                target.ref_sub = ''
               }
             } else {
               messages.value = messages.value.filter(m => m.id !== messageId)
             }
           }
         } else if (payload.type === 'read') {
+          const readUserId = payload.user_id
           const lastReadId = payload.last_message_id
-          if (lastReadId) {
+          const myId = getMyUserId()
+
+          // 다른 사용자가 읽은 경우에만 내가 보낸 메시지의 unread_count 차감 (자신이 발생시킨 read 이벤트 제외)
+          if (readUserId && myId > 0 && readUserId !== myId && lastReadId) {
             messages.value.forEach(m => {
               if (m.id <= lastReadId && m.unread_count && m.unread_count > 0) {
                 m.unread_count = Math.max(0, m.unread_count - 1)
@@ -293,7 +326,29 @@ export const useChat = defineStore('chat', () => {
         params: targetRoomId ? { room: targetRoomId } : {},
         hideProgress: true,
       } as any)
-      messages.value = messages.value.filter(m => m.id !== messageId)
+      // 웹소켓 미연결 시 로컬 폴백 (웹소켓 연결 시에는 ws.onmessage의 delete_message 이벤트가 자동 처리)
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        const target = messages.value.find(m => m.id === messageId)
+        if (target) {
+          const isSelf = currentRoom.value?.room_type === 'self'
+          const isDirectUnread =
+            currentRoom.value?.room_type === 'direct' && (target.unread_count || 0) > 0
+          const isUnder5Min =
+            Date.now() - new Date(target.created).getTime() <= 5 * 60 * 1000
+          if (isSelf || isDirectUnread || isUnder5Min) {
+            messages.value = messages.value.filter(m => m.id !== messageId)
+          } else {
+            target.is_deleted = true
+            target.content = '삭제된 메시지입니다.'
+            target.file = null
+            target.file_name = ''
+            target.file_size = 0
+            target.ref_id = null
+            target.ref_title = ''
+            target.ref_sub = ''
+          }
+        }
+      }
     } catch (e) {
       throw e
     }

@@ -304,6 +304,48 @@ const handleForwardToRoom = async (room: ChatRoom) => {
   }
 }
 
+// ── 메시지 삭제 (스마트 삭제 Smart Delete) ────────────────────────
+const isDeleting = ref(false)
+
+const handleDeleteMessage = async (msg: ChatMessage) => {
+  if (msg.sender?.pk !== currentUserId.value) return
+  if (msg.is_deleted || isDeleting.value) return
+
+  let confirmMsg = '이 메시지를 삭제하시겠습니까?'
+  if (currentRoom.value?.room_type === 'direct') {
+    if ((msg.unread_count || 0) > 0) {
+      confirmMsg =
+        '이 메시지를 삭제하시겠습니까?\n\n상대방이 아직 읽지 않아 모든 대화방에서 완전히 삭제됩니다.'
+    } else {
+      confirmMsg =
+        "이 메시지를 삭제하시겠습니까?\n\n상대방이 이미 확인하여 '삭제된 메시지입니다.'로 표시됩니다."
+    }
+  } else if (
+    currentRoom.value?.room_type === 'channel' ||
+    currentRoom.value?.room_type === 'group'
+  ) {
+    const diffMinutes = (Date.now() - new Date(msg.created).getTime()) / (1000 * 60)
+    if (diffMinutes <= 5) {
+      confirmMsg =
+        '이 메시지를 삭제하시겠습니까?\n\n전송 후 5분 이내이므로 모든 대화 참여자의 화면에서 완전히 삭제됩니다.'
+    } else {
+      confirmMsg =
+        "이 메시지를 삭제하시겠습니까?\n\n전송 후 5분이 경과하여 '삭제된 메시지입니다.'로 표시됩니다."
+    }
+  }
+
+  if (!confirm(confirmMsg)) return
+
+  try {
+    isDeleting.value = true
+    await chatStore.deleteMessage(msg.id, currentRoom.value?.id)
+  } catch (err: any) {
+    alert(err.response?.data?.detail || '메시지 삭제에 실패했습니다.')
+  } finally {
+    isDeleting.value = false
+  }
+}
+
 const formatFileSize = (bytes?: number) => {
   if (!bytes) return ''
   if (bytes < 1024) return `${bytes} B`
@@ -706,7 +748,7 @@ const formatTime = (dateStr: string) => {
                 </span>
               </v-avatar>
 
-              <!-- 말풍선 영역 -->
+              <!-- 말풍선 및 타임스탬프/안읽음 카운트 영역 -->
               <div style="max-width: 82%">
                 <div
                   v-if="msg.sender?.pk !== currentUserId && currentRoom?.room_type === 'channel'"
@@ -714,113 +756,173 @@ const formatTime = (dateStr: string) => {
                 >
                   {{ msg.sender?.username }}
                 </div>
+
                 <div
-                  class="p-2.5 rounded-lg text-sm chat-bubble shadow-sm position-relative msg-bubble-wrapper cursor-pointer"
-                  :class="msg.sender?.pk === currentUserId ? 'my-bubble ml-auto' : 'other-bubble'"
-                  title="더블클릭하여 답장/댓글 쓰기"
-                  @dblclick="setReplyTarget(msg)"
+                  class="d-flex align-items-end"
+                  :class="msg.sender?.pk === currentUserId ? 'justify-end' : 'justify-start'"
                 >
-                  <!-- 호버 액션 툴바 (답장, 복사 & 다른 방으로 공유/전달) -->
-                  <div class="msg-action-toolbar d-flex align-items-center">
-                    <v-btn
-                      icon="mdi-reply-outline"
-                      size="x-small"
-                      variant="text"
-                      density="compact"
-                      title="답장/댓글 쓰기"
-                      @click.stop="setReplyTarget(msg)"
-                    />
-                    <v-btn
-                      icon="mdi-content-copy"
-                      size="x-small"
-                      variant="text"
-                      density="compact"
-                      title="텍스트/링크 복사"
-                      @click.stop="copyMessageContent(msg)"
-                    />
-                    <v-btn
-                      icon="mdi-share-outline"
-                      size="x-small"
-                      variant="text"
-                      density="compact"
-                      title="다른 대화방으로 전달/공유"
-                      @click.stop="openForwardModal(msg)"
-                    />
-                  </div>
-
-                  <!-- 0. 답장(댓글) 대상 메시지 인용 표시 -->
-                  <div v-if="msg.reply_to_detail" class="p-2 mb-2 rounded reply-quote-box text-xs">
-                    <div class="font-weight-bold reply-quote-sender mb-0.5">
-                      <v-icon icon="mdi-reply" size="x-small" class="mr-1" />
-                      {{ msg.reply_to_detail.sender_name }}님에게 답장
-                    </div>
-                    <div class="text-truncate reply-quote-content">
-                      {{ msg.reply_to_detail.content }}
-                    </div>
-                  </div>
-
-                  <!-- 1. 리치 카드 (업무/회의/결재 연계 항목) -->
-                  <div v-if="msg.ref_id" class="p-2 mb-2 rounded ref-card text-xs">
-                    <div class="font-weight-bold ref-card-title mb-1">
-                      📌 {{ msg.ref_title || '연계 항목' }}
-                    </div>
-                    <div class="ref-card-sub">{{ msg.ref_sub }}</div>
-                  </div>
-
-                  <!-- 2. 이미지 첨부파일 -->
+                  <!-- [내 메시지인 경우] 말풍선 왼쪽: 안 읽은 인원수(노란색) + 전송 시간 -->
                   <div
-                    v-if="msg.message_type === 'image' && msg.file"
-                    class="chat-image-preview mb-1"
+                    v-if="msg.sender?.pk === currentUserId"
+                    class="d-flex flex-column align-items-end mr-1.5 flex-shrink-0"
                   >
-                    <a :href="msg.file" target="_blank" rel="noopener">
-                      <img
-                        :src="msg.file"
-                        :alt="msg.file_name || '사진'"
-                        class="rounded mw-100"
-                        style="max-height: 200px; object-fit: cover"
+                    <span
+                      v-if="!msg.is_deleted && (msg.unread_count || 0) > 0"
+                      class="unread-count-badge font-weight-bold mb-0.5"
+                      title="아직 읽지 않은 인원수"
+                    >
+                      {{ msg.unread_count }}
+                    </span>
+                    <span class="timestamp-text">{{ formatTime(msg.created) }}</span>
+                  </div>
+
+                  <!-- 말풍선 박스 -->
+                  <div
+                    class="p-2.5 rounded-lg text-sm chat-bubble shadow-sm position-relative msg-bubble-wrapper"
+                    :class="[
+                      msg.sender?.pk === currentUserId ? 'my-bubble' : 'other-bubble',
+                      { 'deleted-bubble': msg.is_deleted, 'cursor-pointer': !msg.is_deleted },
+                    ]"
+                    :title="msg.is_deleted ? '' : '더블클릭하여 답장/댓글 쓰기'"
+                    @dblclick="!msg.is_deleted && setReplyTarget(msg)"
+                  >
+                    <!-- 호버 액션 툴바 (삭제되지 않은 정상 메시지만 표시) -->
+                    <div
+                      v-if="!msg.is_deleted"
+                      class="msg-action-toolbar d-flex align-items-center"
+                    >
+                      <v-btn
+                        icon="mdi-reply-outline"
+                        size="x-small"
+                        variant="text"
+                        density="compact"
+                        title="답장/댓글 쓰기"
+                        @click.stop="setReplyTarget(msg)"
                       />
-                    </a>
-                  </div>
-
-                  <!-- 3. 일반 문서/도면 첨부파일 카드 -->
-                  <div
-                    v-else-if="msg.message_type === 'file' && msg.file"
-                    class="p-2 mb-1 rounded file-attachment-card d-flex align-items-center"
-                  >
-                    <v-icon icon="mdi-file-document-outline" size="24" class="mr-2 flex-shrink-0" />
-                    <div class="flex-grow-1 overflow-hidden mr-2">
-                      <div class="font-weight-bold text-truncate text-xs">
-                        {{ msg.file_name || '첨부파일' }}
-                      </div>
-                      <div class="text-xs opacity-75">
-                        {{ formatFileSize(msg.file_size) }}
-                      </div>
+                      <v-btn
+                        icon="mdi-content-copy"
+                        size="x-small"
+                        variant="text"
+                        density="compact"
+                        title="텍스트/링크 복사"
+                        @click.stop="copyMessageContent(msg)"
+                      />
+                      <v-btn
+                        icon="mdi-share-outline"
+                        size="x-small"
+                        variant="text"
+                        density="compact"
+                        title="다른 대화방으로 전달/공유"
+                        @click.stop="openForwardModal(msg)"
+                      />
+                      <!-- 본인 작성 메시지인 경우에만 삭제 버튼 노출 -->
+                      <v-btn
+                        v-if="msg.sender?.pk === currentUserId"
+                        icon="mdi-delete-outline"
+                        size="x-small"
+                        variant="text"
+                        density="compact"
+                        color="error"
+                        class="delete-btn"
+                        title="메시지 삭제"
+                        @click.stop="handleDeleteMessage(msg)"
+                      />
                     </div>
-                    <v-btn
-                      :href="msg.file"
-                      target="_blank"
-                      download
-                      icon="mdi-download"
-                      size="x-small"
-                      variant="tonal"
-                      class="flex-shrink-0"
-                    />
+
+                    <!-- 🚫 삭제된 메시지 표시 -->
+                    <div
+                      v-if="msg.is_deleted"
+                      class="d-flex align-items-center text-xs fst-italic deleted-msg-content py-0.5"
+                    >
+                      <v-icon icon="mdi-cancel" size="14" class="mr-1.5 opacity-60" />
+                      <span>삭제된 메시지입니다.</span>
+                    </div>
+
+                    <!-- 정상 메시지 컨텐츠 -->
+                    <template v-else>
+                      <!-- 0. 답장(댓글) 대상 메시지 인용 표시 -->
+                      <div
+                        v-if="msg.reply_to_detail"
+                        class="p-2 mb-2 rounded reply-quote-box text-xs"
+                      >
+                        <div class="font-weight-bold reply-quote-sender mb-0.5">
+                          <v-icon icon="mdi-reply" size="x-small" class="mr-1" />
+                          {{ msg.reply_to_detail.sender_name }}님에게 답장
+                        </div>
+                        <div class="text-truncate reply-quote-content">
+                          {{ msg.reply_to_detail.content }}
+                        </div>
+                      </div>
+
+                      <!-- 1. 리치 카드 (업무/회의/결재 연계 항목) -->
+                      <div v-if="msg.ref_id" class="p-2 mb-2 rounded ref-card text-xs">
+                        <div class="font-weight-bold ref-card-title mb-1">
+                          📌 {{ msg.ref_title || '연계 항목' }}
+                        </div>
+                        <div class="ref-card-sub">{{ msg.ref_sub }}</div>
+                      </div>
+
+                      <!-- 2. 이미지 첨부파일 -->
+                      <div
+                        v-if="msg.message_type === 'image' && msg.file"
+                        class="chat-image-preview mb-1"
+                      >
+                        <a :href="msg.file" target="_blank" rel="noopener">
+                          <img
+                            :src="msg.file"
+                            :alt="msg.file_name || '사진'"
+                            class="rounded mw-100"
+                            style="max-height: 200px; object-fit: cover"
+                          />
+                        </a>
+                      </div>
+
+                      <!-- 3. 일반 문서/도면 첨부파일 카드 -->
+                      <div
+                        v-else-if="msg.message_type === 'file' && msg.file"
+                        class="p-2 mb-1 rounded file-attachment-card d-flex align-items-center"
+                      >
+                        <v-icon
+                          icon="mdi-file-document-outline"
+                          size="24"
+                          class="mr-2 flex-shrink-0"
+                        />
+                        <div class="flex-grow-1 overflow-hidden mr-2">
+                          <div class="font-weight-bold text-truncate text-xs">
+                            {{ msg.file_name || '첨부파일' }}
+                          </div>
+                          <div class="text-xs opacity-75">
+                            {{ formatFileSize(msg.file_size) }}
+                          </div>
+                        </div>
+                        <v-btn
+                          :href="msg.file"
+                          target="_blank"
+                          download
+                          icon="mdi-download"
+                          size="x-small"
+                          variant="tonal"
+                          class="flex-shrink-0"
+                        />
+                      </div>
+
+                      <!-- 4. 메시지 본문 텍스트 -->
+                      <div
+                        v-if="msg.content && msg.content !== msg.file_name"
+                        class="chat-text-content"
+                      >
+                        {{ msg.content }}
+                      </div>
+                    </template>
                   </div>
 
-                  <!-- 메시지 본문 텍스트 (텍스트가 있을 때만 표시) -->
+                  <!-- [상대방 메시지인 경우] 말풍선 오른쪽: 전송 시간 -->
                   <div
-                    v-if="msg.content && msg.content !== msg.file_name"
-                    class="chat-text-content"
+                    v-if="msg.sender?.pk !== currentUserId"
+                    class="d-flex flex-column align-items-start ml-1.5 flex-shrink-0"
                   >
-                    {{ msg.content }}
+                    <span class="timestamp-text">{{ formatTime(msg.created) }}</span>
                   </div>
-                </div>
-
-                <div
-                  class="text-xs timestamp-text mt-1 px-1"
-                  :class="msg.sender?.pk === currentUserId ? 'text-right' : 'text-left'"
-                >
-                  {{ formatTime(msg.created) }}
                 </div>
               </div>
             </div>
@@ -1221,6 +1323,43 @@ const formatTime = (dateStr: string) => {
 .dark-drawer .msg-action-toolbar .v-btn:hover {
   color: #ffffff !important;
   background-color: #333c52 !important;
+}
+.msg-action-toolbar .delete-btn:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+.dark-drawer .msg-action-toolbar .delete-btn:hover {
+  color: #f87171 !important;
+  background-color: rgba(239, 68, 68, 0.22) !important;
+}
+
+/* 읽음/안읽음 카운트 배지 (카카오톡 스타일 골드 옐로우) */
+.unread-count-badge {
+  color: #eab308;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+.dark-drawer .unread-count-badge {
+  color: #facc15;
+}
+
+/* 삭제된 메시지 말풍선 스타일 */
+.deleted-bubble {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  color: #94a3b8 !important;
+  border: 1px dashed #cbd5e1 !important;
+  cursor: default !important;
+}
+.dark-drawer .deleted-bubble {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #64748b !important;
+  border: 1px dashed #334155 !important;
+  cursor: default !important;
+}
+.deleted-msg-content {
+  color: inherit;
+  font-size: 0.82rem;
+  letter-spacing: -0.2px;
 }
 
 /* 답장/댓글 원본 인용 박스 */
