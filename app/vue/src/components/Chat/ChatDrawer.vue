@@ -552,8 +552,10 @@ const formatTime = (dateStr: string) => {
 
               <!-- 일반 1:1 대화 섹션 구분선 -->
               <div class="d-flex align-items-center px-1 my-2">
-                <span class="text-xs text-muted font-weight-medium">1:1 대화</span>
-                <v-divider class="ml-2" />
+                <span class="text-xs text-muted font-weight-medium text-nowrap flex-shrink-0 mr-2">
+                  1:1 대화
+                </span>
+                <v-divider class="my-0" />
               </div>
 
               <div
