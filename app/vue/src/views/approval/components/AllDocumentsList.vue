@@ -238,7 +238,9 @@ onMounted(async () => {
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h6 class="mb-0 fw-bold">전사 결재 문서 목록</h6>
-        <CBadge color="primary" shape="rounded-pill">총 {{ allDocumentsCount }}건</CBadge>
+        <v-chip color="info" shape="rounded-pill" variant="elevated" size="x-small">
+          총 {{ allDocumentsCount }}건
+        </v-chip>
       </div>
     </div>
 
@@ -304,7 +306,7 @@ onMounted(async () => {
 
           <!-- 공개등급 -->
           <CTableDataCell class="text-center">
-            <CBadge
+            <v-chip
               :color="
                 doc.security_level === '1'
                   ? 'danger'
@@ -312,8 +314,8 @@ onMounted(async () => {
                     ? 'primary'
                     : 'success'
               "
-              variant="outline"
-              class="small"
+              variant="tonal"
+              size="x-small"
             >
               {{
                 doc.security_level === '1'
@@ -322,7 +324,7 @@ onMounted(async () => {
                     ? '👥 2등급'
                     : '🌐 3등급'
               }}
-            </CBadge>
+            </v-chip>
           </CTableDataCell>
 
           <!-- 카테고리 / 문서유형 -->

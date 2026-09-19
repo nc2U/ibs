@@ -164,7 +164,7 @@ onMounted(() => {
 
         <!-- 문서 유형 -->
         <CTableDataCell class="text-center">
-          <v-chip color="primary" size="x-small">{{ doc.doc_type_name }}</v-chip>
+          <v-chip color="primary" size="x-small" variant="outlined">{{ doc.doc_type_name }}</v-chip>
         </CTableDataCell>
 
         <!-- 공개 등급 -->
