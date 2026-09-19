@@ -38,6 +38,12 @@ class ChatRepository {
     return ChatRoomModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// 2-1. 나와의 채팅(개인 메모/보관함) 방 조회 또는 생성
+  Future<ChatRoomModel> getOrCreateSelf() async {
+    final response = await _dio.get('/api/v1/chat-room/get-or-create-self/');
+    return ChatRoomModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 3. 대화방 이전 메시지 내역 조회 (REST API)
   Future<List<ChatMessageModel>> fetchMessages(int roomId) async {
     final response = await _dio.get(

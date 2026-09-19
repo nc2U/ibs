@@ -84,6 +84,32 @@ class _UserSelectSheetState extends ConsumerState<UserSelectSheet> {
     }
   }
 
+  Future<void> _startSelfChat() async {
+    setState(() => _isCreating = true);
+    try {
+      final repo = ref.read(chatRepositoryProvider);
+      final room = await repo.getOrCreateSelf();
+
+      if (mounted) {
+        Navigator.pop(context); // 시트 닫기
+        ref.invalidate(chatRoomsProvider);
+        ref.invalidate(totalUnreadChatCountProvider);
+        context.push('/chat/${room.id}', extra: room);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('나와의 채팅 연결 실패: $e'),
+            backgroundColor: context.colors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(allMembersProvider);
@@ -130,6 +156,27 @@ class _UserSelectSheetState extends ConsumerState<UserSelectSheet> {
             ),
           ),
           Divider(color: context.colors.border, height: 1),
+
+          // ── 나와의 채팅 바로가기 버튼 ──────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _startSelfChat,
+                icon: const Icon(Icons.bookmark_added_rounded, size: 18, color: Colors.blueAccent),
+                label: const Text(
+                  '나와의 채팅 바로가기 (내게 쓰기)',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.blueAccent),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ),
 
           // ── 검색 입력창 ──────────────────────────────────────────
           Padding(

@@ -167,18 +167,274 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
           ),
           data: (rooms) {
             final channelRooms = rooms.where((r) => r.roomType == ChatRoomType.channel).toList();
-            final directRooms = rooms.where((r) => r.roomType != ChatRoomType.channel).toList();
+            final directRooms = rooms.where((r) => r.roomType == ChatRoomType.direct || r.roomType == ChatRoomType.group).toList();
+            final selfRoom = rooms.where((r) => r.roomType == ChatRoomType.self).firstOrNull;
 
             return TabBarView(
               controller: _tabController,
               children: [
                 _buildRoomList(context, channelRooms, currentUserId, isChannel: true),
-                _buildRoomList(context, directRooms, currentUserId, isChannel: false),
+                _buildDirectTab(context, selfRoom, directRooms, currentUserId),
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  Future<void> _enterSelfChat(BuildContext context, ChatRoomModel? selfRoom) async {
+    if (selfRoom != null) {
+      context.push('/chat/${selfRoom.id}', extra: selfRoom).then((_) {
+        ref.invalidate(chatRoomsProvider);
+        ref.invalidate(totalUnreadChatCountProvider);
+      });
+      return;
+    }
+
+    try {
+      final repository = ref.read(chatRepositoryProvider);
+      final room = await repository.getOrCreateSelf();
+      if (!context.mounted) return;
+      context.push('/chat/${room.id}', extra: room).then((_) {
+        ref.invalidate(chatRoomsProvider);
+        ref.invalidate(totalUnreadChatCountProvider);
+      });
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('나와의 채팅방을 불러오지 못했습니다.')),
+      );
+    }
+  }
+
+  Widget _buildDirectTab(
+    BuildContext context,
+    ChatRoomModel? selfRoom,
+    List<ChatRoomModel> directRooms,
+    int currentUserId,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        // ── 나와의 채팅 (최상단 고정 카드) ──────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _enterSelfChat(context, selfRoom),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withAlpha(60), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.bookmark_added_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '나와의 채팅',
+                              style: AppTextStyles.titleSm.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: context.colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                '나',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          selfRoom?.lastMessage?.content ?? '나만의 메모, 사진, 도면 파일을 보관해보세요',
+                          style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (selfRoom?.lastMessage != null)
+                        Text(
+                          _formatTime(selfRoom!.lastMessage!.created),
+                          style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                        ),
+                      const SizedBox(height: 4),
+                      const Icon(Icons.push_pin_rounded, size: 14, color: Colors.blueAccent),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // ── 1:1 대화 섹션 타이틀 ─────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Text(
+                '1:1 대화',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textMuted,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Divider(color: context.colors.border, height: 1)),
+            ],
+          ),
+        ),
+
+        // ── 일반 1:1 대화 목록 ──────────────────────────────
+        if (directRooms.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 32),
+            child: Column(
+              children: [
+                Icon(Icons.forum_outlined, size: 40, color: context.colors.textMuted.withAlpha(120)),
+                const SizedBox(height: 10),
+                Text(
+                  '진행 중인 1:1 대화가 없습니다.',
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+                ),
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  onPressed: () => UserSelectSheet.show(context),
+                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                  label: const Text('대화 상대 선택하기'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.colors.accentWork,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...directRooms.map((room) {
+            final displayName = room.getDisplayName(currentUserId);
+            return Column(
+              children: [
+                InkWell(
+                  onTap: () {
+                    context.push('/chat/${room.id}', extra: room).then((_) {
+                      ref.invalidate(chatRoomsProvider);
+                      ref.invalidate(totalUnreadChatCountProvider);
+                    });
+                  },
+                  onLongPress: () => _showLeaveRoomDialog(context, room, displayName),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: context.colors.accentCorp.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.colors.accentCorp.withAlpha(50)),
+                          ),
+                          child: Icon(Icons.person_rounded, color: context.colors.accentCorp, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: AppTextStyles.titleSm.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                room.lastMessage?.content ?? '대화를 시작해보세요',
+                                style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatTime(room.lastMessage?.created ?? room.updated),
+                              style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                            ),
+                            if (room.unreadCount > 0) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${room.unreadCount}',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(color: context.colors.border, height: 1, indent: 76),
+              ],
+            );
+          }),
+      ],
     );
   }
 

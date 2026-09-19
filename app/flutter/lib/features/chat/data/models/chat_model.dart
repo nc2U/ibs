@@ -5,6 +5,7 @@ enum ChatRoomType {
   channel, // 워크스페이스 공용 채널
   group,   // 비공개 소그룹
   direct,  // 1:1 DM
+  self,    // 나와의 채팅 (개인 메모/보관함)
 }
 
 /// 메시지 유형
@@ -61,6 +62,8 @@ class ChatRoomModel {
           return ChatRoomType.direct;
         case 'group':
           return ChatRoomType.group;
+        case 'self':
+          return ChatRoomType.self;
         default:
           return ChatRoomType.channel;
       }
@@ -90,8 +93,11 @@ class ChatRoomModel {
     );
   }
 
-  /// 표시할 방 이름 (1:1 DM인 경우 상대방 이름 자동 반환)
+  /// 표시할 방 이름 (나와의 채팅, 1:1 DM인 경우 상대방 이름 자동 반환)
   String getDisplayName(int currentUserId) {
+    if (roomType == ChatRoomType.self) {
+      return '나와의 채팅';
+    }
     if (roomType == ChatRoomType.direct) {
       final other = members.firstWhere(
         (m) => m.pk != currentUserId,

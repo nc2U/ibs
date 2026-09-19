@@ -105,38 +105,39 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(Icons.people_alt_outlined, color: context.colors.textPrimary, size: 22),
-                if ((widget.initialRoom?.members.length ?? 0) > 0)
-                  Positioned(
-                    top: -4,
-                    right: -6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: context.colors.accentWork,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${widget.initialRoom!.members.length}',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.1,
+          if (widget.initialRoom?.roomType != ChatRoomType.self)
+            IconButton(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(Icons.people_alt_outlined, color: context.colors.textPrimary, size: 22),
+                  if ((widget.initialRoom?.members.length ?? 0) > 0)
+                    Positioned(
+                      top: -4,
+                      right: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: context.colors.accentWork,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${widget.initialRoom!.members.length}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
+              tooltip: '참여자 목록',
+              onPressed: () => _showMembersSheet(widget.initialRoom, currentUserId),
             ),
-            tooltip: '참여자 목록',
-            onPressed: () => _showMembersSheet(widget.initialRoom, currentUserId),
-          ),
-          if (widget.initialRoom?.roomType != ChatRoomType.channel)
+          if (widget.initialRoom?.roomType == ChatRoomType.direct || widget.initialRoom?.roomType == ChatRoomType.group)
             IconButton(
               icon: Icon(Icons.exit_to_app_rounded, color: context.colors.textMuted, size: 22),
               tooltip: '대화방 나가기',
@@ -162,6 +163,50 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 if (messages.isEmpty) {
+                  if (widget.initialRoom?.roomType == ChatRoomType.self) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withAlpha(20),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.withAlpha(60)),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.lightbulb_outline_rounded, color: Colors.blueAccent, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '나와의 채팅 활용 팁',
+                                    style: AppTextStyles.titleSm.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blueAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                '• 도면/사진 보관: 모바일과 PC 웹 간 현장 사진, 도면, 공문 파일을 자유롭게 전송·다운로드하세요.\n'
+                                '• 리치 카드 확인: 결재 문서나 업무(Issue) 공유 카드를 미리 보내보고 형태를 사전 확인할 수 있습니다.\n'
+                                '• 개인 메모장: 중요한 일정, To-Do, 아이디어를 빠르게 기록해 두세요.',
+                                style: AppTextStyles.bodySm.copyWith(
+                                  color: context.colors.textMuted,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
