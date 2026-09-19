@@ -764,7 +764,7 @@ const formatTime = (dateStr: string) => {
                   <!-- [내 메시지인 경우] 말풍선 왼쪽: 안 읽은 인원수(노란색) + 전송 시간 -->
                   <div
                     v-if="msg.sender?.pk === currentUserId"
-                    class="d-flex flex-column align-items-end mr-1.5 flex-shrink-0"
+                    class="d-flex flex-column align-items-end msg-time-left flex-shrink-0"
                   >
                     <span
                       v-if="!msg.is_deleted && (msg.unread_count || 0) > 0"
@@ -919,7 +919,7 @@ const formatTime = (dateStr: string) => {
                   <!-- [상대방 메시지인 경우] 말풍선 오른쪽: 전송 시간 -->
                   <div
                     v-if="msg.sender?.pk !== currentUserId"
-                    class="d-flex flex-column align-items-start ml-1.5 flex-shrink-0"
+                    class="d-flex flex-column align-items-start msg-time-right flex-shrink-0"
                   >
                     <span class="timestamp-text">{{ formatTime(msg.created) }}</span>
                   </div>
@@ -1333,6 +1333,16 @@ const formatTime = (dateStr: string) => {
   background-color: rgba(239, 68, 68, 0.22) !important;
 }
 
+/* 말풍선과 전송 시간/읽음 배지 사이의 자연스러운 간격 */
+.msg-time-left {
+  margin-right: 8px;
+  padding-bottom: 2px;
+}
+.msg-time-right {
+  margin-left: 8px;
+  padding-bottom: 2px;
+}
+
 /* 읽음/안읽음 카운트 배지 (카카오톡 스타일 골드 옐로우) */
 .unread-count-badge {
   color: #eab308;
@@ -1348,18 +1358,27 @@ const formatTime = (dateStr: string) => {
   background-color: rgba(0, 0, 0, 0.04) !important;
   color: #94a3b8 !important;
   border: 1px dashed #cbd5e1 !important;
+  box-shadow: none !important;
   cursor: default !important;
 }
 .dark-drawer .deleted-bubble {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
   color: #64748b !important;
   border: 1px dashed #334155 !important;
+  box-shadow: none !important;
   cursor: default !important;
 }
 .deleted-msg-content {
-  color: inherit;
+  color: #94a3b8;
   font-size: 0.82rem;
   letter-spacing: -0.2px;
+}
+.dark-drawer .deleted-msg-content {
+  color: #64748b !important; /* 다크모드에서 일반 텍스트 대비 차분하게 톤 다운 */
+}
+.dark-drawer .deleted-msg-content .v-icon {
+  color: #64748b !important;
+  opacity: 0.8;
 }
 
 /* 답장/댓글 원본 인용 박스 */
@@ -1410,13 +1429,13 @@ const formatTime = (dateStr: string) => {
   color: #f1f5f9 !important;
 }
 
-.my-bubble {
+.my-bubble:not(.deleted-bubble) {
   background-color: #e2eefc; /* 눈이 아주 편안하고 세련된 소프트 파스텔 연청색 */
   color: #0f2e5c; /* 시인성이 뛰어난 딥 네이비 텍스트 */
   border: 1px solid #c7defa;
   border-radius: 14px 14px 2px 14px;
 }
-.other-bubble {
+.other-bubble:not(.deleted-bubble) {
   background-color: #ffffff;
   color: #1e293b; /* 가독성 좋은 차콜 네이비 */
   border: 1px solid #e2e8f0;
@@ -1509,13 +1528,13 @@ const formatTime = (dateStr: string) => {
 }
 
 /* 다크모드 말풍선: 눈이 편안한 고급 슬레이트 블루(내 메시지) & 다크 차콜(상대 메시지) */
-.dark-drawer .my-bubble {
+.dark-drawer .my-bubble:not(.deleted-bubble) {
   background-color: #2b3a55 !important; /* 눈이 아주 편안한 차분한 슬레이트 네이비/블루 */
   color: #f8fafc !important; /* 맑고 선명한 화이트 */
   border: 1px solid #3d4f72 !important;
   border-radius: 14px 14px 2px 14px;
 }
-.dark-drawer .other-bubble {
+.dark-drawer .other-bubble:not(.deleted-bubble) {
   background-color: #202430 !important;
   color: #e2e8f0 !important;
   border: 1px solid #2d3345 !important;
