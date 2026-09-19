@@ -112,15 +112,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         elif event_type == 'read':
             last_message_id = data.get('last_message_id', 0)
             if last_message_id:
-                await self.update_last_read(self.room_id, self.user, last_message_id)
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'broadcast_read',
-                        'user_id': self.user.pk,
-                        'last_message_id': last_message_id,
-                    }
-                )
+                updated = await self.update_last_read(self.room_id, self.user, last_message_id)
+                if updated:
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'broadcast_read',
+                            'user_id': self.user.pk,
+                            'last_message_id': last_message_id,
+                        }
+                    )
 
     # ── Channel Layer Handler ──────────────────────────────────────────
 
@@ -222,7 +223,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             sender_avatar = profile.image.url if profile.image else None
         except Exception:
             sender_name = user.username
-            sender_avatar = None
+        # 새 메시지 생성 직후의 안 읽은 인원수 (발신자 본인 제외)
+        unread_cnt = 0
+        if room.room_type == 'self':
+            unread_cnt = 0
+        elif room.room_type == 'direct':
+            unread_cnt = 1
+        elif room.room_type == 'channel' and room.project:
+            pjt_mems = room.project.all_members()
+            unread_cnt = max(0, len(pjt_mems) - 1)
+        else:
+            unread_cnt = max(0, room.members.exclude(pk=user.pk).count())
 
         return {
             'id': msg.id,
@@ -243,6 +254,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'ref_sub': msg.ref_sub,
             'reply_to': msg.reply_to_id,
             'reply_to_detail': reply_to_detail,
+            'is_deleted': False,
+            'unread_count': unread_cnt,
             'created': msg.created.isoformat(),
         }
 
@@ -252,4 +265,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if int(last_message_id) > membership.last_read_message_id:
             membership.last_read_message_id = int(last_message_id)
             membership.save(update_fields=['last_read_message_id'])
+            return True
+        return False
 

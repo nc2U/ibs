@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../data/chat_repository.dart';
 import '../data/models/chat_model.dart';
@@ -47,6 +48,8 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   StreamSubscription? _sub;
   final bool _isTyping = false;
   final String _typingUser = '';
+  int _myUserId = 0;
+  String _myUsername = '';
 
   ChatRoomNotifier(this.roomId, this._repo, this._ref) : super(const AsyncValue.loading()) {
     _init();
@@ -57,6 +60,23 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
 
   Future<void> _init() async {
     try {
+      try {
+        final myUser = _ref.read(currentUserProvider).valueOrNull ??
+            await _ref.read(currentUserProvider.future);
+        _myUserId = myUser?.pk ?? 0;
+        _myUsername = myUser?.username ?? '';
+      } catch (_) {
+        final tokenStorage = _ref.read(tokenStorageProvider);
+        final cached = await tokenStorage.getUserData();
+        if (cached != null && cached.isNotEmpty) {
+          try {
+            final json = jsonDecode(cached) as Map<String, dynamic>;
+            _myUserId = json['pk'] as int? ?? 0;
+            _myUsername = json['username'] as String? ?? '';
+          } catch (_) {}
+        }
+      }
+
       // 1) 기존 메시지 내역 불러오기
       final initialMessages = await _repo.fetchMessages(roomId);
       state = AsyncValue.data(initialMessages);
@@ -121,6 +141,14 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
       final json = jsonDecode(rawData as String) as Map<String, dynamic>;
       final type = json['type'] as String?;
 
+      if (_myUserId == 0) {
+        final myUser = _ref.read(currentUserProvider).valueOrNull;
+        if (myUser != null) {
+          _myUserId = myUser.pk;
+          _myUsername = myUser.username;
+        }
+      }
+
       if (type == 'chat_message') {
         final newMsg = ChatMessageModel.fromJson(json['data'] as Map<String, dynamic>);
         state = state.whenData((msgs) {
@@ -128,16 +156,21 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
           return [...msgs, newMsg];
         });
 
-        // 수신 즉시 REST 및 WebSocket 양방향 읽음 처리
-        _repo.markAsRead(roomId, lastMessageId: newMsg.id).then((_) {
-          _ref.invalidate(totalUnreadChatCountProvider);
-          _ref.invalidate(chatRoomsProvider);
-        });
-        if (_channel != null) {
-          _channel!.sink.add(jsonEncode({
-            'type': 'read',
-            'last_message_id': newMsg.id,
-          }));
+        final isMe = (newMsg.sender != null && _myUserId > 0 && newMsg.sender!.pk == _myUserId) ||
+                     (newMsg.sender != null && _myUsername.isNotEmpty && newMsg.sender!.username == _myUsername);
+
+        // 상대방이 보낸 메시지인 경우에만 수신 즉시 읽음 처리 전송 (내가 보낸 메시지는 제외)
+        if (!isMe) {
+          _repo.markAsRead(roomId, lastMessageId: newMsg.id).then((_) {
+            _ref.invalidate(totalUnreadChatCountProvider);
+            _ref.invalidate(chatRoomsProvider);
+          });
+          if (_channel != null) {
+            _channel!.sink.add(jsonEncode({
+              'type': 'read',
+              'last_message_id': newMsg.id,
+            }));
+          }
         }
       } else if (type == 'delete_message') {
         final deletedId = json['message_id'] as int?;
@@ -163,8 +196,11 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
           });
         }
       } else if (type == 'read') {
+        final readUserId = json['user_id'] as int?;
         final lastReadId = json['last_message_id'] as int?;
-        if (lastReadId != null) {
+
+        // 다른 사용자가 읽은 경우에만 내가 보낸 메시지의 unreadCount를 차감 (자신이 발생시킨 read 이벤트 제외)
+        if (readUserId != null && _myUserId > 0 && readUserId != _myUserId && lastReadId != null) {
           state = state.whenData((msgs) {
             return msgs.map((m) {
               if (m.id <= lastReadId && m.unreadCount > 0) {

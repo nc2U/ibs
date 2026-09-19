@@ -746,10 +746,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                                   try {
                                     final newRoom = await ref.read(chatRepositoryProvider).getOrCreateDm(member.pk);
                                     ref.invalidate(chatRoomsProvider);
-                                    if (!mounted) return;
+                                    if (!mounted || !context.mounted) return;
                                     context.push('/chat/${newRoom.id}', extra: newRoom);
                                   } catch (e) {
-                                    if (!mounted) return;
+                                    if (!mounted || !context.mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('대화방 생성 실패: $e')),
                                     );
@@ -793,18 +793,16 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 await ref.read(chatRepositoryProvider).leaveRoom(widget.roomId);
                 ref.invalidate(chatRoomsProvider);
                 ref.invalidate(totalUnreadChatCountProvider);
-                if (mounted) {
-                  context.pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('대화방을 나갔습니다.')),
-                  );
-                }
+                if (!mounted || !context.mounted) return;
+                context.pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('대화방을 나갔습니다.')),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('대화방 나가기 실패: $e')),
-                  );
-                }
+                if (!mounted || !context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('대화방 나가기 실패: $e')),
+                );
               }
             },
             child: const Text('나가기'),

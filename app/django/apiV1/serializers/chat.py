@@ -55,18 +55,32 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         if room.room_type == 'self':
             return 0
 
-        # 방별 멤버십(user_id, last_read_message_id) 캐싱
-        room_memberships = getattr(room, '_cached_memberships_list', None)
-        if room_memberships is None:
-            room_memberships = list(room.memberships.values('user_id', 'last_read_message_id'))
-            room._cached_memberships_list = room_memberships
+        # 방별 (전체 멤버 user_id 집합, 멤버별 last_read_message_id 딕셔너리) 캐싱
+        cached_info = getattr(room, '_cached_room_read_info', None)
+        if cached_info is None:
+            if room.room_type == 'channel' and room.project:
+                pjt_members = room.project.all_members()
+                all_member_ids = {m['user']['pk'] for m in pjt_members}
+            else:
+                all_member_ids = set(room.members.values_list('pk', flat=True))
 
-        # 발신자를 제외한 멤버들 중 아직 이 메시지를 안 읽은(last_read_message_id < obj.id) 멤버 수
+            last_reads = dict(room.memberships.values_list('user_id', 'last_read_message_id'))
+            cached_info = (all_member_ids, last_reads)
+            room._cached_room_read_info = cached_info
+
+        all_member_ids, last_reads = cached_info
+
+        # 발신자를 제외한 멤버들 중 아직 읽지 않은(last_read_message_id < obj.id) 멤버 수 계산
         sender_id = obj.sender_id
-        return sum(
-            1 for m in room_memberships
-            if m['user_id'] != sender_id and m['last_read_message_id'] < obj.id
-        )
+        unread = 0
+        for uid in all_member_ids:
+            if uid == sender_id:
+                continue
+            member_last_read = last_reads.get(uid, 0)
+            if member_last_read < obj.id:
+                unread += 1
+
+        return unread
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)

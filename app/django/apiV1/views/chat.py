@@ -219,25 +219,28 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             room=room,
             user=request.user
         )
+        was_updated = False
         if int(last_message_id) > membership.last_read_message_id:
             membership.last_read_message_id = int(last_message_id)
             membership.save(update_fields=['last_read_message_id'])
+            was_updated = True
 
-        # WebSocket으로 읽음 위치 실시간 브로드캐스팅
-        try:
-            from channels.layers import get_channel_layer
-            from asgiref.sync import async_to_sync
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f'chat_room_{room.id}',
-                {
-                    'type': 'broadcast_read',
-                    'user_id': request.user.pk,
-                    'last_message_id': membership.last_read_message_id,
-                }
-            )
-        except Exception:
-            pass
+        # WebSocket으로 읽음 위치 실시간 브로드캐스팅 (실제 갱신된 경우에만 전송하여 중복 카운트 감쇄 방지)
+        if was_updated:
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'chat_room_{room.id}',
+                    {
+                        'type': 'broadcast_read',
+                        'user_id': request.user.pk,
+                        'last_message_id': membership.last_read_message_id,
+                    }
+                )
+            except Exception:
+                pass
 
         return Response({'success': True, 'last_read_message_id': membership.last_read_message_id})
 
@@ -350,7 +353,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                     return ChatMessage.objects.none()
 
             return ChatMessage.objects.filter(room_id=room_id).select_related(
-                'sender', 'sender__profile',
+                'room', 'sender', 'sender__profile',
                 'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
             ).order_by('-created')  # 역순 정렬 후 클라이언트에서 뒤집어 사용
 
@@ -409,6 +412,15 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         # 방의 최근 활동시간(updated) 갱신
         msg.room.save(update_fields=['updated'])
 
+        # 발신자의 last_read_message_id를 본인 메시지 ID로 자동 갱신 및 숨김 해제
+        membership, _ = ChatRoomMember.objects.get_or_create(room=msg.room, user=self.request.user)
+        membership.last_read_message_id = msg.id
+        membership.is_hidden = False
+        membership.save(update_fields=['last_read_message_id', 'is_hidden'])
+
+        # 모든 참여 멤버의 숨김(is_hidden) 상태 자동 해제 (새 메시지 도착 시 목록 복원)
+        msg.room.memberships.filter(is_hidden=True).update(is_hidden=False)
+
         # WebSocket 채널 그룹으로 브로드캐스팅 (파일 업로드 실시간 전파)
         self._broadcast_new_message(msg)
 
@@ -437,6 +449,18 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                     'message_type': target.message_type,
                 }
 
+            room = msg.room
+            unread_cnt = 0
+            if room.room_type == 'self':
+                unread_cnt = 0
+            elif room.room_type == 'direct':
+                unread_cnt = 1
+            elif room.room_type == 'channel' and room.project:
+                pjt_mems = room.project.all_members()
+                unread_cnt = max(0, len(pjt_mems) - 1)
+            else:
+                unread_cnt = max(0, room.members.exclude(pk=msg.sender.pk).count() if msg.sender else 0)
+
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f'chat_room_{msg.room_id}',
@@ -461,6 +485,8 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                         'ref_sub': msg.ref_sub,
                         'reply_to': msg.reply_to_id,
                         'reply_to_detail': reply_to_detail,
+                        'is_deleted': False,
+                        'unread_count': unread_cnt,
                         'created': msg.created.isoformat(),
                     },
                 }
