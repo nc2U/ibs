@@ -512,7 +512,9 @@ const applyExampleTitle = (title: string) => {
                     />
                     {{ currentGuide.title }} 작성 가이드
                   </span>
-                  <CBadge color="info" size="sm">{{ currentGuide.category }}</CBadge>
+                  <v-chip color="info" size="x-small" variant="elevated">
+                    {{ currentGuide.category }}
+                  </v-chip>
                 </div>
                 <div class="small text-muted mb-2">{{ currentGuide.summary }}</div>
                 <div class="small mb-1">
@@ -756,20 +758,22 @@ const applyExampleTitle = (title: string) => {
                 결재선 미리보기
               </p>
               <div class="d-flex gap-1">
-                <CBadge
+                <v-chip
                   v-if="selectedDocType?.policy_rules?.length && currentAmount !== null"
                   color="warning"
-                  size="sm"
+                  size="x-small"
+                  variant="elevated"
                 >
                   금액 조건 반영 ({{ currentAmount.toLocaleString() }}원)
-                </CBadge>
-                <CBadge
+                </v-chip>
+                <v-chip
                   v-if="selectedDocType?.route_type === 'organization'"
                   color="info"
-                  size="sm"
+                  size="x-small"
+                  variant="elevated"
                 >
                   조직도 기반 자동 생성
-                </CBadge>
+                </v-chip>
               </div>
             </div>
             <div class="d-flex align-items-start flex-wrap gap-0">
@@ -782,12 +786,13 @@ const applyExampleTitle = (title: string) => {
                   <div class="text-muted mb-1" style="font-size: 0.72rem">
                     {{ step.approvers.map(a => a.full_name).join(', ') }}
                   </div>
-                  <CBadge
+                  <v-chip
                     :color="step.condition === 'AND' ? 'primary' : 'info'"
-                    style="font-size: 0.65rem"
+                    size="x-small"
+                    variant="elevated"
                   >
                     {{ step.condition === 'AND' ? '전원승인' : '1인승인' }}
-                  </CBadge>
+                  </v-chip>
                 </div>
                 <!-- 화살표 연결 (마지막 제외) -->
                 <div v-if="idx < routePreview.length - 1" class="route-arrow">→</div>
@@ -827,7 +832,9 @@ const applyExampleTitle = (title: string) => {
               <v-icon icon="mdi-lightbulb-on-outline" size="small" class="me-1 text-warning" />
               {{ currentGuide.title }} 작성 가이드
             </div>
-            <CBadge color="info" size="sm">{{ currentGuide.category }}</CBadge>
+            <v-chip color="info" size="x-small" variant="elevated">
+              {{ currentGuide.category }}
+            </v-chip>
           </CCardHeader>
           <CCardBody class="p-3">
             <!-- 1. 양식 요약 -->
