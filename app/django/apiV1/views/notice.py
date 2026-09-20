@@ -10,15 +10,25 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
-from contract.models import ContractorContact, Contractor, Contract
-from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
+from contract.models import ContractorContact, Contractor, Contract, ContractorAddress
+from notice.models import (
+    SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory,
+    EmailNotice, EmailSendLog
+)
+from notice.tasks import send_mass_email_task
 from notice.utils import IwinvSMSService
 from work.models import IssueProject
+from apiV1.pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
-from ..serializers.notice import SallesBillIssueSerializer, RegisteredSenderNumberSerializer, \
-    MessageTemplateSerializer, SMSMessageSerializer, MMSMessageSerializer, KakaoMessageSerializer, \
-    SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer
+from ..serializers.notice import (
+    SallesBillIssueSerializer, RegisteredSenderNumberSerializer,
+    MessageTemplateSerializer, SMSMessageSerializer, MMSMessageSerializer, KakaoMessageSerializer,
+    SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer,
+    PostLabelSerializer, EmailNoticeSerializer, EmailNoticeListSerializer,
+    EmailSendLogSerializer, EmailSendRequestSerializer
+)
+
 
 
 def get_accessible_project_ids(user):
@@ -716,3 +726,249 @@ class MessageSendHistoryViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(sent_at__date__lte=end_date)
 
         return queryset
+
+
+class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
+    """우편 라벨 출력용 계약자 주소 목록 ViewSet (읽기 전용)"""
+    serializer_class = PostLabelSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = ContractorAddress.objects.filter(
+            is_current=True,
+            contractor__is_active=True,
+            contractor__contract__is_active=True,
+        ).select_related(
+            'contractor__contract__order_group',
+            'contractor__contract__unit_type',
+            'contractor__contract__key_unit__houseunit__building_unit',
+        ).order_by(
+            'contractor__contract__key_unit__houseunit__building_unit__name',
+            'contractor__contract__key_unit__houseunit__name',
+            'contractor__name',
+        )
+
+        # 권한 격리 (RLS)
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_projects = get_accessible_project_ids(user)
+            queryset = queryset.filter(contractor__contract__project_id__in=accessible_projects)
+
+        # 프로젝트 필터
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            queryset = queryset.filter(contractor__contract__project_id=project_id)
+
+        # 차수 필터
+        order_group = self.request.query_params.get('order_group')
+        if order_group:
+            queryset = queryset.filter(contractor__contract__order_group_id=order_group)
+
+        # 동 필터
+        building = self.request.query_params.get('building')
+        if building:
+            queryset = queryset.filter(contractor__contract__key_unit__houseunit__building_unit_id=building)
+
+        # 타입 필터
+        unit_type = self.request.query_params.get('unit_type')
+        if unit_type:
+            queryset = queryset.filter(contractor__contract__unit_type_id=unit_type)
+
+        # 검색어 필터 (계약자명, 동호수, 우편번호, 주소)
+        search = self.request.query_params.get('search')
+        if search:
+            search = search.strip()
+            queryset = queryset.filter(
+                Q(contractor__name__icontains=search) |
+                Q(contractor__contract__serial_number__icontains=search) |
+                Q(id_zipcode__icontains=search) |
+                Q(dm_zipcode__icontains=search) |
+                Q(id_address1__icontains=search) |
+                Q(dm_address1__icontains=search) |
+                Q(contractor__contract__key_unit__houseunit__name__icontains=search)
+            )
+
+        return queryset
+
+    @property
+    def required_permission(self):
+        return 'notice.read'
+
+
+class EmailNoticeViewSet(viewsets.ModelViewSet):
+    """이메일 발송 관리 ViewSet"""
+    queryset = EmailNotice.objects.select_related('project', 'sent_by').prefetch_related('send_logs').all()
+    serializer_class = EmailNoticeSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filterset_fields = ('project', 'status')
+    ordering_fields = ('created', 'completed_at', 'total_recipients')
+    ordering = ('-created',)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return EmailNoticeListSerializer
+        return EmailNoticeSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_projects = get_accessible_project_ids(user)
+            queryset = queryset.filter(project_id__in=accessible_projects)
+        return queryset
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve', 'recipients'):
+            return 'notice.read'
+        return 'notice.create'
+
+    @action(detail=False, methods=['get'], url_path='recipients')
+    def recipients(self, request):
+        """이메일 발송 대상자 목록 및 등록/미등록 집계 통계"""
+        project_id = request.query_params.get('project')
+        if not project_id:
+            return Response({'error': 'project 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order_group = request.query_params.get('order_group')
+        building = request.query_params.get('building')
+
+        base_filter = Q(
+            contract__project_id=project_id,
+            contract__is_active=True,
+            is_active=True,
+        )
+        if order_group:
+            base_filter &= Q(contract__order_group_id=order_group)
+        if building:
+            base_filter &= Q(contract__key_unit__houseunit__building_unit_id=building)
+
+        contractors = Contractor.objects.filter(base_filter).select_related(
+            'contract__key_unit__houseunit__building_unit',
+            'contract__order_group',
+            'contractorcontact',
+        ).order_by(
+            'contract__key_unit__houseunit__building_unit__name',
+            'contract__key_unit__houseunit__name',
+            'name',
+        )
+
+        total_count = contractors.count()
+        registered_list = []
+        unregistered_list = []
+
+        for c in contractors:
+            email = ''
+            if hasattr(c, 'contractorcontact') and c.contractorcontact and c.contractorcontact.email:
+                email = c.contractorcontact.email.strip()
+
+            hu = getattr(getattr(c.contract, 'key_unit', None), 'houseunit', None)
+            unit_info = f'{hu.building_unit.name} {hu.name}' if hu and hu.building_unit else ''
+
+            item = {
+                'contractor_id': c.pk,
+                'name': c.name,
+                'email': email,
+                'unit_info': unit_info,
+                'order_group_name': c.contract.order_group.name if c.contract.order_group else '',
+                'has_email': bool(email),
+            }
+
+            if email:
+                registered_list.append(item)
+            else:
+                unregistered_list.append(item)
+
+        return Response({
+            'total_contractors': total_count,
+            'registered_count': len(registered_list),
+            'unregistered_count': len(unregistered_list),
+            'recipients': registered_list,
+            'unregistered_contractors': unregistered_list,
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='send-email')
+    def send_email(self, request):
+        """이메일 발송 생성 및 Celery 비동기 태스크 인큐"""
+        serializer = EmailSendRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        project_id = data['project']
+        # 권한 확인
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            accessible_projects = list(get_accessible_project_ids(request.user))
+            if project_id not in accessible_projects:
+                return Response({'error': '해당 프로젝트에 대한 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 발송 대상자 쿼리
+        base_filter = Q(
+            contract__project_id=project_id,
+            contract__is_active=True,
+            is_active=True,
+        )
+        if data.get('order_group'):
+            base_filter &= Q(contract__order_group_id=data['order_group'])
+        if data.get('building'):
+            base_filter &= Q(contract__key_unit__houseunit__building_unit_id=data['building'])
+        if data.get('contractor_ids'):
+            base_filter &= Q(id__in=data['contractor_ids'])
+
+        contractors = Contractor.objects.filter(base_filter).select_related(
+            'contract__key_unit__houseunit__building_unit',
+            'contractorcontact',
+        )
+
+        valid_recipients = []
+        for c in contractors:
+            email = ''
+            if hasattr(c, 'contractorcontact') and c.contractorcontact and c.contractorcontact.email:
+                email = c.contractorcontact.email.strip()
+            if email:
+                hu = getattr(getattr(c.contract, 'key_unit', None), 'houseunit', None)
+                unit_info = f'{hu.building_unit.name} {hu.name}' if hu and hu.building_unit else ''
+                valid_recipients.append({
+                    'contractor': c,
+                    'name': c.name,
+                    'email': email,
+                    'unit_info': unit_info,
+                })
+
+        if not valid_recipients:
+            return Response({'error': '발송 가능한 이메일 수신자가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. EmailNotice 마스터 생성
+        notice = EmailNotice.objects.create(
+            project_id=project_id,
+            title=data['title'],
+            content=data['content'],
+            sender_name=data.get('sender_name', ''),
+            sender_email=data.get('sender_email', ''),
+            total_recipients=len(valid_recipients),
+            status='pending',
+            sent_by=request.user,
+        )
+
+        # 2. EmailSendLog 벌크 생성
+        EmailSendLog.objects.bulk_create([
+            EmailSendLog(
+                email_notice=notice,
+                contractor=item['contractor'],
+                recipient_name=item['name'],
+                recipient_email=item['email'],
+                unit_info=item['unit_info'],
+                status='pending',
+            )
+            for item in valid_recipients
+        ])
+
+        # 3. 비동기 Celery 태스크 트리거
+        send_mass_email_task.delay(notice.pk)
+
+        return Response({
+            'detail': f'총 {len(valid_recipients)}명에게 이메일 발송이 접수되었습니다.',
+            'notice_id': notice.pk,
+            'total_recipients': len(valid_recipients),
+        }, status=status.HTTP_201_CREATED)

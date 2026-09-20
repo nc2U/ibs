@@ -1,7 +1,9 @@
 from rest_framework import serializers
-
 from apiV1.serializers.accounts import SimpleUserSerializer
-from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
+from notice.models import (
+    SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory,
+    EmailNotice, EmailSendLog
+)
 
 
 # Notice --------------------------------------------------------------------------
@@ -393,3 +395,140 @@ class MessageSendHistoryListSerializer(serializers.ModelSerializer):
         fields = ('id', 'message_type', 'sender_number', 'title', 'message_content', 'recipient_count',
                   'sent_at', 'request_no', 'scheduled_send', 'sent_by', 'created')
         read_only_fields = ('id', 'sent_by', 'created')
+
+
+# Post Label ----------------------------------------------------------------------
+class PostLabelSerializer(serializers.Serializer):
+    """우편 라벨 출력용 시리얼라이저"""
+    id = serializers.IntegerField(read_only=True)
+    contractor_id = serializers.IntegerField(source='contractor.id', read_only=True)
+    contractor_name = serializers.CharField(source='contractor.name', read_only=True)
+    contract_id = serializers.IntegerField(source='contractor.contract.id', read_only=True, allow_null=True)
+    contract_serial = serializers.CharField(source='contractor.contract.serial_number', read_only=True, allow_null=True)
+    order_group_id = serializers.IntegerField(source='contractor.contract.order_group.id', read_only=True, allow_null=True)
+    order_group_name = serializers.CharField(source='contractor.contract.order_group.name', read_only=True, allow_null=True)
+    unit_type_name = serializers.CharField(source='contractor.contract.unit_type.name', read_only=True, allow_null=True)
+
+    # 동호수
+    building_name = serializers.SerializerMethodField()
+    unit_name = serializers.SerializerMethodField()
+    unit_info = serializers.SerializerMethodField()
+
+    # 주민등록 주소
+    id_zipcode = serializers.CharField(read_only=True)
+    id_address1 = serializers.CharField(read_only=True)
+    id_address2 = serializers.CharField(read_only=True)
+    id_address3 = serializers.CharField(read_only=True)
+
+    # 우편송부 주소
+    dm_zipcode = serializers.CharField(read_only=True)
+    dm_address1 = serializers.CharField(read_only=True)
+    dm_address2 = serializers.CharField(read_only=True)
+    dm_address3 = serializers.CharField(read_only=True)
+
+    # 조합 주소 (수령지 우선)
+    effective_zipcode = serializers.SerializerMethodField()
+    effective_address1 = serializers.SerializerMethodField()
+    effective_address2 = serializers.SerializerMethodField()
+    effective_address3 = serializers.SerializerMethodField()
+    has_dm_address = serializers.SerializerMethodField()
+
+    def _get_house_unit(self, obj):
+        contract = getattr(obj.contractor, 'contract', None)
+        if contract and contract.key_unit and hasattr(contract.key_unit, 'houseunit'):
+            return contract.key_unit.houseunit
+        return None
+
+    def get_building_name(self, obj):
+        hu = self._get_house_unit(obj)
+        return hu.building_unit.name if hu and hu.building_unit else ''
+
+    def get_unit_name(self, obj):
+        hu = self._get_house_unit(obj)
+        return hu.name if hu else ''
+
+    def get_unit_info(self, obj):
+        hu = self._get_house_unit(obj)
+        if hu:
+            bldg = hu.building_unit.name if hu.building_unit else ''
+            return f'{bldg} {hu.name}'
+        return ''
+
+    def get_has_dm_address(self, obj):
+        return bool(obj.dm_address1 and obj.dm_address1.strip())
+
+    def get_effective_zipcode(self, obj):
+        return obj.dm_zipcode if self.get_has_dm_address(obj) else obj.id_zipcode
+
+    def get_effective_address1(self, obj):
+        return obj.dm_address1 if self.get_has_dm_address(obj) else obj.id_address1
+
+    def get_effective_address2(self, obj):
+        return obj.dm_address2 if self.get_has_dm_address(obj) else obj.id_address2
+
+    def get_effective_address3(self, obj):
+        return obj.dm_address3 if self.get_has_dm_address(obj) else obj.id_address3
+
+
+# Email Notice --------------------------------------------------------------------
+class EmailSendLogSerializer(serializers.ModelSerializer):
+    """이메일 발송 로그 시리얼라이저"""
+    contractor_name = serializers.CharField(source='contractor.name', read_only=True)
+
+    class Meta:
+        model = EmailSendLog
+        fields = (
+            'id', 'email_notice', 'contractor', 'contractor_name',
+            'recipient_name', 'recipient_email', 'unit_info',
+            'status', 'error_message', 'sent_at'
+        )
+        read_only_fields = ('id', 'sent_at')
+
+
+class EmailNoticeSerializer(serializers.ModelSerializer):
+    """이메일 공지 상세 및 생성 시리얼라이저"""
+    sent_by = SimpleUserSerializer(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    send_logs = EmailSendLogSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = EmailNotice
+        fields = (
+            'id', 'project', 'title', 'content', 'sender_name', 'sender_email',
+            'total_recipients', 'success_count', 'fail_count',
+            'status', 'status_display', 'sent_by', 'created', 'completed_at', 'send_logs'
+        )
+        read_only_fields = (
+            'id', 'total_recipients', 'success_count', 'fail_count',
+            'status', 'sent_by', 'created', 'completed_at'
+        )
+
+
+class EmailNoticeListSerializer(serializers.ModelSerializer):
+    """이메일 공지 목록 시리얼라이저 (경량화)"""
+    sent_by = SimpleUserSerializer(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = EmailNotice
+        fields = (
+            'id', 'project', 'title', 'sender_name', 'sender_email',
+            'total_recipients', 'success_count', 'fail_count',
+            'status', 'status_display', 'sent_by', 'created', 'completed_at'
+        )
+        read_only_fields = ('id', 'sent_by', 'created')
+
+
+class EmailSendRequestSerializer(serializers.Serializer):
+    """이메일 발송 요청 바디 검증용"""
+    project = serializers.IntegerField(required=True)
+    title = serializers.CharField(max_length=150, required=True)
+    content = serializers.CharField(required=True)
+    sender_name = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
+    sender_email = serializers.EmailField(required=False, allow_blank=True, default='')
+    order_group = serializers.IntegerField(required=False, allow_null=True)
+    building = serializers.IntegerField(required=False, allow_null=True)
+    # 특정 계약자 지정 발송 옵션
+    contractor_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_empty=True, default=list
+    )

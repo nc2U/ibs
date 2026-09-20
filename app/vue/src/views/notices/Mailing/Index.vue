@@ -1,24 +1,641 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref } from 'vue'
-import { pageTitle, navMenu } from '@/views/notices/_menu/headermixin'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin'
+import { useNotice } from '@/store/pinia/notice'
+import { useProject } from '@/store/pinia/project'
+import { useContract } from '@/store/pinia/contract'
+import { useProjectData } from '@/store/pinia/project_data'
+import { usePerms } from '@/composables/usePerms'
+import type { EmailNotice } from '@/store/types/notice'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
 
-const msg = ref(pageTitle)
-const loading = ref(true)
-onBeforeMount(() => {
-  loading.value = false
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
+
+const loading = ref(false)
+const activeTab = ref<'write' | 'history'>('write')
+
+const noticeStore = useNotice()
+const projStore = useProject()
+const contractStore = useContract()
+const pDataStore = useProjectData()
+
+const project = computed(() => (projStore.project as any)?.pk)
+const orderGroups = computed(() => contractStore.orderGroupList)
+const buildingList = computed(() => pDataStore.buildingList)
+
+// ── 1. 작성 폼 상태 ──
+const filter = ref({
+  order_group: '' as string | number,
+  building: '' as string | number,
 })
+
+const form = ref({
+  sender_name: '',
+  sender_email: '',
+  title: '',
+  content: '',
+})
+
+// 수신 대상자 집계 상태
+const recipientsData = computed(() => noticeStore.emailRecipientsData)
+const showUnregisteredModal = ref(false)
+
+// 대상자 집계 로드
+const fetchRecipients = async () => {
+  if (!project.value) return
+  await noticeStore.fetchEmailRecipients({
+    project: project.value,
+    order_group: filter.value.order_group || undefined,
+    building: filter.value.building || undefined,
+  })
+}
+
+// 템플릿 변수 삽입 헬퍼
+const insertVariable = (variableTag: string) => {
+  form.value.content += ` ${variableTag} `
+}
+
+// 이메일 발송 실행
+const isSending = ref(false)
+const handleSendEmail = async () => {
+  if (!project.value) {
+    alert('프로젝트를 선택해 주세요.')
+    return
+  }
+  if (!form.value.title.trim()) {
+    alert('이메일 제목을 입력해 주세요.')
+    return
+  }
+  if (!form.value.content.trim()) {
+    alert('이메일 본문을 입력해 주세요.')
+    return
+  }
+  const regCount = recipientsData.value?.registered_count || 0
+  if (regCount === 0) {
+    alert('이메일이 등록된 발송 대상자가 없습니다.')
+    return
+  }
+
+  const confirmMsg = `총 ${regCount}명의 계약자에게 이메일을 발송하시겠습니까?\n발송 후에는 취소할 수 없습니다.`
+  if (!confirm(confirmMsg)) return
+
+  isSending.value = true
+  try {
+    await noticeStore.sendEmailNotice({
+      project: project.value,
+      title: form.value.title.trim(),
+      content: form.value.content,
+      sender_name: form.value.sender_name.trim(),
+      sender_email: form.value.sender_email.trim(),
+      order_group: filter.value.order_group || undefined,
+      building: filter.value.building || undefined,
+    })
+    // 폼 초기화 및 이력 탭으로 전환
+    form.value.title = ''
+    form.value.content = ''
+    activeTab.value = 'history'
+    await fetchHistory()
+  } finally {
+    isSending.value = false
+  }
+}
+
+// ── 2. 발송 이력 상태 ──
+const historyList = computed(() => noticeStore.emailNotices)
+const historyCount = computed(() => noticeStore.emailNoticesCount)
+const historyStatusFilter = ref('')
+
+const fetchHistory = async () => {
+  if (!project.value) return
+  await noticeStore.fetchEmailNotices({
+    project: project.value,
+    status: historyStatusFilter.value || undefined,
+  })
+}
+
+// 이력 상세 모달
+const showDetailModal = ref(false)
+const selectedNotice = computed(() => noticeStore.currentEmailNotice)
+
+const openDetail = async (noticeItem: EmailNotice) => {
+  await noticeStore.fetchEmailNoticeDetail(noticeItem.id)
+  showDetailModal.value = true
+}
+
+// 프로젝트 변경 시 재조회
+watch(
+  () => project.value,
+  async newProj => {
+    if (newProj) {
+      loading.value = true
+      try {
+        await Promise.all([
+          contractStore.fetchOrderGroupList(newProj),
+          pDataStore.fetchBuildingList(newProj),
+        ])
+        if (activeTab.value === 'write') {
+          await fetchRecipients()
+        } else {
+          await fetchHistory()
+        }
+      } finally {
+        loading.value = false
+      }
+    }
+  },
+)
+
+watch(
+  () => activeTab.value,
+  async newTab => {
+    if (newTab === 'write') {
+      await fetchRecipients()
+    } else {
+      await fetchHistory()
+    }
+  },
+)
+
+onBeforeMount(async () => {
+  if (project.value) {
+    loading.value = true
+    try {
+      await Promise.all([
+        contractStore.fetchOrderGroupList(project.value),
+        pDataStore.fetchBuildingList(project.value),
+      ])
+      await fetchRecipients()
+    } finally {
+      loading.value = false
+    }
+  }
+})
+
+// 상태 뱃지 색상
+const getStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'success'
+    case 'sending':
+      return 'info'
+    case 'failed':
+      return 'danger'
+    default:
+      return 'secondary'
+  }
+}
 </script>
 
 <template>
   <Loading v-model:active="loading" />
   <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
   <ContentBody>
-    <CCardBody>
-      {{ msg }}
-      <div style="height: 420px"></div>
-    </CCardBody>
+    <NoticeAuthGuard :is-authorized="canNoticeRead">
+      <!-- 탭 헤더 -->
+      <CNav variant="tabs" class="mb-4">
+        <CNavItem>
+          <CNavLink
+            href="javascript:void(0);"
+            :active="activeTab === 'write'"
+            @click="activeTab = 'write'"
+          >
+            <v-icon icon="mdi-email-edit-outline" size="small" class="me-1" />
+            새 이메일 작성 및 발송
+          </CNavLink>
+        </CNavItem>
+        <CNavItem>
+          <CNavLink
+            href="javascript:void(0);"
+            :active="activeTab === 'history'"
+            @click="activeTab = 'history'"
+          >
+            <v-icon icon="mdi-history" size="small" class="me-1" />
+            이메일 발송 이력 대장
+            <CBadge v-if="historyCount > 0" color="primary" shape="rounded-pill" class="ms-1">
+              {{ historyCount }}
+            </CBadge>
+          </CNavLink>
+        </CNavItem>
+      </CNav>
+
+      <!-- ═══════════════════════════════════════════════════
+           TAB 1: 새 이메일 작성 및 발송
+           ═══════════════════════════════════════════════════ -->
+      <div v-if="activeTab === 'write'">
+        <div class="row g-4">
+          <!-- 좌측: 대상자 타겟팅 및 집계 카드 -->
+          <div class="col-12 col-lg-4">
+            <CCard class="shadow-sm mb-3">
+              <CCardHeader class="bg-light fw-bold py-2 d-flex align-items-center">
+                <v-icon icon="mdi-target-account" size="small" class="me-1 text-primary" />
+                발송 대상자 타겟팅
+              </CCardHeader>
+              <CCardBody>
+                <!-- 차수 선택 -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-secondary">차수 선택</label>
+                  <CFormSelect v-model="filter.order_group" size="sm" @change="fetchRecipients">
+                    <option value="">전체 차수</option>
+                    <option v-for="og in orderGroups" :key="og.pk" :value="og.pk">
+                      {{ og.name }}
+                    </option>
+                  </CFormSelect>
+                </div>
+
+                <!-- 동 선택 -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-secondary">동 선택</label>
+                  <CFormSelect v-model="filter.building" size="sm" @change="fetchRecipients">
+                    <option value="">전체 동</option>
+                    <option v-for="bldg in buildingList" :key="bldg.pk" :value="bldg.pk">
+                      {{ bldg.name }}동
+                    </option>
+                  </CFormSelect>
+                </div>
+
+                <hr class="my-3 text-muted" />
+
+                <!-- 수신 현황 통계 카드 -->
+                <div class="p-3 bg-light rounded-3 border">
+                  <div class="text-secondary small fw-bold mb-2">이메일 등록 및 발송 가능 현황</div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">총 대상 계약자</span>
+                    <strong class="font-monospace">{{ recipientsData?.total_contractors || 0 }}명</strong>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-success fw-bold">발송 가능 (이메일 등록)</span>
+                    <CBadge color="success" shape="rounded-pill">
+                      {{ recipientsData?.registered_count || 0 }}명
+                    </CBadge>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="small text-warning fw-bold">발송 불가 (이메일 미등록)</span>
+                    <CBadge color="warning" shape="rounded-pill">
+                      {{ recipientsData?.unregistered_count || 0 }}명
+                    </CBadge>
+                  </div>
+
+                  <div v-if="(recipientsData?.unregistered_count || 0) > 0" class="mt-3 text-end">
+                    <CButton
+                      color="secondary"
+                      variant="ghost"
+                      size="sm"
+                      class="text-decoration-none p-0 small"
+                      @click="showUnregisteredModal = true"
+                    >
+                      <v-icon icon="mdi-account-alert-outline" size="small" />
+                      미등록자 명단 확인
+                    </CButton>
+                  </div>
+                </div>
+              </CCardBody>
+            </CCard>
+
+            <!-- 변수 치환 도우미 카드 -->
+            <CCard class="shadow-sm">
+              <CCardHeader class="bg-light fw-bold py-2 d-flex align-items-center">
+                <v-icon icon="mdi-code-tags" size="small" class="me-1 text-primary" />
+                자동 치환 머지 태그
+              </CCardHeader>
+              <CCardBody class="small text-secondary">
+                <p class="mb-2">본문 작성 시 클릭하면 해당 위치에 태그가 삽입되어 발송 시 계약자 정보로 자동 치환됩니다.</p>
+                <div class="d-flex flex-wrap gap-1">
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    class="font-monospace"
+                    @click="insertVariable('{{ 계약자명 }}')"
+                  >
+                    + &#123;&#123; 계약자명 &#125;&#125;
+                  </CButton>
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    class="font-monospace"
+                    @click="insertVariable('{{ 동호수 }}')"
+                  >
+                    + &#123;&#123; 동호수 &#125;&#125;
+                  </CButton>
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    class="font-monospace"
+                    @click="insertVariable('{{ 프로젝트명 }}')"
+                  >
+                    + &#123;&#123; 프로젝트명 &#125;&#125;
+                  </CButton>
+                </div>
+              </CCardBody>
+            </CCard>
+          </div>
+
+          <!-- 우측: 이메일 작성 폼 -->
+          <div class="col-12 col-lg-8">
+            <CCard class="shadow-sm">
+              <CCardHeader class="bg-light fw-bold py-2 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <v-icon icon="mdi-email-outline" size="small" class="me-1 text-primary" />
+                  이메일 내용 작성
+                </div>
+                <div class="small text-muted">
+                  예상 수신인: <strong class="text-primary">{{ recipientsData?.registered_count || 0 }}명</strong>
+                </div>
+              </CCardHeader>
+
+              <CCardBody>
+                <!-- 발신자 정보 -->
+                <div class="row g-2 mb-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-secondary">발신자 명</label>
+                    <CFormInput
+                      v-model="form.sender_name"
+                      size="sm"
+                      placeholder="예: IBS 분양사무소"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-secondary">발신 이메일 주소</label>
+                    <CFormInput
+                      v-model="form.sender_email"
+                      size="sm"
+                      type="email"
+                      placeholder="미입력 시 시스템 기본 발신 주소 사용"
+                    />
+                  </div>
+                </div>
+
+                <!-- 이메일 제목 -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-secondary">
+                    이메일 제목 <span class="text-danger">*</span>
+                  </label>
+                  <CFormInput
+                    v-model="form.title"
+                    size="sm"
+                    placeholder="계약자 안내 공지 제목을 입력하세요."
+                  />
+                </div>
+
+                <!-- 이메일 본문 (HTML 지원) -->
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-secondary">
+                    이메일 본문 (HTML 태그 지원) <span class="text-danger">*</span>
+                  </label>
+                  <CFormTextarea
+                    v-model="form.content"
+                    rows="15"
+                    placeholder="계약자에게 안내할 내용을 작성하세요. HTML 태그(<p>, <br>, <strong> 등)를 자유롭게 사용할 수 있습니다."
+                  />
+                </div>
+
+                <!-- 하단 액션 버튼 -->
+                <div class="d-flex justify-content-end align-items-center gap-2 border-top pt-3">
+                  <span class="text-muted small me-2">
+                    수신자 {{ recipientsData?.registered_count || 0 }}명에게 비동기(Celery) 대량 전송됩니다.
+                  </span>
+                  <CButton
+                    color="primary"
+                    :disabled="isSending || (recipientsData?.registered_count || 0) === 0"
+                    @click="handleSendEmail"
+                  >
+                    <v-icon icon="mdi-send" size="small" class="me-1" />
+                    {{ isSending ? '발송 접수 중...' : '이메일 발송 실행' }}
+                  </CButton>
+                </div>
+              </CCardBody>
+            </CCard>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           TAB 2: 이메일 발송 이력 대장
+           ═══════════════════════════════════════════════════ -->
+      <div v-else-if="activeTab === 'history'">
+        <CCard class="shadow-sm">
+          <CCardHeader class="bg-light py-2 d-flex justify-content-between align-items-center">
+            <div class="fw-bold d-flex align-items-center">
+              <v-icon icon="mdi-history" size="small" class="me-1 text-primary" />
+              발송 이력 목록
+              <CBadge color="primary" shape="rounded-pill" class="ms-2">
+                {{ historyList.length }}건
+              </CBadge>
+            </div>
+
+            <!-- 상태 필터 -->
+            <div class="d-flex align-items-center gap-2">
+              <CFormSelect v-model="historyStatusFilter" size="sm" style="width: 140px" @change="fetchHistory">
+                <option value="">전체 상태</option>
+                <option value="completed">발송 완료</option>
+                <option value="sending">발송 중</option>
+                <option value="failed">발송 실패</option>
+              </CFormSelect>
+              <CButton color="secondary" variant="outline" size="sm" @click="fetchHistory">
+                <v-icon icon="mdi-refresh" size="small" />
+              </CButton>
+            </div>
+          </CCardHeader>
+
+          <CCardBody class="p-0 table-responsive">
+            <CTable hover align="middle" class="mb-0 text-center small">
+              <CTableHead color="light">
+                <CTableRow>
+                  <CTableHeaderCell style="width: 60px">No</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 150px">등록/발송 일시</CTableHeaderCell>
+                  <CTableHeaderCell class="text-start">메일 제목</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 120px">발송자</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 90px">총 대상</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 90px">성공</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 90px">실패</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 110px">상태</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 100px">상세</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+
+              <CTableBody>
+                <template v-if="historyList.length > 0">
+                  <CTableRow v-for="(item, idx) in historyList" :key="item.id">
+                    <CTableDataCell class="text-muted">{{ idx + 1 }}</CTableDataCell>
+                    <CTableDataCell class="font-monospace">
+                      {{ item.created ? item.created.substring(0, 16).replace('T', ' ') : '-' }}
+                    </CTableDataCell>
+                    <CTableDataCell class="text-start fw-bold">
+                      {{ item.title }}
+                    </CTableDataCell>
+                    <CTableDataCell>{{ item.sent_by?.username || '-' }}</CTableDataCell>
+                    <CTableDataCell class="font-monospace fw-bold">{{ item.total_recipients }}명</CTableDataCell>
+                    <CTableDataCell class="font-monospace text-success fw-bold">{{ item.success_count }}</CTableDataCell>
+                    <CTableDataCell class="font-monospace text-danger fw-bold">{{ item.fail_count }}</CTableDataCell>
+                    <CTableDataCell>
+                      <CBadge :color="getStatusBadgeColor(item.status)" shape="rounded-pill">
+                        {{ item.status_display }}
+                      </CBadge>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <CButton color="primary" variant="ghost" size="sm" @click="openDetail(item)">
+                        상세보기
+                      </CButton>
+                    </CTableDataCell>
+                  </CTableRow>
+                </template>
+                <template v-else>
+                  <CTableRow>
+                    <CTableDataCell colspan="9" class="py-5 text-muted">
+                      발송된 이메일 이력이 없습니다.
+                    </CTableDataCell>
+                  </CTableRow>
+                </template>
+              </CTableBody>
+            </CTable>
+          </CCardBody>
+        </CCard>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           MODAL 1: 이메일 미등록 계약자 명단 모달
+           ═══════════════════════════════════════════════════ -->
+      <CModal
+        :visible="showUnregisteredModal"
+        size="lg"
+        scrollable
+        @close="showUnregisteredModal = false"
+      >
+        <CModalHeader>
+          <CModalTitle>
+            <v-icon icon="mdi-account-alert" class="me-1 text-warning" />
+            이메일 미등록 계약자 명단 ({{ recipientsData?.unregistered_count || 0 }}명)
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody class="p-0">
+          <div class="p-3 bg-light border-bottom small text-secondary">
+            이메일 주소가 등록되지 않아 이번 발송에서 제외되는 계약자입니다. SMS 또는 서면 우편 발송을 통해 안내해 주세요.
+          </div>
+          <CTable hover align="middle" class="mb-0 text-center small">
+            <CTableHead color="light">
+              <CTableRow>
+                <CTableHeaderCell style="width: 50px">No</CTableHeaderCell>
+                <CTableHeaderCell>차수</CTableHeaderCell>
+                <CTableHeaderCell>동 / 호수</CTableHeaderCell>
+                <CTableHeaderCell>계약자명</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              <CTableRow
+                v-for="(unreg, uIdx) in (recipientsData?.unregistered_contractors || [])"
+                :key="unreg.contractor_id"
+              >
+                <CTableDataCell class="text-muted">{{ uIdx + 1 }}</CTableDataCell>
+                <CTableDataCell>{{ unreg.order_group_name || '-' }}</CTableDataCell>
+                <CTableDataCell class="fw-bold">{{ unreg.unit_info || '-' }}</CTableDataCell>
+                <CTableDataCell class="fw-bold">{{ unreg.name }}</CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" @click="showUnregisteredModal = false">닫기</CButton>
+        </CModalFooter>
+      </CModal>
+
+      <!-- ═══════════════════════════════════════════════════
+           MODAL 2: 이메일 발송 상세 및 수신자별 로그 모달
+           ═══════════════════════════════════════════════════ -->
+      <CModal
+        :visible="showDetailModal"
+        size="xl"
+        scrollable
+        @close="showDetailModal = false"
+      >
+        <CModalHeader>
+          <CModalTitle>
+            <v-icon icon="mdi-email-check" class="me-1 text-primary" />
+            이메일 발송 상세 내역
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody v-if="selectedNotice">
+          <!-- 메일 기본 정보 요약 -->
+          <div class="row g-2 mb-4 p-3 bg-light rounded border small">
+            <div class="col-12 col-md-8">
+              <strong>제목:</strong> {{ selectedNotice.title }}
+            </div>
+            <div class="col-12 col-md-4 text-md-end">
+              <strong>상태:</strong>
+              <CBadge :color="getStatusBadgeColor(selectedNotice.status)" class="ms-1">
+                {{ selectedNotice.status_display }}
+              </CBadge>
+            </div>
+            <div class="col-12 col-md-6 text-muted">
+              발신자: {{ selectedNotice.sender_name || '-' }} &lt;{{ selectedNotice.sender_email || '기본 주소' }}&gt;
+            </div>
+            <div class="col-12 col-md-6 text-md-end text-muted">
+              등록: {{ selectedNotice.created ? selectedNotice.created.substring(0, 19).replace('T', ' ') : '-' }}
+            </div>
+            <div class="col-12">
+              <span class="fw-bold text-secondary">발송 통계:</span>
+              총 {{ selectedNotice.total_recipients }}명 /
+              <span class="text-success fw-bold">성공 {{ selectedNotice.success_count }}건</span> /
+              <span class="text-danger fw-bold">실패 {{ selectedNotice.fail_count }}건</span>
+            </div>
+          </div>
+
+          <!-- 본문 미리보기 아코디언 -->
+          <CAccordion class="mb-4">
+            <CAccordionItem :item-key="1">
+              <CAccordionHeader>
+                <span class="small fw-bold">발송 본문 내용 확인</span>
+              </CAccordionHeader>
+              <CAccordionBody>
+                <div class="p-3 bg-white border rounded small font-monospace" style="white-space: pre-wrap">
+                  {{ selectedNotice.content }}
+                </div>
+              </CAccordionBody>
+            </CAccordionItem>
+          </CAccordion>
+
+          <!-- 수신자별 전송 로그 테이블 -->
+          <div class="fw-bold mb-2 small text-secondary">
+            수신자별 전송 결과 ({{ selectedNotice.send_logs?.length || 0 }}건)
+          </div>
+          <CTable hover align="middle" class="mb-0 text-center small border">
+            <CTableHead color="light">
+              <CTableRow>
+                <CTableHeaderCell style="width: 50px">No</CTableHeaderCell>
+                <CTableHeaderCell style="width: 130px">동호수</CTableHeaderCell>
+                <CTableHeaderCell style="width: 120px">계약자명</CTableHeaderCell>
+                <CTableHeaderCell class="text-start">수신 이메일</CTableHeaderCell>
+                <CTableHeaderCell style="width: 90px">결과</CTableHeaderCell>
+                <CTableHeaderCell class="text-start">실패 사유 / 오류</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              <CTableRow v-for="(log, lIdx) in (selectedNotice.send_logs || [])" :key="log.id">
+                <CTableDataCell class="text-muted">{{ lIdx + 1 }}</CTableDataCell>
+                <CTableDataCell>{{ log.unit_info || '-' }}</CTableDataCell>
+                <CTableDataCell class="fw-bold">{{ log.recipient_name }}</CTableDataCell>
+                <CTableDataCell class="text-start font-monospace">{{ log.recipient_email }}</CTableDataCell>
+                <CTableDataCell>
+                  <CBadge :color="log.status === 'success' ? 'success' : (log.status === 'fail' ? 'danger' : 'secondary')">
+                    {{ log.status === 'success' ? '성공' : (log.status === 'fail' ? '실패' : '대기') }}
+                  </CBadge>
+                </CTableDataCell>
+                <CTableDataCell class="text-start text-danger small">
+                  {{ log.error_message || '-' }}
+                </CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" @click="showDetailModal = false">닫기</CButton>
+        </CModalFooter>
+      </CModal>
+    </NoticeAuthGuard>
   </ContentBody>
 </template>

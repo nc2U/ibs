@@ -178,3 +178,82 @@ export declare interface HistoryListResponse {
   previous: string | null
   results: MessageSendHistoryList[]
 }
+
+export declare interface PostLabel {
+  id: number
+  contractor_id: number
+  contractor_name: string
+  contract_id: number | null
+  contract_serial: string | null
+  order_group_id: number | null
+  order_group_name: string | null
+  unit_type_name: string | null
+  building_name: string
+  unit_name: string
+  unit_info: string
+  id_zipcode: string
+  id_address1: string
+  id_address2: string
+  id_address3: string
+  dm_zipcode: string
+  dm_address1: string
+  dm_address2: string
+  dm_address3: string
+  effective_zipcode: string
+  effective_address1: string
+  effective_address2: string
+  effective_address3: string
+  has_dm_address: boolean
+}
+
+export declare interface EmailSendLog {
+  id: number
+  email_notice: number
+  contractor: number | null
+  contractor_name: string
+  recipient_name: string
+  recipient_email: string
+  unit_info: string
+  status: 'pending' | 'success' | 'fail'
+  error_message: string
+  sent_at: string | null
+}
+
+export declare interface EmailNotice {
+  id: number
+  project: number
+  title: string
+  content: string
+  sender_name: string
+  sender_email: string
+  total_recipients: number
+  success_count: number
+  fail_count: number
+  status: 'pending' | 'sending' | 'completed' | 'failed'
+  status_display: string
+  sent_by: {
+    pk: number
+    username: string
+  } | null
+  created: string
+  completed_at: string | null
+  send_logs?: EmailSendLog[]
+}
+
+export declare interface EmailRecipientTarget {
+  contractor_id: number
+  name: string
+  email: string
+  unit_info: string
+  order_group_name: string
+  has_email: boolean
+}
+
+export declare interface EmailRecipientsResponse {
+  total_contractors: number
+  registered_count: number
+  unregistered_count: number
+  recipients: EmailRecipientTarget[]
+  unregistered_contractors: EmailRecipientTarget[]
+}
+

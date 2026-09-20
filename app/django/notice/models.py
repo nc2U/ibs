@@ -129,3 +129,65 @@ class MessageSendHistory(models.Model):
 
     def __str__(self):
         return f'{self.message_type} - {self.sender_number} ({self.recipient_count}명) - {self.sent_at.strftime("%Y-%m-%d %H:%M")}'
+
+
+class EmailNotice(models.Model):
+    """계약자 대상 대량 이메일 발송"""
+    STATUS_CHOICES = (
+        ('pending', '발송 대기'),
+        ('sending', '발송 중'),
+        ('completed', '발송 완료'),
+        ('failed', '발송 실패'),
+    )
+
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE,
+                                related_name='email_notices', verbose_name='프로젝트')
+    title = models.CharField('이메일 제목', max_length=150)
+    content = models.TextField('이메일 본문 (HTML)')
+    sender_name = models.CharField('발신자명', max_length=50, blank=True, default='')
+    sender_email = models.EmailField('발신 이메일', blank=True, default='')
+    total_recipients = models.PositiveIntegerField('총 수신자 수', default=0)
+    success_count = models.PositiveIntegerField('발송 성공 건수', default=0)
+    fail_count = models.PositiveIntegerField('발송 실패 건수', default=0)
+    status = models.CharField('발송 상태', max_length=15, choices=STATUS_CHOICES, default='pending', db_index=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='발송자')
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    completed_at = models.DateTimeField('완료일시', null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created']
+        verbose_name = "05. 이메일 발송 관리"
+        verbose_name_plural = "05. 이메일 발송 관리"
+
+    def __str__(self):
+        return f'[{self.get_status_display()}] {self.title} ({self.success_count}/{self.total_recipients}건)'
+
+
+class EmailSendLog(models.Model):
+    """개별 계약자 이메일 발송 로그"""
+    STATUS_CHOICES = (
+        ('pending', '대기'),
+        ('success', '성공'),
+        ('fail', '실패'),
+    )
+
+    email_notice = models.ForeignKey(EmailNotice, on_delete=models.CASCADE,
+                                     related_name='send_logs', verbose_name='이메일 공지')
+    contractor = models.ForeignKey('contract.Contractor', on_delete=models.SET_NULL,
+                                   null=True, blank=True, verbose_name='계약자')
+    recipient_name = models.CharField('수신자명', max_length=50)
+    recipient_email = models.EmailField('수신 이메일')
+    unit_info = models.CharField('동호수 정보', max_length=50, blank=True, default='')
+    status = models.CharField('발송 상태', max_length=10, choices=STATUS_CHOICES, default='pending', db_index=True)
+    error_message = models.TextField('오류/실패 사유', blank=True, default='')
+    sent_at = models.DateTimeField('발송일시', null=True, blank=True)
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "06. 이메일 발송 로그"
+        verbose_name_plural = "06. 이메일 발송 로그"
+
+    def __str__(self):
+        return f'{self.recipient_name}({self.recipient_email}) - {self.get_status_display()}'
+

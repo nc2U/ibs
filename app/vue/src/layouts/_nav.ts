@@ -345,35 +345,20 @@ const notice = {
       name: 'SMS 발송 관리',
       to: '/notices/sms',
     },
-    // {
-    //   component: 'CNavItem',
-    //   name: 'MAIL 발송 관리',
-    //   to: '/notices/mailing',
-    //   badge: {
-    //     color: 'danger',
-    //     text: 'u.c',
-    //   },
-    // },
-    // {
-    //   component: 'CNavItem',
-    //   name: '우편 라벨 관리',
-    //   to: '/notices/post-label',
-    //   badge: {
-    //     color: 'danger',
-    //     text: 'u.c',
-    //   },
-    // },
-    // {
-    //   component: 'CNavItem',
-    //   name: '발송 기록 관리',
-    //   to: '/notices/log',
-    //   badge: {
-    //     color: 'danger',
-    //     text: 'u.c',
-    //   },
-    // },
+    {
+      component: 'CNavItem',
+      name: 'MAIL 발송 관리',
+      to: '/notices/mailing',
+    },
+    {
+      component: 'CNavItem',
+      name: '우편 라벨 관리',
+      to: '/notices/post-label',
+    },
   ],
 }
+
+
 
 const projectLedger = {
   component: 'CNavGroup',

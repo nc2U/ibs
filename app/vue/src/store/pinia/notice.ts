@@ -16,6 +16,9 @@ import type {
   MessageSendHistory,
   HistoryListParams,
   HistoryListResponse,
+  PostLabel,
+  EmailNotice,
+  EmailRecipientsResponse,
 } from '@/store/types/notice'
 import { usePayment } from '@/store/pinia/payment.ts'
 
@@ -511,6 +514,127 @@ export const useNotice = defineStore('notice', () => {
     }
   }
 
+  // Post Labels (우편 라벨)
+  const postLabels = ref<PostLabel[]>([])
+  const postLabelsCount = ref<number>(0)
+
+  const fetchPostLabels = async (params: {
+    project?: number
+    order_group?: number | string
+    building?: number | string
+    unit_type?: number | string
+    search?: string
+    limit?: number
+  }) => {
+    loading.value = true
+    try {
+      const res = await api.get('/post-labels/', { params })
+      if (res.data && res.data.results) {
+        postLabels.value = res.data.results
+        postLabelsCount.value = res.data.count
+      } else {
+        postLabels.value = res.data || []
+        postLabelsCount.value = (res.data || []).length
+      }
+    } catch (err: any) {
+      postLabels.value = []
+      postLabelsCount.value = 0
+      console.error(err)
+      errorHandle(err.response?.data || err.message)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Email Notices (이메일 발송 관리)
+  const emailNotices = ref<EmailNotice[]>([])
+  const emailNoticesCount = ref<number>(0)
+  const currentEmailNotice = ref<EmailNotice | null>(null)
+  const emailRecipientsData = ref<EmailRecipientsResponse | null>(null)
+
+  const fetchEmailRecipients = async (params: {
+    project: number
+    order_group?: number | string
+    building?: number | string
+  }) => {
+    loading.value = true
+    try {
+      const res = await api.get('/email-notices/recipients/', { params })
+      emailRecipientsData.value = res.data
+      return res.data as EmailRecipientsResponse
+    } catch (err: any) {
+      emailRecipientsData.value = null
+      console.error(err)
+      errorHandle(err.response?.data || err.message)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const sendEmailNotice = async (payload: {
+    project: number
+    title: string
+    content: string
+    sender_name?: string
+    sender_email?: string
+    order_group?: number | string
+    building?: number | string
+    contractor_ids?: number[]
+  }) => {
+    loading.value = true
+    try {
+      const res = await api.post('/email-notices/send-email/', payload)
+      message('success', '이메일 발송 요청이 정상 접수되었습니다.')
+      return res.data
+    } catch (err: any) {
+      console.error(err)
+      errorHandle(err.response?.data || err.message)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchEmailNotices = async (params: {
+    project?: number
+    status?: string
+    page?: number
+  }) => {
+    loading.value = true
+    try {
+      const res = await api.get('/email-notices/', { params })
+      if (res.data && res.data.results) {
+        emailNotices.value = res.data.results
+        emailNoticesCount.value = res.data.count
+      } else {
+        emailNotices.value = res.data || []
+        emailNoticesCount.value = (res.data || []).length
+      }
+    } catch (err: any) {
+      emailNotices.value = []
+      emailNoticesCount.value = 0
+      console.error(err)
+      errorHandle(err.response?.data || err.message)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchEmailNoticeDetail = async (id: number) => {
+    loading.value = true
+    try {
+      const res = await api.get(`/email-notices/${id}/`)
+      currentEmailNotice.value = res.data
+      return res.data as EmailNotice
+    } catch (err: any) {
+      currentEmailNotice.value = null
+      console.error(err)
+      errorHandle(err.response?.data || err.message)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // state
     billIssue,
@@ -521,6 +645,12 @@ export const useNotice = defineStore('notice', () => {
     messageTemplates,
     messageSendHistory,
     currentHistory,
+    postLabels,
+    postLabelsCount,
+    emailNotices,
+    emailNoticesCount,
+    currentEmailNotice,
+    emailRecipientsData,
 
     // Sales Bill Issue actions
     fetchSalesBillIssue,
@@ -555,5 +685,16 @@ export const useNotice = defineStore('notice', () => {
     // Message Send History actions
     fetchMessageSendHistory,
     fetchMessageSendHistoryDetail,
+
+    // Post Labels actions
+    fetchPostLabels,
+
+    // Email Notices actions
+    fetchEmailRecipients,
+    sendEmailNotice,
+    fetchEmailNotices,
+    fetchEmailNoticeDetail,
   }
 })
+
+

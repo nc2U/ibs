@@ -221,6 +221,8 @@ router.register(r'messages', notice.MessageViewSet, basename='messages')
 router.register(r'registered-sender-numbers', notice.RegisteredSenderNumberViewSet)
 router.register(r'message-templates', notice.MessageTemplateViewSet)
 router.register(r'message-send-history', notice.MessageSendHistoryViewSet)
+router.register(r'post-labels', notice.PostLabelViewSet, basename='post-labels')
+router.register(r'email-notices', notice.EmailNoticeViewSet, basename='email-notices')
 
 # docs
 router.register(r'category', docs.CategoryViewSet)
