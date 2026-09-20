@@ -342,6 +342,11 @@ const notice = {
     },
     {
       component: 'CNavItem',
+      name: '우편 라벨 관리',
+      to: '/notices/post-label',
+    },
+    {
+      component: 'CNavItem',
       name: 'SMS 발송 관리',
       to: '/notices/sms',
     },
@@ -350,15 +355,8 @@ const notice = {
       name: 'MAIL 발송 관리',
       to: '/notices/mailing',
     },
-    {
-      component: 'CNavItem',
-      name: '우편 라벨 관리',
-      to: '/notices/post-label',
-    },
   ],
 }
-
-
 
 const projectLedger = {
   component: 'CNavGroup',

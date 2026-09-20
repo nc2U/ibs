@@ -21,6 +21,16 @@ const notices = {
       },
     },
     {
+      path: 'post-label',
+      name: '우편 라벨 관리',
+      component: () => import('@/views/notices/Label/Index.vue'),
+      meta: {
+        title: '우편 라벨 관리',
+        auth: true,
+        requiresNoticeAuth: true,
+      },
+    },
+    {
       path: 'sms',
       name: 'SMS 발송 관리',
       component: () => import('@/views/notices/Sms/Index.vue'),
@@ -36,16 +46,6 @@ const notices = {
       component: () => import('@/views/notices/Mailing/Index.vue'),
       meta: {
         title: 'MAIL 발송 관리',
-        auth: true,
-        requiresNoticeAuth: true,
-      },
-    },
-    {
-      path: 'post-label',
-      name: '우편 라벨 관리',
-      component: () => import('@/views/notices/Label/Index.vue'),
-      meta: {
-        title: '우편 라벨 관리',
         auth: true,
         requiresNoticeAuth: true,
       },
