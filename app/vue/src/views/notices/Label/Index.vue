@@ -11,7 +11,9 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
-import PrintSheet, { SPECS, type PrintOptions } from './components/PrintSheet.vue'
+import PrintSheet from './components/PrintSheet.vue'
+import { SPECS, type PrintOptions } from './types'
+
 
 const { can, PERM } = usePerms()
 const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
