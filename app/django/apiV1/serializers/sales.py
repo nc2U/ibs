@@ -68,16 +68,25 @@ class SalesPersonSerializer(serializers.ModelSerializer):
             'join_date', 'quit_date', 'notes', 'documents_count', 'documents',
             'created_at', 'updated_at'
         )
-        extra_kwargs = {
-            # C-1 수정: 주민등록번호(PII)는 쓰기 전용으로 처리하여 API 응답 노출 방지
-            'id_number': {'write_only': True},
-        }
+
+    def validate_id_number(self, value):
+        """원천세 신고용 주민등록번호 형식 및 유효성 검증"""
+        if not value:
+            return ''
+        cleaned = value.strip().replace('-', '')
+        if cleaned and (len(cleaned) != 13 or not cleaned.isdigit()):
+            raise serializers.ValidationError('주민등록번호는 13자리 숫자(또는 생년월일 6자리-뒷자리 7자리) 형식이어야 합니다.')
+        # 7번째 자리(성별 코드) 기본 유효성 (1~8)
+        if cleaned and cleaned[6] not in '12345678':
+            raise serializers.ValidationError('올바르지 않은 주민등록번호 뒷자리 형식입니다.')
+        return value.strip()
 
     def get_documents_count(self, obj):
         # annotated 값(annotate_documents_count)이 있으면 우선 사용 (N+1 방지)
         if hasattr(obj, 'annotate_documents_count'):
             return obj.annotate_documents_count
         return obj.documents.count()
+
 
 
 class CommissionPolicySerializer(serializers.ModelSerializer):
