@@ -26,6 +26,12 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>전자결재 승인 및 안전한 본인 확인을 위해 Face ID를 사용합니다.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>채팅 메시지 사진 첨부 및 현장 문서 등록을 위해 카메라 촬영 권한이 필요합니다.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>채팅 메시지 및 현장 문서에 사진을 첨부하기 위해 사진 보관함 접근 권한이 필요합니다.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>동영상 및 음성 메시지 첨부를 위해 마이크 접근 권한이 필요합니다.</string>
 		<key>CFBundleDocumentTypes</key>
 		<array>
 			<dict>
