@@ -246,9 +246,22 @@ const fetchHistory = async () => {
 
 // 이력 상세 모달
 const showDetailModal = ref(false)
+const showRawHtml = ref(false)
 const selectedNotice = computed(() => noticeStore.currentEmailNotice)
 
+// 템플릿 변수를 시각적으로 돋보이게 스타일링한 HTML 반환
+const formattedPreviewContent = computed(() => {
+  const content = selectedNotice.value?.content || ''
+  if (!content) return ''
+  // {{ 변수 }} 머지 태그를 스타일이 적용된 뱃지 형태로 치환하여 미리보기 제공
+  return content.replace(
+    /(\{\{\s*[^}]+\s*\}\})/g,
+    '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-1 py-0 rounded font-monospace">$1</span>',
+  )
+})
+
 const openDetail = async (noticeItem: EmailNotice) => {
+  showRawHtml.value = false
   await noticeStore.fetchEmailNoticeDetail(noticeItem.id)
   showDetailModal.value = true
 }
@@ -974,12 +987,39 @@ const getStatusBadgeColor = (status: string) => {
           <CAccordion class="mb-4">
             <CAccordionItem :item-key="1">
               <CAccordionHeader>
-                <span class="small fw-bold">발송 본문 내용 확인</span>
+                <div class="d-flex justify-content-between align-items-center w-100 pe-3">
+                  <span class="small fw-bold">
+                    <v-icon icon="mdi-file-document-outline" size="small" class="me-1 text-primary" />
+                    발송 본문 서식 미리보기 (HTML)
+                  </span>
+                </div>
               </CAccordionHeader>
               <CAccordionBody>
+                <div class="d-flex justify-content-end mb-2">
+                  <v-btn
+                    color="secondary"
+                    variant="text"
+                    size="x-small"
+                    @click="showRawHtml = !showRawHtml"
+                  >
+                    <v-icon :icon="showRawHtml ? 'mdi-eye-outline' : 'mdi-code-tags'" size="small" class="me-1" />
+                    {{ showRawHtml ? '서식 미리보기로 보기' : 'HTML 원문 코드 보기' }}
+                  </v-btn>
+                </div>
+
+                <!-- HTML 서식 렌더링 뷰 (실제 수신자 메일 화면과 동일한 스타일) -->
                 <div
-                  class="p-3 bg-white border rounded small font-monospace"
-                  style="white-space: pre-wrap"
+                  v-if="!showRawHtml"
+                  class="p-4 bg-white border rounded small email-rendered-view"
+                  style="min-height: 120px; line-height: 1.6"
+                  v-html="formattedPreviewContent"
+                />
+
+                <!-- 개발/검토용 원문 HTML 코드 뷰 -->
+                <div
+                  v-else
+                  class="p-3 bg-light border rounded small font-monospace text-secondary"
+                  style="white-space: pre-wrap; word-break: break-all"
                 >
                   {{ selectedNotice.content }}
                 </div>
