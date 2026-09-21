@@ -51,9 +51,21 @@ const printBill = () => {
           선택 건별 고지서 내려받기
         </v-btn>
       </CCol>
-      <CCol sm="6" class="text-right">
-        <v-checkbox-btn v-model="noPrice" color="success" label="가격정보 미표시" inline />
-        <v-checkbox-btn v-model="noLate" color="success" label="연체정보 미표시" inline />
+      <CCol sm="6" class="d-flex justify-content-end align-items-center">
+        <v-checkbox-btn
+          v-model="noPrice"
+          color="success"
+          label="가격정보 미표시"
+          inline
+          class="flex-grow-0 me-3"
+        />
+        <v-checkbox-btn
+          v-model="noLate"
+          color="success"
+          label="연체정보 미표시"
+          inline
+          class="flex-grow-0"
+        />
       </CCol>
     </CRow>
   </CAlert>
