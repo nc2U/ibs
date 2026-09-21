@@ -38,7 +38,7 @@ const contChk = (ctorPk: number) => {
 
 <template>
   <CTableRow v-if="contract" class="text-center" :color="checked ? 'secondary' : ''">
-    <CTableDataCell v-if="canNoticeRead">
+    <CTableDataCell v-if="canNoticeRead" class="pl-3">
       <CFormCheck
         :id="'check_' + contract.pk"
         v-model="checked"

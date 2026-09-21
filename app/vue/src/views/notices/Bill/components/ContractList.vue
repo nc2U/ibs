@@ -37,7 +37,7 @@ const onContChk = (payload: { chk: boolean; pk: number }) => emit('on-cont-chk',
 </script>
 
 <template>
-  <CTable hover responsive align="middle">
+  <CTable hover responsive align="middle" class="border" small>
     <colgroup>
       <col v-if="canNoticeRead" style="width: 8%" />
       <col style="width: 10%" />
@@ -52,7 +52,7 @@ const onContChk = (payload: { chk: boolean; pk: number }) => emit('on-cont-chk',
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center">
-        <CTableHeaderCell v-if="canNoticeRead" scope="col">
+        <CTableHeaderCell v-if="canNoticeRead" scope="col" class="pl-3">
           <CFormCheck id="checkAll" v-model="allChecked" label="전체" @change="allUnChecked" />
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">차수</CTableHeaderCell>
