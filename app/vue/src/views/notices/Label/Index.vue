@@ -345,7 +345,7 @@ const displayAddress = (item: PostLabel) => {
       </CCard>
 
       <!-- 3. 명단 테이블 및 인쇄 액션 바 -->
-      <CCard class="mx-3 shadow-sm">
+      <CCard class="mx-3 shadow-sm mb-3">
         <CCardHeader
           class="bg-light py-2 d-flex flex-wrap justify-content-between align-items-center"
         >
@@ -456,9 +456,13 @@ const displayAddress = (item: PostLabel) => {
                     {{ displayAddress(item) }}
                   </CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="item.has_dm_address ? 'info' : 'secondary'" variant="outline">
+                    <v-chip
+                      :color="item.has_dm_address ? 'info' : 'secondary'"
+                      variant="flat"
+                      size="x-small"
+                    >
                       {{ item.has_dm_address ? '우편송부지' : '주민등록지' }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
                 </CTableRow>
               </template>
@@ -479,7 +483,7 @@ const displayAddress = (item: PostLabel) => {
 
         <CCardFooter
           v-if="postLabels.length > 0"
-          class="bg-white py-2 d-flex flex-wrap justify-content-between align-items-center"
+          class="bg-more-white py-2 d-flex flex-wrap justify-content-between align-items-center"
         >
           <!-- 표시 개수 선택 -->
           <div class="d-flex align-items-center gap-2 text-secondary small">
