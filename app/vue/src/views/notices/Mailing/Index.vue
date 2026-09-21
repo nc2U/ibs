@@ -586,7 +586,9 @@ const getStatusBadgeColor = (status: string) => {
                ═══════════════════════════════════════════════════ -->
           <CCol v-else-if="activeTab === 'history'">
             <CCard class="shadow-sm">
-              <CCardHeader class="bg-light py-2 d-flex justify-content-between align-items-center">
+              <CCardHeader
+                class="bg-more-light py-2 d-flex justify-content-between align-items-center"
+              >
                 <div class="fw-bold d-flex align-items-center">
                   <v-icon icon="mdi-history" size="small" class="me-1 text-primary" />
                   발송 이력 목록
