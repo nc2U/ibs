@@ -18,7 +18,7 @@ from notice.models import (
 from notice.tasks import send_mass_email_task
 from notice.utils import IwinvSMSService
 from work.models import IssueProject
-from apiV1.pagination import PageNumberPaginationOneThousand
+from apiV1.pagination import PageNumberPaginationOneThousand, PageNumberPaginationThreeThousand
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.notice import (
@@ -732,7 +732,7 @@ class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
     """우편 라벨 출력용 계약자 주소 목록 ViewSet (읽기 전용)"""
     serializer_class = PostLabelSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
-    pagination_class = PageNumberPaginationOneThousand
+    pagination_class = PageNumberPaginationThreeThousand
 
     def get_queryset(self):
         user = self.request.user
