@@ -558,8 +558,9 @@ const getStatusBadgeColor = (status: string) => {
                       class="d-flex justify-content-end align-items-center gap-2 border-top pt-3"
                     >
                       <span class="text-muted small me-2">
-                        선택된 수신자 <strong>{{ finalRecipients.length }}</strong>명에게
-                        비동기(Celery) 대량 전송됩니다.
+                        선택된 수신자
+                        <strong>{{ finalRecipients.length }}</strong>
+                        명에게 비동기(Celery) 대량 전송됩니다.
                       </span>
                       <v-btn
                         color="primary"
@@ -567,7 +568,11 @@ const getStatusBadgeColor = (status: string) => {
                         @click="handleSendEmail"
                       >
                         <v-icon icon="mdi-send" size="small" class="me-1" />
-                        {{ isSending ? '발송 접수 중...' : `이메일 발송 실행 (${finalRecipients.length}명)` }}
+                        {{
+                          isSending
+                            ? '발송 접수 중...'
+                            : `이메일 발송 실행 (${finalRecipients.length}명)`
+                        }}
                       </v-btn>
                     </div>
                   </CCardBody>
@@ -745,12 +750,7 @@ const getStatusBadgeColor = (status: string) => {
                     placeholder="추가할 이메일 주소"
                     @keydown.enter="addManualRecipient"
                   />
-                  <v-btn
-                    color="primary"
-                    variant="tonal"
-                    size="small"
-                    @click="addManualRecipient"
-                  >
+                  <v-btn color="primary" variant="tonal" size="small" @click="addManualRecipient">
                     <v-icon icon="mdi-plus" size="small" class="me-1" />
                     수기 추가
                   </v-btn>
@@ -762,7 +762,8 @@ const getStatusBadgeColor = (status: string) => {
           <!-- 상태 요약 안내 바 -->
           <div class="d-flex justify-content-between align-items-center px-1 mb-2 small">
             <div class="text-secondary">
-              전체 <strong>{{ editableRecipients.length }}</strong>명 중
+              전체 <strong>{{ editableRecipients.length }}</strong
+              >명 중
               <span class="text-primary fw-bold">{{ finalRecipients.length }}명 발송 선택됨</span>
               (검색 필터 결과: {{ filteredEditableRecipients.length }}명)
             </div>
@@ -777,13 +778,18 @@ const getStatusBadgeColor = (status: string) => {
               <CTableHead color="light" class="position-sticky top-0" style="z-index: 2">
                 <CTableRow>
                   <CTableHeaderCell style="width: 45px">
-                    <CFormCheck v-model="isAllFilteredSelected" title="현재 검색 목록 전체 선택/해제" />
+                    <CFormCheck
+                      v-model="isAllFilteredSelected"
+                      title="현재 검색 목록 전체 선택/해제"
+                    />
                   </CTableHeaderCell>
                   <CTableHeaderCell style="width: 50px">No</CTableHeaderCell>
                   <CTableHeaderCell style="width: 120px">차수</CTableHeaderCell>
                   <CTableHeaderCell style="width: 130px">동 / 호수</CTableHeaderCell>
                   <CTableHeaderCell style="width: 130px">수신자명</CTableHeaderCell>
-                  <CTableHeaderCell class="text-start">이메일 주소 (직접 수정 가능)</CTableHeaderCell>
+                  <CTableHeaderCell class="text-start"
+                    >이메일 주소 (직접 수정 가능)</CTableHeaderCell
+                  >
                   <CTableHeaderCell style="width: 100px">상태</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -795,11 +801,7 @@ const getStatusBadgeColor = (status: string) => {
                     :class="{ 'table-active': !r.selected }"
                   >
                     <CTableDataCell>
-                      <input
-                        v-model="r.selected"
-                        type="checkbox"
-                        class="form-check-input"
-                      />
+                      <input v-model="r.selected" type="checkbox" class="form-check-input" />
                     </CTableDataCell>
                     <CTableDataCell class="text-muted">{{ idx + 1 }}</CTableDataCell>
                     <CTableDataCell>{{ r.order_group_name }}</CTableDataCell>
@@ -858,7 +860,8 @@ const getStatusBadgeColor = (status: string) => {
         </CModalBody>
         <CModalFooter class="d-flex justify-content-between">
           <div class="small text-secondary">
-            최종 발송 예정: <strong class="text-primary">{{ finalRecipients.length }}</strong>명
+            최종 발송 예정: <strong class="text-primary">{{ finalRecipients.length }}</strong
+            >명
           </div>
           <v-btn color="primary" size="small" flat @click="showRecipientManageModal = false">
             설정 완료
@@ -916,7 +919,13 @@ const getStatusBadgeColor = (status: string) => {
       <!-- ═══════════════════════════════════════════════════
            MODAL 2: 이메일 발송 상세 및 수신자별 로그 모달
            ═══════════════════════════════════════════════════ -->
-      <CModal :visible="showDetailModal" size="xl" scrollable @close="showDetailModal = false">
+      <CModal
+        :visible="showDetailModal"
+        size="xl"
+        scrollable
+        @close="showDetailModal = false"
+        alignment="center"
+      >
         <CModalHeader>
           <CModalTitle>
             <v-icon icon="mdi-email-check" class="me-1 text-primary" />
