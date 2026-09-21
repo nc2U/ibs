@@ -36,9 +36,14 @@ def send_mass_email_task(self, email_notice_id: int):
     success_count = notice.success_count
     fail_count = notice.fail_count
 
-    from_email = notice.sender_email.strip() or getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@ibs.local')
-    if notice.sender_name.strip():
-        from_email = f'{notice.sender_name.strip()} <{from_email}>'
+    from email.utils import parseaddr, formataddr
+
+    raw_default = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@ibs.local')
+    default_name, default_addr = parseaddr(raw_default)
+    actual_addr = notice.sender_email.strip() or default_addr or raw_default
+    actual_name = notice.sender_name.strip() or default_name
+
+    from_email = formataddr((actual_name, actual_addr)) if actual_name else actual_addr
 
     project_name = notice.project.name if notice.project else ''
 
@@ -77,6 +82,8 @@ def send_mass_email_task(self, email_notice_id: int):
             log.save(update_fields=['status', 'error_message', 'sent_at'])
             fail_count += 1
 
+    success_count = notice.send_logs.filter(status='success').count()
+    fail_count = notice.send_logs.filter(status='fail').count()
     notice.success_count = success_count
     notice.fail_count = fail_count
     notice.status = 'completed' if fail_count == 0 else ('failed' if success_count == 0 and fail_count > 0 else 'completed')

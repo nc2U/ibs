@@ -2,9 +2,6 @@ import os
 import base64
 from celery import shared_task
 from django.core.cache import cache
-from .seal_extractor import extract_seals_from_file
-
-
 @shared_task(bind=True)
 def extract_seals_task(self, temp_file_path, is_pdf=True):
     """
@@ -14,6 +11,7 @@ def extract_seals_task(self, temp_file_path, is_pdf=True):
         temp_file_path (str): 임시 저장된 스캔 파일 경로
         is_pdf (bool): PDF 여부
     """
+    from .seal_extractor import extract_seals_from_file
     task_id = self.request.id
     cache_key = f"seal_extraction_{task_id}"
 
