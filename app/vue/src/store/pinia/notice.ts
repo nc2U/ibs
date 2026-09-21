@@ -580,6 +580,12 @@ export const useNotice = defineStore('notice', () => {
     order_group?: number | string
     building?: number | string
     contractor_ids?: number[]
+    custom_recipients?: Array<{
+      contractor_id?: number | null
+      name: string
+      email: string
+      unit_info?: string
+    }>
   }) => {
     loading.value = true
     try {

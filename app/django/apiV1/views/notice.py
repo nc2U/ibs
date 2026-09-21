@@ -922,19 +922,41 @@ class EmailNoticeViewSet(viewsets.ModelViewSet):
         )
 
         valid_recipients = []
-        for c in contractors:
-            email = ''
-            if hasattr(c, 'contractorcontact') and c.contractorcontact and c.contractorcontact.email:
-                email = c.contractorcontact.email.strip()
-            if email:
-                hu = getattr(getattr(c.contract, 'key_unit', None), 'houseunit', None)
-                unit_info = f'{hu.building_unit.name} {hu.name}' if hu and hu.building_unit else ''
-                valid_recipients.append({
-                    'contractor': c,
-                    'name': c.name,
-                    'email': email,
-                    'unit_info': unit_info,
-                })
+        custom_recipients = data.get('custom_recipients')
+
+        if custom_recipients:
+            # 클라이언트에서 수동 확인/수정된 수신자 목록 직접 사용
+            contractor_id_map = {}
+            c_ids = [r['contractor_id'] for r in custom_recipients if r.get('contractor_id')]
+            if c_ids:
+                for c in Contractor.objects.filter(id__in=c_ids):
+                    contractor_id_map[c.id] = c
+
+            for r in custom_recipients:
+                email = (r.get('email') or '').strip()
+                name = (r.get('name') or '').strip()
+                if email and name:
+                    c_obj = contractor_id_map.get(r.get('contractor_id'))
+                    valid_recipients.append({
+                        'contractor': c_obj,
+                        'name': name,
+                        'email': email,
+                        'unit_info': r.get('unit_info', ''),
+                    })
+        else:
+            for c in contractors:
+                email = ''
+                if hasattr(c, 'contractorcontact') and c.contractorcontact and c.contractorcontact.email:
+                    email = c.contractorcontact.email.strip()
+                if email:
+                    hu = getattr(getattr(c.contract, 'key_unit', None), 'houseunit', None)
+                    unit_info = f'{hu.building_unit.name} {hu.name}' if hu and hu.building_unit else ''
+                    valid_recipients.append({
+                        'contractor': c,
+                        'name': c.name,
+                        'email': email,
+                        'unit_info': unit_info,
+                    })
 
         if not valid_recipients:
             return Response({'error': '발송 가능한 이메일 수신자가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)

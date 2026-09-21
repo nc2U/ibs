@@ -532,3 +532,7 @@ class EmailSendRequestSerializer(serializers.Serializer):
     contractor_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, allow_empty=True, default=list
     )
+    # 직접/수동 지정 수신자 목록 ({'contractor_id': optional, 'name': str, 'email': str, 'unit_info': optional})
+    custom_recipients = serializers.ListField(
+        child=serializers.DictField(), required=False, allow_empty=True, default=list
+    )

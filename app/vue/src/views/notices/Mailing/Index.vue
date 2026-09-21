@@ -44,6 +44,118 @@ const form = ref({
 // 수신 대상자 집계 상태
 const recipientsData = computed(() => noticeStore.emailRecipientsData)
 const showUnregisteredModal = ref(false)
+const showRecipientManageModal = ref(false)
+
+// 수신 대상자 목록 (편집 및 개별 선택 가능 상태)
+export interface EditableRecipient {
+  contractor_id: number | null
+  name: string
+  email: string
+  unit_info: string
+  order_group_name: string
+  selected: boolean
+  is_custom?: boolean // 직접 추가한 수신자인지 여부
+}
+
+const editableRecipients = ref<EditableRecipient[]>([])
+const recipientSearch = ref('')
+
+// 직접 추가 수신자 입력 상태
+const manualName = ref('')
+const manualEmail = ref('')
+
+// recipientsData가 로드되면 editableRecipients 초기화
+watch(
+  () => recipientsData.value,
+  data => {
+    if (!data) {
+      editableRecipients.value = []
+      return
+    }
+    // 등록자 (선택 상태로 초기화)
+    const registered: EditableRecipient[] = (data.recipients || []).map(r => ({
+      contractor_id: r.contractor_id,
+      name: r.name,
+      email: r.email,
+      unit_info: r.unit_info,
+      order_group_name: r.order_group_name,
+      selected: true,
+      is_custom: false,
+    }))
+    // 미등록자 (미선택 상태, 이메일 빈칸으로 초기화)
+    const unregistered: EditableRecipient[] = (data.unregistered_contractors || []).map(u => ({
+      contractor_id: u.contractor_id,
+      name: u.name,
+      email: '',
+      unit_info: u.unit_info,
+      order_group_name: u.order_group_name,
+      selected: false,
+      is_custom: false,
+    }))
+    editableRecipients.value = [...registered, ...unregistered]
+  },
+  { immediate: true },
+)
+
+// 최종 발송 대상 목록 (선택되어 있고 이메일이 유효한 건)
+const finalRecipients = computed(() => {
+  return editableRecipients.value.filter(r => r.selected && r.email.trim().length > 0)
+})
+
+// 모달 검색 필터 적용 목록
+const filteredEditableRecipients = computed(() => {
+  const query = recipientSearch.value.trim().toLowerCase()
+  if (!query) return editableRecipients.value
+  return editableRecipients.value.filter(
+    r =>
+      r.name.toLowerCase().includes(query) ||
+      r.email.toLowerCase().includes(query) ||
+      r.unit_info.toLowerCase().includes(query) ||
+      r.order_group_name.toLowerCase().includes(query),
+  )
+})
+
+// 모달 전체 선택 / 해제
+const isAllFilteredSelected = computed({
+  get: () =>
+    filteredEditableRecipients.value.length > 0 &&
+    filteredEditableRecipients.value.every(r => r.selected),
+  set: (val: boolean) => {
+    filteredEditableRecipients.value.forEach(r => {
+      r.selected = val
+    })
+  },
+})
+
+// 직접 수동 수신자 추가
+const addManualRecipient = () => {
+  const name = manualName.value.trim()
+  const email = manualEmail.value.trim()
+  if (!name) {
+    alert('수신자 이름을 입력해 주세요.')
+    return
+  }
+  if (!email || !email.includes('@')) {
+    alert('올바른 이메일 주소를 입력해 주세요.')
+    return
+  }
+  editableRecipients.value.unshift({
+    contractor_id: null,
+    name,
+    email,
+    unit_info: '직접 추가',
+    order_group_name: '-',
+    selected: true,
+    is_custom: true,
+  })
+  manualName.value = ''
+  manualEmail.value = ''
+}
+
+// 직접 추가 수신자 삭제
+const removeManualRecipient = (idx: number) => {
+  editableRecipients.value.splice(idx, 1)
+}
 
 // 대상자 집계 로드
 const fetchRecipients = async () => {
@@ -81,17 +193,24 @@ const handleSendEmail = async () => {
     alert('이메일 본문을 입력해 주세요.')
     return
   }
-  const regCount = recipientsData.value?.registered_count || 0
+  const regCount = finalRecipients.value.length
   if (regCount === 0) {
-    alert('이메일이 등록된 발송 대상자가 없습니다.')
+    alert('선택된 유효한 수신자가 없습니다. 수신 대상자 목록에서 이메일을 확인해 주세요.')
     return
   }
 
-  const confirmMsg = `총 ${regCount}명의 계약자에게 이메일을 발송하시겠습니까?\n발송 후에는 취소할 수 없습니다.`
+  const confirmMsg = `총 ${regCount}명의 수신자에게 이메일을 발송하시겠습니까?\n발송 후에는 취소할 수 없습니다.`
   if (!confirm(confirmMsg)) return
 
   isSending.value = true
   try {
+    const customList = finalRecipients.value.map(r => ({
+      contractor_id: r.contractor_id,
+      name: r.name,
+      email: r.email.trim(),
+      unit_info: r.unit_info,
+    }))
+
     await noticeStore.sendEmailNotice({
       project: project.value,
       title: form.value.title.trim(),
@@ -100,6 +219,7 @@ const handleSendEmail = async () => {
       sender_email: form.value.sender_email.trim(),
       order_group: filter.value.order_group || undefined,
       building: filter.value.building || undefined,
+      custom_recipients: customList,
     })
     // 폼 초기화 및 이력 탭으로 전환
     form.value.title = ''
@@ -278,7 +398,19 @@ const getStatusBadgeColor = (status: string) => {
 
                     <!-- 수신 현황 통계 카드 -->
                     <div class="p-3 bg-light rounded-3 border">
-                      <div class="fw-bold mb-4">이메일 등록 및 발송 가능 현황</div>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">수신 대상자 설정</span>
+                        <v-btn
+                          color="primary"
+                          variant="tonal"
+                          size="small"
+                          @click="showRecipientManageModal = true"
+                        >
+                          <v-icon icon="mdi-account-cog-outline" size="small" class="me-1" />
+                          명단 확인 / 수정
+                        </v-btn>
+                      </div>
+
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>총 대상 계약자</span>
                         <strong class="font-monospace">
@@ -286,15 +418,15 @@ const getStatusBadgeColor = (status: string) => {
                         </strong>
                       </div>
                       <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">발송 가능 (이메일 등록)</span>
-                        <v-chip color="success" shape="rounded-pill" variant="flat" size="x-small">
+                        <span>초기 등록자</span>
+                        <span class="text-secondary font-monospace">
                           {{ recipientsData?.registered_count || 0 }}명
-                        </v-chip>
+                        </span>
                       </div>
-                      <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">발송 불가 (이메일 미등록)</span>
-                        <v-chip color="warning" shape="rounded-pill" variant="flat" size="x-small">
-                          {{ recipientsData?.unregistered_count || 0 }}명
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-primary">최종 발송 예정</span>
+                        <v-chip color="primary" shape="rounded-pill" variant="flat" size="small">
+                          <strong>{{ finalRecipients.length }}명</strong>
                         </v-chip>
                       </div>
 
@@ -304,13 +436,13 @@ const getStatusBadgeColor = (status: string) => {
                       >
                         <v-btn
                           color="secondary"
-                          variant="tonal"
+                          variant="text"
                           size="small"
                           class="text-decoration-none p-0 small"
                           @click="showUnregisteredModal = true"
                         >
                           <v-icon icon="mdi-account-alert-outline" size="small" />
-                          미등록자 명단 확인
+                          미등록자 명단 ({{ recipientsData?.unregistered_count || 0 }}명)
                         </v-btn>
                       </div>
                     </div>
@@ -426,16 +558,16 @@ const getStatusBadgeColor = (status: string) => {
                       class="d-flex justify-content-end align-items-center gap-2 border-top pt-3"
                     >
                       <span class="text-muted small me-2">
-                        수신자 {{ recipientsData?.registered_count || 0 }}명에게 비동기(Celery) 대량
-                        전송됩니다.
+                        선택된 수신자 <strong>{{ finalRecipients.length }}</strong>명에게
+                        비동기(Celery) 대량 전송됩니다.
                       </span>
                       <v-btn
                         color="primary"
-                        :disabled="isSending || (recipientsData?.registered_count || 0) === 0"
+                        :disabled="isSending || finalRecipients.length === 0"
                         @click="handleSendEmail"
                       >
                         <v-icon icon="mdi-send" size="small" class="me-1" />
-                        {{ isSending ? '발송 접수 중...' : '이메일 발송 실행' }}
+                        {{ isSending ? '발송 접수 중...' : `이메일 발송 실행 (${finalRecipients.length}명)` }}
                       </v-btn>
                     </div>
                   </CCardBody>
@@ -555,6 +687,184 @@ const getStatusBadgeColor = (status: string) => {
           </CCol>
         </CCardBody>
       </CCol>
+
+      <!-- ═══════════════════════════════════════════════════
+           MODAL 0: 수신 대상자 명단 확인 / 이메일 수정 모달
+           ═══════════════════════════════════════════════════ -->
+      <CModal
+        :visible="showRecipientManageModal"
+        size="xl"
+        scrollable
+        @close="showRecipientManageModal = false"
+      >
+        <CModalHeader>
+          <CModalTitle>
+            <v-icon icon="mdi-account-cog" class="me-1 text-primary" />
+            수신 대상자 명단 확인 및 이메일 수정 / 설정
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody class="p-3">
+          <!-- 상단 필터 & 직접 추가 영역 -->
+          <div class="p-3 bg-light rounded border mb-3">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-5">
+                <CInputGroup size="sm">
+                  <CInputGroupText>
+                    <v-icon icon="mdi-magnify" size="small" />
+                  </CInputGroupText>
+                  <CFormInput
+                    v-model="recipientSearch"
+                    placeholder="계약자명 / 동호수 / 이메일 검색..."
+                  />
+                  <CButton
+                    v-if="recipientSearch"
+                    color="secondary"
+                    variant="ghost"
+                    type="button"
+                    @click="recipientSearch = ''"
+                  >
+                    초기화
+                  </CButton>
+                </CInputGroup>
+              </div>
+
+              <!-- 직접 추가 인라인 폼 -->
+              <div class="col-12 col-md-7">
+                <div class="d-flex gap-2 justify-content-md-end">
+                  <CFormInput
+                    v-model="manualName"
+                    size="sm"
+                    style="max-width: 120px"
+                    placeholder="성명/직책"
+                  />
+                  <CFormInput
+                    v-model="manualEmail"
+                    size="sm"
+                    type="email"
+                    style="max-width: 220px"
+                    placeholder="추가할 이메일 주소"
+                    @keydown.enter="addManualRecipient"
+                  />
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                    @click="addManualRecipient"
+                  >
+                    <v-icon icon="mdi-plus" size="small" class="me-1" />
+                    수기 추가
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 상태 요약 안내 바 -->
+          <div class="d-flex justify-content-between align-items-center px-1 mb-2 small">
+            <div class="text-secondary">
+              전체 <strong>{{ editableRecipients.length }}</strong>명 중
+              <span class="text-primary fw-bold">{{ finalRecipients.length }}명 발송 선택됨</span>
+              (검색 필터 결과: {{ filteredEditableRecipients.length }}명)
+            </div>
+            <div class="text-muted">
+              ※ 이메일 입력창에서 주소를 직접 수정하거나 입력할 수 있습니다.
+            </div>
+          </div>
+
+          <!-- 대상자 테이블 -->
+          <div class="table-responsive border rounded" style="max-height: 50vh; overflow-y: auto">
+            <CTable hover align="middle" class="mb-0 text-center small">
+              <CTableHead color="light" class="position-sticky top-0" style="z-index: 2">
+                <CTableRow>
+                  <CTableHeaderCell style="width: 45px">
+                    <CFormCheck v-model="isAllFilteredSelected" title="현재 검색 목록 전체 선택/해제" />
+                  </CTableHeaderCell>
+                  <CTableHeaderCell style="width: 50px">No</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 120px">차수</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 130px">동 / 호수</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 130px">수신자명</CTableHeaderCell>
+                  <CTableHeaderCell class="text-start">이메일 주소 (직접 수정 가능)</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 100px">상태</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <template v-if="filteredEditableRecipients.length > 0">
+                  <CTableRow
+                    v-for="(r, idx) in filteredEditableRecipients"
+                    :key="r.contractor_id ?? `custom-${idx}`"
+                    :class="{ 'table-active': !r.selected }"
+                  >
+                    <CTableDataCell>
+                      <input
+                        v-model="r.selected"
+                        type="checkbox"
+                        class="form-check-input"
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell class="text-muted">{{ idx + 1 }}</CTableDataCell>
+                    <CTableDataCell>{{ r.order_group_name }}</CTableDataCell>
+                    <CTableDataCell class="fw-bold">{{ r.unit_info || '-' }}</CTableDataCell>
+                    <CTableDataCell class="fw-bold">
+                      {{ r.name }}
+                      <v-chip
+                        v-if="r.is_custom"
+                        color="info"
+                        size="x-small"
+                        variant="outlined"
+                        class="ms-1"
+                      >
+                        직접추가
+                      </v-chip>
+                    </CTableDataCell>
+                    <CTableDataCell class="text-start">
+                      <CFormInput
+                        v-model="r.email"
+                        size="sm"
+                        type="email"
+                        placeholder="이메일을 입력하세요 (미입력 시 발송 불가)"
+                        :class="{ 'border-danger': r.selected && !r.email.trim() }"
+                      />
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <template v-if="r.is_custom">
+                        <v-btn
+                          color="danger"
+                          variant="text"
+                          size="x-small"
+                          @click="removeManualRecipient(idx)"
+                        >
+                          삭제
+                        </v-btn>
+                      </template>
+                      <template v-else-if="r.email.trim()">
+                        <CBadge color="success" shape="rounded-pill">발송가능</CBadge>
+                      </template>
+                      <template v-else>
+                        <CBadge color="secondary" shape="rounded-pill">미입력</CBadge>
+                      </template>
+                    </CTableDataCell>
+                  </CTableRow>
+                </template>
+                <template v-else>
+                  <CTableRow>
+                    <CTableDataCell colspan="7" class="py-4 text-muted">
+                      검색 조건에 맞는 수신 대상자가 없습니다.
+                    </CTableDataCell>
+                  </CTableRow>
+                </template>
+              </CTableBody>
+            </CTable>
+          </div>
+        </CModalBody>
+        <CModalFooter class="d-flex justify-content-between">
+          <div class="small text-secondary">
+            최종 발송 예정: <strong class="text-primary">{{ finalRecipients.length }}</strong>명
+          </div>
+          <v-btn color="primary" size="small" flat @click="showRecipientManageModal = false">
+            설정 완료
+          </v-btn>
+        </CModalFooter>
+      </CModal>
 
       <!-- ═══════════════════════════════════════════════════
            MODAL 1: 이메일 미등록 계약자 명단 모달
