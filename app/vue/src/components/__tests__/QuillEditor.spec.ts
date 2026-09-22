@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
 
 import QuillEditor from '../QuillEditor/index.vue'
 
 describe('QuillEditor Component Test', () => {
   it('Quild editor test', async () => {
-    const wrapper = mount(QuillEditor)
+    const wrapper = mount(QuillEditor, {
+      global: {
+        plugins: [createTestingPinia()],
+      },
+    })
     await flushPromises()
 
     expect(wrapper.find('.ql-container').exists()).toBeTruthy()
