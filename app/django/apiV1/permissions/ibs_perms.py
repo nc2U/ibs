@@ -115,34 +115,9 @@ class HqProjectModulePermission(permissions.BasePermission):
                     return True
                 return False
 
-        # 4. 쓰기 요청 (Write: POST, PUT, PATCH, DELETE) — [권한 + 재직 Staff 이중 검증] 정책
-        # 4-1. 본사 기능 권한(Role) 확인
+        # 4. 쓰기 요청 (Write: POST, PUT, PATCH, DELETE) — 본사 기능 권한(Role/Permission) 검증
         if required_perm and required_perm not in user_perms:
             raise exceptions.PermissionDenied("해당 본사 업무를 수행할 수 있는 권한이 없습니다.")
-
-        # 4-2. 재직 임직원(Staff) 이중 검증
-        staff = getattr(request.user, 'staff', None)
-        if staff is None:
-            raise exceptions.PermissionDenied(
-                "본사 입출금 거래 및 업무 데이터를 등록·수정·삭제하려면 해당 회사의 임직원(Staff)으로 등록되어 있어야 합니다. 관리자에게 직원 등록을 요청하세요."
-            )
-
-        if str(staff.status) != '1':
-            raise exceptions.PermissionDenied(
-                "재직 중인 임직원(Staff)만 본사 거래 및 업무를 등록·수정할 수 있습니다. (현재 인사 상태: 재직 아님)"
-            )
-
-        # 4-3. 소속 회사 일치 검사
-        if req_company is not None:
-            staff_match = (
-                str(staff.company_id) == str(req_company) or
-                getattr(staff.company, 'name', '') == str(req_company)
-            )
-            if not staff_match:
-                company_name = getattr(staff.company, 'name', f'회사 ID {staff.company_id}')
-                raise exceptions.PermissionDenied(
-                    f"소속 회사({company_name})와 일치하지 않는 회사의 본사 데이터는 등록·수정할 수 없습니다."
-                )
 
         return True
 
@@ -199,23 +174,9 @@ class HqProjectModulePermission(permissions.BasePermission):
                     return True
                 return False
 
-        # 4. 쓰기 요청 (Write) — 이중 검증
+        # 4. 쓰기 요청 (Write) — 본사 기능 권한(Role/Permission) 검증
         if required_perm and required_perm not in user_perms:
             raise exceptions.PermissionDenied("해당 객체를 수정·삭제할 본사 권한이 없습니다.")
-
-        staff = getattr(request.user, 'staff', None)
-        if staff is None:
-            raise exceptions.PermissionDenied(
-                "본사 객체를 수정·삭제하려면 해당 회사의 임직원(Staff)으로 등록되어 있어야 합니다."
-            )
-        if str(staff.status) != '1':
-            raise exceptions.PermissionDenied(
-                "재직 중인 임직원(Staff)만 본사 객체를 수정·삭제할 수 있습니다. (현재 인사 상태: 재직 아님)"
-            )
-        if obj_company_id is not None and staff.company_id != obj_company_id:
-            raise exceptions.PermissionDenied(
-                "소속 회사와 일치하지 않는 객체는 수정·삭제할 수 없습니다."
-            )
 
         return True
 

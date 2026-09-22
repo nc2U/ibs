@@ -290,76 +290,8 @@ class HqPermissionPolicyTests(TestCase):
         res_staff = self.client.get(f'/api/v1/staff/?company={self.company.pk}&limit=500&status=1')
         self.assertEqual(res_staff.status_code, 200, res_staff.data)
 
-    def test_hq_write_denied_without_staff_with_clear_message(self):
-        """HQ 회계 권한이 있더라도 Staff 미등록 상태에서는 거래 등록이 거부되고 명확한 안내 메시지를 반환한다."""
-        self.client.force_authenticate(user=self.accountant_user)
-
-        post_data = {
-            'company': self.company.pk,
-            'bank_account': self.bank_account.pk,
-            'deal_date': '2026-06-15',
-            'sort': self.sort_expense.pk,
-            'amount': 50000,
-            'content': '서버 호스팅비',
-            'accounting_entries': [
-                {
-                    'account': self.account.pk,
-                    'amount': 50000,
-                }
-            ]
-        }
-        res = self.client.post('/api/v1/ledger/company-composite-transaction/', post_data, format='json')
-        self.assertEqual(res.status_code, 403)
-        self.assertIn('임직원(Staff)으로 등록되어 있어야 합니다', res.data.get('detail', ''))
-
-    def test_hq_write_denied_when_staff_is_inactive(self):
-        """Staff로 등록되었으나 퇴사(status!='1') 상태이면 거래 등록이 거부된다."""
-        # 퇴사자 Staff 생성
-        Staff.objects.create(
-            company=self.company,
-            user=self.accountant_user,
-            name='김회계',
-            id_number='900101-1234567',
-            personal_phone='010-1111-2222',
-            date_join='2026-01-01',
-            position=self.position,
-            grade=self.grade,
-            status='4',  # 4: 퇴직
-        )
-        self.client.force_authenticate(user=self.accountant_user)
-
-        post_data = {
-            'company': self.company.pk,
-            'bank_account': self.bank_account.pk,
-            'deal_date': '2026-06-15',
-            'sort': self.sort_expense.pk,
-            'amount': 50000,
-            'content': '서버 호스팅비',
-            'accounting_entries': [
-                {
-                    'account': self.account.pk,
-                    'amount': 50000,
-                }
-            ]
-        }
-        res = self.client.post('/api/v1/ledger/company-composite-transaction/', post_data, format='json')
-        self.assertEqual(res.status_code, 403)
-        self.assertIn('재직 중인 임직원(Staff)만', res.data.get('detail', ''))
-
-    def test_hq_write_allowed_when_staff_is_active_with_permission(self):
-        """HQ 회계 권한이 있고 재직 중인 Staff(status='1')이면 거래 등록이 정상 처리된다."""
-        # 재직자 Staff 등록
-        Staff.objects.create(
-            company=self.company,
-            user=self.accountant_user,
-            name='김회계',
-            id_number='900101-1234567',
-            personal_phone='010-1111-2222',
-            date_join='2026-01-01',
-            position=self.position,
-            grade=self.grade,
-            status='1',  # 1: 재직
-        )
+    def test_hq_write_allowed_without_staff_if_has_permission(self):
+        """HQ 회계 권한이 있으면 Staff 미등록 상태여도 거래 등록이 정상 처리된다."""
         self.client.force_authenticate(user=self.accountant_user)
 
         post_data = {
@@ -379,3 +311,28 @@ class HqPermissionPolicyTests(TestCase):
         res = self.client.post('/api/v1/ledger/company-composite-transaction/', post_data, format='json')
         self.assertEqual(res.status_code, 201, res.data)
         self.assertEqual(CompanyBankTransaction.objects.count(), 1)
+
+    def test_hq_write_denied_without_permission(self):
+        """HQ 회계 쓰기 권한이 없으면 거래 등록이 거부된다."""
+        # 권한이 없는 사용자
+        other_user = User.objects.create_user(username='other_user', email='other@example.com', password='password')
+        Member.objects.create(project=self.hq_ip, user=other_user)  # 멤버이지만 권한 없음
+        self.client.force_authenticate(user=other_user)
+
+        post_data = {
+            'company': self.company.pk,
+            'bank_account': self.bank_account.pk,
+            'deal_date': '2026-06-15',
+            'sort': self.sort_expense.pk,
+            'amount': 50000,
+            'content': '서버 호스팅비',
+            'accounting_entries': [
+                {
+                    'account': self.account.pk,
+                    'amount': 50000,
+                }
+            ]
+        }
+        res = self.client.post('/api/v1/ledger/company-composite-transaction/', post_data, format='json')
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('권한이 없습니다', res.data.get('detail', ''))
