@@ -164,9 +164,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
                 if (messages.isEmpty) {
                   if (widget.initialRoom?.roomType == ChatRoomType.self) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
