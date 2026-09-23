@@ -193,7 +193,9 @@ export default withMermaid(
               collapsed: true,
               items: [
                 { text: '수납 고지서 출력', link: '/notice/bill' },
+                { text: '우편 라벨 관리', link: '/notice/label' },
                 { text: 'SMS 발송 관리', link: '/notice/sms' },
+                { text: 'MAIL 발송 관리', link: '/notice/mailing' },
               ],
             },
             {
