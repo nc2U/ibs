@@ -4,27 +4,13 @@ import subprocess
 from django import forms
 from django.core.management import call_command
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
-from django.views.generic import TemplateView
-from django.views.generic.edit import CreateView
 
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
 from work.models import Role, Tracker
 from work.models.project import IssueProject, Module
-from .forms import UserCreationForm
 from .models import User
-
-
-class UserCreateView(CreateView):
-    template_name = 'registration/register.html'
-    form_class = UserCreationForm
-    success_url = reverse_lazy('register_done')
-
-
-class UserCreateDoneTV(TemplateView):
-    template_name = 'registration/register_done.html'
 
 
 def install_check_step(request):
