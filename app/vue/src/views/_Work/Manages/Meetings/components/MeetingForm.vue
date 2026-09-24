@@ -347,7 +347,9 @@ const onSubmit = async (event: Event) => {
           if (failedCount > 0) {
             console.error(`Failed to create ${failedCount} action item issues`)
             // Keep only failed items in pending list if any
-            pendingActionItems.value = validItems.filter((_, idx) => results[idx].status === 'rejected')
+            pendingActionItems.value = validItems.filter(
+              (_, idx) => results[idx].status === 'rejected',
+            )
             alertMessage.value = `회의록은 저장되었으나, 후속 조치 업무 중 ${failedCount}건의 등록에 실패하였습니다.`
             refAlertModal.value?.callModal()
             return
@@ -358,7 +360,7 @@ const onSubmit = async (event: Event) => {
       }
 
       if (targetSlug && meetingPk) {
-        router.push({
+        await router.push({
           name: '(회의) - 보기',
           params: { projId: targetSlug, meetingId: meetingPk },
         })
@@ -520,40 +522,56 @@ const onConfirmToggle = async () => {
 export interface MeetingTemplate {
   name: string
   titlePrefix: string
+  categoryName?: string
   agenda: string
   actionItems: string
 }
 
 const DEFAULT_MEETING_TEMPLATES: MeetingTemplate[] = [
   {
-    name: '주간 업무/공정',
+    name: '경영 전략 회의',
+    titlePrefix: '[경영전략] ',
+    categoryName: '경영/기획',
+    agenda:
+      '1. 전사/사업 부문별 핵심 실적 및 KPI 점검\n2. 주요 사업 추진 리스크 검토 및 대응 전략 수립\n3. 신규 투자·개발 사업 및 중장기 사업계획 심의\n4. 경영진 주요 의사결정 및 전사 협조 사항',
+    actionItems:
+      '- [ ] 부문별 리스크 대응 실행 계획 수립 및 보고 (담당: / 기한: )\n- [ ] 투자/사업 심의 안건 보완 및 후속 기안 상신 (담당: / 기한: )\n- [ ] 의결 사항 유관 부서 전파 및 세부 지침 공유 (담당: / 기한: )',
+  },
+  {
+    name: '주간 업무 회의',
     titlePrefix: '[주간업무] ',
+    categoryName: '정기/주간',
     agenda:
-      '1. 전주 실적 점검 및 이슈 공유\n2. 금주 주요 추진 계획\n3. 부서/파트 간 협조 요청 사항',
-    actionItems: '- [ ] 조치 1 (담당: / 기한: )\n- [ ] 조치 2 (담당: / 기한: )',
-  },
-  {
-    name: '설계/인허가 협의',
-    titlePrefix: '[인허가협의] ',
-    agenda:
-      '1. 인허가 진행 현황 점검\n2. 설계 변경 요건 및 관련 법규 검토\n3. 관공서 보완 요청 조치 방안',
+      '1. 전주 부서/담당별 주요 실적 점검\n2. 금주 중점 추진 업무 및 일정 계획\n3. 진행 중인 이슈 및 부서 간 협조 요청 사항\n4. 공지 및 전달 사항',
     actionItems:
-      '- [ ] 보완 도서 및 서류 제출 (담당: / 기한: )\n- [ ] 유관 부서/기관 협의 (담당: / 기한: )',
+      '- [ ] 금주 중점 과제 추진 및 진척률 업데이트 (담당: / 기한: )\n- [ ] 유관 부서 협조 요청 사항 회신 및 조율 (담당: / 기한: )\n- [ ] 주간 보고서 확정 및 공유 (담당: / 기한: )',
   },
   {
-    name: '시공/품질/안전 점검',
-    titlePrefix: '[안전품질] ',
+    name: '프로젝트 내부 회의',
+    titlePrefix: '[내부협의] ',
+    categoryName: '내부/협의',
     agenda:
-      '1. 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
+      '1. 프로젝트 주요 현안 및 마일스톤 진척도 점검\n2. 기술·설계·인허가 요건 검토 및 설계 변경 안건 협의\n3. 공정 지연 리스크 분석 및 만회 대책 협의\n4. 품질·안전 관리 현황 및 개선 조치안',
     actionItems:
-      '- [ ] 안전 위험 요소 시정 조치 및 사진 보고 (담당: / 기한: )\n- [ ] 자재 시험 성적서 확인 (담당: / 기한: )',
+      '- [ ] 설계 변경 및 인허가 보완 도서 작성 (담당: / 기한: )\n- [ ] 공정 만회 세부 실행 일정표 수립 (담당: / 기한: )\n- [ ] 현안 검토서 작성 및 상신 (담당: / 기한: )',
   },
   {
-    name: '사업비/예산 심의',
-    titlePrefix: '[예산심의] ',
+    name: '협력업체 업무 협의',
+    titlePrefix: '[협력업체협의] ',
+    categoryName: '대외/협력',
     agenda:
-      '1. 사업비 집행 실적 분석\n2. 신규 발주/계약 품의 검토\n3. 자금 흐름(Cash Flow) 점검 및 자금 조달안',
-    actionItems: '- [ ] 기안/품의서 상신 (담당: / 기한: )\n- [ ] 정산 보고서 작성 (담당: / 기한: )',
+      '1. 계약 및 발주 공종별 시공/납품 진행 현황 점검\n2. 공정/품질/안전 준수 실태 및 현장 애로사항 청취\n3. 기성 청구·정산 관련 검토 및 일정 협의\n4. 후속 작업 일정 및 협조 사항 조율',
+    actionItems:
+      '- [ ] 협의된 자재/인력 추가 투입 계획서 제출 (담당: / 기한: )\n- [ ] 기성 검사 및 정산 서류 보완 (담당: / 기한: )\n- [ ] 지적 사항 조치 결과서 및 사진 제출 (담당: / 기한: )',
+  },
+  {
+    name: '신규 사업 관련 회의',
+    titlePrefix: '[신규사업] ',
+    categoryName: '기타/임시',
+    agenda:
+      '1. 신규 대상 부지(사업지) 개요 및 입지·시장 환경 분석\n2. 사업 타당성(F/S) 검토 및 분양성·수지 분석 결과 공유\n3. 인허가 가능 여부 및 법적·행정적 리스크 검토\n4. 토지 확보(매입/동의) 전략 및 금융 조달(PF) 방안 협의',
+    actionItems:
+      '- [ ] 사업 타당성 검토 보고서 보완 및 최종본 작성 (담당: / 기한: )\n- [ ] 토지 조서 및 매입 협의 진행 상황 업데이트 (담당: / 기한: )\n- [ ] 금융기관/신탁사 사전 타진 및 조건 분석 (담당: / 기한: )',
   },
 ]
 
@@ -595,6 +613,7 @@ const templateEditIndex = ref<number | null>(null)
 const templateEditForm = ref<MeetingTemplate>({
   name: '',
   titlePrefix: '',
+  categoryName: '',
   agenda: '',
   actionItems: '',
 })
@@ -612,6 +631,7 @@ const openTemplateEditModal = (index?: number) => {
     templateEditForm.value = {
       name: '',
       titlePrefix: '',
+      categoryName: '',
       agenda: '',
       actionItems: '',
     }
@@ -673,6 +693,16 @@ const applyMeetingTemplate = (tmpl: MeetingTemplate) => {
     form.value.action_items = tmpl.actionItems
   } else {
     form.value.action_items = tmpl.actionItems
+  }
+
+  // 회의 카테고리(category) 자동 지정: 템플릿의 categoryName과 일치하는 카테고리가 있으면 자동 선택
+  if (tmpl.categoryName && categories.value?.length) {
+    const matchedCategory = categories.value.find(
+      c => c.name === tmpl.categoryName || c.name.includes(tmpl.categoryName as string),
+    )
+    if (matchedCategory) {
+      form.value.category = matchedCategory.pk
+    }
   }
 
   selectedTemplate.value = tmpl.name
@@ -1395,33 +1425,25 @@ onBeforeMount(async () => {
             자주 사용하는 회의 의제 및 후속 조치 양식을 나만의 템플릿으로 설정할 수 있습니다.
           </span>
           <div class="d-flex gap-2">
-            <v-btn
-              color="secondary"
-              variant="tonal"
-              size="small"
-              @click="resetDefaultTemplates"
-            >
+            <v-btn color="secondary" variant="tonal" size="small" @click="resetDefaultTemplates">
               <v-icon icon="mdi-restore" size="14" class="mr-1" />
               기본값 초기화
             </v-btn>
-            <v-btn
-              color="primary"
-              size="small"
-              @click="openTemplateEditModal()"
-            >
+            <v-btn color="primary" size="small" @click="openTemplateEditModal()">
               <v-icon icon="mdi-plus" size="14" class="mr-1" />
               새 템플릿 추가
             </v-btn>
           </div>
         </div>
 
-        <CTable small bordered hover responsive class="align-middle bg-white">
+        <CTable small bordered hover responsive class="align-middle bg-more-white">
           <CTableHead color="light">
             <CTableRow class="text-center small">
-              <CTableHeaderCell style="width: 25%">템플릿명</CTableHeaderCell>
-              <CTableHeaderCell style="width: 20%">제목 접두사</CTableHeaderCell>
-              <CTableHeaderCell style="width: 40%">기본 의제 미리보기</CTableHeaderCell>
-              <CTableHeaderCell style="width: 15%">관리</CTableHeaderCell>
+              <CTableHeaderCell style="width: 22%">템플릿명</CTableHeaderCell>
+              <CTableHeaderCell style="width: 15%">연결 카테고리</CTableHeaderCell>
+              <CTableHeaderCell style="width: 15%">제목 접두사</CTableHeaderCell>
+              <CTableHeaderCell style="width: 36%">기본 의제 미리보기</CTableHeaderCell>
+              <CTableHeaderCell style="width: 12%">관리</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -1429,10 +1451,16 @@ onBeforeMount(async () => {
               <CTableDataCell class="font-weight-medium">
                 {{ tmpl.name }}
               </CTableDataCell>
+              <CTableDataCell class="text-center">
+                <v-chip v-if="tmpl.categoryName" size="x-small" color="info" label>
+                  {{ tmpl.categoryName }}
+                </v-chip>
+                <span v-else class="text-muted small">미지정</span>
+              </CTableDataCell>
               <CTableDataCell class="text-muted small">
                 <code>{{ tmpl.titlePrefix }}</code>
               </CTableDataCell>
-              <CTableDataCell class="text-muted small text-truncate" style="max-width: 250px">
+              <CTableDataCell class="text-muted small text-truncate" style="max-width: 200px">
                 {{ tmpl.agenda.split('\n')[0] }}
               </CTableDataCell>
               <CTableDataCell class="text-center">
@@ -1457,7 +1485,7 @@ onBeforeMount(async () => {
               </CTableDataCell>
             </CTableRow>
             <CTableRow v-if="!meetingTemplates.length">
-              <CTableDataCell colspan="4" class="text-center text-muted py-3">
+              <CTableDataCell colspan="5" class="text-center text-muted py-3">
                 등록된 템플릿이 없습니다. 상단 [기본값 초기화] 또는 [새 템플릿 추가]를 눌러주세요.
               </CTableDataCell>
             </CTableRow>
@@ -1495,9 +1523,24 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="tmpl-prefix" class="col-sm-3 col-form-label">
-            제목 접두사
+          <CFormLabel for="tmpl-category" class="col-sm-3 col-form-label">
+            연결 카테고리
           </CFormLabel>
+          <CCol sm="9">
+            <CFormSelect v-model="templateEditForm.categoryName" id="tmpl-category">
+              <option value="">미지정 (카테고리 자동 변경 안 함)</option>
+              <option v-for="cat in categories" :key="cat.pk" :value="cat.name">
+                {{ cat.name }}
+              </option>
+            </CFormSelect>
+            <div class="text-muted small mt-1">
+              템플릿 적용 시 해당 이름의 카테고리가 자동으로 선택됩니다.
+            </div>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="tmpl-prefix" class="col-sm-3 col-form-label"> 제목 접두사 </CFormLabel>
           <CCol sm="9">
             <CFormInput
               v-model="templateEditForm.titlePrefix"
@@ -1538,7 +1581,13 @@ onBeforeMount(async () => {
         <CRow>
           <CCol class="text-right">
             <v-btn type="submit" color="primary" size="small">저장</v-btn>
-            <v-btn color="light" size="small" class="ml-2" @click="refTemplateEditModal.close()" flat>
+            <v-btn
+              color="light"
+              size="small"
+              class="ml-2"
+              @click="refTemplateEditModal.close()"
+              flat
+            >
               취소
             </v-btn>
           </CCol>
