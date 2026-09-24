@@ -120,6 +120,25 @@ class MeetingRepository {
     final data = response.data as Map<String, dynamic>;
     return data['is_confirmed'] as bool? ?? false;
   }
+
+  /// AI 음성 회의록 생성 (POST /api/v1/meeting/ai-summarize/)
+  Future<Map<String, dynamic>> aiSummarizeAudio(File audioFile) async {
+    final fileName = audioFile.path.split('/').last;
+    final formData = FormData.fromMap({
+      'audio': await MultipartFile.fromFile(audioFile.path, filename: fileName),
+    });
+
+    final response = await _dio.post(
+      ApiEndpoints.meetingAiSummarize,
+      data: formData,
+      options: Options(
+        sendTimeout: const Duration(seconds: 180),
+        receiveTimeout: const Duration(seconds: 180),
+      ),
+    );
+
+    return response.data as Map<String, dynamic>;
+  }
 }
 
 /// Riverpod 프로바이더

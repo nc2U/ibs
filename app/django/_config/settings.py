@@ -459,6 +459,9 @@ SLACK_NOTIFICATIONS_ENABLED = config('SLACK_NOTIFICATIONS_ENABLED', default=True
 IWINV_API_KEY = config('IWINV_API_KEY', default='')
 IWINV_AUTH_KEY = config('IWINV_AUTH_KEY', default='')
 
+# Google Gemini API Settings (for AI Meeting Minutes & Audio STT/Summary)
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

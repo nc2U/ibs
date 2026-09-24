@@ -53,9 +53,10 @@ dependencies:
     sdk: flutter
   intl: ^0.20.2
 
-  # Image / file picker
+  # Image / file picker & Audio record
   image_picker: ^1.1.2
   file_picker: ^10.3.3
+  record: ^5.2.0
 
   # URL launcher (파일/링크 열기)
   url_launcher: ^6.3.1

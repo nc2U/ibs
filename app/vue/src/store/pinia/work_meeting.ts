@@ -134,6 +134,18 @@ export const useMeeting = defineStore('meeting', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const aiSummarizeMeeting = async (audioBlob: Blob, filename = 'recording.webm') => {
+    const formData = new FormData()
+    formData.append('audio', audioBlob, filename)
+    return await api
+      .post('/meeting/ai-summarize/', formData, config_headers)
+      .then(res => res.data)
+      .catch(err => {
+        errorHandle(err.response?.data || err.message)
+        throw err
+      })
+  }
+
   return {
     meeting,
     meetingList,
@@ -150,5 +162,6 @@ export const useMeeting = defineStore('meeting', () => {
     fetchCategoryList,
     createCategory,
     generatePdf,
+    aiSummarizeMeeting,
   }
 })

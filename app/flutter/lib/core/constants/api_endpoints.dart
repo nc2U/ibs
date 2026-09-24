@@ -26,10 +26,11 @@ abstract class ApiEndpoints {
   static const String codePriorities = '/api/v1/code-priority/';
 
   // ── Meeting ──────────────────────────────────────
-  static const String meetings          = '/api/v1/meeting/';
-  static const String meetingDetail     = '/api/v1/meeting/{id}/';
-  static const String meetingCategories = '/api/v1/meeting-category/';
-  static const String members           = '/api/v1/member/';
+  static const String meetings           = '/api/v1/meeting/';
+  static const String meetingDetail      = '/api/v1/meeting/{id}/';
+  static const String meetingCategories  = '/api/v1/meeting-category/';
+  static const String meetingAiSummarize = '/api/v1/meeting/ai-summarize/';
+  static const String members            = '/api/v1/member/';
 
   // ── Search ───────────────────────────────────────
   static const String issueSearchRun = '/api/v1/issue-search/run/';

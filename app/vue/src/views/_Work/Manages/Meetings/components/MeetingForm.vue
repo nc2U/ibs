@@ -708,6 +708,147 @@ const applyMeetingTemplate = (tmpl: MeetingTemplate) => {
   selectedTemplate.value = tmpl.name
 }
 
+// ==========================================
+// 🎙️ AI 회의록 생성 (실시간 웹 녹음 & 파일 분석)
+// ==========================================
+const refAiRecordModal = ref()
+const isRecording = ref(false)
+const recordingSeconds = ref(0)
+const isAiAnalyzing = ref(false)
+const aiStatusText = ref('')
+const audioFileInput = ref<HTMLInputElement | null>(null)
+
+let mediaRecorder: MediaRecorder | null = null
+let audioChunks: Blob[] = []
+let recordingTimer: any = null
+
+const formattedRecordingTime = computed(() => {
+  const mins = Math.floor(recordingSeconds.value / 60)
+  const secs = recordingSeconds.value % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+})
+
+const openAiRecordModal = () => {
+  isRecording.value = false
+  recordingSeconds.value = 0
+  audioChunks = []
+  if (recordingTimer) clearInterval(recordingTimer)
+  refAiRecordModal.value.callModal()
+}
+
+const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    audioChunks = []
+
+    // 지원하는 mimeType 확인
+    const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
+    const selectedMime = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || ''
+
+    mediaRecorder = selectedMime
+      ? new MediaRecorder(stream, { mimeType: selectedMime })
+      : new MediaRecorder(stream)
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data)
+    }
+
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(track => track.stop())
+      if (recordingTimer) clearInterval(recordingTimer)
+    }
+
+    mediaRecorder.start(1000) // 1초 단위 청크 수집
+    isRecording.value = true
+    recordingSeconds.value = 0
+    recordingTimer = setInterval(() => {
+      recordingSeconds.value++
+    }, 1000)
+  } catch (err: any) {
+    console.error('Microphone access denied:', err)
+    alertMessage.value = '마이크 접근 권한이 거부되었거나 사용 가능한 마이크 장치가 없습니다.'
+    refAlertModal.value?.callModal()
+  }
+}
+
+const stopRecordingAndAnalyze = async () => {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+
+  mediaRecorder.stop()
+  isRecording.value = false
+  if (recordingTimer) clearInterval(recordingTimer)
+
+  // 청크가 수집될 때까지 짧은 대기
+  await new Promise(r => setTimeout(r, 400))
+  const mimeType = mediaRecorder.mimeType || 'audio/webm'
+  const audioBlob = new Blob(audioChunks, { type: mimeType })
+
+  await processAudioWithAi(audioBlob, `meeting_record_${Date.now()}.webm`)
+}
+
+const cancelRecording = () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop()
+  }
+  isRecording.value = false
+  if (recordingTimer) clearInterval(recordingTimer)
+  recordingSeconds.value = 0
+  audioChunks = []
+}
+
+const onAudioFileSelected = async (event: Event) => {
+  const el = event.target as HTMLInputElement
+  if (el.files && el.files.length > 0) {
+    const file = el.files[0]
+    await processAudioWithAi(file, file.name)
+    el.value = ''
+  }
+}
+
+const processAudioWithAi = async (audioBlob: Blob, filename: string) => {
+  isAiAnalyzing.value = true
+  aiStatusText.value =
+    '음성 데이터를 전송하고 Gemini AI로 회의록 및 액션 아이템을 추출하는 중입니다...'
+
+  try {
+    const result = await meetingStore.aiSummarizeMeeting(audioBlob, filename)
+    if (result) {
+      populateFormFromAiSummary(result)
+      refAiRecordModal.value.close()
+    }
+  } catch (err: any) {
+    console.error('AI summary failed:', err)
+    alertMessage.value =
+      err.response?.data?.detail ||
+      err.message ||
+      'AI 회의록 생성에 실패했습니다. API 키 및 파일 형식을 확인해 주세요.'
+    refAlertModal.value?.callModal()
+  } finally {
+    isAiAnalyzing.value = false
+    aiStatusText.value = ''
+  }
+}
+
+const populateFormFromAiSummary = (aiData: any) => {
+  if (aiData.title) form.value.title = aiData.title
+  if (aiData.agenda) form.value.agenda = aiData.agenda
+  if (aiData.content) form.value.content = aiData.content
+  if (aiData.decisions) form.value.decisions = aiData.decisions
+  if (aiData.action_items) {
+    form.value.action_items = aiData.action_items
+    // 추출된 후속 조치 텍스트를 인라인 액션 아이템 테이블로 자동 파싱
+    parseActionItemsFromText()
+  }
+
+  // 카테고리 매핑
+  if (aiData.category_name && categories.value?.length) {
+    const found = categories.value.find(
+      c => c.name === aiData.category_name || c.name.includes(aiData.category_name),
+    )
+    if (found) form.value.category = found.pk
+  }
+}
+
 const projId = computed(() => route.params.projId as string | undefined)
 watch(projId, newVal => {
   if (newVal)
@@ -802,6 +943,17 @@ onBeforeMount(async () => {
                   >
                     <v-icon icon="mdi-cog-outline" size="14" class="mr-1" />
                     양식 관리
+                  </v-btn>
+
+                  <v-btn
+                    variant="flat"
+                    color="success"
+                    size="x-small"
+                    class="ml-2 my-1"
+                    @click="openAiRecordModal"
+                  >
+                    <v-icon icon="mdi-microphone" size="14" class="mr-1" />
+                    AI 음성 회의록 생성
                   </v-btn>
                 </div>
               </CCol>
@@ -1593,6 +1745,112 @@ onBeforeMount(async () => {
           </CCol>
         </CRow>
       </CForm>
+    </template>
+  </FormModal>
+
+  <!-- 🎙️ AI 회의 녹음 및 분석 모달 -->
+  <FormModal ref="refAiRecordModal" size="lg">
+    <template #header>🎙️ AI 음성 회의록 생성 (Gemini)</template>
+    <template #default>
+      <div class="p-4 text-center">
+        <!-- AI 분석 중 로딩 스피너 -->
+        <div v-if="isAiAnalyzing" class="py-5">
+          <v-progress-circular indeterminate color="primary" size="64" width="6" class="mb-4" />
+          <h5 class="fw-bold text-primary mb-2">회의 음성을 분석하고 있습니다</h5>
+          <p class="text-muted small">{{ aiStatusText }}</p>
+          <div class="alert alert-info py-2 px-3 small d-inline-block text-left mt-2">
+            💡 음성 인식, 핵심 의제, 결정 사항 및 액션 아이템 추출 완료 즉시 서버의 음성 원본은 자동
+            영구 삭제됩니다.
+          </div>
+        </div>
+
+        <!-- 녹음 및 업로드 UI -->
+        <div v-else>
+          <div class="mb-4">
+            <h6 class="text-muted mb-2">
+              회의실에서 실시간으로 녹음하거나 스마트폰 녹음 파일을 업로드하세요.
+            </h6>
+            <div class="small text-muted">
+              회의가 끝나면 AI가 자동으로
+              <strong>제목, 의제, 본문 요약, 결정 사항, 후속 조치 업무</strong>를 작성해 드립니다.
+            </div>
+          </div>
+
+          <!-- 실시간 녹음 상태 영역 -->
+          <div class="py-4 my-3 bg-more-light rounded border">
+            <div class="mb-3">
+              <v-icon
+                :icon="isRecording ? 'mdi-microphone' : 'mdi-microphone-outline'"
+                :color="isRecording ? 'error' : 'secondary'"
+                size="48"
+                :class="{ 'animate-pulse': isRecording }"
+              />
+            </div>
+
+            <div
+              class="display-6 font-weight-bold mb-2"
+              :class="isRecording ? 'text-danger' : 'text-muted'"
+            >
+              {{ formattedRecordingTime }}
+            </div>
+
+            <div v-if="isRecording" class="text-danger small font-weight-bold mb-3">
+              🔴 실시간 회의 음성 녹음 진행 중...
+            </div>
+            <div v-else class="text-muted small mb-3">
+              마이크가 준비되었습니다. 아래 [녹음 시작] 버튼을 누르세요.
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+              <v-btn
+                v-if="!isRecording"
+                color="danger"
+                size="large"
+                prepend-icon="mdi-record-rec"
+                @click="startRecording"
+              >
+                녹음 시작
+              </v-btn>
+              <template v-else>
+                <v-btn
+                  color="success"
+                  size="large"
+                  prepend-icon="mdi-stop-circle-outline"
+                  @click="stopRecordingAndAnalyze"
+                >
+                  녹음 완료 & AI 회의록 생성
+                </v-btn>
+                <v-btn color="secondary" variant="outlined" size="large" @click="cancelRecording">
+                  녹음 취소
+                </v-btn>
+              </template>
+            </div>
+          </div>
+
+          <!-- 파일 업로드 대안 -->
+          <div class="mt-4 pt-3 border-top">
+            <span class="text-muted small mr-3"
+              >스마트폰이나 녹음기로 이미 녹음한 파일이 있으신가요?</span
+            >
+            <input
+              type="file"
+              ref="audioFileInput"
+              accept="audio/*,.m4a,.mp3,.wav,.webm"
+              style="display: none"
+              @change="onAudioFileSelected"
+            />
+            <v-btn
+              color="primary"
+              variant="tonal"
+              size="small"
+              prepend-icon="mdi-upload"
+              @click="(audioFileInput as HTMLInputElement)?.click()"
+            >
+              음성 파일 업로드 (.m4a, .mp3, .wav)
+            </v-btn>
+          </div>
+        </div>
+      </div>
     </template>
   </FormModal>
 

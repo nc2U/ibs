@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/common_models.dart';
@@ -39,6 +44,15 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   int? _selectedProjectPk;
   int? _selectedCategoryPk;
   List<int> _selectedAttendeePks = [];
+
+  // ── AI 음성 녹음 및 분석 상태 ─────────────────────────
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  int _recordingSeconds = 0;
+  Timer? _recordingTimer;
+  String? _currentRecordingPath;
+  bool _isAiAnalyzing = false;
+  String _aiStatusMessage = '';
 
   @override
   void initState() {
@@ -85,6 +99,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
+    _audioRecorder.dispose();
     _titleController.dispose();
     _meetingDateController.dispose();
     _locationController.dispose();
@@ -94,6 +110,172 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     _decisionsController.dispose();
     _actionItemsController.dispose();
     super.dispose();
+  }
+
+  String _formatRecordingTime(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final tempDir = await getTemporaryDirectory();
+        final path = '${tempDir.path}/meeting_record_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+        await _audioRecorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc),
+          path: path,
+        );
+
+        _currentRecordingPath = path;
+        _recordingSeconds = 0;
+        _isRecording = true;
+
+        _recordingTimer?.cancel();
+        _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (mounted) {
+            setState(() => _recordingSeconds++);
+          }
+        });
+
+        setState(() {});
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('마이크 접근 권한이 필요합니다.'),
+              backgroundColor: context.colors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error starting audio recording: $e');
+    }
+  }
+
+  Future<void> _stopRecordingAndAnalyze() async {
+    try {
+      final path = await _audioRecorder.stop();
+      _recordingTimer?.cancel();
+      setState(() {
+        _isRecording = false;
+      });
+
+      final finalPath = path ?? _currentRecordingPath;
+      if (finalPath != null && File(finalPath).existsSync()) {
+        await _processAudioFileWithAi(File(finalPath));
+      }
+    } catch (e) {
+      debugPrint('Error stopping audio recording: $e');
+    }
+  }
+
+  Future<void> _cancelRecording() async {
+    try {
+      await _audioRecorder.stop();
+      _recordingTimer?.cancel();
+      if (_currentRecordingPath != null) {
+        final f = File(_currentRecordingPath!);
+        if (f.existsSync()) await f.delete();
+      }
+      setState(() {
+        _isRecording = false;
+        _recordingSeconds = 0;
+        _currentRecordingPath = null;
+      });
+    } catch (e) {
+      debugPrint('Error canceling audio recording: $e');
+    }
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'webm'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        await _processAudioFileWithAi(file);
+      }
+    } catch (e) {
+      debugPrint('Error picking audio file: $e');
+    }
+  }
+
+  Future<void> _processAudioFileWithAi(File audioFile) async {
+    setState(() {
+      _isAiAnalyzing = true;
+      _aiStatusMessage = 'AI 음성 인식 및 회의록 분석 중...';
+    });
+
+    try {
+      final repo = ref.read(meetingRepositoryProvider);
+      final aiData = await repo.aiSummarizeAudio(audioFile);
+
+      if (mounted) {
+        setState(() {
+          if (aiData['title'] != null && (aiData['title'] as String).isNotEmpty) {
+            _titleController.text = aiData['title'];
+          }
+          if (aiData['agenda'] != null && (aiData['agenda'] as String).isNotEmpty) {
+            _agendaController.text = aiData['agenda'];
+          }
+          if (aiData['content'] != null && (aiData['content'] as String).isNotEmpty) {
+            _contentController.text = aiData['content'];
+          }
+          if (aiData['decisions'] != null && (aiData['decisions'] as String).isNotEmpty) {
+            _decisionsController.text = aiData['decisions'];
+          }
+          if (aiData['action_items'] != null && (aiData['action_items'] as String).isNotEmpty) {
+            _actionItemsController.text = aiData['action_items'];
+          }
+        });
+
+        // 카테고리 자동 매핑
+        final catName = aiData['category_name'] as String?;
+        if (catName != null && catName.isNotEmpty) {
+          final cats = ref.read(meetingCategoriesProvider(_selectedProjectPk)).valueOrNull ?? [];
+          final match = cats.where((c) => c.name.contains(catName) || catName.contains(c.name)).firstOrNull;
+          if (match != null) {
+            setState(() => _selectedCategoryPk = match.pk);
+          }
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✨ AI 회의록 분석이 완료되어 폼에 반영되었습니다.'),
+            backgroundColor: context.colors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('AI 회의록 생성 실패: ${getDioErrorMessage(e)}'),
+            backgroundColor: context.colors.error,
+          ),
+        );
+      }
+    } finally {
+      // 분석 완료 즉시 임시 오디오 파일 삭제
+      try {
+        if (audioFile.existsSync()) await audioFile.delete();
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _isAiAnalyzing = false;
+          _aiStatusMessage = '';
+          _currentRecordingPath = null;
+        });
+      }
+    }
   }
 
   Future<void> _selectDateTime() async {
@@ -327,6 +509,138 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
             children: [
               // ── 섹션 1: 회의 개요 ─────────────────────────────────────────
               _buildSectionHeader('회의 개요', Icons.info_outline_rounded),
+
+              // ── 🎙️ AI 음성 회의록 생성 배너 (신규 작성 시) ───────────────
+              if (!isEdit) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: context.colors.accentWork.withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: context.colors.accentWork.withAlpha(60),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome, size: 18, color: context.colors.accentWork),
+                          const SizedBox(width: 6),
+                          Text(
+                            'AI 음성 회의록 자동 생성',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: context.colors.accentWork,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '회의실 음성을 실시간 녹음하거나 오디오 파일을 분석하여 회의 제목, 의제, 본문, 결정 사항 및 후속 조치를 자동 완성합니다.',
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                      ),
+                      const SizedBox(height: 12),
+
+                      if (_isAiAnalyzing) ...[
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: context.colors.accentWork,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _aiStatusMessage,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: context.colors.accentWork,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (_isRecording) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.redAccent.withAlpha(80)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.fiber_manual_record, color: Colors.red, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                '녹음 중: ${_formatRecordingTime(_recordingSeconds)}',
+                                style: AppTextStyles.titleSm.copyWith(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: _cancelRecording,
+                                child: Text('취소', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
+                              ),
+                              const SizedBox(width: 4),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: context.colors.success,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                icon: const Icon(Icons.stop, size: 14),
+                                label: const Text('완료 & 분석', style: TextStyle(fontSize: 12)),
+                                onPressed: _stopRecordingAndAnalyze,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              icon: const Icon(Icons.mic, size: 16),
+                              label: const Text('실시간 녹음 시작'),
+                              onPressed: _startRecording,
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: context.colors.accentWork,
+                                side: BorderSide(color: context.colors.accentWork.withAlpha(120)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              icon: const Icon(Icons.audio_file_outlined, size: 16),
+                              label: const Text('음성 파일 선택'),
+                              onPressed: _pickAudioFile,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
 
               // 프로젝트 선택 (신규 등록 시)
               if (!isEdit) ...[

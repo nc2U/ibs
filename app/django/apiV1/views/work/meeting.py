@@ -163,10 +163,49 @@ class MeetingViewSet(viewsets.ModelViewSet):
             'update': 'meeting.update',
             'partial_update': 'meeting.update',
             'destroy': 'meeting.delete',
-            'confirm': 'meeting.confirm'
+            'confirm': 'meeting.confirm',
+            'ai_summarize': 'meeting.create',
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
         return mapping.get(self.action, None)
+
+    @action(detail=False, methods=['post'], url_path='ai-summarize')
+    def ai_summarize(self, request):
+        """
+        클라이언트(웹/모바일)에서 업로드한 회의 음성 녹음 파일을 전달받아
+        Gemini 1.5 Flash를 통해 STT 및 회의록(제목, 카테고리, 의제, 본문, 결정사항, 액션아이템)을 추출합니다.
+        완료 후 서버의 임시 파일은 즉시 삭제되어 스토리지를 점유하지 않습니다.
+        """
+        audio_file = request.FILES.get('audio')
+        if not audio_file:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'audio': '음성 녹음 파일(audio)이 전송되지 않았습니다.'})
+
+        mime_type = audio_file.content_type or 'audio/webm'
+        if 'octet-stream' in mime_type:
+            # 확장자 기반 mime-type 추론
+            name_lower = audio_file.name.lower()
+            if name_lower.endswith('.m4a'):
+                mime_type = 'audio/mp4'
+            elif name_lower.endswith('.mp3'):
+                mime_type = 'audio/mp3'
+            elif name_lower.endswith('.wav'):
+                mime_type = 'audio/wav'
+            else:
+                mime_type = 'audio/webm'
+
+        try:
+            from work.services.meeting_ai_service import summarize_meeting_audio
+            audio_bytes = audio_file.read()
+            summary_result = summarize_meeting_audio(audio_bytes, mime_type=mime_type)
+            return Response(summary_result)
+        except Exception as e:
+            from rest_framework.exceptions import APIException
+            raise APIException(f'AI 회의록 생성 중 오류가 발생했습니다: {str(e)}')
+        finally:
+            # 안전한 메모리/임시 파일 정리
+            if hasattr(audio_file, 'close'):
+                audio_file.close()
 
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):

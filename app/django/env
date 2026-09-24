@@ -52,6 +52,9 @@ IWINV_API_KEY=                # iwinv SMS 발송 API 키
 IWINV_AUTH_KEY=               # iwinv SMS 발송 AUTH 키
 IWINV_REGISTERED_SENDER_NUMBERS= # SMS 사전 등록 발신번호 (예: 010-XXXX-XXXX)
 
+### FOR AI SERVICE (Google Gemini) --------------------------------------------------------
+GEMINI_API_KEY=               # Google AI Studio API Key (AI 회의록 생성 및 음성 STT/요약용)
+
 ### FOR DEVELOPMENT & ALERTS (OPTIONAL) ------------------------------------------------
 DOCKERHUB_USER=               # Docker Hub 사용자 계정
 DOCKERHUB_TOKEN=              # Docker Hub Access Token
