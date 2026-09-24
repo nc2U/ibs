@@ -12,6 +12,7 @@ import type { Meeting } from '@/store/types/work_meeting.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
@@ -32,6 +33,9 @@ const categories = computed(() => meetingStore.categoryList)
 const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
+
+const refAlertModal = ref<InstanceType<typeof AlertModal>>()
+const alertMessage = ref('')
 
 const validated = ref(false)
 const form = ref({
@@ -313,23 +317,44 @@ const onSubmit = async (event: Event) => {
         }
       }
 
-      // Process pending inline action items
+      // Process pending inline action items in parallel with error handling
       if (meetingPk && pendingActionItems.value.length > 0) {
+        // Resolve project slug or pk safely
+        const selectedProjectObj = meetingProjects.value.find(p => p.value === form.value.project)
         const projectVal =
-          form.value.project || (workStore.currentProject as IssueProject)?.slug || targetSlug || ''
+          selectedProjectObj?.slug ||
+          selectedProjectObj?.value ||
+          (workStore.currentProject as IssueProject)?.slug ||
+          targetSlug ||
+          ''
 
-        for (const item of pendingActionItems.value) {
-          if (!item.subject?.trim()) continue
-          const issueData = new FormData()
-          issueData.append('subject', item.subject.trim())
-          issueData.append('meeting', meetingPk.toString())
-          if (projectVal) issueData.append('project', projectVal.toString())
-          if (item.assigned_to) issueData.append('assigned_to', item.assigned_to.toString())
-          if (item.due_date) issueData.append('due_date', item.due_date)
-          if (item.priority) issueData.append('priority', item.priority.toString())
-          await issueStore.createIssue(issueData)
+        const validItems = pendingActionItems.value.filter(item => !!item.subject?.trim())
+        if (validItems.length > 0) {
+          const creationPromises = validItems.map(item => {
+            const issueData = new FormData()
+            issueData.append('subject', item.subject.trim())
+            issueData.append('meeting', (meetingPk as number).toString())
+            if (projectVal) issueData.append('project', projectVal.toString())
+            if (item.assigned_to) issueData.append('assigned_to', item.assigned_to.toString())
+            if (item.due_date) issueData.append('due_date', item.due_date)
+            if (item.priority) issueData.append('priority', item.priority.toString())
+            return issueStore.createIssue(issueData)
+          })
+
+          const results = await Promise.allSettled(creationPromises)
+          const failedCount = results.filter(r => r.status === 'rejected').length
+
+          if (failedCount > 0) {
+            console.error(`Failed to create ${failedCount} action item issues`)
+            // Keep only failed items in pending list if any
+            pendingActionItems.value = validItems.filter((_, idx) => results[idx].status === 'rejected')
+            alertMessage.value = `회의록은 저장되었으나, 후속 조치 업무 중 ${failedCount}건의 등록에 실패하였습니다.`
+            refAlertModal.value?.callModal()
+            return
+          } else {
+            pendingActionItems.value = []
+          }
         }
-        pendingActionItems.value = []
       }
 
       if (targetSlug && meetingPk) {
@@ -340,6 +365,10 @@ const onSubmit = async (event: Event) => {
       } else {
         router.back()
       }
+    } catch (err: any) {
+      console.error('Error during meeting submit:', err)
+      alertMessage.value = '회의록 저장 중 오류가 발생했습니다. 입력 내용을 확인해 주세요.'
+      refAlertModal.value?.callModal()
     } finally {
       isSubmitting.value = false
     }
@@ -444,7 +473,10 @@ watch(
   async newProjPk => {
     if (newProjPk) {
       const proj = meetingProjects.value.find(p => p.value === newProjPk)
-      if (proj) await issueStore.fetchAllIssueList(proj.slug)
+      if (proj) {
+        await issueStore.fetchAllIssueList(proj.slug)
+        await meetingStore.fetchCategoryList(proj.slug)
+      }
     }
   },
 )
@@ -485,14 +517,14 @@ const onConfirmToggle = async () => {
   if (form.value.pk) await meetingStore.confirmMeeting(form.value.pk)
 }
 
-interface MeetingTemplate {
+export interface MeetingTemplate {
   name: string
   titlePrefix: string
   agenda: string
   actionItems: string
 }
 
-const meetingTemplates: MeetingTemplate[] = [
+const DEFAULT_MEETING_TEMPLATES: MeetingTemplate[] = [
   {
     name: '주간 업무/공정',
     titlePrefix: '[주간업무] ',
@@ -525,17 +557,125 @@ const meetingTemplates: MeetingTemplate[] = [
   },
 ]
 
+const getTemplateStorageKey = () => `meeting-templates-${accStore.userInfo?.pk ?? 'common'}`
+
+const meetingTemplates = ref<MeetingTemplate[]>([])
+
+const loadMeetingTemplates = () => {
+  try {
+    const raw = localStorage.getItem(getTemplateStorageKey())
+    if (raw) {
+      meetingTemplates.value = JSON.parse(raw)
+      return
+    }
+  } catch (e) {
+    console.error('Failed to load meeting templates from localStorage', e)
+  }
+  meetingTemplates.value = JSON.parse(JSON.stringify(DEFAULT_MEETING_TEMPLATES))
+  saveMeetingTemplates()
+}
+
+const saveMeetingTemplates = () => {
+  try {
+    localStorage.setItem(getTemplateStorageKey(), JSON.stringify(meetingTemplates.value))
+  } catch (e) {
+    console.error('Failed to save meeting templates to localStorage', e)
+  }
+}
+
+const resetDefaultTemplates = () => {
+  meetingTemplates.value = JSON.parse(JSON.stringify(DEFAULT_MEETING_TEMPLATES))
+  saveMeetingTemplates()
+}
+
+// 템플릿 관리 모달 상태
+const refTemplateManageModal = ref()
+const refTemplateEditModal = ref()
+const templateEditIndex = ref<number | null>(null)
+const templateEditForm = ref<MeetingTemplate>({
+  name: '',
+  titlePrefix: '',
+  agenda: '',
+  actionItems: '',
+})
+
+const openTemplateManageModal = () => {
+  refTemplateManageModal.value.callModal()
+}
+
+const openTemplateEditModal = (index?: number) => {
+  if (index !== undefined) {
+    templateEditIndex.value = index
+    templateEditForm.value = JSON.parse(JSON.stringify(meetingTemplates.value[index]))
+  } else {
+    templateEditIndex.value = null
+    templateEditForm.value = {
+      name: '',
+      titlePrefix: '',
+      agenda: '',
+      actionItems: '',
+    }
+  }
+  refTemplateEditModal.value.callModal()
+}
+
+const saveTemplateEdit = (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+    return
+  }
+  if (!templateEditForm.value.name.trim()) return
+
+  if (templateEditIndex.value !== null) {
+    meetingTemplates.value[templateEditIndex.value] = { ...templateEditForm.value }
+  } else {
+    meetingTemplates.value.push({ ...templateEditForm.value })
+  }
+  saveMeetingTemplates()
+  refTemplateEditModal.value.close()
+}
+
+const deleteTemplate = (index: number) => {
+  const deletedName = meetingTemplates.value[index].name
+  meetingTemplates.value.splice(index, 1)
+  saveMeetingTemplates()
+  if (selectedTemplate.value === deletedName) {
+    selectedTemplate.value = null
+  }
+}
+
+const selectedTemplate = ref<string | null>(null)
+
 const applyMeetingTemplate = (tmpl: MeetingTemplate) => {
   const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
-  if (!form.value.title || form.value.title.startsWith('[')) {
+
+  // 1. 이전 템플릿과 일치하거나 비어있으면 새 템플릿 내용으로 갱신
+  const prevTmpl = meetingTemplates.value.find(t => t.name === selectedTemplate.value)
+  const isTitleFromTemplate =
+    !form.value.title ||
+    form.value.title.startsWith('[') ||
+    (prevTmpl && form.value.title.startsWith(prevTmpl.titlePrefix))
+
+  if (isTitleFromTemplate) {
     form.value.title = `${tmpl.titlePrefix}${dateStr} 회의`
   }
-  if (!form.value.agenda) {
+
+  // 의제(agenda): 비어있거나 이전 템플릿의 의제와 동일하면 새 템플릿으로 교체
+  if (!form.value.agenda || (prevTmpl && form.value.agenda === prevTmpl.agenda)) {
+    form.value.agenda = tmpl.agenda
+  } else if (!form.value.agenda.includes(tmpl.agenda)) {
+    // 사용자가 일부 편집했더라도 템플릿을 바꾸면 새 템플릿 내용으로 덮어씀
     form.value.agenda = tmpl.agenda
   }
-  if (!form.value.action_items) {
+
+  // 후속 조치(action_items): 비어있거나 이전 템플릿과 동일하면 새 템플릿으로 교체
+  if (!form.value.action_items || (prevTmpl && form.value.action_items === prevTmpl.actionItems)) {
+    form.value.action_items = tmpl.actionItems
+  } else {
     form.value.action_items = tmpl.actionItems
   }
+
+  selectedTemplate.value = tmpl.name
 }
 
 const projId = computed(() => route.params.projId as string | undefined)
@@ -580,6 +720,8 @@ onBeforeMount(async () => {
     await meetingStore.fetchCategoryList()
   }
 
+  loadMeetingTemplates()
+
   if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
 })
 </script>
@@ -604,16 +746,33 @@ onBeforeMount(async () => {
                     자주 쓰는 양식 자동 채우기:
                   </span>
                   <v-chip
-                    v-for="tmpl in meetingTemplates"
-                    :key="tmpl.name"
+                    v-for="(tmpl, tIdx) in meetingTemplates"
+                    :key="`${tmpl.name}-${tIdx}`"
                     size="small"
-                    variant="elevated"
-                    color="primary"
-                    class="mr-2 my-1 cursor-pointer"
+                    :variant="selectedTemplate === tmpl.name ? 'elevated' : 'outlined'"
+                    :color="selectedTemplate === tmpl.name ? 'primary' : 'secondary'"
+                    class="mr-2 my-1 cursor-pointer font-weight-medium"
                     @click="applyMeetingTemplate(tmpl)"
                   >
+                    <v-icon
+                      v-if="selectedTemplate === tmpl.name"
+                      icon="mdi-check"
+                      size="14"
+                      class="mr-1"
+                    />
                     {{ tmpl.name }}
                   </v-chip>
+
+                  <v-btn
+                    variant="text"
+                    color="primary"
+                    size="x-small"
+                    class="ml-auto my-1"
+                    @click="openTemplateManageModal"
+                  >
+                    <v-icon icon="mdi-cog-outline" size="14" class="mr-1" />
+                    양식 관리
+                  </v-btn>
                 </div>
               </CCol>
             </CRow>
@@ -1224,4 +1383,173 @@ onBeforeMount(async () => {
       </CForm>
     </template>
   </FormModal>
+
+  <!-- 회의 템플릿 관리 모달 -->
+  <FormModal ref="refTemplateManageModal" size="lg">
+    <template #header>회의 템플릿 양식 관리</template>
+    <template #default>
+      <div class="p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small">
+            <v-icon icon="mdi-information-outline" size="14" class="mr-1" />
+            자주 사용하는 회의 의제 및 후속 조치 양식을 나만의 템플릿으로 설정할 수 있습니다.
+          </span>
+          <div class="d-flex gap-2">
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              size="small"
+              @click="resetDefaultTemplates"
+            >
+              <v-icon icon="mdi-restore" size="14" class="mr-1" />
+              기본값 초기화
+            </v-btn>
+            <v-btn
+              color="primary"
+              size="small"
+              @click="openTemplateEditModal()"
+            >
+              <v-icon icon="mdi-plus" size="14" class="mr-1" />
+              새 템플릿 추가
+            </v-btn>
+          </div>
+        </div>
+
+        <CTable small bordered hover responsive class="align-middle bg-white">
+          <CTableHead color="light">
+            <CTableRow class="text-center small">
+              <CTableHeaderCell style="width: 25%">템플릿명</CTableHeaderCell>
+              <CTableHeaderCell style="width: 20%">제목 접두사</CTableHeaderCell>
+              <CTableHeaderCell style="width: 40%">기본 의제 미리보기</CTableHeaderCell>
+              <CTableHeaderCell style="width: 15%">관리</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+          <CTableBody>
+            <CTableRow v-for="(tmpl, idx) in meetingTemplates" :key="idx">
+              <CTableDataCell class="font-weight-medium">
+                {{ tmpl.name }}
+              </CTableDataCell>
+              <CTableDataCell class="text-muted small">
+                <code>{{ tmpl.titlePrefix }}</code>
+              </CTableDataCell>
+              <CTableDataCell class="text-muted small text-truncate" style="max-width: 250px">
+                {{ tmpl.agenda.split('\n')[0] }}
+              </CTableDataCell>
+              <CTableDataCell class="text-center">
+                <v-btn
+                  icon
+                  size="x-small"
+                  variant="text"
+                  color="primary"
+                  @click="openTemplateEditModal(idx)"
+                >
+                  <v-icon icon="mdi-pencil" size="14" />
+                </v-btn>
+                <v-btn
+                  icon
+                  size="x-small"
+                  variant="text"
+                  color="danger"
+                  @click="deleteTemplate(idx)"
+                >
+                  <v-icon icon="mdi-trash-can-outline" size="14" />
+                </v-btn>
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow v-if="!meetingTemplates.length">
+              <CTableDataCell colspan="4" class="text-center text-muted py-3">
+                등록된 템플릿이 없습니다. 상단 [기본값 초기화] 또는 [새 템플릿 추가]를 눌러주세요.
+              </CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
+      </div>
+    </template>
+  </FormModal>
+
+  <!-- 회의 템플릿 추가/수정 모달 -->
+  <FormModal ref="refTemplateEditModal" size="lg">
+    <template #header>
+      {{ templateEditIndex !== null ? '회의 템플릿 수정' : '새 회의 템플릿 추가' }}
+    </template>
+    <template #default>
+      <CForm
+        class="needs-validation p-4"
+        novalidate
+        :validated="validated"
+        @submit.prevent="saveTemplateEdit"
+      >
+        <CRow class="mb-3">
+          <CFormLabel for="tmpl-name" class="col-sm-3 col-form-label required">
+            템플릿명
+          </CFormLabel>
+          <CCol sm="9">
+            <CFormInput
+              v-model="templateEditForm.name"
+              id="tmpl-name"
+              placeholder="예: 주간 업무/공정, 설계 협의 등"
+              required
+            />
+            <CFormFeedback invalid>템플릿명을 입력해 주세요.</CFormFeedback>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="tmpl-prefix" class="col-sm-3 col-form-label">
+            제목 접두사
+          </CFormLabel>
+          <CCol sm="9">
+            <CFormInput
+              v-model="templateEditForm.titlePrefix"
+              id="tmpl-prefix"
+              placeholder="예: [주간업무] (비워둘 수 있음)"
+            />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="tmpl-agenda" class="col-sm-3 col-form-label">
+            기본 회의 의제
+          </CFormLabel>
+          <CCol sm="9">
+            <CFormTextarea
+              v-model="templateEditForm.agenda"
+              id="tmpl-agenda"
+              rows="4"
+              placeholder="1. 전주 실적 점검\n2. 금주 계획"
+            />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="tmpl-action-items" class="col-sm-3 col-form-label">
+            기본 후속 조치 양식
+          </CFormLabel>
+          <CCol sm="9">
+            <CFormTextarea
+              v-model="templateEditForm.actionItems"
+              id="tmpl-action-items"
+              rows="4"
+              placeholder="- [ ] 조치 1 (담당: / 기한: )\n- [ ] 조치 2 (담당: / 기한: )"
+            />
+          </CCol>
+        </CRow>
+
+        <CRow>
+          <CCol class="text-right">
+            <v-btn type="submit" color="primary" size="small">저장</v-btn>
+            <v-btn color="light" size="small" class="ml-2" @click="refTemplateEditModal.close()" flat>
+              취소
+            </v-btn>
+          </CCol>
+        </CRow>
+      </CForm>
+    </template>
+  </FormModal>
+
+  <AlertModal ref="refAlertModal">
+    <template #default>
+      {{ alertMessage }}
+    </template>
+  </AlertModal>
 </template>
