@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
@@ -203,6 +204,13 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        if user and user.is_authenticated:
+            if not (user.is_superuser or getattr(user, 'work_manager', False)):
+                sub_projects = sub_projects.filter(Q(is_public=True) | Q(members__user=user)).distinct()
+        else:
+            sub_projects = sub_projects.filter(is_public=True)
         return IssueProjectListSerializer(sub_projects, many=True, read_only=True, context=self.context).data
 
     def get_parent_visible(self, obj):
@@ -264,6 +272,13 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        if user and user.is_authenticated:
+            if not (user.is_superuser or getattr(user, 'work_manager', False)):
+                sub_projects = sub_projects.filter(Q(is_public=True) | Q(members__user=user)).distinct()
+        else:
+            sub_projects = sub_projects.filter(is_public=True)
         # Create a new serializer class without the 'my_perms' field to avoid recursion bloat if needed,
         # but for now reusing ListSerializer is fine as it's meant for tree view
         return IssueProjectListSerializer(sub_projects, many=True, read_only=True, context=self.context).data

@@ -59,7 +59,9 @@ const isOwnProject = (project: IssueProject) =>
 
     <!-- 재귀 호출: 하위 프로젝트가 있는 경우 -->
     <div v-if="project.sub_projects && project.sub_projects.length > 0" class="child">
-      <ProjectCard v-for="sub in project.sub_projects" :key="sub.pk" :project="sub" />
+      <template v-for="sub in project.sub_projects" :key="sub.pk">
+        <ProjectCard v-if="sub.visible" :project="sub" />
+      </template>
     </div>
   </div>
 </template>
