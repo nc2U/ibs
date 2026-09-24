@@ -7,9 +7,11 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-GEMINI_UPLOAD_URL = "https://generativelanguage.googleapis.com/upload/v1beta/files"
-GEMINI_FILE_URL = "https://generativelanguage.googleapis.com/v1beta/files"
+PRIMARY_GEMINI_MODEL = "gemini-3.5-flash-lite"
+FALLBACK_GEMINI_MODEL = "gemini-3-flash-preview"
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_UPLOAD_URL = f"https://generativelanguage.googleapis.com/upload/v1beta/files"
+GEMINI_FILE_URL = f"{GEMINI_BASE_URL}/files"
 
 SYSTEM_PROMPT = """당신은 건설 시행 및 부동산 개발 회사의 전문 서기(회의 기록관)입니다.
 제공된 회의 음성 녹음을 듣고, 한국어로 건설/시행/시공 실무 맥락에 맞추어 정확하게 분석한 후, 반드시 아래 JSON 형식으로만 응답하세요. 다른 설명이나 마크다운 백틱(```json) 없이 순수 JSON 문자열만 출력하세요.
@@ -66,15 +68,7 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
             }
         }
 
-        resp = requests.post(
-            f"{GEMINI_API_URL}?key={api_key}",
-            json=request_body,
-            timeout=120
-        )
-        if not resp.ok:
-            logger.error("Gemini API Error: %s %s", resp.status_code, resp.text)
-            raise RuntimeError(f"Gemini API 호출 실패 ({resp.status_code}): {resp.text}")
-
+        resp = _post_generate_content(request_body, api_key)
         result_json = resp.json()
         return _extract_meeting_data(result_json)
 
@@ -128,14 +122,7 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
                 }
             }
 
-            resp = requests.post(
-                f"{GEMINI_API_URL}?key={api_key}",
-                json=request_body,
-                timeout=180
-            )
-            if not resp.ok:
-                raise RuntimeError(f"Gemini API 호출 실패 ({resp.status_code}): {resp.text}")
-
+            resp = _post_generate_content(request_body, api_key)
             result_json = resp.json()
             return _extract_meeting_data(result_json)
 
@@ -148,6 +135,28 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
                         logger.info("Successfully deleted remote Gemini file: %s", file_name)
                 except Exception as del_err:
                     logger.warning("Failed to delete remote Gemini file %s: %s", file_name, del_err)
+
+
+def _post_generate_content(request_body: Dict[str, Any], api_key: str) -> requests.Response:
+    """기본 모델(gemini-3.5-flash-lite)로 호출하고 실패 시 fallback 모델(gemini-3-flash-preview)로 재시도합니다."""
+    models_to_try = [PRIMARY_GEMINI_MODEL, FALLBACK_GEMINI_MODEL]
+    last_error_text = ""
+    last_status = 500
+
+    for model in models_to_try:
+        url = f"{GEMINI_BASE_URL}/models/{model}:generateContent?key={api_key}"
+        try:
+            resp = requests.post(url, json=request_body, timeout=120)
+            if resp.ok:
+                return resp
+            last_status = resp.status_code
+            last_error_text = resp.text
+            logger.warning("Gemini model %s call failed (%s): %s", model, resp.status_code, resp.text)
+        except Exception as e:
+            last_error_text = str(e)
+            logger.warning("Gemini model %s request exception: %s", model, e)
+
+    raise RuntimeError(f"Gemini API 호출 실패 ({last_status}): {last_error_text}")
 
 
 def _extract_meeting_data(api_response: Dict[str, Any]) -> Dict[str, Any]:
