@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Company } from '@/store/types/settings.ts'
 import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
@@ -42,6 +43,10 @@ const topLevelRouteTarget = computed(() => {
   return { name: '워크스페이스' }
 })
 const workStore = useWork()
+const accStore = useAccount()
+const superAuth = computed(() => accStore.superAuth)
+const isWorkManager = computed(() => accStore.workManager)
+
 const allActiveProjects = computed(() =>
   workStore.getAllActiveProjectSlugs.filter(p => `${p.value}` !== route.params.projId),
 )
@@ -116,8 +121,26 @@ const cngProject = async (slug: any) => {
           </CRow>
 
           <CRow class="mb-3">
-            <CCol class="text-body d-none d-lg-block">
+            <CCol class="text-body d-none d-lg-flex align-items-center">
               <strong class="title pl-1"> {{ pageTitle }}</strong>
+              <v-chip
+                v-if="superAuth"
+                color="danger"
+                variant="elevated"
+                size="x-small"
+                class="ms-3"
+              >
+                시스템관리자
+              </v-chip>
+              <v-chip
+                v-else-if="isWorkManager"
+                color="info"
+                variant="elevated"
+                size="x-small"
+                class="ms-3"
+              >
+                업무관리자
+              </v-chip>
             </CCol>
 
             <CCol
@@ -125,12 +148,32 @@ const cngProject = async (slug: any) => {
               :class="{ pointer: !!ancestors.length }"
               @click="visible = !visible"
             >
-              <v-icon
-                v-if="route.path.startsWith('/work/')"
-                :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                color=""
-              />
-              <strong class="title pl-1"> {{ pageTitle }}</strong>
+              <div class="d-flex align-items-center">
+                <v-icon
+                  v-if="route.path.startsWith('/work/')"
+                  :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                  color=""
+                />
+                <strong class="title pl-1"> {{ pageTitle }}</strong>
+                <v-chip
+                  v-if="superAuth"
+                  color="danger"
+                  variant="elevated"
+                  size="x-small"
+                  class="ms-3"
+                >
+                  시스템관리자
+                </v-chip>
+                <v-chip
+                  v-else-if="isWorkManager"
+                  color="info"
+                  variant="elevated"
+                  size="x-small"
+                  class="ms-3"
+                >
+                  업무관리자
+                </v-chip>
+              </div>
 
               <CCollapse v-if="route.path.startsWith('/work/')" :visible="visible">
                 <v-card class="mx-auto mt-3" :max-width="1000">

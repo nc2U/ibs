@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
-import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
-import { type User, type Profile } from '@/store/types/accounts'
+import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
+import { type User, type Profile } from '@/store/types/accounts'
 import TodoModal from '@/components/Modals/TodoModal.vue'
 
 const props = defineProps({
@@ -48,8 +48,30 @@ const logout = () => {
     </CDropdownToggle>
 
     <CDropdownMenu>
-      <CDropdownHeader component="h6" class="fw-semibold py-2" :class="headerClass">
-        {{ profile && profile.name ? profile.name : userInfo.username }}님
+      <CDropdownHeader
+        component="h6"
+        class="fw-semibold py-2 d-flex justify-content-between align-items-center"
+        :class="headerClass"
+      >
+        <span>{{ profile && profile.name ? profile.name : userInfo.username }}님</span>
+        <v-chip
+          v-if="userInfo.is_superuser"
+          color="danger"
+          variant="flat"
+          size="x-small"
+          class="ml-2"
+        >
+          시스템관리자
+        </v-chip>
+        <v-chip
+          v-else-if="account.workManager"
+          color="info"
+          variant="flat"
+          size="x-small"
+          class="ml-2"
+        >
+          업무관리자
+        </v-chip>
       </CDropdownHeader>
 
       <CDropdownItem @click="refsTodoModal.callModal()">
