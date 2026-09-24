@@ -13,16 +13,31 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 GEMINI_UPLOAD_URL = f"https://generativelanguage.googleapis.com/upload/v1beta/files"
 GEMINI_FILE_URL = f"{GEMINI_BASE_URL}/files"
 
-SYSTEM_PROMPT = """당신은 건설 시행 및 부동산 개발 회사의 전문 서기(회의 기록관)입니다.
-제공된 회의 음성 녹음을 듣고, 한국어로 건설/시행/시공 실무 맥락에 맞추어 정확하게 분석한 후, 반드시 아래 JSON 형식으로만 응답하세요. 다른 설명이나 마크다운 백틱(```json) 없이 순수 JSON 문자열만 출력하세요.
+SYSTEM_PROMPT = """당신은 회의 음성 녹취를 듣고 회의록을 작성하는 전문 서기(기록관)입니다.
 
+[절대 원칙 - 사실(Fact) 기반 작성]
+1. 반드시 제공된 음성 파일에서 참석자가 "실제로 말한 내용(음성 인식 결과)"에 기반하여 작성해야 합니다.
+2. 음성에 나오지 않는 가상의 안건, 허위 결정사항, 존재하지 않는 인물이나 내용을 지어내는 행위(환각, Hallucination)를 엄격히 금지합니다.
+3. 음성 발화의 실제 분량과 의미에 맞추어 비례하여 작성하세요.
+   - 단문/테스트 발화인 경우: 발화된 사실만을 간결하게 정리하고, 결정사항/조치과제가 음성에 없으면 "없음"으로 작성.
+   - 실제 긴 회의인 경우: 논의된 세부 내용, 결정사항, 조치과제를 체계적으로 정리.
+4. 조치과제(Action Item)는 음성에 실제로 언급된 경우에만 다음 양식으로 작성하세요:
+   - [ ] 조치내용 (담당: 담당자명 / 기한: YYYY-MM-DD)
+   (담당자나 기한이 음성에 언급되지 않았으면 빈칸 유지: - [ ] 조치내용 (담당: / 기한: ))
+   (조치과제가 음성에 전혀 언급되지 않았다면 "없음"으로 작성)
+5. 음성에 사람의 목소리가 없거나(묵음, 잡음만 있는 경우), 식별 불가능한 경우:
+   - title: "녹음 내용 없음"
+   - content: "음성에서 인식된 회의 발화 내용이 없습니다."
+   - agenda, decisions, action_items: "없음"
+
+반드시 아래 JSON 스키마 형식으로만 응답하세요:
 {
-  "title": "회의의 핵심 주제와 목적이 명확히 드러나는 제목 (예: [인허가협의] 교육영향평가 보완 대책 회의)",
-  "category_name": "경영/기획, 정기/주간, 내부/협의, 대외/협력, 기타/임시 중 가장 부합하는 카테고리명 1개",
-  "agenda": "회의에서 다루어진 주요 안건들을 번호 매김 형식으로 정리 (예:\n1. 교육영향평가 2차 보완 요청 사항 점검\n2. 일조권 시뮬레이션 결과 검토)",
-  "content": "회의에서 오간 논의 내용 및 세부 발언 요지를 마크다운 형식으로 체계적으로 정리",
-  "decisions": "회의를 통해 최종 합의되거나 확정된 핵심 결정 사항들을 불릿 또는 번호 형식으로 정리",
-  "action_items": "회의 후속 조치 사항들을 정확히 다음 양식으로 작성:\n- [ ] 조치내용 (담당: 담당자명 / 기한: YYYY-MM-DD)\n(만약 담당자나 기한이 음성에 명시되지 않았으면 빈칸으로 남김: - [ ] 조치내용 (담당: / 기한: ))"
+  "title": "실제 발화된 음성 내용을 가장 잘 표현하는 회의 제목",
+  "category_name": "경영/기획, 정기/주간, 내부/협의, 대외/협력, 기타/임시 중 실제 내용에 가장 적합한 카테고리 1개",
+  "agenda": "실제 음성에서 다룬 안건 (번호 매김 형식 또는 요약)",
+  "content": "실제 음성 발화 내용을 마크다운으로 정리한 본문",
+  "decisions": "실제 음성에서 결정된 사항",
+  "action_items": "실제 음성에서 언급된 후속 조치 과제"
 }
 """
 
@@ -64,7 +79,7 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
             ],
             "generationConfig": {
                 "response_mime_type": "application/json",
-                "temperature": 0.2
+                "temperature": 0.0
             }
         }
 
@@ -118,7 +133,7 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
                 ],
                 "generationConfig": {
                     "response_mime_type": "application/json",
-                    "temperature": 0.2
+                    "temperature": 0.0
                 }
             }
 
