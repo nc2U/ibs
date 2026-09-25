@@ -321,7 +321,7 @@ class LinkViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(updator=self.request.user)
+        serializer.save()
 
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -1026,11 +1026,17 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             )
         for att in letter.attachments.all():
             if att.file:
+                att_file_name = att.name or (att.file.name.split('/')[-1] if att.file else '')
+                att_file_size = None
+                try:
+                    att_file_size = att.file.size
+                except Exception:
+                    pass
                 ApprovalAttachment.objects.create(
                     document=doc,
                     file=att.file,
-                    file_name=att.file_name or att.file.name.split('/')[-1],
-                    file_size=att.file_size,
+                    file_name=att_file_name,
+                    file_size=att_file_size,
                     creator=request.user,
                 )
 

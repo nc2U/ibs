@@ -1,12 +1,10 @@
 import datetime
-import io
 
-import xlsxwriter
 from django.db.models import Q
-from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
 from company.models import Company
+from docs.courts import COURT_CHOICES
 from docs.models import LawsuitCase
 from project.models import Project
 
@@ -128,6 +126,10 @@ class ExportSuitCases(ExcelExportMixin):
             rs_case = LawsuitCase.objects.get(pk=pk)
             return rs_case.case_number
 
+        sort_dict = dict(LawsuitCase.SORT_CHOICES)
+        level_dict = dict(LawsuitCase.LEVEL_CHOICES)
+        court_dict = dict(COURT_CHOICES)
+
         # Write body
         for i, row in enumerate(data):
             row = list(row)
@@ -135,14 +137,13 @@ class ExportSuitCases(ExcelExportMixin):
             row.insert(0, i + 1)
             for col_num, cell_data in enumerate(row):
                 if col_num == 1:
-                    cell_data = list(filter(lambda x: x[0] == cell_data, LawsuitCase.SORT_CHOICES))[0][1]
+                    cell_data = sort_dict.get(cell_data, cell_data or '')
                 elif col_num == 2:
-                    cell_data = list(filter(lambda x: x[0] == cell_data, LawsuitCase.LEVEL_CHOICES))[0][1]
+                    cell_data = level_dict.get(cell_data, cell_data or '')
                 elif col_num == 3:
                     cell_data = get_related_case(cell_data) if cell_data else ''
                 elif col_num == 5:
-                    cell_data = list(filter(lambda x: x[0] == cell_data, LawsuitCase.COURT_CHOICES))[0][1] \
-                        if cell_data else ''
+                    cell_data = court_dict.get(cell_data, cell_data or '') if cell_data else ''
                 if col_num < 6 or col_num in (15, 16):
                     if col_num in (15, 16):
                         body_format['num_format'] = 'yyyy-mm-dd'
@@ -221,26 +222,19 @@ class ExportSuitCase(ExcelExportMixin):
 
         row_num = 5
         worksheet.write(row_num, 0, '유형', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3,
-                              list(filter(lambda x: x[0] == obj.sort, LawsuitCase.SORT_CHOICES))[0][1],
-                              center_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, obj.get_sort_display() or '', center_format)
 
         row_num = 6
         worksheet.write(row_num, 0, '심급', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3,
-                              list(filter(lambda x: x[0] == obj.level, LawsuitCase.LEVEL_CHOICES))[0][1],
-                              center_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, obj.get_level_display() or '', center_format)
 
         row_num = 7
         worksheet.write(row_num, 0, '관련 사건', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_case), center_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, str(obj.related_case or ''), center_format)
 
         row_num = 8
         worksheet.write(row_num, 0, '관할 법원', h_format)
-        worksheet.merge_range(row_num, 1, row_num, 3,
-                              list(filter(lambda x: x[0] == obj.court, LawsuitCase.COURT_CHOICES))[0][1] \
-                                  if obj.court else '',
-                              center_format)
+        worksheet.merge_range(row_num, 1, row_num, 3, obj.get_court_display() or '', center_format)
 
         row_num = 9
         worksheet.write(row_num, 0, '처리기관', h_format)

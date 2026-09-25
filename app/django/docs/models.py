@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.postgres.indexes import GinIndex
 from django.core.files.storage import default_storage
@@ -184,7 +184,7 @@ class File(models.Model):
                                 null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
-        return settings.MEDIA_URL
+        return self.file_name or (self.file.name.split('/')[-1] if self.file else str(self.pk))
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
@@ -205,7 +205,7 @@ class Image(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return settings.MEDIA_URL
+        return self.image_name or (self.image.name.split('/')[-1] if self.image else str(self.pk))
 
     def save(self, *args, **kwargs):
         if self.image and not self.image_name:
@@ -227,6 +227,7 @@ class LawsuitCase(models.Model):
     level = models.CharField('심급', max_length=1, choices=LEVEL_CHOICES, blank=True)
     related_case = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='관련사건',
                                      help_text='본안 사건인 경우 원심 사건, 신청/집행 사건인 경우 관련 본안 사건 지정')
+    COURT_CHOICES = COURT_CHOICES
     court = models.CharField('법원명', max_length=10, choices=COURT_CHOICES, blank=True, default='')
     other_agency = models.CharField('기타 처리기관', max_length=30, blank=True, default='',
                                     help_text='사건 유형이 기소 전 형사 사건인 경우 해당 수사기관을 기재')
@@ -303,14 +304,14 @@ class LetterSequence(models.Model):
         """다음 문서번호 생성 ([회사약칭]-YYYY-NNN 형식, 시퀀스 원자적 증가)"""
         current_year = timezone.now().year
 
-        sequence, created = cls.objects.get_or_create(
-            company=company,
-            year=current_year,
-            defaults={'last_sequence': 0}
-        )
-
-        sequence.last_sequence += 1
-        sequence.save()
+        with transaction.atomic():
+            sequence, created = cls.objects.select_for_update().get_or_create(
+                company=company,
+                year=current_year,
+                defaults={'last_sequence': 0}
+            )
+            sequence.last_sequence += 1
+            sequence.save(update_fields=['last_sequence'])
 
         prefix = cls._get_prefix(company)
         if prefix:
@@ -555,14 +556,14 @@ class InboundSequence(models.Model):
         """다음 사내 접수번호 생성 ([회사약칭]-접수-YYYY-NNN 형식, 시퀀스 원자적 증가)"""
         current_year = timezone.now().year
 
-        sequence, created = cls.objects.get_or_create(
-            company=company,
-            year=current_year,
-            defaults={'last_sequence': 0}
-        )
-
-        sequence.last_sequence += 1
-        sequence.save()
+        with transaction.atomic():
+            sequence, created = cls.objects.select_for_update().get_or_create(
+                company=company,
+                year=current_year,
+                defaults={'last_sequence': 0}
+            )
+            sequence.last_sequence += 1
+            sequence.save(update_fields=['last_sequence'])
 
         prefix = cls._get_prefix(company)
         if prefix:

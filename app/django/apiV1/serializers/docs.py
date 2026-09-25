@@ -91,12 +91,18 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
         return files
 
     def get_prev_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(LawsuitCase.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(LawsuitCase.objects.all())
         prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-case_start_date', '-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(LawsuitCase.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(LawsuitCase.objects.all())
         next_obj = queryset.filter(pk__gt=obj.pk).order_by('case_start_date', 'pk').first()
         return next_obj.pk if next_obj else None
 
@@ -303,7 +309,11 @@ class DocumentSerializer(serializers.ModelSerializer):
         if hasattr(self.initial_data, 'getlist'):
             new_links = self.initial_data.getlist('newLinks', [])
             for link in new_links:
-                Link.objects.create(docs=docs, link=validate_link(link))
+                Link.objects.create(
+                    docs=docs,
+                    link=validate_link(link),
+                    creator=user if (user and user.is_authenticated) else None
+                )
 
         FileService.manage_files(docs, request.data, user, File, related_name='docs')
         return docs
@@ -343,7 +353,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 
             new_links = self.initial_data.getlist('newLinks', [])
             for link in new_links:
-                Link.objects.create(docs=instance, link=validate_link(link))
+                Link.objects.create(
+                    docs=instance,
+                    link=validate_link(link),
+                    creator=user if (user and user.is_authenticated) else None
+                )
 
             FileService.manage_files(instance, request.data, user, File, related_name='docs')
 

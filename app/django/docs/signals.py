@@ -15,7 +15,8 @@ def notify_lawsuitcase_change(sender, instance, created, raw=False, **kwargs):
         return
 
     action = "등록" if created else "편집"
-    send_slack_notification(instance, action, instance.creator)
+    user = instance.creator if created else (instance.updator or instance.creator)
+    send_slack_notification(instance, action, user)
 
 
 # Document의 이전 상태를 저장하는 딕셔너리
@@ -69,7 +70,8 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
                 return
 
         action = "등록" if created else "편집"
-        send_slack_notification(instance, action, instance.creator)
+        user = instance.creator if created else (instance.updator or instance.creator)
+        send_slack_notification(instance, action, user)
 
     finally:
         # 저장된 상태 정리
