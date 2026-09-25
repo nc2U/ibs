@@ -255,3 +255,93 @@ class ExecutiveModelTests(APITestCase):
 
         exec_name = Executive.objects.create(company=self.company, name='외부인', rank=self.rank)
         self.assertEqual(str(exec_name), '외부인 사장 (사내이사)')
+
+
+class CompanyBugFixRegressionTests(APITestCase):
+    def setUp(self):
+        from decimal import Decimal
+        self.company = Company.objects.create(name='(주)아이비에스건설', tax_number='123-45-67890', ceo='대표자')
+        self.admin = User.objects.create_superuser(username='superadmin', email='superadmin@test.com', password='password123')
+        self.user = User.objects.create_user(username='normaluser', email='normaluser@test.com', password='password123')
+        self.staff = Staff.objects.create(
+            company=self.company, user=self.user, name='테스트직원',
+            id_number='880808-1234567', personal_phone='010-9999-8888', date_join='2020-01-01'
+        )
+        self.rank = ExecutiveRank.objects.create(company=self.company, code='E1', name='전무', sort_order=2)
+        self.executive = Executive.objects.create(
+            company=self.company, staff=self.staff, rank=self.rank,
+            executive_type='inside', represent_type='none'
+        )
+
+    def test_executive_serializer_type_desc_no_error(self):
+        """Fix 1: ExecutiveSerializer가 executive_type_desc를 정상 반환하는지 검증 (오타 재발 방지)"""
+        from apiV1.serializers.company import ExecutiveSerializer
+        serializer = ExecutiveSerializer(self.executive)
+        self.assertEqual(serializer.data['executive_type_desc'], '사내이사')
+        self.assertEqual(serializer.data['full_name'], '테스트직원')
+
+    def test_department_circular_reference_prevention(self):
+        """Fix 8: Department의 순환 참조 방어 검증"""
+        d1 = Department.objects.create(company=self.company, name='본부')
+        d2 = Department.objects.create(company=self.company, name='팀', upper_depart=d1)
+        self.assertEqual(d1.level, 1)
+        self.assertEqual(d2.level, 2)
+
+        # 1) 자기 자신을 상위 부서로 지정 시 ValidationError
+        d1.upper_depart = d1
+        with self.assertRaises(ValidationError):
+            d1.clean()
+
+        # 2) 순환 참조 (d1의 상위를 d2로 지정) 시 ValidationError
+        d1.upper_depart = d2
+        with self.assertRaises(ValidationError):
+            d1.clean()
+
+    def test_staff_leave_quota_used_days_aggregate(self):
+        """Fix 7: StaffLeaveQuota.used_days DB aggregate 계산 검증"""
+        from decimal import Decimal
+        from company.models import StaffLeaveQuota, StaffLeaveUsage
+        quota = StaffLeaveQuota.objects.create(
+            company=self.company, staff=self.staff, year=2026,
+            granted_days=Decimal('15.00'), valid_start='2026-01-01', valid_end='2026-12-31'
+        )
+        # 휴가 사용 등록
+        StaffLeaveUsage.objects.create(
+            company=self.company, staff=self.staff, start_date='2026-03-01', end_date='2026-03-01',
+            deduction_days=Decimal('1.00'), is_cancelled=False
+        )
+        StaffLeaveUsage.objects.create(
+            company=self.company, staff=self.staff, start_date='2026-04-01', end_date='2026-04-01',
+            deduction_days=Decimal('0.50'), is_cancelled=False
+        )
+        # 취소된 휴가는 제외되어야 함
+        StaffLeaveUsage.objects.create(
+            company=self.company, staff=self.staff, start_date='2026-05-01', end_date='2026-05-01',
+            deduction_days=Decimal('1.00'), is_cancelled=True
+        )
+
+        self.assertEqual(quota.used_days, Decimal('1.50'))
+        self.assertEqual(quota.remaining_days, Decimal('13.50'))
+
+    def test_excel_export_views_no_500_error(self):
+        """Fix 2, 3, 4: ExportExecutives, ExportStaffs, ExportStaffAttendanceStatus 엑셀 내보내기 뷰 200 검증"""
+        from django.test import RequestFactory
+        from company.exports.excel import ExportExecutives, ExportStaffs, ExportStaffAttendanceStatus
+        factory = RequestFactory()
+
+        # 1. ExportExecutives
+        req_exec = factory.get(f'/company/export/executives/?company={self.company.pk}')
+        res_exec = ExportExecutives().get(req_exec)
+        self.assertEqual(res_exec.status_code, 200)
+        self.assertIn('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', res_exec['Content-Type'])
+
+        # 2. ExportStaffs
+        req_staff = factory.get(f'/company/export/staffs/?company={self.company.pk}')
+        res_staff = ExportStaffs().get(req_staff)
+        self.assertEqual(res_staff.status_code, 200)
+
+        # 3. ExportStaffAttendanceStatus
+        req_att = factory.get(f'/company/export/attendance/?company={self.company.pk}&year=2026')
+        res_att = ExportStaffAttendanceStatus().get(req_att)
+        self.assertEqual(res_att.status_code, 200)
+

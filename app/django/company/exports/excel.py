@@ -83,8 +83,10 @@ class ExportStaffs(ExcelExportMixin):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
-        obj_list = Staff.objects.filter(company=company).prefetch_related(
-            'assignments__department', 'assignments__position', 'assignments__duty'
+        obj_list = Staff.objects.filter(company=company).select_related(
+            'grade', 'position'
+        ).prefetch_related(
+            'assignments__department', 'assignments__duty'
         )
 
         # get query list
@@ -99,7 +101,7 @@ class ExportStaffs(ExcelExportMixin):
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
         obj_list = obj_list.filter(assignments__department_id=department) if department else obj_list
         obj_list = obj_list.filter(grade_id=grade) if grade else obj_list
-        obj_list = obj_list.filter(assignments__position_id=position) if position else obj_list
+        obj_list = obj_list.filter(position_id=position) if position else obj_list
         obj_list = obj_list.filter(assignments__duty_id=duty) if duty else obj_list
         obj_list = obj_list.filter(status=status) if status else obj_list
         obj_list = obj_list.filter(
@@ -679,7 +681,7 @@ class ExportExecutives(ExcelExportMixin):
         header_src = [[],
                       ['성명', 'staff__name', 12],
                       ['임원 직위', 'rank__name', 13],
-                      ['상법상 지위', 'director_type', 15],
+                      ['임원 구분', 'executive_type', 15],
                       ['등기 여부', 'is_registered', 10],
                       ['상근 여부', 'is_standing', 10],
                       ['대표권 구분', 'represent_type', 12],
@@ -721,7 +723,7 @@ class ExportExecutives(ExcelExportMixin):
         obj_list = Executive.objects.filter(company=company).select_related('staff', 'rank')
 
         rank = request.GET.get('rank')
-        director_type = request.GET.get('director_type')
+        executive_type = request.GET.get('executive_type')
         is_registered = request.GET.get('is_registered')
         is_standing = request.GET.get('is_standing')
         represent_type = request.GET.get('represent_type')
@@ -729,8 +731,8 @@ class ExportExecutives(ExcelExportMixin):
 
         if rank:
             obj_list = obj_list.filter(rank_id=rank)
-        if director_type:
-            obj_list = obj_list.filter(director_type=director_type)
+        if executive_type:
+            obj_list = obj_list.filter(executive_type=executive_type)
         if is_registered in ('true', 'True', '1', True):
             obj_list = obj_list.filter(is_registered=True)
         elif is_registered in ('false', 'False', '0', False):
@@ -744,6 +746,7 @@ class ExportExecutives(ExcelExportMixin):
         if search:
             obj_list = obj_list.filter(
                 Q(staff__name__icontains=search) |
+                Q(name__icontains=search) |
                 Q(rank__name__icontains=search) |
                 Q(note__icontains=search)
             )
@@ -755,16 +758,16 @@ class ExportExecutives(ExcelExportMixin):
             'num_format': '@'
         }
 
-        director_map = dict(Executive.DIRECTOR_CHOICES)
+        executive_map = dict(Executive.EXECUTIVE_TYPE_CHOICES)
         represent_map = dict(Executive.REPRESENT_CHOICES)
 
         for i, exec_item in enumerate(obj_list):
             row_num += 1
             row_data = [
                 i + 1,
-                exec_item.staff.name if exec_item.staff else '',
+                exec_item.full_name,
                 exec_item.rank.name if exec_item.rank else '',
-                director_map.get(exec_item.director_type, exec_item.director_type),
+                executive_map.get(exec_item.executive_type, exec_item.executive_type),
                 '등기' if exec_item.is_registered else '비등기',
                 '상근' if exec_item.is_standing else '비상근',
                 represent_map.get(exec_item.represent_type, exec_item.represent_type),
@@ -1443,13 +1446,15 @@ class ExportStaffAttendanceStatus(ExcelExportMixin):
         for col_num, title in enumerate(titles):
             worksheet.write(row_num, col_num, title, h_format)
 
-        staff_list = Staff.objects.filter(company=company).select_related('department', 'position', 'grade')
+        staff_list = Staff.objects.filter(company=company).select_related(
+            'position', 'grade'
+        ).prefetch_related('assignments__department')
         department = request.GET.get('department')
         status = request.GET.get('status')
         search = request.GET.get('search')
 
         if department:
-            staff_list = staff_list.filter(department_id=department)
+            staff_list = staff_list.filter(assignments__department_id=department)
         if status:
             staff_list = staff_list.filter(status=status)
         if search:

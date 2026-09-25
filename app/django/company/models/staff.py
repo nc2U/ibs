@@ -1,4 +1,8 @@
+from decimal import Decimal
 from django.db import models
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
+
 from .company import Company
 from .organization import Department, JobGrade, Position, DutyTitle
 
@@ -296,13 +300,15 @@ class StaffLeaveQuota(models.Model):
     @property
     def used_days(self):
         """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계"""
-        usages = self.staff.leave_usages.filter(
+        res = self.staff.leave_usages.filter(
             start_date__gte=self.valid_start,
             start_date__lte=self.valid_end,
             is_cancelled=False,
             deduction_days__gt=0,
+        ).aggregate(
+            total=Coalesce(Sum('deduction_days'), Decimal('0.00'))
         )
-        return sum(u.deduction_days for u in usages)
+        return res['total']
 
     @property
     def remaining_days(self):

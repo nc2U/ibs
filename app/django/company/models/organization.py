@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from .company import Company
 
@@ -23,7 +24,26 @@ class Department(models.Model):
         verbose_name = '03. 부서 정보'
         verbose_name_plural = '03. 부서 정보'
 
+    def clean(self):
+        super().clean()
+        if self.upper_depart_id:
+            if self.pk and self.upper_depart_id == self.pk:
+                raise ValidationError({'upper_depart': '자기 자신을 상위 부서로 지정할 수 없습니다.'})
+            parent = self.upper_depart
+            visited = {self.pk} if self.pk else set()
+            while parent:
+                if parent.pk in visited:
+                    raise ValidationError({'upper_depart': '상위 부서 지정 시 순환 참조가 발생합니다.'})
+                visited.add(parent.pk)
+                parent = parent.upper_depart
+
     def save(self, *args, **kwargs):
+        visited = kwargs.pop('_visited_departs', None)
+        if visited is None:
+            visited = set()
+        if self.pk:
+            visited.add(self.pk)
+
         # 1. 상위 부서 유무에 따른 level 자동 계산
         if not self.upper_depart:
             self.level = 1
@@ -32,10 +52,10 @@ class Department(models.Model):
 
         super().save(*args, **kwargs)
 
-        # 2. 부서의 레벨이 변경된 경우 하위 부서들도 연쇄 재계산 (재귀 호출)
+        # 2. 부서의 레벨이 변경된 경우 하위 부서들도 연쇄 재계산 (순환 방어 포함)
         for sub in self.sub_departs.all():
-            if sub.level != self.level + 1:
-                sub.save()
+            if sub.pk not in visited and sub.level != self.level + 1:
+                sub.save(_visited_departs=visited)
 
 
 # 직급 모델 - 조직에서의 성장 단계(조직 내에서 사람의 역할·책임·성장단계·보상 수준을 일관된 기준으로 관리하기 위한 체계)

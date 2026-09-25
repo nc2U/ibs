@@ -57,7 +57,7 @@ class LogoInline(admin.StackedInline):
 class CompanySealInline(admin.TabularInline):
     model = CompanySeal
     extra = 1
-    fields = ('seal_type', 'name', 'seal_image', 'manager', 'final_approval_duty', 'final_dept_level', 'is_active')
+    fields = ('seal_type', 'name', 'seal_image', 'custodian', 'final_approval_duty', 'final_dept_level', 'is_active')
 
 
 class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
