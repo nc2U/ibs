@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.db.models import Q
 from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -14,8 +12,6 @@ from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, Ke
                                  BuildingUnitSerializer, HouseUnitSerializer, AllHouseUnitSerializer,
                                  HouseUnitSummarySerializer, OptionItemSerializer)
 
-TODAY = datetime.today().strftime('%Y-%m-%d')
-
 
 def get_accessible_project_ids(user):
     return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
@@ -23,7 +19,7 @@ def get_accessible_project_ids(user):
 
 # Items --------------------------------------------------------------------------
 class UnitTypeViewSet(viewsets.ModelViewSet):
-    queryset = UnitType.objects.all()
+    queryset = UnitType.objects.select_related('project').all()
     serializer_class = UnitTypeSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'sort', 'main_or_sub')
@@ -44,7 +40,7 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
 
 
 class UnitFloorTypeViewSet(viewsets.ModelViewSet):
-    queryset = UnitFloorType.objects.all()
+    queryset = UnitFloorType.objects.select_related('project').all()
     serializer_class = UnitFloorTypeSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
@@ -74,10 +70,11 @@ class KeyUnitListFilterSet(FilterSet):
 
 
 class KeyUnitViewSet(viewsets.ModelViewSet):
-    queryset = KeyUnit.objects.all()
+    queryset = KeyUnit.objects.select_related('houseunit', 'project', 'unit_type', 'contract').all()
     serializer_class = KeyUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_class = KeyUnitListFilterSet
+    search_fields = ('unit_code',)
     ordering_fields = ('pk', 'unit_code', 'unit_type')
     ordering = ('-pk',)
 
@@ -96,7 +93,7 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
 
 
 class BuildingUnitViewSet(viewsets.ModelViewSet):
-    queryset = BuildingUnit.objects.all()
+    queryset = BuildingUnit.objects.select_related('project').all()
     serializer_class = BuildingUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project',)
@@ -117,12 +114,12 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
 
 
 class HouseUnitViewSet(viewsets.ModelViewSet):
-    queryset = HouseUnit.objects.all()
+    queryset = HouseUnit.objects.select_related('unit_type', 'floor_type', 'building_unit', 'key_unit').all()
     serializer_class = HouseUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('building_unit__project', 'unit_type__sort', 'unit_type',
                         'floor_type', 'building_unit', 'is_hold')
-    search_fields = ('hold_reason',)
+    search_fields = ('name', 'building_unit__name', 'hold_reason')
 
     @property
     def required_permission(self):
@@ -147,31 +144,43 @@ class AvailableHouseUnitViewSet(HouseUnitViewSet):
         project = self.request.query_params.get('project', None)
         unit_type = self.request.query_params.get('unit_type', None)
 
-        if project and unit_type:
-            queryset = queryset.filter(
-                building_unit__project=project, unit_type=unit_type, key_unit__isnull=True
-            )
+        if project:
+            queryset = queryset.filter(building_unit__project_id=project)
+        if unit_type:
+            queryset = queryset.filter(unit_type_id=unit_type)
 
         contract = self.request.query_params.get('contract', None)
-        if contract is not None:
-            queryset = HouseUnit.objects.filter(
-                Q(building_unit__project=project, unit_type=unit_type, key_unit__isnull=True) |
-                Q(key_unit__contract=contract)
+        if contract:
+            queryset = queryset.filter(
+                Q(key_unit__isnull=True) | Q(key_unit__contract=contract)
             )
+        else:
+            queryset = queryset.filter(key_unit__isnull=True)
 
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         return queryset.filter(building_unit__project_id__in=get_accessible_project_ids(user))
 
 
-class AllHouseUnitViewSet(HouseUnitViewSet):
+class AllHouseUnitViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = HouseUnit.objects.all()
     serializer_class = AllHouseUnitSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationThreeThousand
+    filterset_fields = ('building_unit__project', 'unit_type__sort', 'unit_type',
+                        'floor_type', 'building_unit', 'is_hold')
+    search_fields = ('name', 'building_unit__name', 'hold_reason')
+
+    @property
+    def required_permission(self):
+        return None
 
     def get_queryset(self):
         user = self.request.user
         queryset = HouseUnit.objects.select_related(
             'unit_type',
+            'floor_type',
+            'building_unit',
             'key_unit__contract__contractor',
             'key_unit__contract__contractprice',
         ).all()
@@ -180,8 +189,8 @@ class AllHouseUnitViewSet(HouseUnitViewSet):
         return queryset.filter(building_unit__project_id__in=get_accessible_project_ids(user))
 
 
-class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
-    queryset = HouseUnit.objects.all()
+class HouseUnitSummaryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = HouseUnit.objects.select_related('unit_type', 'building_unit').all()
     serializer_class = HouseUnitSummarySerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('building_unit__project', 'unit_type',
@@ -189,9 +198,7 @@ class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        if self.action in ('list', 'retrieve'):
-            return None
-        return 'contract.update'
+        return None
 
     def get_queryset(self):
         user = self.request.user
@@ -202,7 +209,7 @@ class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
 
 
 class OptionItemViewSet(viewsets.ModelViewSet):
-    queryset = OptionItem.objects.all()
+    queryset = OptionItem.objects.select_related('project').prefetch_related('types').all()
     serializer_class = OptionItemSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'types')

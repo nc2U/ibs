@@ -26,6 +26,15 @@ class UnitFloorTypeSerializer(serializers.ModelSerializer):
         model = UnitFloorType
         fields = ('pk', 'project', 'sort', 'start_floor', 'end_floor', 'extra_cond', 'alias_name')
 
+    def validate(self, attrs):
+        start_floor = attrs.get('start_floor') if 'start_floor' in attrs else (self.instance.start_floor if self.instance else None)
+        end_floor = attrs.get('end_floor') if 'end_floor' in attrs else (self.instance.end_floor if self.instance else None)
+        if start_floor is not None and end_floor is not None and start_floor > end_floor:
+            raise serializers.ValidationError(
+                {'end_floor': '종료 층은 시작 층보다 크거나 같아야 합니다.'}
+            )
+        return attrs
+
 
 class BuildingUnitSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,7 +52,7 @@ class KeyUnitSerializer(serializers.ModelSerializer):
 
 
 class HouseUnitSerializer(serializers.ModelSerializer):
-    unit_code = serializers.CharField(write_only=True, required=False)
+    unit_code = serializers.CharField(write_only=True, required=False, max_length=8)
 
     class Meta:
         model = HouseUnit
@@ -52,17 +61,26 @@ class HouseUnitSerializer(serializers.ModelSerializer):
                   'unit_code')
         read_only_fields = ('__str__',)
 
-    @staticmethod
-    def _resolve_key_unit(validated_data):
+    @classmethod
+    def _resolve_key_unit(cls, validated_data, instance=None):
         unit_code = validated_data.pop('unit_code', None)
         if unit_code:
-            project = validated_data['building_unit'].project
-            unit_type = validated_data['unit_type']
+            building_unit = validated_data.get('building_unit') or (instance.building_unit if instance else None)
+            unit_type = validated_data.get('unit_type') or (instance.unit_type if instance else None)
+            if not building_unit or not unit_type:
+                raise serializers.ValidationError(
+                    {'unit_code': '유닛 코드를 배정하려면 동수(building_unit)와 타입(unit_type) 정보가 필요합니다.'}
+                )
             key_unit, _ = KeyUnit.objects.get_or_create(
-                project=project,
+                project=building_unit.project,
                 unit_type=unit_type,
                 unit_code=unit_code,
             )
+            if hasattr(key_unit, 'houseunit') and key_unit.houseunit is not None:
+                if instance is None or key_unit.houseunit.pk != instance.pk:
+                    raise serializers.ValidationError(
+                        {'unit_code': f'해당 유닛 코드({unit_code})는 이미 다른 세대({key_unit.houseunit})에 배정되어 있습니다.'}
+                    )
             validated_data['key_unit'] = key_unit
         return validated_data
 
@@ -70,7 +88,7 @@ class HouseUnitSerializer(serializers.ModelSerializer):
         return super().create(self._resolve_key_unit(validated_data))
 
     def update(self, instance, validated_data):
-        return super().update(instance, self._resolve_key_unit(validated_data))
+        return super().update(instance, self._resolve_key_unit(validated_data, instance=instance))
 
 
 class ContractorInContractSerializer(serializers.ModelSerializer):
@@ -134,9 +152,9 @@ class OptionItemSerializer(serializers.ModelSerializer):
         read_only_fields = ('pk',)
 
     def validate(self, attrs):
-        opt_price = attrs.get('opt_price')
-        opt_deposit = attrs.get('opt_deposit')
-        opt_balance = attrs.get('opt_balance')
+        opt_price = attrs.get('opt_price') if 'opt_price' in attrs else (self.instance.opt_price if self.instance else None)
+        opt_deposit = attrs.get('opt_deposit') if 'opt_deposit' in attrs else (self.instance.opt_deposit if self.instance else None)
+        opt_balance = attrs.get('opt_balance') if 'opt_balance' in attrs else (self.instance.opt_balance if self.instance else None)
 
         if opt_price is not None and opt_deposit is not None and opt_balance is not None:
             if opt_deposit + opt_balance != opt_price:

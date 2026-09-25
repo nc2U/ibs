@@ -117,5 +117,6 @@ class OptionItem(models.Model):
         return self.opt_name
 
     class Meta:
+        ordering = ['-project', 'id']
         verbose_name = '06. 옵션 품목'
         verbose_name_plural = '06. 옵션 품목'

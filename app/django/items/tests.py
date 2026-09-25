@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company
+from contract.models import Contract, OrderGroup
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
 from project.models import Project
 from work.models.project import IssueProject, Member, Role, Permission
@@ -221,3 +222,142 @@ class ItemsIsolationAndPermissionTests(APITestCase):
             'name': '202동'
         })
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_available_house_unit_filtering(self):
+        """가용 호수(AvailableHouseUnit) 필터링: unit_type 누락 시에도 미분양 유닛만 조회, contract 지정 시 본인 계약 포함"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # house_a: key_unit 미배정 (가용 상태)
+        # house_assigned: key_unit 배정 + 계약 체결
+        key_unit_assigned = KeyUnit.objects.create(
+            project=self.project_a, unit_type=self.unit_type_a, unit_code='KU-ASGN'
+        )
+        house_assigned = HouseUnit.objects.create(
+            building_unit=self.bldg_a, unit_type=self.unit_type_a,
+            bldg_line=1, floor_no=2, name='102', key_unit=key_unit_assigned
+        )
+        order_group = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, name='일반분양'
+        )
+        contract = Contract.objects.create(
+            project=self.project_a, order_group=order_group, serial_number='CONT-TEST-001',
+            key_unit=key_unit_assigned, creator=self.admin_user
+        )
+
+        # 1. unit_type 없이 project만 전달했을 때 -> 미배정 유닛(house_a)만 반환되어야 함
+        res = self.client.get(f'/api/v1/available-house-unit/?project={self.project_a.pk}')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        pks = [item['pk'] for item in res.data['results']]
+        self.assertIn(self.house_a.pk, pks)
+        self.assertNotIn(house_assigned.pk, pks)
+
+        # 2. contract를 함께 전달했을 때 -> 미배정 유닛(house_a) + 해당 계약 배정 유닛(house_assigned) 모두 반환되어야 함
+        res_with_cont = self.client.get(
+            f'/api/v1/available-house-unit/?project={self.project_a.pk}&contract={contract.pk}'
+        )
+        self.assertEqual(res_with_cont.status_code, status.HTTP_200_OK)
+        cont_pks = [item['pk'] for item in res_with_cont.data['results']]
+        self.assertIn(self.house_a.pk, cont_pks)
+        self.assertIn(house_assigned.pk, cont_pks)
+
+    def test_house_unit_patch_unit_code_fallback(self):
+        """HouseUnit에 unit_code만 전달하여 PATCH할 때 KeyError 없이 안전하게 KeyUnit이 바인딩되는지 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        res = self.client.patch(f'/api/v1/house-unit/{self.house_a.pk}/', {
+            'unit_code': 'KU-P01'
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.house_a.refresh_from_db()
+        self.assertIsNotNone(self.house_a.key_unit)
+        self.assertEqual(self.house_a.key_unit.unit_code, 'KU-P01')
+
+    def test_house_unit_key_unit_already_bound_raises_validation_error(self):
+        """이미 타 세대에 배정된 KeyUnit을 다른 세대에 지정 시 500이 아닌 400 ValidationError 반환"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. house_a에 KU-DUP1 배정
+        self.client.patch(f'/api/v1/house-unit/{self.house_a.pk}/', {
+            'unit_code': 'KU-DUP1'
+        })
+        self.house_a.refresh_from_db()
+        self.assertEqual(self.house_a.key_unit.unit_code, 'KU-DUP1')
+
+        # 2. 신규 세대 생성 시 동일한 KU-DUP1 지정 시도 -> 400 Bad Request
+        res = self.client.post('/api/v1/house-unit/', {
+            'building_unit': self.bldg_a.pk,
+            'unit_type': self.unit_type_a.pk,
+            'bldg_line': 2,
+            'floor_no': 2,
+            'name': '103',
+            'unit_code': 'KU-DUP1'
+        })
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_code', res.data)
+
+    def test_unit_floor_type_floor_range_validation(self):
+        """시작 층이 종료 층보다 큰 경우 400 ValidationError 발생 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 잘못된 층범위 (시작 10층 > 종료 5층)
+        res = self.client.post('/api/v1/floor/', {
+            'project': self.project_a.pk,
+            'sort': '1',
+            'start_floor': 10,
+            'end_floor': 5,
+            'alias_name': '역전층'
+        })
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('end_floor', res.data)
+
+    def test_option_item_patch_price_validation(self):
+        """옵션 품목 PATCH 수정 시에도 계약금+잔금 합계 정합성 검증이 작동하는지 확인"""
+        self.client.force_authenticate(user=self.user_a)
+
+        option = OptionItem.objects.create(
+            project=self.project_a,
+            opt_name='빌트인 냉장고',
+            opt_price=3000000,
+            opt_deposit=300000,
+            opt_balance=2700000
+        )
+
+        # 잘못된 계약금으로 PATCH (1,000,000 + 2,700,000 != 3,000,000)
+        res_fail = self.client.patch(f'/api/v1/option-item/{option.pk}/', {
+            'opt_deposit': 1000000
+        })
+        self.assertEqual(res_fail.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('opt_deposit', res_fail.data)
+
+        # 올바른 잔금과 함께 PATCH (1,000,000 + 2,000,000 == 3,000,000)
+        res_ok = self.client.patch(f'/api/v1/option-item/{option.pk}/', {
+            'opt_deposit': 1000000,
+            'opt_balance': 2000000
+        })
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        option.refresh_from_db()
+        self.assertEqual(option.opt_deposit, 1000000)
+        self.assertEqual(option.opt_balance, 2000000)
+
+    def test_house_unit_and_key_unit_search(self):
+        """호수(name), 동(building_unit__name), 유닛코드(unit_code) 검색 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 호수 검색
+        res_house = self.client.get('/api/v1/house-unit/?search=101')
+        self.assertEqual(res_house.status_code, status.HTTP_200_OK)
+        pks = [item['pk'] for item in res_house.data['results']]
+        self.assertIn(self.house_a.pk, pks)
+
+        # 2. 동 이름 검색
+        res_bldg = self.client.get('/api/v1/house-unit/?search=101동')
+        self.assertEqual(res_bldg.status_code, status.HTTP_200_OK)
+        pks = [item['pk'] for item in res_bldg.data['results']]
+        self.assertIn(self.house_a.pk, pks)
+
+        # 3. 유닛 코드 검색
+        res_ku = self.client.get('/api/v1/key-unit/?search=KU-001')
+        self.assertEqual(res_ku.status_code, status.HTTP_200_OK)
+        ku_pks = [item['pk'] for item in res_ku.data['results']]
+        self.assertIn(self.key_unit_a.pk, ku_pks)
+
