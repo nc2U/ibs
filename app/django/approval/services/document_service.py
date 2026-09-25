@@ -135,8 +135,13 @@ def archive_to_docs(document: ApprovalDocument):
         company = None
         if document.drafter_assignment and document.drafter_assignment.company:
             company = document.drafter_assignment.company
-        elif hasattr(document.drafter, 'staff') and document.drafter.staff.company:
-            company = document.drafter.staff.company
+        else:
+            try:
+                drafter_staff = document.drafter.staff
+                if drafter_staff and drafter_staff.company:
+                    company = drafter_staff.company
+            except Exception:
+                pass
 
         if company:
             workspace = (

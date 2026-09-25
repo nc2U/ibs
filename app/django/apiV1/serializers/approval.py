@@ -249,17 +249,8 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'pdf_file') and obj.pdf_file and obj.pdf_file.name:
             request = self.context.get('request')
             return request.build_absolute_uri(obj.pdf_file.url) if request else obj.pdf_file.url
-        # 최종 승인된 문서인데 PDF가 아직 없거나 누락된 경우 즉시 온디맨드로 생성 및 S3 저장
-        if getattr(obj, 'status', None) == ApprovalDocument.STATUS_APPROVED:
-            try:
-                from approval.tasks import render_and_save_approval_pdf
-                render_and_save_approval_pdf(obj.pk)
-                obj.refresh_from_db()
-                if obj.pdf_file and obj.pdf_file.name:
-                    request = self.context.get('request')
-                    return request.build_absolute_uri(obj.pdf_file.url) if request else obj.pdf_file.url
-            except Exception as e:
-                print(f'⚠️ On-demand PDF generation failed for doc {obj.pk}: {e}')
+        # PDF가 아직 없는 경우 null 반환 (동기 렌더링 제거: 목록 조회 시 타임아웃·과부하 위험)
+        # PDF 생성은 최종 승인 시 generate_approval_pdf_task.delay()로 비동기 처리됨
         return None
 
     def to_internal_value(self, data):

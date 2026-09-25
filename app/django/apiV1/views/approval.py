@@ -52,8 +52,8 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet):
         ).select_related('delegator__profile', 'delegatee__profile')
 
     def perform_create(self, serializer):
-        # 관리자가 명시하지 않은 경우 본인을 delegator로 설정
-        if 'delegator' not in serializer.validated_data or not self.request.user.is_superuser:
+        # delegator가 지정되지 않았고 슈퍼유저가 아닌 경우에만 본인을 위임자로 설정
+        if 'delegator' not in serializer.validated_data and not self.request.user.is_superuser:
             serializer.save(delegator=self.request.user)
         else:
             serializer.save()
@@ -114,16 +114,21 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
             duty = assignment.duty
             pos = assignment.staff.position if assignment.staff else None
 
-            # 부서 제한 필터: allowed_departments가 비어있거나, 해당 부서가 포함된 경우
-            # (Q 객체 조합 또는 Python 리스트 필터링)
+            # prefetch_related 캐시를 활용한 Python set 비교로 N+1 쿼리 방지
+            # (.exists()/.filter() 호출은 prefetch 캐시를 우회하여 DB 쿼리를 재발생시킴)
+            dept_pk = dept.pk if dept else None
+            duty_pk = duty.pk if duty else None
+            pos_pk = pos.pk if pos else None
+
             available_types = []
             for dt in qs:
-                # 1. 부서 검사
-                dept_allowed = not dt.allowed_departments.exists() or (dept and dt.allowed_departments.filter(pk=dept.pk).exists())
-                # 2. 직책 검사
-                duty_allowed = not dt.allowed_duties.exists() or (duty and dt.allowed_duties.filter(pk=duty.pk).exists())
-                # 3. 직위 검사
-                pos_allowed = not dt.allowed_positions.exists() or (pos and dt.allowed_positions.filter(pk=pos.pk).exists())
+                allowed_dept_pks = {d.pk for d in dt.allowed_departments.all()}
+                allowed_duty_pks = {d.pk for d in dt.allowed_duties.all()}
+                allowed_pos_pks = {d.pk for d in dt.allowed_positions.all()}
+
+                dept_allowed = not allowed_dept_pks or (dept_pk is not None and dept_pk in allowed_dept_pks)
+                duty_allowed = not allowed_duty_pks or (duty_pk is not None and duty_pk in allowed_duty_pks)
+                pos_allowed = not allowed_pos_pks or (pos_pk is not None and pos_pk in allowed_pos_pks)
 
                 if dept_allowed and duty_allowed and pos_allowed:
                     available_types.append(dt)
@@ -131,8 +136,11 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = self.get_serializer(available_types, many=True)
             return Response(serializer.data)
 
-        # 보직이 없는 경우 전사 공통(제한 없는) 문서만 반환
-        common_types = [dt for dt in qs if not dt.allowed_departments.exists() and not dt.allowed_duties.exists() and not dt.allowed_positions.exists()]
+        # 보직이 없는 경우 전사 공통(제한 없는) 문서만 반환 (prefetch 캐시 활용)
+        common_types = [
+            dt for dt in qs
+            if not dt.allowed_departments.all() and not dt.allowed_duties.all() and not dt.allowed_positions.all()
+        ]
         serializer = self.get_serializer(common_types, many=True)
         return Response(serializer.data)
 
@@ -378,12 +386,15 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 step.approvers.set([request.user])
 
                 document.status = ApprovalDocument.STATUS_APPROVED
-                document.completed_at = timezone.now()
+                now = timezone.now()
+                document.completed_at = now
+                document.submitted_at = now
                 document.content_hash = document.compute_hash()
-                document.submitted_at = timezone.now()
-                document.save()
+                # generate_doc_number()는 self.completed_at(Python 속성)을 사용하므로 save() 전 호출 가능
                 document.doc_number = document.generate_doc_number()
-                document.save(update_fields=['doc_number'])
+                document.save(update_fields=[
+                    'status', 'completed_at', 'submitted_at', 'content_hash', 'doc_number'
+                ])
 
                 # 연동 수신공문 동기화
                 if document.related_inbound_letter:
@@ -508,9 +519,9 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if not approved:
             # 반려
             current_step.status = ApprovalStep.STATUS_REJECTED
-            current_step.save()
+            current_step.save(update_fields=['status'])
             document.status = ApprovalDocument.STATUS_REJECTED
-            document.save()
+            document.save(update_fields=['status'])
 
             # 연동된 공문(OfficialLetter) 상태 동기화
             official_letter_id = (document.content or {}).get('official_letter_id')
@@ -534,12 +545,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         # 단계 승인
         current_step.status = ApprovalStep.STATUS_APPROVED
-        current_step.save()
+        current_step.save(update_fields=['status'])
 
         next_step = document.steps.filter(step_order=document.current_step + 1).first()
         if next_step:
             document.current_step += 1
-            document.save()
+            document.save(update_fields=['current_step'])
             try:
                 notify_approvers_task.delay(document.pk, next_step.pk)
             except Exception:
@@ -605,16 +616,17 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             )
 
         # 1차 결재자 및 결재선 결재자 ID 추출 (회수 알림 및 이전 알림 정리용)
-        approver_ids = list(
+        # M2M JOIN 결과에 결재자 없는 단계가 있으면 None이 포함될 수 있으므로 필터링
+        approver_ids = list(filter(None,
             ApprovalStep.objects.filter(document=document).values_list('approvers__id', flat=True)
-        )
+        ))
 
-        # 상태를 임시저장(DRAFT)으로 되돌리고 기존 결재선 단계 초기화
+        # 기존 결재선 단계 초기화 후 임시저장(DRAFT) 상태로 복귀
+        document.steps.all().delete()
         document.status = ApprovalDocument.STATUS_DRAFT
         document.current_step = 0
         document.submitted_at = None
-        document.steps.all().delete()
-        document.save()
+        document.save(update_fields=['status', 'current_step', 'submitted_at'])
 
         # 연동된 공문(OfficialLetter) 상태 동기화 (기안 회수 시 미상신/임시 상태로 복귀)
         official_letter_id = (document.content or {}).get('official_letter_id')

@@ -1,9 +1,12 @@
+import logging
+
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
 from django.utils import timezone
 
 from _utils.push_service import send_push_notification
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -40,7 +43,7 @@ def notify_approvers_task(document_pk, step_pk):
             target_id=str(document_pk),
         )
     except Exception as e:
-        print(f'❌ notify_approvers_task failed: {e}')
+        logger.error('notify_approvers_task failed (doc=%s, step=%s): %s', document_pk, step_pk, e)
 
 
 @shared_task
@@ -87,7 +90,7 @@ def notify_drafter_task(document_pk, action, comment=''):
                     target_id=str(document_pk),
                 )
     except Exception as e:
-        print(f'❌ notify_drafter_task failed: {e}')
+        logger.error('notify_drafter_task failed (doc=%s, action=%s): %s', document_pk, action, e)
 
 
 @shared_task
@@ -124,7 +127,7 @@ def notify_cancel_task(document_pk, approver_ids):
             target_id=str(document_pk),
         )
     except Exception as e:
-        print(f'❌ notify_cancel_task failed: {e}')
+        logger.error('notify_cancel_task failed (doc=%s): %s', document_pk, e)
 
 
 def render_and_save_approval_pdf(document_pk):
@@ -135,7 +138,7 @@ def render_and_save_approval_pdf(document_pk):
     try:
         from weasyprint import HTML
     except ImportError:
-        print('⚠️ WeasyPrint is not installed. PDF generation skipped.')
+        logger.warning('WeasyPrint is not installed. PDF generation skipped.')
         return None
 
     try:
@@ -163,18 +166,18 @@ def render_and_save_approval_pdf(document_pk):
 
         # 기존 중복 파일명이 겹치지 않도록 깔끔하게 저장 (upload_to='approval/pdf/%Y/%m/' 적용)
         document.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-        print(f'✅ PDF generated and saved to S3: {document.pdf_file.name}')
+        logger.info('PDF generated and saved: %s', document.pdf_file.name)
 
         # 자동 아카이빙 후속 연동 (PDF 생성 후 첨부파일 추가)
         try:
             from approval.services.document_service import archive_to_docs
             archive_to_docs(document)
         except Exception as e:
-            print(f'⚠️ 아카이빙 PDF 연동 실패: {e}')
+            logger.warning('아카이빙 PDF 연동 실패 (doc=%s): %s', document_pk, e)
 
         return document.pdf_file.url if document.pdf_file else None
     except Exception as e:
-        print(f'❌ render_and_save_approval_pdf failed for doc {document_pk}: {e}')
+        logger.error('render_and_save_approval_pdf failed for doc %s: %s', document_pk, e)
         raise e
 
 
@@ -184,5 +187,6 @@ def generate_approval_pdf_task(document_pk):
     try:
         return render_and_save_approval_pdf(document_pk)
     except Exception as e:
-        print(f'❌ generate_approval_pdf_task failed: {e}')
+        logger.error('generate_approval_pdf_task failed (doc=%s): %s', document_pk, e)
         return None
+

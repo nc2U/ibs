@@ -3,6 +3,24 @@ from company.models import StaffAssignment, Staff, Department
 from ..models import DocumentType
 
 
+def _is_joint_representative(user) -> bool:
+    """사용자가 공동대표(joint) 등기 임원인지 안전하게 확인.
+
+    staff.executive는 OneToOne 역참조로 RelatedObjectDoesNotExist가 발생할 수 있으므로
+    try/except로 방어 처리합니다.
+    """
+    try:
+        staff = getattr(user, 'staff', None)
+        if not staff:
+            return False
+        executive = getattr(staff, 'executive', None)
+        if not executive:
+            return False
+        return executive.represent_type == 'joint'
+    except Exception:
+        return False
+
+
 def extract_amount_from_content(content: dict | None) -> float | None:
     """기안 문서 내용에서 금액 성격의 필드 값을 자동 추출"""
     if not content or not isinstance(content, dict):
@@ -117,11 +135,7 @@ def _find_highest_role_label(user, current_dept_label: str, company, current_dep
         # 호출 측 CEO 목록을 재사용; 없으면 새로 조회
         _ceo_users = ceo_users if ceo_users is not None else _get_company_ceos(company, set())
         if any(u.id == user.id for u in _ceo_users):
-            is_joint = any(
-                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
-                u.staff.executive.represent_type == 'joint'
-                for u in _ceo_users if u.id == user.id
-            )
+            is_joint = any(_is_joint_representative(u) for u in _ceo_users if u.id == user.id)
             return '공동대표 최종 승인' if is_joint else '대표이사 최종 승인'
 
     # 2. 상위 부서(본부장, 실장 등) 겸직 여부 확인
@@ -261,11 +275,7 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         other_ceos = [u for u in all_ceo_users if u.id != drafter_user.id]
         if other_ceos:
             # 다른 공동대표들이 존재하는 경우 (공동대표 체제)
-            is_joint = any(
-                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
-                u.staff.executive.represent_type == 'joint'
-                for u in other_ceos
-            )
+            is_joint = any(_is_joint_representative(u) for u in other_ceos)
             return [{
                 'step_order': 1,
                 'role_label': '공동대표 최종 승인' if is_joint else '대표이사 최종 승인',
@@ -348,11 +358,7 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         ceo_users = _get_company_ceos(company, added_user_ids)
 
         if ceo_users:
-            is_joint = any(
-                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
-                u.staff.executive.represent_type == 'joint'
-                for u in ceo_users
-            )
+            is_joint = any(_is_joint_representative(u) for u in ceo_users)
             condition = 'AND' if is_joint else 'OR'
             label = '공동대표 최종 승인' if is_joint else '대표이사 최종 승인'
 

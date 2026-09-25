@@ -191,13 +191,14 @@ class ApprovalDocument(models.Model):
             self.security_level = self.doc_type.default_security_level
 
         # 2. 임시저장(draft) → 상신(pending) 전환 시 content_hash 자동 갱신
-        #    (view 레이어에서 명시적 호출 없이 누락되는 경우를 모델 레벨에서 방어)
-        if self.pk:
+        #    update_fields에 'status'가 포함된 경우에만 이전 상태를 SELECT하여 불필요한 쿼리 방지
+        update_fields = kwargs.get('update_fields')
+        status_may_change = update_fields is None or 'status' in update_fields
+        if status_may_change and self.pk and self.status == self.STATUS_PENDING:
             try:
                 prev_status = ApprovalDocument.objects.filter(pk=self.pk).values_list('status', flat=True).first()
-                if prev_status == self.STATUS_DRAFT and self.status == self.STATUS_PENDING:
-                    if not self.content_hash:
-                        self.content_hash = self.compute_hash()
+                if prev_status == self.STATUS_DRAFT and not self.content_hash:
+                    self.content_hash = self.compute_hash()
             except Exception:
                 pass
 
@@ -264,15 +265,15 @@ class ApprovalStep(models.Model):
 
     def is_completed(self):
         """이 단계의 결재가 완료되었는지 확인 (AND/OR 조건 처리)"""
-        actions = self.actions.filter(action__in=[
+        # 한 번의 쿼리로 승인/반려 액션을 모두 가져와 Python에서 처리 (기존 3회 → 2회 쿼리)
+        all_actions = list(self.actions.filter(action__in=[
             ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED
-        ])
-        rejected = actions.filter(action=ApprovalAction.ACTION_REJECTED).exists()
-        if rejected:
+        ]).values('action', 'approver_id'))
+
+        if any(a['action'] == ApprovalAction.ACTION_REJECTED for a in all_actions):
             return True, False  # (완료여부, 승인여부)
 
-        approved_ids = set(actions.filter(action=ApprovalAction.ACTION_APPROVED)
-                           .values_list('approver_id', flat=True))
+        approved_ids = {a['approver_id'] for a in all_actions if a['action'] == ApprovalAction.ACTION_APPROVED}
         approver_ids = set(self.approvers.values_list('id', flat=True))
 
         if self.condition == self.CONDITION_OR:

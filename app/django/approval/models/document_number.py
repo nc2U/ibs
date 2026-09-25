@@ -36,11 +36,15 @@ class DocNumberSequence(models.Model):
             doc_number = f'{doc_type.code}-2026-{seq:04d}'
         """
         with transaction.atomic():
-            obj, _ = cls.objects.select_for_update().get_or_create(
+            # 1단계: 행이 없으면 INSERT (잠금 없이), 있으면 조회
+            cls.objects.get_or_create(
                 doc_type=doc_type,
                 year=year,
                 defaults={'last_number': 0},
             )
+            # 2단계: 행이 반드시 존재하는 시점에 select_for_update로 잠금 후 증가
+            # (신규·기존 행 모두 동일한 잠금 경로를 거쳐 Race Condition 방지)
+            obj = cls.objects.select_for_update().get(doc_type=doc_type, year=year)
             obj.last_number += 1
             obj.save(update_fields=['last_number'])
             return obj.last_number
