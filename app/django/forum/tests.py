@@ -205,3 +205,24 @@ class ForumAppSecurityTests(TestCase):
         self.assertEqual(res_modify_ok.status_code, status.HTTP_200_OK)
         self.normal_post.refresh_from_db()
         self.assertEqual(self.normal_post.title, '작성자가 수정한 제목')
+
+    def test_post_trash_workspace_security(self):
+        """휴지통(PostInTrashViewSet) 워크스페이스 권한 격리 검증"""
+        # 일반 글을 소프트 삭제 처리
+        self.normal_post.delete()
+        self.normal_post.refresh_from_db()
+        self.assertIsNotNone(self.normal_post.deleted)
+
+        # 1. 비공개 워크스페이스에 속하지 않은 타 사용자 조회 시 미노출 (0건)
+        self.client.force_authenticate(user=self.other_user)
+        res_other = self.client.get('/api/v1/post-trash-can/')
+        self.assertEqual(res_other.status_code, status.HTTP_200_OK)
+        trash_ids = [item['pk'] for item in res_other.data.get('results', res_other.data)]
+        self.assertNotIn(self.normal_post.pk, trash_ids)
+
+        # 2. 해당 워크스페이스 멤버 조회 시 삭제된 글 노출
+        self.client.force_authenticate(user=self.member_user)
+        res_member = self.client.get('/api/v1/post-trash-can/')
+        self.assertEqual(res_member.status_code, status.HTTP_200_OK)
+        member_trash_ids = [item['pk'] for item in res_member.data.get('results', res_member.data)]
+        self.assertIn(self.normal_post.pk, member_trash_ids)

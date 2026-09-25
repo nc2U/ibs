@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
@@ -69,10 +70,9 @@ class Post(models.Model):
     def __str__(self):
         return self.title
 
+    @property
     def is_new(self):
-        today = datetime.today().strftime('%Y-%m-%d %H:%M')
-        new_period = self.created + timedelta(days=3)
-        return today < new_period.strftime('%Y-%m-%d %H:%M')
+        return timezone.now() < self.created + timedelta(days=3)
 
     class Meta:
         ordering = ['-is_notice', '-created']
@@ -84,7 +84,7 @@ class Post(models.Model):
         ]
 
     def delete(self, using=None, keep_parents=False):
-        self.deleted = datetime.now()
+        self.deleted = timezone.now()
         self.save(update_fields=['deleted'])
 
     def restore(self):
@@ -102,7 +102,7 @@ class PostFile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return settings.MEDIA_URL
+        return self.file_name or (self.file.name.split('/')[-1] if self.file else str(self.pk))
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
@@ -122,7 +122,7 @@ class PostImage(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return settings.MEDIA_URL
+        return self.image_name or (self.image.name.split('/')[-1] if self.image else str(self.pk))
 
     def save(self, *args, **kwargs):
         if self.image and not self.image_name:

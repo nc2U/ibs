@@ -180,10 +180,16 @@ class PostSerializer(serializers.ModelSerializer):
         return profile.blame_posts.filter(pk=obj.pk).exists()
 
     def get_prev_pk(self, obj):
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
         prev_obj = self._get_filtered_queryset().filter(created__lt=obj.created).first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
         next_obj = self._get_filtered_queryset().filter(created__gt=obj.created).order_by('created').first()
         return next_obj.pk if next_obj else None
 

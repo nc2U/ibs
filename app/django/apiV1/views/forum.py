@@ -253,7 +253,7 @@ class CommentFilterSet(FilterSet):
 
     class Meta:
         model = Comment
-        fields = ('creator', 'post', 'is_comment', 'creator')
+        fields = ('creator', 'post', 'is_comment')
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -342,6 +342,11 @@ class TagViewSet(viewsets.ModelViewSet):
 class PostInTrashViewSet(PostViewSet):
     serializer_class = PostInTrashSerializer
 
-    # 개선: 쿼리셋 정적 재정의 대신 get_queryset() 오버라이딩 적용
     def get_queryset(self):
-        return Post.objects.filter(deleted__isnull=False).select_related('forum', 'category', 'creator')
+        user = self.request.user
+        queryset = Post.objects.filter(deleted__isnull=False).select_related('forum', 'category', 'creator')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        return queryset.filter(
+            Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+        ).distinct()
