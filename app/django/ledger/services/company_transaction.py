@@ -1,4 +1,6 @@
-from django.db.models import Q
+from collections import defaultdict
+from django.db.models import Q, Subquery, IntegerField, F, OuterRef, Sum
+from django.db.models.functions import Coalesce
 
 from ledger.models import CompanyBankTransaction, CompanyAccount, CompanyAccountingEntry
 
@@ -33,12 +35,24 @@ def get_company_transactions(params):
     if bank_account:
         qs = qs.filter(bank_account_id=bank_account)
 
-    # is_balanced 필터링
+    # is_balanced 필터링 (회계분개 금액 합계와 은행 거래 금액 비교)
     is_balanced = params.get('is_balanced')
-    if is_balanced is not None:
+    if is_balanced is not None and is_balanced != '' and is_balanced != 'all':
         is_balanced_bool = is_balanced.lower() in ('true', '1', 'yes') if isinstance(is_balanced, str) else bool(
             is_balanced)
-        qs = qs.filter(is_balanced=is_balanced_bool)
+        entry_sum_sq = CompanyAccountingEntry.objects.filter(
+            transaction_id=OuterRef('transaction_id')
+        ).values('transaction_id').annotate(
+            total=Sum('amount')
+        ).values('total')
+
+        qs = qs.annotate(
+            calc_entry_sum=Coalesce(Subquery(entry_sum_sq, output_field=IntegerField()), 0)
+        )
+        if is_balanced_bool:
+            qs = qs.filter(amount=F('calc_entry_sum'))
+        else:
+            qs = qs.exclude(amount=F('calc_entry_sum'))
 
     # 회계분개 모델을 참조해야 하는 복합 필터링
     account_id = params.get('account')
@@ -68,6 +82,7 @@ def get_company_transactions(params):
         entry_filters &= Q(affiliate_id=affiliate_id)
 
     if search:
+        search_q = Q()
         # 계정 이름 검색 — 매칭된 계정 + 하위 계정들을 code__startswith로 단일 쿼리 수집
         matched_codes = list(CompanyAccount.objects.filter(
             name__icontains=search, is_active=True
@@ -80,10 +95,13 @@ def get_company_transactions(params):
             account_ids = CompanyAccount.objects.filter(
                 account_q, is_active=True
             ).values_list('pk', flat=True)
-            entry_filters |= Q(account_id__in=account_ids)
+            search_q |= Q(account_id__in=account_ids)
 
         # trader 검색 추가
-        entry_filters |= Q(trader__icontains=search)
+        search_q |= Q(trader__icontains=search)
+
+        # 조립된 search_q 조건을 기존 필터에 AND 결합
+        entry_filters &= search_q
 
     # entry_filters가 있는 경우, transaction_id를 통해 필터링
     if entry_filters:
@@ -127,3 +145,26 @@ def get_company_transactions(params):
     return qs.select_related(
         'company', 'bank_account', 'sort', 'creator'
     ).order_by('-deal_date', '-created_at')
+
+
+def prefetch_company_transactions(instances):
+    """지정된 거래 목록(instances)에 대해서만 분개를 수동 prefetch 맵핑합니다."""
+    transaction_ids = [t.transaction_id for t in instances if t.transaction_id]
+    if not transaction_ids:
+        for tx in instances:
+            tx.prefetched_accounting_entries = []
+        return instances
+
+    # 페이징된 instances 대상 분개 쿼리 실행
+    entries_qs = CompanyAccountingEntry.objects.filter(
+        transaction_id__in=transaction_ids
+    ).select_related('account', 'affiliate', 'affiliate__company', 'affiliate__project')
+
+    entries_map = defaultdict(list)
+    for entry in entries_qs:
+        entries_map[entry.transaction_id].append(entry)
+
+    for tx in instances:
+        tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
+
+    return instances

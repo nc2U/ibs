@@ -257,6 +257,7 @@ class AsyncImportExportMixin(ImportExportMixin):
 @admin.register(ImportJob)
 class ImportJobAdmin(admin.ModelAdmin):
     """가져오기/내보내기 작업 관리"""
+    list_select_related = ('creator',)
     list_display = ('id', 'job_type', 'resource_type', 'status', 'progress_bar',
                     'success_count', 'error_count', 'creator', 'created_at', 'duration_display')
     list_filter = ('job_type', 'resource_type', 'status', 'created_at')

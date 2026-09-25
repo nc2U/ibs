@@ -30,7 +30,7 @@ User = get_user_model()
     max_retries=3,
     retry_jitter=True
 )
-def async_import_ledger_account(self, file_path: str, user_id: int, resource_type: str = 'company_account') -> dict:
+def async_import_ledger_account(self, file_path: str, user_id: int, resource_type: str = 'company_bank_transaction') -> dict:
     """
     Ledger 관련 데이터를 비동기로 가져오기
 
@@ -38,8 +38,6 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
         file_path: 업로드된 파일 경로
         user_id: 사용자 ID
         resource_type: 리소스 타입
-            - 'company_account': 본사 계정 과목
-            - 'project_account': 프로젝트 계정 과목
             - 'company_bank_transaction': 본사 은행 거래
             - 'project_bank_transaction': 프로젝트 은행 거래
             - 'company_accounting_entry': 본사 회계 분개
@@ -195,7 +193,7 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
 
 
 @shared_task(bind=True)
-def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource_type: str = 'company_account') -> dict:
+def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource_type: str = 'company_bank_transaction') -> dict:
     """
     Ledger 관련 데이터를 비동기로 내보내기
 
@@ -203,8 +201,6 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
         queryset_ids: 내보낼 객체의 ID 목록
         user_id: 사용자 ID
         resource_type: 리소스 타입
-            - 'company_account': 본사 계정 과목
-            - 'project_account': 프로젝트 계정 과목
             - 'company_bank_transaction': 본사 은행 거래
             - 'project_bank_transaction': 프로젝트 은행 거래
             - 'company_accounting_entry': 본사 회계 분개

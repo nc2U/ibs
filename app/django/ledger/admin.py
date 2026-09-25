@@ -24,6 +24,7 @@ from ledger.resources import (
 
 class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
     """Account Admin 공통 기능 (CompanyAccount, ProjectAccount에서 상속)"""
+    list_select_related = ('parent',)
     list_display = (
         'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_transfer_fee', 'is_active', 'order'
@@ -248,6 +249,7 @@ class ProjectAccountAdmin(BaseAccountAdmin):
 
 @admin.register(CompanyBankAccount)
 class CompanyBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_select_related = ('company', 'depart', 'bankcode')
     list_display = ('id', 'order', 'company', 'depart', 'bankcode', 'alias_name',
                     'number', 'holder', 'open_date', 'note', 'is_hide', 'inactive')
     list_editable = ('order', 'number', 'is_hide', 'inactive')
@@ -259,6 +261,7 @@ class CompanyBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ProjectBankAccount)
 class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_select_related = ('project', 'bankcode')
     list_display = ('id', 'order', 'project', 'alias_name', 'bankcode', 'number',
                     'holder', 'open_date', 'note', 'is_hide', 'inactive', 'directpay', 'is_imprest')
     list_editable = ('order', 'number', 'is_hide', 'inactive', 'directpay', 'is_imprest')
@@ -275,6 +278,7 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyBankTransaction)
 class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyBankTransactionResource
+    list_select_related = ('company', 'bank_account', 'sort', 'creator')
     list_display = ('id', 'transaction_id_short', 'company', 'bank_account', 'deal_date',
                     'sort', 'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -376,6 +380,7 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(ProjectBankTransaction)
 class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectBankTransactionResource
+    list_select_related = ('project', 'bank_account', 'sort', 'creator')
     list_display = ('id', 'transaction_id_short', 'project', 'bank_account', 'deal_date', 'sort',
                     'formatted_amount', 'content', 'is_balanced', 'creator', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -482,6 +487,7 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyAccountingEntry)
 class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyAccountingEntryResource
+    list_select_related = ('company', 'account', 'affiliate')
     list_display = ('id', 'transaction_id_short', 'company', 'account_display',
                     'affiliate_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -555,6 +561,7 @@ class CompanyAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 @admin.register(ProjectAccountingEntry)
 class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = ProjectAccountingEntryResource
+    list_select_related = ('project', 'account', 'contract', 'contractor')
     list_display = ('id', 'transaction_id_short', 'project', 'account_display', 'contract_display',
                     'contractor_display', 'formatted_amount', 'trader', 'evidence_type', 'created_at')
     list_display_links = ('transaction_id_short',)
@@ -618,6 +625,7 @@ class ProjectAccountingEntryAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Affiliate)
 class AffiliateAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_select_related = ('company', 'project')
     list_display = ('id', 'sort_display', 'company', 'project', 'description_short', 'created_at')
     list_display_links = ('id',)
     list_filter = ('sort', 'company', 'project')
@@ -663,6 +671,7 @@ class AffiliateAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(CompanyLedgerCalculation)
 class CompanyLedgerCalculationAdmin(admin.ModelAdmin):
     """본사 원장 정산 Admin"""
+    list_select_related = ('company', 'creator')
     list_display = ('company', 'calculated', 'creator', 'created_at', 'updated_at')
     list_filter = ('company', 'calculated')
     readonly_fields = ('created_at', 'updated_at')
@@ -680,6 +689,7 @@ class CompanyLedgerCalculationAdmin(admin.ModelAdmin):
 @admin.register(ProjectLedgerCalculation)
 class ProjectLedgerCalculationAdmin(admin.ModelAdmin):
     """프로젝트 원장 정산 Admin"""
+    list_select_related = ('project', 'creator')
     list_display = ('project', 'calculated', 'creator', 'created_at', 'updated_at')
     list_filter = ('project', 'calculated')
     readonly_fields = ('created_at', 'updated_at')

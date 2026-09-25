@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.db import transaction as db_transaction
 from django.db.models import Sum, F, Case, When, Count, Q
+from django.utils import timezone
 from django_filters import CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
@@ -18,7 +19,7 @@ from ledger.models import (
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
-from ledger.services.company_transaction import get_company_transactions
+from ledger.services.company_transaction import get_company_transactions, prefetch_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
@@ -34,7 +35,12 @@ from ..serializers.ledger import (
     ProjectLedgerLastDealDateSerializer,
 )
 
-TODAY = datetime.today().strftime('%Y-%m-%d')
+
+def get_today_str():
+    return timezone.localdate().strftime('%Y-%m-%d')
+
+
+TODAY = get_today_str()
 
 
 # ============================================
@@ -456,19 +462,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         instances = page if page is not None else list(queryset)
 
-        transaction_ids = [t.transaction_id for t in instances]
-        if transaction_ids:
-            entries = CompanyAccountingEntry.objects.filter(
-                transaction_id__in=transaction_ids
-            ).select_related('account', 'affiliate', 'affiliate__company', 'affiliate__project')
-            entries_map = defaultdict(list)
-            for entry in entries:
-                entries_map[entry.transaction_id].append(entry)
-            for tx in instances:
-                tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
-        else:
-            for tx in instances:
-                tx.prefetched_accounting_entries = []
+        prefetch_company_transactions(instances)
 
         serializer = self.get_serializer(instances, many=True)
         if page is not None:
@@ -485,7 +479,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def balance_by_account(self, request):
         """계좌별 잔액 조회 (누적 + 당일 입출금)"""
-        date = request.query_params.get('date', TODAY)
+        date = request.query_params.get('date', get_today_str())
         company = request.query_params.get('company')
         is_balance = request.query_params.get('is_balance', '')
 
@@ -527,7 +521,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def daily_transactions(self, request):
         """특정일 거래 내역 조회"""
-        date = request.query_params.get('date', TODAY)
+        date = request.query_params.get('date', get_today_str())
         company = request.query_params.get('company')
 
         if not company:
@@ -536,34 +530,14 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1. 기본 쿼리셋 (잘못된 prefetch 제거)
-        transactions = self.get_queryset().filter(
+        transactions = list(self.get_queryset().filter(
             company_id=company,
             deal_date=date
         ).select_related(
             'bank_account', 'sort', 'creator'
-        ).order_by('sort_id', 'created_at')
+        ).order_by('sort_id', 'created_at'))
 
-        # 2. 수동으로 prefetch 하기
-        transaction_ids = [t.transaction_id for t in transactions]
-
-        if transaction_ids:
-            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
-            accounting_entries = CompanyAccountingEntry.objects.filter(
-                transaction_id__in=transaction_ids
-            ).select_related('account')
-
-            # transaction_id를 키로 하는 딕셔너리 생성
-            entries_map = defaultdict(list)
-            for entry in accounting_entries:
-                entries_map[entry.transaction_id].append(entry)
-
-            # 각 거래 객체에 미리 가져온 분개 리스트를 할당
-            for transaction in transactions:
-                transaction.prefetched_accounting_entries = entries_map.get(transaction.transaction_id, [])
-        else:
-            for transaction in transactions:
-                transaction.prefetched_accounting_entries = []
+        prefetch_company_transactions(transactions)
 
         serializer = CompanyBankTransactionSerializer(transactions, many=True)
         return Response({'results': serializer.data})
@@ -645,7 +619,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def balance_by_account(self, request):
         """계좌별 잔액 조회"""
-        date = request.query_params.get('date', TODAY)
+        date = request.query_params.get('date', get_today_str())
         project = request.query_params.get('project')
         is_balance = request.query_params.get('is_balance', '')
 
@@ -701,7 +675,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     def daily_transactions(self, request):
         """특정일 거래 내역 조회"""
 
-        date = request.query_params.get('date', TODAY)
+        date = request.query_params.get('date', get_today_str())
         project = request.query_params.get('project')
 
         if not project:
@@ -710,34 +684,14 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1. 기본 쿼리셋 (잘못된 prefetch 제거)
-        transactions = self.get_queryset().filter(
+        transactions = list(self.get_queryset().filter(
             project_id=project,
             deal_date=date
         ).select_related(
             'bank_account', 'sort', 'creator'
-        ).order_by('sort_id', 'created_at')
+        ).order_by('sort_id', 'created_at'))
 
-        # 2. 수동으로 prefetch 하기
-        transaction_ids = [t.transaction_id for t in transactions]
-
-        if transaction_ids:
-            # 관련된 모든 회계 분개를 한 번의 쿼리로 가져오기
-            accounting_entries = ProjectAccountingEntry.objects.filter(
-                transaction_id__in=transaction_ids
-            ).select_related('account')
-
-            # transaction_id를 키로 하는 딕셔너리 생성
-            entries_map = defaultdict(list)
-            for entry in accounting_entries:
-                entries_map[entry.transaction_id].append(entry)
-
-            # 각 거래 객체에 미리 가져온 분개 리스트를 할당
-            for transaction in transactions:
-                transaction.prefetched_accounting_entries = entries_map.get(transaction.transaction_id, [])
-        else:
-            for transaction in transactions:
-                transaction.prefetched_accounting_entries = []
+        prefetch_project_transactions(transactions)
 
         serializer = ProjectBankTransactionSerializer(transactions, many=True)
         return Response({'results': serializer.data})
@@ -1142,9 +1096,10 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
                     try:
                         from project.models import Project
                         prj = Project.objects.select_related('issue_project').get(pk=bank_transaction.project_id)
-                        user_perms = set(prj.issue_project.get_user_permissions(user))
-                        if 'ledger.manage' in user_perms:
-                            has_manage_perm = True
+                        if hasattr(prj, 'issue_project') and prj.issue_project:
+                            user_perms = set(prj.issue_project.get_user_permissions(user))
+                            if 'ledger.manage' in user_perms:
+                                has_manage_perm = True
                     except Exception:
                         pass
 

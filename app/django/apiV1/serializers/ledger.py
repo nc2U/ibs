@@ -374,7 +374,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                             try:
                                 from apiV1.permissions.ibs_perms import HqProjectModulePermission
                                 user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
-                                if 'ledger.com_manage' in user_perms:
+                                if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
                                     has_manage_perm = True
                             except Exception:
                                 pass
@@ -688,9 +688,10 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                             try:
                                 from project.models import Project
                                 prj = Project.objects.select_related('issue_project').get(pk=project_id)
-                                user_perms = set(prj.issue_project.get_user_permissions(user))
-                                if 'ledger.manage' in user_perms:
-                                    has_manage_perm = True
+                                if hasattr(prj, 'issue_project') and prj.issue_project:
+                                    user_perms = set(prj.issue_project.get_user_permissions(user))
+                                    if 'ledger.manage' in user_perms:
+                                        has_manage_perm = True
                             except Exception:
                                 pass
 
@@ -1058,7 +1059,7 @@ class CompanyLedgerLastDealDateSerializer(serializers.ModelSerializer):
 
 
 class ProjectLedgerCalculationSerializer(serializers.ModelSerializer):
-    """본사 원장 정산 시리얼라이저"""
+    """프로젝트 원장 정산 시리얼라이저"""
     creator_name = serializers.CharField(source='creator.username', read_only=True)
 
     class Meta:

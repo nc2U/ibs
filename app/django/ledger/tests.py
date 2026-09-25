@@ -709,3 +709,133 @@ class HqLedgerAndGlobalVisibilityTests(LedgerTestBase):
         wm_tx_ids = [item['pk'] for item in res_wm_pr.data['results']]
         self.assertIn(tx_a.pk, wm_tx_ids)
         self.assertIn(tx_b.pk, wm_tx_ids)
+
+    def test_company_transaction_is_balanced_filtering(self):
+        """본사 거래 is_balanced=true / false 필터링이 500 FieldError 없이 정상 작동하는지 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        com_account = CompanyAccount.objects.create(
+            code='1100', name='본사 보통예금', category='asset', direction='deposit',
+            is_active=True, is_category_only=False
+        )
+
+        # 1. 균형 거래: 10,000,000원 거래 + 10,000,000원 분개
+        tx_balanced = CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=self.hq_bank_acc, deal_date=date(2026, 7, 5),
+            amount=10000000, sort=self.sort_deposit, content='균형 거래', creator=self.admin_user
+        )
+        CompanyAccountingEntry.objects.create(
+            transaction_id=tx_balanced.transaction_id, company=self.company,
+            account=com_account, amount=10000000, trader='균형처'
+        )
+
+        # 2. 불균형 거래: 20,000,000원 거래 + 5,000,000원 분개
+        tx_unbalanced = CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=self.hq_bank_acc, deal_date=date(2026, 7, 6),
+            amount=20000000, sort=self.sort_deposit, content='불균형 거래', creator=self.admin_user
+        )
+        CompanyAccountingEntry.objects.create(
+            transaction_id=tx_unbalanced.transaction_id, company=self.company,
+            account=com_account, amount=5000000, trader='불균형처'
+        )
+
+        # is_balanced=true 필터링
+        res_true = self.client.get(
+            f'/api/v1/ledger/company-transaction/?company={self.company.pk}&is_balanced=true'
+        )
+        self.assertEqual(res_true.status_code, http_status.HTTP_200_OK)
+        pks_true = [item['pk'] for item in res_true.data['results']]
+        self.assertIn(tx_balanced.pk, pks_true)
+        self.assertNotIn(tx_unbalanced.pk, pks_true)
+
+        # is_balanced=false 필터링
+        res_false = self.client.get(
+            f'/api/v1/ledger/company-transaction/?company={self.company.pk}&is_balanced=false'
+        )
+        self.assertEqual(res_false.status_code, http_status.HTTP_200_OK)
+        pks_false = [item['pk'] for item in res_false.data['results']]
+        self.assertNotIn(tx_balanced.pk, pks_false)
+        self.assertIn(tx_unbalanced.pk, pks_false)
+
+    def test_company_transaction_search_and_category_filter_combined(self):
+        """본사 거래에서 search와 account_category 필터가 결합될 때 AND로 결합되어 카테고리 필터가 유지되는지 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        acc_rev = CompanyAccount.objects.create(
+            code='4100', name='용역수수료수익', category='revenue', direction='deposit',
+            is_active=True, is_category_only=False
+        )
+        acc_exp = CompanyAccount.objects.create(
+            code='5100', name='지급수수료비용', category='expense', direction='withdraw',
+            is_active=True, is_category_only=False
+        )
+
+        tx_rev = CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=self.hq_bank_acc, deal_date=date(2026, 7, 7),
+            amount=3000000, sort=self.sort_deposit, content='수익 거래', creator=self.admin_user
+        )
+        CompanyAccountingEntry.objects.create(
+            transaction_id=tx_rev.transaction_id, company=self.company,
+            account=acc_rev, amount=3000000, trader='고객사'
+        )
+
+        tx_exp = CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=self.hq_bank_acc, deal_date=date(2026, 7, 8),
+            amount=500000, sort=self.sort_withdraw, content='비용 거래', creator=self.admin_user
+        )
+        CompanyAccountingEntry.objects.create(
+            transaction_id=tx_exp.transaction_id, company=self.company,
+            account=acc_exp, amount=500000, trader='협력사'
+        )
+
+        # 검색어 '수수료' + category='revenue' -> tx_rev만 나와야 하고 tx_exp는 제외되어야 함
+        res = self.client.get(
+            f'/api/v1/ledger/company-transaction/?company={self.company.pk}&account_category=revenue&search=수수료'
+        )
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        pks = [item['pk'] for item in res.data['results']]
+        self.assertIn(tx_rev.pk, pks)
+        self.assertNotIn(tx_exp.pk, pks)
+
+    def test_company_composite_transaction_hq_manage_perm_support(self):
+        """hq.ledger.manage 권한을 가진 사용자는 본사 정산 마감일 이전의 거래도 수정/삭제 가능"""
+        # 본사 정산일 설정 (2026-07-10)
+        CompanyLedgerCalculation.objects.create(
+            company=self.company, calculated=date(2026, 7, 10), creator=self.admin_user
+        )
+
+        # HQ 담당자 유저 생성 및 hq.ledger.manage 권한 부여
+        hq_user = User.objects.create_user(
+            username='hq_manager_user', email='hqm@test.com', password='password123'
+        )
+        perm_hq_delete, _ = Permission.objects.get_or_create(
+            code='hq.ledger.delete', defaults={'name': '본사 원장 삭제', 'module': 'ledger', 'is_for_hq': True}
+        )
+        role_hq_manage = Role.objects.create(
+            name='본사 경영관리자', creator=self.admin_user, category='ibs_hq_manage'
+        )
+        role_hq_manage.permissions.add(self.perm_hq_read, perm_hq_delete, self.perm_hq_manage)
+        member_hq = Member.objects.create(project=self.hq_issue_project, user=hq_user)
+        member_hq.roles.add(role_hq_manage)
+
+        # 마감일 이전의 거래 (2026-07-05)
+        com_acc = CompanyAccount.objects.create(
+            code='1101', name='본사 보통예금2', category='asset', direction='deposit',
+            is_active=True, is_category_only=False
+        )
+        tx_locked = CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=self.hq_bank_acc, deal_date=date(2026, 7, 5),
+            amount=5000000, sort=self.sort_deposit, content='마감일 이전 거래', creator=self.admin_user
+        )
+        entry_locked = CompanyAccountingEntry.objects.create(
+            transaction_id=tx_locked.transaction_id, company=self.company,
+            account=com_acc, amount=5000000, trader='거래처'
+        )
+
+        # hq.ledger.manage 권한자로 로그인하여 거래 삭제 시도 -> 204 No Content 성공해야 함
+        self.client.force_authenticate(user=hq_user)
+        res_del = self.client.delete(
+            f'/api/v1/ledger/company-composite-transaction/{tx_locked.pk}/'
+        )
+        self.assertEqual(res_del.status_code, http_status.HTTP_204_NO_CONTENT)
+        self.assertFalse(CompanyBankTransaction.objects.filter(pk=tx_locked.pk).exists())
