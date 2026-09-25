@@ -151,6 +151,11 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         }
 
     def get_unread_count(self, obj):
+        # list() 오버라이드에서 단일 집계 쿼리로 사전 산출한 결과가 있으면 추가 쿼리 없이 반환
+        unread_counts = self.context.get('unread_counts')
+        if unread_counts is not None:
+            return unread_counts.get(obj.id, 0)
+        # fallback: context 없이 단건 직렬화 시 (retrieve, get_or_create_dm 등)
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return 0

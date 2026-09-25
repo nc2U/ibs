@@ -106,6 +106,49 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             defaults={'is_admin': True}
         )
 
+    def list(self, request, *args, **kwargs):
+        """
+        대화방 목록 반환 — 미읽음 카운트를 단일 집계 쿼리로 일괄 산출하여 N+1 방지
+        (default list()는 serializer.get_unread_count()를 방마다 COUNT 쿼리로 호출하는 문제 해결)
+        """
+        from django.db.models import Case, When, IntegerField, Sum
+
+        qs = self.get_queryset()
+        room_ids = list(qs.values_list('id', flat=True))
+
+        # 내 last_read_message_id 일괄 조회
+        my_reads = dict(
+            ChatRoomMember.objects.filter(room_id__in=room_ids, user=request.user)
+            .values_list('room_id', 'last_read_message_id')
+        )
+
+        # 방별 미읽음 메시지 수 — CASE/WHEN 패턴으로 단일 집계 (total_unread 와 동일 패턴)
+        unread_counts = {}
+        if room_ids:
+            whens = [
+                When(room_id=rid, id__gt=my_reads.get(rid, 0), then=1)
+                for rid in room_ids
+            ]
+            rows = (
+                ChatMessage.objects
+                .filter(room_id__in=room_ids)
+                .exclude(sender=request.user)
+                .values('room_id')
+                .annotate(
+                    unread=Coalesce(
+                        Sum(Case(*whens, default=0, output_field=IntegerField())),
+                        0,
+                    )
+                )
+            )
+            unread_counts = {row['room_id']: row['unread'] for row in rows}
+
+        serializer = self.get_serializer(
+            qs, many=True,
+            context={**self.get_serializer_context(), 'unread_counts': unread_counts},
+        )
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get', 'post'], url_path='get-or-create-self')
     def get_or_create_self(self, request):
         """
@@ -146,8 +189,13 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if not target_user_id:
             return Response({'error': 'target_user_id가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            target_user_id = int(target_user_id)
+        except (ValueError, TypeError):
+            return Response({'error': '잘못된 target_user_id 형식입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         # 자기 자신에게 보낸 경우 '나와의 채팅'으로 자동 연결
-        if int(target_user_id) == request.user.pk:
+        if target_user_id == request.user.pk:
             return self.get_or_create_self(request)
 
         target_user = User.objects.filter(pk=target_user_id, is_active=True, is_system=False).first()
@@ -391,13 +439,16 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         elif after_id:
             qs = qs.filter(id__gt=after_id).order_by('created')
 
-        messages = list(qs[:page_size])
-        # before_id 방식은 역순으로 가져온 뒤 다시 오름차순 정렬
+        # page_size+1개를 가져와 초과 여부를 판단 → qs.count() 추가 쿼리 제거
+        fetched = list(qs[:page_size + 1])
+        has_more = len(fetched) > page_size
+        messages = fetched[:page_size]
+
+        # before_id / 기본(최신순) 방식은 역순 정렬 후 오름차순으로 반환
         if before_id or (not before_id and not after_id):
             messages = list(reversed(messages))
 
         serializer = self.get_serializer(messages, many=True)
-        has_more = qs.count() > page_size if messages else False
         return Response({
             'results': serializer.data,
             'has_more': has_more,
@@ -445,21 +496,20 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                 reply_to_detail = {
                     'id': target.id,
                     'sender_name': (t_profile.name if t_profile and t_profile.name else None) or (target.sender.username if target.sender else '알 수 없음'),
-                    'content': target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]'),
+                    'content': '삭제된 메시지입니다.' if target.is_deleted else (target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]')),
                     'message_type': target.message_type,
                 }
 
             room = msg.room
-            unread_cnt = 0
             if room.room_type == 'self':
                 unread_cnt = 0
             elif room.room_type == 'direct':
                 unread_cnt = 1
             elif room.room_type == 'channel' and room.project:
-                pjt_mems = room.project.all_members()
-                unread_cnt = max(0, len(pjt_mems) - 1)
+                from work.models.project import Member as ProjectMember
+                unread_cnt = max(0, ProjectMember.objects.filter(project=room.project).exclude(user=msg.sender).count())
             else:
-                unread_cnt = max(0, room.members.exclude(pk=msg.sender.pk).count() if msg.sender else 0)
+                unread_cnt = max(0, room.memberships.exclude(user=msg.sender).count() if msg.sender else 0)
 
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(

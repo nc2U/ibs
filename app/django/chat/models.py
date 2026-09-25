@@ -156,3 +156,12 @@ class ChatMessage(models.Model):
     def __str__(self):
         sender_name = self.sender.username if self.sender else '시스템'
         return f"[{self.room.title}] {sender_name}: {self.content[:30]}"
+
+    def save(self, *args, **kwargs):
+        # 파일 첨부 시 file_size 자동 산출 (클라이언트 미전달 방어)
+        if self.file and not self.file_size:
+            try:
+                self.file_size = self.file.size
+            except Exception:
+                pass
+        super().save(*args, **kwargs)

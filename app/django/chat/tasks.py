@@ -77,7 +77,7 @@ def send_chat_push_notification(self, message_id):
         )
         return f"Chat push sent for message #{message_id} to {len(target_user_ids)} users"
     except ChatMessage.DoesNotExist:
-        logger.warning(f"ChatMessage #{message_id} does not exist for push notification.")
+        logger.warning("ChatMessage #%s does not exist for push notification.", message_id)
     except Exception as e:
-        logger.error(f"Error sending chat push notification: {e}")
+        logger.error("Error sending chat push notification: %s", e, exc_info=True)
         raise self.retry(exc=e)

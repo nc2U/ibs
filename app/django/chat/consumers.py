@@ -210,13 +210,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 reply_to_detail = {
                     'id': target.id,
                     'sender_name': target_sender_name,
-                    'content': target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]'),
+                    'content': '삭제된 메시지입니다.' if target.is_deleted else (target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]')),
                     'message_type': target.message_type,
                 }
             except ChatMessage.DoesNotExist:
                 pass
 
         # sender 프로필 정보 (이름, 이미지)
+        sender_avatar = None  # 예외 발생 시 NameError 방지 — try 블록 밖에서 기본값 선언
         try:
             profile = user.profile
             sender_name = profile.name or user.username
@@ -224,16 +225,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception:
             sender_name = user.username
         # 새 메시지 생성 직후의 안 읽은 인원수 (발신자 본인 제외)
-        unread_cnt = 0
+        # channel: all_members()의 계층 조회 비용 제거 → ProjectMember 기반 단순 COUNT로 대체
         if room.room_type == 'self':
             unread_cnt = 0
         elif room.room_type == 'direct':
             unread_cnt = 1
         elif room.room_type == 'channel' and room.project:
-            pjt_mems = room.project.all_members()
-            unread_cnt = max(0, len(pjt_mems) - 1)
+            from work.models.project import Member as ProjectMember
+            unread_cnt = max(0, ProjectMember.objects.filter(project=room.project).exclude(user=user).count())
         else:
-            unread_cnt = max(0, room.members.exclude(pk=user.pk).count())
+            unread_cnt = max(0, room.memberships.exclude(user=user).count())
 
         return {
             'id': msg.id,
