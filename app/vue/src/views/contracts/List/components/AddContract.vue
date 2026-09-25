@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { AlertLight } from '@/utils/cssMixins'
 import ContractForm from './ContractForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
@@ -17,7 +16,7 @@ const createConfirm = () => createFormModal.value.callModal()
 </script>
 
 <template>
-  <CAlert :color="AlertLight" variant="solid" class="text-right">
+  <CAlert variant="solid" class="text-right bg-more-light">
     <v-btn color="primary" :disabled="!project" @click="createConfirm"> 신규등록</v-btn>
   </CAlert>
 
