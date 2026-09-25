@@ -229,7 +229,8 @@ class IbsModulePermission(ProjectPermission):
                 .get(pk=project_pk)
                 .issue_project
             )
-        except (Project.DoesNotExist, Project.issue_project.RelatedObjectDoesNotExist, AttributeError):
+        except (Project.DoesNotExist, Project.issue_project.RelatedObjectDoesNotExist,
+                AttributeError, ValueError, TypeError):
             issue_project = None
 
         if request is not None:
@@ -351,7 +352,10 @@ class IbsModulePermission(ProjectPermission):
                     project_pk = getattr(period, 'project_id', None)
 
         if project_pk is not None:
-            project_pk = int(project_pk) if not isinstance(project_pk, int) else project_pk
+            try:
+                project_pk = int(project_pk)
+            except (ValueError, TypeError):
+                project_pk = None
 
         issue_project = self._resolve_project_issue_project(project_pk, request)
 

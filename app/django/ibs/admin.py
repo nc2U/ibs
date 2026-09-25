@@ -2,7 +2,8 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
 from .models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
-                     ProjectAccountD2, ProjectAccountD3, WiseSaying)
+                     ProjectAccountD2, ProjectAccountD3, UserWidgetConfig,
+                     CalendarSchedule, WiseSaying)
 
 
 @admin.register(AccountSort)
@@ -47,7 +48,7 @@ class AccountSubD3Admin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('d2__d1', 'd2')
 
 
-class ProjectAccountD3Inline(ImportExportMixin, admin.TabularInline):
+class ProjectAccountD3Inline(admin.TabularInline):
     model = ProjectAccountD3
 
 
@@ -67,6 +68,21 @@ class ProjectAccountD3Admin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('is_payment', 'is_related_contract', 'description')
     list_filter = ('d2__d1', 'sort', 'd2')
     search_fields = ('name', 'description')
+
+
+@admin.register(UserWidgetConfig)
+class UserWidgetConfigAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'version', 'created', 'updated')
+    list_display_links = ('user',)
+    search_fields = ('user__username', 'user__name')
+
+
+@admin.register(CalendarSchedule)
+class CalendarScheduleAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'title', 'all_day', 'start_date', 'end_date', 'creator', 'created')
+    list_display_links = ('title',)
+    list_filter = ('all_day', 'start_date', 'created')
+    search_fields = ('title', 'creator__username', 'creator__name')
 
 
 @admin.register(WiseSaying)

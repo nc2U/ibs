@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apiV1.serializers.accounts import SimpleUserSerializer
 from ibs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
                         ProjectAccountD2, ProjectAccountD3, UserWidgetConfig,
                         CalendarSchedule, WiseSaying)
@@ -27,7 +28,7 @@ class AccountSubD2Serializer(serializers.ModelSerializer):
 class AccountSubD3Serializer(serializers.ModelSerializer):
     class Meta:
         model = AccountSubD3
-        fields = ('pk', 'd2', 'code', 'name', 'description', 'is_hide', 'is_special')
+        fields = ('pk', 'sort', 'd2', 'code', 'name', 'description', 'is_hide', 'is_special')
 
 
 class ProjectAccountD2Serializer(serializers.ModelSerializer):
@@ -41,7 +42,7 @@ class ProjectAccountD2Serializer(serializers.ModelSerializer):
 class ProjectAccountD3Serializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectAccountD3
-        fields = ('pk', 'd2', 'code', 'is_related_contract', 'name', 'description')
+        fields = ('pk', 'sort', 'd2', 'code', 'is_payment', 'is_related_contract', 'name', 'description')
 
 
 class UserWidgetConfigSerializer(serializers.ModelSerializer):
@@ -51,7 +52,6 @@ class UserWidgetConfigSerializer(serializers.ModelSerializer):
 
 
 class CalendarScheduleSerializer(serializers.ModelSerializer):
-    from apiV1.serializers.accounts import SimpleUserSerializer
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:

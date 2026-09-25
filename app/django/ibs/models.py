@@ -107,6 +107,7 @@ class UserWidgetConfig(models.Model):
         return f'{self.user.username}의 대시보드 설정'
 
     class Meta:
+        ordering = ['-id']
         verbose_name = '07. 대시보드 위젯 설정'
         verbose_name_plural = '07. 대시보드 위젯 설정'
 
@@ -122,6 +123,14 @@ class CalendarSchedule(models.Model):
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
 
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['-id']
+        verbose_name = '08. 캘린더 일정'
+        verbose_name_plural = '08. 캘린더 일정'
+
 
 class WiseSaying(models.Model):
     saying_ko = models.CharField(max_length=300)
@@ -132,5 +141,6 @@ class WiseSaying(models.Model):
         return f'{self.saying_ko} - {self.spoked_by}'
 
     class Meta:
+        ordering = ['id']
         verbose_name = "오늘의 한마디"
         verbose_name_plural = "오늘의 한마디"

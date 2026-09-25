@@ -1,5 +1,3 @@
-from datetime import date
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.views import generic
@@ -11,8 +9,6 @@ from ibs.models import ProjectAccountD3
 from project.models import Project
 
 # --------------------------------------------------------
-
-TODAY = date.today()
 
 
 def install_check(request):
@@ -40,8 +36,7 @@ def menu2_1(request):
 
 
 class CustomHandler404(generic.View):
-    @staticmethod
-    def get(request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         context = {}
         return render(request, "errors/404.html", context, status=404)
 
