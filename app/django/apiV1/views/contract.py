@@ -191,7 +191,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장
         from_page = self.request.data.get('from_page')
-        instance = serializer.save(creator=self.request.user)
+        instance = serializer.save(updator=self.request.user)
 
         # 인스턴스에 from_page 정보 임시 저장 (슬랙 알림에서 사용)
         if from_page:
@@ -764,7 +764,8 @@ class ContAddressViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(creator=self.request.user)
+        # 업데이트 시 최초 등록자(creator) 정보 유지
+        serializer.save()
 
 
 class ContContactViewSet(viewsets.ModelViewSet):
@@ -776,7 +777,8 @@ class ContContactViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(creator=self.request.user)
+        # 업데이트 시 최초 등록자(creator) 정보 유지
+        serializer.save()
 
 
 class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):

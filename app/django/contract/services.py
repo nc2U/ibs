@@ -642,10 +642,12 @@ class PaymentProcessingService:
         order_group_sort = int(data.get('order_group_sort'))
 
         # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 매출금=분양대금)
-        index = order_group_sort - 1
         category = ('equity', 'revenue')
+        target_category = category[0] if order_group_sort == 1 else category[1]
         payment_accounts = ProjectAccount.objects.filter(is_payment=True)
-        account = payment_accounts.get(category=category[index]) or payment_accounts[index]
+        account = payment_accounts.filter(category=target_category).first()
+        if not account and payment_accounts.exists():
+            account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
 
         # 납부 정보
         bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
@@ -1120,23 +1122,37 @@ class ContractorReleaseService:
         회계 분개의 계정을 환불 계정으로 변경
 
         우선순위:
-        1. 같은 parent 하위의 입금(deposit) + 계약자 관련 계정
-        2. Fallback: account.pk + 1 계정
+        1. 같은 parent 하위의 입금(deposit) + 계약자 관련 + 해지자 계정
+        2. 같은 parent 하위의 입금(deposit) + 계약자 관련 계정
+        3. 동일 category의 계약자 관련 + 해지자 계정
         """
-        # 1순위: 더 정확한 환불 계정 찾기
+        # 1순위: 같은 parent 하위의 입금 + 해지자 계정 찾기
         refund_account = ProjectAccount.objects.filter(
             parent=accounting_entry.account.parent,
             direction='deposit',
-            is_related_contractor=True
+            is_related_contractor=True,
+            name__contains='해지자'
         ).first()
 
-        # 2순위: Fallback - pk + 1 방식
+        # 2순위: 같은 parent 하위의 입금 + 계약자 관련 계정
         if not refund_account:
-            try:
-                refund_account_pk = accounting_entry.account.pk + 1
-                refund_account = ProjectAccount.objects.get(pk=refund_account_pk)
-            except ProjectAccount.DoesNotExist:
-                return False
+            refund_account = ProjectAccount.objects.filter(
+                parent=accounting_entry.account.parent,
+                direction='deposit',
+                is_related_contractor=True
+            ).first()
+
+        # 3순위: 동일 카테고리의 해지자 계정
+        if not refund_account:
+            refund_account = ProjectAccount.objects.filter(
+                category=accounting_entry.account.category,
+                direction='deposit',
+                is_related_contractor=True,
+                name__contains='해지자'
+            ).first()
+
+        if not refund_account:
+            return False
 
         # 환불 계정 적용
         accounting_entry.account = refund_account
