@@ -252,6 +252,48 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             inbound.approval_document = doc
             inbound.save(update_fields=['approval_document'])
 
+    def update(self, request, *args, **kwargs):
+        """[C-2] 기안자 본인 및 수정 가능 상태 검증 (무단 변조 차단)"""
+        instance = self.get_object()
+        user = request.user
+        if not user.is_superuser:
+            if instance.drafter != user:
+                return Response({'detail': '기안자 본인만 결재 문서를 수정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+            if instance.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
+                return Response(
+                    {'detail': '임시저장 또는 반려 상태의 문서만 수정할 수 있습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        """[C-2] 기안자 본인 및 수정 가능 상태 검증 (무단 변조 차단)"""
+        instance = self.get_object()
+        user = request.user
+        if not user.is_superuser:
+            if instance.drafter != user:
+                return Response({'detail': '기안자 본인만 결재 문서를 수정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+            if instance.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
+                return Response(
+                    {'detail': '임시저장 또는 반려 상태의 문서만 수정할 수 있습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """[C-2] 기안자 본인 및 삭제 가능 상태 검증 (무단 삭제 차단)"""
+        instance = self.get_object()
+        user = request.user
+        if not user.is_superuser:
+            if instance.drafter != user:
+                return Response({'detail': '기안자 본인만 결재 문서를 삭제할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+            if instance.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
+                return Response(
+                    {'detail': '임시저장 또는 반려 상태의 문서만 삭제할 수 있습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        return super().destroy(request, *args, **kwargs)
+
     def perform_update(self, serializer):
         doc = serializer.save()
         inbound = doc.related_inbound_letter

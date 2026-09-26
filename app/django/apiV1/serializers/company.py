@@ -292,6 +292,25 @@ class StaffSerializer(serializers.ModelSerializer):
                   'duty_name', 'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
                   'assignments', 'executive')
 
+    def to_representation(self, instance):
+        """[H-2] 본인 또는 관리자(슈퍼유저)가 아닌 경우 주민등록번호 마스킹 처리"""
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        is_owner = user and instance.user_id == user.pk
+        is_admin = user and (user.is_superuser or getattr(user, 'work_manager', False))
+
+        if not (is_owner or is_admin):
+            id_num = data.get('id_number')
+            if id_num:
+                cleaned = str(id_num).replace('-', '').strip()
+                if len(cleaned) >= 7:
+                    data['id_number'] = f"{cleaned[:6]}-{'*' * (len(cleaned) - 6)}"
+                else:
+                    data['id_number'] = '*******'
+        return data
+
     def create(self, validated_data):
         dept_name = validated_data.pop('department_name', None) or self.initial_data.get('department')
         pos_name = validated_data.pop('position_name', None) or self.initial_data.get('position')

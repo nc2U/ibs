@@ -69,6 +69,30 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser:
+            return qs
+        return qs.filter(company_id__in=get_accessible_company_ids(user))
+
+
+def get_accessible_company_ids(user):
+    """[C-1] 사용자가 접근 가능한 소속 회사 ID 목록을 반환합니다 (Staff 소속 또는 본사 워크스페이스 멤버)"""
+    if not user or not user.is_authenticated:
+        return []
+    company_ids = set()
+    staff = getattr(user, 'staff', None)
+    if staff and staff.company_id:
+        company_ids.add(staff.company_id)
+    member_companies = IssueProject.objects.filter(
+        type='1',
+        members__user=user,
+        company__isnull=False
+    ).values_list('company_id', flat=True)
+    company_ids.update(member_companies)
+    return list(company_ids)
+
 
 def get_accessible_project_ids(user):
     return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
@@ -442,16 +466,18 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        요청 action에 따라 쿼리셋을 분기합니다.
-        - list: 서비스 함수를 통해 필터링된 쿼리셋 반환
-        - retrieve, update 등: 기본 쿼리셋 반환
+        [C-1] 요청 action에 따라 쿼리셋을 분기하되, 항상 소속 회사 RLS 필터를 적용하여 IDOR 차단
         """
-        if self.action == 'list':
-            return get_company_transactions(self.request.query_params)
-        # 상세 조회 등에서는 필터링 없이 전체에서 pk로 조회
-        return super().get_queryset().select_related(
+        user = self.request.user
+        qs = super().get_queryset().select_related(
             'company', 'bank_account', 'sort', 'creator'
         )
+        if not user.is_superuser:
+            qs = qs.filter(company_id__in=get_accessible_company_ids(user))
+
+        if self.action == 'list':
+            return get_company_transactions(self.request.query_params, base_qs=qs)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -791,6 +817,13 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
             'destroy': 'hq.ledger.delete',
         }.get(self.action, 'hq.ledger.read')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser:
+            return qs
+        return qs.filter(company_id__in=get_accessible_company_ids(user))
+
 
 class ProjectAccountingEntryFilterSet(FilterSet):
     """프로젝트 회계 분개 필터셋"""
@@ -855,8 +888,27 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             'destroy': 'hq.ledger.delete',
         }.get(self.action, 'hq.ledger.read')
 
+    def _get_bank_transaction(self, request, pk):
+        """[C-1] 소속 회사 RLS가 적용된 은행 거래 조회 (IDOR 방지)"""
+        qs = CompanyBankTransaction.objects.all()
+        if not request.user.is_superuser:
+            qs = qs.filter(company_id__in=get_accessible_company_ids(request.user))
+        try:
+            return qs.get(pk=pk)
+        except CompanyBankTransaction.DoesNotExist:
+            return None
+
     def create(self, request):
         """본사 거래 생성 (은행거래 + 회계분개)"""
+        company_id = request.data.get('company')
+        if not request.user.is_superuser and company_id:
+            try:
+                c_id_int = int(company_id)
+            except (ValueError, TypeError):
+                c_id_int = None
+            if c_id_int not in get_accessible_company_ids(request.user):
+                return Response({'detail': '해당 회사의 거래를 생성할 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CompanyCompositeTransactionSerializer(
             data=request.data,
             context={'request': request}
@@ -871,9 +923,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
 
     def update(self, request, pk=None):
         """본사 거래 수정 (은행거래 + 회계분개)"""
-        try:
-            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
-        except CompanyBankTransaction.DoesNotExist:
+        bank_transaction = self._get_bank_transaction(request, pk)
+        if not bank_transaction:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
@@ -893,9 +944,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
 
     def partial_update(self, request, pk=None):
         """본사 거래 부분 수정 (은행거래 + 회계분개)"""
-        try:
-            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
-        except CompanyBankTransaction.DoesNotExist:
+        bank_transaction = self._get_bank_transaction(request, pk)
+        if not bank_transaction:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
@@ -916,9 +966,8 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
 
     def destroy(self, request, pk=None):
         """본사 거래 삭제 (은행거래 + 회계분개 일괄 삭제)"""
-        try:
-            bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
-        except CompanyBankTransaction.DoesNotExist:
+        bank_transaction = self._get_bank_transaction(request, pk)
+        if not bank_transaction:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
@@ -1142,6 +1191,13 @@ class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser:
+            return qs
+        return qs.filter(company_id__in=get_accessible_company_ids(user))
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -1156,7 +1212,15 @@ class CompanyLedgerLastDealDateViewSet(viewsets.ModelViewSet):
         return 'hq.ledger.read'
 
     def get_queryset(self):
+        user = self.request.user
         company = self.request.query_params.get('company')
+        if not user.is_superuser and company:
+            try:
+                c_id = int(company)
+            except (ValueError, TypeError):
+                c_id = None
+            if c_id not in get_accessible_company_ids(user):
+                return CompanyBankTransaction.objects.none()
         return CompanyBankTransaction.objects.filter(company_id=company).order_by('-deal_date')[:1]
 
 

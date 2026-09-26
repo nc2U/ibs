@@ -5,14 +5,15 @@ from django.db.models.functions import Coalesce
 from ledger.models import CompanyBankTransaction, CompanyAccount, CompanyAccountingEntry
 
 
-def get_company_transactions(params):
+def get_company_transactions(params, base_qs=None):
     """
     본사 은행 거래 내역을 필터링하고 검색하는 공용 함수
 
     :param params: request.GET 또는 request.query_params (dict-like object)
+    :param base_qs: RLS 등이 적용된 기본 쿼리셋 (선택)
     :return: 필터링되고 정렬된 CompanyBankTransaction 쿼리셋
     """
-    qs = CompanyBankTransaction.objects.all()
+    qs = base_qs if base_qs is not None else CompanyBankTransaction.objects.all()
 
     company_id = params.get('company')
     if company_id:

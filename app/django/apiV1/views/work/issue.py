@@ -518,6 +518,11 @@ def build_issue_queryset(user, base_qs=None):
     q_expr = Q(creator=user) | Q(assigned_to=user)
     if member_all_pids:
         q_expr |= Q(project_id__in=member_all_pids)
+    # [H-3] 공개 이슈 열람 멤버(PUB) 및 비공개 이슈 권한 멤버(private_pids) 누락 필터 보강
+    if member_pub_pids:
+        q_expr |= Q(project_id__in=member_pub_pids, is_private=False)
+    if private_pids:
+        q_expr |= Q(project_id__in=private_pids, is_private=True)
     if non_member_visible == 'ALL':
         q_expr |= Q(project__is_public=True)
     elif non_member_visible == 'PUB':

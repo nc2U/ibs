@@ -122,7 +122,7 @@ defineExpose({ open })
       <CModalBody>
         <CRow class="g-3">
           <CCol md="12">
-            <CFormLabel>정책명 <span class="text-danger">*</span></CFormLabel>
+            <CFormLabel class="small required">정책명</CFormLabel>
             <CFormInput
               v-model="form.name"
               placeholder="예: 84A타입 정규 분양 수수료 기준표"
@@ -132,7 +132,7 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6">
-            <CFormLabel>적용 차수</CFormLabel>
+            <CFormLabel class="small">적용 차수</CFormLabel>
             <CFormSelect v-model.number="form.order_group">
               <option :value="null">전체 차수 공통 적용</option>
               <option v-for="og in orderGroupList" :key="og.pk" :value="og.pk">
@@ -142,11 +142,11 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6">
-            <CFormLabel>적용 유니트 타입</CFormLabel>
+            <CFormLabel class="small">적용 유니트 타입</CFormLabel>
             <CFormSelect v-model.number="form.unit_type">
               <option :value="null">전체 타입 공통 적용</option>
               <option v-for="t in unitTypeList" :key="t.pk" :value="t.pk">
-                {{ t.name }} ({{ t.color }})
+                {{ t.name }}
               </option>
             </CFormSelect>
           </CCol>
@@ -163,9 +163,9 @@ defineExpose({ open })
               <div class="d-flex align-items-center gap-3">
                 <span class="text-secondary small fw-normal">
                   건당 공급가 (VAT 별도):
-                  <strong class="text-dark">{{ totalFee.toLocaleString() }}원</strong>
+                  <strong class="text-body"> {{ totalFee.toLocaleString() }}원</strong>
                 </span>
-                <span class="badge bg-warning text-dark px-2 py-1 fs-6 fw-bold">
+                <span class="badge bg-amber-lighten-4 text-dark px-2 py-1 fs-6 fw-bold">
                   VAT 10% 포함 청구액: {{ Math.floor(totalFee * 1.1).toLocaleString() }}원
                 </span>
               </div>
@@ -173,7 +173,7 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6" lg="3">
-            <CFormLabel>상담사 수수료</CFormLabel>
+            <CFormLabel class="small">상담사 수수료</CFormLabel>
             <CInputGroup>
               <CFormInput
                 v-model.number="form.agent_fee"
@@ -187,7 +187,7 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6" lg="3">
-            <CFormLabel>팀장 수수료</CFormLabel>
+            <CFormLabel class="small">팀장 수수료</CFormLabel>
             <CInputGroup>
               <CFormInput
                 v-model.number="form.leader_fee"
@@ -201,7 +201,7 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6" lg="3">
-            <CFormLabel>본부장 수수료</CFormLabel>
+            <CFormLabel class="small">본부장 수수료</CFormLabel>
             <CInputGroup>
               <CFormInput
                 v-model.number="form.director_fee"
@@ -215,9 +215,8 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6" lg="3">
-            <CFormLabel>
-              대행사 수수료 (본사몫)
-              <span class="text-warning small font-weight-bold">VAT 별도</span>
+            <CFormLabel class="small">
+              본사 / 대행사 수수료 (<span class="text-danger">VAT 별도</span>)
             </CFormLabel>
             <CInputGroup>
               <CFormInput
@@ -240,7 +239,7 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="6">
-            <CFormLabel>수수료 지급 조건</CFormLabel>
+            <CFormLabel class="small">수수료 지급 조건</CFormLabel>
             <CFormSelect v-model="form.pay_condition">
               <option value="1">계약금 100% 완납 시 전액 지급</option>
               <option value="2">계약금 1차 납부 시 50%, 2차 완납 시 50% 분할</option>
@@ -250,12 +249,12 @@ defineExpose({ open })
           </CCol>
 
           <CCol md="3">
-            <CFormLabel>적용 시작일 <span class="text-danger">*</span></CFormLabel>
+            <CFormLabel class="small required">적용 시작일</CFormLabel>
             <DatePicker v-model="form.start_date" required placeholder="적용 시작일" />
           </CCol>
 
           <CCol md="3">
-            <CFormLabel>적용 종료일</CFormLabel>
+            <CFormLabel class="small">적용 종료일</CFormLabel>
             <DatePicker v-model="form.end_date" placeholder="종료일 없을 시 미지정" />
           </CCol>
 

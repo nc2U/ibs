@@ -141,9 +141,12 @@ class MeetingViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             base_qs = queryset
         else:
-            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 회의만 조회
+            # 2. [M-1] 공개 프로젝트 OR 사용자가 멤버인 프로젝트 OR 작성자/참석자인 회의 조회 (AGENTS.md RLS 준수)
             base_qs = queryset.filter(
-                Q(project__is_public=True) | Q(project__members__user=user)
+                Q(project__is_public=True)
+                | Q(project__members__user=user)
+                | Q(creator=user)
+                | Q(attendees=user)
             ).distinct()
 
         # 3. 성능 최적화: 목록 조회 시 필수 관계만, 상세 조회 시 파일/링크/연계업무까지 prefetch

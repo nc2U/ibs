@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
+from apiV1.permissions.ibs_perms import HqProjectModulePermission  # [H-4] 공문서 본사 권한 검증
 from company.models import Company
 from work.models import IssueProject
 from docs.models import (LetterSequence, Category, LawsuitCase, Document, Link,
@@ -188,7 +189,8 @@ class DocumentViewSet(viewsets.ModelViewSet):
             staff__user=user, department__isnull=False
         ).values_list('department_id', flat=True)
 
-        accessible_projects = IssueProject.objects.filter(members__user=user)
+        # [M-2] 공개 프로젝트 또는 사용자가 멤버인 프로젝트
+        accessible_projects = IssueProject.objects.filter(Q(is_public=True) | Q(members__user=user))
 
         return queryset.filter(
             issue_project__in=accessible_projects
@@ -227,11 +229,8 @@ class DocumentViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            org_instance = Document.objects.select_related(
-                'issue_project', 'category', 'lawsuit'
-            ).get(pk=origin_pk)
-
-            # (A) 기밀 문서 검증은 DocumentPermission 클래스에서 자동 통제됨
+            # [H-1] self.get_object()를 호출하여 RLS 및 보안등급(비공개 등) 필터를 거치도록 수정 (IDOR 차단)
+            org_instance = self.get_object()
             copied_at = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')
             add_text = (
                 f'<br /><br /><p>'
@@ -477,7 +476,7 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         'company', 'seal', 'creator', 'updator', 'approval_document'
     ).prefetch_related('attachments')
     serializer_class = OfficialLetterSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = OfficialLetterFilterSet
     search_fields = ('document_number', 'title', 'recipient_name',
@@ -873,7 +872,7 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
     queryset = InboundLetter.objects.select_related(
         'company', 'recipient_dept', 'recipient_manager', 'creator', 'updator', 'approval_document'
     ).prefetch_related('attachments', 'reply_letters')
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = InboundLetterFilterSet
     search_fields = ('receipt_number', 'document_number', 'sender_name',
