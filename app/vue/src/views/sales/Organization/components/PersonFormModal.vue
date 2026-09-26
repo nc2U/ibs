@@ -2,6 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesPerson, SalesDuty, SalesPersonStatus, TaxType } from '@/store/types/sales'
+import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import { CModalBody } from '@coreui/vue'
@@ -16,6 +17,7 @@ const salesStore = useSales()
 const modalRef = ref()
 const isEdit = ref(false)
 const targetId = ref<number | null>(null)
+const validated = ref(false)
 
 const currentPerson = computed(() => {
   if (!targetId.value) return null
@@ -64,6 +66,7 @@ const form = reactive({
 })
 
 const resetForm = () => {
+  validated.value = false
   form.team = props.defaultTeamId || (teamList.value[0]?.id ?? null)
   form.name = ''
   form.duty = '1'
@@ -106,20 +109,16 @@ const open = (person?: SalesPerson, teamId?: number) => {
 
 const isSubmitting = ref(false)
 
-const submit = async (e?: KeyboardEvent) => {
-  if (e?.isComposing) return
+const submit = async (event: Event) => {
   if (isSubmitting.value) return
 
-  if (!form.team) {
-    alert('소속 팀을 선택해주세요.')
+  if (isValidate(event)) {
+    validated.value = true
     return
   }
-  if (!form.name.trim()) {
-    alert('성명을 입력해주세요.')
-    return
-  }
-  if (!form.phone.trim()) {
-    alert('연락처를 입력해주세요.')
+
+  if (!form.team || !form.name.trim() || !form.phone.trim()) {
+    validated.value = true
     return
   }
 
@@ -160,197 +159,197 @@ defineExpose({ open })
   <FormModal ref="modalRef" size="lg">
     <template #header>{{ isEdit ? '영업 인력 정보 수정' : '신규 영업 인력 등록' }}</template>
     <template #default>
-      <CModalBody>
-        <CRow class="g-3">
-          <!-- 기본 인적사항 -->
-          <CCol md="4">
-            <CFormLabel>소속 팀 <span class="text-danger">*</span></CFormLabel>
-            <CFormSelect v-model.number="form.team" required>
-              <option :value="null">소속 팀을 선택하세요</option>
-              <option v-for="t in teamList" :key="t.id" :value="t.id">
-                {{ t.agency_name ? `[${t.agency_name}] ` : '' }}
-                {{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+      <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="submit">
+        <CModalBody>
+          <CRow class="g-3">
+            <!-- 기본 인적사항 -->
+            <CCol md="4">
+              <CFormLabel class="small required">소속 팀</CFormLabel>
+              <CFormSelect v-model.number="form.team" required>
+                <option value="">소속 팀을 선택하세요</option>
+                <option v-for="t in teamList" :key="t.id" :value="t.id">
+                  {{ t.agency_name ? `[${t.agency_name}] ` : '' }}
+                  {{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
+                </option>
+              </CFormSelect>
+              <CFormFeedback invalid>소속 팀을 선택해주세요.</CFormFeedback>
+            </CCol>
 
-          <CCol md="4">
-            <CFormLabel>성명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput
-              v-model="form.name"
-              maxlength="30"
-              placeholder="홍길동"
-              required
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
+            <CCol md="4">
+              <CFormLabel class="small required">성명</CFormLabel>
+              <CFormInput
+                v-model="form.name"
+                maxlength="30"
+                placeholder="홍길동"
+                required
+              />
+              <CFormFeedback invalid>성명을 입력해주세요.</CFormFeedback>
+            </CCol>
 
-          <CCol md="4">
-            <CFormLabel>직책 <span class="text-danger">*</span></CFormLabel>
-            <CFormSelect v-model="form.duty">
-              <option value="1">분양상담사</option>
-              <option value="2">팀장</option>
-              <option value="3">본부장</option>
-              <option value="4">총괄본부장</option>
-              <option value="5">지원/기타</option>
-            </CFormSelect>
-          </CCol>
+            <CCol md="4">
+              <CFormLabel class="small required">직책</CFormLabel>
+              <CFormSelect v-model="form.duty">
+                <option value="1">분양상담사</option>
+                <option value="2">팀장</option>
+                <option value="3">본부장</option>
+                <option value="4">총괄본부장</option>
+                <option value="5">지원/기타</option>
+              </CFormSelect>
+            </CCol>
 
-          <CCol md="4">
-            <CFormLabel>연락처 <span class="text-danger">*</span></CFormLabel>
-            <input
-              v-model="form.phone"
-              v-maska
-              data-maska="['###-###-####', '###-####-####']"
-              placeholder="010-0000-0000"
-              class="form-control"
-              required
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
+            <CCol md="4">
+              <CFormLabel class="small required">연락처</CFormLabel>
+              <input
+                v-model="form.phone"
+                v-maska
+                data-maska="['###-###-####', '###-####-####']"
+                placeholder="010-0000-0000"
+                class="form-control"
+                required
+              />
+              <CFormFeedback invalid>연락처를 입력해주세요.</CFormFeedback>
+            </CCol>
 
-          <CCol md="4">
-            <CFormLabel>주민등록번호 (원천세용)</CFormLabel>
-            <input
-              v-model="form.id_number"
-              v-maska
-              data-maska="######-#######"
-              placeholder="주민번호(식별용)"
-              class="form-control"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
+            <CCol md="4">
+              <CFormLabel class="small">주민등록번호 (원천세용)</CFormLabel>
+              <input
+                v-model="form.id_number"
+                v-maska
+                data-maska="######-#######"
+                placeholder="주민번호(식별용)"
+                class="form-control"
+              />
+            </CCol>
 
-          <CCol md="4">
-            <CFormLabel>소득 구분 <span class="text-danger">*</span></CFormLabel>
-            <CFormSelect v-model="form.tax_type">
-              <option value="1">3.3% 사업소득 (프리랜서)</option>
-              <option value="2">근로소득</option>
-              <option value="3">사업자 (세금계산서)</option>
-              <option value="4">기타</option>
-            </CFormSelect>
-          </CCol>
+            <CCol md="4">
+              <CFormLabel class="small required">소득 구분</CFormLabel>
+              <CFormSelect v-model="form.tax_type">
+                <option value="1">3.3% 사업소득 (프리랜서)</option>
+                <option value="2">근로소득</option>
+                <option value="3">사업자 (세금계산서)</option>
+                <option value="4">기타</option>
+              </CFormSelect>
+            </CCol>
 
-          <!-- 계좌 정보 -->
-          <CCol md="12" class="pt-2">
-            <div class="border-bottom pb-1 text-primary fw-bold">
-              <v-icon icon="mdi-bank" size="small" class="mr-1" /> 정산 계좌 정보
-            </div>
-          </CCol>
-
-          <CCol md="4">
-            <CFormLabel>정산 은행</CFormLabel>
-            <CFormSelect v-model="form.bank_name">
-              <option v-for="b in bankOptions" :key="b" :value="b">{{ b }}</option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="5">
-            <CFormLabel>계좌번호</CFormLabel>
-            <CFormInput
-              v-model="form.account_number"
-              maxlength="30"
-              placeholder="'-' 제외 숫자만 입력"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-
-          <CCol md="3">
-            <CFormLabel>예금주</CFormLabel>
-            <CFormInput
-              v-model="form.account_holder"
-              maxlength="30"
-              :placeholder="form.name || '예금주명'"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-
-          <!-- 재직 및 일정 -->
-          <CCol md="12" class="pt-2">
-            <div class="border-bottom pb-1 text-primary fw-bold">
-              <v-icon icon="mdi-calendar-check" size="small" class="mr-1" /> 활동 및 재직 정보
-            </div>
-          </CCol>
-
-          <CCol md="4">
-            <CFormLabel>재직 상태</CFormLabel>
-            <CFormSelect v-model="form.status">
-              <option value="1">재직 (활동 중)</option>
-              <option value="2">휴직</option>
-              <option value="3">해촉 (퇴사)</option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="4">
-            <CFormLabel>위촉/입사일</CFormLabel>
-            <DatePicker v-model="form.join_date" placeholder="위촉/입사일" />
-          </CCol>
-
-          <CCol md="4">
-            <CFormLabel>해촉/퇴사일</CFormLabel>
-            <DatePicker v-model="form.quit_date" placeholder="해촉/퇴사일" />
-          </CCol>
-
-          <!-- 증빙 서류 정보 안내 (수정 모드) -->
-          <CCol v-if="isEdit && currentPerson" md="12" class="pt-2">
-            <div
-              class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
-            >
-              <div>
-                <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
-                증빙 서류 현황
+            <!-- 계좌 정보 -->
+            <CCol md="12" class="pt-2">
+              <div class="border-bottom pb-1 text-primary fw-bold">
+                <v-icon icon="mdi-bank" size="small" class="mr-1" /> 정산 계좌 정보
               </div>
-              <v-btn
-                color="primary"
-                size="x-small"
-                variant="tonal"
-                @click="emit('open-docs', currentPerson)"
-              >
-                <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
-                서류 접수 및 관리 ({{ currentPerson.documents_count ?? 0 }}건)
-              </v-btn>
-            </div>
-            <div class="small text-muted mt-2">
-              주민등록등본, 통장 사본, 신분증, 영업 위촉계약서, 보안서약서 등 접수된 증빙 서류를
-              확인하고 관리합니다.
-            </div>
-          </CCol>
+            </CCol>
 
-          <CCol md="12">
-            <CFormLabel>비고 / 특이사항</CFormLabel>
-            <CFormTextarea v-model="form.notes" rows="2" placeholder="경력 사항, 추천인, 메모 등" />
-          </CCol>
-        </CRow>
-      </CModalBody>
-      <CModalFooter class="d-flex justify-content-between">
-        <div>
-          <v-btn
-            v-if="isEdit && currentPerson"
-            color="info"
-            variant="tonal"
-            size="small"
-            @click="emit('open-docs', currentPerson)"
-          >
-            <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
-            증빙 서류 관리 ({{ currentPerson.documents_count ?? 0 }}건)
-          </v-btn>
-        </div>
-        <div>
-          <v-btn
-            color="primary"
-            size="small"
-            class="me-2"
-            :loading="isSubmitting"
-            :disabled="isSubmitting"
-            @click="submit"
-          >
-            {{ isEdit ? '수정 저장' : '등록하기' }}
-          </v-btn>
-          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
-            >취소</v-btn
-          >
-        </div>
-      </CModalFooter>
+            <CCol md="4">
+              <CFormLabel class="small">정산 은행</CFormLabel>
+              <CFormSelect v-model="form.bank_name">
+                <option v-for="b in bankOptions" :key="b" :value="b">{{ b }}</option>
+              </CFormSelect>
+            </CCol>
+
+            <CCol md="5">
+              <CFormLabel class="small">계좌번호</CFormLabel>
+              <CFormInput
+                v-model="form.account_number"
+                maxlength="30"
+                placeholder="'-' 제외 숫자만 입력"
+              />
+            </CCol>
+
+            <CCol md="3">
+              <CFormLabel class="small">예금주</CFormLabel>
+              <CFormInput
+                v-model="form.account_holder"
+                maxlength="30"
+                :placeholder="form.name || '예금주명'"
+              />
+            </CCol>
+
+            <!-- 재직 및 일정 -->
+            <CCol md="12" class="pt-2">
+              <div class="border-bottom pb-1 text-primary fw-bold">
+                <v-icon icon="mdi-calendar-check" size="small" class="mr-1" /> 활동 및 재직 정보
+              </div>
+            </CCol>
+
+            <CCol md="4">
+              <CFormLabel class="small">재직 상태</CFormLabel>
+              <CFormSelect v-model="form.status">
+                <option value="1">재직 (활동 중)</option>
+                <option value="2">휴직</option>
+                <option value="3">해촉 (퇴사)</option>
+              </CFormSelect>
+            </CCol>
+
+            <CCol md="4">
+              <CFormLabel class="small">위촉/입사일</CFormLabel>
+              <DatePicker v-model="form.join_date" placeholder="위촉/입사일" />
+            </CCol>
+
+            <CCol md="4">
+              <CFormLabel class="small">해촉/퇴사일</CFormLabel>
+              <DatePicker v-model="form.quit_date" placeholder="해촉/퇴사일" />
+            </CCol>
+
+            <!-- 증빙 서류 정보 안내 (수정 모드) -->
+            <CCol v-if="isEdit && currentPerson" md="12" class="pt-2">
+              <div
+                class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
+              >
+                <div>
+                  <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+                  증빙 서류 현황
+                </div>
+                <v-btn
+                  color="primary"
+                  size="x-small"
+                  variant="tonal"
+                  @click="emit('open-docs', currentPerson)"
+                >
+                  <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
+                  서류 접수 및 관리 ({{ currentPerson.documents_count ?? 0 }}건)
+                </v-btn>
+              </div>
+              <div class="small text-muted mt-2">
+                주민등록등본, 통장 사본, 신분증, 영업 위촉계약서, 보안서약서 등 접수된 증빙 서류를
+                확인하고 관리합니다.
+              </div>
+            </CCol>
+
+            <CCol md="12">
+              <CFormLabel class="small">비고 / 특이사항</CFormLabel>
+              <CFormTextarea v-model="form.notes" rows="2" placeholder="경력 사항, 추천인, 메모 등" />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter class="d-flex justify-content-between">
+          <div>
+            <v-btn
+              v-if="isEdit && currentPerson"
+              color="info"
+              variant="tonal"
+              size="small"
+              @click="emit('open-docs', currentPerson)"
+            >
+              <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+              증빙 서류 관리 ({{ currentPerson.documents_count ?? 0 }}건)
+            </v-btn>
+          </div>
+          <div>
+            <v-btn
+              type="submit"
+              color="primary"
+              size="small"
+              class="me-2"
+              :loading="isSubmitting"
+              :disabled="isSubmitting"
+            >
+              {{ isEdit ? '수정 저장' : '등록하기' }}
+            </v-btn>
+            <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+              >취소</v-btn
+            >
+          </div>
+        </CModalFooter>
+      </CForm>
     </template>
   </FormModal>
 </template>

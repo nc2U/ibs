@@ -2,6 +2,7 @@
 import { ref, reactive, watch } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesAgency } from '@/store/types/sales'
+import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
@@ -14,6 +15,7 @@ const salesStore = useSales()
 const modalRef = ref()
 const isEdit = ref(false)
 const targetId = ref<number | null>(null)
+const validated = ref(false)
 
 const form = reactive({
   name: '',
@@ -38,6 +40,7 @@ watch(
 )
 
 const resetForm = () => {
+  validated.value = false
   form.name = ''
   form.is_direct_managed = true
   form.business_number = ''
@@ -67,12 +70,16 @@ const open = (agency?: SalesAgency) => {
 
 const isSubmitting = ref(false)
 
-const submit = async (e?: KeyboardEvent) => {
-  if (e?.isComposing) return
+const submit = async (event: Event) => {
   if (isSubmitting.value) return
 
+  if (isValidate(event)) {
+    validated.value = true
+    return
+  }
+
   if (!form.name.trim()) {
-    alert('대행사명을 입력해주세요.')
+    validated.value = true
     return
   }
 
@@ -105,84 +112,82 @@ defineExpose({ open })
   <FormModal ref="modalRef" size="lg">
     <template #header>{{ isEdit ? '분양 대행사 수정' : '신규 분양 대행사 등록' }}</template>
     <template #default>
-      <CModalBody>
-        <CRow class="g-3">
-          <CCol md="8">
-            <CFormLabel>대행사명 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput
-              v-model="form.name"
-              placeholder="예: [직영] 자체분양관리 또는 (주)미래분양대행"
-              required
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-          <CCol md="4" class="d-flex align-items-center pt-4">
-            <CFormCheck
-              id="is_direct_managed"
-              v-model="form.is_direct_managed"
-              label="자체 직영 대행 여부"
-            />
-          </CCol>
-          <template v-if="!form.is_direct_managed">
-            <CCol md="4">
-              <CFormLabel>대표자명</CFormLabel>
+      <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="submit">
+        <CModalBody>
+          <CRow class="g-3">
+            <CCol md="8">
+              <CFormLabel class="small required">대행사명</CFormLabel>
               <CFormInput
-                v-model="form.ceo_name"
-                placeholder="대표자 성명"
-                @keydown.enter.prevent="submit"
+                v-model="form.name"
+                placeholder="예: [직영] 자체분양관리 또는 (주)미래분양대행"
+                required
+              />
+              <CFormFeedback invalid>대행사명을 입력해주세요.</CFormFeedback>
+            </CCol>
+            <CCol md="4" class="d-flex align-items-center pt-4">
+              <CFormCheck
+                id="is_direct_managed"
+                v-model="form.is_direct_managed"
+                label="자체 직영 대행 여부"
               />
             </CCol>
+            <template v-if="!form.is_direct_managed">
+              <CCol md="4">
+                <CFormLabel class="small">대표자명</CFormLabel>
+                <CFormInput
+                  v-model="form.ceo_name"
+                  placeholder="대표자 성명"
+                />
+              </CCol>
+              <CCol md="4">
+                <CFormLabel class="small">사업자등록번호</CFormLabel>
+                <input
+                  v-model="form.business_number"
+                  v-maska
+                  data-maska="###-##-#####"
+                  class="form-control"
+                  placeholder="000-00-00000"
+                />
+              </CCol>
+              <CCol md="4">
+                <CFormLabel class="small">대표 전화번호</CFormLabel>
+                <input
+                  v-model="form.phone"
+                  v-maska
+                  data-maska="['###-###-####', '###-####-####']"
+                  class="form-control"
+                  placeholder="02-000-0000"
+                />
+              </CCol>
+            </template>
             <CCol md="4">
-              <CFormLabel>사업자등록번호</CFormLabel>
-              <input
-                v-model="form.business_number"
-                v-maska
-                data-maska="###-##-#####"
-                class="form-control"
-                placeholder="000-00-00000"
-                @keydown.enter.prevent="submit"
+              <CFormLabel class="small">정렬 순서</CFormLabel>
+              <CFormInput
+                v-model.number="form.order"
+                type="number"
+                min="1"
               />
             </CCol>
-            <CCol md="4">
-              <CFormLabel>대표 전화번호</CFormLabel>
-              <input
-                v-model="form.phone"
-                v-maska
-                data-maska="['###-###-####', '###-####-####']"
-                class="form-control"
-                placeholder="02-000-0000"
-                @keydown.enter.prevent="submit"
-              />
+            <CCol md="4" class="d-flex align-items-center pt-4">
+              <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />
             </CCol>
-          </template>
-          <CCol md="4">
-            <CFormLabel>정렬 순서</CFormLabel>
-            <CFormInput
-              v-model.number="form.order"
-              type="number"
-              min="1"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-          <CCol md="4" class="d-flex align-items-center pt-4">
-            <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />
-          </CCol>
-        </CRow>
-      </CModalBody>
-      <CModalFooter>
-        <v-btn
-          color="primary"
-          size="small"
-          :loading="isSubmitting"
-          :disabled="isSubmitting"
-          @click="submit"
-        >
-          {{ isEdit ? '수정 저장' : '등록하기' }}
-        </v-btn>
-        <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
-          >취소</v-btn
-        >
-      </CModalFooter>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn
+            type="submit"
+            color="primary"
+            size="small"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+          >
+            {{ isEdit ? '수정 저장' : '등록하기' }}
+          </v-btn>
+          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+            >취소</v-btn
+          >
+        </CModalFooter>
+      </CForm>
     </template>
   </FormModal>
 </template>

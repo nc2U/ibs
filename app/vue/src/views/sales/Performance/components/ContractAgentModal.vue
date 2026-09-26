@@ -206,7 +206,7 @@ defineExpose({ open })
           <CRow class="g-3">
             <!-- 대상 계약 선택 -->
             <CCol md="12">
-              <CFormLabel>대상 분양 계약 <span class="text-danger">*</span></CFormLabel>
+              <CFormLabel class="small required"> 대상 분양 계약</CFormLabel>
               <div v-if="isEdit" class="form-control bg-light font-weight-bold">
                 {{ form.contract_info || `계약 번호 #${form.contract}` }}
               </div>
@@ -223,7 +223,7 @@ defineExpose({ open })
 
             <!-- 배정 방식 선택 (직영 영업직원 vs 외주 대행사 직배정) -->
             <CCol md="12">
-              <CFormLabel class="fw-bold">배정 방식 <span class="text-danger">*</span></CFormLabel>
+              <CFormLabel class="small required">배정 방식</CFormLabel>
               <div class="d-flex gap-4 p-2 bg-light rounded border">
                 <CFormCheck
                   id="assignDirectRadio"
@@ -265,7 +265,7 @@ defineExpose({ open })
             <!-- [직영/인력 배정] 담당 영업직원 (상담사) 선택 -->
             <template v-else>
               <CCol md="12">
-                <CFormLabel>담당 영업직원 (상담사) <span class="text-danger">*</span></CFormLabel>
+                <CFormLabel class="small required">담당 영업직원 (상담사)</CFormLabel>
                 <CFormSelect v-model.number="form.sales_person" required>
                   <option value="">담당 상담사를 선택하세요</option>
                   <option v-for="p in personList" :key="p.id" :value="p.id">
@@ -292,7 +292,7 @@ defineExpose({ open })
 
             <!-- 적용 수수료 정책 -->
             <CCol md="6">
-              <CFormLabel>적용 수수료 정책</CFormLabel>
+              <CFormLabel class="small">적용 수수료 정책</CFormLabel>
               <CFormSelect v-model.number="form.policy">
                 <option :value="null">기본 유니트 정책 자동 적용</option>
                 <option v-for="pol in policyList" :key="pol.id" :value="pol.id">
@@ -303,30 +303,30 @@ defineExpose({ open })
 
             <!-- 성과 인정일 -->
             <CCol md="6">
-              <CFormLabel>영업 성과 인정일</CFormLabel>
+              <CFormLabel class="small">영업 성과 인정일</CFormLabel>
               <DatePicker v-model="form.contract_date" placeholder="성과 인정일" />
             </CCol>
 
             <!-- MGM 및 소개 수수료 -->
             <CCol md="12" class="pt-2">
               <div class="border-bottom pb-1 text-primary fw-bold">
-                <v-icon icon="mdi-handshake" size="small" class="mr-1" /> MGM / 소개 중개사 연계 정보
-                (선택)
+                <v-icon icon="mdi-handshake" size="small" class="mr-1" /> MGM / 소개 중개사 연계
+                정보 (선택)
               </div>
             </CCol>
 
             <CCol md="4">
-              <CFormLabel>MGM / 소개자 성명</CFormLabel>
+              <CFormLabel class="small">MGM / 소개자 성명</CFormLabel>
               <CFormInput v-model="form.mgm_name" placeholder="예: OO공인중개사 / 김철수" />
             </CCol>
 
             <CCol md="4">
-              <CFormLabel>MGM 연락처</CFormLabel>
+              <CFormLabel class="small">MGM 연락처</CFormLabel>
               <CFormInput v-model="form.mgm_phone" placeholder="010-0000-0000" />
             </CCol>
 
             <CCol md="4">
-              <CFormLabel>MGM 수수료 (원)</CFormLabel>
+              <CFormLabel class="small">MGM 수수료 (원)</CFormLabel>
               <CInputGroup>
                 <CFormInput v-model.number="form.mgm_fee" type="number" step="10000" min="0" />
                 <CInputGroupText>원</CInputGroupText>
@@ -334,7 +334,7 @@ defineExpose({ open })
             </CCol>
 
             <CCol md="12">
-              <CFormLabel>비고 / 특이사항</CFormLabel>
+              <CFormLabel class="small">비고 / 특이사항</CFormLabel>
               <CFormInput v-model="form.note" placeholder="계약 체결 경위, 특약 메모 등" />
             </CCol>
 
