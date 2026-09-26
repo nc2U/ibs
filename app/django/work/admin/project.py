@@ -1,7 +1,10 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import IssueProject, Module, Role, Permission, Member, Version
+from work.models import (
+    IssueProject, Module, Role, Permission, Member, Version,
+    ProjectSubscription, ProjectBookmark
+)
 from work.models.issue import IssueCategory
 
 
@@ -31,6 +34,7 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
                     'chat_channel_enabled', 'slack_notifications_enabled', 'order')
     list_display_links = ('name',)
     list_editable = ('company', 'type', 'chat_channel_enabled', 'slack_notifications_enabled', 'order')
+    list_select_related = ('company', 'parent', 'creator')
     inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline)
     list_filter = ('company', 'type', 'is_public', 'status', 'chat_channel_enabled', 'slack_notifications_enabled')
 
@@ -69,6 +73,7 @@ class ModuleAdmin(admin.ModelAdmin):
     list_display = ('pk', 'project', 'meeting', 'issue', 'news', 'document', 'forum', 'calendar')
     list_display_links = ('project',)
     list_editable = ('meeting', 'issue', 'news', 'document', 'forum', 'calendar')
+    list_select_related = ('project',)
 
 
 @admin.register(Role)
@@ -77,6 +82,7 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
                     'order')
     list_display_links = ('name',)
     list_editable = ('category', 'is_for_dev_project', 'is_confidential', 'order')
+    list_select_related = ('creator',)
     list_filter = ('category', 'is_for_dev_project', 'is_confidential', 'issue_visible', 'user_visible')
     filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
 
@@ -110,7 +116,11 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'project', 'get_roles', 'created')
     list_display_links = ('user',)
     list_editable = ('project',)
+    list_select_related = ('user', 'project')
     list_filter = ('project', 'roles')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('roles')
 
     def get_roles(self, obj):
         return ", ".join([role.name for role in obj.roles.all()]) if obj.roles.all() else '-'
@@ -122,6 +132,22 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
 class VersionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'project', 'status', 'get_sharing_display', 'effective_date')
     list_display_links = ('name',)
+    list_select_related = ('project',)
     list_filter = ('project', 'status', 'sharing')
 
-    list_filter = ('project', 'status', 'sharing')
+
+@admin.register(ProjectSubscription)
+class ProjectSubscriptionAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'user', 'project', 'created_at')
+    list_display_links = ('pk', 'user')
+    list_select_related = ('user', 'project')
+    list_filter = ('project',)
+
+
+@admin.register(ProjectBookmark)
+class ProjectBookmarkAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'user', 'project', 'order', 'created')
+    list_display_links = ('pk', 'user')
+    list_editable = ('order',)
+    list_select_related = ('user', 'project')
+    list_filter = ('project',)

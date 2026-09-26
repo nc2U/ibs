@@ -542,3 +542,322 @@ class WorkMeetingAndSecurityAPITests(APITestCase):
         self.assertEqual(res_unlock.data['status'], '1')
 
 
+from django.core.exceptions import ValidationError
+from datetime import timedelta
+from work.models.issue import IssueRelation, IssueCategory
+from work.models.project import Version, ProjectBookmark
+
+
+class WorkImprovementTests(TestCase):
+    """
+    work 앱 개선 사항 및 무결성 단위 테스트:
+    1. Issue.clean() 날짜 역전, 진척도 범위, 상위 업무 자기참조 및 교차 프로젝트 오참조 방어
+    2. IssueRelation.clean() 자기참조 및 순환 관계 방어
+    3. IssueProject.clean() 자기참조 및 순환 참조 방어
+    4. Meeting.clean() 카테고리 프로젝트 불일치 및 미종료 상태 확정 방어
+    5. signals updater 결측 시 creator 폴백 로직 검증
+    6. IssueCountByMemberView 단일 aggregate 쿼리 결과 정합성 검증
+    7. is_bookmarked prefetch 캐시 활용 검증
+    8. Django Admin list_select_related 설정 검증
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='worker1', email='worker1@example.com', password='pw')
+        self.user2 = User.objects.create_user(username='worker2', email='worker2@example.com', password='pw')
+        self.company = Company.objects.create(name='(주)테스트건설')
+
+        self.project_a = IssueProject.objects.create(
+            company=self.company,
+            name='프로젝트 A',
+            slug='proj-a',
+            creator=self.user
+        )
+        self.project_b = IssueProject.objects.create(
+            company=self.company,
+            name='프로젝트 B',
+            slug='proj-b',
+            creator=self.user
+        )
+
+        self.status_open = IssueStatus.objects.create(name='진행', creator=self.user)
+        self.status_closed = IssueStatus.objects.create(name='완료', closed=True, creator=self.user)
+        self.tracker = Tracker.objects.create(name='업무', default_status=self.status_open, creator=self.user)
+        self.priority = CodeIssuePriority.objects.create(name='보통', creator=self.user)
+
+    def test_issue_clean_date_inversion(self):
+        """시작일이 완료 기한보다 늦은 경우 ValidationError 발생 검증"""
+        issue = Issue(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='날짜 역전 업무',
+            start_date=timezone.now().date() + timedelta(days=5),
+            due_date=timezone.now().date(),
+            creator=self.user
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            issue.clean()
+        self.assertIn('due_date', ctx.exception.message_dict)
+
+    def test_issue_clean_done_ratio_range(self):
+        """진척도가 0 미만이거나 100 초과인 경우 ValidationError 발생 검증"""
+        issue_under = Issue(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='진척도 미달',
+            start_date=timezone.now().date(),
+            done_ratio=-1,
+            creator=self.user
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            issue_under.clean()
+        self.assertIn('done_ratio', ctx.exception.message_dict)
+
+        issue_over = Issue(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='진척도 초과',
+            start_date=timezone.now().date(),
+            done_ratio=105,
+            creator=self.user
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            issue_over.clean()
+        self.assertIn('done_ratio', ctx.exception.message_dict)
+
+    def test_issue_clean_parent_self_and_cross_project(self):
+        """상위 업무 자기 참조 및 교차 프로젝트 지정 차단 검증"""
+        issue1 = Issue.objects.create(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='기본 업무 1',
+            start_date=timezone.now().date(),
+            creator=self.user
+        )
+        # 1. 자기 참조
+        issue1.parent = issue1
+        with self.assertRaises(ValidationError) as ctx:
+            issue1.clean()
+        self.assertIn('parent', ctx.exception.message_dict)
+
+        # 2. 다른 프로젝트의 업무를 상위 업무로 지정
+        issue_b = Issue.objects.create(
+            project=self.project_b,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='프로젝트 B 업무',
+            start_date=timezone.now().date(),
+            creator=self.user
+        )
+        issue1.parent = issue_b
+        with self.assertRaises(ValidationError) as ctx:
+            issue1.clean()
+        self.assertIn('parent', ctx.exception.message_dict)
+
+    def test_issue_clean_category_and_version_mismatch(self):
+        """범주 및 목표 단계가 타 프로젝트 소속일 때의 차단 검증"""
+        cat_b = IssueCategory.objects.create(project=self.project_b, name='B 범주')
+        issue = Issue(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='범주 불일치 업무',
+            category=cat_b,
+            start_date=timezone.now().date(),
+            creator=self.user
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            issue.clean()
+        self.assertIn('category', ctx.exception.message_dict)
+
+        # 타 프로젝트의 비공유 단계 지정
+        ver_b = Version.objects.create(project=self.project_b, name='v1.0', sharing='0')
+        issue.category = None
+        issue.fixed_version = ver_b
+        with self.assertRaises(ValidationError) as ctx:
+            issue.clean()
+        self.assertIn('fixed_version', ctx.exception.message_dict)
+
+    def test_issue_relation_clean_self_and_cycle(self):
+        """선후행 관계 자기참조 및 상호 순환 참조(A->B, B->A) 방어 검증"""
+        issue1 = Issue.objects.create(
+            project=self.project_a, tracker=self.tracker, status=self.status_open,
+            priority=self.priority, subject='업무 1', start_date=timezone.now().date(), creator=self.user
+        )
+        issue2 = Issue.objects.create(
+            project=self.project_a, tracker=self.tracker, status=self.status_open,
+            priority=self.priority, subject='업무 2', start_date=timezone.now().date(), creator=self.user
+        )
+
+        # 1. 자기 자신과 관계 맺기
+        rel_self = IssueRelation(source=issue1, target=issue1)
+        with self.assertRaises(ValidationError) as ctx:
+            rel_self.clean()
+        self.assertIn('target', ctx.exception.message_dict)
+
+        # 2. 1 -> 2 관계 생성 후 2 -> 1 관계 시도
+        IssueRelation.objects.create(source=issue1, target=issue2, creator=self.user)
+        rel_cycle = IssueRelation(source=issue2, target=issue1)
+        with self.assertRaises(ValidationError) as ctx:
+            rel_cycle.clean()
+        self.assertIn('target', ctx.exception.message_dict)
+
+    def test_issue_project_clean_cycles(self):
+        """워크스페이스 상위 지정 시 자기참조 및 순환 참조 방어 검증"""
+        # 1. 자기 참조
+        self.project_a.parent = self.project_a
+        with self.assertRaises(ValidationError) as ctx:
+            self.project_a.clean()
+        self.assertIn('parent', ctx.exception.message_dict)
+
+        # 2. 순환 참조: A -> B -> A
+        self.project_b.parent = self.project_a
+        self.project_b.save()
+        self.project_a.parent = self.project_b
+        with self.assertRaises(ValidationError) as ctx:
+            self.project_a.clean()
+        self.assertIn('parent', ctx.exception.message_dict)
+
+    def test_meeting_clean_category_and_status(self):
+        """Meeting.clean() 카테고리 프로젝트 불일치 및 준비 상태 확정 방어 검증"""
+        cat_b = MeetingCategory.objects.create(project=self.project_b, name='B 회의 카테고리')
+
+        meeting = Meeting(
+            project=self.project_a,
+            title='전략 회의',
+            category=cat_b,
+            status='1',
+            creator=self.user
+        )
+        # 타 프로젝트 카테고리 차단
+        with self.assertRaises(ValidationError) as ctx:
+            meeting.clean()
+        self.assertIn('category', ctx.exception.message_dict)
+
+        # 준비 상태('1')인데 확정(is_confirmed=True) 차단
+        meeting.category = None
+        meeting.is_confirmed = True
+        with self.assertRaises(ValidationError) as ctx:
+            meeting.clean()
+        self.assertIn('is_confirmed', ctx.exception.message_dict)
+
+    @patch('work.services.work_services.IssueService.send_issue_mail')
+    def test_signals_issue_log_changes_fallback_to_creator(self, mock_mail):
+        """updater가 None인 경우에도 creator로 폴백되어 로그가 기록되는지 검증"""
+        issue = Issue.objects.create(
+            project=self.project_a,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='업데이터 누락 테스트',
+            start_date=timezone.now().date(),
+            creator=self.user
+        )
+        ActivityLogEntry.objects.all().delete()
+        IssueLogEntry.objects.all().delete()
+
+        # updater를 지정하지 않고 수정 후 save
+        issue.subject = '업데이터 누락 테스트 (수정됨)'
+        issue.updater = None
+        issue.save()
+
+        # post_save 신호에서 updater or creator 폴백이 동작하여 로그가 남아야 함
+        log_entry = IssueLogEntry.objects.filter(issue=issue).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.creator, self.user)
+
+    def test_admin_list_select_related_configs(self):
+        """Admin 클래스들의 list_select_related 설정이 정상 적용되었는지 검증"""
+        from django.contrib import admin
+        from work.models import (
+            IssueProject, Module, Role, Member, Version,
+            ProjectSubscription, ProjectBookmark, Issue, Tracker,
+            IssueCategory, IssueStatus, Workflow, CodeIssuePriority,
+            Meeting, MeetingCategory, ActivityLogEntry, IssueLogEntry,
+            News, CustomQuery
+        )
+
+        models_to_check = [
+            (IssueProject, ('company', 'parent', 'creator')),
+            (Module, ('project',)),
+            (Role, ('creator',)),
+            (Member, ('user', 'project')),
+            (Version, ('project',)),
+            (ProjectSubscription, ('user', 'project')),
+            (ProjectBookmark, ('user', 'project')),
+            (Issue, ('tracker', 'project', 'parent', 'status', 'priority')),
+            (Tracker, ('default_status',)),
+            (IssueCategory, ('project', 'assigned_to')),
+            (IssueStatus, ('creator',)),
+            (Workflow, ('role', 'tracker', 'old_status')),
+            (CodeIssuePriority, ('creator',)),
+            (Meeting, ('project', 'category', 'creator', 'updater')),
+            (MeetingCategory, ('project',)),
+            (ActivityLogEntry, ('project', 'creator')),
+            (IssueLogEntry, ('issue', 'comment', 'creator')),
+            (News, ('project', 'author')),
+            (CustomQuery, ('user', 'project')),
+        ]
+
+        for model, expected_select_related in models_to_check:
+            model_admin = admin.site._registry.get(model)
+            self.assertIsNotNone(model_admin, f"{model.__name__}이(가) admin에 등록되지 않았습니다.")
+            self.assertEqual(
+                model_admin.list_select_related,
+                expected_select_related,
+                f"{model.__name__}Admin의 list_select_related 설정이 일치하지 않습니다."
+            )
+
+    def test_issue_count_by_member_aggregate(self):
+        """IssueCountByMemberView가 단일 aggregate 쿼리로 올바른 개수를 반환하는지 검증"""
+        from rest_framework.test import APIClient
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        # 담당 업무 2건 (진행 1, 완료 1)
+        Issue.objects.create(
+            project=self.project_a, tracker=self.tracker, status=self.status_open,
+            priority=self.priority, subject='내 담당 진행', start_date=timezone.now().date(),
+            assigned_to=self.user, creator=self.user2
+        )
+        Issue.objects.create(
+            project=self.project_a, tracker=self.tracker, status=self.status_closed,
+            priority=self.priority, subject='내 담당 완료', start_date=timezone.now().date(),
+            assigned_to=self.user, creator=self.user2
+        )
+
+        res = client.get('/api/v1/issue-by-member/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['open_charged'], 1)
+        self.assertEqual(res.data['closed_charged'], 1)
+        self.assertEqual(res.data['all_charged'], 2)
+
+    def test_is_bookmarked_prefetch_cache(self):
+        """ProjectBookmark prefetch 캐시가 활용되어 is_bookmarked가 올바르게 반환되는지 검증"""
+        ProjectBookmark.objects.create(user=self.user, project=self.project_a)
+
+        from rest_framework.test import APIClient
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        res = client.get('/api/v1/issue-project/')
+        self.assertEqual(res.status_code, 200)
+        results = res.data.get('results', res.data)
+        item_a = next((p for p in results if p['pk'] == self.project_a.pk), None)
+        item_b = next((p for p in results if p['pk'] == self.project_b.pk), None)
+
+        self.assertIsNotNone(item_a)
+        self.assertTrue(item_a['is_bookmarked'])
+        if item_b:
+            self.assertFalse(item_b['is_bookmarked'])
+
+

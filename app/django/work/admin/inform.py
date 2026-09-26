@@ -19,6 +19,7 @@ class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'project', 'title', 'is_important', 'author', 'created')
     list_display_links = ('title',)
     list_editable = ('is_important',)
+    list_select_related = ('project', 'author')
     inlines = (NewsFileInline, NewsCommentInline)
 
 
@@ -26,6 +27,7 @@ class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
 class CustomQueryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'target_type', 'user', 'is_public', 'created', 'updated')
     list_display_links = ('name',)
+    list_select_related = ('user', 'project')
     list_filter = ('target_type', 'is_public', 'user')
     search_fields = ('name', 'description')
     readonly_fields = ('created', 'updated')

@@ -97,6 +97,8 @@ class ProjectPermissionMixin:
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        if hasattr(obj, '_prefetched_objects_cache') and 'bookmarked_by' in obj._prefetched_objects_cache:
+            return any(bm.user_id == request.user.pk for bm in obj.bookmarked_by.all())
         return obj.bookmarked_by.filter(user=request.user).exists()
 
 

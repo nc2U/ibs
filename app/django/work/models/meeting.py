@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 
@@ -68,6 +69,19 @@ class Meeting(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.category and self.category.project_id:
+            if self.project_id and self.category.project_id != self.project_id:
+                errors['category'] = '지정된 카테고리는 현재 워크스페이스에 속한 카테고리가 아닙니다.'
+
+        if self.is_confirmed and self.status != '2':
+            errors['is_confirmed'] = '회의가 종료 상태일 때만 확정할 수 있습니다.'
+
+        if errors:
+            raise ValidationError(errors)
 
 
 class MeetingFile(models.Model):

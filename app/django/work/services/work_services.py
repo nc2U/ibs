@@ -34,7 +34,7 @@ class IssueService:
                 fields_to_track = [
                     'project', 'tracker', 'status', 'priority', 'subject',
                     'description', 'category', 'fixed_version', 'assigned_to',
-                    'parent', 'watchers', 'is_private', 'expected_duration',
+                    'parent', 'is_private', 'expected_duration',
                     'start_date', 'due_date', 'done_ratio', 'closed'
                 ]
                 for field in fields_to_track:
@@ -166,7 +166,9 @@ class IssueService:
     @staticmethod
     def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):
         """이슈 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
-        send_issue_mail_task.delay(instance.pk, user.pk, mail_type, old_status_name, old_assigned_to)
+        transaction.on_commit(
+            lambda: send_issue_mail_task.delay(instance.pk, user.pk, mail_type, old_status_name, old_assigned_to)
+        )
 
 
 class PermissionService:

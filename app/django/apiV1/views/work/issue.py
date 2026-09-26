@@ -1,4 +1,4 @@
-from django.db.models import Q, F
+from django.db.models import Q, F, Count
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -608,16 +608,19 @@ class IssueCountByMemberView(APIView):
         user_param = request.query_params.get('user', None)
         user = user_param if user_param else request.user
 
-        # Count issues assigned to the user (사용중인 프로젝트 project__status='1' 기준)
-        issues_in_charge = Issue.objects.filter(assigned_to=user, project__status='1')
-        open_charged = issues_in_charge.filter(status__closed=False).count()
-        closed_charged = issues_in_charge.filter(status__closed=True).count()
+        # Count issues using a single aggregate query (사용중인 프로젝트 project__status='1' 기준)
+        counts = Issue.objects.filter(project__status='1').aggregate(
+            open_charged=Count('id', filter=Q(assigned_to=user, status__closed=False)),
+            closed_charged=Count('id', filter=Q(assigned_to=user, status__closed=True)),
+            open_created=Count('id', filter=Q(creator=user, status__closed=False)),
+            closed_created=Count('id', filter=Q(creator=user, status__closed=True)),
+        )
+        open_charged = counts['open_charged']
+        closed_charged = counts['closed_charged']
         all_charged = open_charged + closed_charged
 
-        # Count issues created by the user (사용중인 프로젝트 project__status='1' 기준)
-        issues_in_created = Issue.objects.filter(creator=user, project__status='1')
-        open_created = issues_in_created.filter(status__closed=False).count()
-        closed_created = issues_in_created.filter(status__closed=True).count()
+        open_created = counts['open_created']
+        closed_created = counts['closed_created']
         all_created = open_created + closed_created
 
         summary_data = {

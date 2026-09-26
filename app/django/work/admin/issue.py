@@ -33,13 +33,11 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'tracker', 'is_private', 'subject', 'project',
                     'parent', 'status', 'priority', 'start_date', 'due_date')
     list_display_links = ('subject',)
+    list_select_related = ('tracker', 'project', 'parent', 'status', 'priority')
     list_filter = ('project', 'project__status', 'tracker', 'status', 'priority',
                    ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
     search_fields = ('subject',)
     inlines = (IssueFileInline, IssueLinkInline, IssueCommentInline, IssueRelationInline)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request)
 
 
 @admin.register(Tracker)
@@ -47,6 +45,7 @@ class TrackerAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'is_for_dev_project', 'is_in_roadmap', 'default_status', 'description', 'order')
     list_display_links = ('name',)
     list_editable = ('is_for_dev_project', 'is_in_roadmap', 'default_status', 'description', 'order')
+    list_select_related = ('default_status',)
     list_filter = ('is_for_dev_project', 'default_status',)
 
 
@@ -55,12 +54,14 @@ class IssueCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'project', 'assigned_to')
     list_display_links = ('name',)
     list_editable = ('project', 'assigned_to')
+    list_select_related = ('project', 'assigned_to')
 
 
 @admin.register(IssueStatus)
 class IssueStatusAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'description', 'closed', 'order', 'creator')
     list_editable = ('description', 'closed', 'order')
+    list_select_related = ('creator',)
     list_display_links = ('name',)
 
 
@@ -68,6 +69,10 @@ class IssueStatusAdmin(ImportExportMixin, admin.ModelAdmin):
 class WorkflowAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'role', 'tracker', 'old_status', 'get_new_statuses')
     list_display_links = ('role', 'tracker', 'old_status')
+    list_select_related = ('role', 'tracker', 'old_status')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('new_statuses')
 
     def get_new_statuses(self, obj):
         return ", ".join([status.name for status in obj.new_statuses.all()]) if obj.new_statuses.all() else '-'
@@ -80,4 +85,5 @@ class CodeIssuePriorityAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
     list_display_links = ('name',)
     list_editable = ('active', 'default', 'order')
+    list_select_related = ('creator',)
     list_filter = ('active', 'default')

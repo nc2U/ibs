@@ -8,6 +8,7 @@ from work.models import ActivityLogEntry, IssueLogEntry
 class ActivityLogEntryAdmin(admin.ModelAdmin):
     list_display = ('pk', 'sort', 'title', 'project', 'act_date')
     list_display_links = ('title',)
+    list_select_related = ('project', 'creator')
     list_filter = ('project', 'sort', ('act_date', DateRangeFilter))
 
 
@@ -15,4 +16,5 @@ class ActivityLogEntryAdmin(admin.ModelAdmin):
 class IssueLogEntryAdmin(admin.ModelAdmin):
     list_display = ('pk', 'action', 'issue', 'comment_id', 'details', 'diff', 'timestamp')
     list_display_links = ('issue',)
+    list_select_related = ('issue', 'comment', 'creator')
     list_filter = ('action',)

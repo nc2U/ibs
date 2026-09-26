@@ -10,6 +10,7 @@ class MeetingCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'project', 'name', 'description', 'color', 'order')
     list_display_links = ('project', 'name',)
     list_editable = ('description', 'color', 'order')
+    list_select_related = ('project',)
     list_filter = ('project',)
 
 
@@ -28,6 +29,7 @@ class MeetingAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'project', 'title', 'category', 'status',
                     'is_confirmed', 'meeting_date', 'creator', 'created')
     list_display_links = ('project', 'title',)
+    list_select_related = ('project', 'category', 'creator', 'updater')
     list_filter = ('project', 'category', 'status', 'is_confirmed', ('meeting_date', DateRangeFilter))
     list_editable = ('category', 'status', 'is_confirmed')
     search_fields = ('title', 'agenda', 'content', 'decisions', 'action_items')

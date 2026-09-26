@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.postgres.indexes import GinIndex
 
@@ -63,6 +64,44 @@ class Issue(models.Model):
 
     def __str__(self):
         return f'#{self.pk}-{self.subject}'
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        # 1. 날짜 역전 방어
+        if self.start_date and self.due_date and self.start_date > self.due_date:
+            errors['due_date'] = '완료 기한은 시작 일자보다 빠를 수 없습니다.'
+
+        # 2. 진척도 범위 제약 (0 ~ 100)
+        if self.done_ratio is not None and (self.done_ratio < 0 or self.done_ratio > 100):
+            errors['done_ratio'] = '진척도는 0에서 100 사이의 값이어야 합니다.'
+
+        # 3. 상위 업무(parent) 무결성
+        if self.parent:
+            if self.pk and self.parent_id == self.pk:
+                errors['parent'] = '자기 자신을 상위 업무로 지정할 수 없습니다.'
+            elif self.project_id and self.parent.project_id and self.parent.project_id != self.project_id:
+                errors['parent'] = '상위 업무는 동일한 워크스페이스 내의 업무여야 합니다.'
+
+        # 4. 범주(category) 프로젝트 일치 여부
+        if self.category and self.project_id:
+            if self.category.project_id and self.category.project_id != self.project_id:
+                errors['category'] = '지정된 범주는 현재 워크스페이스에 속한 범주가 아닙니다.'
+
+        # 5. 목표 단계(fixed_version) 프로젝트 접근 가능 여부
+        if self.fixed_version and self.project:
+            from work.models.project import Version
+            accessible_versions = Version.objects.accessible_from(self.project)
+            if not accessible_versions.filter(pk=self.fixed_version_id).exists():
+                errors['fixed_version'] = '지정된 목표 단계는 현재 워크스페이스에서 사용할 수 없는 단계입니다.'
+
+        # 6. 회의(meeting) 프로젝트 일치 여부
+        if self.meeting and self.project_id:
+            if self.meeting.project_id != self.project_id:
+                errors['meeting'] = '지정된 회의는 현재 워크스페이스에 속한 회의가 아닙니다.'
+
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         ordering = ('-updated', '-created')
@@ -138,6 +177,19 @@ class IssueRelation(models.Model):
 
     def __str__(self):
         return f'#{self.source.pk} ({self.source.subject}) → #{self.target.pk} ({self.target.subject})'
+
+    def clean(self):
+        super().clean()
+        if self.source_id and self.target_id:
+            if self.source_id == self.target_id:
+                raise ValidationError({'target': '선행 업무와 후속 업무는 동일한 업무일 수 없습니다.'})
+            reverse_relation = IssueRelation.objects.filter(
+                source_id=self.target_id, target_id=self.source_id
+            )
+            if self.pk:
+                reverse_relation = reverse_relation.exclude(pk=self.pk)
+            if reverse_relation.exists():
+                raise ValidationError({'target': '해당 업무와 상호 순환 참조되는 관계가 이미 존재합니다.'})
 
 
 class TrackerManager(models.Manager):

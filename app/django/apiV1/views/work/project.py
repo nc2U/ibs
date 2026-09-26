@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, DateFilter
 from rest_framework import viewsets, serializers, permissions, status
 from rest_framework.decorators import action
@@ -100,10 +100,14 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             base_qs = queryset.filter(Q(is_public=True) | Q(members__user=user)).distinct()
 
         # 3. Prefetch 최적화 추가 (N+1 문제 해결)
+        bookmark_prefetch = Prefetch(
+            'bookmarked_by',
+            queryset=ProjectBookmark.objects.filter(user=user) if user.is_authenticated else ProjectBookmark.objects.none()
+        )
         base_qs = base_qs.prefetch_related(
             'members__user', 'members__roles',
             'trackers', 'versions', 'categories__assigned_to',
-            'allowed_roles', 'bookmarked_by'
+            'allowed_roles', bookmark_prefetch
         )
 
         # 4. 액션에 따른 추가 필드 로드 최적화

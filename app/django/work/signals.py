@@ -65,7 +65,7 @@ def issue_track_changes(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Issue)
 def issue_log_changes(sender, instance, created, **kwargs):
-    user = instance.creator if created else instance.updater
+    user = instance.creator if created else (instance.updater or instance.creator)
     if user:
         IssueService.log_and_notify(instance, created, user)
 

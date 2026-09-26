@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from tree_queries.query import TreeQuerySet
@@ -54,6 +55,20 @@ class IssueProject(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.parent:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '상위 워크스페이스로 자기 자신을 지정할 수 없습니다.'})
+            curr = self.parent
+            visited = {self.pk} if self.pk else set()
+            while curr:
+                if curr.pk in visited:
+                    raise ValidationError({'parent': '상위 워크스페이스 계층 구조에 순환 참조가 존재합니다.'})
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.parent
 
     def depth(self):
         if self.parent is None:
