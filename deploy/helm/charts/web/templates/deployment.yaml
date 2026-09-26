@@ -55,23 +55,28 @@ spec:
             - name: web
               containerPort: 8000
               protocol: TCP
-{{/*          readinessProbe:*/}}
-{{/*            httpGet:*/}}
-{{/*              path: /healthz/*/}}
-{{/*              host: web.ibs-{{ .Values.global.appMode }}.svc.cluster.local*/}}
-{{/*              port: 8000    # Django가 직접 듣는 포트*/}}
-{{/*            initialDelaySeconds: 10*/}}
-{{/*            periodSeconds: 30*/}}
-{{/*            timeoutSeconds: 5*/}}
-{{/*            failureThreshold: 3*/}}
-{{/*          livenessProbe:*/}}
-{{/*            httpGet:*/}}
-{{/*              path: /healthz/*/}}
-{{/*              port: 8000*/}}
-{{/*            initialDelaySeconds: 30*/}}
-{{/*            periodSeconds: 30*/}}
-{{/*            timeoutSeconds: 5*/}}
-{{/*            failureThreshold: 5*/}}
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz/live/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
           volumeMounts:
             - name: env-config
               mountPath: /app/django/.env

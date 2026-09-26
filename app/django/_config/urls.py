@@ -38,12 +38,23 @@ admin.site.site_header = '관리자 페이지'  # default: "Django Administratio
 admin.site.site_title = 'IBS 사이트 관리'  # default: "Django site admin"
 
 
-def health_check(request):
+def health_live(request):
+    """Liveness probe: 프로세스 자체의 생존 여부만 검사 (외부 의존성 없음)."""
+    return JsonResponse({"status": "ok"})
+
+
+def health_ready(request):
+    """Readiness probe: 데이터베이스 등 핵심 서비스 의존성 연결 상태 검사."""
     try:
         connections['default'].cursor()
     except OperationalError:
         return JsonResponse({"status": "db_error"}, status=500)
     return JsonResponse({"status": "ok"})
+
+
+def health_check(request):
+    """하위 호환성을 위한 기본 헬스체크 엔드포인트 (Readiness와 동일하게 작동)."""
+    return health_ready(request)
 
 
 def custom_logout(request):
@@ -56,6 +67,8 @@ def custom_logout(request):
 
 urlpatterns = [
     path("healthz/", health_check),
+    path("healthz/live/", health_live),
+    path("healthz/ready/", health_ready),
     path('install/', include('accounts.urls'), name='install'),
 
     path('book/', include('book.urls')),

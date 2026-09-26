@@ -26,6 +26,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+# 로컬 헬스체크 및 K8s Pod 내부 Probe 통신을 위해 localhost/127.0.0.1 보장 (와일드카드가 아닐 경우)
+if '*' not in ALLOWED_HOSTS:
+    for _host in ('localhost', '127.0.0.1'):
+        if _host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_host)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='SECRET_KEY')
@@ -46,6 +51,12 @@ else:
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_DOMAIN = config('SESSION_COOKIE_DOMAIN', default='')
     CSRF_COOKIE_DOMAIN = config('CSRF_COOKIE_DOMAIN', default='')
+    # 프로덕션 보안 헤더 강화
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True, cast=bool)
+    SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=True, cast=bool)
 
 SITE_ID = 1
 
@@ -465,10 +476,20 @@ GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "[%(levelname)s] %(message)s",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "stream": sys.stdout,  # 중요: stdout으로 보내기
+            "formatter": "verbose",
         },
     },
     "root": {
