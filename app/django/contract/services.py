@@ -67,7 +67,8 @@ class ContractPriceBulkUpdateService:
                 - uncontracted_created_count: 미계약 세대 ContractPrice 생성 수
                 - errors: 오류 발생한 계약 정보
         """
-        contracts = Contract.objects.filter(
+        # [M-2] 일괄 가격 업데이트 중 개별 계약 수정과의 Race Condition 방지를 위한 row-level lock
+        contracts = Contract.objects.select_for_update().filter(
             project=self.project,
             is_active=True
         )

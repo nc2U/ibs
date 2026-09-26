@@ -134,3 +134,32 @@ def is_project_locked(issue_project):
 def is_project_closed(issue_project):
     """워크스페이스가 닫힘(status='2') 상태인지 확인합니다."""
     return issue_project and issue_project.status == '2'
+
+
+def get_project_ids_with_permission(user, required_perm: str):
+    """
+    [H-7] 사용자가 특정 required_perm을 실제로 보유한 IBS 프로젝트 ID 목록을 반환합니다.
+
+    단순 소속(member) 여부가 아닌 IssueProject.get_user_permissions()를 통해
+    required_perm 보유 여부를 검증합니다.
+
+    Args:
+        user: request.user
+        required_perm: 'sales.read', 'sales.policy', 'contract.read' 등
+
+    Returns:
+        list[int]: 해당 권한을 보유한 project.Project PK 목록
+    """
+    from work.models.project import IssueProject as _IssueProject
+    # 소속 IssueProject 중 IBS project가 연결된 것만 조회
+    candidate_ips = _IssueProject.objects.filter(
+        members__user=user,
+        project__isnull=False,
+    ).select_related('project')
+
+    allowed_ids = []
+    for ip in candidate_ips:
+        perms = set(ip.get_user_permissions(user))
+        if required_perm in perms:
+            allowed_ids.append(ip.project_id)
+    return allowed_ids

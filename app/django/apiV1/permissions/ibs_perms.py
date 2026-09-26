@@ -102,18 +102,12 @@ class HqProjectModulePermission(permissions.BasePermission):
             user_perms = self._get_all_hq_user_permissions(request.user)
 
         # 3. 조회 요청 (SAFE_METHODS: GET, HEAD, OPTIONS)
-        # 본사 관리 권한을 보유하고 있거나, 본사 워크스페이스 멤버이거나, Staff이면 조회 허용
+        # [M-5] required_perm이 명시된 경우 반드시 해당 권한을 보유해야 허용.
+        # required_perm이 지정되지 않은 일반 조회에서만 본사 워크스페이스 멤버 또는 Staff 허용.
         if request.method in permissions.SAFE_METHODS:
             if required_perm:
-                if required_perm in user_perms:
-                    return True
-                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
-                    return True
-                return False
-            else:
-                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
-                    return True
-                return False
+                return required_perm in user_perms
+            return self._is_hq_member_or_staff(request.user) or bool(user_perms)
 
         # 4. 쓰기 요청 (Write: POST, PUT, PATCH, DELETE) — 본사 기능 권한(Role/Permission) 검증
         if required_perm and required_perm not in user_perms:
@@ -162,17 +156,11 @@ class HqProjectModulePermission(permissions.BasePermission):
             user_perms = self._get_all_hq_user_permissions(request.user)
 
         # 3. 조회 요청 (SAFE_METHODS)
+        # [M-5] required_perm이 명시된 경우 반드시 해당 객체 권한 보유 여부 검증
         if request.method in permissions.SAFE_METHODS:
             if required_perm:
-                if required_perm in user_perms:
-                    return True
-                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
-                    return True
-                return False
-            else:
-                if self._is_hq_member_or_staff(request.user) or bool(user_perms):
-                    return True
-                return False
+                return required_perm in user_perms
+            return self._is_hq_member_or_staff(request.user) or bool(user_perms)
 
         # 4. 쓰기 요청 (Write) — 본사 기능 권한(Role/Permission) 검증
         if required_perm and required_perm not in user_perms:

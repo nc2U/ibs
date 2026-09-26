@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationCustomBasic, PageNumberPaginationOneHundred
 from apiV1.permissions.ibs_perms import IbsModulePermission
+from apiV1.permissions._utils import get_project_ids_with_permission  # [H-7] 권한 인식 필터링
 from apiV1.serializers.sales import (
     SalesAgencySerializer, SalesTeamSerializer, SalesPersonSerializer,
     SalesPersonDocumentSerializer, CommissionPolicySerializer,
@@ -37,19 +38,22 @@ def _sync_period_status(period: SettlementPeriod) -> None:
     - 전원 '지급 완료(3)' → 회차 상태 '3'으로 갱신
     - 일부 미완료 상태에서 '3'이었던 경우 → 회차 상태 '2(확정)'로 복귀
     M-3 수정: 외주 AgencyPayout도 동기화 대상에 포함.
+    [H-6] 동시 상태 전이 경쟁 상태를 방지하기 위해 transaction.atomic 및 select_for_update 적용
     """
-    if period.status not in ('2', '3'):
-        return
-    has_pending = (
-        period.payouts.exclude(pay_status='3').exists()
-        or period.agency_payouts.exclude(pay_status='3').exists()
-    )
-    if not has_pending and period.status == '2':
-        period.status = '3'
-        period.save(update_fields=['status', 'updated_at'])
-    elif has_pending and period.status == '3':
-        period.status = '2'
-        period.save(update_fields=['status', 'updated_at'])
+    with transaction.atomic():
+        period = SettlementPeriod.objects.select_for_update().get(pk=period.pk)
+        if period.status not in ('2', '3'):
+            return
+        has_pending = (
+            period.payouts.exclude(pay_status='3').exists()
+            or period.agency_payouts.exclude(pay_status='3').exists()
+        )
+        if not has_pending and period.status == '2':
+            period.status = '3'
+            period.save(update_fields=['status', 'updated_at'])
+        elif has_pending and period.status == '3':
+            period.status = '2'
+            period.save(update_fields=['status', 'updated_at'])
 
 
 class SalesAgencyViewSet(viewsets.ModelViewSet):
@@ -66,7 +70,9 @@ class SalesAgencyViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
+        allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+        return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -90,7 +96,9 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
             annotate_members_count=Count('members', filter=Q(members__status='1'))
         )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(agency__project_id__in=get_accessible_project_ids(user))
+            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
+            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            qs = qs.filter(agency__project_id__in=allowed_ids)
         return qs.order_by('agency', 'order', 'id')
 
     @property
@@ -115,7 +123,9 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
             annotate_documents_count=Count('documents')
         )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(team__agency__project_id__in=get_accessible_project_ids(user))
+            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
+            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            qs = qs.filter(team__agency__project_id__in=allowed_ids)
         return qs.order_by('team', 'duty', 'name', 'id')
 
     @property
@@ -139,7 +149,9 @@ class CommissionPolicyViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.policy 권한을 실제로 보유한 프로젝트만 필터링
+        allowed_ids = get_project_ids_with_permission(user, 'sales.policy')
+        return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -169,7 +181,9 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = super().get_queryset()
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
+            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            qs = qs.filter(contract__project_id__in=allowed_ids)
         if self.request.query_params.get('search'):
             return qs.distinct()
         return qs
@@ -241,9 +255,9 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         직영 대행사: CommissionPayout (개인별, 계층 수수료 자동 배분 + bubble-up 귀속 이익 추적)
         외주 대행사: AgencyPayout    (대행사 단위, VAT 10% 자동 계산)
         """
-        period = self.get_object()
-
         with transaction.atomic():
+            # [H-5] 동시 정산 생성/수정 방지를 위한 row-level lock
+            period = SettlementPeriod.objects.select_for_update().get(pk=self.get_object().pk)
             result = generate_period_payouts(period)
 
         if result['total_contracts'] == 0:
@@ -351,9 +365,10 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         return 'sales.settle'
 
     @action(detail=True, methods=['post'], url_path='update-pay-status')
+    @transaction.atomic
     def update_pay_status(self, request, pk=None):
         """지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
-        payout = self.get_object()
+        payout = CommissionPayout.objects.select_for_update().get(pk=pk)
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status
@@ -475,9 +490,10 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         return 'sales.settle'
 
     @action(detail=True, methods=['post'], url_path='update-pay-status')
+    @transaction.atomic
     def update_pay_status(self, request, pk=None):
         """대행사 지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
-        payout = self.get_object()
+        payout = AgencyPayout.objects.select_for_update().get(pk=pk)
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status

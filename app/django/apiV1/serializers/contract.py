@@ -524,8 +524,9 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         contractor = validated_data.get('contractor')
 
-        # 동일 계약자의 기존 현재 주소를 False로 변경
+        # [M-1] 계약자 row-level lock을 획득하여 동시 주소 등록 시 복수의 is_current=True 발생 방지
         if contractor:
+            Contractor.objects.select_for_update().get(pk=contractor.pk)
             ContractorAddress.objects.filter(
                 contractor=contractor,
                 is_current=True
@@ -537,8 +538,9 @@ class ContractorAddressSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # is_current 값이 True로 변경되는 경우 처리
+        # [M-1] is_current 값이 True로 변경되는 경우 처리 시 row-level lock으로 동시성 보호
         if validated_data.get('is_current', False) and not instance.is_current:
+            Contractor.objects.select_for_update().get(pk=instance.contractor_id)
             # 동일 contractor의 다른 모든 주소를 is_current=False로 변경
             ContractorAddress.objects.filter(
                 contractor=instance.contractor,
@@ -624,7 +626,12 @@ class SuccessionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # 1. contract 데이터 추출
         validated_data['contract_id'] = self.initial_data.get('contract')
-        contract = Contract.objects.get(pk=validated_data['contract_id'])
+        # [H-4] 행 락을 통해 동일 계약에 대한 동시 승계 생성 차단
+        contract = Contract.objects.select_for_update().get(pk=validated_data['contract_id'])
+
+        # [M-3] 이미 진행 중인 승계(신청접수 1, 변경인가대기 2)가 있는 경우 중복 신청 차단
+        if Succession.objects.filter(contract=contract, status__in=['1', '2']).exists():
+            raise serializers.ValidationError('해당 계약에 대해 이미 처리 중인 권리의무승계 신청이 존재합니다.')
 
         # 2. 기존 계약자(양도인) 처리 (해지 신청 중인 경우 신청 취소 처리)
         # 접수 시점에는 매도인이 그대로 계약을 유지하되 상태만 '변경처리중(3)'/'승계신청(3)'으로 전환
@@ -688,6 +695,10 @@ class SuccessionSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        # [H-4] 계약 및 관련 계약자 레코드에 대해 행 락(select_for_update)을 획득하여 OneToOne 상태 전이 동시성 보호
+        contract = Contract.objects.select_for_update().get(pk=instance.contract_id)
+        list(Contractor.objects.select_for_update().filter(pk__in=[instance.seller_id, instance.buyer_id]))
+
         instance.__dict__.update(**validated_data)
         # updator 설정
         instance.updator = self.context['request'].user
