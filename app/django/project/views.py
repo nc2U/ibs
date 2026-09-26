@@ -27,10 +27,6 @@ class ProjectCreate(SuccessMessageMixin, LoginRequiredMixin, CreateView):
     success_message = '새 프로젝트가 등록되었습니다.'
     success_url = reverse_lazy('ibs:project:index')
 
-    def form_valid(self, form):
-        form.instance.company = Company.objects.first()
-        return super(ProjectCreate, self).form_valid(form)
-
 
 class ProjectUpdate(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
     model = Project

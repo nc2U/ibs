@@ -29,6 +29,16 @@ def get_accessible_project_ids(user):
     return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
+# 프로젝트 액션별 권한 매핑
+_PROJECT_ACTION_PERMISSION_MAP = {
+    'list': 'project.public',
+    'retrieve': 'project.public',
+    'create': 'project.create',
+    'update': 'project.update',
+    'partial_update': 'project.update',
+    'destroy': 'project.delete',
+}
+
 # 사이트 액션별 권한 매핑 (SiteOwnerViewSet, SiteContractViewSet 공통)
 _SITE_ACTION_PERMISSION_MAP = {
     'list': 'site.read',
@@ -55,8 +65,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         'issue_project__company', 'salesbillissue'
     ).all()
     serializer_class = ProjectSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_class = ProjectFilterSet
+
+    @property
+    def required_permission(self):
+        return _PROJECT_ACTION_PERMISSION_MAP.get(self.action, 'project.public')
 
     def get_queryset(self):
         user = self.request.user
@@ -67,11 +81,17 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class ProjectIncBudgetViewSet(viewsets.ModelViewSet):
-    queryset = ProjectIncBudget.objects.all()
+    queryset = ProjectIncBudget.objects.select_related(
+        'project', 'account', 'account_d2', 'account_d3', 'order_group', 'unit_type'
+    ).all()
     serializer_class = ProjectIncBudgetSerializer
     pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'unit_type__sort')
+
+    @property
+    def required_permission(self):
+        return _PROJECT_ACTION_PERMISSION_MAP.get(self.action, 'project.public')
 
     def get_queryset(self):
         user = self.request.user
@@ -82,11 +102,17 @@ class ProjectIncBudgetViewSet(viewsets.ModelViewSet):
 
 
 class ProjectOutBudgetViewSet(viewsets.ModelViewSet):
-    queryset = ProjectOutBudget.objects.all()
+    queryset = ProjectOutBudget.objects.select_related(
+        'project', 'account', 'account_d2', 'account_d3'
+    ).all()
     serializer_class = ProjectOutBudgetSerializer
     pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project',)
+
+    @property
+    def required_permission(self):
+        return _PROJECT_ACTION_PERMISSION_MAP.get(self.action, 'project.public')
 
     def get_queryset(self):
         user = self.request.user
@@ -135,25 +161,18 @@ class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
         date = parsed_date.strftime('%Y-%m-%d')
         month_first = parsed_date.replace(day=1).strftime('%Y-%m-%d')
 
+        user = self.request.user
         queryset = ProjectAccountingEntry.objects.filter(
             account__depth=2,
             account__is_category_only=False,
             account__category='expense',
         ).select_related('account')
 
-        if project:
-            queryset = queryset.filter(project_id=project)
-
         # 출금 거래만 (sort_id=2)
         valid_transactions = ProjectBankTransaction.objects.filter(
             sort_id=2,
             deal_date__lte=date
         )
-        if project:
-            valid_transactions = valid_transactions.filter(project_id=project)
-        valid_transaction_ids = valid_transactions.values_list('transaction_id', flat=True)
-
-        queryset = queryset.filter(transaction_id__in=valid_transaction_ids)
 
         # 당월 거래 ID
         month_transactions = ProjectBankTransaction.objects.filter(
@@ -161,8 +180,21 @@ class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
             deal_date__gte=month_first,
             deal_date__lte=date
         )
+
+        # RLS: 비관리자일 경우 접근 권한 있는 프로젝트로 필터링
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_pids = list(get_accessible_project_ids(user))
+            queryset = queryset.filter(project_id__in=accessible_pids)
+            valid_transactions = valid_transactions.filter(project_id__in=accessible_pids)
+            month_transactions = month_transactions.filter(project_id__in=accessible_pids)
+
         if project:
+            queryset = queryset.filter(project_id=project)
+            valid_transactions = valid_transactions.filter(project_id=project)
             month_transactions = month_transactions.filter(project_id=project)
+
+        valid_transaction_ids = valid_transactions.values_list('transaction_id', flat=True)
+        queryset = queryset.filter(transaction_id__in=valid_transaction_ids)
         month_transaction_ids = month_transactions.values_list('transaction_id', flat=True)
 
         return queryset.values('account').annotate(
@@ -171,7 +203,7 @@ class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
                 When(transaction_id__in=month_transaction_ids, then=F('amount')),
                 default=0
             ))
-        )
+        ).order_by('account')
 
 
 class TotalSiteAreaViewSet(viewsets.ReadOnlyModelViewSet):
@@ -180,15 +212,25 @@ class TotalSiteAreaViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ('project',)
 
     def get_queryset(self):
-        return Site.objects.values('project') \
+        user = self.request.user
+        qs = Site.objects.all()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        return qs.values('project') \
             .annotate(official=Sum('official_area'),
-                      returned=Sum('returned_area'))
+                      returned=Sum('returned_area')) \
+            .order_by('project')
 
 
 class SiteViewSet(viewsets.ModelViewSet):
-    queryset = Site.objects.all()
+    # N+1 방지: 관계 필드 eager loading
+    queryset = Site.objects.select_related(
+        'creator', 'updator', 'project'
+    ).prefetch_related(
+        'owners', 'site_info_files'
+    ).all()
     serializer_class = SiteSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project',)
     search_fields = ('district', 'lot_number', 'site_purpose', 'owners__owner')
@@ -235,8 +277,13 @@ class TotalOwnerAreaViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ('project',)
 
     def get_queryset(self):
-        return Site.objects.values('project') \
-            .annotate(owned_area=Sum('siteownshiprelationship__owned_area'))
+        user = self.request.user
+        qs = Site.objects.all()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        return qs.values('project') \
+            .annotate(owned_area=Sum('siteownshiprelationship__owned_area')) \
+            .order_by('project')
 
 
 class FindPageMixin:
@@ -277,7 +324,12 @@ class FindPageMixin:
 
 
 class SiteOwnerViewSet(FindPageMixin, viewsets.ModelViewSet):
-    queryset = SiteOwner.objects.all()
+    # N+1 방지: 관계 필드 eager loading
+    queryset = SiteOwner.objects.select_related(
+        'creator', 'updator', 'project'
+    ).prefetch_related(
+        'relations__site', 'consultation_logs__consultant'
+    ).all()
     serializer_class = SiteOwnerSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
@@ -288,6 +340,15 @@ class SiteOwnerViewSet(FindPageMixin, viewsets.ModelViewSet):
 
     filterset_fields = ('project', 'own_sort', 'use_consent')
     search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'note')
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            queryset = queryset.filter(project_id__in=get_accessible_project_ids(user))
+        if self.request.query_params.get('search'):
+            return queryset.distinct()
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -304,11 +365,29 @@ class AllOwnerViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
 
 class SiteRelationViewSet(viewsets.ModelViewSet):
-    queryset = SiteOwnshipRelationship.objects.all()
+    queryset = SiteOwnshipRelationship.objects.select_related('site', 'site_owner').all()
     serializer_class = SiteOwnshipRelationshipSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return _SITE_ACTION_PERMISSION_MAP.get(self.action, 'site.read')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(site__project_id__in=get_accessible_project_ids(user))
 
 
 class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
@@ -317,12 +396,22 @@ class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ('project',)
 
     def get_queryset(self):
-        return SiteContract.objects.values('project') \
-            .annotate(contracted_area=Sum('contract_area'))
+        user = self.request.user
+        qs = SiteContract.objects.all()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        return qs.values('project') \
+            .annotate(contracted_area=Sum('contract_area')) \
+            .order_by('project')
 
 
 class SiteContractViewSet(FindPageMixin, viewsets.ModelViewSet):
-    queryset = SiteContract.objects.all()
+    # N+1 방지: 관계 필드 eager loading
+    queryset = SiteContract.objects.select_related(
+        'owner', 'creator', 'updator', 'project'
+    ).prefetch_related(
+        'site_cont_files'
+    ).all()
     serializer_class = SiteContractSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
@@ -334,6 +423,15 @@ class SiteContractViewSet(FindPageMixin, viewsets.ModelViewSet):
     filterset_fields = ('project', 'owner__own_sort')
     search_fields = ('owner__owner', 'owner__phone1', 'acc_bank', 'acc_owner', 'note')
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            queryset = queryset.filter(project_id__in=get_accessible_project_ids(user))
+        if self.request.query_params.get('search'):
+            return queryset.distinct()
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -343,11 +441,24 @@ class SiteContractViewSet(FindPageMixin, viewsets.ModelViewSet):
 
 class SiteOwnerConsultationLogsViewSet(viewsets.ModelViewSet):
     """토지 소유자 상담 내역 관리 ViewSet"""
-    queryset = SiteOwnerConsultationLogs.objects.select_related('consultant').all()
+    queryset = SiteOwnerConsultationLogs.objects.select_related(
+        'site_owner', 'consultant', 'creator', 'updator'
+    ).all()
     serializer_class = SiteOwnerConsultationLogsSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('site_owner', 'channel')
     ordering = ['-consultation_date', '-created']
+
+    @property
+    def required_permission(self):
+        return _SITE_ACTION_PERMISSION_MAP.get(self.action, 'site.read')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(site_owner__project_id__in=get_accessible_project_ids(user))
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, consultant=self.request.user)

@@ -1,17 +1,31 @@
 import datetime
 
 from django.db.models import Q
+from django.http import HttpResponseBadRequest
 
 from _excel.mixins import ExcelExportMixin, AdvancedExcelMixin
 from project.models import Project, Site, SiteOwner, SiteContract
 
-TODAY = datetime.date.today().strftime('%Y-%m-%d')
+
+def get_today():
+    return datetime.date.today().strftime('%Y-%m-%d')
 
 
 class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 지번별 토지목록"""
 
     def get(self, request):
+        project_id = request.GET.get('project')
+        if not project_id:
+            return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except (Project.DoesNotExist, ValueError):
+            return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        today = get_today()
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('지번별_토지목록')
 
@@ -26,7 +40,6 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         # data start --------------------------------------------- #
 
         # -------------------- get_queryset start -------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
         search = request.GET.get('search')
         rights = request.GET.get('rights')
         obj_list = Site.objects.filter(project=project).order_by('order')
@@ -50,7 +63,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         # 2. Pre Header - Date
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, rows_cnt, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, rows_cnt, today + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header
         row_num = 2
@@ -148,13 +161,13 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
                 if col_num < 5:
                     worksheet.write(row_num, col_num, row[col_num], bf)
                 elif col_num == 5:
-                    worksheet.write(row_num, col_num, float(row[col_num - 1]) * 0.3025, bf)
+                    worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
                 else:
                     if project.is_returned_area:
                         if col_num == 6:
                             worksheet.write(row_num, col_num, row[col_num - 1], bf)
                         elif col_num == 7:
-                            worksheet.write(row_num, col_num, float(row[col_num - 2]) * 0.3025, bf)
+                            worksheet.write(row_num, col_num, float(row[col_num - 2] or 0) * 0.3025, bf)
                         else:
                             worksheet.write(row_num, col_num, row[col_num - 2], bf)
                     else:
@@ -163,8 +176,8 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_area = sum([a[4] for a in rows])
-        sum_ret_area = sum([a[5] for a in rows]) if project.is_returned_area else None
+        sum_area = sum([a[4] or 0 for a in rows])
+        sum_ret_area = sum([a[5] or 0 for a in rows]) if project.is_returned_area else None
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -182,13 +195,13 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
             elif col_num == 4:
                 worksheet.write(row_num, col_num, sum_area, sum_format)
             elif col_num == 5:
-                worksheet.write(row_num, col_num, float(sum_area) * 0.3025, sum_format)
+                worksheet.write(row_num, col_num, float(sum_area or 0) * 0.3025, sum_format)
             else:
                 if project.is_returned_area:
                     if col_num == 6:
                         worksheet.write(row_num, col_num, sum_ret_area, sum_format)
                     elif col_num == 7:
-                        worksheet.write(row_num, col_num, float(sum_ret_area) * 0.3025, sum_format)
+                        worksheet.write(row_num, col_num, float(sum_ret_area or 0) * 0.3025, sum_format)
                     else:
                         worksheet.write(row_num, col_num, '', sum_format)
                 else:
@@ -197,15 +210,9 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
 
         # data finish -------------------------------------------- #
 
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
+        # Set up the Http response (create_response closes workbook and rewinds buffer)
         filename = request.GET.get('filename', 'sites')
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today}'
         return self.create_response(output, workbook, filename)
 
 
@@ -213,6 +220,17 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 소유자별 토지목록"""
 
     def get(self, request):
+        project_id = request.GET.get('project')
+        if not project_id:
+            return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except (Project.DoesNotExist, ValueError):
+            return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        today = get_today()
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('소유자별_토지목록')
         formats = self.create_format_objects(workbook)
@@ -220,7 +238,6 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
         # data start --------------------------------------------- #
 
         # -------------------- get_queryset start -------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
         own_sort = request.GET.get('own_sort')
         search = request.GET.get('search')
         obj_list = SiteOwner.objects.prefetch_related('sites', 'relations__site').filter(project=project).order_by('id')
@@ -245,7 +262,7 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
         # 2. Pre Header - Date
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, rows_cnt, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, rows_cnt, today + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header
         row_num = 2
@@ -310,10 +327,11 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
         # rows = obj_list.values_list(*params)
         rows = []
         for owner in obj_list:
-            site_count = owner.sites.count()
+            relations = list(owner.relations.all())
+            site_count = len(relations)
 
-            for relation in owner.relations.all():
-                lot_number = relation.site.lot_number
+            for relation in relations:
+                lot_number = relation.site.lot_number if relation.site else ''
                 ownership_ratio = relation.ownership_ratio
                 owned_area = relation.owned_area
                 acquisition_date = relation.acquisition_date
@@ -389,27 +407,38 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
 
         # data finish -------------------------------------------- #
 
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
+        # Set up the Http response (create_response closes workbook and rewinds buffer)
         filename = request.GET.get('filename', 'sites-by-owner')
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today}'
         return self.create_response(output, workbook, filename)
 
     @staticmethod
     def get_sort(code):
         sort = ('', '개인', '법인', '국공유지')
-        return sort[int(code)]
+        try:
+            idx = int(code)
+            if 0 <= idx < len(sort):
+                return sort[idx]
+        except (ValueError, TypeError):
+            pass
+        return ''
 
 
 class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
     """프로젝트 토지 계약현황"""
 
     def get(self, request):
+        project_id = request.GET.get('project')
+        if not project_id:
+            return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except (Project.DoesNotExist, ValueError):
+            return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        today = get_today()
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('사업부지_계약현황')
         formats = self.create_format_objects(workbook)
@@ -417,7 +446,6 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         # data start --------------------------------------------- #
 
         # --------------------- get_queryset start --------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
         own_sort = request.GET.get('own_sort')
         search = request.GET.get('search')
         obj_list = SiteContract.objects.filter(project=project).order_by('owner__id')
@@ -441,7 +469,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         # 2. Pre Header - Date
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, rows_cnt, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, rows_cnt, today + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header
         row_num = 2
@@ -598,25 +626,25 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
 
         # data end ----------------------------------------------- #
 
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
-        # Set up the Http response.
+        # Set up the Http response (create_response closes workbook and rewinds buffer)
         filename = request.GET.get('filename', 'sites-contracts')
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today}'
         return self.create_response(output, workbook, filename)
 
     @staticmethod
     def get_sort(code):
         sort = ('', '개인', '법인', '국공유지')
-        return sort[int(code)]
+        try:
+            idx = int(code)
+            if 0 <= idx < len(sort):
+                return sort[idx]
+        except (ValueError, TypeError):
+            pass
+        return ''
 
     @staticmethod
     def get_row_content(cont):
-        if type(cont) == bool:
+        if isinstance(cont, bool):
             return '완료' if cont else ''
         else:
             return cont

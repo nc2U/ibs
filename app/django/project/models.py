@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
@@ -52,8 +53,8 @@ class Project(models.Model):
 
     class Meta:
         ordering = ['order', '-start_year', 'id']
-        verbose_name = '01. 프로젝트(현장)'
-        verbose_name_plural = '01. 프로젝트(현장)'
+        verbose_name = '01. 프로젝트'
+        verbose_name_plural = '01. 프로젝트'
 
 
 class ProjectIncBudget(models.Model):
@@ -78,10 +79,17 @@ class ProjectIncBudget(models.Model):
     def __str__(self):
         return self.item_name
 
+    def clean(self):
+        super().clean()
+        if self.order_group and self.order_group.project_id != self.project_id:
+            raise ValidationError({'order_group': '차수의 프로젝트가 예산의 프로젝트와 일치하지 않습니다.'})
+        if self.unit_type and self.unit_type.project_id != self.project_id:
+            raise ValidationError({'unit_type': '타입의 프로젝트가 예산의 프로젝트와 일치하지 않습니다.'})
+
     class Meta:
         ordering = ('-project', 'id')
-        verbose_name = '02. 현장 수입예산'
-        verbose_name_plural = '02. 현장 수입예산'
+        verbose_name = '02. 프로젝트 수입예산'
+        verbose_name_plural = '02. 프로젝트 수입예산'
 
 
 class ProjectOutBudget(models.Model):
@@ -105,8 +113,8 @@ class ProjectOutBudget(models.Model):
 
     class Meta:
         ordering = ('order', 'id', '-project')
-        verbose_name = '03. 현장 지출예산'
-        verbose_name_plural = '03. 현장 지출예산'
+        verbose_name = '03. 프로젝트 지출예산'
+        verbose_name_plural = '03. 프로젝트 지출예산'
 
 
 class Site(models.Model):
@@ -200,6 +208,12 @@ class SiteOwnshipRelationship(models.Model):
     def __str__(self):
         return f'{self.site} {self.site_owner}'
 
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'site') and hasattr(self, 'site_owner'):
+            if self.site.project_id != self.site_owner.project_id:
+                raise ValidationError('부지의 프로젝트와 소유자의 프로젝트가 일치해야 합니다.')
+
     class Meta:
         ordering = ('-id',)
         verbose_name = '06. 사업부지 소유관계'
@@ -227,7 +241,7 @@ class SiteOwnerConsultationLogs(models.Model):
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('수정일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                related_name='created_site_consultations', verbose_name='등록자')
+                                   related_name='created_site_consultations', verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='updated_site_consultations', verbose_name='수정자')
 
@@ -277,6 +291,12 @@ class SiteContract(models.Model):
 
     def __str__(self):
         return f'{self.owner.owner} - [{self.total_price}]'
+
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'owner') and hasattr(self, 'project'):
+            if self.project_id != self.owner.project_id:
+                raise ValidationError({'owner': '계약의 프로젝트와 소유자의 프로젝트가 일치해야 합니다.'})
 
     class Meta:
         ordering = ('-id',)

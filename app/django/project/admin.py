@@ -14,6 +14,7 @@ class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
                     'construction_start_date', 'construction_period_months')
     list_display_links = ('name',)
     list_editable = ('issue_project', 'order', 'kind', 'num_unit', 'build_size', 'area_usage')
+    list_select_related = ('issue_project',)
 
     fieldsets = (
         ('기본 정보', {
@@ -44,6 +45,7 @@ class ProjectIncBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('account', 'account_d2', 'account_d3', 'order_group', 'unit_type',
                      'item_name', 'average_price', 'quantity', 'budget', 'revised_budget')
     list_filter = ('project', 'order_group', 'unit_type')
+    list_select_related = ('project', 'account', 'account_d2', 'account_d3', 'order_group', 'unit_type')
 
 
 @admin.register(ProjectOutBudget)
@@ -54,6 +56,7 @@ class ProjectOutBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('order', 'account', 'account_d2', 'account_d3', 'account_opt',
                      'budget', 'revised_budget', 'basis_calc')
     list_filter = ('project', 'account_d2', 'account_d3')
+    list_select_related = ('project', 'account', 'account_d2', 'account_d3')
 
 
 class InfoFileAdmin(admin.TabularInline):
@@ -70,6 +73,7 @@ class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('order', 'official_area', 'returned_area', 'notice_price', 'dup_issue_date')
     search_fields = ('district', 'lot_number',)
     list_filter = ('project', 'site_purpose')
+    list_select_related = ('project',)
     inlines = (InfoFileAdmin,)
 
 
@@ -80,6 +84,7 @@ class SiteOwnerAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('owner',)
     search_fields = ('owner', 'own_sort')
     list_filter = ('project', 'own_sort',)
+    list_select_related = ('project',)
 
 
 @admin.register(SiteOwnshipRelationship)
@@ -88,6 +93,7 @@ class SiteOwnshipRelationshipAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('site', 'site_owner')
     list_editable = ('ownership_ratio', 'owned_area', 'acquisition_date')
     list_filter = ('site__project',)
+    list_select_related = ('site', 'site_owner', 'site__project')
 
 
 @admin.register(SiteOwnerConsultationLogs)
@@ -96,6 +102,7 @@ class SiteOwnerConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
                     'title', 'consultant', 'follow_up_required', 'created')
     list_display_links = ('site_owner',)
     list_filter = ('channel', 'follow_up_required', 'consultation_date', 'site_owner__project')
+    list_select_related = ('site_owner', 'consultant', 'site_owner__project')
     search_fields = ('site_owner__owner', 'title', 'content', 'consultant__username')
     date_hierarchy = 'consultation_date'
     readonly_fields = ('created', 'updated', 'creator', 'updator')
@@ -135,6 +142,7 @@ class SiteContractAdmin(ImportExportMixin, admin.ModelAdmin):
                     'ownership_completion')
     list_display_links = ('owner',)
     list_filter = ('owner__project',)
+    list_select_related = ('owner', 'project')
     inlines = (ContFileAdmin,)
 
     def formatted_price(self, obj):

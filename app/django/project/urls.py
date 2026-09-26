@@ -19,7 +19,9 @@ urlpatterns = [
     path('site-del/<int:pk>/', site_delete, name='site-del'),
     path('site-owner/', SiteOwnerManage.as_view(), name='site-owner'),
     path('site-relation/', site_relationship_update, name='site-relation'),
+    path('site-relation-delete/<int:pk>/', site_relationship_delete, name='site-relation-delete'),
     path('site-relation-delete/<int:pk>', site_relationship_delete, name='site-relateion-delete'),
     path('site-contract/', SiteContractManage.as_view(), name='site-contract'),
-    path('site-contract-delete/<int:pk>', site_contract_delete, name='site-contract-delete'),
+    path('site-contract-delete/<int:pk>/', site_contract_delete, name='site-contract-delete'),
+    path('site-contract-delete/<int:pk>', site_contract_delete),
 ]
