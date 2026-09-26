@@ -1,7 +1,7 @@
 from datetime import date, datetime
+from urllib.parse import quote
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.storage import FileSystemStorage
 from django.db.models import Q, Sum, Max
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -14,8 +14,6 @@ from _utils.payment_adjustment import aggregate_installment_adjustments
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
 
-TODAY = date.today()
-
 
 class PdfExportBill(View):
     """고지서 리스트"""
@@ -23,13 +21,16 @@ class PdfExportBill(View):
     def get(self, request):
         """
         :: PDF 파일 생성 함수
-        :parma request:
+        :param request:
         :return:
         """
         project = request.GET.get('project')  # 프로젝트 ID
         pub_date = request.GET.get('date')
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
-        bill_info = SalesBillIssue.objects.get(project=project)
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else date.today()
+        bill_info = SalesBillIssue.objects.filter(project_id=project).first()
+        if not bill_info:
+            return HttpResponse('고지서 발행 정보가 존재하지 않습니다.', status=404, content_type='text/plain; charset=utf-8')
+
         np = True if request.GET.get('np') else False
         nl = True if request.GET.get('nl') else False
 
@@ -40,7 +41,9 @@ class PdfExportBill(View):
         payment_orders = InstallmentPaymentOrder.objects.filter(project=project)  # 전체 납부회차 리스트
         now_due_order = bill_info.now_payment_order.pay_code if bill_info.now_payment_order else 2  # 당회 납부 회차
 
-        contractor_list = request.GET.get('seq').split('-')  # 계약 건 ID 리스트
+        contractor_list = [c for c in request.GET.get('seq', '').split('-') if c]  # 계약 건 ID 리스트
+        if not contractor_list:
+            return HttpResponse('고지서 발행 대상 계약 건이 지정되지 않았습니다.', status=400, content_type='text/plain; charset=utf-8')
 
         # 해당 계약건에 대한 데이터 정리 --------------------------------------- start
         context['data_list'] = (self.get_bill_data(cont_id,
@@ -51,16 +54,15 @@ class PdfExportBill(View):
 
         html_string = render_to_string('pdf/bill_control.html', context)
         html = HTML(string=html_string)
-        html.write_pdf(target='/tmp/mypdf.pdf')
+        pdf_bytes = html.write_pdf()
 
         filename = request.GET.get('filename', 'payment_bill')
         filename = f'{filename}({len(contractor_list)}건)' if contractor_list else filename
+        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
 
-        fs = FileSystemStorage('/tmp')
-        with fs.open('mypdf.pdf') as pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
-            return response
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return response
 
     def get_bill_data(self, cont_id, payment_orders, now_due_order, pub_date, np, nl):
         """
@@ -84,7 +86,7 @@ class PdfExportBill(View):
         ).exclude(excluded_order_groups=contract.order_group)
 
         try:
-            unit = contract.key_unit.houseunit
+            unit = contract.key_unit.houseunit if (contract and getattr(contract, 'key_unit', None)) else None
         except ObjectDoesNotExist:
             unit = None
 
@@ -262,7 +264,7 @@ class PdfExportBill(View):
         """
         contractor = contract.contractor.name
         cont_date = contract.sup_cont_date or contract.contractor.contract_date
-        cont_no = contract.key_unit.houseunit if unit else contract.serial_number
+        cont_no = unit if unit else contract.serial_number
         cont_type = contract.unit_type
 
         return {

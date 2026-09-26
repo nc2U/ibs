@@ -1,10 +1,13 @@
 from datetime import datetime
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import ListView, FormView
 
 from contract.models import OrderGroup, Contractor
@@ -14,7 +17,9 @@ from project.models import Project
 from .forms import SalesBillIssueForm
 from .models import SalesBillIssue
 
-TODAY = datetime.today().strftime('%Y-%m-%d')
+
+def get_today_str():
+    return timezone.localdate().strftime('%Y-%m-%d')
 
 
 class BillManageView(LoginRequiredMixin, ListView, FormView):
@@ -27,18 +32,20 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
 
     def get_bill_issue(self):
         try:
-            bill_issue = SalesBillIssue.objects.get(project=self.get_project())
-        except:
-            bill_issue = None
-        return bill_issue
+            return SalesBillIssue.objects.get(project=self.get_project())
+        except (SalesBillIssue.DoesNotExist, ObjectDoesNotExist, AttributeError):
+            return None
 
     def get_project(self):
         try:
             project = self.request.user.staff_auth.default_project
-        except:
+        except (AttributeError, ObjectDoesNotExist):
             project = Project.objects.first()
         gp = self.request.GET.get('project')
-        project = Project.objects.get(pk=gp) if gp else project
+        if gp:
+            found = Project.objects.filter(pk=gp).first()
+            if found:
+                project = found
         return project
 
     def get_form_kwargs(self):
@@ -83,12 +90,12 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
         if group:
             queryset = queryset.filter(contract__order_group=group)
         if type:
-            queryset = queryset.filter(contract__keyunit__unit_type=type)
+            queryset = queryset.filter(contract__key_unit__unit_type=type)
         if dong:
-            queryset = queryset.filter(contract__keyunit__houseunit__building_number=dong)
+            queryset = queryset.filter(contract__key_unit__houseunit__building_unit=dong)
         order_list = ['contract_date', '-contract_date', 'contract__serial_number',
                       '-contract__serial_number', 'name', '-name']
-        if order:
+        if order and order.isdigit() and 0 <= int(order) < len(order_list):
             queryset = queryset.order_by(order_list[int(order)])
         if q:
             queryset = queryset.filter(name__icontains=q)
@@ -99,7 +106,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
         user = self.request.user
         context['project_list'] = Project.objects.all() if user.is_superuser else user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
-        context['today'] = TODAY
+        context['today'] = get_today_str()
         context['groups'] = OrderGroup.objects.filter(project=self.get_project())
         context['types'] = UnitType.objects.filter(project=self.get_project())
         context['dongs'] = BuildingUnit.objects.filter(project=self.get_project())
@@ -112,18 +119,15 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
         paginate_queryset = paginator.page(page)
 
         # 계약자별 납부상태 구하기 + 계약자별 현 회차 상태(완납회차 계산)
-        now_pay_code = self.get_bill_issue().now_payment_order.pay_code if self.get_bill_issue() else 2  # 현재 납부해야 하는 회차
+        bill_issue = self.get_bill_issue()
+        now_pay_code = bill_issue.now_payment_order.pay_code if (bill_issue and bill_issue.now_payment_order) else 2
 
         total_pay_by_contract = []
         amounts = []
         paid_order = []
         for contractor in paginate_queryset:
             contract = contractor.contract
-            total_pay_by_contract.append(None)  # 계약자별 총 납입액 배열화
-            try:  # 동호수 지정여부
-                unit_set = contract.keyunit.houseunit
-            except:
-                unit_set = None
+            unit_set = getattr(getattr(contract, 'key_unit', None), 'houseunit', None)
             group = contract.order_group
             type = contract.unit_type
 
@@ -131,24 +135,28 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                                                    unit_type=type)  # 타입별 분양가 그룹
             price = contract.unit_type.average_price  # 동호 미지정시 타입별 평균 분양가
             if unit_set:
-                floor = contract.keyunit.houseunit.floor_type
-                price = prices.get(unit_floor_type=floor)  # 동호 지정시 해당 동호 분양가
-
-            # all_pay = price.installmentpaymentamount_set.all() # 분양가 -> 회차별 납입가 그룹
-            # now_pay = all_pay.filter(payment_order__pay_code__lte=now_pay_code) # 회차별 납입가 중 -> 현재 회차까지 그룹
-            # -----
+                floor = unit_set.floor_type
+                matched_price = prices.filter(unit_floor_type=floor).first()
+                if matched_price:
+                    price = matched_price
 
             all_pay_order = InstallmentPaymentOrder.objects.filter(
                 project=self.get_project(),
                 type_sort=contract.unit_type.sort
             ).exclude(excluded_order_groups=contract.order_group)
             now_pay = 0
-            now_pay_order = all_pay_order.filter(pay_code__lte=now_pay_code)
+
+            payment_by_cont = contract.payments.aggregate(
+                total=Sum('accounting_entry__amount')
+            )['total'] or 0
+            total_pay_by_contract.append(payment_by_cont)
 
             pay_by_order = 0  # 회차별 납입액 합계
-            payid_by = payment_by_cont if payment_by_cont else 0  # 해당 계약건 총 기납입액
+            payid_by = payment_by_cont  # 해당 계약건 총 기납입액
             pbo_string = '계약금미납'
             balance_order = all_pay_order.filter(pay_sort='3')
+            price_val = getattr(price, 'price', 0) if hasattr(price, 'price') else (price or 0)
+
             for apo in all_pay_order:
 
                 if apo.pay_sort == '1':  # 계약금일때
@@ -157,10 +165,10 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                                                      order_group=contract.order_group,
                                                      unit_type=contract.unit_type)
                         down_payment = dp.payment_amount
-                    except:
-                        pay_num = all_pay_order.filter(pay_sort='1').count()
-                        pn = round(pay_num / 2)
-                        down_payment = int(price.price * 0.1 / pn)
+                    except (DownPayment.DoesNotExist, ObjectDoesNotExist):
+                        pay_num = all_pay_order.filter(pay_sort='1').count() or 1
+                        pn = round(pay_num / 2) or 1
+                        down_payment = int(price_val * 0.1 / pn)
                     if apo.pay_code <= now_pay_code:
                         now_pay += down_payment
                     pay_by_order += down_payment  # 회차별 납입액 가산
@@ -170,20 +178,21 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                         break
 
                 if apo.pay_sort == '2':  # 중도금일때
-                    medium_amount = int(price.price * 0.1)
+                    medium_amount = int(price_val * 0.1)
                     pay_by_order += medium_amount  # 회차별 납입액 가산
                     if apo.pay_code <= now_pay_code:
-                        now_pay += down_payment
+                        now_pay += medium_amount
                     if payid_by >= pay_by_order:
                         pbo_string = apo.pay_name
                     else:
                         break
 
                 if apo.pay_sort == '3':  # 잔금일때
-                    balance_amount = int((price.price - pay_by_order) / balance_order.count())
+                    bal_count = balance_order.count() or 1
+                    balance_amount = int((price_val - pay_by_order) / bal_count)
                     pay_by_order += balance_amount  # 회차별 납입액 가산
                     if apo.pay_code <= now_pay_code:
-                        now_pay += down_payment
+                        now_pay += balance_amount
                     if payid_by >= pay_by_order:
                         pbo_string = apo.pay_name
                     else:
@@ -227,7 +236,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                     bill_issue.address3 = form.cleaned_data.get('address3')
                     bill_issue.title = form.cleaned_data.get('title')
                     bill_issue.content = form.cleaned_data.get('content')
-                    bill_issue.register = request.user
+                    bill_issue.creator = request.user
                 else:
                     now_due_order = InstallmentPaymentOrder.objects.get(pk=request.POST.get('now_payment_order'))
                     now_due_order.pay_due_date = form.cleaned_data.get('now_due_date')
@@ -250,7 +259,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
                                                 address3=form.cleaned_data.get('address3'),
                                                 title=form.cleaned_data.get('title'),
                                                 content=form.cleaned_data.get('content'),
-                                                user=request.user)
+                                                creator=request.user)
                 bill_issue.save()
                 page = '?page=' + self.request.GET.get('page') if self.request.GET.get('page') else ''
                 return redirect(reverse_lazy('ibs:notice:bill') + page)

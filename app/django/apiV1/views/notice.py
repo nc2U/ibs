@@ -22,7 +22,7 @@ from apiV1.pagination import PageNumberPaginationOneThousand, PageNumberPaginati
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.notice import (
-    SallesBillIssueSerializer, RegisteredSenderNumberSerializer,
+    SalesBillIssueSerializer, SallesBillIssueSerializer, RegisteredSenderNumberSerializer,
     MessageTemplateSerializer, SMSMessageSerializer, MMSMessageSerializer, KakaoMessageSerializer,
     SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer,
     PostLabelSerializer, EmailNoticeSerializer, EmailNoticeListSerializer,
@@ -36,8 +36,8 @@ def get_accessible_project_ids(user):
 
 
 class BillIssueViewSet(viewsets.ModelViewSet):
-    queryset = SalesBillIssue.objects.all()
-    serializer_class = SallesBillIssueSerializer
+    queryset = SalesBillIssue.objects.select_related('project', 'now_payment_order', 'creator').all()
+    serializer_class = SalesBillIssueSerializer
     filterset_fields = ('project',)
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
 
@@ -76,13 +76,13 @@ class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
 
 class MessageTemplateViewSet(viewsets.ModelViewSet):
     """메시지 템플릿 관리 ViewSet"""
-    queryset = MessageTemplate.objects.filter(is_active=True)
+    queryset = MessageTemplate.objects.filter(is_active=True).select_related('created_by')
     serializer_class = MessageTemplateSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         """활성화된 템플릿만 조회"""
-        return MessageTemplate.objects.filter(is_active=True).order_by('-created_at')
+        return MessageTemplate.objects.filter(is_active=True).select_related('created_by').order_by('-created_at')
 
     def perform_create(self, serializer):
         """템플릿 생성 시 현재 사용자 저장"""
@@ -457,6 +457,35 @@ class MessageViewSet(viewsets.ViewSet):
             # 결과에 따른 응답 상태 코드 결정
             if result.get('code') == 200:
                 response_status = status.HTTP_200_OK
+
+                # 발송 성공 시 히스토리 저장
+                try:
+                    schedule_datetime = None
+                    if schedule_date and schedule_time:
+                        schedule_datetime = timezone.make_aware(
+                            datetime.combine(schedule_date, schedule_time)
+                        )
+
+                    recipients_phone = [r['phone'] for r in validated_data['recipients'] if 'phone' in r]
+                    message_content = validated_data.get('resend_content') or f"알림톡 템플릿: {validated_data['template_code']}"
+
+                    MessageSendHistory.objects.create(
+                        message_type='KAKAO',
+                        sender_number=validated_data['sender_number'],
+                        message_content=message_content,
+                        title=validated_data.get('resend_title', ''),
+                        recipients=recipients_phone,
+                        recipient_count=len(recipients_phone),
+                        sent_at=timezone.now(),
+                        request_no='',
+                        company_id=validated_data.get('company_id', '') or '',
+                        project_id=request.data.get('project'),
+                        scheduled_send=validated_data.get('scheduled_send', False),
+                        schedule_datetime=schedule_datetime,
+                        sent_by=request.user
+                    )
+                except Exception:
+                    pass
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 
@@ -798,7 +827,7 @@ class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
 
 class EmailNoticeViewSet(viewsets.ModelViewSet):
     """이메일 발송 관리 ViewSet"""
-    queryset = EmailNotice.objects.select_related('project', 'sent_by').prefetch_related('send_logs').all()
+    queryset = EmailNotice.objects.select_related('project', 'sent_by').all()
     serializer_class = EmailNoticeSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filter_backends = (DjangoFilterBackend, OrderingFilter)
@@ -817,6 +846,12 @@ class EmailNoticeViewSet(viewsets.ModelViewSet):
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             accessible_projects = get_accessible_project_ids(user)
             queryset = queryset.filter(project_id__in=accessible_projects)
+
+        if self.action != 'list':
+            from django.db.models import Prefetch
+            queryset = queryset.prefetch_related(
+                Prefetch('send_logs', queryset=EmailSendLog.objects.select_related('contractor'))
+            )
         return queryset
 
     @property
@@ -929,7 +964,12 @@ class EmailNoticeViewSet(viewsets.ModelViewSet):
             contractor_id_map = {}
             c_ids = [r['contractor_id'] for r in custom_recipients if r.get('contractor_id')]
             if c_ids:
-                for c in Contractor.objects.filter(id__in=c_ids):
+                for c in Contractor.objects.filter(
+                    id__in=c_ids,
+                    contract__project_id=project_id,
+                    contract__is_active=True,
+                    is_active=True
+                ):
                     contractor_id_map[c.id] = c
 
             for r in custom_recipients:

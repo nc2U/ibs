@@ -47,40 +47,56 @@ def send_mass_email_task(self, email_notice_id: int):
 
     project_name = notice.project.name if notice.project else ''
 
-    for log in logs:
-        context = {
-            '계약자명': log.recipient_name,
-            'name': log.recipient_name,
-            '동호수': log.unit_info,
-            'unit': log.unit_info,
-            '프로젝트명': project_name,
-            'project': project_name,
-        }
+    from django.core.mail import get_connection
 
-        rendered_title = _render_template(notice.title, context)
-        rendered_html = _render_template(notice.content, context)
-        text_content = strip_tags(rendered_html)
+    connection = get_connection()
+    try:
+        connection.open()
+    except Exception:
+        connection = None
 
-        try:
-            msg = EmailMultiAlternatives(
-                subject=rendered_title,
-                body=text_content,
-                from_email=from_email,
-                to=[log.recipient_email],
-            )
-            msg.attach_alternative(rendered_html, 'text/html')
-            msg.send(fail_silently=False)
+    try:
+        for log in logs:
+            context = {
+                '계약자명': log.recipient_name,
+                'name': log.recipient_name,
+                '동호수': log.unit_info,
+                'unit': log.unit_info,
+                '프로젝트명': project_name,
+                'project': project_name,
+            }
 
-            log.status = 'success'
-            log.sent_at = timezone.now()
-            log.save(update_fields=['status', 'sent_at'])
-            success_count += 1
-        except Exception as exc:
-            log.status = 'fail'
-            log.error_message = str(exc)
-            log.sent_at = timezone.now()
-            log.save(update_fields=['status', 'error_message', 'sent_at'])
-            fail_count += 1
+            rendered_title = _render_template(notice.title, context)
+            rendered_html = _render_template(notice.content, context)
+            text_content = strip_tags(rendered_html)
+
+            try:
+                msg = EmailMultiAlternatives(
+                    subject=rendered_title,
+                    body=text_content,
+                    from_email=from_email,
+                    to=[log.recipient_email],
+                    connection=connection,
+                )
+                msg.attach_alternative(rendered_html, 'text/html')
+                msg.send(fail_silently=False)
+
+                log.status = 'success'
+                log.sent_at = timezone.now()
+                log.save(update_fields=['status', 'sent_at'])
+                success_count += 1
+            except Exception as exc:
+                log.status = 'fail'
+                log.error_message = str(exc)
+                log.sent_at = timezone.now()
+                log.save(update_fields=['status', 'error_message', 'sent_at'])
+                fail_count += 1
+    finally:
+        if connection:
+            try:
+                connection.close()
+            except Exception:
+                pass
 
     success_count = notice.send_logs.filter(status='success').count()
     fail_count = notice.send_logs.filter(status='fail').count()

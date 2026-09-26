@@ -7,7 +7,7 @@ from notice.models import (
 
 
 # Notice --------------------------------------------------------------------------
-class SallesBillIssueSerializer(serializers.ModelSerializer):
+class SalesBillIssueSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
@@ -16,6 +16,10 @@ class SallesBillIssueSerializer(serializers.ModelSerializer):
                   'agency', 'agency_tel', 'bank_account1', 'bank_number1', 'bank_host1',
                   'bank_account2', 'bank_number2', 'bank_host2', 'zipcode', 'address1',
                   'address2', 'address3', 'title', 'content', 'creator', 'updated')
+
+
+# Backward compatibility alias
+SallesBillIssueSerializer = SalesBillIssueSerializer
 
 
 # Registered Sender Number --------------------------------------------------------
@@ -250,6 +254,17 @@ class KakaoMessageSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="대체 문자 내용"
     )
+    company_id = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        help_text="조직 구분 ID (히스토리 저장용)"
+    )
+    project = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="프로젝트 ID (히스토리 저장용)"
+    )
 
     @staticmethod
     def validate_recipients(value):
@@ -434,10 +449,13 @@ class PostLabelSerializer(serializers.Serializer):
     has_dm_address = serializers.SerializerMethodField()
 
     def _get_house_unit(self, obj):
-        contract = getattr(obj.contractor, 'contract', None)
-        if contract and contract.key_unit and hasattr(contract.key_unit, 'houseunit'):
-            return contract.key_unit.houseunit
-        return None
+        if not hasattr(obj, '_cached_house_unit'):
+            contract = getattr(obj.contractor, 'contract', None)
+            if contract and contract.key_unit and hasattr(contract.key_unit, 'houseunit'):
+                obj._cached_house_unit = contract.key_unit.houseunit
+            else:
+                obj._cached_house_unit = None
+        return obj._cached_house_unit
 
     def get_building_name(self, obj):
         hu = self._get_house_unit(obj)
@@ -455,7 +473,9 @@ class PostLabelSerializer(serializers.Serializer):
         return ''
 
     def get_has_dm_address(self, obj):
-        return bool(obj.dm_address1 and obj.dm_address1.strip())
+        if not hasattr(obj, '_cached_has_dm'):
+            obj._cached_has_dm = bool(obj.dm_address1 and obj.dm_address1.strip())
+        return obj._cached_has_dm
 
     def get_effective_zipcode(self, obj):
         return obj.dm_zipcode if self.get_has_dm_address(obj) else obj.id_zipcode
