@@ -141,6 +141,7 @@ router.register(r'price', payment.SalesPriceViewSet)
 router.register(r'pay-order', payment.InstallmentOrderViewSet)
 router.register(r'payment-installment', payment.PaymentPerInstallmentViewSet)
 router.register(r'down-payment', payment.DownPaymentViewSet)
+router.register(r'over-due-rule', payment.OverDueRuleViewSet)
 router.register(r'payment-summary', payment.PaymentSummaryViewSet, basename='payment-summary')  # only list
 router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeViewSet,
                 basename='payment-status-by-unit-type')  # only list

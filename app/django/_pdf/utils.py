@@ -244,22 +244,22 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
                 except IndexError:
                     next_due_date = simple_orders[-1]['due_date']
 
-                prepay_days = (paid[0].deal_date - next_due_date).days
+                prepay_days = (paid[0].deal_date - next_due_date).days if next_due_date else 0
 
                 buffer_days = 30
                 diff = diff if prepay_days < -buffer_days else 0  # 납부기한 30일 이내 납부는 선납 적용하지 않음
 
                 delay_days = (paid[0].deal_date - pre_date).days \
-                    if ord_i_list and ord_i_list[0] < i else 0
+                    if (ord_i_list and ord_i_list[0] < i and pre_date) else 0
             else:  # 미납 시 (약정 총액 > 납부 총액)
                 # 납부 총액 - 약정 총액(미납금 추출)
                 diff = curr_amt_total - curr_paid_total
                 if paid_pay_code >= calc_start_pay_code:
                     is_first_pre = True  # 미납이 발생된 경우 최초 선납 초기화
                 prepay_days = (pre_date - paid[0].deal_date).days \
-                    if ord_i_list and ord_i_list[0] < i and diff else 0
+                    if (ord_i_list and ord_i_list[0] < i and diff and pre_date) else 0
                 delay_days = (next_date - paid[0].deal_date).days \
-                    if ord_i_list and ord_i_list[0] < i and diff else 0
+                    if (ord_i_list and ord_i_list[0] < i and diff and next_date) else 0
 
             days = prepay_days if diff < 0 else delay_days
             days = days if diff else 0

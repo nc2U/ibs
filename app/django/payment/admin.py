@@ -22,6 +22,7 @@ class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'pay_sort')
     list_filter = ('project', 'pay_sort')
     filter_horizontal = ('excluded_order_groups',)
+    list_select_related = ('project',)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "excluded_order_groups":
@@ -74,6 +75,7 @@ class SalesPriceByGTAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'unit_type', 'unit_floor_type')
     list_editable = ('price_build', 'price_land', 'price_tax', 'price')
     list_filter = ('project', 'order_group', 'unit_type')
+    list_select_related = ('project', 'order_group', 'unit_type', 'unit_floor_type')
     inlines = (PaymentPerInstallmentInline,)
 
 
@@ -84,6 +86,7 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('amount',)
     list_filter = ('sales_price__project', 'sales_price__order_group', 'sales_price__unit_type')
     search_fields = ('pay_order__pay_name',)
+    list_select_related = ('sales_price__project', 'sales_price__order_group', 'sales_price__unit_type', 'sales_price__unit_floor_type', 'pay_order')
 
     def get_sales_price_info(self, obj):
         if obj.sales_price:
@@ -113,6 +116,7 @@ class DownPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project', 'order_group', 'unit_type')
     list_editable = ('payment_amount',)
     list_filter = ('project', 'order_group', 'unit_type')
+    list_select_related = ('project', 'order_group', 'unit_type')
 
 
 @admin.register(OverDueRule)
@@ -121,6 +125,7 @@ class OverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('__str__',)
     list_editable = ('term_start', 'term_end', 'rate_year')
     list_filter = ('project',)
+    list_select_related = ('project',)
 
 
 @admin.register(SpecialPaymentOrder)
@@ -131,6 +136,7 @@ class SpecialPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('alias_name', 'days_since_prev', 'pay_due_date', 'extra_due_date')
     list_display_links = ('project', 'pay_name',)
     list_filter = ('project', 'pay_sort')
+    list_select_related = ('project',)
 
 
 @admin.register(SpecialDownPay)
@@ -139,6 +145,7 @@ class SpecialDownPayAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('project',)
     list_editable = ('order_group', 'unit_type', 'payment_amount', 'payment_remain')
     list_filter = ('project', 'order_group', 'unit_type')
+    list_select_related = ('project', 'order_group', 'unit_type')
 
 
 @admin.register(SpecialOverDueRule)
@@ -147,6 +154,7 @@ class SpecialOverDueRuleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('__str__',)
     list_editable = ('term_start', 'term_end', 'rate_year')
     list_filter = ('project',)
+    list_select_related = ('project',)
 
 
 # ============================================
@@ -290,7 +298,8 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
             'accounting_entry__account',
             'contract',
             'project',
-            'creator'
+            'creator',
+            'installment_order'
         )
 
     actions = ['fix_payment_mismatch', 'mark_as_mismatch']

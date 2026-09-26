@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -7,10 +8,10 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from company.models import Company
-from contract.models import OrderGroup, Contract, ContractPrice
+from contract.models import OrderGroup, Contract, ContractPrice, Contractor
 from items.models import UnitType, KeyUnit, HouseUnit, BuildingUnit, UnitFloorType
 from project.models import Project, ProjectIncBudget
-from work.models.project import IssueProject
+from work.models.project import IssueProject, Member, Role, Permission
 from ibs.models import AccountSort
 from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry, BankCode
 from payment.models import (
@@ -23,7 +24,7 @@ User = get_user_model()
 
 class PaymentTestCaseBase(APITestCase):
     def setUp(self):
-        # Create user
+        # Create superuser
         self.user = User.objects.create_superuser(
             username='testadmin',
             email='admin@test.com',
@@ -37,6 +38,7 @@ class PaymentTestCaseBase(APITestCase):
             company=self.company,
             name='Test Issue Project',
             slug='test-issue-project',
+            type='2',
             creator=self.user
         )
 
@@ -51,6 +53,49 @@ class PaymentTestCaseBase(APITestCase):
             construction_start_date='2026-06-01',
             construction_period_months=24
         )
+
+        # Regular users and permissions for RLS testing
+        self.user_a = User.objects.create_user(
+            username='user_proj_a',
+            email='usera@test.com',
+            password='password123'
+        )
+        self.user_b = User.objects.create_user(
+            username='user_proj_b',
+            email='userb@test.com',
+            password='password123'
+        )
+
+        self.perm_read = Permission.objects.create(module='payment', code='payment.read', name='수납 읽기')
+        self.perm_create = Permission.objects.create(module='payment', code='payment.create', name='수납 생성')
+        self.perm_update = Permission.objects.create(module='payment', code='payment.update', name='수납 수정')
+        self.perm_delete = Permission.objects.create(module='payment', code='payment.delete', name='수납 삭제')
+        self.role_staff = Role.objects.create(name='직원', creator=self.user)
+        self.role_staff.permissions.add(self.perm_read, self.perm_create, self.perm_update, self.perm_delete)
+
+        member_a = Member.objects.create(project=self.issue_project, user=self.user_a)
+        member_a.roles.add(self.role_staff)
+
+        # Project B for isolation tests
+        self.issue_project_b = IssueProject.objects.create(
+            company=self.company,
+            name='Test Issue Project B',
+            slug='test-issue-project-b',
+            type='2',
+            creator=self.user
+        )
+        self.project_b = Project.objects.create(
+            issue_project=self.issue_project_b,
+            name='Test Project B',
+            order=2,
+            kind='1',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+        member_b = Member.objects.create(project=self.issue_project_b, user=self.user_b)
+        member_b.roles.add(self.role_staff)
 
         # Create order group
         self.order_group = OrderGroup.objects.create(
@@ -108,7 +153,8 @@ class PaymentTestCaseBase(APITestCase):
             pay_code=1,
             pay_time=1,
             pay_name='계약금',
-            pay_ratio=10.0
+            pay_ratio=10.0,
+            pay_due_date=date(2026, 1, 15)
         )
         self.pay_order_remain = InstallmentPaymentOrder.objects.create(
             project=self.project,
@@ -117,7 +163,8 @@ class PaymentTestCaseBase(APITestCase):
             pay_code=10,
             pay_time=10,
             pay_name='잔금',
-            pay_ratio=90.0
+            pay_ratio=90.0,
+            pay_due_date=date(2026, 12, 31)
         )
 
         # Sales Price
@@ -172,6 +219,12 @@ class PaymentTestCaseBase(APITestCase):
             order_group=self.order_group,
             unit_type=self.unit_type,
             key_unit=self.key_unit
+        )
+        self.contractor = Contractor.objects.create(
+            contract=self.contract,
+            name='홍길동',
+            contract_date=date(2026, 1, 1),
+            status='2'
         )
         self.contract_price = ContractPrice.objects.create(
             contract=self.contract,
@@ -251,6 +304,25 @@ class PaymentPerInstallmentModelTests(PaymentTestCaseBase):
             str(ppi),
             f'{self.sales_price.project}-{self.sales_price.order_group}-{self.sales_price.unit_type}-[{self.sales_price.unit_floor_type}]'
         )
+
+    def test_clean_project_mismatch(self):
+        """sales_price와 pay_order의 프로젝트가 다를 때 ValidationError 발생 검증"""
+        other_pay_order = InstallmentPaymentOrder.objects.create(
+            project=self.project_b,
+            type_sort='1',
+            pay_sort='1',
+            pay_code=1,
+            pay_time=1,
+            pay_name='타프로젝트 회차',
+            pay_ratio=10.0
+        )
+        ppi = PaymentPerInstallment(
+            sales_price=self.sales_price,
+            pay_order=other_pay_order,
+            amount=30000000
+        )
+        with self.assertRaises(ValidationError):
+            ppi.clean()
 
 
 class DownPaymentModelTests(PaymentTestCaseBase):
@@ -354,3 +426,140 @@ class PaymentAPITests(PaymentTestCaseBase):
         url = reverse('api:ledger-overall-summary-list')
         response = self.client.get(url, {'project': self.project.pk})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_permission_and_rls_isolation(self):
+        """ViewSet 5종의 권한 및 RLS 격리(타 프로젝트 접근 403 차단) 검증"""
+        viewsets_urls = [
+            reverse('api:installmentpaymentorder-list'),
+            reverse('api:salespricebygt-list'),
+            reverse('api:paymentperinstallment-list'),
+            reverse('api:downpayment-list'),
+            reverse('api:overduerule-list'),
+        ]
+
+        # User A는 Project A 소속이므로 200 OK
+        self.client.force_authenticate(user=self.user_a)
+        for url in viewsets_urls:
+            res = self.client.get(url, {'project': self.project.pk})
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # User B는 Project A에 권한이 없으므로 403 Forbidden
+        self.client.force_authenticate(user=self.user_b)
+        for url in viewsets_urls:
+            res = self.client.get(url, {'project': self.project.pk})
+            self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PaymentExportTests(PaymentTestCaseBase):
+    @patch('weasyprint.HTML.write_pdf')
+    def test_pdf_export_ledger_payment(self, mock_write_pdf):
+        """납부 확인서 PDF 내보내기 인메모리 반환 및 예외 처리 검증"""
+        mock_write_pdf.return_value = b'%PDF-1.4 payment test'
+
+        # 1. 정상 요청
+        url = reverse('pdf:ledger-payment') + f'?contract={self.contract.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+        self.assertEqual(res.content, b'%PDF-1.4 payment test')
+        self.assertIn("filename*=UTF-8''", res['Content-Disposition'])
+
+        # 2. 계약 파라미터 누락 시 400 Bad Request
+        res_no_cont = self.client.get(reverse('pdf:ledger-payment'))
+        self.assertEqual(res_no_cont.status_code, 400)
+
+        # 3. 존재하지 않는 계약 ID 시 404 Not Found
+        res_404 = self.client.get(reverse('pdf:ledger-payment') + '?contract=999999')
+        self.assertEqual(res_404.status_code, 404)
+
+        # 4. 동호수 미지정 계약건도 정상 출력 (AttributeError 방어)
+        self.contract.key_unit = None
+        self.contract.save()
+        res_no_unit = self.client.get(url)
+        self.assertEqual(res_no_unit.status_code, 200)
+
+    @patch('weasyprint.HTML.write_pdf')
+    def test_pdf_export_ledger_daily_late_fee(self, mock_write_pdf):
+        """일자별 연체료 PDF 내보내기 검증"""
+        mock_write_pdf.return_value = b'%PDF-1.4 daily late fee test'
+
+        # 1. 정상 요청
+        url = reverse('pdf:ledger-daily-late-fee') + f'?contract={self.contract.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+
+        # 2. 파라미터 누락 400
+        res_no_cont = self.client.get(reverse('pdf:ledger-daily-late-fee'))
+        self.assertEqual(res_no_cont.status_code, 400)
+
+        # 3. 미존재 계약 404
+        res_404 = self.client.get(reverse('pdf:ledger-daily-late-fee') + '?contract=999999')
+        self.assertEqual(res_404.status_code, 404)
+
+    @patch('weasyprint.HTML.write_pdf')
+    def test_pdf_export_ledger_calculation(self, mock_write_pdf):
+        """선납할인/연체가산 내역서 PDF 내보내기 검증"""
+        mock_write_pdf.return_value = b'%PDF-1.4 calculation test'
+
+        # 1. 정상 요청
+        url = reverse('pdf:ledger-calculation') + f'?project={self.project.pk}&contract={self.contract.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+
+        # 2. 계약 파라미터 누락 400
+        res_no_cont = self.client.get(reverse('pdf:ledger-calculation') + f'?project={self.project.pk}')
+        self.assertEqual(res_no_cont.status_code, 400)
+
+        # 3. 미존재 계약 404
+        res_404 = self.client.get(reverse('pdf:ledger-calculation') + f'?project={self.project.pk}&contract=999999')
+        self.assertEqual(res_404.status_code, 404)
+
+    def test_excel_export_payments(self):
+        """수납건별 납부내역 Excel 내보내기 검증"""
+        # 정상 요청
+        url = reverse('excel:ledger-payment') + f'?project={self.project.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('spreadsheetml.sheet', res['Content-Type'])
+
+        # 프로젝트 파라미터 누락 시 400 Bad Request
+        res_no_proj = self.client.get(reverse('excel:ledger-payment'))
+        self.assertEqual(res_no_proj.status_code, 400)
+
+    def test_excel_export_payments_by_cont(self):
+        """계약자별 납부내역 Excel 내보내기 및 회차 미존재 시 안전 생성 검증"""
+        # 정상 요청
+        url = reverse('excel:ledger-paid-by-cont') + f'?project={self.project.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+        # 회차 없는 프로젝트에서도 에러 없이 200 반환
+        url_b = reverse('excel:ledger-paid-by-cont') + f'?project={self.project_b.pk}'
+        res_b = self.client.get(url_b)
+        self.assertEqual(res_b.status_code, 200)
+
+        # 프로젝트 누락 400
+        res_no_proj = self.client.get(reverse('excel:ledger-paid-by-cont'))
+        self.assertEqual(res_no_proj.status_code, 400)
+
+    def test_excel_export_payment_status(self):
+        """차수 및 타입별 수납 현황 Excel 내보내기 검증"""
+        url = reverse('excel:ledger-paid-status') + f'?project={self.project.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+        # 프로젝트 누락 400
+        res_no_proj = self.client.get(reverse('excel:ledger-paid-status'))
+        self.assertEqual(res_no_proj.status_code, 400)
+
+    def test_excel_export_overall_summary(self):
+        """총괄 집계 현황 Excel 내보내기 검증"""
+        url = reverse('excel:ledger-overall-summary') + f'?project={self.project.pk}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+        # 프로젝트 누락 400
+        res_no_proj = self.client.get(reverse('excel:ledger-overall-summary'))
+        self.assertEqual(res_no_proj.status_code, 400)

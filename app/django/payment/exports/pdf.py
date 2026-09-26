@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -14,9 +14,12 @@ from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
                                        calculate_daily_interest)
+from contract.models import Contract
 from payment.models import InstallmentPaymentOrder, SpecialDownPay
 
-TODAY = date.today()
+
+def get_today():
+    return date.today()
 
 
 class PdfExportLedgerPayment(View):
@@ -28,16 +31,22 @@ class PdfExportLedgerPayment(View):
 
         # 계약 건 객체
         cont_id = request.GET.get('contract')
-        context['contract'] = contract = get_contract(cont_id)
+        if not cont_id:
+            return HttpResponse('계약 정보가 지정되지 않았습니다.', status=400, content_type='text/plain; charset=utf-8')
+        try:
+            context['contract'] = contract = get_contract(cont_id)
+        except (Contract.DoesNotExist, ValueError):
+            return HttpResponse('존재하지 않는 계약 건입니다.', status=404, content_type='text/plain; charset=utf-8')
+
         context['is_calc'] = calc = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
 
         # 발행일자
         pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
         context['pub_date'] = pub_date
 
         try:
-            unit = contract.key_unit.houseunit
+            unit = contract.key_unit.houseunit if (contract and getattr(contract, 'key_unit', None)) else None
         except ObjectDoesNotExist:
             unit = None
 
@@ -73,15 +82,14 @@ class PdfExportLedgerPayment(View):
         html_string = render_to_string('pdf/payments_by_contractor.html', context)
 
         html = HTML(string=html_string)
-        html.write_pdf(target='/tmp/mypdf.pdf')
+        pdf_bytes = html.write_pdf()
 
         filename = request.GET.get('filename', 'payments_contractor')
+        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
 
-        fs = FileSystemStorage('/tmp')
-        with fs.open('mypdf.pdf') as pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
-            return response
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return response
 
     @staticmethod
     def get_simple_orders_from_plan(payment_plan, contract):
@@ -296,15 +304,20 @@ class PdfExportLedgerDailyLateFee(View):
 
         # 계약 건 객체
         cont_id = request.GET.get('contract')
-        context['contract'] = contract = get_contract(cont_id)
+        if not cont_id:
+            return HttpResponse('계약 정보가 지정되지 않았습니다.', status=400, content_type='text/plain; charset=utf-8')
+        try:
+            context['contract'] = contract = get_contract(cont_id)
+        except (Contract.DoesNotExist, ValueError):
+            return HttpResponse('존재하지 않는 계약 건입니다.', status=404, content_type='text/plain; charset=utf-8')
 
         # 발행일자
         pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
         context['pub_date'] = pub_date
 
         try:
-            unit = contract.key_unit.houseunit
+            unit = contract.key_unit.houseunit if (contract and getattr(contract, 'key_unit', None)) else None
         except ObjectDoesNotExist:
             unit = None
 
@@ -337,15 +350,14 @@ class PdfExportLedgerDailyLateFee(View):
         html_string = render_to_string('pdf/daily_late_fee.html', context)
 
         html = HTML(string=html_string)
-        html.write_pdf(target='/tmp/mypdf.pdf')
+        pdf_bytes = html.write_pdf()
 
         filename = request.GET.get('filename', 'daily_late_fee')
+        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
 
-        fs = FileSystemStorage('/tmp')
-        with fs.open('mypdf.pdf') as pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
-            return response
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return response
 
     @staticmethod
     def get_unpaid_summary_ledger(contract, pub_date):
@@ -515,11 +527,16 @@ class PdfExportLedgerCalculation(View):
         project = request.GET.get('project')  # 프로젝트 ID
         # 계약 건 객체
         cont_id = request.GET.get('contract')
-        context['contract'] = contract = get_contract(cont_id)
+        if not cont_id:
+            return HttpResponse('계약 정보가 지정되지 않았습니다.', status=400, content_type='text/plain; charset=utf-8')
+        try:
+            context['contract'] = contract = get_contract(cont_id)
+        except (Contract.DoesNotExist, ValueError):
+            return HttpResponse('존재하지 않는 계약 건입니다.', status=404, content_type='text/plain; charset=utf-8')
 
         # 발행일자
         pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
+        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
         context['pub_date'] = pub_date
 
         # 납부 회차 정보 (조정된 날짜 반영을 위해 필터링)
@@ -529,7 +546,7 @@ class PdfExportLedgerCalculation(View):
         ).exclude(excluded_order_groups=contract.order_group)
 
         try:
-            unit = contract.key_unit.houseunit
+            unit = contract.key_unit.houseunit if (contract and getattr(contract, 'key_unit', None)) else None
         except ObjectDoesNotExist:
             unit = None
 
@@ -566,15 +583,14 @@ class PdfExportLedgerCalculation(View):
         html_string = render_to_string('pdf/calculation_by_contractor.html', context)
 
         html = HTML(string=html_string)
-        html.write_pdf(target='/tmp/mypdf.pdf')
+        pdf_bytes = html.write_pdf()
 
         filename = request.GET.get('filename', 'calculation_contractor')
+        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
 
-        fs = FileSystemStorage('/tmp')
-        with fs.open('mypdf.pdf') as pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
-            return response
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return response
 
     @staticmethod
     def get_down_pay(contract):

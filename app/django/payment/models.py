@@ -104,6 +104,12 @@ class PaymentPerInstallment(models.Model):
     def __str__(self):
         return f'{self.sales_price.project}-{self.sales_price.order_group}-{self.sales_price.unit_type}-[{self.sales_price.unit_floor_type}]'
 
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'sales_price') and hasattr(self, 'pay_order') and self.sales_price and self.pay_order:
+            if self.sales_price.project_id != self.pay_order.project_id:
+                raise ValidationError({'pay_order': '기준 공급가격과 납부 회차의 프로젝트가 일치해야 합니다.'})
+
     class Meta:
         ordering = ('sales_price__order_group', 'pay_order', 'sales_price__unit_type')
         verbose_name = '03. 특별 약정금액'

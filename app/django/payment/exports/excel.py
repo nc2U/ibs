@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Sum
+from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin
 from contract.models import Contract
@@ -15,7 +16,9 @@ from ledger.models import ProjectBankAccount
 from payment.models import InstallmentPaymentOrder, ContractPayment, SalesPriceByGT, DownPayment
 from project.models import ProjectIncBudget
 
-TODAY = datetime.date.today().strftime('%Y-%m-%d')
+
+def get_today_str():
+    return datetime.date.today().strftime('%Y-%m-%d')
 
 
 class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
@@ -25,10 +28,10 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         # Get project and date parameters
         project = self.get_project(request)
         if not project:
-            raise ValueError("Project ID is required")
+            return HttpResponse('프로젝트 파라미터가 필요합니다.', status=400, content_type='text/plain; charset=utf-8')
 
         sd = request.GET.get('sd', '1900-01-01')
-        ed = request.GET.get('ed', TODAY)
+        ed = request.GET.get('ed', get_today_str())
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('수납건별_납부내역')
@@ -209,9 +212,9 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         # Get project and date parameters using mixins
         project = self.get_project(request)
         if not project:
-            raise ValueError("Project ID is required")
+            return HttpResponse('프로젝트 파라미터가 필요합니다.', status=400, content_type='text/plain; charset=utf-8')
 
-        date = request.GET.get('to_date', TODAY)
+        date = request.GET.get('to_date', get_today_str())
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('계약자별_납부내역', in_memory=False)
@@ -221,7 +224,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
 
         # 현재 납부 회차 구하기
         now_date = datetime.date.today()
-        pay_orders = InstallmentPaymentOrder.objects.filter(project=project)
+        pay_orders = InstallmentPaymentOrder.objects.filter(project=project).order_by('pay_code', 'pay_time')
         now_order = pay_orders.first()
         for o in pay_orders:
             if o.pay_due_date is None or o.pay_due_date <= now_date:
@@ -239,15 +242,15 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             .first()
         )
 
-        if max_payment:
+        if max_payment and max_payment.installment_order:
             max_order = max_payment.installment_order
-            calc_order = now_order if now_order.pay_code >= max_order.pay_code else max_order
+            calc_order = now_order if (now_order and now_order.pay_code >= max_order.pay_code) else max_order
         else:
             calc_order = now_order
 
-        due_pay_orders = pay_orders.filter(project=project, id__lte=calc_order.id)
+        due_pay_orders = pay_orders.filter(project=project, id__lte=calc_order.id) if calc_order else pay_orders.none()
 
-        add_order_cols = now_order.pay_code * 2  # 납부회차 * 2
+        add_order_cols = (now_order.pay_code * 2) if now_order else 0  # 납부회차 * 2
 
         col_cnt = 7 + add_order_cols  # 기본 컬럼수 + 납부회차 * 2
         is_us_cn = 2 if project.is_unit_set else 0  # 동호 표시할 경우 2라인 추가
@@ -537,9 +540,9 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
         # Get project and date parameters using mixins
         project = self.get_project(request)
         if not project:
-            raise ValueError("Project ID is required")
+            return HttpResponse('프로젝트 파라미터가 필요합니다.', status=400, content_type='text/plain; charset=utf-8')
 
-        date = request.GET.get('date', TODAY)
+        date = request.GET.get('date', get_today_str())
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('차수_타입별_수납집계', in_memory=False)
@@ -815,7 +818,10 @@ class ExportLedgerOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedE
 
         # Get project using mixin
         project = self.get_project(request)
-        date = request.GET.get('date', TODAY)
+        if not project:
+            return HttpResponse('프로젝트 파라미터가 필요합니다.', status=400, content_type='text/plain; charset=utf-8')
+
+        date = request.GET.get('date', get_today_str())
 
         # ----------------- get_data_using_api start ----------------- #
         # ContractPaymentOverallSummaryViewSet 사용 (Ledger 기반)

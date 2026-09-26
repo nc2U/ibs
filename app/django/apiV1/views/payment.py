@@ -30,7 +30,9 @@ from ..serializers.payment import InstallmentOrderSerializer, SalesPriceSerializ
 
 logger = logging.getLogger(__name__)
 
-TODAY = datetime.today().strftime('%Y-%m-%d')
+
+def get_today_str():
+    return datetime.today().strftime('%Y-%m-%d')
 
 
 def get_accessible_project_ids(user):
@@ -62,12 +64,17 @@ class InstallmentOrderFilterSet(FilterSet):
 
 
 class InstallmentOrderViewSet(viewsets.ModelViewSet):
-    queryset = InstallmentPaymentOrder.objects.all()
+    queryset = InstallmentPaymentOrder.objects.select_related('project').all()
     serializer_class = InstallmentOrderSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = InstallmentOrderFilterSet
     search_fields = ('pay_name', 'alias_name')
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -78,11 +85,16 @@ class InstallmentOrderViewSet(viewsets.ModelViewSet):
 
 
 class SalesPriceViewSet(viewsets.ModelViewSet):
-    queryset = SalesPriceByGT.objects.all()
+    queryset = SalesPriceByGT.objects.select_related('project', 'order_group', 'unit_type', 'unit_floor_type').all()
     serializer_class = SalesPriceSerializer
     pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'order_group', 'unit_type')
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -93,12 +105,23 @@ class SalesPriceViewSet(viewsets.ModelViewSet):
 
 
 class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
-    queryset = PaymentPerInstallment.objects.all()
+    queryset = PaymentPerInstallment.objects.select_related(
+        'sales_price__project',
+        'sales_price__order_group',
+        'sales_price__unit_type',
+        'sales_price__unit_floor_type',
+        'pay_order'
+    ).all()
     serializer_class = PaymentPerInstallmentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('sales_price', 'sales_price__project', 'sales_price__order_group',
                         'sales_price__unit_type', 'pay_order')
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -108,14 +131,17 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
         return qs.filter(sales_price__project_id__in=get_accessible_project_ids(user))
 
 
-
-
 class DownPaymentViewSet(viewsets.ModelViewSet):
-    queryset = DownPayment.objects.all()
+    queryset = DownPayment.objects.select_related('project', 'order_group', 'unit_type').all()
     serializer_class = DownPaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('project', 'order_group', 'unit_type')
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -126,9 +152,14 @@ class DownPaymentViewSet(viewsets.ModelViewSet):
 
 
 class OverDueRuleViewSet(viewsets.ModelViewSet):
-    queryset = OverDueRule.objects.all()
+    queryset = OverDueRule.objects.select_related('project').all()
     serializer_class = OverDueRuleSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -614,7 +645,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     def list(self, request):
         project_id = request.query_params.get('project')
-        date = request.query_params.get('date', datetime.today().strftime('%Y-%m-%d'))
+        date = request.query_params.get('date', get_today_str())
 
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
@@ -1849,7 +1880,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     def list(self, request):
         project_id = request.query_params.get('project')
-        date = request.query_params.get('date', datetime.today().strftime('%Y-%m-%d'))
+        date = request.query_params.get('date', get_today_str())
 
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
