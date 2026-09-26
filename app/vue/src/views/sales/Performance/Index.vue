@@ -185,7 +185,7 @@ const onSaved = async () => {
             <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
               <v-icon icon="mdi-account-tie" size="small" class="mr-1 text-primary" />
               계약 실적 &amp; 영업 담당자 매핑 대장
-              <CBadge color="primary" class="ml-2" shape="rounded-pill">
+              <CBadge color="info" class="ml-2" shape="rounded-pill">
                 {{ filteredList.length }}건
               </CBadge>
             </div>
@@ -404,7 +404,7 @@ const onSaved = async () => {
                       <v-btn
                         v-else
                         size="x-small"
-                        color="primary"
+                        color="info"
                         @click="openAssignModal(undefined, item.contractId)"
                       >
                         배정하기
