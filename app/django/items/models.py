@@ -63,6 +63,7 @@ class KeyUnit(models.Model):
         ordering = ['-project', 'id']
         verbose_name = '03. 계약 유닛'
         verbose_name_plural = '03. 계약 유닛'
+        unique_together = [('project', 'unit_code')]  # [C-1] 동일 프로젝트 내 unit_code 중복 방지
 
 
 class BuildingUnit(models.Model):

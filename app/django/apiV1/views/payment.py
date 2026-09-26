@@ -1112,7 +1112,12 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         # 기간도래 미수금 = 계약금액 - 수납액 (음수 포함 - 초과납부 반영)
         unpaid_amount = contract_amount - collected_amount
-        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+        # [M-7] float 대신 Decimal 사용으로 이진 부동소수점 오차 방지
+        from decimal import Decimal, ROUND_HALF_UP
+        unpaid_rate = (
+            (Decimal(str(unpaid_amount)) / Decimal(str(contract_amount)) * Decimal('100'))
+            .quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ) if contract_amount > 0 else Decimal('0')
 
         # TODO: 기간도래분 연체료 계산 로직 구현 필요
         overdue_fee = 0
@@ -1121,7 +1126,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         return {
             'contract_amount': contract_amount,
             'unpaid_amount': unpaid_amount,
-            'unpaid_rate': round(unpaid_rate, 2),
+            'unpaid_rate': float(unpaid_rate),
             'overdue_fee': overdue_fee,
             'subtotal': subtotal
         }
@@ -1162,7 +1167,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             unpaid_amount = actual_required_amount - collected_amount
             new_carryover = 0  # 초과납부액 모두 소진
 
-        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+        unpaid_rate = (
+            (Decimal(str(unpaid_amount)) / Decimal(str(contract_amount)) * Decimal('100'))
+            .quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ) if contract_amount > 0 else Decimal('0')  # [M-7] Decimal 적용
 
         # TODO: 기간도래분 연체료 계산 로직 구현 필요
         overdue_fee = 0
@@ -1213,14 +1221,17 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         actual_collected = collected_amount + overdue_fee - discount_amount
 
         contract_amount = self._get_contract_amount(order, project_id)
-        collection_rate = (actual_collected / contract_amount * 100) if contract_amount > 0 else 0
+        collection_rate = (
+            (Decimal(str(actual_collected)) / Decimal(str(contract_amount)) * Decimal('100'))
+            .quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ) if contract_amount > 0 else Decimal('0')  # [M-7] Decimal 적용
 
         return {
             'collected_amount': collected_amount,
             'discount_amount': discount_amount,
             'overdue_fee': overdue_fee,
             'actual_collected': actual_collected,
-            'collection_rate': round(collection_rate, 2)
+            'collection_rate': float(collection_rate)
         }
 
     def _get_due_period_data(self, order, project_id, date):
@@ -1235,7 +1246,10 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         ).aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
 
         unpaid_amount = contract_amount - collected_amount  # 음수 포함 - 초과납부 반영
-        unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
+        unpaid_rate = (
+            (Decimal(str(unpaid_amount)) / Decimal(str(contract_amount)) * Decimal('100'))
+            .quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ) if contract_amount > 0 else Decimal('0')  # [M-7] Decimal 적용
 
         overdue_fee = 0
         subtotal = unpaid_amount + overdue_fee

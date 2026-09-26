@@ -263,7 +263,14 @@ class ContractPriceBulkUpdateService:
                         continue
 
             except Exception as e:
-                # 기타 오류 발생시 건너뜀 (운영시에는 적절한 로깅 필요)
+                # [H-8] 에러를 조용히 삼키지 않고 반드시 로깅하여 운영 중 추적 가능하게 함
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.error(
+                    f'[ContractPriceBulkUpdateService] 미계약 세대 ContractPrice 처리 중 오류 발생 '
+                    f'(house_unit_id={house_unit.pk}): {e}',
+                    exc_info=True
+                )
                 continue
 
         return processed_count
@@ -382,6 +389,7 @@ class UnitAssignmentService:
         return None
 
     @staticmethod
+    @transaction.atomic  # [H-1] 3개 객체(Contract, old/new HouseUnit) 저장을 원자적 트랜잭션으로 보호
     def reassign_unit(contract, new_unit_pk, new_house_unit_pk=None):
         """
         계약의 유닛 재할당 (기존 연결 해제 후 새 연결)
@@ -486,6 +494,7 @@ class ContractorRegistrationService:
         return contractor
 
     @staticmethod
+    @transaction.atomic  # [H-2] Contractor/Contact/Address 복합 수정을 원자적 트랜잭션으로 보호
     def update_contractor(contractor, data):
         """
         기존 계약자 정보 수정

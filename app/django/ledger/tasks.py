@@ -161,20 +161,20 @@ def async_import_ledger_account(self, file_path: str, user_id: int, resource_typ
         error_msg = f"Import failed for user {user_id}: {str(e)}"
         logger.error(error_msg, exc_info=True)
 
-        # 오류 이메일 발송
-        try:
-            user = User.objects.get(id=user_id)
-            if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
-                send_import_error_email(user.email, error_msg)
-        except Exception as e:
-            logger.warning(f"Failed to send import error email: {e}")
-
-        # Celery 재시도 로직
+        # Celery 재시도 로직 (이메일은 최종 실패 시에만 발송)
         if self.request.retries < self.max_retries:
             countdown = 2 ** self.request.retries  # 지수 백오프
             logger.warning(
                 f"Retrying import task in {countdown} seconds (attempt {self.request.retries + 1}/{self.max_retries})")
             raise self.retry(exc=e, countdown=countdown)
+
+        # [L-5] 최종 실패 시에만 오류 이메일 발송 (재시도마다 중복 발송 방지)
+        try:
+            user = User.objects.get(id=user_id)
+            if hasattr(settings, 'EMAIL_HOST') and settings.EMAIL_HOST:
+                send_import_error_email(user.email, error_msg)
+        except Exception as email_err:
+            logger.warning(f"Failed to send import error email: {email_err}")
 
         return {
             'success': False,

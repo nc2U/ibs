@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from contract.models import Contract, Contractor, ContractPrice
@@ -71,17 +72,20 @@ class HouseUnitSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'unit_code': '유닛 코드를 배정하려면 동수(building_unit)와 타입(unit_type) 정보가 필요합니다.'}
                 )
-            key_unit, _ = KeyUnit.objects.get_or_create(
-                project=building_unit.project,
-                unit_type=unit_type,
-                unit_code=unit_code,
-            )
-            if hasattr(key_unit, 'houseunit') and key_unit.houseunit is not None:
-                if instance is None or key_unit.houseunit.pk != instance.pk:
-                    raise serializers.ValidationError(
-                        {'unit_code': f'해당 유닛 코드({unit_code})는 이미 다른 세대({key_unit.houseunit})에 배정되어 있습니다.'}
-                    )
-            validated_data['key_unit'] = key_unit
+            # [C-2] transaction.atomic + select_for_update 으로 Race Condition 차단
+            # get_or_create 이후 행 락을 즉시 획득하여 동시 요청의 이중 배정을 원천 방지
+            with transaction.atomic():
+                key_unit, _ = KeyUnit.objects.select_for_update().get_or_create(
+                    project=building_unit.project,
+                    unit_type=unit_type,
+                    unit_code=unit_code,
+                )
+                if hasattr(key_unit, 'houseunit') and key_unit.houseunit is not None:
+                    if instance is None or key_unit.houseunit.pk != instance.pk:
+                        raise serializers.ValidationError(
+                            {'unit_code': f'해당 유닛 코드({unit_code})는 이미 다른 세대({key_unit.houseunit})에 배정되어 있습니다.'}
+                        )
+                validated_data['key_unit'] = key_unit
         return validated_data
 
     def create(self, validated_data):
@@ -89,6 +93,7 @@ class HouseUnitSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         return super().update(instance, self._resolve_key_unit(validated_data, instance=instance))
+
 
 
 class ContractorInContractSerializer(serializers.ModelSerializer):
