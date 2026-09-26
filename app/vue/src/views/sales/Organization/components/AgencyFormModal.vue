@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesAgency } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -24,6 +24,18 @@ const form = reactive({
   order: 1,
   is_active: true,
 })
+
+// 자체 직영 대행인 경우 외주 대행사 관련 정보(대표자명, 사업자등록번호, 대표 전화번호) 초기화
+watch(
+  () => form.is_direct_managed,
+  newVal => {
+    if (newVal) {
+      form.business_number = ''
+      form.ceo_name = ''
+      form.phone = ''
+    }
+  },
+)
 
 const resetForm = () => {
   form.name = ''
@@ -69,6 +81,9 @@ const submit = async (e?: KeyboardEvent) => {
     const payload = {
       ...form,
       project: props.project,
+      business_number: form.is_direct_managed ? '' : form.business_number,
+      ceo_name: form.is_direct_managed ? '' : form.ceo_name,
+      phone: form.is_direct_managed ? '' : form.phone,
     }
 
     if (isEdit.value && targetId.value) {
@@ -108,36 +123,38 @@ defineExpose({ open })
               label="자체 직영 대행 여부"
             />
           </CCol>
-          <CCol md="4">
-            <CFormLabel>대표자명</CFormLabel>
-            <CFormInput
-              v-model="form.ceo_name"
-              placeholder="대표자 성명"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-          <CCol md="4">
-            <CFormLabel>사업자등록번호</CFormLabel>
-            <input
-              v-model="form.business_number"
-              v-maska
-              data-maska="###-##-#####"
-              class="form-control"
-              placeholder="000-00-00000"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
-          <CCol md="4">
-            <CFormLabel>대표 전화번호</CFormLabel>
-            <input
-              v-model="form.phone"
-              v-maska
-              data-maska="['###-###-####', '###-####-####']"
-              class="form-control"
-              placeholder="02-000-0000"
-              @keydown.enter.prevent="submit"
-            />
-          </CCol>
+          <template v-if="!form.is_direct_managed">
+            <CCol md="4">
+              <CFormLabel>대표자명</CFormLabel>
+              <CFormInput
+                v-model="form.ceo_name"
+                placeholder="대표자 성명"
+                @keydown.enter.prevent="submit"
+              />
+            </CCol>
+            <CCol md="4">
+              <CFormLabel>사업자등록번호</CFormLabel>
+              <input
+                v-model="form.business_number"
+                v-maska
+                data-maska="###-##-#####"
+                class="form-control"
+                placeholder="000-00-00000"
+                @keydown.enter.prevent="submit"
+              />
+            </CCol>
+            <CCol md="4">
+              <CFormLabel>대표 전화번호</CFormLabel>
+              <input
+                v-model="form.phone"
+                v-maska
+                data-maska="['###-###-####', '###-####-####']"
+                class="form-control"
+                placeholder="02-000-0000"
+                @keydown.enter.prevent="submit"
+              />
+            </CCol>
+          </template>
           <CCol md="4">
             <CFormLabel>정렬 순서</CFormLabel>
             <CFormInput
