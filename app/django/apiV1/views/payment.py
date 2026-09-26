@@ -349,11 +349,22 @@ def get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date,
         return 0
 
 
-def get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_id):
-    """order_group과 unit_type별 미계약 금액 계산"""
+def get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_id, project=None, default_og=None):
+    """order_group과 unit_type별 미계약 금액 계산
+
+    Args:
+        project_id: 프로젝트 ID
+        order_group_id: 분양 구분 ID
+        unit_type_id: 유니트 타입 ID
+        project: [M-4] 루프 밖에서 미리 로딩된 Project 객체 (None이면 내부 조회)
+        default_og: [M-4] 루프 밖에서 미리 로딩된 기본 분양 구분 (None이면 내부 조회)
+    """
     try:
-        project = Project.objects.get(pk=project_id)
-        default_og = OrderGroup.get_default_for_project(project)
+        # [M-4] 루프 진입 전 전달된 경우 DB 재조회 생략
+        if project is None:
+            project = Project.objects.get(pk=project_id)
+        if default_og is None:
+            default_og = OrderGroup.get_default_for_project(project)
         if not default_og:
             return 0
 
@@ -380,11 +391,23 @@ def get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_i
         return 0
 
 
-def get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id):
-    """order_group과 unit_type별 미계약 세대수 계산"""
+
+def get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id, project=None, default_og=None):
+    """order_group과 unit_type별 미계약 세대수 계산
+
+    Args:
+        project_id: 프로젝트 ID
+        order_group_id: 분양 구분 ID
+        unit_type_id: 유니트 타입 ID
+        project: [M-4] 루프 밖에서 미리 로딩된 Project 객체 (None이면 내부 조회)
+        default_og: [M-4] 루프 밖에서 미리 로딩된 기본 분양 구분 (None이면 내부 조회)
+    """
     try:
-        project = Project.objects.get(pk=project_id)
-        default_og = OrderGroup.get_default_for_project(project)
+        # [M-4] 루프 진입 전 전달된 경우 DB 재조회 생략
+        if project is None:
+            project = Project.objects.get(pk=project_id)
+        if default_og is None:
+            default_og = OrderGroup.get_default_for_project(project)
         if not default_og:
             return 0
 
@@ -410,8 +433,21 @@ def get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id
         return 0
 
 
+
 def calculate_payment_status_by_unit_type_core(project_id, date=None, use_ledger_join=False):
-    """PaymentStatus 요약 현황 계산 코어 로직"""
+    """PaymentStatus 요약 현황 계산 코어 로직
+
+    [H-3] N+1 쿼리 방지: 루프 외부에서 Project, default_og, UnitType, HouseUnit 유무를 사전 로딩.
+    기존 최대 N×8 쿼리 → 루프 외부 사전 로딩 + 루프 내 raw SQL 4개로 대폭 감소.
+    """
+    # [H-3/M-4] 루프 밖에서 Project와 default_og를 한 번만 조회
+    try:
+        project = Project.objects.get(pk=project_id)
+    except Project.DoesNotExist:
+        logger.error(f"calculate_payment_status_by_unit_type_core: Project {project_id} not found")
+        return []
+    default_og = OrderGroup.get_default_for_project(project)
+
     with connection.cursor() as cursor:
         query = """
                 SELECT pib.order_group_id as order_group_id,
@@ -421,7 +457,8 @@ def calculate_payment_status_by_unit_type_core(project_id, date=None, use_ledger
                        ut.color           as unit_type_color,
                        pib.quantity       as planned_units,
                        pib.budget         as total_budget,
-                       pib.average_price  as average_price
+                       pib.average_price  as average_price,
+                       ut.sort            as unit_type_sort
                 FROM project_projectincbudget pib
                          INNER JOIN items_unittype ut ON pib.unit_type_id = ut.id
                          INNER JOIN contract_ordergroup og ON pib.order_group_id = og.id
@@ -430,89 +467,94 @@ def calculate_payment_status_by_unit_type_core(project_id, date=None, use_ledger
                 """
 
         cursor.execute(query, [project_id])
+        rows = cursor.fetchall()
 
-        results = []
-        for row in cursor.fetchall():
-            order_group_id = row[0]
-            unit_type_id = row[2]
-            planned_units = row[5]
-            total_budget = row[6]
+    # [H-3] 근린생활시설(sort='5') UnitType ID 목록 및 HouseUnit 유무를 루프 전 일괄 조회
+    commercial_unit_type_ids = {row[2] for row in rows if row[8] == '5'}
+    if commercial_unit_type_ids:
+        # 근린생활시설 중 HouseUnit이 존재하는 unit_type_id 집합
+        house_unit_exists_ids = set(
+            HouseUnit.objects.filter(unit_type_id__in=commercial_unit_type_ids)
+            .values_list('unit_type_id', flat=True)
+            .distinct()
+        )
+        # 근린생활시설 중 SalesPriceByGT가 존재하는 (project_id, order_group_id, unit_type_id) 집합
+        sales_price_exists_set = set(
+            SalesPriceByGT.objects.filter(
+                project_id=project_id,
+                unit_type_id__in=commercial_unit_type_ids,
+            ).values_list('order_group_id', 'unit_type_id')
+        )
+    else:
+        house_unit_exists_ids = set()
+        sales_price_exists_set = set()
 
-            # 매출액 계산
-            total_sales_amount = get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id)
+    results = []
+    for row in rows:
+        order_group_id = row[0]
+        unit_type_id = row[2]
+        planned_units = row[5]
+        total_budget = row[6]
+        unit_type_sort = row[8]
 
-            # 근린생활시설 특별 처리
-            if total_budget == 0 and total_sales_amount > 0:
-                try:
-                    unit_type = UnitType.objects.get(pk=unit_type_id)
-                    if unit_type.sort == '5':  # 근린생활시설
-                        has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type_id).exists()
-                        has_sales_price = SalesPriceByGT.objects.filter(
-                            project_id=project_id,
-                            order_group_id=order_group_id,
-                            unit_type_id=unit_type_id
-                        ).exists()
+        # 매출액 계산
+        total_sales_amount = get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id)
 
-                        if has_house_units and not has_sales_price:
-                            total_budget = total_sales_amount
-                except UnitType.DoesNotExist:
-                    pass
+        # [H-3] 근린생활시설 특별 처리 — 루프 전 캐시된 데이터 사용
+        if total_budget == 0 and total_sales_amount > 0 and unit_type_sort == '5':
+            has_house_units = unit_type_id in house_unit_exists_ids
+            has_sales_price = (order_group_id, unit_type_id) in sales_price_exists_set
+            if has_house_units and not has_sales_price:
+                total_budget = total_sales_amount
 
-            # 계약 현황 계산
-            contract_data = get_contract_data_by_unit_type(project_id, order_group_id, unit_type_id)
+        # 계약 현황 계산
+        contract_data = get_contract_data_by_unit_type(project_id, order_group_id, unit_type_id)
 
-            # 실수납금액 계산
-            paid_amount = get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date, use_ledger_join)
+        # 실수납금액 계산
+        paid_amount = get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date, use_ledger_join)
 
-            contract_units = contract_data['contract_units']
-            contract_amount = contract_data['contract_amount']
-            unpaid_amount = contract_amount - paid_amount
+        contract_units = contract_data['contract_units']
+        contract_amount = contract_data['contract_amount']
+        unpaid_amount = contract_amount - paid_amount
 
-            # 미계약 금액
-            non_contract_amount = get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_id)
+        # [H-3/M-4] 미계약 금액 — project/default_og 인수 전달로 내부 DB 재조회 생략
+        non_contract_amount = get_non_contract_amount_by_unit_type(
+            project_id, order_group_id, unit_type_id, project=project, default_og=default_og
+        )
 
-            # 미계약 세대수
-            non_contract_units = get_non_contract_units_by_unit_type(project_id, order_group_id, unit_type_id)
+        # [H-3/M-4] 미계약 세대수 — project/default_og 인수 전달로 내부 DB 재조회 생략
+        non_contract_units = get_non_contract_units_by_unit_type(
+            project_id, order_group_id, unit_type_id, project=project, default_og=default_og
+        )
 
-            # 합계 = 계약금액 + 미계약금액
-            total_amount = contract_amount + non_contract_amount
+        # 합계 = 계약금액 + 미계약금액
+        total_amount = contract_amount + non_contract_amount
 
-            # 근린생활시설 특별 처리
-            if total_amount == 0:
-                try:
-                    unit_type = UnitType.objects.get(pk=unit_type_id)
-                    if unit_type.sort == '5':  # 근린생활시설
-                        has_house_units = HouseUnit.objects.filter(unit_type_id=unit_type_id).exists()
-                        has_sales_price = SalesPriceByGT.objects.filter(
-                            project_id=project_id,
-                            order_group_id=order_group_id,
-                            unit_type_id=unit_type_id
-                        ).exists()
+        # [H-3] 근린생활시설 특별 처리 — 루프 전 캐시된 데이터 사용
+        if total_amount == 0 and unit_type_sort == '5':
+            has_house_units = unit_type_id in house_unit_exists_ids
+            has_sales_price = (order_group_id, unit_type_id) in sales_price_exists_set
+            if has_house_units and not has_sales_price:
+                total_amount = get_commercial_fallback_amount(project_id, order_group_id, unit_type_id)
 
-                        if has_house_units and not has_sales_price:
-                            total_amount = get_commercial_fallback_amount(
-                                project_id, order_group_id, unit_type_id
-                            )
-                except UnitType.DoesNotExist:
-                    pass
-
-            results.append({
-                'order_group_id': order_group_id,
-                'order_group_name': row[1],
-                'unit_type_id': unit_type_id,
-                'unit_type_name': row[3],
-                'unit_type_color': row[4],
-                'total_sales_amount': total_sales_amount,
-                'planned_units': planned_units,
-                'contract_units': contract_units,
-                'non_contract_units': non_contract_units,
-                'contract_amount': contract_amount,
-                'paid_amount': paid_amount,
-                'unpaid_amount': unpaid_amount,
-                'non_contract_amount': non_contract_amount,
-                'total_budget': total_amount
-            })
+        results.append({
+            'order_group_id': order_group_id,
+            'order_group_name': row[1],
+            'unit_type_id': unit_type_id,
+            'unit_type_name': row[3],
+            'unit_type_color': row[4],
+            'total_sales_amount': total_sales_amount,
+            'planned_units': planned_units,
+            'contract_units': contract_units,
+            'non_contract_units': non_contract_units,
+            'contract_amount': contract_amount,
+            'paid_amount': paid_amount,
+            'unpaid_amount': unpaid_amount,
+            'non_contract_amount': non_contract_amount,
+            'total_budget': total_amount
+        })
     return results
+
 
 
 def is_due_period(order, date_str):

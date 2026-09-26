@@ -654,11 +654,17 @@ class ContractorViewSet(viewsets.ModelViewSet):
                      'contractorcontact__cell_phone', 'contractorcontact__home_phone',
                      'contractorcontact__other_phone', 'contractorcontact__email')
 
+    def get_queryset(self):
+        # [H-4] ContractorSerializer 직렬화 시 contract, project, 연락처 접근으로 발생하는 N+1 방지
+        return Contractor.objects.select_related(
+            'contract__project',
+            'contract__order_group',
+            'contract__unit_type',
+            'contractorcontact',
+        )
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
-
-    # def perform_update(self, serializer):
-    #     serializer.save(creator=self.request.user)
 
 
 class SimpleContractorViewSet(ContractorViewSet):
@@ -807,7 +813,14 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.succession'
 
     def get_queryset(self):
-        queryset = Succession.objects.all()
+        # [M-2] SuccessionSerializer 직렬화 시 seller/buyer/contract/project 접근으로 발생하는 N+1 방지
+        queryset = Succession.objects.select_related(
+            'seller',
+            'buyer',
+            'contract__project',
+            'contract__order_group',
+            'contract__unit_type',
+        )
         return queryset.annotate(
             is_ongoing=Case(
                 When(status__in=['1', '2'], then=Value(1)),
@@ -815,6 +828,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
                 output_field=IntegerField()
             )
         ).order_by('-is_ongoing', '-apply_date', '-id')
+
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -940,8 +954,11 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.release'
 
     def get_queryset(self):
-        queryset = ContractorRelease.objects.all()
-        from django.db.models import Case, When, Value, IntegerField
+        # [M-3] ContractorReleaseSerializer 직렬화 시 contractor/project 접근으로 발생하는 N+1 방지
+        queryset = ContractorRelease.objects.select_related(
+            'contractor',
+            'project',
+        )
         return queryset.annotate(
             is_ongoing=Case(
                 When(status__in=['1', '2', '3'], then=Value(1)),
@@ -949,6 +966,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
                 output_field=IntegerField()
             )
         ).order_by('-is_ongoing', '-request_date', '-id')
+
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

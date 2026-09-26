@@ -181,12 +181,15 @@ def render_and_save_approval_pdf(document_pk):
         raise e
 
 
-@shared_task
-def generate_approval_pdf_task(document_pk):
-    """결재 최종 승인 후 PDF 생성 비동기 Celery 태스크"""
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def generate_approval_pdf_task(self, document_pk):
+    """결재 최종 승인 후 PDF 생성 비동기 Celery 태스크
+
+    [M-6] WeasyPrint PDF 생성은 메모리/CPU 집약 작업 — 일시적 OOM 발생 시 최대 2회 재시도.
+    """
     try:
         return render_and_save_approval_pdf(document_pk)
     except Exception as e:
         logger.error('generate_approval_pdf_task failed (doc=%s): %s', document_pk, e)
-        return None
+        raise self.retry(exc=e)
 

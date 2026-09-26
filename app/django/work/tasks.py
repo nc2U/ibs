@@ -1,3 +1,5 @@
+import logging
+
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
@@ -7,11 +9,12 @@ from _utils.push_service import send_push_notification
 from work.models.meeting import Meeting
 from work.models.issue import Issue
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-@shared_task
-def send_meeting_mail_task(meeting_pk, user_pk, mail_type):
+@shared_task(bind=True, max_retries=3, default_retry_delay=10)
+def send_meeting_mail_task(self, meeting_pk, user_pk, mail_type):
     """Celery task to send meeting-related emails & push notifications asynchronously"""
     try:
         instance = Meeting.objects.select_related('project', 'creator__profile').get(pk=meeting_pk)
@@ -80,16 +83,18 @@ def send_meeting_mail_task(meeting_pk, user_pk, mail_type):
                 extra_data={'meeting_id': str(instance.pk), 'project_id': str(instance.project_id)},
             )
     except Exception as e:
-        print(f"❌ Async meeting notification task failed: {e}")
+        logger.error('send_meeting_mail_task failed (meeting=%s, type=%s): %s', meeting_pk, mail_type, e, exc_info=True)
+        raise self.retry(exc=e)
 
 
-@shared_task
-def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old_assigned_to=None):
+@shared_task(bind=True, max_retries=3, default_retry_delay=10)
+def send_issue_mail_task(self, issue_pk, user_pk, mail_type, old_status_name=None, old_assigned_to=None):
     """Celery task to send issue-related emails & push notifications asynchronously"""
     try:
         instance = Issue.objects.select_related('project', 'tracker', 'status', 'assigned_to').get(pk=issue_pk)
         user = User.objects.get(pk=user_pk)
-        watchers = list(instance.watchers.all())
+        # [M-1] watchers 프로필 N+1 방지: select_related('profile') 적용
+        watchers = list(instance.watchers.select_related('profile').all())
 
         recipient_user_ids = set()
 
@@ -160,7 +165,8 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old
                 extra_data={'issue_id': str(instance.pk), 'project_id': str(instance.project_id)},
             )
     except Exception as e:
-        print(f"❌ Async issue notification task failed: {e}")
+        logger.error('send_issue_mail_task failed (issue=%s, type=%s): %s', issue_pk, mail_type, e, exc_info=True)
+        raise self.retry(exc=e)
 
 
 @shared_task
@@ -211,6 +217,6 @@ def send_news_push_task(news_pk):
             },
         )
     except Exception as e:
-        print(f"❌ Async news notification task failed: {e}")
+        logger.error('send_news_push_task failed (news=%s): %s', news_pk, e, exc_info=True)
 
 

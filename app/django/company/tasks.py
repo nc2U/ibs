@@ -1,7 +1,12 @@
+import logging
 import os
 import base64
 from celery import shared_task
 from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
+
+
 @shared_task(bind=True)
 def extract_seals_task(self, temp_file_path, is_pdf=True):
     """
@@ -56,5 +61,7 @@ def extract_seals_task(self, temp_file_path, is_pdf=True):
         if os.path.exists(temp_file_path):
             try:
                 os.remove(temp_file_path)
-            except OSError:
-                pass
+            except OSError as e:
+                # [M-5] 무음 처리 → 운영자가 디스크/권한 문제를 인지할 수 있도록 경고 로깅
+                logger.warning('extract_seals_task: 임시 파일 삭제 실패 (%s): %s', temp_file_path, e)
+
