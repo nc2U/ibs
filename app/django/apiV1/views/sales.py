@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -86,10 +86,12 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = super().get_queryset()
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
-        return qs.filter(agency__project_id__in=get_accessible_project_ids(user))
+        qs = super().get_queryset().annotate(
+            annotate_members_count=Count('members', filter=Q(members__status='1'))
+        )
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(agency__project_id__in=get_accessible_project_ids(user))
+        return qs.order_by('agency', 'order', 'id')
 
     @property
     def required_permission(self):
@@ -109,10 +111,12 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = super().get_queryset()
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
-        return qs.filter(team__agency__project_id__in=get_accessible_project_ids(user))
+        qs = super().get_queryset().annotate(
+            annotate_documents_count=Count('documents')
+        )
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(team__agency__project_id__in=get_accessible_project_ids(user))
+        return qs.order_by('team', 'duty', 'name', 'id')
 
     @property
     def required_permission(self):
@@ -146,7 +150,11 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     """계약 영업 담당자 매핑 ViewSet"""
     queryset = ContractSalesAgent.objects.all().select_related(
         'contract__contractor', 'contract__key_unit__houseunit__building_unit',
-        'agency', 'sales_person', 'team', 'policy'
+        'contract__order_group', 'contract__unit_type',
+        'agency', 'sales_person', 'team', 'policy', 'approved_by'
+    ).prefetch_related(
+        'contract__sales_payout_details__payout__period',
+        'contract__agency_payout_details__payout__period',
     )
     serializer_class = ContractSalesAgentSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
@@ -160,9 +168,11 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
-        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+        if self.request.query_params.get('search'):
+            return qs.distinct()
+        return qs
 
     @property
     def required_permission(self):
@@ -279,8 +289,14 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'project 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             project = Project.objects.get(pk=project_id)
-        except Project.DoesNotExist:
+        except (Project.DoesNotExist, ValueError):
             return Response({'detail': '프로젝트를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_ids = list(get_accessible_project_ids(user))
+            if project.pk not in accessible_ids:
+                return Response({'detail': '해당 프로젝트에 대한 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         result = validate_org_health(project)
         return Response(result, status=status.HTTP_200_OK)

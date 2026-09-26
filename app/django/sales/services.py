@@ -89,8 +89,11 @@ def _resolve_policy(
     return None
 
 
-def _find_leader(team) -> SalesPerson | None:
+def _find_leader(team, leader_cache: dict[int, SalesPerson] | None = None) -> SalesPerson | None:
     """팀 내 재직 중인 팀장(duty='2') 첫 번째 반환"""
+    team_id = getattr(team, 'pk', None)
+    if leader_cache is not None and team_id is not None:
+        return leader_cache.get(team_id)
     return (
         SalesPerson.objects.filter(team=team, duty='2', status='1')
         .order_by('name')
@@ -98,13 +101,16 @@ def _find_leader(team) -> SalesPerson | None:
     )
 
 
-def _find_director(team) -> SalesPerson | None:
+def _find_director(team, director_cache: dict[int, SalesPerson] | None = None) -> SalesPerson | None:
     """
     상위 조직(parent_team) 내 재직 중인 본부장(duty='3' or '4') 탐색.
     상위 조직이 없으면 현재 팀에서도 탐색.
     """
     parent = getattr(team, 'parent', None)
     search_team = parent if parent else team
+    search_team_id = getattr(search_team, 'pk', None)
+    if director_cache is not None and search_team_id is not None:
+        return director_cache.get(search_team_id)
     return (
         SalesPerson.objects.filter(
             team=search_team, duty__in=('3', '4'), status='1'
@@ -118,6 +124,8 @@ def _build_direct_targets(
     person: SalesPerson,
     team,
     policy: CommissionPolicy,
+    leader_cache: dict[int, SalesPerson] | None = None,
+    director_cache: dict[int, SalesPerson] | None = None,
 ) -> tuple[list[tuple[SalesPerson, int, str]], int]:
     """
     직영 체제 수수료 수령자 목록 및 귀속 이익(미지급 fee) 계산.
@@ -133,8 +141,8 @@ def _build_direct_targets(
         unallocated_fee: 팀장/본부장 부재로 귀속된 fee 합계 (양수)
     """
     duty = person.duty
-    leader = _find_leader(team)
-    director = _find_director(team)
+    leader = _find_leader(team, leader_cache=leader_cache)
+    director = _find_director(team, director_cache=director_cache)
     targets: list[tuple[SalesPerson, int, str]] = []
     unallocated_fee = 0
 
@@ -337,6 +345,22 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         ).order_by('-start_date').select_related('unit_type')
     )
 
+    # ── N+1 방지: 프로젝트 내 재직 중인 팀장(2) 및 본부장(3, 4) 인력 사전 캐싱 ──
+    active_supervisors = list(
+        SalesPerson.objects.filter(
+            team__agency__project=period.project,
+            duty__in=('2', '3', '4'),
+            status='1',
+        ).select_related('team').order_by('duty', 'name')
+    )
+    leader_cache: dict[int, SalesPerson] = {}
+    director_cache: dict[int, SalesPerson] = {}
+    for sp in active_supervisors:
+        if sp.duty == '2' and sp.team_id not in leader_cache:
+            leader_cache[sp.team_id] = sp
+        elif sp.duty in ('3', '4') and sp.team_id not in director_cache:
+            director_cache[sp.team_id] = sp
+
     # ── 이중 정산 방지: 이미 다른 정산 회차에 포함된 계약건 제외 ──
     other_settled_contract_ids = set(
         PayoutContractDetail.objects.filter(
@@ -370,6 +394,11 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         mappings = mappings.exclude(contract_id__in=other_settled_contract_ids)
 
     # ── 재계산 시 기존 회차의 Payout 및 상세 내역 초기화 ──
+    # 환수금 영구 유실 방지: 기존 회차 Payout에 상계되었던 clawback들을 미상계로 복원
+    CommissionClawback.objects.filter(settled_payout__period=period).update(
+        is_settled=False, settled_payout=None
+    )
+
     period.payouts.all().delete()
 
     period.agency_payouts.all().delete()
@@ -420,7 +449,10 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
 
             # 직영 운영인력 계층별 타깃 (bubble-up 로직 적용)
             if policy:
-                targets, unallocated = _build_direct_targets(m.sales_person, m.team, policy)
+                targets, unallocated = _build_direct_targets(
+                    m.sales_person, m.team, policy,
+                    leader_cache=leader_cache, director_cache=director_cache
+                )
                 # 귀속 fee를 직영 대행사에 누적
                 agency_map[aid]['unallocated_fee'] += unallocated
             else:

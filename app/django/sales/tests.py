@@ -1229,3 +1229,245 @@ class SalesMultiAgencyPayoutTests(APITestCase):
         self.assertEqual(period.payouts.count(), 2)          # 김상담, 박팀장
         self.assertEqual(period.agency_payouts.count(), 3)   # 직영대행사청구 + 외주A + 외주B
 
+
+class SalesImprovementTests(APITestCase):
+    """sales 앱 리팩토링 및 무결성 강화 검증 테스트"""
+
+    def setUp(self):
+        from django.core.exceptions import ValidationError
+        self.ValidationError = ValidationError
+
+        self.admin_user = User.objects.create_superuser(
+            username='sales_admin',
+            email='admin@sales.test',
+            password='adminpassword'
+        )
+        self.normal_user = User.objects.create_user(
+            username='sales_normal',
+            email='normal@sales.test',
+            password='normalpassword'
+        )
+        self.company = Company.objects.create(name='테스트 개선 시행사')
+        self.issue_project1 = IssueProject.objects.create(
+            company=self.company,
+            name='프로젝트 1',
+            slug='proj-1',
+            creator=self.admin_user
+        )
+        self.project1 = Project.objects.create(
+            issue_project=self.issue_project1,
+            name='프로젝트 1',
+            order=1,
+            kind='2',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+        self.issue_project2 = IssueProject.objects.create(
+            company=self.company,
+            name='프로젝트 2',
+            slug='proj-2',
+            creator=self.admin_user
+        )
+        self.project2 = Project.objects.create(
+            issue_project=self.issue_project2,
+            name='프로젝트 2',
+            order=2,
+            kind='2',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+
+        # 프로젝트1 멤버십 부여 (normal_user는 프로젝트1만 접근 가능)
+        role = Role.objects.create(
+            name='Staff',
+            category='ibs_pr_manage',
+            creator=self.admin_user
+        )
+        perm, _ = Permission.objects.get_or_create(
+            code='sales.settle',
+            defaults={'name': '정산 관리', 'module': 'sales', 'is_for_project': True}
+        )
+        role.permissions.add(perm)
+        member = Member.objects.create(user=self.normal_user, project=self.issue_project1)
+        member.roles.add(role)
+
+        # 대행사 및 조직 생성
+        self.agency1 = SalesAgency.objects.create(
+            project=self.project1,
+            name='대행사 1',
+            is_direct_managed=True
+        )
+        self.agency2 = SalesAgency.objects.create(
+            project=self.project2,
+            name='대행사 2',
+            is_direct_managed=True
+        )
+        self.team1 = SalesTeam.objects.create(agency=self.agency1, name='1팀')
+        self.team2 = SalesTeam.objects.create(agency=self.agency2, name='2팀')
+
+        # 영업인력 생성
+        self.person1 = SalesPerson.objects.create(
+            team=self.team1,
+            name='직원1',
+            duty='1',
+            status='1'
+        )
+
+        # 차수 및 유니트 타입
+        self.order_group1 = OrderGroup.objects.create(project=self.project1, order_number=1, name='1차')
+        self.order_group2 = OrderGroup.objects.create(project=self.project2, order_number=1, name='2차')
+        self.unit_type1 = UnitType.objects.create(project=self.project1, name='59A', color='#fff', num_unit=10)
+        self.unit_type2 = UnitType.objects.create(project=self.project2, name='84A', color='#000', num_unit=10)
+
+        # 계약
+        self.key_unit1 = KeyUnit.objects.create(project=self.project1, unit_type=self.unit_type1, unit_code='U01')
+        self.contract1 = Contract.objects.create(
+            project=self.project1,
+            serial_number='CONT-001',
+            order_group=self.order_group1,
+            unit_type=self.unit_type1,
+            key_unit=self.key_unit1
+        )
+
+    def test_commission_policy_clean_order_group_and_unit_type(self):
+        """수수료 정책의 차수/유니트 타입 프로젝트 불일치 및 날짜 역전 방어"""
+        policy = CommissionPolicy(
+            project=self.project1,
+            order_group=self.order_group2,  # 타 프로젝트 차수
+            name='잘못된 정책',
+            start_date=date(2026, 9, 1)
+        )
+        with self.assertRaises(self.ValidationError):
+            policy.clean()
+
+        policy2 = CommissionPolicy(
+            project=self.project1,
+            unit_type=self.unit_type2,  # 타 프로젝트 타입
+            name='잘못된 정책2',
+            start_date=date(2026, 9, 1)
+        )
+        with self.assertRaises(self.ValidationError):
+            policy2.clean()
+
+        policy3 = CommissionPolicy(
+            project=self.project1,
+            name='날짜 역전 정책',
+            start_date=date(2026, 9, 10),
+            end_date=date(2026, 9, 1)  # start > end
+        )
+        with self.assertRaises(self.ValidationError):
+            policy3.clean()
+
+    def test_sales_team_clean_cross_agency_and_self_parent(self):
+        """영업팀의 타 대행사 본부 참조 및 자기 참조 방어"""
+        team = SalesTeam(agency=self.agency1, parent=self.team2, name='교차팀')
+        with self.assertRaises(self.ValidationError):
+            team.clean()
+
+        self.team1.parent = self.team1
+        with self.assertRaises(self.ValidationError):
+            self.team1.clean()
+
+    def test_contract_sales_agent_clean_project_mismatch(self):
+        """계약 영업 매핑의 대행사/영업인력 프로젝트 불일치 방어"""
+        mapping = ContractSalesAgent(
+            contract=self.contract1,  # project1
+            agency=self.agency2       # project2
+        )
+        with self.assertRaises(self.ValidationError):
+            mapping.clean()
+
+    def test_settlement_period_clean_date_inversion(self):
+        """정산 회차 시작/종료일 역전 방어"""
+        period = SettlementPeriod(
+            project=self.project1,
+            title='역전 회차',
+            start_date=date(2026, 9, 20),
+            end_date=date(2026, 9, 10)
+        )
+        with self.assertRaises(self.ValidationError):
+            period.clean()
+
+    def test_recalculation_clawback_recovery(self):
+        """정산 회차 재계산 시 기존 상계된 CommissionClawback이 유실되지 않고 재상계되는지 검증"""
+        from sales.services import generate_period_payouts
+
+        # 수수료 정책
+        policy = CommissionPolicy.objects.create(
+            project=self.project1,
+            name='기본정책',
+            agent_fee=1000000,
+            start_date=date(2026, 9, 1)
+        )
+
+        # 계약 매핑
+        ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 5),
+            is_settlement_approved=True
+        )
+
+        # 환수금 등록 (300,000원)
+        clawback = CommissionClawback.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            amount=300000,
+            reason='해지 환수'
+        )
+        self.assertFalse(clawback.is_settled)
+
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='2026년 9월 정산',
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30)
+        )
+
+        # 1차 정산 실행
+        generate_period_payouts(period)
+        clawback.refresh_from_db()
+        payout = period.payouts.get(sales_person=self.person1)
+        self.assertTrue(clawback.is_settled)
+        self.assertEqual(payout.deduction_amount, 300000)
+        self.assertEqual(payout.commission_amount, 1000000)
+
+        # 2차 정산 재계산 실행 (버그 수정 전에는 deduction_amount가 0원이 되었음)
+        generate_period_payouts(period)
+        clawback.refresh_from_db()
+        payout2 = period.payouts.get(sales_person=self.person1)
+        self.assertTrue(clawback.is_settled)
+        self.assertEqual(payout2.deduction_amount, 300000)
+        self.assertEqual(payout2.commission_amount, 1000000)
+
+    def test_validate_org_rls_permission(self):
+        """SettlementPeriodViewSet validate-org RLS 프로젝트 접근 권한 통제 검증"""
+        self.client.force_authenticate(user=self.normal_user)
+
+        # 권한 있는 project1은 200 OK
+        res_ok = self.client.get(f'/api/v1/sales-settlement-period/validate-org/?project={self.project1.id}')
+        self.assertEqual(res_ok.status_code, http_status.HTTP_200_OK)
+
+        # 권한 없는 project2는 403 Forbidden
+        res_deny = self.client.get(f'/api/v1/sales-settlement-period/validate-org/?project={self.project2.id}')
+        self.assertEqual(res_deny.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_contract_sales_agent_serializer_prefetches(self):
+        """ContractSalesAgentViewSet 목록 조회 시 N+1 쿼리 최적화 확인"""
+        ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 5)
+        )
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.get('/api/v1/sales-contract-agent/')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        self.assertGreater(len(res.data['results']), 0)
+        self.assertIn('is_settled', res.data['results'][0])
+        self.assertIn('settled_period_title', res.data['results'][0])
+
+

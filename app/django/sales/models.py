@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
@@ -61,6 +62,14 @@ class SalesTeam(models.Model):
         if self.parent:
             return f'{self.parent.name} > {self.name}'
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.parent:
+            if self.parent.agency_id != self.agency_id:
+                raise ValidationError({'parent': '상위 조직은 동일한 대행사 소속이어야 합니다.'})
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 상위 조직으로 지정할 수 없습니다.'})
 
 
 class SalesPerson(models.Model):
@@ -166,6 +175,16 @@ class CommissionPolicy(models.Model):
         type_str = f' - {self.unit_type.name}' if self.unit_type else ' (전체 공통)'
         return f'{self.name}{type_str} ({self.project})'
 
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'project_id') and self.project_id:
+            if self.order_group and self.order_group.project_id != self.project_id:
+                raise ValidationError({'order_group': '차수 그룹의 프로젝트와 수수료 정책의 프로젝트가 일치해야 합니다.'})
+            if self.unit_type and self.unit_type.project_id != self.project_id:
+                raise ValidationError({'unit_type': '유니트 타입의 프로젝트와 수수료 정책의 프로젝트가 일치해야 합니다.'})
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError({'end_date': '적용 종료일은 적용 시작일보다 이전일 수 없습니다.'})
+
 
 class ContractSalesAgent(models.Model):
     """계약별 영업 담당자 매핑 (Contract ↔ SalesAgency / SalesPerson)"""
@@ -228,6 +247,18 @@ class ContractSalesAgent(models.Model):
             return f'{self.contract} ➔ [대행사] {self.agency.name}'
         return f'{self.contract} ➔ 미배정'
 
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'contract') and self.contract_id:
+            contract_proj_id = self.contract.project_id
+            if self.agency and self.agency.project_id != contract_proj_id:
+                raise ValidationError({'agency': '대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
+            if self.sales_person and hasattr(self.sales_person, 'team'):
+                if self.sales_person.team.agency.project_id != contract_proj_id:
+                    raise ValidationError({'sales_person': '영업직원 소속 대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
+            if self.policy and self.policy.project_id != contract_proj_id:
+                raise ValidationError({'policy': '수수료 정책의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
+
     def save(self, *args, **kwargs):
         # 1. 영업직원(상담사)이 지정된 경우: 소속 팀과 대행사 자동 동기화
         if self.sales_person_id:
@@ -281,6 +312,11 @@ class SettlementPeriod(models.Model):
 
     def __str__(self):
         return f'[{self.get_status_display()}] {self.title} ({self.project})'
+
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError({'end_date': '정산 대상 종료일은 시작일보다 이전일 수 없습니다.'})
 
 
 class CommissionPayout(models.Model):

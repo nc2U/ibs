@@ -29,6 +29,8 @@ class SalesTeamSerializer(serializers.ModelSerializer):
         )
 
     def get_members_count(self, obj):
+        if hasattr(obj, 'annotate_members_count'):
+            return obj.annotate_members_count
         return obj.members.filter(status='1').count()
 
 
@@ -150,13 +152,25 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
         return ''
 
     def get_is_settled(self, obj):
-        # 직영 또는 외주 PayoutContractDetail 존재 여부
+        # 직영 또는 외주 PayoutContractDetail 존재 여부 (prefetch 캐시 활용)
+        if obj.contract and hasattr(obj.contract, '_prefetched_objects_cache'):
+            has_direct = bool(obj.contract.sales_payout_details.all())
+            has_agency = bool(obj.contract.agency_payout_details.all())
+            return has_direct or has_agency
         return (
             PayoutContractDetail.objects.filter(contract=obj.contract).exists() or
             AgencyPayoutContractDetail.objects.filter(contract=obj.contract).exists()
         )
 
     def get_settled_period_title(self, obj):
+        if obj.contract and hasattr(obj.contract, '_prefetched_objects_cache'):
+            direct_details = list(obj.contract.sales_payout_details.all())
+            if direct_details:
+                return direct_details[0].payout.period.title
+            agency_details = list(obj.contract.agency_payout_details.all())
+            if agency_details:
+                return agency_details[0].payout.period.title
+            return None
         pcd = PayoutContractDetail.objects.filter(contract=obj.contract).select_related('payout__period').first()
         if pcd:
             return pcd.payout.period.title
