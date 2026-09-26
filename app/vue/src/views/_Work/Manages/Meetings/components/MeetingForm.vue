@@ -1804,7 +1804,7 @@ onBeforeMount(async () => {
             <div class="d-flex justify-content-center gap-3">
               <v-btn
                 v-if="!isRecording"
-                color="danger"
+                color="red-lighten-1"
                 size="large"
                 prepend-icon="mdi-record-rec"
                 @click="startRecording"
@@ -1829,9 +1829,9 @@ onBeforeMount(async () => {
 
           <!-- 파일 업로드 대안 -->
           <div class="mt-4 pt-3 border-top">
-            <span class="text-muted small mr-3"
-              >스마트폰이나 녹음기로 이미 녹음한 파일이 있으신가요?</span
-            >
+            <span class="text-muted small mr-3">
+              스마트폰이나 녹음기로 이미 녹음한 파일이 있으신가요?
+            </span>
             <input
               type="file"
               ref="audioFileInput"
