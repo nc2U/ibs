@@ -150,6 +150,51 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.assertEqual(response.data['status'], ApprovalDocument.STATUS_DRAFT)
         self.assertIsNone(response.data['doc_number'])  # 임시저장 상태에서는 문서번호 미채번
 
+    def test_update_and_destroy_restricted_to_drafter_and_draft_status(self):
+        """[T-4 / C-2] 결재 문서는 기안자 본인이면서 DRAFT 또는 REJECTED 상태일 때만 수정/삭제 가능하며, 타인 또는 PENDING 상태에서는 403 차단 검증"""
+        # 1. 기안자의 임시저장 문서 생성
+        doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='임시저장 문서',
+            content={'amount': 1000000},
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            status=ApprovalDocument.STATUS_DRAFT,
+        )
+
+        # 2. 타인(user_outsider)이 임시저장 문서 수정/삭제 시도 -> 403 Forbidden 또는 404 Not Found (RLS 차단)
+        self.client.force_authenticate(user=self.user_outsider)
+        res_patch_other = self.client.patch(f'/api/v1/approval-document/{doc.id}/', {'title': '타인 수정 시도'}, format='json')
+        self.assertIn(res_patch_other.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
+
+        res_del_other = self.client.delete(f'/api/v1/approval-document/{doc.id}/')
+        self.assertIn(res_del_other.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
+
+
+        # 3. 문서가 결재 진행 중(STATUS_PENDING)으로 변경된 경우 기안자 본인이어도 수정/삭제 시도 -> 400 Bad Request
+        doc.status = ApprovalDocument.STATUS_PENDING
+        doc.save()
+
+        self.client.force_authenticate(user=self.user_drafter)
+        res_patch_pending = self.client.patch(f'/api/v1/approval-document/{doc.id}/', {'title': '진행중 수정 시도'}, format='json')
+        self.assertEqual(res_patch_pending.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('임시저장 또는 반려 상태의 문서만', str(res_patch_pending.data))
+
+        res_del_pending = self.client.delete(f'/api/v1/approval-document/{doc.id}/')
+        self.assertEqual(res_del_pending.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('임시저장 또는 반려 상태의 문서만', str(res_del_pending.data))
+
+
+        # 4. 반려(STATUS_REJECTED) 상태로 변경 시 기안자 본인의 수정 허용 (200 OK)
+        doc.status = ApprovalDocument.STATUS_REJECTED
+        doc.save()
+
+        res_patch_rejected = self.client.patch(f'/api/v1/approval-document/{doc.id}/', {'title': '반려 후 재작성 제목'}, format='json')
+        self.assertEqual(res_patch_rejected.status_code, status.HTTP_200_OK)
+        doc.refresh_from_db()
+        self.assertEqual(doc.title, '반려 후 재작성 제목')
+
+
     def test_create_draft_document_with_file_multipart(self):
         """파일 첨부와 함께 multipart/form-data로 기안 시 content JSON이 유실 없이 dict로 보존되고 첨부파일이 등록되는지 검증"""
         self.client.force_authenticate(user=self.user_drafter)

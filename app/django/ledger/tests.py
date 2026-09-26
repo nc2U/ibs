@@ -508,6 +508,42 @@ class ProjectCompositeTransactionIntegrityTests(LedgerTestBase):
         self.assertFalse(ProjectAccountingEntry.objects.filter(transaction_id=tx_obj.transaction_id).exists())
         self.assertFalse(ContractPayment.objects.filter(pk=payment_record.pk).exists())
 
+    def test_composite_transaction_overpayment_blocked(self):
+        """[T-3 / M-6] 잔여 미납액을 초과하는 납부 분개 등록 시 400 ValidationError 차단 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # self.contract_a의 총 공급가는 500,000,000원(5억)
+        # 잔여 미납액(5억)을 초과하는 600,000,000원(6억) 납부 분개 생성 시도
+        overpay_amount = 600000000
+        payload_overpay = {
+            'project': self.project_a.pk,
+            'bank_account': self.bank_acc_a.pk,
+            'deal_date': '2026-07-20',
+            'amount': overpay_amount,
+            'sort': 1,
+            'content': '초과 납부 시도',
+            'accounting_entries': [
+                {
+                    'account': self.account_sales.pk,
+                    'amount': overpay_amount,
+                    'contract': self.contract_a.pk,
+                    'contractor': self.contractor_a.pk,
+                    'installment_order': self.pay_order_down.pk,
+                    'trader': '홍길동',
+                }
+            ]
+        }
+        res = self.client.post(
+            '/api/v1/ledger/project-composite-transaction/',
+            data=payload_overpay,
+            format='json'
+        )
+        self.assertEqual(res.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('잔여 미납액', str(res.data))
+        self.assertIn('초과합니다', str(res.data))
+
+
+
 
 class ProjectLedgerSettlementLockTests(LedgerTestBase):
     """원장 정산 마감일(ProjectLedgerCalculation) 방어벽 및 권한 테스트"""

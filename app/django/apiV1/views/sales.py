@@ -367,8 +367,12 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     @transaction.atomic
     def update_pay_status(self, request, pk=None):
+
         """지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
-        payout = CommissionPayout.objects.select_for_update().get(pk=pk)
+        # [H-2] self.get_object()를 통해 get_queryset() RLS 및 has_object_permission(sales.payout) 검증 수행
+        payout = self.get_object()
+        payout = CommissionPayout.objects.select_for_update().get(pk=payout.pk)
+
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status
@@ -492,8 +496,10 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     @transaction.atomic
     def update_pay_status(self, request, pk=None):
-        """대행사 지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
-        payout = AgencyPayout.objects.select_for_update().get(pk=pk)
+        # [H-2] self.get_object()를 통해 get_queryset() RLS 및 has_object_permission(sales.payout) 검증 수행
+        payout = self.get_object()
+        payout = AgencyPayout.objects.select_for_update().get(pk=payout.pk)
+
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status

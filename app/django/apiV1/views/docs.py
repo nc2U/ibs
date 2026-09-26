@@ -249,7 +249,8 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'description': org_instance.description + add_text,
             }
 
-            serializer = DocumentSerializer(data=new_instance_data, context={'request': request})
+            serializer = DocumentSerializer(data=new_instance_data, context={'request': request, 'view': self})
+
             serializer.is_valid(raise_exception=True)
             serializer.save(creator=request.user)
 

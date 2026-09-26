@@ -115,7 +115,10 @@ def get_sales_price_by_gt(contract, houseunit=None):
     try:
         return SalesPriceByGT.objects.get(project=contract.project, order_group=contract.order_group,
                                           unit_type=contract.unit_type, unit_floor_type=houseunit.floor_type)
-    except Exception:
+    except SalesPriceByGT.DoesNotExist:
+        return None
+    except Exception as e:
+        logger.debug("get_sales_price_by_gt 조회 실패: %s", e)
         return None
 
 
@@ -131,19 +134,22 @@ def get_contract_price(contract, houseunit=None, is_set=False):
         sales_price = get_sales_price_by_gt(contract, houseunit)
         if sales_price: return (sales_price.price or 0, sales_price.price_build or 0,
                                 sales_price.price_land or 0, sales_price.price_tax or 0)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("get_sales_price_by_gt 실패 폴백: %s", e)
     try:
         budget = ProjectIncBudget.objects.get(project=contract.project, order_group=contract.order_group,
                                               unit_type=contract.unit_type)
         if budget and budget.average_price: return budget.average_price, 0, 0, 0
-    except Exception:
+    except ProjectIncBudget.DoesNotExist:
         pass
+    except Exception as e:
+        logger.debug("ProjectIncBudget 조회 실패 폴백: %s", e)
     try:
         if contract.unit_type and contract.unit_type.average_price: return contract.unit_type.average_price, 0, 0, 0
     except AttributeError:
         pass
     return 0, 0, 0, 0
+
 
 
 def get_fixed_payment_amount(installment_order):

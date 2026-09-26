@@ -219,6 +219,26 @@ class DocsAppSecurityTests(TestCase):
         res_admin = self.client.get(f'/api/v1/docs/{self.doc_blind.pk}/')
         self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
 
+    def test_document_copy_idor_blocked_and_allowed(self):
+        """[T-5 / H-1] 타 프로젝트/권한 없는 비공개 문서 복사 시도 시 IDOR 차단(404) 및 권한 있는 문서의 정상 복제(201) 검증"""
+        # 1. 권한이 없는 타 사용자(other_user)가 기획팀 전용 문서(self.doc_team) 복사 시도 -> 404 Not Found (self.get_object()에 의해 차단)
+        self.client.force_authenticate(user=self.other_user)
+        payload = {
+            'issue_project': self.workspace.pk,
+            'doc_type': '1',
+        }
+
+        res_copy_forbidden = self.client.post(f'/api/v1/docs/{self.doc_team.pk}/copy/', payload, format='json')
+        self.assertIn(res_copy_forbidden.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN])
+
+        # 2. 문서 권한이 있는 기획팀원(team_user)이 복사 시도 -> 201 Created 및 신규 문서 생성 완료
+        self.client.force_authenticate(user=self.team_user)
+        res_copy_ok = self.client.post(f'/api/v1/docs/{self.doc_team.pk}/copy/', payload, format='json')
+        self.assertEqual(res_copy_ok.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_copy_ok.data['title'], self.doc_team.title)
+        self.assertIn('복사됨', res_copy_ok.data['description'])
+
+
     def test_official_letter_company_isolation(self):
         """공문 회사별 격리 및 문서번호 채번 권한 검증"""
         # Company A 소속 직원은 Company A 공문만 조회 가능

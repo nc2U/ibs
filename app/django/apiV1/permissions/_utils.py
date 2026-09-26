@@ -161,5 +161,6 @@ def get_project_ids_with_permission(user, required_perm: str):
     for ip in candidate_ips:
         perms = set(ip.get_user_permissions(user))
         if required_perm in perms:
-            allowed_ids.append(ip.project_id)
+            allowed_ids.append(ip.project.id)
     return allowed_ids
+

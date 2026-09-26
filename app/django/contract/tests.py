@@ -401,6 +401,40 @@ class SuccessionAndReleaseAPITests(APITestCase):
         succession.refresh_from_db()
         self.assertEqual(succession.status, '3')
 
+    def test_create_duplicate_succession_blocked(self):
+        """[T-2 / M-3] 동일 계약에 대해 이미 진행 중인 승계가 존재할 때 중복 승계 신청(POST) 시 400 ValidationError 차단 검증"""
+        # 1. 이미 진행 중(status='1' 신청)인 기존 승계 건 생성
+        buyer1 = Contractor.objects.create(name='1차양수인', status='3', is_active=False)
+        Succession.objects.create(
+            contract=self.contract,
+            seller=self.seller,
+            buyer=buyer1,
+            apply_date='2026-02-01',
+            trading_date='2026-02-01',
+            status='1'  # 신청 상태 (진행 중)
+        )
+
+        # 2. 동일한 contract에 대해 또 다른 양수인으로 승계 신청(POST) 시도
+        url = '/api/v1/succession/'
+        data = {
+            'contract': self.contract.pk,
+            'name': '2차양수인',
+            'gender': 'F',
+            'id_zipcode': '12345',
+            'id_address1': '서울시 서초구',
+            'id_address2': '201호',
+            'cell_phone': '010-9999-8888',
+            'apply_date': '2026-02-15',
+            'trading_date': '2026-02-15',
+        }
+        response = self.client.post(url, data, format='json')
+
+        # 3. 400 Bad Request 및 에러 메시지 검증
+        self.assertEqual(response.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('해당 계약에 대해 이미 처리 중인 권리의무승계', str(response.data))
+
+
+
     def test_destroy_ongoing_contractor_release_restores_contractor(self):
         """해지 신청건 삭제 시 contractor 상태가 원래 상태로 복구되고 release 레코드만 삭제되는지 검증"""
         self.seller.status = '3'

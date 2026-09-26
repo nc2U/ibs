@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from rest_framework import status
+
 from rest_framework.test import APITestCase
+
 
 from company.models import Company
 from contract.models import Contract, OrderGroup
@@ -360,4 +363,27 @@ class ItemsIsolationAndPermissionTests(APITestCase):
         self.assertEqual(res_ku.status_code, status.HTTP_200_OK)
         ku_pks = [item['pk'] for item in res_ku.data['results']]
         self.assertIn(self.key_unit_a.pk, ku_pks)
+
+    def test_key_unit_unique_together_constraint(self):
+        """[T-1 / C-1] 동일 프로젝트 내 KeyUnit의 unit_code 중복 생성 시 IntegrityError 차단 검증"""
+        # 1. 동일 프로젝트(project_a)에 이미 존재하는 unit_code('KU-001')로 생성 시도 -> IntegrityError 발생
+        with transaction.atomic():
+            with self.assertRaises(IntegrityError):
+                KeyUnit.objects.create(
+                    project=self.project_a,
+                    unit_type=self.unit_type_a,
+                    unit_code='KU-001'
+                )
+
+
+        # 2. 서로 다른 프로젝트(project_b)에는 동일한 unit_code('KU-001') 생성이 정상 허용됨
+        ku_other_proj = KeyUnit.objects.create(
+            project=self.project_b,
+            unit_type=self.unit_type_b,
+            unit_code='KU-001'
+        )
+        self.assertIsNotNone(ku_other_proj.pk)
+        self.assertEqual(ku_other_proj.unit_code, 'KU-001')
+        self.assertEqual(ku_other_proj.project, self.project_b)
+
 

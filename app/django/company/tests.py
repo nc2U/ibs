@@ -224,6 +224,28 @@ class CompanyDataIsolationAndPermissionTests(APITestCase):
         })
         self.assertEqual(res_post.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_staff_id_number_masking_for_ordinary_users(self):
+        """[T-6 / H-2] 일반 직원이 타 직원의 인사 정보 조회 시 주민등록번호 뒷자리가 마스킹(900101-*******)되고 본인/관리자는 원본 반환 검증"""
+        # 1. 일반 조회자(user_1_ro)가 타인(staff_1)의 Staff 정보를 조회 시 마스킹 검증
+        self.client.force_authenticate(user=self.user_1_ro)
+        res_other = self.client.get(f'/api/v1/staff/{self.staff_1.pk}/')
+        self.assertEqual(res_other.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_other.data['id_number'], '900101-*******')
+
+        # 2. 본인(user_1)이 본인(staff_1)의 Staff 정보를 조회 시 원본 노출 검증
+        self.client.force_authenticate(user=self.user_1)
+        res_self = self.client.get(f'/api/v1/staff/{self.staff_1.pk}/')
+        self.assertEqual(res_self.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_self.data['id_number'], '900101-1234567')
+
+        # 3. 슈퍼유저(admin_user)가 조회 시 원본 노출 검증
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin = self.client.get(f'/api/v1/staff/{self.staff_1.pk}/')
+        self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_admin.data['id_number'], '900101-1234567')
+
+
+
 
 class ExecutiveModelTests(APITestCase):
     def setUp(self):

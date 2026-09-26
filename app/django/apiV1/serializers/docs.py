@@ -275,7 +275,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_prev_pk(self, obj):
         view = self.context.get('view')
-        if view and view.action != 'retrieve':
+        if not view or getattr(view, 'action', None) != 'retrieve':
             return None
         queryset = view.filter_queryset(Document.objects.all())
         prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-pk').first()
@@ -283,11 +283,12 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_next_pk(self, obj):
         view = self.context.get('view')
-        if view and view.action != 'retrieve':
+        if not view or getattr(view, 'action', None) != 'retrieve':
             return None
         queryset = view.filter_queryset(Document.objects.all())
         next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
         return next_obj.pk if next_obj else None
+
 
     @transaction.atomic
     def create(self, validated_data):
@@ -298,8 +299,9 @@ class DocumentSerializer(serializers.ModelSerializer):
         if issue_project and str(issue_project).isdigit():
             validated_data['issue_project_id'] = int(issue_project)
 
-        validated_data['ip'] = request.META.get('REMOTE_ADDR')
-        validated_data['device'] = request.META.get('HTTP_USER_AGENT')
+        validated_data['ip'] = request.META.get('REMOTE_ADDR') or ''
+        validated_data['device'] = request.META.get('HTTP_USER_AGENT') or ''
+
         if user and user.is_authenticated:
             validated_data['creator'] = user
 

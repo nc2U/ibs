@@ -128,14 +128,20 @@ const onSaved = async () => {
         <CCard class="shadow-sm mb-4">
           <!-- 헤더 및 필터 컨트롤러 -->
           <CCardHeader
-            class="bg-light d-flex flex-wrap justify-content-between align-items-center py-2"
+            class="bg-more-light d-flex flex-wrap justify-content-between align-items-center py-2"
           >
             <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
               <v-icon icon="mdi-cog-outline" size="small" class="mr-1 text-primary" />
               수수료 정책 (R값 기준표)
-              <CBadge color="primary" class="ml-2" shape="rounded-pill">
+              <v-chip
+                color="primary"
+                class="ml-2"
+                shape="rounded-pill"
+                variant="flat"
+                size="x-small"
+              >
                 {{ filteredPolicies.length }}개
-              </CBadge>
+              </v-chip>
             </div>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
@@ -188,14 +194,14 @@ const onSaved = async () => {
               class="mb-0 text-center text-body small"
             >
               <colgroup>
-                <col style="width: 16%" />
+                <col style="width: 14%" />
+                <col style="width: 10%" />
+                <col style="width: 8%" />
+                <col style="width: 8%" />
+                <col style="width: 8%" />
+                <col style="width: 8%" />
                 <col style="width: 11%" />
-                <col style="width: 8%" />
-                <col style="width: 8%" />
-                <col style="width: 8%" />
-                <col style="width: 8%" />
-                <col style="width: 13%" />
-                <col style="width: 12%" />
+                <col style="width: 11%" />
                 <col style="width: 10%" />
                 <col style="width: 6%" />
                 <col style="width: 6%" />
@@ -210,11 +216,11 @@ const onSaved = async () => {
                   <CTableHeaderCell>대행사 수수료</CTableHeaderCell>
                   <CTableHeaderCell>
                     건당 총 수수료
-                    <div class="small text-warning fw-normal">VAT 별도</div>
+                    <span class="small text-warning fw-normal ml-2">VAT 별도</span>
                   </CTableHeaderCell>
                   <CTableHeaderCell class="table-warning">
                     VAT 포함 청구금액
-                    <div class="small text-muted fw-normal">공급가 + 부가세 10%</div>
+                    <span class="small text-dark fw-normal ml-2">공급가 + 부가세 10%</span>
                   </CTableHeaderCell>
                   <CTableHeaderCell>지급 조건</CTableHeaderCell>
                   <CTableHeaderCell>상태</CTableHeaderCell>
