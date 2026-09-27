@@ -150,9 +150,9 @@ onMounted(() => {
           <DatePicker v-model="startDate" required placeholder="출장 시작일" />
           <span>~</span>
           <DatePicker v-model="endDate" required placeholder="출장 종료일" />
-          <CBadge color="primary" class="p-2 text-nowrap">
+          <v-chip color="primary" variant="flat" size="x-small" class="p-2 text-nowrap">
             {{ modelValue.nights_count ?? 0 }}박 {{ modelValue.days_count ?? 1 }}일
-          </CBadge>
+          </v-chip>
         </div>
       </CCol>
     </CRow>

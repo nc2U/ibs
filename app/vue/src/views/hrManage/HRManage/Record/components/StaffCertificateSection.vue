@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import Pagination from '@/components/Pagination'
 import TableTitleRow from '@/components/TableTitleRow.vue'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: String, default: null },
@@ -160,9 +161,13 @@ defineExpose({ openCreateModal })
         <CTableDataCell>{{ item.issuer || '-' }}</CTableDataCell>
         <CTableDataCell class="small">{{ item.acquired_date }}</CTableDataCell>
         <CTableDataCell>
-          <CBadge :color="item.has_allowance ? 'success' : 'secondary'">
+          <v-chip
+            :color="item.has_allowance ? 'success' : 'secondary'"
+            variant="flat"
+            size="x-small"
+          >
             {{ item.has_allowance ? '지급' : '미지급' }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableDataCell v-if="canHrWorkManage">
           <v-btn color="info" size="x-small" @click="openEditModal(item)">확인</v-btn>

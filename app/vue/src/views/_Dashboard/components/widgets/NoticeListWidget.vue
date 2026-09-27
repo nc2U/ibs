@@ -68,10 +68,24 @@ onBeforeMount(() => {
                 >
                   {{ cutString(item.title, 40) }}
                 </router-link>
-                <CBadge v-if="item.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
-                <CBadge v-if="item.comments?.length" color="warning" size="sm" class="ml-1">
+                <v-chip
+                  v-if="item.is_new"
+                  color="warning"
+                  variant="flat"
+                  size="x-small"
+                  class="ml-2"
+                >
+                  new
+                </v-chip>
+                <v-chip
+                  v-if="item.comments?.length"
+                  color="warning"
+                  variant="flat"
+                  size="x-small"
+                  class="ml-1"
+                >
                   +{{ item.comments.length }}
-                </CBadge>
+                </v-chip>
               </td>
               <td class="text-right text-medium-emphasis truncate">
                 {{ timeFormat(item.created ?? '').substring(0, 10) }}

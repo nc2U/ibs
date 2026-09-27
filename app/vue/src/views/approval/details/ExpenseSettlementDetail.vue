@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableHead,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -24,15 +16,17 @@ defineProps<{
             정산 구분
           </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge color="primary">{{
-              content.settlement_type === 'PERSONAL_EXPENSE'
-                ? '개인경비 실비환급'
-                : content.settlement_type === 'BUSINESS_TRIP'
-                  ? '출장경비 정산'
-                  : content.settlement_type === 'ADVANCE_PAY'
-                    ? '가지급금 정산'
-                    : '법인카드 사용정산'
-            }}</CBadge>
+            <v-chip color="info" variant="flat" size="x-small">
+              {{
+                content.settlement_type === 'PERSONAL_EXPENSE'
+                  ? '개인경비 실비환급'
+                  : content.settlement_type === 'BUSINESS_TRIP'
+                    ? '출장경비 정산'
+                    : content.settlement_type === 'ADVANCE_PAY'
+                      ? '가지급금 정산'
+                      : '법인카드 사용정산'
+              }}
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             귀속 연월
@@ -76,7 +70,7 @@ defineProps<{
           <CTableRow v-for="(item, idx) in content.items" :key="idx">
             <CTableDataCell>{{ item.date }}</CTableDataCell>
             <CTableDataCell>
-              <CBadge color="secondary">{{ item.category }}</CBadge>
+              <v-chip color="secondary" variant="flat" size="x-small">{{ item.category }}</v-chip>
             </CTableDataCell>
             <CTableDataCell class="text-start fw-semibold">{{ item.merchant }}</CTableDataCell>
             <CTableDataCell class="text-end fw-bold text-body">

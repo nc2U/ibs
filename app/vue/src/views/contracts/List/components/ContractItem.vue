@@ -70,12 +70,18 @@ const changeTypeColor = computed(() => {
       </router-link>
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      <CBadge :color="getColor(contract.contractor?.qualification)">
+      <v-chip :color="getColor(contract.contractor?.qualification)" variant="flat" size="x-small">
         {{ contract.contractor?.qualifi_display }}
-      </CBadge>
-      <CBadge v-if="changeTypeLabel" :color="changeTypeColor" class="ml-1">
+      </v-chip>
+      <v-chip
+        v-if="changeTypeLabel"
+        :color="changeTypeColor"
+        variant="flat"
+        size="x-small"
+        class="ml-1"
+      >
         {{ changeTypeLabel }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>
       {{ contract.order_group_desc.name }}

@@ -355,22 +355,23 @@ onMounted(async () => {
                 size="x-small"
                 class="text-muted flex-shrink-0"
               />
-              <CBadge
+              <v-chip
                 v-if="doc.observer_count && doc.observer_count > 0"
                 color="light"
-                text-color="dark"
-                class="border small py-0 px-1 flex-shrink-0"
+                variant="flat"
+                size="x-small"
+                class="border small py-0 px-1 flex-shrink-0 text-body"
               >
                 참조 {{ doc.observer_count }}
-              </CBadge>
+              </v-chip>
             </div>
           </CTableDataCell>
 
           <!-- 상태 -->
           <CTableDataCell class="text-center">
-            <CBadge :color="STATUS_COLOR[doc.status]" shape="rounded-pill">
+            <v-chip :color="STATUS_COLOR[doc.status]" variant="flat" size="x-small">
               {{ doc.status_desc || STATUS_LABEL[doc.status] }}
-            </CBadge>
+            </v-chip>
           </CTableDataCell>
 
           <!-- 기안일시 -->

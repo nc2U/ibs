@@ -121,9 +121,9 @@ onMounted(() => {
             required
             placeholder="휴가 종료일"
           />
-          <CBadge color="primary" class="p-2 text-nowrap">
+          <v-chip color="primary" variant="flat" size="x-small" class="p-2 text-nowrap">
             신청일수: {{ modelValue.days_count ?? 1 }}일
-          </CBadge>
+          </v-chip>
         </div>
       </CCol>
     </CRow>

@@ -7,6 +7,7 @@ import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs'
 import Pagination from '@/components/Pagination'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps<{
   company: number
@@ -174,9 +175,9 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.recipient_name }}</CTableDataCell>
           <CTableDataCell class="text-center">
-            <CBadge color="dark" class="me-1">
+            <v-chip color="dark" variant="flat" size="x-small" class="me-1">
               {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
-            </CBadge>
+            </v-chip>
             <small
               v-if="letter.tracking_number"
               class="text-muted d-block"
@@ -190,16 +191,37 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.creator?.username || '-' }}</CTableDataCell>
           <CTableDataCell class="text-center">
-            <CBadge v-if="letter.approval_status === 'approved'" color="success">승인완료</CBadge>
-            <CBadge v-else-if="letter.approval_status === 'pending'" color="warning">진행중</CBadge>
-            <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger">반려</CBadge>
-            <CBadge v-else color="secondary">미상신</CBadge>
+            <v-chip
+              v-if="letter.approval_status === 'approved'"
+              color="success"
+              variant="flat"
+              size="x-small"
+            >
+              승인완료
+            </v-chip>
+            <v-chip
+              v-else-if="letter.approval_status === 'pending'"
+              color="warning"
+              variant="flat"
+              size="x-small"
+            >
+              진행중
+            </v-chip>
+            <v-chip
+              v-else-if="letter.approval_status === 'rejected'"
+              color="danger"
+              variant="flat"
+              size="x-small"
+            >
+              반려
+            </v-chip>
+            <v-chip v-else color="secondary" variant="flat" size="x-small"> 미상신 </v-chip>
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            <CBadge v-if="letter.pdf_file" color="success">
+            <v-chip v-if="letter.pdf_file" color="success" variant="flat" size="x-small">
               <v-icon icon="mdi-file-pdf-box" size="small" />
-            </CBadge>
-            <CBadge v-else color="secondary">-</CBadge>
+            </v-chip>
+            <v-chip v-else color="secondary" variant="flat" size="x-small">-</v-chip>
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="letterList.length === 0">

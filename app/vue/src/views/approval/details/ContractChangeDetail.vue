@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -22,7 +15,11 @@ defineProps<{
           변경/해지 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge :color="content.change_type === 'TERMINATION' ? 'danger' : 'warning'">
+          <v-chip
+            :color="content.change_type === 'TERMINATION' ? 'danger' : 'warning'"
+            variant="flat"
+            size="x-small"
+          >
             {{
               content.change_type === 'TERMINATION'
                 ? '계약 해지 / 합의 해제'
@@ -34,7 +31,7 @@ defineProps<{
                       ? '과업/조건 변경'
                       : '복합 변경 (금액+기간)'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           계약 상대방

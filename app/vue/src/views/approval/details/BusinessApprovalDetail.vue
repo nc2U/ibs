@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -28,7 +21,7 @@ defineProps<{
           승인 의결 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="success">
+          <v-chip color="success" variant="flat" size="x-small">
             {{
               content.approval_type === 'NEW_LAUNCH'
                 ? '사업 공식 론칭'
@@ -42,7 +35,7 @@ defineProps<{
                         ? '시공 도급/착공'
                         : '주요 사업 승인'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
       </CTableRow>
       <CTableRow>

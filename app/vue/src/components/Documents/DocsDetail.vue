@@ -17,6 +17,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TypeListModal from '@/components/Documents/components/TypeListModal.vue'
 import CateListModal from '@/components/Documents/components/CateListModal.vue'
+import { CRow } from '@coreui/vue'
 
 const props = defineProps({
   typeNum: { type: Number, default: 1 },
@@ -317,9 +318,9 @@ onMounted(() => {
                   </a>
                   <small>
                     다운로드 :
-                    <CBadge color="success" shape="rounded-pill">
+                    <v-chip color="success" variant="flat" size="x-small">
                       {{ f.hit }}
-                    </CBadge>
+                    </v-chip>
                   </small>
                 </CListGroupItem>
               </CListGroup>
@@ -340,9 +341,9 @@ onMounted(() => {
                   </a>
                   <small>
                     조회 수 :
-                    <CBadge color="info" shape="rounded-pill">
+                    <v-chip color="info" variant="flat" size="x-small">
                       {{ l.hit }}
-                    </CBadge>
+                    </v-chip>
                   </small>
                 </CListGroupItem>
               </CListGroup>

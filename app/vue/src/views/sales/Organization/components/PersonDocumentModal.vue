@@ -203,9 +203,9 @@ defineExpose({ open })
           <div class="fw-bold d-flex align-items-center">
             <v-icon icon="mdi-folder-file-outline" size="small" class="mr-1 text-primary" />
             제출된 증빙 서류 목록
-            <CBadge color="primary" class="ms-2" shape="rounded-pill">
+            <v-chip color="info" variant="flat" size="x-small" class="ms-2">
               {{ documents.length }}건
-            </CBadge>
+            </v-chip>
           </div>
           <small class="text-body-secondary">
             * 서류 검토 후 [검증]을 클릭하면 관리자 검증 완료 처리됩니다.
@@ -227,12 +227,13 @@ defineExpose({ open })
           <CTableBody>
             <CTableRow v-for="doc in documents" :key="doc.id">
               <CTableDataCell>
-                <CBadge
+                <v-chip
                   :color="docTypeBadgeColor[doc.doc_type] || 'secondary'"
-                  shape="rounded-pill"
+                  variant="flat"
+                  size="x-small"
                 >
                   {{ doc.doc_type_display || docTypeLabels[doc.doc_type] }}
-                </CBadge>
+                </v-chip>
               </CTableDataCell>
               <CTableDataCell class="fw-semibold text-start">
                 {{ doc.title }}
@@ -254,14 +255,26 @@ defineExpose({ open })
                 {{ doc.created_at ? doc.created_at.substring(0, 10) : '-' }}
               </CTableDataCell>
               <CTableDataCell>
-                <CBadge v-if="doc.is_verified" color="success" class="px-2 py-1">
+                <v-chip
+                  v-if="doc.is_verified"
+                  color="success"
+                  variant="flat"
+                  size="x-small"
+                  class="px-2 py-1"
+                >
                   <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
                   검증완료
-                </CBadge>
-                <CBadge v-else color="warning" class="px-2 py-1 text-dark">
+                </v-chip>
+                <v-chip
+                  v-else
+                  color="warning"
+                  variant="flat"
+                  size="x-small"
+                  class="px-2 py-1 text-dark"
+                >
                   <v-icon icon="mdi-clock-outline" size="x-small" class="me-1" />
                   확인대기
-                </CBadge>
+                </v-chip>
               </CTableDataCell>
               <CTableDataCell>
                 <div class="d-flex justify-content-center align-items-center gap-1">

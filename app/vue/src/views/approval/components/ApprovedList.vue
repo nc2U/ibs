@@ -71,9 +71,9 @@ onMounted(() => {
       >
         <CIcon name="cilCheckCircle" class="me-1 text-success" />
         결재 완료 문서
-        <CBadge color="success" shape="rounded-pill" class="ms-1">
+        <v-chip color="success" variant="flat" size="x-small" class="ms-1">
           {{ approvedList.length }}
-        </CBadge>
+        </v-chip>
       </CNavLink>
     </CNavItem>
     <CNavItem>
@@ -84,9 +84,9 @@ onMounted(() => {
       >
         <CIcon name="cilUserFollow" class="me-1 text-info" />
         참조 / 공람 문서
-        <CBadge color="info" shape="rounded-pill" class="ms-1">
+        <v-chip color="info" variant="flat" size="x-small" class="ms-1">
           {{ observedList.length }}
-        </CBadge>
+        </v-chip>
       </CNavLink>
     </CNavItem>
   </CNav>

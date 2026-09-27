@@ -44,7 +44,9 @@ const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
         {{ cutString(docs.title, 32) }}
       </router-link>
       <span v-else class="text-grey">{{ cutString(docs.title, 32) }}</span>
-      <CBadge v-if="docs.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+      <v-chip v-if="docs.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+        new
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ docs.creator?.username }}</CTableDataCell>
     <CTableDataCell>{{ timeFormat(docs.created ?? '') }}</CTableDataCell>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { CTable, CTableBody } from '@coreui/vue'
 
 const props = defineProps<{
   content: Record<string, any>
@@ -89,13 +90,13 @@ const formattedBudget = computed(() => {
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light"> 사내 접수번호 </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge color="secondary" variant="outline">
+            <v-chip color="secondary" variant="flat" size="x-small">
               {{
                 content.receipt_number ||
                 document?.related_inbound_letter_detail?.receipt_number ||
                 '-'
               }}
-            </CBadge>
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light"> 접수 일자 </CTableHeaderCell>
           <CTableDataCell class="pl-3">
@@ -123,12 +124,23 @@ const formattedBudget = computed(() => {
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light"> 대응 처리방향 </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge :color="actionTypeInfo.color" class="me-2 py-1 px-2">
+            <v-chip
+              :color="actionTypeInfo.color"
+              variant="flat"
+              size="x-small"
+              class="me-2 py-1 px-2"
+            >
               {{ actionTypeInfo.label }}
-            </CBadge>
-            <CBadge v-if="urgencyInfo" :color="urgencyInfo.color" class="py-1 px-2">
+            </v-chip>
+            <v-chip
+              v-if="urgencyInfo"
+              :color="urgencyInfo.color"
+              variant="flat"
+              size="x-small"
+              class="py-1 px-2"
+            >
               {{ urgencyInfo.label }}
-            </CBadge>
+            </v-chip>
           </CTableDataCell>
         </CTableRow>
 

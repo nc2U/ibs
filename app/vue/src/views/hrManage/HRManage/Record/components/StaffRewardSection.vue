@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import Pagination from '@/components/Pagination'
 import TableTitleRow from '@/components/TableTitleRow.vue'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps({
   company: { type: String, default: null },
@@ -159,9 +160,13 @@ defineExpose({ openCreateModal })
           <a href="javascript:void(0);" @click="openEditModal(item)">{{ item.staff_name }}</a>
         </CTableDataCell>
         <CTableDataCell>
-          <CBadge :color="item.sort === 'reward' ? 'success' : 'danger'">
+          <v-chip
+            :color="item.sort === 'reward' ? 'success' : 'danger'"
+            variant="flat"
+            size="x-small"
+          >
             {{ item.sort_desc || (item.sort === 'reward' ? '포상/표창' : '징계/문책') }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableDataCell class="fw-semibold text-left">{{ item.type_name }}</CTableDataCell>
         <CTableDataCell class="small">{{ item.action_date }}</CTableDataCell>

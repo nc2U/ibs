@@ -173,9 +173,9 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-2 col-form-label">총 인정 시간</CFormLabel>
       <CCol sm="4" class="d-flex align-items-center">
-        <CBadge color="primary" class="fs-6 px-3 py-2">
+        <v-chip color="info" variant="flat" size="x-small" class="fs-6 px-3 py-2">
           총 {{ modelValue.total_hours ?? 3 }} 시간 인정
-        </CBadge>
+        </v-chip>
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">보상 방식</CFormLabel>
       <CCol sm="4">

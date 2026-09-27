@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { type PromotionPolicy } from '@/store/types/company.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import PolicyForm from './PolicyForm.vue'
+import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 defineProps({
   policy: { type: Object as PropType<PromotionPolicy>, required: true },
@@ -28,13 +29,13 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTableRow v-if="policy" class="text-center">
     <CTableDataCell class="fw-bold">
-      <CBadge color="light" class="text-dark border">
+      <v-chip color="light" variant="flat" size="x-small" class="text-body border">
         {{ policy.current_grade_code }}
-      </CBadge>
+      </v-chip>
       <CIcon icon="cil-arrow-right" class="mx-1 text-muted small" />
-      <CBadge color="primary">
+      <v-chip color="info" variant="flat" size="x-small">
         {{ policy.target_grade_code }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ policy.min_years }}년</CTableDataCell>
     <CTableDataCell class="text-right">
@@ -55,9 +56,9 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       policy.description || '-'
     }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="policy.is_active ? 'success' : 'secondary'" shape="rounded-pill">
+      <v-chip :color="policy.is_active ? 'success' : 'secondary'" variant="flat" size="x-small">
         {{ policy.is_active ? '사용' : '미사용' }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">수정</v-btn>

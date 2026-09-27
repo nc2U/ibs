@@ -126,7 +126,9 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     </template>
 
     <p v-if="!(formShow && isEditing)" class="mt-1 p-1">
-      <CBadge v-if="comment.secret" color="danger" class="mr-2">비밀글입니다</CBadge>
+      <v-chip v-if="comment.secret" color="danger" variant="flat" size="x-small" class="mr-2">
+        비밀글입니다
+      </v-chip>
       <span
         v-show="
           !comment.secret ||

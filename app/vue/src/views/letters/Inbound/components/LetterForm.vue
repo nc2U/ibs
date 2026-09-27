@@ -345,7 +345,7 @@ const handleSubmit = () => {
                 v-if="existingScanFile && !scanFile"
                 class="d-flex align-items-center gap-2 mb-2"
               >
-                <CBadge color="success">현재 등록됨</CBadge>
+                <v-chip color="success" variant="flat" size="x-small">현재 등록됨</v-chip>
                 <a
                   :href="existingScanFile"
                   target="_blank"

@@ -77,7 +77,7 @@ const getTypeColor = computed(() => {
           <div class="mb-3">
             <strong class="text-medium-emphasis">수신자 수</strong>
             <div class="mt-1">
-              <CBadge color="info" size="lg"> {{ item.recipient_count }}명 </CBadge>
+              <v-chip color="info" variant="flat"> {{ item.recipient_count }}명 </v-chip>
             </div>
           </div>
         </CCol>
@@ -88,9 +88,9 @@ const getTypeColor = computed(() => {
           <div class="mb-3">
             <strong class="text-medium-emphasis">메시지 타입</strong>
             <div class="mt-1">
-              <CBadge :color="getTypeColor" size="lg">
+              <v-chip :color="getTypeColor" variant="flat">
                 {{ item.message_type }}
-              </CBadge>
+              </v-chip>
             </div>
           </div>
         </CCol>
@@ -107,9 +107,9 @@ const getTypeColor = computed(() => {
           <div class="mb-3">
             <strong class="text-medium-emphasis">예약 발송 일시</strong>
             <div class="mt-1">
-              <CBadge color="warning" size="lg">
+              <v-chip color="warning" variant="flat">
                 {{ formatDate(item.schedule_datetime) }}
-              </CBadge>
+              </v-chip>
             </div>
           </div>
         </CCol>

@@ -7,6 +7,7 @@ import type { InboundLetter } from '@/store/types/docs'
 import type { InboundLetterFilter } from '@/store/pinia/docs'
 import Pagination from '@/components/Pagination'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { CTable, CTableBody } from '@coreui/vue'
 
 const props = defineProps<{
   company: number
@@ -245,14 +246,16 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
           <CTableDataCell class="text-center">
             <template v-if="item.reply_due_date">
               <div>{{ formatDate(item.reply_due_date) }}</div>
-              <CBadge
+              <v-chip
                 v-if="item.status !== 'closed' && item.status !== 'replied'"
                 :color="getDDayBadgeColor(item.d_day)"
+                variant="flat"
+                size="x-small"
                 class="mt-1"
                 style="font-size: 0.75rem"
               >
                 {{ getDDayText(item.d_day) }}
-              </CBadge>
+              </v-chip>
             </template>
             <span v-else class="text-muted">-</span>
           </CTableDataCell>
@@ -266,16 +269,46 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
             {{ item.recipient_manager_name || '-' }}
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            <CBadge v-if="item.status === 'received'" color="info">접수</CBadge>
-            <CBadge v-else-if="item.status === 'in_progress'" color="warning">처리중</CBadge>
-            <CBadge v-else-if="item.status === 'replied'" color="primary">회신완료</CBadge>
-            <CBadge v-else-if="item.status === 'closed'" color="secondary">종결</CBadge>
-            <CBadge v-else color="secondary">{{ item.status_desc || item.status }}</CBadge>
+            <v-chip v-if="item.status === 'received'" color="info" variant="flat" size="x-small">
+              접수
+            </v-chip>
+            <v-chip
+              v-else-if="item.status === 'in_progress'"
+              color="warning"
+              variant="flat"
+              size="x-small"
+            >
+              처리중
+            </v-chip>
+            <v-chip
+              v-else-if="item.status === 'replied'"
+              color="primary"
+              variant="flat"
+              size="x-small"
+            >
+              회신완료
+            </v-chip>
+            <v-chip
+              v-else-if="item.status === 'closed'"
+              color="secondary"
+              variant="flat"
+              size="x-small"
+            >
+              종결
+            </v-chip>
+            <v-chip v-else color="secondary" variant="flat" size="x-small">
+              {{ item.status_desc || item.status }}
+            </v-chip>
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            <CBadge v-if="item.has_scan || item.scan_file" color="success">
+            <v-chip
+              v-if="item.has_scan || item.scan_file"
+              color="success"
+              variant="flat"
+              size="x-small"
+            >
               <v-icon :icon="getScanFileIcon(item.scan_file)" size="small" />
-            </CBadge>
+            </v-chip>
             <span v-else class="text-muted">-</span>
           </CTableDataCell>
         </CTableRow>

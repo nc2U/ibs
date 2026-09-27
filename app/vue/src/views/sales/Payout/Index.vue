@@ -13,6 +13,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PayoutStatusSummary from './components/PayoutStatusSummary.vue'
 import PayoutDetailModal from '@/views/sales/Settlement/components/PayoutDetailModal.vue'
 import PersonPayoutHistoryModal from './components/PersonPayoutHistoryModal.vue'
+import { CCardBody } from '@coreui/vue'
 
 const route = useRoute()
 const { can, PERM } = usePerms()
@@ -429,11 +430,11 @@ const agencyPayStatusColor = (status: string) => {
                 </div>
 
                 <template v-if="selectedPayoutIds.length > 0">
-                  <CBadge color="primary" class="px-2 py-1">
+                  <v-chip color="info" variant="flat" size="x-small" class="px-2 py-1">
                     선택 {{ selectedPayoutIds.length }}명 ({{
                       selectedTotalAmount.toLocaleString()
                     }}원)
-                  </CBadge>
+                  </v-chip>
 
                   <template v-if="can(PERM.SALES_PAYOUT)">
                     <v-btn
@@ -603,7 +604,7 @@ const agencyPayStatusColor = (status: string) => {
                         <option value="3">지급완료</option>
                         <option value="4">지급보류</option>
                       </select>
-                      <CBadge
+                      <v-chip
                         v-else
                         :color="
                           payout.pay_status === '3'
@@ -612,9 +613,11 @@ const agencyPayStatusColor = (status: string) => {
                               ? 'primary'
                               : 'secondary'
                         "
+                        variant="flat"
+                        size="x-small"
                       >
                         {{ payout.pay_status_display }}
-                      </CBadge>
+                      </v-chip>
                       <div
                         v-if="payout.pay_status === '3' && payout.paid_date"
                         class="text-muted font-monospace"
@@ -708,14 +711,14 @@ const agencyPayStatusColor = (status: string) => {
                 <CCardBody>
                   <div class="text-body-secondary small fw-semibold">직영 / 외주 구분</div>
                   <div class="small mt-1">
-                    <CBadge color="primary" class="mr-1"
-                      >직영
-                      {{ agencyPayoutList.filter(ap => ap.is_direct_managed).length }}개</CBadge
-                    >
-                    <CBadge color="success"
-                      >외주
-                      {{ agencyPayoutList.filter(ap => !ap.is_direct_managed).length }}개</CBadge
-                    >
+                    <v-chip color="info" variant="flat" size="x-small" class="mr-1">
+                      직영
+                      {{ agencyPayoutList.filter(ap => ap.is_direct_managed).length }}개\
+                    </v-chip>
+                    <v-chip color="success" variant="flat" size="x-small">
+                      외주
+                      {{ agencyPayoutList.filter(ap => !ap.is_direct_managed).length }}개
+                    </v-chip>
                   </div>
                 </CCardBody>
               </CCard>
@@ -781,13 +784,17 @@ const agencyPayStatusColor = (status: string) => {
 
                 <CTableBody>
                   <CTableRow v-for="ap in filteredAgencyPayouts" :key="ap.id">
-                    <CTableDataCell class="fw-bold text-start ps-3">{{
-                      ap.agency_name
-                    }}</CTableDataCell>
+                    <CTableDataCell class="fw-bold text-start ps-3">
+                      {{ ap.agency_name }}
+                    </CTableDataCell>
                     <CTableDataCell>
-                      <CBadge :color="ap.is_direct_managed ? 'primary' : 'success'">
+                      <v-chip
+                        :color="ap.is_direct_managed ? 'primary' : 'success'"
+                        variant="flat"
+                        size="x-small"
+                      >
                         {{ ap.is_direct_managed ? '직영' : '외주' }}
-                      </CBadge>
+                      </v-chip>
                     </CTableDataCell>
                     <CTableDataCell class="font-monospace"
                       >{{ ap.contract_count }}건</CTableDataCell
@@ -823,7 +830,7 @@ const agencyPayStatusColor = (status: string) => {
                         <option value="3">지급완료</option>
                         <option value="4">지급보류</option>
                       </select>
-                      <CBadge
+                      <v-chip
                         v-else
                         :color="
                           ap.pay_status === '3'
@@ -832,9 +839,11 @@ const agencyPayStatusColor = (status: string) => {
                               ? 'primary'
                               : 'secondary'
                         "
+                        variant="flat"
+                        size="x-small"
                       >
                         {{ ap.pay_status_display }}
-                      </CBadge>
+                      </v-chip>
                       <div
                         v-if="ap.pay_status === '3' && ap.paid_date"
                         class="text-muted font-monospace"

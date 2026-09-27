@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableHead,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -24,7 +14,9 @@ defineProps<{
             지출 구분
           </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge color="success">{{ content.expense_type || '법인카드' }}</CBadge>
+            <v-chip color="success" variant="flat" size="x-small">
+              {{ content.expense_type || '법인카드' }}
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             지급 요청일

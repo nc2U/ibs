@@ -46,15 +46,20 @@ const getGradeBadge = (grade: string) => {
   <CTableRow v-if="evaluation" class="text-center">
     <CTableDataCell>{{ evaluation.eval_year }}년</CTableDataCell>
     <CTableDataCell>
-      <CBadge color="info" shape="rounded-pill">{{ evaluation.eval_period_desc }}</CBadge>
+      <v-chip color="info" variant="flat" size="x-small">{{ evaluation.eval_period_desc }}</v-chip>
     </CTableDataCell>
     <CTableDataCell class="fw-bold">
       <a href="javascript:void(0);" @click="showDetail">{{ evaluation.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="getGradeBadge(evaluation.grade).color" shape="rounded-pill" class="px-2">
+      <v-chip
+        :color="getGradeBadge(evaluation.grade).color"
+        variant="flat"
+        size="x-small"
+        class="px-2"
+      >
         {{ getGradeBadge(evaluation.grade).label }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell class="text-right fw-bold">
       {{
@@ -65,9 +70,9 @@ const getGradeBadge = (grade: string) => {
     </CTableDataCell>
     <CTableDataCell>{{ evaluation.evaluator_name || '-' }}</CTableDataCell>
     <CTableDataCell>{{ evaluation.reviewer_name || '-' }}</CTableDataCell>
-    <CTableDataCell class="text-left small">{{
-      evaluation.achievement_summary || '-'
-    }}</CTableDataCell>
+    <CTableDataCell class="text-left small">
+      {{ evaluation.achievement_summary || '-' }}
+    </CTableDataCell>
     <CTableDataCell class="text-left small">{{ evaluation.notes || '-' }}</CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>

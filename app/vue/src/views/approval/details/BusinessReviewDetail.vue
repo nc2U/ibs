@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -28,7 +21,7 @@ defineProps<{
           사업 유형
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="info">
+          <v-chip color="info" variant="flat" size="x-small">
             {{
               content.biz_type === 'DEV_SELF'
                 ? '자체 개발사업'
@@ -42,7 +35,7 @@ defineProps<{
                         ? '지분투자/공동개발'
                         : '신규 사업'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
       </CTableRow>
       <CTableRow>

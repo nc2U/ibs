@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { type Executive } from '@/store/types/company.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ExecutiveForm from './ExecutiveForm.vue'
+import { CTableDataCell, CTableRow } from '@coreui/vue'
 
 defineProps({
   executive: { type: Object as PropType<Executive>, required: true },
@@ -33,14 +34,14 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell>{{ executive.rank_name || '-' }}</CTableDataCell>
     <CTableDataCell>{{ executive.executive_type_desc }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="executive.is_registered ? 'primary' : 'secondary'">
+      <v-chip :color="executive.is_registered ? 'info' : 'secondary'" variant="flat" size="x-small">
         {{ executive.is_registered ? '등기' : '비등기' }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="executive.is_standing ? 'success' : 'warning'">
+      <v-chip :color="executive.is_standing ? 'success' : 'warning'" variant="flat" size="x-small">
         {{ executive.is_standing ? '상근' : '비상근' }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ executive.represent_type_desc }}</CTableDataCell>
     <CTableDataCell>{{ executive.term_start || '-' }}</CTableDataCell>

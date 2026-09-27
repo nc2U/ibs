@@ -259,7 +259,9 @@ onMounted(fetchMyPending)
           <CTableRow>
             <CTableHeaderCell class="light" style="width: 80px">유형</CTableHeaderCell>
             <CTableDataCell>
-              <CBadge color="primary">{{ selectedDoc.doc_type_name }}</CBadge>
+              <v-chip color="info" variant="flat" size="x-small">
+                {{ selectedDoc.doc_type_name }}
+              </v-chip>
             </CTableDataCell>
             <CTableHeaderCell class="light" style="width: 80px">기안자</CTableHeaderCell>
             <CTableDataCell>{{ selectedDoc.drafter.full_name }}</CTableDataCell>

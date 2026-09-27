@@ -23,7 +23,9 @@ defineProps({
       >
         {{ cutString(post.title, 50) }}
       </router-link>
-      <CBadge v-if="post.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+      <v-chip v-if="post.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+        new
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ timeFormat(post.created ?? '') }}</CTableDataCell>
   </CTableRow>

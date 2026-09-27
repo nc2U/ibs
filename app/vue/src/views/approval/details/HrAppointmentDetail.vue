@@ -1,15 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableHead,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-import CIcon from '@coreui/icons-vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -25,7 +14,9 @@ defineProps<{
             발령 구분
           </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge color="primary">{{ content.appointment_type || '승진/전보' }}</CBadge>
+            <v-chip color="info" variant="flat" size="x-small">
+              {{ content.appointment_type || '승진/전보' }}
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             발령 시행일
@@ -49,7 +40,7 @@ defineProps<{
 
     <div v-if="content.targets?.length" class="mb-3">
       <h6 class="fw-bold mb-2 small text-primary">
-        <CIcon name="cilPeople" class="me-1" />
+        <v-icon icon="mdi-account-group" class="me-1" />
         발령 대상자 세부 내역 (총 {{ content.targets.length }}명)
       </h6>
       <CTable small bordered responsive hover class="text-center mb-0 align-middle">
@@ -74,7 +65,9 @@ defineProps<{
               {{ t.new_dept || '-' }} / {{ t.new_position || '-' }}
             </CTableDataCell>
             <CTableDataCell>
-              <CBadge color="info">{{ t.type_desc || '발령' }}</CBadge>
+              <v-chip color="info" variant="flat" size="x-small">
+                {{ t.type_desc || '발령' }}
+              </v-chip>
             </CTableDataCell>
             <CTableDataCell class="text-start">{{ t.note || '-' }}</CTableDataCell>
           </CTableRow>

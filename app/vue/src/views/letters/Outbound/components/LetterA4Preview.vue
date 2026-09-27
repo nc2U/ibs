@@ -58,9 +58,9 @@ const accStore = useAccount()
         <v-icon icon="mdi-printer-outline" class="me-1" />
         {{ isViewMode ? '공문서 인쇄 미리보기 (A4)' : '실시간 인쇄 미리보기 (A4 Live Preview)' }}
       </span>
-      <CBadge :color="isViewMode ? 'secondary' : 'info'">
+      <v-chip :color="isViewMode ? 'secondary' : 'info'" variant="flat" size="x-small">
         {{ isViewMode ? 'A4 표준서식' : '실시간 반영중' }}
-      </CBadge>
+      </v-chip>
     </div>
 
     <!-- A4 종이 프리뷰 컨테이너 (A4 비율 210:297 고정) -->

@@ -13,6 +13,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import PeriodFormModal from './components/PeriodFormModal.vue'
 import PayoutDetailModal from './components/PayoutDetailModal.vue'
+import { CCard, CCardBody, CCardHeader, CTable, CTableBody } from '@coreui/vue'
 
 const refSettlement = ref()
 const refConfirmSettlement = ref()
@@ -210,19 +211,21 @@ const onPeriodSaved = async () => {
                 </option>
               </CFormSelect>
 
-              <CBadge
+              <v-chip
                 v-if="selectedPeriod"
                 :color="
                   selectedPeriod.status === '2'
-                    ? 'primary'
+                    ? 'info'
                     : selectedPeriod.status === '3'
                       ? 'success'
                       : 'warning'
                 "
+                variant="flat"
+                size="x-small"
                 class="px-2 py-1"
               >
                 {{ selectedPeriod.status_display }}
-              </CBadge>
+              </v-chip>
             </div>
 
             <!-- 우측: 액션 버튼 그룹 -->
@@ -361,9 +364,9 @@ const onPeriodSaved = async () => {
             <div class="fw-bold d-flex align-items-center">
               <v-icon icon="mdi-format-list-numbered" size="small" class="mr-1 text-primary" />
               개인별 정산 및 세금 공제 명세
-              <CBadge color="primary" class="ml-2" shape="rounded-pill">
+              <v-chip color="info" variant="flat" size="x-small" class="ml-2">
                 {{ payoutList.length }}명
-              </CBadge>
+              </v-chip>
             </div>
           </CCardHeader>
 
@@ -446,17 +449,19 @@ const onPeriodSaved = async () => {
                     {{ payout.net_amount.toLocaleString() }}원
                   </CTableDataCell>
                   <CTableDataCell>
-                    <CBadge
+                    <v-chip
                       :color="
                         payout.pay_status === '3'
                           ? 'success'
                           : payout.pay_status === '2'
-                            ? 'primary'
+                            ? 'info'
                             : 'secondary'
                       "
+                      variant="flat"
+                      size="x-small"
                     >
                       {{ payout.pay_status_display }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
                   <CTableDataCell>
                     <v-btn size="x-small" color="info" @click="openPayoutDetail(payout)">
@@ -482,9 +487,9 @@ const onPeriodSaved = async () => {
             <div class="fw-bold d-flex align-items-center">
               <v-icon icon="mdi-domain" size="small" class="mr-1 text-primary" />
               대행사 정산 및 귀속 이익 명세
-              <CBadge color="info" class="ml-2" shape="rounded-pill">
+              <v-chip color="info" variant="flat" size="x-small" class="ml-2">
                 {{ agencyPayoutList.length }}개사
-              </CBadge>
+              </v-chip>
             </div>
             <div v-if="totalUnallocatedFee > 0" class="small text-info fw-semibold">
               <v-icon icon="mdi-shield-check" size="small" class="mr-1" />
@@ -528,9 +533,13 @@ const onPeriodSaved = async () => {
                     {{ ap.agency_name }}
                   </CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="ap.is_direct_managed ? 'primary' : 'success'">
+                    <v-chip
+                      :color="ap.is_direct_managed ? 'info' : 'success'"
+                      variant="flat"
+                      size="x-small"
+                    >
                       {{ ap.is_direct_managed ? '직영 사업부' : '외주 대행' }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
                   <CTableDataCell class="font-monospace">
                     {{ ap.contract_count }}건
@@ -565,17 +574,18 @@ const onPeriodSaved = async () => {
             <div class="fw-bold d-flex align-items-center">
               <v-icon icon="mdi-cash-refund" size="small" class="mr-1 text-danger" />
               수수료 환수 이력
-              <CBadge color="danger" class="ml-2" shape="rounded-pill">
+              <v-chip color="danger" variant="flat" size="x-small" class="ml-2">
                 {{ clawbackList.length }}건
-              </CBadge>
-              <CBadge
+              </v-chip>
+              <v-chip
                 v-if="clawbackList.filter(c => !c.is_settled).length > 0"
                 color="warning"
+                variant="flat"
+                size="x-small"
                 class="ml-1"
-                shape="rounded-pill"
               >
                 미상계 {{ clawbackList.filter(c => !c.is_settled).length }}건
-              </CBadge>
+              </v-chip>
             </div>
             <div class="small text-danger fw-semibold">
               총 환수액:
@@ -623,9 +633,13 @@ const onPeriodSaved = async () => {
                     {{ c.amount.toLocaleString() }}원
                   </CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="c.is_settled ? 'success' : 'warning'">
+                    <v-chip
+                      :color="c.is_settled ? 'success' : 'warning'"
+                      variant="flat"
+                      size="x-small"
+                    >
                       {{ c.is_settled ? '상계 완료' : '미상계' }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
                   <CTableDataCell class="text-start small text-muted">{{
                     c.reason

@@ -65,7 +65,14 @@ onUpdated(() => {
               </div>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge v-if="Number(nowType) === obj.value" color="warning">현재</CBadge>
+              <v-chip
+                v-if="Number(nowType) === obj.value"
+                color="warning"
+                variant="flat"
+                size="x-small"
+              >
+                현재
+              </v-chip>
             </CTableDataCell>
           </CTableRow>
         </CTableBody>

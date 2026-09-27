@@ -4,7 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesPerson } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
-import { CCard } from '@coreui/vue'
+import { CCard, CCardBody, CTable } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -202,9 +202,13 @@ const deletePerson = async (person: SalesPerson) => {
               </v-btn>
             </CTableDataCell>
             <CTableDataCell>
-              <CBadge :color="statusBadgeColor[person.status] || 'secondary'">
+              <v-chip
+                :color="statusBadgeColor[person.status] || 'secondary'"
+                variant="flat"
+                size="x-small"
+              >
                 {{ person.status_display }}
-              </CBadge>
+              </v-chip>
             </CTableDataCell>
             <CTableDataCell>
               <template v-if="can(PERM.SALES_MANAGE)">

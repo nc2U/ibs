@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-import CIcon from '@coreui/icons-vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -23,7 +13,7 @@ defineProps<{
           신청 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="danger">
+          <v-chip color="danger" variant="flat" size="x-small">
             {{
               content.advance_type === 'PREPAYMENT'
                 ? '선급금 (계약상 대금 선지급)'
@@ -33,7 +23,7 @@ defineProps<{
                     ? '행사/프로젝트 진행비'
                     : '가지급금 (업무용 선지급)'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           지급 요청일
@@ -71,7 +61,7 @@ defineProps<{
       <CTableRow v-if="content.settlement_promise !== false">
         <CTableHeaderCell class="text-center bg-more-light">정산 확약</CTableHeaderCell>
         <CTableDataCell colspan="3" class="pl-3 text-success fw-semibold">
-          <CIcon name="cilCheckCircle" class="me-1" />
+          <v-icon icon="mdi-check-circle" class="me-1" />
           상기 선급금/가지급금을 수령한 후, 정산 예정일까지 적격 증빙을 첨부하여 전액 정산할 것을
           확약함
         </CTableDataCell>

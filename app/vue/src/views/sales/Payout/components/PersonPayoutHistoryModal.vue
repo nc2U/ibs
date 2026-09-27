@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { CommissionPayout, CommissionClawback } from '@/store/types/sales'
+import { CModal } from '@coreui/vue'
 
 const salesStore = useSales()
 const isVisible = ref(false)
@@ -156,7 +157,9 @@ const payStatusColor = (status: string) => {
                 {{ p.net_amount.toLocaleString() }}원
               </CTableDataCell>
               <CTableDataCell>
-                <CBadge :color="payStatusColor(p.pay_status)">{{ p.pay_status_display }}</CBadge>
+                <v-chip :color="payStatusColor(p.pay_status)" variant="flat" size="x-small">
+                  {{ p.pay_status_display }}
+                </v-chip>
               </CTableDataCell>
               <CTableDataCell class="small text-muted">{{ p.paid_date || '-' }}</CTableDataCell>
             </CTableRow>
@@ -195,13 +198,17 @@ const payStatusColor = (status: string) => {
                 </CTableDataCell>
                 <CTableDataCell class="text-start small text-muted">{{ c.reason }}</CTableDataCell>
                 <CTableDataCell>
-                  <CBadge :color="c.is_settled ? 'success' : 'warning'">
+                  <v-chip
+                    :color="c.is_settled ? 'success' : 'warning'"
+                    variant="flat"
+                    size="x-small"
+                  >
                     {{ c.is_settled ? '상계 완료' : '미상계' }}
-                  </CBadge>
+                  </v-chip>
                 </CTableDataCell>
-                <CTableDataCell class="small text-muted">{{
-                  c.created_at?.slice(0, 10)
-                }}</CTableDataCell>
+                <CTableDataCell class="small text-muted">
+                  {{ c.created_at?.slice(0, 10) }}
+                </CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>

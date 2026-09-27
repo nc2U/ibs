@@ -211,21 +211,36 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
       <CRow>
         <CCol :sm="4">
           <strong>활성화 :</strong>
-          <CBadge :color="contract.is_active ? 'success' : 'secondary'" class="ml-2">
+          <v-chip
+            :color="contract.is_active ? 'success' : 'secondary'"
+            variant="flat"
+            size="x-small"
+            class="ml-2"
+          >
             {{ contract.is_active ? '활성' : '비활성' }}
-          </CBadge>
+          </v-chip>
         </CCol>
         <CCol :sm="4">
           <strong>공급계약 :</strong>
-          <CBadge :color="contract.is_sup_cont ? 'success' : 'secondary'" class="ml-2">
+          <v-chip
+            :color="contract.is_sup_cont ? 'success' : 'secondary'"
+            variant="flat"
+            size="x-small"
+            class="ml-2"
+          >
             {{ contract.is_sup_cont ? '완료' : '미완료' }}
-          </CBadge>
+          </v-chip>
         </CCol>
         <CCol :sm="4">
           <strong>계약종결 :</strong>
-          <CBadge :color="contract.is_completed ? 'success' : 'info'" class="ml-2">
+          <v-chip
+            :color="contract.is_completed ? 'success' : 'info'"
+            variant="flat"
+            size="x-small"
+            class="ml-2"
+          >
             {{ contract.is_completed ? '종결' : '진행중' }}
-          </CBadge>
+          </v-chip>
         </CCol>
       </CRow>
     </CCardBody>
@@ -257,9 +272,14 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
           </CCol>
           <CCol :sm="6">
             <strong>자격구분 :</strong>
-            <CBadge :color="getQualificationColor(contractor.qualification)" class="ml-2">
+            <v-chip
+              :color="getQualificationColor(contractor.qualification)"
+              variant="flat"
+              size="x-small"
+              class="ml-2"
+            >
               {{ contractor.qualifi_display }}
-            </CBadge>
+            </v-chip>
           </CCol>
         </CRow>
         <CRow>
@@ -271,9 +291,15 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             >
               {{ contractor.status_display }}
             </span>
-            <CBadge v-if="contractor.change_type" color="danger" class="ml-2">
+            <v-chip
+              v-if="contractor.change_type"
+              color="danger"
+              variant="flat"
+              size="x-small"
+              class="ml-2"
+            >
               {{ contractor.change_type_display }}
-            </CBadge>
+            </v-chip>
           </CCol>
           <CCol :sm="6">
             <strong>청약일 :</strong>

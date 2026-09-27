@@ -52,9 +52,17 @@ const isLowBalance = computed(() => props.balance < 10000)
       @click="toggle"
     >
       <CCol class="d-flex align-items-center">
-        <CIcon name="cilWallet" class="me-2" />
+        <v-icon icon="mdi-wallet" class="me-2" />
         <strong>잔액 확인</strong>
-        <CBadge v-if="visible && isLowBalance" color="danger" class="ms-2"> 잔액 부족 </CBadge>
+        <v-chip
+          v-if="visible && isLowBalance"
+          color="danger"
+          variant="flat"
+          size="x-small"
+          class="ms-2"
+        >
+          잔액 부족
+        </v-chip>
       </CCol>
       <v-icon :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
     </CCardHeader>
@@ -75,7 +83,7 @@ const isLowBalance = computed(() => props.balance < 10000)
                   <CSpinner v-if="loading" size="sm" class="ms-2" />
                 </div>
                 <div v-if="isLowBalance" class="text-danger small mt-1">
-                  <CIcon name="cilWarning" size="sm" class="me-1" />
+                  <v-icon icon="mdi-alert" size="small" class="me-1" />
                   잔액이 부족합니다. 충전이 필요합니다.
                 </div>
               </div>

@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -22,7 +15,7 @@ defineProps<{
           계약 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="info" class="me-1">
+          <v-chip color="info" variant="flat" size="x-small" class="me-1">
             {{
               content.contract_type === 'CONSTRUCTION'
                 ? '공사 도급/하도급'
@@ -36,8 +29,8 @@ defineProps<{
                         ? 'MOU/NDA'
                         : '일반 계약'
             }}
-          </CBadge>
-          <CBadge color="secondary">
+          </v-chip>
+          <v-chip color="secondary" variant="flat" size="x-small">
             {{
               content.contract_kind === 'CHANGE'
                 ? '변경 계약'
@@ -45,7 +38,7 @@ defineProps<{
                   ? '갱신 계약'
                   : '신규 계약'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           계약 건명

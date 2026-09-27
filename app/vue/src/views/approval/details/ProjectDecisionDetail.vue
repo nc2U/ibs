@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable, CTableBody } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -22,7 +15,7 @@ defineProps<{
           현안 분야
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="danger" class="me-1">
+          <v-chip color="danger" variant="flat" size="x-small" class="me-1">
             {{
               content.decision_type === 'DESIGN_SPEC'
                 ? '설계변경/스펙'
@@ -38,8 +31,8 @@ defineProps<{
                           ? '업체선정/타절'
                           : '프로젝트 의사결정'
             }}
-          </CBadge>
-          <CBadge
+          </v-chip>
+          <v-chip
             :color="
               content.urgency === 'CRITICAL'
                 ? 'danger'
@@ -47,6 +40,8 @@ defineProps<{
                   ? 'warning'
                   : 'secondary'
             "
+            variant="flat"
+            size="x-small"
           >
             {{
               content.urgency === 'CRITICAL'
@@ -55,7 +50,7 @@ defineProps<{
                   ? '긴급'
                   : '보통'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           결정 목표일

@@ -11,7 +11,7 @@ import type {
   StepStatus,
   ApprovalActionType,
 } from '@/store/types/approval'
-import { CCard } from '@coreui/vue'
+import { CCard, CCardBody } from '@coreui/vue'
 import { STATIC_DETAIL_REGISTRY, FallbackDetail } from '../details'
 import { markNotificationReadByTarget } from '@/utils/notification.ts'
 
@@ -325,14 +325,15 @@ onMounted(() => fetchDocument(docId.value))
               <CTableHeaderCell class="text-center bg-more-light">기안자</CTableHeaderCell>
               <CTableDataCell class="pl-3">
                 <span class="fw-semibold">{{ document.drafter?.full_name }}</span>
-                <CBadge
+                <v-chip
                   v-if="document.drafter_assignment_desc"
                   color="secondary"
-                  size="sm"
+                  variant="flat"
+                  size="x-small"
                   class="ms-2"
                 >
                   {{ document.drafter_assignment_desc }}
-                </CBadge>
+                </v-chip>
               </CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light">기안일시</CTableHeaderCell>
               <CTableDataCell class="pl-3">{{ fmtDatetime(document.created_at) }}</CTableDataCell>
@@ -347,16 +348,17 @@ onMounted(() => fetchDocument(docId.value))
               <CTableHeaderCell class="text-center bg-more-light">참조자 (공람)</CTableHeaderCell>
               <CTableDataCell colspan="3" class="pl-3">
                 <div class="d-flex flex-wrap gap-1 align-items-center">
-                  <CBadge
+                  <v-chip
                     v-for="obs in document.observers"
                     :key="obs.id"
                     color="info"
-                    variant="outline"
+                    variant="outlined"
+                    size="x-small"
                     class="py-1 px-2"
                   >
-                    <CIcon name="cilUser" size="sm" class="me-1" />
+                    <v-icon icon="mdi-account-check" size="small" class="me-1" />
                     {{ obs.full_name }}
-                  </CBadge>
+                  </v-chip>
                 </div>
               </CTableDataCell>
             </CTableRow>
@@ -369,9 +371,15 @@ onMounted(() => fetchDocument(docId.value))
     <CCard class="mb-3">
       <CCardHeader class="d-flex align-items-center justify-content-between">
         <strong>결재 내용</strong>
-        <CBadge v-if="document.doc_type_detail?.category_name" color="light" class="text-body">
+        <v-chip
+          v-if="document.doc_type_detail?.category_name"
+          color="light"
+          variant="flat"
+          size="x-small"
+          class="text-body"
+        >
           {{ document.doc_type_detail.category_name }}
-        </CBadge>
+        </v-chip>
       </CCardHeader>
       <CCardBody>
         <component :is="detailComponent" :content="docContent" :document="document" />
@@ -384,12 +392,12 @@ onMounted(() => fetchDocument(docId.value))
         <div class="fw-semibold">
           <CIcon name="cilPaperclip" class="me-1 text-primary" />
           첨부파일
-          <CBadge color="secondary" size="sm" class="ms-1">
+          <v-chip color="secondary" variant="flat" size="x-small" class="ms-1">
             {{
               (document.attachments?.length || 0) +
               (document.attachment && !document.attachments?.length ? 1 : 0)
             }}개
-          </CBadge>
+          </v-chip>
         </div>
       </CCardHeader>
       <CCardBody class="p-0">
@@ -496,18 +504,19 @@ onMounted(() => fetchDocument(docId.value))
                 <div class="step-number">{{ step.step_order }}</div>
                 <div>
                   <span class="fw-semibold">{{ step.role_label }}</span>
-                  <CBadge
-                    :color="step.condition === 'AND' ? 'primary' : 'info'"
-                    size="sm"
+                  <v-chip
+                    :color="step.condition === 'AND' ? 'success' : 'info'"
+                    variant="flat"
+                    size="x-small"
                     class="ms-2"
                   >
                     {{ step.condition === 'AND' ? '전원 승인' : '1인 승인' }}
-                  </CBadge>
+                  </v-chip>
                 </div>
               </div>
-              <CBadge :color="STEP_STATUS_COLOR[step.status]">
+              <v-chip :color="STEP_STATUS_COLOR[step.status]" variant="flat" size="x-small">
                 {{ STEP_STATUS_LABEL[step.status] }}
-              </CBadge>
+              </v-chip>
             </div>
 
             <!-- 결재자 카드 -->
@@ -526,23 +535,26 @@ onMounted(() => fetchDocument(docId.value))
 
                 <template v-if="getAction(step, approver.id)">
                   <div class="d-flex align-items-center gap-1 mb-1">
-                    <CBadge
+                    <v-chip
                       :color="
                         getAction(step, approver.id)!.action === 'approved' ? 'success' : 'danger'
                       "
+                      variant="flat"
+                      size="x-small"
                     >
                       {{
                         getAction(step, approver.id)!.action === 'approved' ? '✓ 승인' : '✗ 반려'
                       }}
-                    </CBadge>
-                    <CBadge
+                    </v-chip>
+                    <v-chip
                       v-if="getAction(step, approver.id)!.is_delegated"
                       color="warning"
-                      size="sm"
+                      size="x-small"
+                      variant="flat"
                       title="대리 결재"
                     >
                       대결: {{ getAction(step, approver.id)!.approver.full_name }}
-                    </CBadge>
+                    </v-chip>
                   </div>
                   <div class="text-muted" style="font-size: 0.72rem">
                     {{ fmtDatetime(getAction(step, approver.id)!.acted_at) }}
@@ -554,7 +566,9 @@ onMounted(() => fetchDocument(docId.value))
                     "{{ getAction(step, approver.id)!.comment }}"
                   </div>
                 </template>
-                <CBadge v-else color="secondary" class="mb-1">대기중</CBadge>
+                <v-chip v-else color="secondary" variant="flat" size="x-small" class="mb-1">
+                  대기중
+                </v-chip>
 
                 <!-- 내가 결재할 수 있는 경우 -->
                 <div v-if="canAct(step, approver.id)" class="d-flex gap-1 mt-2">

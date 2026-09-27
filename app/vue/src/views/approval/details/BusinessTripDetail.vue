@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -23,9 +14,9 @@ defineProps<{
             출장 구분
           </CTableHeaderCell>
           <CTableDataCell class="pl-3">
-            <CBadge color="primary">{{
-              content.trip_type === 'OVERSEAS' ? '해외 출장' : '국내 출장'
-            }}</CBadge>
+            <v-chip color="info" variant="flat" size="x-small">
+              {{ content.trip_type === 'OVERSEAS' ? '해외 출장' : '국내 출장' }}
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             출장지
@@ -38,9 +29,9 @@ defineProps<{
           <CTableHeaderCell class="text-center bg-more-light">출장 기간</CTableHeaderCell>
           <CTableDataCell class="pl-3">
             {{ content.start_date || '-' }} ~ {{ content.end_date || '-' }}
-            <CBadge color="info" class="ms-2">
+            <v-chip color="info" variant="flat" size="x-small" class="ms-2">
               {{ content.nights_count ?? 0 }}박 {{ content.days_count ?? 1 }}일
-            </CBadge>
+            </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light">교통편</CTableHeaderCell>
           <CTableDataCell class="pl-3">{{ content.transportation || '법인차량' }}</CTableDataCell>

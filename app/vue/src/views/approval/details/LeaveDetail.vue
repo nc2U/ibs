@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-
 const props = defineProps<{
   content: Record<string, any>
   document?: any
@@ -37,7 +28,9 @@ const leaveTypeLabel = (code?: string) => {
           휴가 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="primary">{{ leaveTypeLabel(content.leave_type) }}</CBadge>
+          <v-chip color="info" variant="flat" size="x-small">
+            {{ leaveTypeLabel(content.leave_type) }}
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           신청 일수

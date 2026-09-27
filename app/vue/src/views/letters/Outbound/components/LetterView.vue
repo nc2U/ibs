@@ -478,9 +478,15 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               <span class="text-muted ms-1">
                 {{ formatDateTime(letter.dispatched_at) }} 발송 완료 (증빙 보관 및 수정/삭제 불가)
               </span>
-              <CBadge v-if="letter.approval_document_detail" color="info" class="ms-2">
+              <v-chip
+                v-if="letter.approval_document_detail"
+                color="info"
+                variant="flat"
+                size="x-small"
+                class="ms-2"
+              >
                 결재승인 ({{ letter.approval_document_detail.doc_number }})
-              </CBadge>
+              </v-chip>
             </div>
           </div>
           <div v-if="letter.approval_document">
@@ -502,16 +508,36 @@ const formatDateTime = (dateStr: string | null | undefined) => {
             <v-icon icon="mdi-shield-check" size="large" class="text-primary me-2" />
             <div>
               <strong>전자결재 연동 상태: </strong>
-              <CBadge v-if="letter.approval_status === 'approved'" color="success" class="ms-1">
+              <v-chip
+                v-if="letter.approval_status === 'approved'"
+                color="success"
+                variant="flat"
+                size="x-small"
+                class="ms-1"
+              >
                 결재 승인완료 ({{ letter.approval_document_detail?.doc_number || '공문' }})
-              </CBadge>
-              <CBadge v-else-if="letter.approval_status === 'pending'" color="warning" class="ms-1">
+              </v-chip>
+              <v-chip
+                v-else-if="letter.approval_status === 'pending'"
+                color="warning"
+                variant="flat"
+                size="x-small"
+                class="ms-1"
+              >
                 결재 진행중
-              </CBadge>
-              <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger" class="ms-1">
+              </v-chip>
+              <v-chip
+                v-else-if="letter.approval_status === 'rejected'"
+                color="danger"
+                variant="flat"
+                size="x-small"
+                class="ms-1"
+              >
                 결재 반려
-              </CBadge>
-              <CBadge v-else color="secondary" class="ms-1"> 미상신 (임시/초안) </CBadge>
+              </v-chip>
+              <v-chip v-else color="secondary" variant="flat" size="x-small" class="ms-1">
+                미상신 (임시/초안)
+              </v-chip>
             </div>
           </div>
           <div>
@@ -592,7 +618,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <CCard class="mb-4">
           <CCardHeader class="d-flex justify-content-between align-items-center">
             <div>
-              <CBadge color="primary" class="me-2">{{ letter.document_number }}</CBadge>
+              <v-chip color="info" variant="flat" size="x-small" class="me-2">
+                {{ letter.document_number }}
+              </v-chip>
               <strong>{{ letter.title }}</strong>
             </div>
             <div>
@@ -630,7 +658,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                     <tr>
                       <th>공개구분</th>
                       <td>
-                        <CBadge
+                        <v-chip
                           :color="
                             letter.disclosure_type === '3'
                               ? 'danger'
@@ -638,6 +666,8 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                                 ? 'warning'
                                 : 'success'
                           "
+                          variant="flat"
+                          size="x-small"
                         >
                           {{
                             letter.disclosure_type_desc ||
@@ -647,7 +677,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                                 ? '부분공개'
                                 : '공개')
                           }}
-                        </CBadge>
+                        </v-chip>
                       </td>
                     </tr>
                     <tr>
@@ -655,14 +685,18 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                       <td>
                         <span v-if="letter.dispatched_at" class="fw-bold text-success">
                           {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
-                          <CBadge color="success" class="ms-1">발송완료</CBadge>
+                          <v-chip color="success" variant="flat" size="x-small" class="ms-1">
+                            발송완료
+                          </v-chip>
                         </span>
                         <span
                           v-else-if="letter.approval_status === 'approved'"
                           class="fw-bold text-primary"
                         >
                           {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
-                          <CBadge color="primary" class="ms-1">승인확정</CBadge>
+                          <v-chip color="primary" variant="flat" size="x-small" class="ms-1">
+                            승인확정
+                          </v-chip>
                         </span>
                         <span v-else class="text-secondary">
                           {{ formatDate(letter.issue_date) }}
@@ -712,9 +746,15 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                           >{{ letter.drafter_name }}
                           {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span
                         >
-                        <CBadge v-if="letter.is_solo_approval" color="info" class="ms-1"
-                          >승인권자 직접기안</CBadge
+                        <v-chip
+                          v-if="letter.is_solo_approval"
+                          color="info"
+                          variant="flat"
+                          size="x-small"
+                          class="ms-1"
                         >
+                          승인권자 직접기안
+                        </v-chip>
                       </td>
                     </tr>
                     <tr v-if="letter.sender_address">
@@ -811,9 +851,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                     <tr>
                       <th style="width: 120px">발송 방법</th>
                       <td>
-                        <CBadge color="dark">{{
-                          letter.dispatch_method_desc || letter.dispatch_method || '이메일'
-                        }}</CBadge>
+                        <v-chip color="dark" variant="flat" size="x-small">
+                          {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
+                        </v-chip>
                       </td>
                     </tr>
                     <tr>
@@ -853,8 +893,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               공문 PDF 파일 (최종 발송/보관본)
             </strong>
             <div>
-              <CBadge v-if="isDispatched" color="dark">대외 발송완료 (재생성 금지)</CBadge>
-              <CBadge v-else-if="isApproved" color="secondary">결재승인완료 (재생성 제한)</CBadge>
+              <v-chip v-if="isDispatched" color="dark" variant="flat" size="x-small">
+                대외 발송완료 (재생성 금지)
+              </v-chip>
+              <v-chip v-else-if="isApproved" color="secondary" variant="flat" size="x-small">
+                결재승인완료 (재생성 제한)
+              </v-chip>
             </div>
           </CCardHeader>
           <CCardBody>

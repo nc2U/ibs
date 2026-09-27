@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import type { InboundLetter } from '@/store/types/docs'
 import type { InboundLetterFilter } from '@/store/pinia/docs'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { CCard, CCardBody } from '@coreui/vue'
 
 const props = defineProps<{
   letter: InboundLetter | null
@@ -242,25 +243,53 @@ const updateStatus = (newStatus: string) => {
           </div>
           <div class="text-end">
             <div class="d-flex align-items-center gap-2 justify-content-end mb-1">
-              <CBadge v-if="letter.status === 'received'" color="info" class="fs-6">접수</CBadge>
-              <CBadge v-else-if="letter.status === 'in_progress'" color="warning" class="fs-6"
-                >처리중</CBadge
+              <v-chip
+                v-if="letter.status === 'received'"
+                color="info"
+                variant="flat"
+                size="x-small"
+                class="fs-6"
               >
-              <CBadge v-else-if="letter.status === 'replied'" color="primary" class="fs-6"
-                >회신완료</CBadge
+                접수
+              </v-chip>
+              <v-chip
+                v-else-if="letter.status === 'in_progress'"
+                color="warning"
+                variant="flat"
+                size="x-small"
+                class="fs-6"
               >
-              <CBadge v-else-if="letter.status === 'closed'" color="secondary" class="fs-6"
-                >종결</CBadge
+                처리중
+              </v-chip>
+              <v-chip
+                v-else-if="letter.status === 'replied'"
+                color="primary"
+                variant="flat"
+                size="x-small"
+                class="fs-6"
               >
+                회신완료
+              </v-chip>
+              <v-chip
+                v-else-if="letter.status === 'closed'"
+                color="secondary"
+                variant="flat"
+                size="x-small"
+                class="fs-6"
+              >
+                종결
+              </v-chip>
             </div>
-            <CBadge
+            <v-chip
               v-if="letter.reply_due_date"
               :color="getDDayBadgeColor(letter.d_day)"
+              variant="flat"
+              size="x-small"
               class="fs-7"
             >
               <v-icon icon="mdi-clock-alert-outline" size="small" class="me-1" />
               회신기한: {{ formatDate(letter.reply_due_date) }} ({{ getDDayText(letter.d_day) }})
-            </CBadge>
+            </v-chip>
           </div>
         </div>
 
@@ -328,9 +357,15 @@ const updateStatus = (newStatus: string) => {
                 class="me-1"
               />
               공문서 원본 파일
-              <CBadge v-if="scanFileExt" color="info" class="ms-1 text-uppercase">
+              <v-chip
+                v-if="scanFileExt"
+                color="info"
+                variant="flat"
+                size="x-small"
+                class="ms-1 text-uppercase"
+              >
                 {{ scanFileExt }}
-              </CBadge>
+              </v-chip>
             </div>
             <a
               v-if="letter.scan_file"

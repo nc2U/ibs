@@ -128,12 +128,14 @@ const formatDate = (dateStr: string) => {
               {{ item.sender_number }}
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge :color="getTypeColor(item.message_type)">
+              <v-chip :color="getTypeColor(item.message_type)" variant="flat" size="x-small">
                 {{ item.message_type }}
-              </CBadge>
+              </v-chip>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge color="info"> {{ item.recipient_count }}명 </CBadge>
+              <v-chip color="info" variant="flat" size="x-small">
+                {{ item.recipient_count }}명
+              </v-chip>
             </CTableDataCell>
             <CTableDataCell>
               {{ cutString(item.title || '(제목 없음)') }}

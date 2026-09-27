@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -22,7 +15,7 @@ defineProps<{
           근무 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge
+          <v-chip
             :color="
               content.work_type === 'HOLIDAY'
                 ? 'danger'
@@ -30,6 +23,8 @@ defineProps<{
                   ? 'dark'
                   : 'primary'
             "
+            variant="flat"
+            size="x-small"
           >
             {{
               content.work_type === 'HOLIDAY'
@@ -38,7 +33,7 @@ defineProps<{
                   ? '야간 근무'
                   : '평일 연장근무'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           근무 일자
@@ -61,11 +56,11 @@ defineProps<{
       <CTableRow>
         <CTableHeaderCell class="text-center bg-more-light">보상 방식</CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="info">
+          <v-chip color="info" variant="flat" size="x-small">
             {{
               content.compensation_type === 'COMP_LEAVE' ? '대체휴무 (보상휴가) 적립' : '수당 지급'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light">동반 근무자</CTableHeaderCell>
         <CTableDataCell class="pl-3">{{ content.co_workers || '-' }}</CTableDataCell>

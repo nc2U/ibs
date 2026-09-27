@@ -180,9 +180,9 @@ onBeforeMount(() => {
       <CCol md="9">
         <CCard>
           <CCardHeader class="text-body">
-            <CIcon name="cil-calendar" class="mr-2" />
+            <v-icon icon="mdi-calendar-badge" class="mr-2" />
             <h6 class="d-inline">Calendar</h6>
-            <CBadge color="primary" class="ml-2">IBS</CBadge>
+            <v-chip color="primary" variant="flat" size="x-small" class="ml-2">IBS</v-chip>
           </CCardHeader>
           <CCardBody>
             <div class="demo-app text-body">

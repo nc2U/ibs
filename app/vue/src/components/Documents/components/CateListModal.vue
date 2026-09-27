@@ -2,7 +2,6 @@
 import { type PropType, ref } from 'vue'
 import type { Category } from '@/store/types/docs'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 
 defineProps({
   nowCate: { type: Number, default: null },
@@ -53,7 +52,9 @@ defineExpose({ callModal })
               </div>
             </CTableDataCell>
             <CTableDataCell class="text-center">
-              <CBadge v-if="nowCate === obj.pk" color="warning">현재</CBadge>
+              <v-chip v-if="nowCate === obj.pk" color="warning" variant="flat" size="x-small">
+                현재
+              </v-chip>
             </CTableDataCell>
           </CTableRow>
         </CTableBody>

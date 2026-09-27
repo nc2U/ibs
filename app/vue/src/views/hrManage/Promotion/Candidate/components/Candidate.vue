@@ -49,13 +49,13 @@ const getStatusBadge = (status: string) => {
       <a href="javascript:void(0);" @click="showDetail">{{ candidate.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
-      <CBadge color="light" class="text-dark border">
+      <v-chip color="light" variant="flat" size="x-small" class="text-body border">
         {{ candidate.current_grade_code }}
-      </CBadge>
+      </v-chip>
       <CIcon icon="cil-arrow-right" class="mx-1 text-muted small" />
-      <CBadge color="primary">
+      <v-chip color="info" variant="flat" size="x-small">
         {{ candidate.target_grade_code }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell class="text-right">
       {{ Number(candidate.tenure_years || 0).toFixed(1) }} 년
@@ -68,9 +68,14 @@ const getStatusBadge = (status: string) => {
       }}
     </CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="getStatusBadge(candidate.status).color" shape="rounded-pill" class="px-2">
+      <v-chip
+        :color="getStatusBadge(candidate.status).color"
+        variant="flat"
+        size="x-small"
+        class="px-2"
+      >
         {{ getStatusBadge(candidate.status).label }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell class="small text-muted">
       {{ candidate.promoted_date || '-' }}

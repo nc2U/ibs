@@ -162,7 +162,7 @@ defineExpose({ openCreateModal })
           {{ item.start_date }} ~ {{ item.end_date || '재직' }}
         </CTableDataCell>
         <CTableDataCell>
-          <CBadge color="info">{{ item.recognized_ratio }}%</CBadge>
+          <v-chip color="info" variant="flat" size="x-small">{{ item.recognized_ratio }}%</v-chip>
         </CTableDataCell>
         <CTableDataCell v-if="canHrWorkManage">
           <v-btn color="info" size="x-small" @click="openEditModal(item)">확인</v-btn>

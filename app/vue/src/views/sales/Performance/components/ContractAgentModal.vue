@@ -6,6 +6,7 @@ import { getToday } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { CForm, CModalBody } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -274,9 +275,9 @@ defineExpose({ open })
                 </CFormSelect>
                 <CFormFeedback invalid>담당 영업직원(상담사)을 선택해주세요.</CFormFeedback>
                 <div v-if="selectedPersonTeamInfo" class="mt-1 d-flex align-items-center gap-2">
-                  <CBadge color="info" shape="rounded-pill">
+                  <v-chip color="info" variant="flat" size="x-small">
                     소속: {{ selectedPersonTeamInfo }}
-                  </CBadge>
+                  </v-chip>
                 </div>
                 <div v-if="selectedPersonTeamWarning" class="mt-1">
                   <CAlert
@@ -347,9 +348,13 @@ defineExpose({ open })
                   <v-icon icon="mdi-check-decagram-outline" size="small" class="mr-1" />
                   수수료 정산 승인 관리
                 </span>
-                <CBadge :color="form.is_settlement_approved ? 'success' : 'warning'">
+                <v-chip
+                  :color="form.is_settlement_approved ? 'success' : 'warning'"
+                  variant="flat"
+                  size="x-small"
+                >
                   {{ form.is_settlement_approved ? '정산 승인 완료' : '정산 보류 (미승인)' }}
-                </CBadge>
+                </v-chip>
               </div>
             </CCol>
 

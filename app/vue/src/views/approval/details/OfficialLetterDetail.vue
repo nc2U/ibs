@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -70,7 +61,9 @@ defineProps<{
       <CTableRow>
         <CTableHeaderCell class="text-center bg-more-light">발송 방법</CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="info">{{ content.send_method || '이메일' }}</CBadge>
+          <v-chip color="info" variant="flat" size="x-small">{{
+            content.send_method || '이메일'
+          }}</v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light">발송 희망일</CTableHeaderCell>
         <CTableDataCell class="pl-3">{{ content.send_due_date || '-' }}</CTableDataCell>
@@ -79,9 +72,9 @@ defineProps<{
         <CTableHeaderCell class="text-center bg-more-light">날인 인감</CTableHeaderCell>
         <CTableDataCell class="pl-3">
           <div class="d-flex align-items-center">
-            <CBadge color="dark" class="me-2">{{
-              content.seal_name || content.seal_type || '법인인감'
-            }}</CBadge>
+            <v-chip color="dark" variant="flat" size="x-small" class="me-2">
+              {{ content.seal_name || content.seal_type || '법인인감' }}
+            </v-chip>
             <img
               v-if="content.seal_image"
               :src="content.seal_image"

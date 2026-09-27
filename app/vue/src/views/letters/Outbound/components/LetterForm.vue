@@ -12,6 +12,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import LetterA4Preview from './LetterA4Preview.vue'
+import { CCard, CCardBody, CCol, CForm, CRow } from '@coreui/vue'
 
 const props = defineProps<{
   company: number
@@ -527,14 +528,15 @@ const goBack = () => {
                   공문서 서식 (PDF 인쇄 영역)
                 </strong>
               </div>
-              <CBadge
+              <v-chip
                 :color="isEdit ? 'success' : 'primary'"
-                shape="rounded-pill"
+                variant="flat"
+                size="x-small"
                 class="px-2 py-1 font-monospace"
                 style="font-size: 0.72rem"
               >
                 {{ isEdit ? '수정 모드' : '신규 작성' }}
-              </CBadge>
+              </v-chip>
             </CCardHeader>
             <CCardBody>
               <!-- 수신 / (경유) / 참조 / 제목 (정돈된 공문서 서식 레이아웃) -->
@@ -736,12 +738,14 @@ const goBack = () => {
                         <span class="badge bg-secondary me-2">붙임 {{ idx + 1 }}</span>
                         <strong class="text-primary">{{ att.name || att.file_name }}</strong>
                         <span class="text-muted ms-2">({{ att.quantity || '1부' }})</span>
-                        <CBadge
+                        <v-chip
                           :color="
                             (att.file_name || '').toLowerCase().endsWith('.pdf')
                               ? 'success'
                               : 'warning'
                           "
+                          variant="flat"
+                          size="x-small"
                           class="ms-2"
                         >
                           {{
@@ -749,7 +753,7 @@ const goBack = () => {
                               ? 'PDF'
                               : '일반파일'
                           }}
-                        </CBadge>
+                        </v-chip>
                         <small class="text-muted ms-2">[{{ att.file_name }}]</small>
                       </div>
                       <v-btn
@@ -780,17 +784,19 @@ const goBack = () => {
                           <span class="badge bg-primary me-2">
                             붙임 {{ (form.attachments?.length || 0) + idx + 1 }}
                           </span>
-                          <CBadge
+                          <v-chip
                             :color="
                               att.file.name.toLowerCase().endsWith('.pdf') ? 'success' : 'warning'
                             "
+                            variant="flat"
+                            size="x-small"
                           >
                             {{
                               att.file.name.toLowerCase().endsWith('.pdf')
                                 ? 'PDF (권장서식)'
                                 : '일반문서'
                             }}
-                          </CBadge>
+                          </v-chip>
                         </div>
                         <v-btn
                           color="error"
@@ -993,31 +999,45 @@ const goBack = () => {
                         />
                         <div class="flex-grow-1">
                           <div class="d-flex flex-wrap gap-1 align-items-center">
-                            <CBadge color="success" class="me-1">
+                            <v-chip color="success" variant="flat" size="x-small" class="me-1">
                               <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
                               PDF 전자날인
-                            </CBadge>
-                            <CBadge v-if="selectedSeal.purpose" color="info">
+                            </v-chip>
+                            <v-chip
+                              v-if="selectedSeal.purpose"
+                              color="info"
+                              variant="flat"
+                              size="x-small"
+                            >
                               용도: {{ selectedSeal.purpose }}
-                            </CBadge>
-                            <CBadge v-if="selectedSeal.internal_manager_name" color="secondary">
+                            </v-chip>
+                            <v-chip
+                              v-if="selectedSeal.internal_manager_name"
+                              color="secondary"
+                              variant="flat"
+                              size="x-small"
+                            >
                               책임자: {{ selectedSeal.internal_manager_duty }}
                               {{ selectedSeal.internal_manager_name }}
-                            </CBadge>
-                            <CBadge
+                            </v-chip>
+                            <v-chip
                               v-if="approvalMode === 'approval' && selectedSeal.route_template_name"
                               color="primary"
+                              variant="flat"
+                              size="x-small"
                             >
                               결재선: {{ selectedSeal.route_template_name }}
-                            </CBadge>
-                            <CBadge
+                            </v-chip>
+                            <v-chip
                               v-else-if="
                                 approvalMode === 'approval' && selectedSeal.final_approval_duty_name
                               "
                               color="primary"
+                              variant="flat"
+                              size="x-small"
                             >
                               {{ selectedSeal.final_approval_duty_name }} 전결
-                            </CBadge>
+                            </v-chip>
                           </div>
                         </div>
                       </div>
@@ -1056,17 +1076,27 @@ const goBack = () => {
                         />
                         <div class="flex-grow-1">
                           <div class="d-flex flex-wrap gap-1 align-items-center">
-                            <CBadge color="success" class="me-1">
+                            <v-chip color="success" variant="flat" size="x-small" class="me-1">
                               <v-icon icon="mdi-check-circle" size="x-small" class="me-1" />
                               대표 2 전자날인
-                            </CBadge>
-                            <CBadge v-if="selectedCoSeal.purpose" color="info">
+                            </v-chip>
+                            <v-chip
+                              v-if="selectedCoSeal.purpose"
+                              color="info"
+                              variant="flat"
+                              size="x-small"
+                            >
                               용도: {{ selectedCoSeal.purpose }}
-                            </CBadge>
-                            <CBadge v-if="selectedCoSeal.internal_manager_name" color="secondary">
+                            </v-chip>
+                            <v-chip
+                              v-if="selectedCoSeal.internal_manager_name"
+                              color="secondary"
+                              variant="flat"
+                              size="x-small"
+                            >
                               책임자: {{ selectedCoSeal.internal_manager_duty }}
                               {{ selectedCoSeal.internal_manager_name }}
-                            </CBadge>
+                            </v-chip>
                           </div>
                         </div>
                       </div>

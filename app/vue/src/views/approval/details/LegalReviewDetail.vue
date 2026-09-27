@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
+import { CTable, CTableBody, CTableDataCell, CTableRow } from '@coreui/vue'
 
 defineProps<{
   content: Record<string, any>
@@ -22,7 +15,7 @@ defineProps<{
           검토 분야
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="primary" class="me-1">
+          <v-chip color="info" variant="flat" size="x-small" class="me-1">
             {{
               content.review_type === 'CONTRACT_REVIEW'
                 ? '계약서/협약서 검토'
@@ -36,8 +29,8 @@ defineProps<{
                         ? '내용증명/공문'
                         : '법률 자문'
             }}
-          </CBadge>
-          <CBadge
+          </v-chip>
+          <v-chip
             :color="
               content.urgency === 'VERY_URGENT'
                 ? 'danger'
@@ -45,6 +38,8 @@ defineProps<{
                   ? 'warning'
                   : 'secondary'
             "
+            variant="flat"
+            size="x-small"
           >
             {{
               content.urgency === 'VERY_URGENT'
@@ -53,7 +48,7 @@ defineProps<{
                   ? '긴급(1~2일)'
                   : '보통'
             }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           회신 희망일
@@ -104,7 +99,7 @@ defineProps<{
         <CTableDataCell colspan="3" class="pl-3 bg-light">
           <div class="mb-2">
             <span class="small fw-semibold me-2">법적 리스크 수준:</span>
-            <CBadge
+            <v-chip
               :color="
                 content.risk_level === 'HIGH'
                   ? 'danger'
@@ -112,6 +107,8 @@ defineProps<{
                     ? 'warning'
                     : 'success'
               "
+              variant="flat"
+              size="x-small"
             >
               {{
                 content.risk_level === 'HIGH'
@@ -120,7 +117,7 @@ defineProps<{
                     ? '중간 (수정 권고)'
                     : '낮음 (체결 가능)'
               }}
-            </CBadge>
+            </v-chip>
           </div>
           <div style="white-space: pre-wrap" class="fw-semibold text-body">
             {{ content.legal_opinion || '상세 검토 의견이 등록되지 않았습니다.' }}

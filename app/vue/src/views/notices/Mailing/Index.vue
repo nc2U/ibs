@@ -438,7 +438,7 @@ const getStatusBadgeColor = (status: string) => {
                       </div>
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold text-primary">최종 발송 예정</span>
-                        <v-chip color="primary" shape="rounded-pill" variant="flat" size="small">
+                        <v-chip color="info" variant="flat" size="x-small">
                           <strong>{{ finalRecipients.length }}명</strong>
                         </v-chip>
                       </div>
@@ -854,10 +854,10 @@ const getStatusBadgeColor = (status: string) => {
                         </v-btn>
                       </template>
                       <template v-else-if="r.email.trim()">
-                        <CBadge color="success" shape="rounded-pill">발송가능</CBadge>
+                        <v-chip color="success" variant="flat" size="x-small">발송가능</v-chip>
                       </template>
                       <template v-else>
-                        <CBadge color="secondary" shape="rounded-pill">미입력</CBadge>
+                        <v-chip color="secondary" variant="flat" size="x-small">미입력</v-chip>
                       </template>
                     </CTableDataCell>
                   </CTableRow>
@@ -875,8 +875,11 @@ const getStatusBadgeColor = (status: string) => {
         </CModalBody>
         <CModalFooter class="d-flex justify-content-between">
           <div class="small text-secondary">
-            최종 발송 예정: <strong class="text-primary">{{ finalRecipients.length }}</strong
-            >명
+            최종 발송 예정:
+            <strong class="text-primary">
+              {{ finalRecipients.length }}
+            </strong>
+            명
           </div>
           <v-btn color="primary" size="small" flat @click="showRecipientManageModal = false">
             설정 완료
@@ -989,7 +992,11 @@ const getStatusBadgeColor = (status: string) => {
               <CAccordionHeader>
                 <div class="d-flex justify-content-between align-items-center w-100 pe-3">
                   <span class="small fw-bold">
-                    <v-icon icon="mdi-file-document-outline" size="small" class="me-1 text-primary" />
+                    <v-icon
+                      icon="mdi-file-document-outline"
+                      size="small"
+                      class="me-1 text-primary"
+                    />
                     발송 본문 서식 미리보기 (HTML)
                   </span>
                 </div>
@@ -1002,7 +1009,11 @@ const getStatusBadgeColor = (status: string) => {
                     size="x-small"
                     @click="showRawHtml = !showRawHtml"
                   >
-                    <v-icon :icon="showRawHtml ? 'mdi-eye-outline' : 'mdi-code-tags'" size="small" class="me-1" />
+                    <v-icon
+                      :icon="showRawHtml ? 'mdi-eye-outline' : 'mdi-code-tags'"
+                      size="small"
+                      class="me-1"
+                    />
                     {{ showRawHtml ? '서식 미리보기로 보기' : 'HTML 원문 코드 보기' }}
                   </v-btn>
                 </div>

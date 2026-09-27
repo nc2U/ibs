@@ -77,9 +77,9 @@ const logout = () => {
       <CDropdownItem @click="refsTodoModal.callModal()">
         <v-icon icon="mdi mdi-calendar-check-outline" size="small" />
         할일 관리
-        <CBadge color="danger" size="sm" class="ms-auto">
+        <v-chip color="danger" variant="flat" size="x-small" class="ms-auto">
           {{ itemsCount }}
-        </CBadge>
+        </v-chip>
       </CDropdownItem>
 
       <CDropdownHeader component="h6" class="fw-semibold py-2" :class="headerClass">

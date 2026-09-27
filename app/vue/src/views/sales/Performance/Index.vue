@@ -185,9 +185,9 @@ const onSaved = async () => {
             <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
               <v-icon icon="mdi-account-tie" size="small" class="mr-1 text-primary" />
               계약 실적 &amp; 영업 담당자 매핑 대장
-              <CBadge color="info" class="ml-2" shape="rounded-pill">
+              <v-chip color="info" variant="flat" size="x-small" class="ml-2">
                 {{ filteredList.length }}건
-              </CBadge>
+              </v-chip>
             </div>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
@@ -296,9 +296,9 @@ const onSaved = async () => {
                       <span v-if="item.mapping.sales_person_name" class="fw-bold text-primary">
                         {{ item.mapping.sales_person_name }}
                       </span>
-                      <CBadge v-else color="info" shape="rounded-pill"> 외주 대행 </CBadge>
+                      <v-chip v-else color="info" variant="flat" size="x-small"> 외주 대행 </v-chip>
                     </template>
-                    <CBadge v-else color="secondary" shape="rounded-pill"> 미배정 </CBadge>
+                    <v-chip v-else color="secondary" variant="flat" size="x-small"> 미배정 </v-chip>
                   </CTableDataCell>
 
                   <!-- 소속 팀 / 대행사 -->

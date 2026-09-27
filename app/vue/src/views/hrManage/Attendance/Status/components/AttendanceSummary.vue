@@ -85,7 +85,9 @@ const overallUsageRate = computed(() => {
             <CIcon icon="cil-chart-pie" class="me-1 text-info" />
             {{ year }}년도 연차 사용 현황 요약
           </strong>
-          <CBadge color="info" shape="rounded-pill"> 전체 소진율: {{ overallUsageRate }}% </CBadge>
+          <v-chip color="info" variant="flat" size="x-small">
+            전체 소진율: {{ overallUsageRate }}%
+          </v-chip>
         </CCardHeader>
         <CCardBody class="p-0">
           <CTable hover responsive bordered align="middle" class="mb-0 text-center">

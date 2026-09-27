@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import {
-  CTable,
-  CTableBody,
-  CTableRow,
-  CTableHeaderCell,
-  CTableDataCell,
-  CBadge,
-} from '@coreui/vue'
-
 defineProps<{
   content: Record<string, any>
   document?: any
@@ -22,7 +13,9 @@ defineProps<{
           신청 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="primary">{{ content.request_type || '제증명서 발급' }}</CBadge>
+          <v-chip color="info" variant="flat" size="x-small">
+            {{ content.request_type || '제증명서 발급' }}
+          </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           수령 방법

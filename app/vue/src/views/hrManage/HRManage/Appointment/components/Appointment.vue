@@ -43,7 +43,7 @@ const formatNewState = (order: PersonnelOrder) => {
   <CTableRow v-if="order" class="text-center">
     <CTableDataCell>{{ order.order_date }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge color="primary">{{ order.order_type_desc }}</CBadge>
+      <v-chip color="info" variant="flat" size="x-small">{{ order.order_type_desc }}</v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ order.order_no || '-' }}</CTableDataCell>
     <CTableDataCell>

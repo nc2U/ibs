@@ -92,7 +92,7 @@ const deleteTeam = async (team: SalesTeam) => {
           <v-icon icon="mdi-account-group" size="small" class="mr-1" />
           전체 인력 보기
         </span>
-        <CBadge color="secondary" shape="rounded-pill">전체</CBadge>
+        <v-chip color="secondary" variant="flat" size="x-small">전체</v-chip>
       </div>
 
       <!-- 대행사가 없는 경우 -->
@@ -113,9 +113,14 @@ const deleteTeam = async (team: SalesTeam) => {
             :class="{ 'text-primary': selectedAgencyId === agency.id }"
             @click="selectAgency(agency)"
           >
-            <CBadge :color="agency.is_direct_managed ? 'info' : 'warning'" class="mr-1">
+            <v-chip
+              :color="agency.is_direct_managed ? 'info' : 'warning'"
+              variant="flat"
+              size="x-small"
+              class="mr-1"
+            >
               {{ agency.is_direct_managed ? '직영' : '외주' }}
-            </CBadge>
+            </v-chip>
             {{ agency.name }}
           </div>
           <div v-if="can(PERM.SALES_MANAGE)">
@@ -162,9 +167,9 @@ const deleteTeam = async (team: SalesTeam) => {
               <strong>{{ team.name }}</strong>
             </span>
             <div class="d-flex align-items-center">
-              <CBadge color="light" class="mr-3 text-body" shape="rounded-pill">
+              <v-chip color="light" variant="flat" size="x-small" class="mr-3 text-body">
                 {{ team.members_count ?? 0 }}명
-              </CBadge>
+              </v-chip>
               <template v-if="can(PERM.SALES_MANAGE)">
                 <v-btn
                   icon="mdi-pencil"

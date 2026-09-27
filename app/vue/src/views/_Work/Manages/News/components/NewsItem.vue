@@ -59,22 +59,54 @@ const previewContent = computed(() => {
             :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
             class="text-decoration-none font-weight-bold"
           >
-            <CBadge v-if="news.is_important" color="primary" size="" class="mr-2">중요 공지</CBadge>
+            <v-chip
+              v-if="news.is_important"
+              color="primary"
+              variant="flat"
+              size="x-small"
+              class="mr-2"
+            >
+              중요 공지
+            </v-chip>
             {{ news.title }}
 
-            <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
-            <CBadge v-if="news.comments?.length" color="info" size="sm" class="ml-1">
+            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+              new
+            </v-chip>
+            <v-chip
+              v-if="news.comments?.length"
+              color="info"
+              variant="flat"
+              size="x-small"
+              class="ml-1"
+            >
               <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
-            </CBadge>
+            </v-chip>
           </router-link>
           <span v-else class="font-weight-bold text-muted">
-            <CBadge v-if="news.is_important" color="primary" size="" class="mr-2">중요 공지</CBadge>
+            <v-chip
+              v-if="news.is_important"
+              color="primary"
+              variant="flat"
+              size="x-small"
+              class="mr-2"
+            >
+              중요 공지
+            </v-chip>
             {{ news.title }}
 
-            <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
-            <CBadge v-if="news.comments?.length" color="info" size="sm" class="ml-1">
+            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+              new
+            </v-chip>
+            <v-chip
+              v-if="news.comments?.length"
+              color="info"
+              variant="flat"
+              size="x-small"
+              class="ml-1"
+            >
               <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
-            </CBadge>
+            </v-chip>
           </span>
         </h6>
       </CCol>

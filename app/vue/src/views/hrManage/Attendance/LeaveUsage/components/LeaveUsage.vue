@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { type StaffLeaveUsage } from '@/store/types/company.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import LeaveUsageForm from './LeaveUsageForm.vue'
+import { CTableRow } from '@coreui/vue'
 
 defineProps({
   usage: { type: Object as PropType<StaffLeaveUsage>, required: true },
@@ -35,9 +36,9 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <a href="javascript:void(0);" @click="showDetail">{{ usage.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="usage.deduction_days > 0 ? 'primary' : 'info'" shape="rounded-pill">
+      <v-chip :color="usage.deduction_days > 0 ? 'primary' : 'info'" variant="flat" size="x-small">
         {{ usage.leave_type_desc }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell>{{ usage.start_date }}</CTableDataCell>
     <CTableDataCell>{{ usage.end_date }}</CTableDataCell>
@@ -49,8 +50,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     </CTableDataCell>
     <CTableDataCell class="text-left small">{{ usage.reason || '-' }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge v-if="usage.is_cancelled" color="danger">취소됨</CBadge>
-      <CBadge v-else color="success">정상</CBadge>
+      <v-chip v-if="usage.is_cancelled" color="danger" variant="flat" size="x-small">취소됨</v-chip>
+      <v-chip v-else color="success" variant="flat" size="x-small">정상</v-chip>
     </CTableDataCell>
     <CTableDataCell class="small text-muted">
       {{ usage.created ? usage.created.substring(0, 10) : '-' }}

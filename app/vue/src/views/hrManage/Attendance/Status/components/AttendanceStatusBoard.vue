@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { type Staff, type StaffLeaveQuota } from '@/store/types/company.ts'
+import { CTable } from '@coreui/vue'
 
 const props = defineProps<{
   staffList: Staff[]
@@ -115,9 +116,9 @@ const getStatusBadge = (status: string) => {
           </div>
         </CTableDataCell>
         <CTableDataCell>
-          <CBadge :color="getStatusBadge(staff.status).color" shape="rounded-pill">
+          <v-chip :color="getStatusBadge(staff.status).color" variant="flat" size="x-small">
             {{ getStatusBadge(staff.status).label }}
-          </CBadge>
+          </v-chip>
         </CTableDataCell>
       </CTableRow>
 

@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { type Staff } from '@/store/types/company.ts'
 import StaffForm from './StaffForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import { CTableRow } from '@coreui/vue'
 
 defineProps({
   staff: { type: Object as PropType<Staff>, required: true },
@@ -39,9 +40,9 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell class="text-left">{{ staff.email }}</CTableDataCell>
     <CTableDataCell>{{ staff.date_join }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="badgeColor[staff.status]">
+      <v-chip :color="badgeColor[staff.status]" variant="flat" size="x-small">
         {{ staff.status_desc }}
-      </CBadge>
+      </v-chip>
     </CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
