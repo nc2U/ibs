@@ -89,7 +89,6 @@ urlpatterns = [
 
     path('', include('django.contrib.auth.urls')),  # 로그아웃 등 페이지 코드에 필요
     path('', install_check, name='home'),
-    path('ibs/', include('ibs.urls')),
 
     path('mdeditor/', include('mdeditor.urls')),
 ]

@@ -88,4 +88,5 @@ app/flutter/.env
 app/flutter/android/app/google-services.json
 app/flutter/ios/Runner/GoogleService-Info.plist
 *firebase-adminsdk*.json
-*serviceAccountKey*.json
+*serviceAccountKey*.json
+!/app/django/templates/partials/center_modal.html

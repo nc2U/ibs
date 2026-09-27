@@ -1,26 +1,103 @@
-{% extends "ibs/layouts/base.html" %}
-
-{% block content %}
-    <div class="container-fluid text-center">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card mt-5">
-                    <div class="card-body" style="height: 720px;">
-                        <div class="mt-5 pt-5">
-                            <h1 class="code mx-auto display-2" data-text="404"
-                                style="color: black; font-family: 'Trebuchet MS';">404</h1>
-                            <h3 class="title text-grey-800 mb-5">Page Not Found!</h3>
-                            <hr class="mb-4"/>
-                            <blockquote class="blockquote">
-                                But if you don't change your direction, and if you keep looking, <br>you may
-                                end up where you are heading.
-                            </blockquote>
-                            <a href="javascript:void(0);" onclick="history.go(-1);">&larr; Back to Previous</a> |
-                            <a href="/ibs/">Go to Home &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 - Page Not Found</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      max-width: 560px;
+      width: 100%;
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .code {
+      font-size: 72px;
+      font-weight: 700;
+      line-height: 1;
+      color: #1976d2;
+      margin-bottom: 12px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .divider {
+      width: 48px;
+      height: 2px;
+      background-color: #e0e0e0;
+      margin: 0 auto 20px;
+    }
+    .quote {
+      font-size: 14px;
+      color: #666666;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-prev {
+      color: #0288d1;
+      border: 1.5px solid #0288d1;
+      background: transparent;
+    }
+    .btn-prev:hover {
+      background: #e1f5fe;
+    }
+    .btn-home {
+      color: #ffffff;
+      border: 1.5px solid #2e7d32;
+      background: #2e7d32;
+    }
+    .btn-home:hover {
+      background: #1b5e20;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="code">404</div>
+    <h1 class="title">PAGE NOT FOUND</h1>
+    <div class="divider"></div>
+    <p class="quote">
+      But if you don't change your direction, and if you keep looking,<br>
+      you may end up where you are heading.
+    </p>
+    <div class="btn-group">
+      <a href="javascript:history.back()" class="btn btn-prev">이전 페이지</a>
+      <a href="/" class="btn btn-home">홈으로 이동</a>
     </div>
-{% endblock %}
+  </div>
+</body>
+</html>

@@ -371,40 +371,7 @@ class NoticeAppSecurityTests(TestCase):
         res_b = self.client.get(f'/api/v1/post-labels/?project={self.project_a.pk}')
         self.assertEqual(res_b.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_bill_manage_view_get_and_post(self):
-        """BillManageView GET 렌더링(기납입액 계산) 및 POST 저장(creator 바인딩) 검증"""
-        client = Client()
-        client.force_login(self.admin_user)
 
-        # GET 요청 검증
-        url = reverse('ibs:notice:bill') + f'?project={self.project_a.pk}'
-        res = client.get(url)
-        self.assertEqual(res.status_code, 200)
-        self.assertIn('total_pay_by_contract', res.context)
-        self.assertIn('today', res.context)
-        self.assertEqual(res.context['bill_issue'], self.bill_a)
-
-        # POST 요청 (수정 저장) 검증
-        post_data = {
-            'published_date': '2026-07-01',
-            'now_payment_order': self.order_1.pk,
-            'now_due_date': '2026-07-15',
-            'host_name': '수정시행자',
-            'host_tel': '02-7777-8888',
-            'bank_account1': '신한은행',
-            'bank_number1': '987-654-321',
-            'bank_host1': '수정시행자',
-            'zipcode': '05500',
-            'address1': '서울시 송파구',
-            'title': '수정된 고지서 제목',
-            'content': '납부 기한 준수 요망',
-        }
-        res_post = client.post(url, post_data)
-        self.assertEqual(res_post.status_code, 302)
-
-        self.bill_a.refresh_from_db()
-        self.assertEqual(self.bill_a.host_name, '수정시행자')
-        self.assertEqual(self.bill_a.creator, self.admin_user)
 
     @patch('weasyprint.HTML.write_pdf')
     def test_pdf_export_bill(self, mock_write_pdf):

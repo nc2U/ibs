@@ -1,65 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     {% load static %}
     <meta charset="utf-8"/>
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}IBS{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- App favicon -->
-    <link rel="shortcut icon" href="{% static 'ibs/images/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'common/images/favicon.png' %}">
 
-    <!-- App css -->
-    <link href="{% static 'ibs/css/icons.min.css' %}" rel="stylesheet" type="text/css"/>
-    <link href="{% static 'ibs/css/app.min.css' %}" rel="stylesheet" type="text/css" id="light-style"/>
-    <link href="{% static 'ibs/css/app-dark.min.css' %}" rel="stylesheet" type="text/css" id="dark-style"/>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 480px;
+            padding: 40px 30px;
+        }
+        .auth-brand {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .auth-brand h2 {
+            font-weight: 700;
+            color: #1976d2;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
 
-<body class="authentication-bg pb-0" data-layout-config='{"darkMode":false}'>
-
-<div class="auth-fluid">
-    <!--Auth fluid left content -->
-    <div class="auth-fluid-form-box">
-        <div class="align-items-center d-flex h-100">
-            <div class="card-body">
-
-                <!-- Logo -->
-                <div class="auth-brand text-center text-lg-left">
-                    <a href="/" class="logo-light">
-                        <span><img src="/static/ibs/images/logo.png" alt="" height="38"></span>
-                    </a>
-                    <a href="/" class="logo-dark">
-                        <span><img src="/static/ibs/images/logo.png" alt="" height="38"></span>
-                    </a>
-                </div>
-
-                {% block content %}{% endblock %}
-
-            </div> <!-- end .card-body -->
-        </div> <!-- end .align-items-center.d-flex.h-100-->
+<body>
+<div class="auth-card">
+    <div class="auth-brand">
+        <a href="/" class="text-decoration-none">
+            <h2>IBS</h2>
+        </a>
     </div>
-    <!-- end auth-fluid-form-box-->
 
-    <!-- Auth fluid right content -->
-    <div class="auth-fluid-right text-center">
-        <div class="auth-user-testimonial">
-            <h2 class="mb-3">I love the color!</h2>
-            <p class="lead"><i class="mdi mdi-format-quote-open"></i> It's a elegent templete. I love it very much! . <i
-                    class="mdi mdi-format-quote-close"></i>
-            </p>
-            <p>
-                - Hyper Admin User
-            </p>
-        </div> <!-- end auth-user-testimonial-->
-    </div>
-    <!-- end Auth fluid right content -->
+    {% block content %}{% endblock %}
 </div>
-<!-- end auth-fluid-->
 
-<!-- bundle -->
-<script src="{% static 'ibs/js/vendor.min.js' %}"></script>
-<script src="{% static 'ibs/js/app.min.js' %}"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
