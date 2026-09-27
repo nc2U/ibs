@@ -82,7 +82,7 @@ const deleteTeam = async (team: SalesTeam) => {
       <div
         class="tree-item p-2 mb-2 rounded cursor-pointer d-flex justify-content-between align-items-center"
         :class="{
-          'bg-primary text-white': !selectedAgencyId && !selectedTeamId,
+          'bg-indigo-lighten-2 text-white': !selectedAgencyId && !selectedTeamId,
           'bg-more-secondary': selectedAgencyId || selectedTeamId,
         }"
         @click="emit('select-team', null)"
@@ -150,7 +150,7 @@ const deleteTeam = async (team: SalesTeam) => {
             :key="team.id"
             class="team-item py-1 px-2 mb-1 rounded cursor-pointer d-flex justify-content-between align-items-center"
             :class="{
-              'bg-primary text-white': selectedTeamId === team.id,
+              'bg-indigo-lighten-2 text-white': selectedTeamId === team.id,
               'hover-bg': selectedTeamId !== team.id,
             }"
             @click="selectTeam(team)"
