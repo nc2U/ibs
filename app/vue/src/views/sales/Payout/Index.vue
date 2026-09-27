@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
+import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
+import { TableSecondary } from '@/utils/cssMixins'
 import type { Project } from '@/store/types/project'
 import type { CommissionPayout, AgencyPayout } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
-import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PayoutStatusSummary from './components/PayoutStatusSummary.vue'
@@ -343,27 +343,27 @@ const agencyPayStatusColor = (status: string) => {
                 <div class="d-flex gap-2">
                   <v-btn
                     size="small"
-                    :color="activeTab === 'person' ? 'primary' : 'secondary'"
+                    :color="activeTab === 'person' ? 'info' : 'secondary'"
                     :variant="activeTab === 'person' ? 'flat' : 'outlined'"
                     @click="activeTab = 'person'"
                   >
                     <v-icon icon="mdi-account-group" size="small" class="mr-1" />
                     개인 지급 명세
-                    <CBadge color="light" text-color="dark" class="ml-1">{{
-                      payoutList.length
-                    }}</CBadge>
+                    <v-chip color="light" variant="flat" size="x-small" class="ml-1 text-body">
+                      {{ payoutList.length }}
+                    </v-chip>
                   </v-btn>
                   <v-btn
                     size="small"
-                    :color="activeTab === 'agency' ? 'info' : 'secondary'"
+                    :color="activeTab === 'agency' ? 'primary' : 'secondary'"
                     :variant="activeTab === 'agency' ? 'flat' : 'outlined'"
                     @click="activeTab = 'agency'"
                   >
                     <v-icon icon="mdi-domain" size="small" class="mr-1" />
                     대행사 지급 명세
-                    <CBadge color="light" text-color="dark" class="ml-1">{{
-                      agencyPayoutList.length
-                    }}</CBadge>
+                    <v-chip color="light" variant="flat" size="x-small" class="ml-1 text-body">
+                      {{ agencyPayoutList.length }}
+                    </v-chip>
                   </v-btn>
                 </div>
               </CCol>

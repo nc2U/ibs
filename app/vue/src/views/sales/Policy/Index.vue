@@ -1,18 +1,17 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
-import { useProject } from '@/store/pinia/project'
-import { useProjectData } from '@/store/pinia/project_data'
-import { useContract } from '@/store/pinia/contract'
+import { usePerms } from '@/composables/usePerms'
 import { useSales } from '@/store/pinia/sales'
+import { useProject } from '@/store/pinia/project'
+import { useContract } from '@/store/pinia/contract'
+import { TableSecondary } from '@/utils/cssMixins'
+import { useProjectData } from '@/store/pinia/project_data'
 import type { Project } from '@/store/types/project'
 import type { CommissionPolicy } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
-import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PolicyFormModal from './components/PolicyFormModal.vue'
-import { CCard, CCardBody } from '@coreui/vue'
 
 const { can, PERM } = usePerms()
 const projStore = useProject()
@@ -134,13 +133,7 @@ const onSaved = async () => {
             <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
               <v-icon icon="mdi-cog-outline" size="small" class="mr-1 text-primary" />
               수수료 정책 (R값 기준표)
-              <v-chip
-                color="primary"
-                class="ml-2"
-                shape="rounded-pill"
-                variant="flat"
-                size="x-small"
-              >
+              <v-chip color="info" class="ml-2" variant="flat" size="x-small">
                 {{ filteredPolicies.length }}개
               </v-chip>
             </div>
