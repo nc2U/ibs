@@ -166,7 +166,11 @@ def _post_generate_content(request_body: Dict[str, Any], api_key: str) -> reques
                 return resp
             last_status = resp.status_code
             last_error_text = resp.text
-            logger.warning("Gemini model %s call failed (%s): %s", model, resp.status_code, resp.text)
+            logger.warning(
+                "Gemini model %s call failed with status %s (response body omitted for security).",
+                model,
+                resp.status_code,
+            )
         except Exception as e:
             last_error_text = str(e)
             logger.warning("Gemini model %s request exception: %s", model, e)
