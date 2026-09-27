@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
@@ -48,7 +49,7 @@ class _OfficialLetterDetailScreenState
 
       if (isShare) {
         final box = context.findRenderObject() as RenderBox?;
-        await Share.shareXFiles(
+        await AppShareHelper.shareXFiles(
           [file],
           subject: '[공문] $title ($docNum)',
           text: '$docNum - $title',
@@ -58,7 +59,7 @@ class _OfficialLetterDetailScreenState
       } else {
         final openResult = await OpenFilex.open(filePath);
         if (openResult.type != ResultType.done && mounted) {
-          await Share.shareXFiles(
+          await AppShareHelper.shareXFiles(
             [file],
             subject: '[공문] $title ($docNum)',
             text: '$docNum - $title',

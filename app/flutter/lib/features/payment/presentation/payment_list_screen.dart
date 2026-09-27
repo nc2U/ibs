@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -367,7 +368,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                     Navigator.pop(dialogCtx);
                     final box = context.findRenderObject() as RenderBox?;
                     final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path)],
                       subject: '[$contractorName 고객님] 분양대금 납부 고지서',
                       sharePositionOrigin: origin,
@@ -546,7 +547,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                     Navigator.pop(dialogCtx);
                     final box = context.findRenderObject() as RenderBox?;
                     final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path)],
                       subject: '[$contractorName 고객님] 분양대금 납부확인서',
                       sharePositionOrigin: origin,

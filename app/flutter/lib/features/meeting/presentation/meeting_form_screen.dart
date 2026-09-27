@@ -671,7 +671,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     }
 
                     return DropdownButtonFormField<int>(
-                      value: validProjectPk,
+                      initialValue: validProjectPk,
                       isExpanded: true,
                       style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                       dropdownColor: context.colors.bgCard,
@@ -742,7 +742,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         Text('진행 상태', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _status,
+                          initialValue: _status,
                           isExpanded: true,
                           style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           dropdownColor: context.colors.bgCard,
@@ -817,7 +817,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                       }
 
                       return DropdownButtonFormField<int?>(
-                        value: validCategoryPk,
+                        initialValue: validCategoryPk,
                         isExpanded: true,
                         style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         dropdownColor: context.colors.bgCard,

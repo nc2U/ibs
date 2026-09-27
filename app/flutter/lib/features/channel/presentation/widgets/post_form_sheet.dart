@@ -295,17 +295,17 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                           );
                         }
                         return DropdownButtonFormField<int>(
-                          value: availableForums
+                          initialValue: availableForums
                                   .any((f) => f.pk == _selectedForumPk)
                               ? _selectedForumPk
                               : null,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             filled: true,
                             fillColor: AppColors.bgSurface,
                             isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
-                            border: const OutlineInputBorder(
+                            border: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
                               borderSide: BorderSide(color: AppColors.border),
                             ),
@@ -355,7 +355,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                       Text('카테고리', style: AppTextStyles.label),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int?>(
-                        value: _selectedCategoryPk,
+                        initialValue: _selectedCategoryPk,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: AppColors.bgSurface,
@@ -417,14 +417,14 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                     TextFormField(
                       controller: _titleController,
                       style: AppTextStyles.bodySm,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: '게시글 제목을 입력하세요',
                         filled: true,
                         fillColor: AppColors.bgSurface,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
-                        border: const OutlineInputBorder(
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: AppColors.border),
                         ),
@@ -501,13 +501,13 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                       controller: _contentController,
                       maxLines: 8,
                       style: AppTextStyles.bodySm,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: '게시글 내용을 작성해 주세요...',
                         filled: true,
                         fillColor: AppColors.bgSurface,
                         isDense: true,
-                        contentPadding: const EdgeInsets.all(12),
-                        border: const OutlineInputBorder(
+                        contentPadding: EdgeInsets.all(12),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: AppColors.border),
                         ),

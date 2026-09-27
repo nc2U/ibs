@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,7 +52,7 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
       if (openResult.type != ResultType.done && mounted) {
         final docNum = letter.receiptNumber.isNotEmpty ? letter.receiptNumber : '수신공문_${letter.id}';
         final file = XFile(filePath, name: '$docNum.pdf');
-        await Share.shareXFiles(
+        await AppShareHelper.shareXFiles(
           [file],
           subject: '[수신공문] ${letter.title} ($docNum)',
         );

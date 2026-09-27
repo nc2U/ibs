@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -377,7 +378,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                   onTap: () async {
                     Navigator.pop(dialogCtx);
                     // ignore: deprecated_member_use
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
                       text: '[$projectName] $docTitle 엑셀 파일입니다.',
                       subject: '$docTitle - $projectName',
@@ -556,7 +557,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                   onTap: () async {
                     Navigator.pop(dialogCtx);
                     // ignore: deprecated_member_use
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/pdf')],
                       text: '[${item.district} ${item.lotNumber}] 토지 등기사항전부증명서(등본)입니다.',
                       subject: '토지 등기부등본 - ${item.district} ${item.lotNumber}',
@@ -730,7 +731,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                   onTap: () async {
                     Navigator.pop(dialogCtx);
                     // ignore: deprecated_member_use
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/pdf')],
                       text: '[매매계약서] 매도인: ${item.ownerName} (${item.contractDate} 계약, ${NumberFormat('#,###').format(item.totalPrice)}원)',
                       subject: '토지 매매계약서 - ${item.ownerName}',

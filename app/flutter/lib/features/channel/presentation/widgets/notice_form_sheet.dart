@@ -180,7 +180,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.campaign_rounded,
+                  const Icon(Icons.campaign_rounded,
                       size: 20, color: AppColors.accentWork),
                   const SizedBox(width: 8),
                   Text(

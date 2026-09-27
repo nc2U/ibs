@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +80,7 @@ class BankingCsvHelper {
 
       // 모바일 공유 시트 호출
       // ignore: deprecated_member_use
-      await Share.shareXFiles(
+      await AppShareHelper.shareXFiles(
         [XFile(file.path, mimeType: 'text/csv')],
         text: '[$periodTitle] 은행 대량 이체용 지급 명세서 (${payouts.length}건)',
         subject: '은행 대량 이체 파일 - $periodTitle',

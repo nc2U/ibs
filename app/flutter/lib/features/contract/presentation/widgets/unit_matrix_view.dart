@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -196,7 +197,7 @@ class UnitMatrixView extends ConsumerWidget {
                   onTap: () async {
                     Navigator.pop(dialogCtx);
                     // ignore: deprecated_member_use
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
                       text: '${selectedProject.name} 동호수 현황표 ($typeLabel) 파일입니다.',
                       subject: '${selectedProject.name} 동호수 현황표 ($typeLabel)',

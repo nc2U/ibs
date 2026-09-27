@@ -711,7 +711,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         }
 
                         return DropdownButtonFormField<int>(
-                          value: validPk,
+                          initialValue: validPk,
                           isExpanded: true,
                           style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           dropdownColor: context.colors.bgCard,
@@ -994,7 +994,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                                 : null;
 
                             return DropdownButtonFormField<int?>(
-                              value: validCate,
+                              initialValue: validCate,
                               isExpanded: true,
                               style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                               dropdownColor: context.colors.bgCard,

@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -187,7 +188,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
       final personName = widget.person.name;
 
       // ignore: deprecated_member_use
-      await Share.shareXFiles(
+      await AppShareHelper.shareXFiles(
         [XFile(savePath)],
         text: '[$personName] $title',
         subject: '영업 인력 증빙 서류 - $personName ($title)',

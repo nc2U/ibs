@@ -1152,7 +1152,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
               title: '기안자 정보',
               icon: Icons.person_pin_circle_outlined,
               child: DropdownButtonFormField<StaffAssignmentItemModel>(
-                value: _selectedAssignment,
+                initialValue: _selectedAssignment,
                 decoration: _inputDecoration(context, '기안 보직'),
                 items: assignments.map((a) {
                   final primary = a.isPrimary ? '[주]' : '[겸]';
@@ -1186,7 +1186,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                       // 자주 쓰는 4대 양식 빠른 선택 칩
                       _buildQuickDocTypeChips(context, docTypes),
                       DropdownButtonFormField<DocumentTypeModel>(
-                        value: _selectedDocType,
+                        initialValue: _selectedDocType,
                         decoration: _inputDecoration(context, '문서 유형 선택'),
                         items: docTypes.map((dt) {
                           final cat = dt.categoryName != null ? '[${dt.categoryName}] ' : '';
@@ -1334,7 +1334,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     return Column(
       children: [
         DropdownButtonFormField<String>(
-          value: _leaveType,
+          initialValue: _leaveType,
           decoration: _inputDecoration(context, '휴가 구분'),
           items: const [
             DropdownMenuItem(value: '연차', child: Text('연차')),
@@ -1476,7 +1476,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _expenseType,
+                initialValue: _expenseType,
                 decoration: _inputDecoration(context, '지출 구분'),
                 items: const [
                   DropdownMenuItem(value: 'CARD', child: Text('법인카드')),
@@ -1691,7 +1691,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _sendMethod,
+                initialValue: _sendMethod,
                 decoration: _inputDecoration(context, '발송 방법'),
                 items: const [
                   DropdownMenuItem(value: 'EMAIL', child: Text('이메일')),
@@ -1733,7 +1733,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _sealType,
+                initialValue: _sealType,
                 decoration: _inputDecoration(context, '날인 인감'),
                 items: const [
                   DropdownMenuItem(value: 'CORP_SEAL', child: Text('법인인감')),
@@ -1845,7 +1845,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _inboundActionType,
+                initialValue: _inboundActionType,
                 decoration: _inputDecoration(context, '처리 방향'),
                 items: const [
                   DropdownMenuItem(value: 'REPLY_LETTER', child: Text('회신 공문 발송')),
@@ -1927,7 +1927,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _tripType,
+                initialValue: _tripType,
                 decoration: _inputDecoration(context, '출장 구분'),
                 items: const [
                   DropdownMenuItem(value: 'DOMESTIC', child: Text('국내 출장')),
@@ -2025,7 +2025,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _transportation,
+                initialValue: _transportation,
                 decoration: _inputDecoration(context, '주요 교통편'),
                 items: const [
                   DropdownMenuItem(value: 'CORP_CAR', child: Text('법인차량')),
@@ -2109,7 +2109,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _workType,
+                initialValue: _workType,
                 decoration: _inputDecoration(context, '근무 구분'),
                 items: const [
                   DropdownMenuItem(value: 'OVERTIME', child: Text('평일 연장근무')),
@@ -2184,7 +2184,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(
-          value: _compensationType,
+          initialValue: _compensationType,
           decoration: _inputDecoration(context, '보상 방식'),
           items: const [
             DropdownMenuItem(value: 'ALLOWANCE', child: Text('연장/휴일 수당 지급')),
@@ -2228,7 +2228,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _appointmentType,
+                initialValue: _appointmentType,
                 decoration: _inputDecoration(context, '발령 구분'),
                 items: const [
                   DropdownMenuItem(value: 'PROMOTION', child: Text('승진 / 승격')),
@@ -2346,7 +2346,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _hrRequestType,
+                initialValue: _hrRequestType,
                 decoration: _inputDecoration(context, '신청 구분'),
                 items: const [
                   DropdownMenuItem(value: 'CERTIFICATE', child: Text('제증명서 발급')),
@@ -2362,7 +2362,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _receiveMethod,
+                initialValue: _receiveMethod,
                 decoration: _inputDecoration(context, '수령 방법'),
                 items: const [
                   DropdownMenuItem(value: 'PDF_EMAIL', child: Text('PDF 이메일 수령')),
@@ -2382,7 +2382,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _certType,
+                  initialValue: _certType,
                   decoration: _inputDecoration(context, '증명서 종류'),
                   items: const [
                     DropdownMenuItem(value: 'EMPLOYMENT', child: Text('재직증명서')),
@@ -2398,7 +2398,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _certLanguage,
+                  initialValue: _certLanguage,
                   decoration: _inputDecoration(context, '발급 언어'),
                   items: const [
                     DropdownMenuItem(value: 'KOREAN', child: Text('국문')),
@@ -2442,7 +2442,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _eventType,
+                  initialValue: _eventType,
                   decoration: _inputDecoration(context, '경조 구분'),
                   items: const [
                     DropdownMenuItem(value: 'MARRIAGE_SELF', child: Text('본인 결혼')),
@@ -2530,7 +2530,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _settlementType,
+                initialValue: _settlementType,
                 decoration: _inputDecoration(context, '정산 구분'),
                 items: const [
                   DropdownMenuItem(value: 'CORP_CARD', child: Text('법인카드 정산')),
@@ -2634,7 +2634,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _advanceType,
+                initialValue: _advanceType,
                 decoration: _inputDecoration(context, '신청 구분'),
                 items: const [
                   DropdownMenuItem(value: 'ADVANCE_PAY', child: Text('가지급금 (업무용)')),
@@ -2716,7 +2716,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: _receiverType,
+                initialValue: _receiverType,
                 decoration: _inputDecoration(context, '수령 대상'),
                 items: const [
                   DropdownMenuItem(value: 'EMPLOYEE', child: Text('임직원 계좌')),
@@ -2786,7 +2786,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _contractType,
+                initialValue: _contractType,
                 decoration: _inputDecoration(context, '계약 구분'),
                 items: const [
                   DropdownMenuItem(value: 'CONSTRUCTION', child: Text('공사 도급/하도급')),
@@ -2802,7 +2802,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _contractKind,
+                initialValue: _contractKind,
                 decoration: _inputDecoration(context, '계약 형태'),
                 items: const [
                   DropdownMenuItem(value: 'NEW', child: Text('신규 계약')),
@@ -2880,7 +2880,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: _vatType,
+                initialValue: _vatType,
                 decoration: _inputDecoration(context, '부가세 구분'),
                 items: const [
                   DropdownMenuItem(value: 'EXCLUDED', child: Text('VAT 별도')),
@@ -2981,7 +2981,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _contractChangeType,
+                initialValue: _contractChangeType,
                 decoration: _inputDecoration(context, '변경/해지 구분'),
                 items: const [
                   DropdownMenuItem(value: 'COMPREHENSIVE', child: Text('복합변경 (금액+기간)')),
@@ -3158,7 +3158,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _legalReviewType,
+                initialValue: _legalReviewType,
                 decoration: _inputDecoration(context, '검토 분야'),
                 items: const [
                   DropdownMenuItem(value: 'CONTRACT_REVIEW', child: Text('계약서/협약서 검토')),
@@ -3174,7 +3174,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _legalUrgency,
+                initialValue: _legalUrgency,
                 decoration: _inputDecoration(context, '긴급도'),
                 items: const [
                   DropdownMenuItem(value: 'NORMAL', child: Text('보통 (3~5일)')),
@@ -3288,7 +3288,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: _bizType,
+                initialValue: _bizType,
                 decoration: _inputDecoration(context, '사업 유형'),
                 items: const [
                   DropdownMenuItem(value: 'DEV_SELF', child: Text('자체 개발사업')),
@@ -3487,7 +3487,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: _bizApprovalType,
+                initialValue: _bizApprovalType,
                 decoration: _inputDecoration(context, '승인 의결 구분'),
                 items: const [
                   DropdownMenuItem(value: 'NEW_LAUNCH', child: Text('사업 론칭 승인')),
@@ -3613,7 +3613,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 4,
               child: DropdownButtonFormField<String>(
-                value: _projectDecisionType,
+                initialValue: _projectDecisionType,
                 decoration: _inputDecoration(context, '현안 분야'),
                 items: const [
                   DropdownMenuItem(value: 'DESIGN_SPEC', child: Text('설계변경/스펙결정')),
@@ -3631,7 +3631,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: _decisionUrgency,
+                initialValue: _decisionUrgency,
                 decoration: _inputDecoration(context, '긴급도'),
                 items: const [
                   DropdownMenuItem(value: 'NORMAL', child: Text('보통')),
@@ -3760,7 +3760,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _budgetAccount,
+                initialValue: _budgetAccount,
                 decoration: _inputDecoration(context, '예산 과목'),
                 items: const [
                   DropdownMenuItem(value: 'NONE', child: Text('예산 비소요')),

@@ -80,12 +80,12 @@ class NoticeCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(3),
                                   border: Border.all(color: _importantAccent.withAlpha(90), width: 0.8),
                                 ),
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.campaign_rounded, size: 12.5, color: _importantAccent),
-                                    const SizedBox(width: 3.5),
-                                    const Text(
+                                    Icon(Icons.campaign_rounded, size: 12.5, color: _importantAccent),
+                                    SizedBox(width: 3.5),
+                                    Text(
                                       '중요 공지',
                                       style: TextStyle(
                                         color: _importantAccent,

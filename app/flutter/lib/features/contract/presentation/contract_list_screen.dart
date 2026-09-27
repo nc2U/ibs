@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -368,7 +369,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                   onTap: () async {
                     Navigator.pop(dialogCtx);
                     // ignore: deprecated_member_use
-                    await Share.shareXFiles(
+                    await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/pdf')],
                       text: '$contractorName님 ($unitStr) 분양대금 납부확인서입니다.',
                       subject: '분양대금 납부확인서 - $contractorName',

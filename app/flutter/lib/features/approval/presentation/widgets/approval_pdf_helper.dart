@@ -1,3 +1,4 @@
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
@@ -60,7 +61,7 @@ Future<void> exportApprovalPdf(
       final box = context.findRenderObject() as RenderBox?;
       final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
 
-      await Share.shareXFiles(
+      await AppShareHelper.shareXFiles(
         [XFile(filePath)],
         subject: '전자결재: ${document.title}',
         sharePositionOrigin: origin,
