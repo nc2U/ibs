@@ -59,7 +59,7 @@
                 <td class="text-center" data-toggle="tooltip" data-placement="left" title="계약 상세 관리 [{{ object.name }}]"
                     {% if object.contractorrelease.status == '3' %}data-toggle="popover"
                     data-trigger="hover" title="" data-content="해지신청 상태" data-original-title=""{% endif %}>
-                    <a href="{% url 'ibs:contract:register' %}?project={{ this_project.id }}&task=2&order_group={{ object.contract.order_group.id }}&type={{ object.contract.key_unit.unit_type.id }}&contract_unit={{ object.contract.key_unit.id }}&unit_number={{ object.contract.key_unit.houseunit.id }}&cont_id={{ object.contract.id }}">
+                    <a href="/#/contracts/detail/{{ object.id }}?project={{ this_project.id }}">
                         {{ object.name }}
                     </a>
                 </td>
