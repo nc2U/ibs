@@ -3,6 +3,7 @@ import { computed, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesAgency, SalesTeam } from '@/store/types/sales'
+import { CCard } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -133,9 +134,9 @@ const deleteTeam = async (team: SalesTeam) => {
               @click.stop="deleteAgency(agency)"
             />
             <v-btn
-              icon="mdi-plus-box"
+              icon="mdi-plus"
               size="x-small"
-              variant="text"
+              variant="tonal"
               color="primary"
               title="팀 추가"
               @click.stop="emit('add-team', agency.id)"

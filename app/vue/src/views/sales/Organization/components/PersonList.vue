@@ -4,6 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesPerson } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
+import { CCard } from '@coreui/vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -78,9 +79,9 @@ const deletePerson = async (person: SalesPerson) => {
       <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
         <v-icon icon="mdi-account-multiple" size="small" class="mr-1 text-primary" />
         영업 인력 명단
-        <CBadge color="primary" class="ml-2" shape="rounded-pill">
+        <v-chip color="info" class="ml-2" shape="rounded-pill" variant="flat" size="x-small">
           {{ filteredPersons.length }}명
-        </CBadge>
+        </v-chip>
       </div>
 
       <div class="d-flex flex-wrap align-items-center gap-2">
@@ -122,11 +123,11 @@ const deletePerson = async (person: SalesPerson) => {
       <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body">
         <colgroup>
           <col style="width: 10%" />
-          <col style="width: 12%" />
+          <col style="width: 11%" />
           <col style="width: 9%" />
           <col style="width: 9%" />
           <col style="width: 11%" />
-          <col style="width: 10%" />
+          <col style="width: 11%" />
           <col style="width: 15%" />
           <col style="width: 10%" />
           <col style="width: 7%" />
@@ -156,9 +157,14 @@ const deletePerson = async (person: SalesPerson) => {
               {{ person.team_name || '-' }}
             </CTableDataCell>
             <CTableDataCell>
-              <CBadge :color="dutyBadgeColor[person.duty] || 'secondary'" shape="rounded-pill">
+              <v-chip
+                :color="dutyBadgeColor[person.duty] || 'secondary'"
+                shape="rounded-pill"
+                variant="flat"
+                size="x-small"
+              >
                 {{ person.duty_display }}
-              </CBadge>
+              </v-chip>
             </CTableDataCell>
             <CTableDataCell>
               <a

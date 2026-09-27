@@ -12,6 +12,7 @@ import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PolicyFormModal from './components/PolicyFormModal.vue'
+import { CCard, CCardBody } from '@coreui/vue'
 
 const { can, PERM } = usePerms()
 const projStore = useProject()
@@ -231,7 +232,7 @@ const onSaved = async () => {
               <CTableBody>
                 <CTableRow v-for="policy in filteredPolicies" :key="policy.id">
                   <!-- 정책명 -->
-                  <CTableDataCell class="text-left font-weight-bold">
+                  <CTableDataCell class="font-weight-bold">
                     <a
                       v-if="can(PERM.SALES_POLICY)"
                       href="javascript:void(0);"
@@ -241,49 +242,46 @@ const onSaved = async () => {
                       {{ policy.name }}
                     </a>
                     <span v-else>{{ policy.name }}</span>
-                    <div class="small text-muted font-monospace">
-                      적용일: {{ policy.start_date }} ~ {{ policy.end_date || '종료일 없음' }}
-                    </div>
+                    <span class="small text-muted font-monospace ml-2">
+                      (적용일: {{ policy.start_date }} ~ {{ policy.end_date || '종료일 없음' }})
+                    </span>
                   </CTableDataCell>
 
                   <!-- 차수 및 타입 -->
                   <CTableDataCell>
-                    <div>
-                      <span v-if="policy.order_group_name" class="badge bg-secondary mr-1">
-                        {{ policy.order_group_name }}
-                      </span>
-                      <span v-else class="text-muted">전체차수</span>
-                    </div>
-                    <div>
-                      <span v-if="policy.unit_type_name" class="badge bg-info">
-                        {{ policy.unit_type_name }}
-                      </span>
-                      <span v-else class="text-muted">전체타입</span>
-                    </div>
+                    <span v-if="policy.order_group_name" class="badge bg-secondary mr-1">
+                      {{ policy.order_group_name }}
+                    </span>
+                    <span v-else class="text-muted">전체차수</span>
+                    /
+                    <span v-if="policy.unit_type_name" class="badge bg-info">
+                      {{ policy.unit_type_name }}
+                    </span>
+                    <span v-else class="text-muted">전체타입</span>
                   </CTableDataCell>
 
                   <!-- 상담사 -->
-                  <CTableDataCell class="text-right font-monospace">
+                  <CTableDataCell class="text-right">
                     {{ policy.agent_fee.toLocaleString() }}원
                   </CTableDataCell>
 
                   <!-- 팀장 -->
-                  <CTableDataCell class="text-right font-monospace">
+                  <CTableDataCell class="text-right">
                     {{ policy.leader_fee.toLocaleString() }}원
                   </CTableDataCell>
 
                   <!-- 본부장 -->
-                  <CTableDataCell class="text-right font-monospace">
+                  <CTableDataCell class="text-right">
                     {{ policy.director_fee.toLocaleString() }}원
                   </CTableDataCell>
 
                   <!-- 대행사 -->
-                  <CTableDataCell class="text-right font-monospace">
+                  <CTableDataCell class="text-right">
                     {{ policy.agency_fee.toLocaleString() }}원
                   </CTableDataCell>
 
                   <!-- 건당 총 수수료 (VAT 별도) -->
-                  <CTableDataCell class="text-right font-monospace fw-bold">
+                  <CTableDataCell class="text-right fw-bold">
                     {{
                       (
                         policy.agent_fee +
@@ -292,13 +290,11 @@ const onSaved = async () => {
                         policy.agency_fee
                       ).toLocaleString()
                     }}원
-                    <div class="small text-warning fw-normal">VAT 별도</div>
+                    <span class="small text-muted ml-2">VAT 별도</span>
                   </CTableDataCell>
 
                   <!-- VAT 포함 청구금액 -->
-                  <CTableDataCell
-                    class="text-right font-monospace fw-bold text-danger table-warning"
-                  >
+                  <CTableDataCell class="text-right fw-bold text-danger table-warning">
                     {{
                       Math.floor(
                         (policy.agent_fee +
@@ -308,35 +304,30 @@ const onSaved = async () => {
                           1.1,
                       ).toLocaleString()
                     }}원
-                    <div class="small text-muted fw-normal">
-                      부가세:
-                      {{
-                        Math.floor(
-                          (policy.agent_fee +
-                            policy.leader_fee +
-                            policy.director_fee +
-                            policy.agency_fee) *
-                            0.1,
-                        ).toLocaleString()
-                      }}원
-                    </div>
+                    <span class="small text-muted ml-2"> VAT 포함 </span>
                   </CTableDataCell>
 
                   <!-- 지급 조건 -->
                   <CTableDataCell>
-                    <CBadge
+                    <v-chip
                       :color="conditionBadgeColor[policy.pay_condition] || 'secondary'"
                       shape="rounded-pill"
+                      variant="flat"
+                      size="x-small"
                     >
                       {{ policy.pay_condition_display }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
 
                   <!-- 상태 -->
                   <CTableDataCell>
-                    <CBadge :color="policy.is_active ? 'success' : 'secondary'">
+                    <v-chip
+                      :color="policy.is_active ? 'success' : 'secondary'"
+                      variant="flat"
+                      size="x-small"
+                    >
                       {{ policy.is_active ? '활성' : '비활성' }}
-                    </CBadge>
+                    </v-chip>
                   </CTableDataCell>
 
                   <!-- 관리 버튼 -->
