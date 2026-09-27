@@ -1,14 +1,10 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.views import generic
-from django.views.generic import TemplateView
 
 from accounts.models import User
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
-
-# --------------------------------------------------------
 
 
 def install_check(request):
@@ -25,14 +21,6 @@ def install_check(request):
         return render(request, 'base-vue.html')
     else:
         return redirect('/install/')
-
-
-class Dashboard(LoginRequiredMixin, TemplateView):
-    template_name = 'ibs/main/1_1_dashboard.html'
-
-
-def menu2_1(request):
-    return render(request, 'ibs/main/2_1_schedule.html')
 
 
 class CustomHandler404(generic.View):

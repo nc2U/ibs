@@ -6,9 +6,7 @@ from .views import *
 app_name = 'ibs'
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/ibs/dashboard/'), name='home'),
-    path('dashboard/', Dashboard.as_view(), name='dashboard'),
-    path('schedule/', menu2_1, name='menu2_1'),
+    path('', RedirectView.as_view(url='/#/dashboard'), name='home'),
     path('project/', include('project.urls')),
     path('notice/', include('notice.urls')),
     # path('docs/', include('document.urls')),
