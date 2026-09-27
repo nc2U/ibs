@@ -147,9 +147,9 @@ def summarize_meeting_audio(audio_bytes: bytes, mime_type: str = 'audio/webm') -
                 try:
                     del_resp = requests.delete(f"{GEMINI_FILE_URL}/{file_name}?key={api_key}", timeout=10)
                     if del_resp.ok:
-                        logger.info("Successfully deleted remote Gemini file: %s", file_name)
+                        logger.info("Successfully deleted remote Gemini file.")
                 except Exception as del_err:
-                    logger.warning("Failed to delete remote Gemini file %s: %s", file_name, del_err)
+                    logger.warning("Failed to delete remote Gemini file: %s", del_err)
 
 
 def _post_generate_content(request_body: Dict[str, Any], api_key: str) -> requests.Response:
