@@ -81,6 +81,7 @@ dependencies:
   open_filex: ^4.7.0
   app_badge_plus: ^1.1.5
   flutter_markdown_plus: ^1.0.12
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:

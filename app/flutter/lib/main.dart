@@ -7,7 +7,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/services/fcm_service.dart';
+import 'core/services/network_monitor.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/offline_banner.dart';
 import 'core/widgets/share_intent_listener.dart';
 
 Future<void> main() async {
@@ -41,11 +43,16 @@ class IBSApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
 
+    // 앱 시작 시 네트워크 모니터를 초기화 (warm-up)
+    ref.watch(networkMonitorProvider);
+
     return MaterialApp.router(
       title: 'IBS 웍스',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      builder: (context, child) => ShareIntentListener(child: child!),
+      builder: (context, child) => OfflineBanner(
+        child: ShareIntentListener(child: child!),
+      ),
 
       // ── 한국어 로케일 설정 ──────────────────────────────────────────
       locale: const Locale('ko', 'KR'),

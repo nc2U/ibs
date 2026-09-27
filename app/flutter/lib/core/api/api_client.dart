@@ -3,6 +3,14 @@ import 'dart:io';
 import '../storage/token_storage.dart';
 import '../constants/api_endpoints.dart';
 
+// ─── 재시도 대상 DioException 유형 ───────────────────────────────────────────
+const _retryableTypes = {
+  DioExceptionType.connectionError,
+  DioExceptionType.connectionTimeout,
+  DioExceptionType.receiveTimeout,
+  DioExceptionType.sendTimeout,
+};
+
 /// 개발/운영 환경별 Base URL
 /// - 빌드 시 `--dart-define=BASE_URL=https://your-prod-api.com` 옵션으로 운영서버 주소 동적 주입 가능
 /// - 미지정 시 기본값: 로컬 개발 환경 (localhost / 10.0.2.2)
@@ -37,11 +45,64 @@ Dio createDio(TokenStorage tokenStorage) {
     ),
   );
 
+  // 1) 네트워크 오류 자동 재시도 (최대 2회, 지수 백오프)
+  dio.interceptors.add(RetryInterceptor(dio: dio));
+
+  // 2) JWT 토큰 자동 갱신
   dio.interceptors.add(
     AuthInterceptor(dio: dio, tokenStorage: tokenStorage),
   );
 
   return dio;
+}
+
+/// 네트워크 오류 자동 재시도 인터셉터
+/// - 재시도 대상: connectionError, connectionTimeout, receiveTimeout, sendTimeout
+/// - 최대 재시도 횟수: 2회
+/// - 지수 백오프: 1초 → 2초
+/// - 4xx/5xx 응답 오류는 재시도하지 않음 (서버 로직 오류)
+/// - 이미 재시도한 요청은 extra['_retryCount']로 횟수 추적
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  final int maxRetries;
+  final Duration initialDelay;
+
+  RetryInterceptor({
+    required this.dio,
+    this.maxRetries = 2,
+    this.initialDelay = const Duration(seconds: 1),
+  });
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final options = err.requestOptions;
+    final retryCount = (options.extra['_retryCount'] as int?) ?? 0;
+
+    final shouldRetry = _retryableTypes.contains(err.type) &&
+        retryCount < maxRetries &&
+        // S3 Presigned URL 등 외부 URL은 재시도하지 않음
+        !options.path.startsWith('http://') &&
+        !options.path.startsWith('https://');
+
+    if (!shouldRetry) {
+      return handler.next(err);
+    }
+
+    final delay = initialDelay * (1 << retryCount); // 1s, 2s
+    await Future<void>.delayed(delay);
+
+    options.extra['_retryCount'] = retryCount + 1;
+
+    try {
+      final response = await dio.fetch<dynamic>(options);
+      return handler.resolve(response);
+    } on DioException catch (retryErr) {
+      return handler.next(retryErr);
+    }
+  }
 }
 
 /// JWT 토큰 자동 갱신 인터셉터
