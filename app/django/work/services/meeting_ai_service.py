@@ -197,5 +197,9 @@ def _extract_meeting_data(api_response: Dict[str, Any]) -> Dict[str, Any]:
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError as err:
-        logger.error("Failed to decode JSON from Gemini output: %s", cleaned)
+        logger.error(
+            "Failed to decode JSON from Gemini output (content omitted). length=%d, error=%s",
+            len(cleaned),
+            err,
+        )
         raise ValueError(f"AI 회의록 JSON 파싱 실패: {err}")
