@@ -1,3 +1,5 @@
+import logging
+
 from django.db.models import Q
 from django_filters.rest_framework import (
     FilterSet, CharFilter, BooleanFilter, NumberFilter, DateTimeFromToRangeFilter
@@ -12,6 +14,9 @@ from apiV1.serializers.work.meeting import (
     MeetingCategorySerializer, MeetingSerializer, MeetingListSerializer, MeetingFileSerializer
 )
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
+
+
+logger = logging.getLogger(__name__)
 
 
 class MeetingCategoryFilter(FilterSet):
@@ -202,9 +207,10 @@ class MeetingViewSet(viewsets.ModelViewSet):
             audio_bytes = audio_file.read()
             summary_result = summarize_meeting_audio(audio_bytes, mime_type=mime_type)
             return Response(summary_result)
-        except Exception as e:
+        except Exception:
             from rest_framework.exceptions import APIException
-            raise APIException(f'AI 회의록 생성 중 오류가 발생했습니다: {str(e)}')
+            logger.exception('AI 회의록 생성 중 내부 오류가 발생했습니다.')
+            raise APIException('AI 회의록 생성 중 오류가 발생했습니다.')
         finally:
             # 안전한 메모리/임시 파일 정리
             if hasattr(audio_file, 'close'):
