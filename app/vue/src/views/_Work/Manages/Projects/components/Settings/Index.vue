@@ -22,7 +22,7 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const menu = ref('프로젝트')
+const menu = ref('메인설정')
 
 const { can, PERM } = usePerms()
 
@@ -67,7 +67,7 @@ const settingMenus = computed(() => {
   const isForumEnabled = !currentProject.value?.module || currentProject.value.module.forum
 
   // PERM 상수를 기반으로 권한 체크 + 프로젝트 모듈 활성화 여부 반영
-  if (canAccessProject.value) menus.push({ no: 1, menu: '프로젝트' })
+  if (canAccessProject.value) menus.push({ no: 1, menu: '메인설정' })
   if (workManager.value || can(PERM.PROJECT_MEMBER)) menus.push({ no: 2, menu: '구성원' })
   if (canAccessIssue.value) menus.push({ no: 3, menu: '업무추적' })
   if (workManager.value || can(PERM.PROJECT_VERSION)) menus.push({ no: 4, menu: '단계' })
@@ -138,7 +138,7 @@ onBeforeMount(async () => {
     else menu.value = initMenu.value
   } catch (err) {
     console.log('Failed to load project settings configurations', err)
-    message('warning', '', '프로젝트 설정 정보를 불러오는 데 실패했습니다.')
+    message('warning', '', '워크스페이스 설정 정보를 불러오는 데 실패했습니다.')
   } finally {
     loading.value = false
   }
@@ -177,7 +177,7 @@ const handleMenuClick = (m: string) => {
           </CCol>
         </CRow>
 
-        <ProjectForm v-if="menu === '프로젝트'" :project="currentProject" />
+        <ProjectForm v-if="menu === '메인설정'" :project="currentProject" />
 
         <Member v-if="menu === '구성원'" />
 
