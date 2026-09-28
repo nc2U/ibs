@@ -59,9 +59,10 @@ def health_check(request):
 
 def custom_logout(request):
     next_url = request.GET.get('redirect', '/accounts/login/')  # 기본값은 로그인 페이지
+    allowed_hosts = set(settings.ALLOWED_HOSTS) | {request.get_host()}
     if not url_has_allowed_host_and_scheme(
         url=next_url,
-        allowed_hosts=None,
+        allowed_hosts=allowed_hosts,
         require_https=request.is_secure(),
     ):
         next_url = '/accounts/login/'  # fallback to a single safe URL
