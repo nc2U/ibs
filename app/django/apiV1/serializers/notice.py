@@ -54,17 +54,25 @@ class MessageTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MessageTemplate
-        fields = ('id', 'title', 'message_type', 'content', 'variables', 'is_active',
+        fields = ('id', 'template_code', 'title', 'message_type', 'content', 'variables', 'is_active',
                   'created_by', 'created_at', 'updated_at')
         read_only_fields = ('created_by', 'created_at', 'updated_at')
 
     @staticmethod
     def validate_message_type(value):
         """메시지 타입 유효성 검사"""
-        valid_types = ['SMS', 'LMS', 'MMS']
+        valid_types = ['SMS', 'LMS', 'MMS', 'KAKAO']
         if value not in valid_types:
             raise serializers.ValidationError(f"메시지 타입은 {', '.join(valid_types)} 중 하나여야 합니다.")
         return value
+
+    def validate(self, data):
+        """카카오 알림톡 템플릿의 경우 template_code 필수 검사"""
+        message_type = data.get('message_type')
+        template_code = data.get('template_code')
+        if message_type == 'KAKAO' and not template_code:
+            raise serializers.ValidationError({'template_code': '카카오 알림톡 템플릿은 승인된 템플릿 코드가 필수입니다.'})
+        return data
 
 
 # SMS/MMS Message Serializers -------------------------------------------------------

@@ -8,7 +8,6 @@ const props = defineProps<{
   options: PrintOptions
 }>()
 
-
 const currentSpec = computed(() => SPECS[props.options.specCode] || SPECS['3107'])
 
 // 시작 위치 오프셋(빈 라벨 칸)을 고려하여 페이지 단위 청크로 분할

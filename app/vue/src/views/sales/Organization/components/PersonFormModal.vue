@@ -177,12 +177,7 @@ defineExpose({ open })
 
             <CCol md="4">
               <CFormLabel class="small required">성명</CFormLabel>
-              <CFormInput
-                v-model="form.name"
-                maxlength="30"
-                placeholder="홍길동"
-                required
-              />
+              <CFormInput v-model="form.name" maxlength="30" placeholder="홍길동" required />
               <CFormFeedback invalid>성명을 입력해주세요.</CFormFeedback>
             </CCol>
 
@@ -316,7 +311,11 @@ defineExpose({ open })
 
             <CCol md="12">
               <CFormLabel class="small">비고 / 특이사항</CFormLabel>
-              <CFormTextarea v-model="form.notes" rows="2" placeholder="경력 사항, 추천인, 메모 등" />
+              <CFormTextarea
+                v-model="form.notes"
+                rows="2"
+                placeholder="경력 사항, 추천인, 메모 등"
+              />
             </CCol>
           </CRow>
         </CModalBody>
@@ -344,7 +343,12 @@ defineExpose({ open })
             >
               {{ isEdit ? '수정 저장' : '등록하기' }}
             </v-btn>
-            <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef.close()"
+            <v-btn
+              color="light"
+              size="small"
+              flat
+              :disabled="isSubmitting"
+              @click="modalRef.close()"
               >취소</v-btn
             >
           </div>

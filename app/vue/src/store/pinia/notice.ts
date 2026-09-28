@@ -389,6 +389,7 @@ export const useNotice = defineStore('notice', () => {
 
   // 메시지 템플릿 생성
   const createMessageTemplate = async (payload: {
+    template_code?: string
     title: string
     message_type: string
     content: string
@@ -702,5 +703,3 @@ export const useNotice = defineStore('notice', () => {
     fetchEmailNoticeDetail,
   }
 })
-
-

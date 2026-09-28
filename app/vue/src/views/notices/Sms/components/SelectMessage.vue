@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import SenderNumberModal from './SenderNumberModal.vue'
 import MessageTemplateModal from './MessageTemplateModal.vue'
 import SpecialCharModal from './SpecialCharModal.vue'
+import KakaoGuideModal from './KakaoGuideModal.vue'
 
 // Props 정의
 const activeTab = defineModel<string>('activeTab')
@@ -43,6 +44,22 @@ const extractVariables = (content: string): string[] => {
   return variables
 }
 
+// Kakao variable extraction function (#{변수} or {변수})
+const extractKakaoVariables = (content: string): string[] => {
+  const regex = /#\{([^}]+)\}|\{([^}]+)\}/g
+  const variables: string[] = []
+  let match
+
+  while ((match = regex.exec(content)) !== null) {
+    const varName = (match[1] || match[2]).trim()
+    if (!variables.includes(varName)) {
+      variables.push(varName)
+    }
+  }
+
+  return variables
+}
+
 // Sender number management
 const senderNumberModal = ref()
 const editingSenderNumber = ref<{ id: number; phone_number: string; label: string } | null>(null)
@@ -50,6 +67,16 @@ const editingSenderNumber = ref<{ id: number; phone_number: string; label: strin
 // Template management
 const templateModal = ref()
 const selectedTemplate = ref<string>('')
+
+// Kakao guide modal
+const kakaoGuideModal = ref()
+const handleOpenKakaoGuide = () => {
+  kakaoGuideModal.value?.openModal()
+}
+
+// Kakao template state
+const selectedKakaoTemplateId = ref<string>('')
+const kakaoVariableNames = ref<string[]>([])
 
 // Preview management
 const showPreview = ref(false)
@@ -75,14 +102,78 @@ const senderNumberOptions = computed(() => {
   }))
 })
 
-// Computed for template options
+// Computed for SMS template options (exclude KAKAO)
 const templateOptions = computed(() => {
   if (!Array.isArray(notiStore.messageTemplates)) return []
-  return notiStore.messageTemplates.map(item => ({
-    value: item.id.toString(),
-    label: `${item.title} (${item.message_type})`,
-    template: item,
-  }))
+  return notiStore.messageTemplates
+    .filter(item => item.message_type !== 'KAKAO')
+    .map(item => ({
+      value: item.id.toString(),
+      label: `${item.title} (${item.message_type})`,
+      template: item,
+    }))
+})
+
+// Computed for Kakao template options (only KAKAO)
+const kakaoTemplateOptions = computed(() => {
+  if (!Array.isArray(notiStore.messageTemplates)) return []
+  return notiStore.messageTemplates
+    .filter(item => item.message_type === 'KAKAO')
+    .map(item => ({
+      value: item.id.toString(),
+      label: item.template_code
+        ? `${item.title} [${item.template_code}]`
+        : `${item.title} (코드 미등록)`,
+      template: item,
+    }))
+})
+
+// Handle Kakao template selection
+const handleKakaoTemplateSelect = () => {
+  nextTick(() => {
+    if (!selectedKakaoTemplateId.value) {
+      kakaoForm.value.templateId = ''
+      kakaoForm.value.message = ''
+      kakaoForm.value.parameters = {}
+      kakaoVariableNames.value = []
+      return
+    }
+
+    const template = notiStore.messageTemplates.find(
+      t => t.id.toString() === selectedKakaoTemplateId.value,
+    )
+
+    if (template) {
+      kakaoForm.value.templateId = template.template_code || ''
+      kakaoForm.value.message = template.content
+
+      const vars = extractKakaoVariables(template.content)
+      kakaoVariableNames.value = vars
+
+      // parameters 객체 초기화
+      const params: Record<string, string> = {}
+      vars.forEach(v => {
+        params[v] = kakaoForm.value.parameters?.[v] || ''
+      })
+      kakaoForm.value.parameters = params
+    }
+  })
+}
+
+// Real-time Kakao preview with replaced variables
+const kakaoPreviewMessage = computed(() => {
+  if (!kakaoForm.value.message) return ''
+  let result = kakaoForm.value.message
+  const params = kakaoForm.value.parameters || {}
+
+  for (const [key, value] of Object.entries(params)) {
+    const displayVal = (value as string) || `[${key}]`
+    const regexHash = new RegExp(`#{${key}}`, 'g')
+    const regexBrace = new RegExp(`{${key}}`, 'g')
+    result = result.replace(regexHash, displayVal).replace(regexBrace, displayVal)
+  }
+
+  return result
 })
 
 // Load sender numbers and templates on mount
@@ -530,52 +621,172 @@ watch(
 
           <!-- 카카오 알림톡 탭 -->
           <v-tabs-window-item value="kakao">
-            <!-- 템플릿 선택 -->
-            <CFormSelect
-              v-model="kakaoForm.templateId"
-              label="승인된 템플릿"
-              :options="[
-                { value: 'template1', label: '계약 완료 안내' },
-                { value: 'template2', label: '납입 안내' },
-                { value: 'template3', label: '공사 진행 상황' },
-              ]"
+            <!-- 1. 필수 사전 절차 안내 배너 -->
+            <v-alert
+              type="warning"
+              variant="tonal"
+              density="compact"
               class="mb-3"
-            />
-
-            <!-- 템플릿 미리보기 -->
-            <v-alert type="info" variant="tonal" class="mb-3">
-              <strong>템플릿 미리보기</strong>
-              <div class="mt-2 p-3 bg-grey-lighten-4 rounded">
-                안녕하세요 [이름]님,<br />
-                [프로젝트] 관련하여 안내드립니다.<br />
-                자세한 내용은 고객센터로 문의하세요.
+              icon="mdi-shield-alert-outline"
+            >
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>카카오 알림톡 서비스 연동 안내</strong>
+                  <div class="text-caption text-medium-emphasis mt-1">
+                    카카오톡 채널 비즈니스 인증과 iwinv 발신 프로필 등록, 사전 템플릿 검수 승인이
+                    필요합니다.
+                  </div>
+                </div>
+                <v-btn
+                  size="small"
+                  color="warning"
+                  variant="flat"
+                  prepend-icon="mdi-help-circle-outline"
+                  class="ms-2 text-none"
+                  @click="handleOpenKakaoGuide"
+                >
+                  사전 절차 가이드
+                </v-btn>
               </div>
             </v-alert>
 
-            <!-- 템플릿 변수 입력 -->
+            <!-- 2. 발송자 번호 선택 (사전 등록된 발신번호) -->
             <div class="mb-3">
-              <CFormLabel>템플릿 변수</CFormLabel>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <CFormLabel>발송자 번호 (사전 등록 발신번호)</CFormLabel>
+                <v-btn
+                  v-if="canNoticeManage"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  prepend-icon="mdi-plus"
+                  @click="handleOpenSenderModal"
+                >
+                  등록
+                </v-btn>
+              </div>
+              <CFormSelect
+                v-model="kakaoForm.senderNumber"
+                :options="[{ value: '', label: '발신번호 선택 (필수)' }, ...senderNumberOptions]"
+              />
+            </div>
+
+            <!-- 3. 승인된 템플릿 선택 -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <CFormLabel>승인된 알림톡 템플릿</CFormLabel>
+                <v-btn
+                  v-if="canNoticeManage"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  prepend-icon="mdi-plus"
+                  @click="handleOpenTemplateModal"
+                >
+                  템플릿 관리
+                </v-btn>
+              </div>
+              <CFormSelect
+                v-model="selectedKakaoTemplateId"
+                :options="[{ value: '', label: '템플릿을 선택하세요' }, ...kakaoTemplateOptions]"
+                @change="handleKakaoTemplateSelect"
+              />
+              <div v-if="kakaoForm.templateId" class="mt-1 d-flex justify-content-between">
+                <small class="text-primary font-weight-bold">
+                  템플릿 코드: {{ kakaoForm.templateId }}
+                </small>
+                <small class="text-medium-emphasis"> 변수 {{ kakaoVariableNames.length }}개 </small>
+              </div>
+            </div>
+
+            <!-- 4. 템플릿 변수 입력 (템플릿에 가변 변수가 포함된 경우 동적 렌더링) -->
+            <div v-if="kakaoVariableNames.length > 0" class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <CFormLabel>템플릿 변수 값 설정</CFormLabel>
+                <small class="text-muted">공통 적용 기본값</small>
+              </div>
               <CRow>
-                <CCol :md="6">
-                  <CFormInput label="이름 (name)" placeholder="예: 홍길동" class="mb-2" />
-                </CCol>
-                <CCol :md="6">
+                <CCol v-for="varName in kakaoVariableNames" :key="varName" :md="6" class="mb-2">
                   <CFormInput
-                    label="프로젝트 (project)"
-                    placeholder="예: 동춘지구 A블럭"
-                    class="mb-2"
+                    v-model="kakaoForm.parameters[varName]"
+                    :label="varName"
+                    :placeholder="`#{${varName}} 에 들어갈 값`"
                   />
                 </CCol>
               </CRow>
+              <small class="text-medium-emphasis d-block mt-1">
+                ※ 위 입력값은 수신자 메시지의 해당 변수에 치환되어 발송됩니다.
+              </small>
             </div>
 
-            <!-- 버튼 설정 -->
-            <div class="mb-3">
-              <CFormLabel>버튼 설정</CFormLabel>
-              <v-switch label="웹링크 버튼 추가" color="primary" hide-details class="mb-2" />
-              <CFormInput label="버튼명" placeholder="자세히 보기" class="mb-2" />
-              <CFormInput label="링크 URL" placeholder="https://example.com" class="mb-3" />
+            <!-- 5. 실시간 알림톡 카드 미리보기 -->
+            <div v-if="kakaoForm.message" class="mb-3">
+              <CFormLabel>알림톡 도착 미리보기</CFormLabel>
+              <div class="kakao-preview-card p-3 rounded">
+                <div
+                  class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom"
+                >
+                  <div class="d-flex align-items-center">
+                    <v-icon icon="mdi-chat" color="amber-darken-3" class="me-2" size="20" />
+                    <strong style="color: #3c1e1e; font-size: 13px">알림톡 도착</strong>
+                  </div>
+                  <small style="color: #796060; font-size: 11px">iwinv 인증 채널</small>
+                </div>
+                <div
+                  class="kakao-preview-body"
+                  style="white-space: pre-wrap; font-size: 13px; line-height: 1.6; color: #1e1e1e"
+                >
+                  {{ kakaoPreviewMessage }}
+                </div>
+              </div>
             </div>
+
+            <!-- 6. 실패 시 대체 문자(Failover: reSend) 발송 설정 -->
+            <CCard class="mb-3 border-dashed bg-light-subtle">
+              <CCardBody class="p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>실패 시 대체 문자(SMS/LMS) 발송</strong>
+                    <div class="text-caption text-medium-emphasis">
+                      알림톡 차단자, 카카오톡 미사용자 등 전송 실패 시 일반 문자로 자동 전환 발송
+                    </div>
+                  </div>
+                  <v-switch
+                    v-model="kakaoForm.reSend"
+                    color="primary"
+                    hide-details
+                    density="compact"
+                  />
+                </div>
+
+                <div v-if="kakaoForm.reSend" class="mt-3 pt-3 border-top">
+                  <v-radio-group
+                    v-model="kakaoForm.resendType"
+                    inline
+                    density="compact"
+                    class="mb-2"
+                  >
+                    <v-radio label="알림톡 내용 그대로 발송" value="Y" />
+                    <v-radio label="대체 문자 내용 직접 입력" value="N" />
+                  </v-radio-group>
+
+                  <div v-if="kakaoForm.resendType === 'N'">
+                    <CFormInput
+                      v-model="kakaoForm.resendTitle"
+                      label="대체 문자 제목 (LMS용)"
+                      placeholder="예: [안내] 알림 메시지"
+                      class="mb-2"
+                    />
+                    <CFormTextarea
+                      v-model="kakaoForm.resendContent"
+                      label="대체 문자 내용"
+                      rows="3"
+                      placeholder="알림톡 실패 시 대신 발송할 문자 내용을 입력하세요..."
+                    />
+                  </div>
+                </div>
+              </CCardBody>
+            </CCard>
           </v-tabs-window-item>
         </v-tabs-window>
       </CCardBody>
@@ -589,10 +800,21 @@ watch(
 
     <!-- Special Character Modal -->
     <SpecialCharModal ref="specialCharModal" @insert="insertSpecialChar" />
+
+    <!-- Kakao Guide Modal -->
+    <KakaoGuideModal ref="kakaoGuideModal" />
   </CCol>
 </template>
 
 <style scoped lang="scss">
+.kakao-preview-card {
+  max-width: 360px;
+  width: 100%;
+  background: #fae100;
+  border: 1px solid #e2cb00;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
 .message-preview-box {
   max-width: 360px;
   width: 100%;

@@ -13,6 +13,7 @@ const formModal = ref()
 // Form state
 const form = ref({
   title: '',
+  template_code: '',
   message_type: 'SMS',
   content: '',
 })
@@ -25,6 +26,7 @@ const deletingId = ref<number | null>(null)
 const resetForm = () => {
   form.value = {
     title: '',
+    template_code: '',
     message_type: 'SMS',
     content: '',
   }
@@ -46,6 +48,11 @@ const handleSubmit = async () => {
     return
   }
 
+  if (form.value.message_type === 'KAKAO' && !form.value.template_code) {
+    alert('카카오 알림톡은 승인된 템플릿 코드가 필수입니다.')
+    return
+  }
+
   if (!form.value.content) {
     alert('메시지 내용을 입력해주세요.')
     return
@@ -58,7 +65,8 @@ const handleSubmit = async () => {
       // 수정 모드
       await notiStore.updateMessageTemplate(editingId.value, {
         title: form.value.title,
-        message_type: form.value.message_type as 'SMS' | 'LMS' | 'MMS',
+        template_code: form.value.template_code,
+        message_type: form.value.message_type as 'SMS' | 'LMS' | 'MMS' | 'KAKAO',
         content: form.value.content,
       })
     } else {
@@ -78,6 +86,7 @@ const handleEdit = (template: MessageTemplate) => {
   editingId.value = template.id
   form.value = {
     title: template.title,
+    template_code: template.template_code || '',
     message_type: template.message_type,
     content: template.content,
   }
@@ -113,6 +122,7 @@ const getTypeColor = (type: string) => {
     SMS: 'blue',
     LMS: 'green',
     MMS: 'purple',
+    KAKAO: 'warning',
   }
   return colors[type] || 'grey'
 }
@@ -147,14 +157,45 @@ defineExpose({ openModal, closeModal })
           { value: 'SMS', label: 'SMS (90자 이내)' },
           { value: 'LMS', label: 'LMS (장문메시지)' },
           { value: 'MMS', label: 'MMS (멀티미디어)' },
+          { value: 'KAKAO', label: '카카오 알림톡' },
         ]"
         class="mb-3"
       />
 
+      <!-- 카카오 알림톡 승인 템플릿 코드 -->
+      <div v-if="form.message_type === 'KAKAO'" class="mb-3">
+        <CFormInput
+          v-model="form.template_code"
+          label="카카오 템플릿 코드 (templateCode)"
+          placeholder="iwinv 콘솔에서 승인받은 템플릿 코드 (예: TEMPLATE_001)"
+          required
+        />
+        <small class="text-primary mt-1 d-block">
+          ※ iwinv/카카오톡 채널에서 사전 검수 승인된 템플릿 코드를 정확히 입력해야 합니다.
+        </small>
+      </div>
+
       <!-- 메시지 내용 -->
       <div class="mb-3">
-        <CFormLabel>메시지 내용</CFormLabel>
-        <CFormTextarea v-model="form.content" rows="6" placeholder="메시지 내용을 입력하세요..." />
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <CFormLabel class="mb-0">메시지 내용</CFormLabel>
+          <small class="text-muted">
+            {{
+              form.message_type === 'KAKAO'
+                ? '변수 표기: #{변수명} 또는 {변수명}'
+                : '변수 표기: {변수명}'
+            }}
+          </small>
+        </div>
+        <CFormTextarea
+          v-model="form.content"
+          rows="6"
+          :placeholder="
+            form.message_type === 'KAKAO'
+              ? '카카오에 승인된 템플릿 본문과 토씨 하나까지 정확히 일치해야 합니다.\n예: 안녕하세요 #{이름}님, #{프로젝트} 안내드립니다.'
+              : '메시지 내용을 입력하세요...'
+          "
+        />
       </div>
     </CModalBody>
 
@@ -208,8 +249,14 @@ defineExpose({ openModal, closeModal })
             </template>
 
             <v-list-item class="text-truncate">
-              {{ template.title }} -
-              <span class="text-grey">{{ template.content }}</span>
+              {{ template.title }}
+              <small
+                v-if="template.template_code"
+                class="text-amber-darken-3 font-weight-bold ms-1"
+              >
+                [{{ template.template_code }}]
+              </small>
+              - <span class="text-grey">{{ template.content }}</span>
             </v-list-item>
 
             <template #append>

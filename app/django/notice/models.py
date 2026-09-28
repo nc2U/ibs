@@ -61,8 +61,11 @@ class MessageTemplate(models.Model):
         ('SMS', 'SMS'),
         ('LMS', 'LMS'),
         ('MMS', 'MMS'),
+        ('KAKAO', '카카오 알림톡'),
     ]
 
+    template_code = models.CharField('템플릿 코드', max_length=50, blank=True,
+                                     help_text='카카오 알림톡 승인 템플릿 코드 (알림톡 필수)')
     title = models.CharField('템플릿 제목', max_length=100,
                              help_text='템플릿 이름 (LMS 전송 시 제목으로도 사용 가능)')
     message_type = models.CharField('메시지 타입', max_length=10,

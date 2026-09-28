@@ -128,7 +128,9 @@ export const useChat = defineStore('chat', () => {
       // 읽음 처리 (마지막 메시지 ID 전달)
       const lastMsg = messages.value.length ? messages.value[messages.value.length - 1] : null
       const lastId = lastMsg?.id || 0
-      await api.post(`/chat-room/${room.id}/read/`, { last_message_id: lastId }, { hideProgress: true } as any)
+      await api.post(`/chat-room/${room.id}/read/`, { last_message_id: lastId }, {
+        hideProgress: true,
+      } as any)
       room.unread_count = 0
       fetchTotalUnread()
     } catch (_) {}
@@ -191,11 +193,9 @@ export const useChat = defineStore('chat', () => {
 
             // 내가 보낸 메시지가 아닐 때(상대방 메시지)에만 읽음 처리 전송
             if (!isMe && currentRoom.value && currentRoom.value.id === roomId) {
-              api.post(
-                `/chat-room/${roomId}/read/`,
-                { last_message_id: msg.id },
-                { hideProgress: true } as any,
-              )
+              api.post(`/chat-room/${roomId}/read/`, { last_message_id: msg.id }, {
+                hideProgress: true,
+              } as any)
               if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(
                   JSON.stringify({
@@ -333,8 +333,7 @@ export const useChat = defineStore('chat', () => {
           const isSelf = currentRoom.value?.room_type === 'self'
           const isDirectUnread =
             currentRoom.value?.room_type === 'direct' && (target.unread_count || 0) > 0
-          const isUnder5Min =
-            Date.now() - new Date(target.created).getTime() <= 5 * 60 * 1000
+          const isUnder5Min = Date.now() - new Date(target.created).getTime() <= 5 * 60 * 1000
           if (isSelf || isDirectUnread || isUnder5Min) {
             messages.value = messages.value.filter(m => m.id !== messageId)
           } else {

@@ -134,10 +134,7 @@ defineExpose({ open })
             <template v-if="!form.is_direct_managed">
               <CCol md="4">
                 <CFormLabel class="small">대표자명</CFormLabel>
-                <CFormInput
-                  v-model="form.ceo_name"
-                  placeholder="대표자 성명"
-                />
+                <CFormInput v-model="form.ceo_name" placeholder="대표자 성명" />
               </CCol>
               <CCol md="4">
                 <CFormLabel class="small">사업자등록번호</CFormLabel>
@@ -162,11 +159,7 @@ defineExpose({ open })
             </template>
             <CCol md="4">
               <CFormLabel class="small">정렬 순서</CFormLabel>
-              <CFormInput
-                v-model.number="form.order"
-                type="number"
-                min="1"
-              />
+              <CFormInput v-model.number="form.order" type="number" min="1" />
             </CCol>
             <CCol md="4" class="d-flex align-items-center pt-4">
               <CFormCheck id="is_active" v-model="form.is_active" label="사용 여부 (활성화)" />

@@ -3,8 +3,11 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useProject } from '@/store/pinia/project.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
+import type { Project } from '@/store/types/project.ts'
+import type { KakaoMessage } from '@/store/types/notice.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -38,9 +41,11 @@ const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<str
 // MMS 이미지 첨부
 const attachedImages = ref<File[]>([])
 
-// 회사 정보
+// 회사 및 프로젝트 정보
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
+const projectStore = useProject()
+const project = computed<Project | null>(() => projectStore.project as Project)
 
 // 폼 데이터
 const smsForm = ref({
@@ -56,10 +61,15 @@ const smsForm = ref({
 const kakaoForm = ref({
   templateId: '',
   message: '',
-  parameters: {},
+  senderNumber: '',
+  parameters: {} as Record<string, string>,
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',
+  reSend: true,
+  resendType: 'Y' as 'Y' | 'N',
+  resendTitle: '',
+  resendContent: '',
 })
 
 // Computed 속성들
@@ -69,14 +79,30 @@ const currentForm = computed(() => {
 
 const isDisabled = computed(() => {
   if (activeTab.value === 'sms') {
-    const basicValidation = recipientsList.value.length === 0 || !smsForm.value.message
+    const basicValidation =
+      recipientsList.value.length === 0 || !smsForm.value.message || !smsForm.value.senderNumber
     // MMS 타입일 때는 이미지 첨부 필수
     if (smsForm.value.messageType === 'MMS') {
       return basicValidation || attachedImages.value.length === 0
     }
     return basicValidation
   } else {
-    return recipientsList.value.length === 0 || !kakaoForm.value.templateId
+    // 알림톡 유효성 검사: 수신자, 템플릿 코드, 발신번호 필수
+    const basicKakao =
+      recipientsList.value.length === 0 ||
+      !kakaoForm.value.templateId ||
+      !kakaoForm.value.senderNumber
+
+    // 실패 시 직접 입력 내용으로 대체 발송 시 대체 본문 필수
+    if (
+      kakaoForm.value.reSend &&
+      kakaoForm.value.resendType === 'N' &&
+      !kakaoForm.value.resendContent
+    ) {
+      return true
+    }
+
+    return basicKakao
   }
 })
 
@@ -178,14 +204,48 @@ const sendMessage = async () => {
       }
     } else {
       // 카카오 알림톡 발송
-      await notiStore.sendKakao({
+      // 수신자별 변수 매핑 구성 (iwinv 규격: template_param 배열)
+      const paramKeys = Object.keys(kakaoForm.value.parameters || {})
+      const kakaoRecipients = recipientsList.value.map(phone => {
+        const matchingWithVar = recipientsWithVariables.value.find(item => item.phone === phone)
+        let template_param: string[] = []
+
+        if (matchingWithVar && matchingWithVar.variables) {
+          template_param = paramKeys.map(
+            k => matchingWithVar.variables[k] || kakaoForm.value.parameters[k] || '',
+          )
+        } else if (paramKeys.length > 0) {
+          template_param = paramKeys.map(k => kakaoForm.value.parameters[k] || '')
+        }
+
+        return {
+          phone,
+          ...(template_param.length > 0 ? { template_param } : {}),
+        }
+      })
+
+      const kakaoPayload: KakaoMessage = {
         template_code: kakaoForm.value.templateId,
-        recipients: recipientsList.value.map(phone => ({ phone })),
-        sender_number: '02-1234-5678', // TODO: 실제 발신번호로 변경
+        recipients: kakaoRecipients,
+        sender_number: kakaoForm.value.senderNumber,
         scheduled_send: kakaoForm.value.scheduledSend,
         schedule_date: kakaoForm.value.scheduledSend ? kakaoForm.value.scheduleDate : undefined,
         schedule_time: kakaoForm.value.scheduledSend ? kakaoForm.value.scheduleTime : undefined,
-      })
+        re_send: kakaoForm.value.reSend,
+        resend_type: kakaoForm.value.reSend ? kakaoForm.value.resendType : undefined,
+        resend_title:
+          kakaoForm.value.reSend && kakaoForm.value.resendType === 'N'
+            ? kakaoForm.value.resendTitle
+            : undefined,
+        resend_content:
+          kakaoForm.value.reSend && kakaoForm.value.resendType === 'N'
+            ? kakaoForm.value.resendContent
+            : undefined,
+        company_id: smsForm.value.companyId || undefined,
+        project: project.value?.pk || undefined,
+      }
+
+      await notiStore.sendKakao(kakaoPayload)
     }
 
     // 발송 성공 후 히스토리 새로고침 및 탭 전환
@@ -196,7 +256,7 @@ const sendMessage = async () => {
 
     mainTab.value = 'history'
   } catch (error) {
-    // 에러 처리
+    console.error('발송 실패:', error)
   } finally {
     isSending.value = false
     sendProgress.value = 100

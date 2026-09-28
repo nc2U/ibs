@@ -59,6 +59,8 @@ export declare interface KakaoMessage {
   resend_type?: 'Y' | 'N'
   resend_title?: string
   resend_content?: string
+  company_id?: string
+  project?: number
 }
 
 export declare interface SendHistoryParams {
@@ -112,8 +114,9 @@ export declare interface KakaoResponse {
 // 메시지 템플릿 관련 타입
 export declare interface MessageTemplate {
   id: number
+  template_code?: string
   title: string
-  message_type: 'SMS' | 'LMS' | 'MMS'
+  message_type: 'SMS' | 'LMS' | 'MMS' | 'KAKAO'
   content: string
   variables?: string[]
   is_active: boolean
@@ -256,4 +259,3 @@ export declare interface EmailRecipientsResponse {
   recipients: EmailRecipientTarget[]
   unregistered_contractors: EmailRecipientTarget[]
 }
-

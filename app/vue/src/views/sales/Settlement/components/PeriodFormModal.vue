@@ -108,7 +108,9 @@ defineExpose({ open })
               <CFormLabel class="small required">정산 대상 시작일</CFormLabel>
               <DatePicker v-model="form.start_date" required placeholder="정산 대상 시작일" />
               <CFormFeedback invalid>정산 대상 시작일을 입력해주세요.</CFormFeedback>
-              <small class="text-muted d-block mt-1">이 기간 내 체결된 계약 실적이 집계됩니다.</small>
+              <small class="text-muted d-block mt-1"
+                >이 기간 내 체결된 계약 실적이 집계됩니다.</small
+              >
             </CCol>
 
             <CCol md="6">
