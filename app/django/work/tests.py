@@ -1,10 +1,22 @@
+from datetime import timedelta
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
 
+from accounts.models import Profile
 from company.models import Company
 from work.models.issue import Issue, Tracker, IssueStatus, CodeIssuePriority
+from work.models.issue import IssueRelation, IssueCategory
+from work.models.logging import ActivityLogEntry, IssueLogEntry
+from work.models.meeting import Meeting, MeetingCategory
 from work.models.project import IssueProject, Role, Member
+from work.models.project import Permission
+from work.models.project import Version, ProjectBookmark
 from work.services.work_services import IssueService
 
 User = get_user_model()
@@ -96,14 +108,6 @@ class WorkAppTests(TestCase):
         members = child_project.all_members()
         self.assertEqual(len(members), 1)
         self.assertTrue(members[0]['roles'][0]['inherited'])
-
-
-from rest_framework import status
-from rest_framework.test import APITestCase
-from unittest.mock import patch
-from work.models.meeting import Meeting, MeetingCategory
-from work.models.project import Permission
-from work.models.logging import ActivityLogEntry, IssueLogEntry
 
 
 class WorkMeetingAndSecurityAPITests(APITestCase):
@@ -542,12 +546,6 @@ class WorkMeetingAndSecurityAPITests(APITestCase):
         self.assertEqual(res_unlock.data['status'], '1')
 
 
-from django.core.exceptions import ValidationError
-from datetime import timedelta
-from work.models.issue import IssueRelation, IssueCategory
-from work.models.project import Version, ProjectBookmark
-
-
 class WorkImprovementTests(TestCase):
     """
     work 앱 개선 사항 및 무결성 단위 테스트:
@@ -860,4 +858,449 @@ class WorkImprovementTests(TestCase):
         if item_b:
             self.assertFalse(item_b['is_bookmarked'])
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Profile 알림 설정 기반 메일 발송 시나리오 테스트
+# ──────────────────────────────────────────────────────────────────────────────
+
+class NotificationProfileSettingsTests(TestCase):
+    """
+    Profile 모델의 알림 설정 필드 값에 따라 메일 태스크가 올바르게 동작하는지 검증합니다.
+
+    검증 대상 필드 및 시나리오:
+    ┌─────────────────────────────────────────┬─────────────────────────────┐
+    │ Profile 필드                            │ 연관 태스크 / 이벤트         │
+    ├─────────────────────────────────────────┼─────────────────────────────┤
+    │ auto_watch_created (기본 True)          │ 업무 생성 시 creator 메일    │
+    │ auto_watch_assigned (기본 True)         │ 업무 생성 시 담당자 메일     │
+    │ meeting_created_notification (기본 True)│ 회의록 생성 알림 메일        │
+    │ meeting_confirmed_notification (기본 T) │ 회의록 확정 알림 메일        │
+    └─────────────────────────────────────────┴─────────────────────────────┘
+
+    테스트 전략:
+    - send_mail / send_push_notification 을 mock 처리하여 실제 외부 I/O 없이 검증
+    - Celery 태스크를 동기적으로 직접 호출(CELERY_TASK_ALWAYS_EAGER 없이 함수 직접 호출)
+    - 수신자 이메일 주소 / 수신자 없음(미발송) 양쪽을 모두 검증
+    """
+
+    SEND_MAIL_PATH = 'work.tasks.send_mail'
+    SEND_PUSH_PATH = 'work.tasks.send_push_notification'
+    RENDER_PATH = 'work.tasks.render_to_string'
+
+    def setUp(self):
+        self.company = Company.objects.create(name='(주)알림테스트건설')
+
+        # 사용자 계정을 가장 먼저 생성 — IssueStatus·Tracker·CodeIssuePriority 등이 creator NOT NULL
+        self.creator = User.objects.create_user(
+            username='issue_creator', email='creator@notif-test.com', password='pw'
+        )
+        self.assignee = User.objects.create_user(
+            username='issue_assignee', email='assignee@notif-test.com', password='pw'
+        )
+        self.attendee = User.objects.create_user(
+            username='meeting_attendee', email='attendee@notif-test.com', password='pw'
+        )
+
+        self.status_open = IssueStatus.objects.create(name='진행', creator=self.creator)
+        self.status_closed = IssueStatus.objects.create(name='완료', closed=True, creator=self.creator)
+        self.tracker = Tracker.objects.create(name='업무', default_status=self.status_open, creator=self.creator)
+        self.priority = CodeIssuePriority.objects.create(name='보통', creator=self.creator)
+
+        self.project = IssueProject.objects.create(
+            company=self.company,
+            name='알림 테스트 워크스페이스',
+            slug='notif-test-ws',
+            creator=self.creator,
+        )
+
+    # ──────────────────────────────────────────────────────────
+    # 공통 헬퍼
+    # ──────────────────────────────────────────────────────────
+
+    def _make_profile(self, user, **kwargs):
+        """Profile 생성 또는 업데이트 헬퍼"""
+        profile, _ = Profile.objects.get_or_create(user=user)
+        for field, value in kwargs.items():
+            setattr(profile, field, value)
+        profile.save()
+        return profile
+
+    def _make_issue(self, assigned_to=None):
+        """테스트용 업무 생성"""
+        return Issue.objects.create(
+            project=self.project,
+            tracker=self.tracker,
+            status=self.status_open,
+            priority=self.priority,
+            subject='테스트 업무',
+            start_date=timezone.now().date(),
+            assigned_to=assigned_to,
+            creator=self.creator,
+        )
+
+    def _make_meeting(self, is_confirmed=False):
+        """테스트용 회의록 생성"""
+        meeting = Meeting.objects.create(
+            project=self.project,
+            title='테스트 회의록',
+            agenda='테스트 안건',
+            status='2' if is_confirmed else '1',
+            is_confirmed=is_confirmed,
+            creator=self.creator,
+        )
+        meeting.attendees.add(self.attendee)
+        return meeting
+
+    # ──────────────────────────────────────────────────────────
+    # [업무 생성] auto_watch_created
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_sent_when_auto_watch_created_true(self, mock_send_mail, mock_render, mock_push):
+        """auto_watch_created=True 인 창작자(creator)는 업무 생성 시 메일을 수신해야 한다."""
+        self._make_profile(self.creator, auto_watch_created=True)
+        issue = self._make_issue()
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_not_sent_when_auto_watch_created_false(self, mock_send_mail, mock_render, mock_push):
+        """auto_watch_created=False 인 창작자(creator)는 업무 생성 시 메일을 수신하지 않아야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)
+        issue = self._make_issue()  # 담당자 없음 → creator만 후보
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        # 수신자가 없어 send_mail 이 호출되지 않아야 함
+        mock_send_mail.assert_not_called()
+
+    # ──────────────────────────────────────────────────────────
+    # [업무 생성] auto_watch_assigned
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_sent_to_assignee_when_auto_watch_assigned_true(self, mock_send_mail, mock_render,
+                                                                              mock_push):
+        """auto_watch_assigned=True 인 담당자는 업무 생성 시 메일을 수신해야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)  # creator 제외
+        self._make_profile(self.assignee, auto_watch_assigned=True)
+        issue = self._make_issue(assigned_to=self.assignee)
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.assignee.email, recipient_list)
+        self.assertNotIn(self.creator.email, recipient_list)
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_not_sent_to_assignee_when_auto_watch_assigned_false(self, mock_send_mail, mock_render,
+                                                                                   mock_push):
+        """auto_watch_assigned=False 인 담당자는 업무 생성 시 메일을 수신하지 않아야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)
+        self._make_profile(self.assignee, auto_watch_assigned=False)
+        issue = self._make_issue(assigned_to=self.assignee)
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_not_called()
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_both_recipients_when_both_flags_true(self, mock_send_mail, mock_render, mock_push):
+        """creator·담당자 모두 알림 ON일 때 두 주소가 recipient_list에 포함되어야 한다."""
+        self._make_profile(self.creator, auto_watch_created=True)
+        self._make_profile(self.assignee, auto_watch_assigned=True)
+        issue = self._make_issue(assigned_to=self.assignee)
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertIn(self.assignee.email, recipient_list)
+
+    # ──────────────────────────────────────────────────────────
+    # [업무 생성] Profile 없음 → 기본값(True) 폴백
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_issue_create_mail_fallback_when_no_profile(self, mock_send_mail, mock_render, mock_push):
+        """Profile이 없는 사용자는 기본값(True)로 폴백되어 메일을 수신해야 한다."""
+        # Profile을 생성하지 않고 그대로 사용
+        issue = self._make_issue(assigned_to=self.assignee)
+
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task(issue.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertIn(self.assignee.email, recipient_list)
+
+    # ──────────────────────────────────────────────────────────
+    # [회의록 생성] meeting_created_notification
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_create_mail_sent_when_notification_true(self, mock_send_mail, mock_render, mock_push):
+        """meeting_created_notification=True 인 참석자는 회의록 등록 시 메일을 수신해야 한다."""
+        self._make_profile(self.creator, meeting_created_notification=True)
+        self._make_profile(self.attendee, meeting_created_notification=True)
+        meeting = self._make_meeting()
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertIn(self.attendee.email, recipient_list)
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_create_mail_not_sent_when_notification_false_for_all(self, mock_send_mail, mock_render, mock_push):
+        """모든 후보자의 meeting_created_notification=False 이면 메일이 발송되지 않아야 한다."""
+        self._make_profile(self.creator, meeting_created_notification=False)
+        self._make_profile(self.attendee, meeting_created_notification=False)
+        meeting = self._make_meeting()
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_not_called()
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_create_mail_partial_when_one_opt_out(self, mock_send_mail, mock_render, mock_push):
+        """creator만 meeting_created_notification=False 이면 참석자(attendee)에게만 메일이 발송되어야 한다."""
+        self._make_profile(self.creator, meeting_created_notification=False)
+        self._make_profile(self.attendee, meeting_created_notification=True)
+        meeting = self._make_meeting()
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertNotIn(self.creator.email, recipient_list)
+        self.assertIn(self.attendee.email, recipient_list)
+
+    # ──────────────────────────────────────────────────────────
+    # [회의록 확정] meeting_confirmed_notification
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_confirm_mail_sent_when_notification_true(self, mock_send_mail, mock_render, mock_push):
+        """meeting_confirmed_notification=True 인 참석자는 회의록 확정 시 메일을 수신해야 한다."""
+        self._make_profile(self.creator, meeting_confirmed_notification=True)
+        self._make_profile(self.attendee, meeting_confirmed_notification=True)
+        meeting = self._make_meeting(is_confirmed=True)
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'confirm')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertIn(self.attendee.email, recipient_list)
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_confirm_mail_not_sent_when_notification_false_for_all(self, mock_send_mail, mock_render,
+                                                                           mock_push):
+        """모든 후보자의 meeting_confirmed_notification=False 이면 확정 알림 메일이 발송되지 않아야 한다."""
+        self._make_profile(self.creator, meeting_confirmed_notification=False)
+        self._make_profile(self.attendee, meeting_confirmed_notification=False)
+        meeting = self._make_meeting(is_confirmed=True)
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'confirm')
+
+        mock_send_mail.assert_not_called()
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_confirm_mail_partial_when_one_opt_out(self, mock_send_mail, mock_render, mock_push):
+        """attendee만 meeting_confirmed_notification=False 이면 creator에게만 확정 알림이 발송되어야 한다."""
+        self._make_profile(self.creator, meeting_confirmed_notification=True)
+        self._make_profile(self.attendee, meeting_confirmed_notification=False)
+        meeting = self._make_meeting(is_confirmed=True)
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'confirm')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertNotIn(self.attendee.email, recipient_list)
+
+    # ──────────────────────────────────────────────────────────
+    # [회의록] Profile 없음 → 기본값(True) 폴백
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.tasks.send_push_notification')
+    @patch('work.tasks.render_to_string', return_value='<html>mail</html>')
+    @patch('work.tasks.send_mail')
+    def test_meeting_mail_fallback_when_no_profile(self, mock_send_mail, mock_render, mock_push):
+        """Profile이 없는 사용자는 기본값(True)로 폴백되어 회의록 알림 메일을 수신해야 한다."""
+        # Profile 생성 없이 진행
+        meeting = self._make_meeting()
+
+        from work.tasks import send_meeting_mail_task
+        send_meeting_mail_task(meeting.pk, self.creator.pk, 'create')
+
+        mock_send_mail.assert_called_once()
+        _, kwargs = mock_send_mail.call_args
+        recipient_list = kwargs.get('recipient_list',
+                                    mock_send_mail.call_args[0][4] if mock_send_mail.call_args[0] else [])
+        self.assertIn(self.creator.email, recipient_list)
+        self.assertIn(self.attendee.email, recipient_list)
+
+    # ──────────────────────────────────────────────────────────
+    # [업무 수정 워처 관리] auto_watch_created / auto_watch_assigned
+    # ──────────────────────────────────────────────────────────
+
+    def test_watcher_added_for_creator_when_auto_watch_created_true(self):
+        """auto_watch_created=True 일 때 log_and_notify() 수정 처리 시 creator가 watcher에 추가되어야 한다."""
+        self._make_profile(self.creator, auto_watch_created=True)
+        issue = self._make_issue()
+
+        # 초기 watcher 비어있음 확인
+        issue.watchers.clear()
+        self.assertNotIn(self.creator, issue.watchers.all())
+
+        with patch('work.services.work_services.IssueService.send_issue_mail'):
+            IssueService.log_and_notify(issue, created=False, user=self.creator)
+
+        self.assertIn(self.creator, issue.watchers.all())
+
+    def test_watcher_not_added_for_creator_when_auto_watch_created_false(self):
+        """auto_watch_created=False 일 때 log_and_notify() 수정 처리 시 creator가 watcher에 추가되지 않아야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)
+        issue = self._make_issue()
+        issue.watchers.clear()
+
+        with patch('work.services.work_services.IssueService.send_issue_mail'):
+            IssueService.log_and_notify(issue, created=False, user=self.creator)
+
+        self.assertNotIn(self.creator, issue.watchers.all())
+
+    def test_watcher_added_for_assignee_when_auto_watch_assigned_true(self):
+        """auto_watch_assigned=True 일 때 log_and_notify() 수정 처리 시 담당자가 watcher에 추가되어야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)
+        self._make_profile(self.assignee, auto_watch_assigned=True)
+        issue = self._make_issue(assigned_to=self.assignee)
+        issue.watchers.clear()
+
+        with patch('work.services.work_services.IssueService.send_issue_mail'):
+            IssueService.log_and_notify(issue, created=False, user=self.creator)
+
+        self.assertIn(self.assignee, issue.watchers.all())
+
+    def test_watcher_not_added_for_assignee_when_auto_watch_assigned_false(self):
+        """auto_watch_assigned=False 일 때 log_and_notify() 수정 처리 시 담당자가 watcher에 추가되지 않아야 한다."""
+        self._make_profile(self.creator, auto_watch_created=False)
+        self._make_profile(self.assignee, auto_watch_assigned=False)
+        issue = self._make_issue(assigned_to=self.assignee)
+        issue.watchers.clear()
+
+        with patch('work.services.work_services.IssueService.send_issue_mail'):
+            IssueService.log_and_notify(issue, created=False, user=self.creator)
+
+        self.assertNotIn(self.assignee, issue.watchers.all())
+
+    # ──────────────────────────────────────────────────────────
+    # [서비스 레이어] MeetingService.notify_meeting_changes → send_meeting_mail 호출 여부
+    # ──────────────────────────────────────────────────────────
+
+    @patch('work.services.work_services.MeetingService.send_meeting_mail')
+    def test_notify_meeting_changes_calls_create_mail_on_created(self, mock_send):
+        """회의 생성(created=True) 시 MeetingService.notify_meeting_changes가 'create' 타입 메일을 트리거해야 한다."""
+        from work.services.work_services import MeetingService
+        meeting = self._make_meeting()
+        # Meeting.objects.create() → post_save 시그널로 이미 'create' 1회 호출됨 → 초기화 후 검증
+        mock_send.reset_mock()
+        MeetingService.notify_meeting_changes(meeting, created=True, user=self.creator)
+        mock_send.assert_called_once_with(meeting, self.creator, 'create')
+
+    @patch('work.services.work_services.MeetingService.send_meeting_mail')
+    def test_notify_meeting_changes_calls_confirm_mail_on_confirmation(self, mock_send):
+        """회의가 미확정→확정으로 변경될 때 'confirm' 타입 메일을 트리거해야 한다."""
+        from work.services.work_services import MeetingService
+        meeting = self._make_meeting(is_confirmed=True)
+        # post_save 시그널 호출분 초기화
+        mock_send.reset_mock()
+        MeetingService.notify_meeting_changes(
+            meeting, created=False, user=self.creator, old_is_confirmed=False
+        )
+        mock_send.assert_called_once_with(meeting, self.creator, 'confirm')
+
+    @patch('work.services.work_services.MeetingService.send_meeting_mail')
+    def test_notify_meeting_changes_no_mail_when_no_state_change(self, mock_send):
+        """이미 확정 상태(old_is_confirmed=True → is_confirmed=True)인 경우 메일이 발송되지 않아야 한다."""
+        from work.services.work_services import MeetingService
+        meeting = self._make_meeting(is_confirmed=True)
+        # post_save 시그널 호출분 초기화
+        mock_send.reset_mock()
+        MeetingService.notify_meeting_changes(
+            meeting, created=False, user=self.creator, old_is_confirmed=True
+        )
+        mock_send.assert_not_called()
+
+    @patch('work.services.work_services.MeetingService.send_meeting_mail')
+    def test_notify_meeting_changes_no_mail_on_unconfirm(self, mock_send):
+        """확정 해제(old_is_confirmed=True → is_confirmed=False)일 때는 메일이 발송되지 않아야 한다."""
+        from work.services.work_services import MeetingService
+        meeting = self._make_meeting(is_confirmed=False)
+        # post_save 시그널 호출분 초기화
+        mock_send.reset_mock()
+        MeetingService.notify_meeting_changes(
+            meeting, created=False, user=self.creator, old_is_confirmed=True
+        )
+        mock_send.assert_not_called()
 
