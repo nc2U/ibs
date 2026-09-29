@@ -125,7 +125,7 @@ const cngProject = async (slug: any) => {
               <strong class="title pl-1"> {{ pageTitle }}</strong>
               <v-chip
                 v-if="superAuth"
-                color="danger"
+                color="deep-purple-lighten-1"
                 variant="elevated"
                 size="x-small"
                 class="ms-3"
