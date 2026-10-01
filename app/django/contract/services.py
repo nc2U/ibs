@@ -310,7 +310,12 @@ class ContractPriceUpdateService:
             existing.price_land = price[2]
             existing.price_tax = price[3]
 
-            if house_unit:
+            if house_unit and existing.house_unit != house_unit:
+                # 다른 ContractPrice가 해당 house_unit을 가지고 있는지 확인하고 detach
+                conflicting_price = ContractPrice.objects.filter(house_unit=house_unit).exclude(pk=existing.pk).first()
+                if conflicting_price:
+                    conflicting_price.house_unit = None
+                    conflicting_price.save()
                 existing.house_unit = house_unit
 
             existing.save()  # order_group은 변경되지 않음
