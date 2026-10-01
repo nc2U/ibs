@@ -5487,12 +5487,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   color: isActive ? const Color(0xFF6366F1) : context.colors.textMuted,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  person.name,
-                  style: AppTextStyles.titleSm.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
+                Flexible(
+                  child: Text(
+                    person.name,
+                    style: AppTextStyles.titleSm.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -5733,61 +5737,66 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                InkWell(
-                  onTap: () => showPersonDocumentSheet(
-                    context,
-                    person: person,
-                    projectSlug: project.slug,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: person.documentsCount > 0
-                          ? const Color(0xFF6366F1).withAlpha(15)
-                          : context.colors.borderSubtle,
-                      border: Border.all(
-                        color: person.documentsCount > 0
-                            ? const Color(0xFF6366F1).withAlpha(70)
-                            : context.colors.border,
-                        width: 0.8,
-                      ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => showPersonDocumentSheet(
+                      context,
+                      person: person,
+                      projectSlug: project.slug,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          person.documentsCount > 0
-                              ? Icons.description_outlined
-                              : Icons.file_present_outlined,
-                          size: 11,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: person.documentsCount > 0
+                            ? const Color(0xFF6366F1).withAlpha(15)
+                            : context.colors.borderSubtle,
+                        border: Border.all(
                           color: person.documentsCount > 0
-                              ? const Color(0xFF6366F1)
-                              : context.colors.textMuted,
+                              ? const Color(0xFF6366F1).withAlpha(70)
+                              : context.colors.border,
+                          width: 0.8,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          person.documentsCount > 0
-                              ? '서류 ${person.documentsCount}건 열람/공유'
-                              : '서류 미제출 (터치하여 확인)',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: person.documentsCount > 0
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            person.documentsCount > 0
+                                ? Icons.description_outlined
+                                : Icons.file_present_outlined,
+                            size: 11,
                             color: person.documentsCount > 0
                                 ? const Color(0xFF6366F1)
                                 : context.colors.textMuted,
                           ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 12,
-                          color: person.documentsCount > 0
-                              ? const Color(0xFF6366F1)
-                              : context.colors.textMuted,
-                        ),
-                      ],
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              person.documentsCount > 0
+                                  ? '서류 ${person.documentsCount}건 열람/공유'
+                                  : '서류 미제출 (터치하여 확인)',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: person.documentsCount > 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: person.documentsCount > 0
+                                    ? const Color(0xFF6366F1)
+                                    : context.colors.textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 12,
+                            color: person.documentsCount > 0
+                                ? const Color(0xFF6366F1)
+                                : context.colors.textMuted,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -44,7 +44,7 @@ class _AgencyTeamManageSheetState
     final ceoController = TextEditingController(text: agency?.ceoName ?? '');
     final phoneController = TextEditingController(text: agency?.phone ?? '');
     final bizController = TextEditingController(text: agency?.businessNumber ?? '');
-    bool isDirect = agency?.isDirectManaged ?? false;
+    bool isDirect = agency?.isDirectManaged ?? true;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -81,54 +81,6 @@ class _AgencyTeamManageSheetState
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => setDlgState(() => isDirect = false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: !isDirect
-                                ? const Color(0xFF6366F1).withAlpha(18)
-                                : context.colors.bgSurface,
-                            border: Border.all(
-                              color: !isDirect
-                                  ? const Color(0xFF6366F1)
-                                  : context.colors.border,
-                              width: !isDirect ? 1.4 : 0.8,
-                            ),
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                !isDirect
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_unchecked,
-                                size: 15,
-                                color: !isDirect
-                                    ? const Color(0xFF6366F1)
-                                    : context.colors.textMuted,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '외주 대행',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: !isDirect
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: !isDirect
-                                      ? const Color(0xFF6366F1)
-                                      : context.colors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Expanded(
                       child: InkWell(
                         onTap: () => setDlgState(() => isDirect = true),
@@ -176,36 +128,86 @@ class _AgencyTeamManageSheetState
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setDlgState(() => isDirect = false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            color: !isDirect
+                                ? const Color(0xFF6366F1).withAlpha(18)
+                                : context.colors.bgSurface,
+                            border: Border.all(
+                              color: !isDirect
+                                  ? const Color(0xFF6366F1)
+                                  : context.colors.border,
+                              width: !isDirect ? 1.4 : 0.8,
+                            ),
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                !isDirect
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                size: 15,
+                                color: !isDirect
+                                    ? const Color(0xFF6366F1)
+                                    : context.colors.textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '외주 대행',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: !isDirect
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: !isDirect
+                                      ? const Color(0xFF6366F1)
+                                      : context.colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: ceoController,
-                  decoration: const InputDecoration(
-                    labelText: '대표자명',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                if (!isDirect) ...[
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: ceoController,
+                    decoration: const InputDecoration(
+                      labelText: '대표자명',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    ),
+                    style: const TextStyle(fontSize: 13),
                   ),
-                  style: const TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: '대표 전화번호',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: '대표 전화번호',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    ),
+                    style: const TextStyle(fontSize: 13),
                   ),
-                  style: const TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: bizController,
-                  decoration: const InputDecoration(
-                    labelText: '사업자등록번호',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: bizController,
+                    decoration: const InputDecoration(
+                      labelText: '사업자등록번호',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    ),
+                    style: const TextStyle(fontSize: 13),
                   ),
-                  style: const TextStyle(fontSize: 13),
-                ),
+                ],
               ],
             ),
           ),
@@ -226,9 +228,9 @@ class _AgencyTeamManageSheetState
                   'project': widget.projectId,
                   'name': nameController.text.trim(),
                   'is_direct_managed': isDirect,
-                  'ceo_name': ceoController.text.trim(),
-                  'phone': phoneController.text.trim(),
-                  'business_number': bizController.text.trim(),
+                  'ceo_name': isDirect ? '' : ceoController.text.trim(),
+                  'phone': isDirect ? '' : phoneController.text.trim(),
+                  'business_number': isDirect ? '' : bizController.text.trim(),
                 };
                 if (agency != null) {
                   await repository.updateSalesAgency(agency.id, payload);
