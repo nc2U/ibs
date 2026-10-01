@@ -158,7 +158,7 @@ const downPayOrder = computed(() =>
 
 const downPayments = computed(() =>
   props.contract && props.contract.payments.length > 0
-    ? props.contract.payments.filter((p: Payment) => p.installment_order.pay_time === 1)
+    ? props.contract.payments.filter((p: Payment) => p.installment_order?.pay_time === 1)
     : [],
 )
 
