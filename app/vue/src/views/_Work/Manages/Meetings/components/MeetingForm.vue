@@ -115,7 +115,7 @@ const parseActionItemsFromText = () => {
     let text = line.trim()
     if (!text) return
 
-    // Strip markdown bullets / numbers
+    // Strip Markdown bullets / numbers
     text = text.replace(/^[-*+]\s*(\[[ xX]\])?\s*/, '')
     text = text.replace(/^\d+[\.\)]\s*/, '')
     text = text.trim()

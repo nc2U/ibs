@@ -8,12 +8,12 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins.ts'
 import { markdownRender } from '@/utils/helper.ts'
-import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
-import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import FormModal from '@/components/Modals/FormModal.vue'
-import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import { markNotificationReadByTarget } from '@/utils/notification.ts'
+import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
+import FormModal from '@/components/Modals/FormModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
+import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -500,7 +500,6 @@ const refConfirmModal = ref()
                 <v-btn
                   v-if="canIssueCreate"
                   color="warning"
-                  variant="outlined"
                   size="x-small"
                   @click="openIssueModalForActionItem"
                 >
@@ -587,7 +586,7 @@ const refConfirmModal = ref()
                       v-else-if="canIssueCreate"
                       color="warning"
                       size="x-small"
-                      variant="tonal"
+                      variant="flat"
                       @click="openIssueModalForSpecificItem(item)"
                     >
                       <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무 발행
