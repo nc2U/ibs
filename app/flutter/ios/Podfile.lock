@@ -1,5 +1,5 @@
 PODS:
-  - app_badge_plus (1.3.4):
+  - app_badge_plus (1.3.5):
     - Flutter
   - audio_session (0.0.1):
     - Flutter
@@ -232,7 +232,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
-  app_badge_plus: 046883d24d97f3a7c3dfd20bbeaddb7b13e4ad7b
+  app_badge_plus: 61669f601f51ea6c45fb7e8a6f1e0b12ba50864b
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
