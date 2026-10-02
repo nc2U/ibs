@@ -1,11 +1,11 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../project/providers/project_provider.dart';
 import '../../data/models/notice_model.dart';
 import '../../data/notice_repository.dart';
@@ -79,9 +79,9 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
 
     if (!ref.can(Perm.newsManage)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('공지사항 관리 권한(news.manage)이 없습니다.'),
-          backgroundColor: AppColors.error,
+        SnackBar(
+          content: const Text('공지사항 관리 권한(news.manage)이 없습니다.'),
+          backgroundColor: context.colors.error,
         ),
       );
       return;
@@ -92,9 +92,9 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
 
     if (widget.notice == null && targetProjectPk == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('공지사항을 등록할 워크스페이스를 선택해 주세요.'),
-          backgroundColor: AppColors.error,
+        SnackBar(
+          content: const Text('공지사항을 등록할 워크스페이스를 선택해 주세요.'),
+          backgroundColor: context.colors.error,
         ),
       );
       return;
@@ -144,7 +144,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('처리 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -163,8 +163,8 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
       ),
       child: Form(
@@ -174,22 +174,22 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
             // ── 상단 타이틀 바 ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                    bottom: BorderSide(color: AppColors.border, width: 0.8)),
+                    bottom: BorderSide(color: context.colors.border, width: 0.8)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.campaign_rounded,
-                      size: 20, color: AppColors.accentWork),
+                  Icon(Icons.campaign_rounded,
+                      size: 20, color: context.colors.accentWork),
                   const SizedBox(width: 8),
                   Text(
                     isEdit ? '공지사항 수정' : '새 공지사항 등록',
-                    style: AppTextStyles.titleLg,
+                    style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                    icon: Icon(Icons.close_rounded, size: 20, color: context.colors.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -206,7 +206,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                     // 1. 워크스페이스 선택
                     Text('워크스페이스',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond)),
+                            .copyWith(color: context.colors.textSecond)),
                     const SizedBox(height: 6),
                     projectsAsync.when(
                       data: (projects) {
@@ -216,19 +216,21 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
-                            border: Border.all(color: AppColors.border),
+                            color: context.colors.bgSurface,
+                            border: Border.all(color: context.colors.border),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<int?>(
                               value: effectivePk,
                               isExpanded: true,
+                              dropdownColor: context.colors.bgCard,
+                              style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                               items: projects
                                   .map(
                                     (p) => DropdownMenuItem<int?>(
                                       value: p.pk,
                                       child: Text(p.name,
-                                          style: AppTextStyles.bodySm),
+                                          style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
                                     ),
                                   )
                                   .toList(),
@@ -241,30 +243,38 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                       },
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => Text('워크스페이스 로딩 실패: $e',
-                          style: AppTextStyles.bodyMuted),
+                          style: AppTextStyles.bodyMuted.copyWith(color: context.colors.error)),
                     ),
                     const SizedBox(height: 14),
 
                     // 2. 제목 입력
                     Text('공지 제목 *',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond)),
+                            .copyWith(color: context.colors.textSecond)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _titleController,
-                      style: AppTextStyles.bodySm,
+                      style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                       validator: (val) => (val == null || val.trim().isEmpty)
                           ? '제목을 입력해 주세요.'
                           : null,
                       decoration: InputDecoration(
                         hintText: '공지사항 제목을 입력하세요',
-                        hintStyle: AppTextStyles.bodyMuted,
+                        hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                         filled: true,
-                        fillColor: AppColors.bgSurface,
+                        fillColor: context.colors.bgSurface,
                         contentPadding: const EdgeInsets.all(12),
-                        border: const OutlineInputBorder(
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.accentWork),
                         ),
                       ),
                     ),
@@ -275,11 +285,11 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: context.colors.bgSurface,
                         border: Border.all(
                           color: _isImportant
-                              ? AppColors.error.withAlpha(120)
-                              : AppColors.border,
+                              ? context.colors.error.withAlpha(120)
+                              : context.colors.border,
                         ),
                       ),
                       child: Row(
@@ -287,15 +297,15 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                           Icon(Icons.campaign_rounded,
                               size: 18,
                               color: _isImportant
-                                  ? AppColors.error
-                                  : AppColors.textMuted),
+                                  ? context.colors.error
+                                  : context.colors.textMuted),
                           const SizedBox(width: 8),
                           Text(
                             '중요 공지 (목록 최상단 고정)',
                             style: AppTextStyles.bodySm.copyWith(
                               color: _isImportant
-                                  ? AppColors.error
-                                  : AppColors.textPrimary,
+                                  ? context.colors.error
+                                  : context.colors.textPrimary,
                               fontWeight: _isImportant
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -304,7 +314,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                           const Spacer(),
                           Switch(
                             value: _isImportant,
-                            activeThumbColor: AppColors.error,
+                            activeThumbColor: context.colors.error,
                             onChanged: (val) =>
                                 setState(() => _isImportant = val),
                           ),
@@ -316,21 +326,29 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                     // 4. 요약문 입력
                     Text('요약문 (선택)',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond)),
+                            .copyWith(color: context.colors.textSecond)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _summaryController,
-                      style: AppTextStyles.bodySm,
+                      style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                       maxLines: 2,
                       decoration: InputDecoration(
                         hintText: '공지사항의 핵심 요약을 간단히 입력하세요',
-                        hintStyle: AppTextStyles.bodyMuted,
+                        hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                         filled: true,
-                        fillColor: AppColors.bgSurface,
+                        fillColor: context.colors.bgSurface,
                         contentPadding: const EdgeInsets.all(12),
-                        border: const OutlineInputBorder(
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.accentWork),
                         ),
                       ),
                     ),
@@ -339,24 +357,32 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                     // 5. 공지 내용 입력
                     Text('공지 본문 *',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond)),
+                            .copyWith(color: context.colors.textSecond)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _contentController,
-                      style: AppTextStyles.bodySm,
+                      style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                       maxLines: 6,
                       validator: (val) => (val == null || val.trim().isEmpty)
                           ? '본문 내용을 입력해 주세요.'
                           : null,
                       decoration: InputDecoration(
                         hintText: '공지사항 상세 내용을 입력하세요',
-                        hintStyle: AppTextStyles.bodyMuted,
+                        hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                         filled: true,
-                        fillColor: AppColors.bgSurface,
+                        fillColor: context.colors.bgSurface,
                         contentPadding: const EdgeInsets.all(12),
-                        border: const OutlineInputBorder(
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.accentWork),
                         ),
                       ),
                     ),
@@ -367,15 +393,15 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                       children: [
                         Text('첨부파일',
                             style: AppTextStyles.caption
-                                .copyWith(color: AppColors.textSecond)),
+                                .copyWith(color: context.colors.textSecond)),
                         const Spacer(),
                         OutlinedButton.icon(
                           onPressed: _pickFiles,
                           icon: const Icon(Icons.attach_file_rounded, size: 14),
                           label: const Text('파일 추가'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.accentWork,
-                            side: const BorderSide(color: AppColors.accentWork),
+                            foregroundColor: context.colors.accentWork,
+                            side: BorderSide(color: context.colors.accentWork),
                             shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.zero),
                             padding: const EdgeInsets.symmetric(
@@ -397,17 +423,17 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: isDeleted
-                                ? AppColors.error.withAlpha(20)
-                                : AppColors.bgSurface,
-                            border: Border.all(color: AppColors.border),
+                                ? context.colors.error.withAlpha(20)
+                                : context.colors.bgSurface,
+                            border: Border.all(color: context.colors.border),
                           ),
                           child: Row(
                             children: [
                               Icon(Icons.insert_drive_file_outlined,
                                   size: 14,
                                   color: isDeleted
-                                      ? AppColors.error
-                                      : AppColors.textMuted),
+                                      ? context.colors.error
+                                      : context.colors.textMuted),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -417,8 +443,8 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                                         ? TextDecoration.lineThrough
                                         : null,
                                     color: isDeleted
-                                        ? AppColors.error
-                                        : AppColors.textPrimary,
+                                        ? context.colors.error
+                                        : context.colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -430,8 +456,8 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                                       : Icons.close_rounded,
                                   size: 16,
                                   color: isDeleted
-                                      ? AppColors.accentWork
-                                      : AppColors.error,
+                                      ? context.colors.accentWork
+                                      : context.colors.error,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -459,25 +485,25 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: context.colors.bgSurface,
                             border:
-                                Border.all(color: AppColors.accentWork.withAlpha(80)),
+                                Border.all(color: context.colors.accentWork.withAlpha(80)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.upload_file_rounded,
-                                  size: 14, color: AppColors.accentWork),
+                              Icon(Icons.upload_file_rounded,
+                                  size: 14, color: context.colors.accentWork),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   file.name,
-                                  style: AppTextStyles.bodySm,
+                                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close_rounded,
-                                    size: 16, color: AppColors.error),
+                                icon: Icon(Icons.close_rounded,
+                                    size: 16, color: context.colors.error),
                                 onPressed: () {
                                   setState(() {
                                     _newFiles.removeAt(idx);
@@ -497,9 +523,9 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
             // ── 하단 제출 버튼 ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                    top: BorderSide(color: AppColors.border, width: 0.8)),
+                    top: BorderSide(color: context.colors.border, width: 0.8)),
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -507,7 +533,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accentWork,
+                    backgroundColor: context.colors.accentWork,
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero),
                   ),
