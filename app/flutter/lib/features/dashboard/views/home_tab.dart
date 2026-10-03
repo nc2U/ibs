@@ -16,13 +16,13 @@ class HomeTab extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pendingCount = ref.watch(pendingApprovalCountProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── 통합 검색 바 (모던 직사각형 스타일) ─────────────────────────
-          InkWell(
+    return Column(
+      children: [
+        // ── 고정된 상단 통합 검색 바 ──────────────────────────────────────
+        Container(
+          color: context.colors.bgPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: InkWell(
             onTap: () => context.go(AppRoutes.search),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -74,8 +74,16 @@ class HomeTab extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+        Divider(color: context.colors.border, height: 1),
 
+        // ── 스크롤 가능한 본문 영역 ─────────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           // ── 01. 업무 관리 (Work Core — Azure Blue) ──────────────────────
           _HeroCard(
             categoryNum: '01',
@@ -175,8 +183,11 @@ class HomeTab extends ConsumerWidget {
             onTap: () => context.go('${AppRoutes.channel}?section=1&tab=0'),
           ),
           const SizedBox(height: 16),
-        ],
-      ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
