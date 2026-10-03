@@ -1536,305 +1536,357 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           ),
           Divider(color: context.colors.border, height: 1),
 
-          // ── 2. 상단 고정 부지 종합 집계 대시보드 ─────────────────────────
-          aggregateAsync.when(
-            loading: () => const SizedBox(
-              height: 70,
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (aggregate) {
-              return Container(
-                color: context.colors.bgCard,
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 헤더: 총 대상부지 면적 및 필지수
-                    Row(
-                      children: [
-                        Icon(Icons.terrain_outlined, size: 13, color: context.colors.textMuted),
-                        const SizedBox(width: 5),
-                        Text(
-                          aggregate.isReturnedArea ? '사업대상 면적(환지)' : '총 대상부지 면적',
-                          style: AppTextStyles.caption.copyWith(
-                            color: context.colors.textMuted,
-                            fontSize: 10.5,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${NumberFormat('#,###.#').format(aggregate.targetTotalArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.targetTotalPyung)}평)',
-                          style: AppTextStyles.titleSm.copyWith(
-                            color: context.colors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '총 ${aggregate.totalSitesCount}필지 / ${aggregate.totalOwnersCount}명',
-                          style: AppTextStyles.caption.copyWith(
-                            color: const Color(0xFF0D9488),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Divider(color: context.colors.border, height: 1),
-                    const SizedBox(height: 7),
-
-                    // 하단 KPI 3종: 계약면적 | 미계약면적 | 확보율(계약율)
-                    Row(
-                      children: [
-                        _KpiItem(
-                          label: '계약면적',
-                          value: '${NumberFormat('#,###.#').format(aggregate.totalContractedArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.totalContractedPyung)}평)',
-                          color: const Color(0xFF10B981),
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '미계약면적',
-                          value: '${NumberFormat('#,###.#').format(aggregate.uncontractedArea)}㎡',
-                          color: context.colors.textSecond,
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '확보율(계약율)',
-                          value: '${aggregate.securedAreaRate.toStringAsFixed(1)}%',
-                          color: aggregate.securedAreaRate >= 100 ? const Color(0xFF10B981) : const Color(0xFF0D9488),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 3. 3대 서브 탭 바 (지번별 토지 / 소유자별 / 매입 계약) ────────────────
-          Container(
-            color: context.colors.bgSurface,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              children: [
-                _SubTabButton(
-                  title: '지번별 토지',
-                  icon: Icons.pin_drop_outlined,
-                  isSelected: currentTab == SiteSubTab.sites,
-                  onTap: () {
-                    ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.sites;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '소유자별',
-                  icon: Icons.person_outline_rounded,
-                  isSelected: currentTab == SiteSubTab.owners,
-                  onTap: () {
-                    ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.owners;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '매입 계약',
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: currentTab == SiteSubTab.contracts,
-                  onTap: () {
-                    ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.contracts;
-                  },
-                ),
-              ],
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 4. 검색창 및 필터 바 ───────────────────────────────────────
-          Container(
-            color: context.colors.bgCard,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: context.colors.bgSurface,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: context.colors.border, width: 0.8),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: _onSearchChanged,
-                          style: AppTextStyles.bodySecond.copyWith(
-                            color: context.colors.textPrimary,
-                            fontSize: 13,
-                          ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: currentTab == SiteSubTab.sites
-                                ? '지번, 행정동, 지목, 소유자 검색...'
-                                : (currentTab == SiteSubTab.owners
-                                    ? '소유자명, 연락처, 지번, 비고 검색...'
-                                    : '매도인(소유자), 은행, 계좌, 메모 검색...'),
-                            hintStyle: AppTextStyles.bodySecond.copyWith(
-                              color: context.colors.textMuted,
-                              fontSize: 12.5,
-                            ),
-                            prefixIcon: Icon(
-                              Icons.search_rounded,
-                              size: 18,
-                              color: context.colors.textMuted,
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 16),
-                                    color: context.colors.textMuted,
-                                    onPressed: _onClearSearch,
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 9),
+          // ── 아래부터 스크롤 가능한 본문 영역 (CustomScrollView) ───────────────
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFF0D9488),
+              onRefresh: () async {
+                ref.invalidate(siteOverallAggregateProvider);
+                _fetchCurrentTabInitial();
+              },
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // A. 부지 종합 집계 대시보드 (스크롤 연동)
+                  SliverToBoxAdapter(
+                    child: aggregateAsync.when(
+                      loading: () => const SizedBox(
+                        height: 70,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Builder(
-                      builder: (context) {
-                        Color btnColor = const Color(0xFF0D9488);
-                        if (currentTab == SiteSubTab.owners) {
-                          btnColor = const Color(0xFF38BDF8);
-                        } else if (currentTab == SiteSubTab.contracts) {
-                          btnColor = const Color(0xFFF59E0B);
-                        }
-
-                        return InkWell(
-                          onTap: _downloadAndShareCurrentTabExcel,
-                          child: Container(
-                            height: 38,
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: btnColor.withAlpha(20),
-                              border: Border.all(color: btnColor.withAlpha(100), width: 0.8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.file_download_outlined, size: 16, color: btnColor),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Excel',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: btnColor,
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (aggregate) {
+                        return Container(
+                          color: context.colors.bgCard,
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // 헤더: 총 대상부지 면적 및 필지수
+                              Row(
+                                children: [
+                                  Icon(Icons.terrain_outlined, size: 13, color: context.colors.textMuted),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    aggregate.isReturnedArea ? '사업대상 면적(환지)' : '총 대상부지 면적',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: context.colors.textMuted,
+                                      fontSize: 10.5,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${NumberFormat('#,###.#').format(aggregate.targetTotalArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.targetTotalPyung)}평)',
+                                    style: AppTextStyles.titleSm.copyWith(
+                                      color: context.colors.textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '총 ${aggregate.totalSitesCount}필지 / ${aggregate.totalOwnersCount}명',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: const Color(0xFF0D9488),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Divider(color: context.colors.border, height: 1),
+                              const SizedBox(height: 7),
+
+                              // 하단 KPI 3종: 계약면적 | 미계약면적 | 확보율(계약율)
+                              Row(
+                                children: [
+                                  _KpiItem(
+                                    label: '계약면적',
+                                    value: '${NumberFormat('#,###.#').format(aggregate.totalContractedArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.totalContractedPyung)}평)',
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '미계약면적',
+                                    value: '${NumberFormat('#,###.#').format(aggregate.uncontractedArea)}㎡',
+                                    color: context.colors.textSecond,
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '확보율(계약율)',
+                                    value: '${aggregate.securedAreaRate.toStringAsFixed(1)}%',
+                                    color: aggregate.securedAreaRate >= 100 ? const Color(0xFF10B981) : const Color(0xFF0D9488),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         );
                       },
                     ),
-                  ],
-                ),
-
-                // 소유자/계약 탭일 때 소유구분 필터 칩 표시
-                if (currentTab != SiteSubTab.sites) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _FilterChipBtn(
-                        label: '전체',
-                        isSelected: ownSortFilter == '',
-                        onTap: () {
-                          ref.read(siteOwnSortFilterProvider.notifier).state = '';
-                          _fetchCurrentTabInitial();
-                        },
-                      ),
-                      const SizedBox(width: 4),
-                      _FilterChipBtn(
-                        label: '개인',
-                        isSelected: ownSortFilter == '1',
-                        onTap: () {
-                          ref.read(siteOwnSortFilterProvider.notifier).state = '1';
-                          _fetchCurrentTabInitial();
-                        },
-                      ),
-                      const SizedBox(width: 4),
-                      _FilterChipBtn(
-                        label: '법인',
-                        isSelected: ownSortFilter == '2',
-                        onTap: () {
-                          ref.read(siteOwnSortFilterProvider.notifier).state = '2';
-                          _fetchCurrentTabInitial();
-                        },
-                      ),
-                      const SizedBox(width: 4),
-                      _FilterChipBtn(
-                        label: '국공유지',
-                        isSelected: ownSortFilter == '3',
-                        onTap: () {
-                          ref.read(siteOwnSortFilterProvider.notifier).state = '3';
-                          _fetchCurrentTabInitial();
-                        },
-                      ),
-                    ],
                   ),
-                ],
-              ],
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
 
-          // ── 5. 탭별 무한 스크롤 목록 뷰 ────────────────────────────────
-          Expanded(
-            child: _buildCurrentTabContent(currentTab),
+                  // B. 3대 서브 탭 바 (상단 제목에 닿으면 고정되는 Sticky Header)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedHeaderDelegate(
+                      height: 50.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.colors.bgSurface,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: context.colors.border,
+                              width: 0.8,
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        child: Row(
+                          children: [
+                            _SubTabButton(
+                              title: '지번별 토지',
+                              icon: Icons.pin_drop_outlined,
+                              isSelected: currentTab == SiteSubTab.sites,
+                              onTap: () {
+                                ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.sites;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '소유자별',
+                              icon: Icons.person_outline_rounded,
+                              isSelected: currentTab == SiteSubTab.owners,
+                              onTap: () {
+                                ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.owners;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '매입 계약',
+                              icon: Icons.receipt_long_outlined,
+                              isSelected: currentTab == SiteSubTab.contracts,
+                              onTap: () {
+                                ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.contracts;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // C. 검색창 및 필터 바 (스크롤 연동)
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        Container(
+                          color: context.colors.bgCard,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: context.colors.bgSurface,
+                                        borderRadius: BorderRadius.zero,
+                                        border: Border.all(color: context.colors.border, width: 0.8),
+                                      ),
+                                      child: TextField(
+                                        controller: _searchController,
+                                        onChanged: _onSearchChanged,
+                                        style: AppTextStyles.bodySecond.copyWith(
+                                          color: context.colors.textPrimary,
+                                          fontSize: 13,
+                                        ),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          hintText: currentTab == SiteSubTab.sites
+                                              ? '지번, 행정동, 지목, 소유자 검색...'
+                                              : (currentTab == SiteSubTab.owners
+                                                  ? '소유자명, 연락처, 지번, 비고 검색...'
+                                                  : '매도인(소유자), 은행, 계좌, 메모 검색...'),
+                                          hintStyle: AppTextStyles.bodySecond.copyWith(
+                                            color: context.colors.textMuted,
+                                            fontSize: 12.5,
+                                          ),
+                                          prefixIcon: Icon(
+                                            Icons.search_rounded,
+                                            size: 18,
+                                            color: context.colors.textMuted,
+                                          ),
+                                          suffixIcon: _searchController.text.isNotEmpty
+                                              ? IconButton(
+                                                  icon: const Icon(Icons.clear_rounded, size: 16),
+                                                  color: context.colors.textMuted,
+                                                  onPressed: _onClearSearch,
+                                                )
+                                              : null,
+                                          border: InputBorder.none,
+                                          contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Builder(
+                                    builder: (context) {
+                                      Color btnColor = const Color(0xFF0D9488);
+                                      if (currentTab == SiteSubTab.owners) {
+                                        btnColor = const Color(0xFF38BDF8);
+                                      } else if (currentTab == SiteSubTab.contracts) {
+                                        btnColor = const Color(0xFFF59E0B);
+                                      }
+
+                                      return InkWell(
+                                        onTap: _downloadAndShareCurrentTabExcel,
+                                        child: Container(
+                                          height: 38,
+                                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                                          decoration: BoxDecoration(
+                                            color: btnColor.withAlpha(20),
+                                            border: Border.all(color: btnColor.withAlpha(100), width: 0.8),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.file_download_outlined, size: 16, color: btnColor),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Excel',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: btnColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              // 소유자/계약 탭일 때 소유구분 필터 칩 표시
+                              if (currentTab != SiteSubTab.sites) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    _FilterChipBtn(
+                                      label: '전체',
+                                      isSelected: ownSortFilter == '',
+                                      onTap: () {
+                                        ref.read(siteOwnSortFilterProvider.notifier).state = '';
+                                        _fetchCurrentTabInitial();
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _FilterChipBtn(
+                                      label: '개인',
+                                      isSelected: ownSortFilter == '1',
+                                      onTap: () {
+                                        ref.read(siteOwnSortFilterProvider.notifier).state = '1';
+                                        _fetchCurrentTabInitial();
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _FilterChipBtn(
+                                      label: '법인',
+                                      isSelected: ownSortFilter == '2',
+                                      onTap: () {
+                                        ref.read(siteOwnSortFilterProvider.notifier).state = '2';
+                                        _fetchCurrentTabInitial();
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _FilterChipBtn(
+                                      label: '국공유지',
+                                      isSelected: ownSortFilter == '3',
+                                      onTap: () {
+                                        ref.read(siteOwnSortFilterProvider.notifier).state = '3';
+                                        _fetchCurrentTabInitial();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Divider(color: context.colors.border, height: 1),
+                      ],
+                    ),
+                  ),
+
+                  // D. 탭별 맞춤 리스트 (Slivers)
+                  _buildCurrentTabSliver(currentTab),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCurrentTabContent(SiteSubTab tab) {
+  Widget _buildCurrentTabSliver(SiteSubTab tab) {
     switch (tab) {
       case SiteSubTab.sites:
-        return _buildSitesListView();
+        return _buildSitesSliver();
       case SiteSubTab.owners:
-        return _buildOwnersListView();
+        return _buildOwnersSliver();
       case SiteSubTab.contracts:
-        return _buildContractsListView();
+        return _buildContractsSliver();
     }
   }
 
-  // 1) 지번별 토지 목록 뷰
-  Widget _buildSitesListView() {
+  // 1) 지번별 토지 목록 Sliver 뷰
+  Widget _buildSitesSliver() {
     final state = ref.watch(siteListProvider);
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488))),
+      );
     }
     if (state.error != null && state.items.isEmpty) {
-      return Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error))),
+      );
     }
     if (state.items.isEmpty) {
-      return Center(child: Text('등록된 사업부지 필지가 없습니다.', style: TextStyle(color: context.colors.textMuted)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('등록된 사업부지 필지가 없습니다.', style: TextStyle(color: context.colors.textMuted))),
+      );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _scrollController,
+    return SliverPadding(
       padding: const EdgeInsets.all(12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (ctx, idx) {
+      sliver: SliverList.separated(
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (ctx, idx) {
         if (idx == state.items.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -2034,31 +2086,41 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
-  // 2) 소유자별 토지 목록 뷰
-  Widget _buildOwnersListView() {
+  // 2) 소유자별 토지 목록 Sliver 뷰
+  Widget _buildOwnersSliver() {
     final state = ref.watch(siteOwnerListProvider);
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8))),
+      );
     }
     if (state.error != null && state.items.isEmpty) {
-      return Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error))),
+      );
     }
     if (state.items.isEmpty) {
-      return Center(child: Text('등록된 토지 소유자가 없습니다.', style: TextStyle(color: context.colors.textMuted)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('등록된 토지 소유자가 없습니다.', style: TextStyle(color: context.colors.textMuted))),
+      );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _scrollController,
+    return SliverPadding(
       padding: const EdgeInsets.all(12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (ctx, idx) {
+      sliver: SliverList.separated(
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (ctx, idx) {
         if (idx == state.items.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -2214,32 +2276,42 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
-  // 3) 사업부지 매입계약 목록 뷰
-  Widget _buildContractsListView() {
+  // 3) 사업부지 매입계약 목록 Sliver 뷰
+  Widget _buildContractsSliver() {
     final state = ref.watch(siteContractListProvider);
     final numFormat = NumberFormat('#,###');
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF59E0B))),
+      );
     }
     if (state.error != null && state.items.isEmpty) {
-      return Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error))),
+      );
     }
     if (state.items.isEmpty) {
-      return Center(child: Text('체결된 사업부지 매입 계약이 없습니다.', style: TextStyle(color: context.colors.textMuted)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('체결된 사업부지 매입 계약이 없습니다.', style: TextStyle(color: context.colors.textMuted))),
+      );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _scrollController,
+    return SliverPadding(
       padding: const EdgeInsets.all(12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (ctx, idx) {
+      sliver: SliverList.separated(
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (ctx, idx) {
         if (idx == state.items.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -2424,10 +2496,35 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   Widget _divider() => Container(width: 1, height: 26, color: context.colors.border);
+}
+
+/// ── 상단 고정 헤더 델리게이트 (SliverPersistentHeader용) ─────────
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _PinnedHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return height != oldDelegate.height || child != oldDelegate.child;
+  }
 }
 
 /// ── 서브 탭 버튼 위젯 (선택 시 명확한 테두리 및 액센트 배경 대비 적용) ─────────
@@ -2462,7 +2559,7 @@ class _SubTabButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.zero,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.5),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
