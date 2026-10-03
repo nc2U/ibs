@@ -1641,7 +1641,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _PinnedHeaderDelegate(
-                      height: 50.0,
+                      height: 52.0,
                       child: Container(
                         decoration: BoxDecoration(
                           color: context.colors.bgSurface,
@@ -1652,7 +1652,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                             ),
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         child: Row(
                           children: [
                             _SubTabButton(
@@ -2558,10 +2558,13 @@ class _SubTabButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.zero,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            height: 38,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
@@ -2569,15 +2572,18 @@ class _SubTabButton extends StatelessWidget {
                   color: isSelected ? activeColor : context.colors.textMuted,
                 ),
                 const SizedBox(width: 5),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? activeColor : context.colors.textSecond,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? activeColor : context.colors.textSecond,
+                      height: 1.15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

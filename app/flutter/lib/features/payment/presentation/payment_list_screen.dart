@@ -1158,10 +1158,18 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _PinnedHeaderDelegate(
-                      height: 49.0,
+                      height: 52.0,
                       child: Container(
-                        color: context.colors.bgSurface,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: context.colors.bgSurface,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: context.colors.border,
+                              width: 0.8,
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         child: Row(
                           children: [
                             _SubTabButton(
@@ -1195,7 +1203,6 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
 
                   // ── 4. 검색창 & 매칭 퀵 필터 (납부내역 & 계약건별 탭에서만 활성화) ──
                   if (currentTab != PaymentSubTab.byInstallment) ...[
@@ -2837,8 +2844,10 @@ class _SubTabButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.zero,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            height: 38,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -2848,15 +2857,18 @@ class _SubTabButton extends StatelessWidget {
                   color: isSelected ? context.colors.accentProject : context.colors.textSecond,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  title,
-                  style: AppTextStyles.caption.copyWith(
-                    color: isSelected ? context.colors.accentProject : context.colors.textSecond,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 11.5,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isSelected ? context.colors.accentProject : context.colors.textSecond,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 12,
+                      height: 1.15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

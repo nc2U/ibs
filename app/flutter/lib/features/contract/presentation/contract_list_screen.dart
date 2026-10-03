@@ -264,7 +264,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _PinnedHeaderDelegate(
-                      height: 49.0,
+                      height: 52.0,
                       child: Container(
                         decoration: BoxDecoration(
                           color: context.colors.bgSurface,
@@ -275,7 +275,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                             ),
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         child: Row(
                           children: [
                             _SubTabButton(
@@ -724,10 +724,13 @@ class _SubTabButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.zero,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            height: 38,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
@@ -737,17 +740,20 @@ class _SubTabButton extends StatelessWidget {
                       : context.colors.textSecond,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  title,
-                  style: AppTextStyles.caption.copyWith(
-                    color: isSelected
-                        ? context.colors.accentProject
-                        : context.colors.textSecond,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 11.5,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isSelected
+                          ? context.colors.accentProject
+                          : context.colors.textSecond,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 12,
+                      height: 1.15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
