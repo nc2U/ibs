@@ -15,7 +15,9 @@ class PaymentRepository {
   PaymentRepository({required this.dio});
 
   /// 1. 수납 총괄 KPI 집계 조회 (/api/v1/ledger/payment-summary/?project={projectId})
-  Future<PaymentOverallAggregateModel?> fetchOverallAggregate(int projectId) async {
+  Future<PaymentOverallAggregateModel?> fetchOverallAggregate(
+    int projectId,
+  ) async {
     try {
       final response = await dio.get(
         '/api/v1/ledger/payment-summary/',
@@ -49,7 +51,9 @@ class PaymentRepository {
           totalUnpaid = totalContractAmt - totalPaid;
         }
 
-        final rate = totalContractAmt > 0 ? (totalPaid / totalContractAmt) * 100 : 0.0;
+        final rate = totalContractAmt > 0
+            ? (totalPaid / totalContractAmt) * 100
+            : 0.0;
 
         return PaymentOverallAggregateModel(
           totalBudget: totalBudget,
@@ -104,8 +108,8 @@ class PaymentRepository {
 
       final List<dynamic> results =
           response.data is Map && response.data.containsKey('results')
-              ? response.data['results']
-              : (response.data is List ? response.data : []);
+          ? response.data['results']
+          : (response.data is List ? response.data : []);
 
       return results
           .map((json) => PaymentTransactionItemModel.fromJson(json))
@@ -116,7 +120,9 @@ class PaymentRepository {
   }
 
   /// 3. 회차별 수납 현황 목록 조회 (/api/v1/ledger/overall-summary/?project={projectId})
-  Future<List<InstallmentStatusItemModel>> fetchInstallmentStatusList(int projectId) async {
+  Future<List<InstallmentStatusItemModel>> fetchInstallmentStatusList(
+    int projectId,
+  ) async {
     try {
       final response = await dio.get(
         '/api/v1/ledger/overall-summary/',
@@ -125,7 +131,9 @@ class PaymentRepository {
 
       if (response.data is Map && response.data.containsKey('pay_orders')) {
         final List<dynamic> list = response.data['pay_orders'];
-        return list.map((json) => InstallmentStatusItemModel.fromJson(json)).toList();
+        return list
+            .map((json) => InstallmentStatusItemModel.fromJson(json))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -151,8 +159,8 @@ class PaymentRepository {
 
       final List<dynamic> results =
           response.data is Map && response.data.containsKey('results')
-              ? response.data['results']
-              : (response.data is List ? response.data : []);
+          ? response.data['results']
+          : (response.data is List ? response.data : []);
 
       return results
           .map((json) => PaymentTransactionItemModel.fromJson(json))
@@ -182,8 +190,8 @@ class PaymentRepository {
 
       final List<dynamic> results =
           response.data is Map && response.data.containsKey('results')
-              ? response.data['results']
-              : (response.data is List ? response.data : []);
+          ? response.data['results']
+          : (response.data is List ? response.data : []);
 
       return results.cast<Map<String, dynamic>>();
     } catch (e) {
@@ -207,9 +215,10 @@ class PaymentRepository {
             {
               'pk': accountingEntryId,
               if (contractId != null) 'contract': contractId,
-              if (installmentOrderId != null) 'installment_order': installmentOrderId,
-            }
-          ]
+              if (installmentOrderId != null)
+                'installment_order': installmentOrderId,
+            },
+          ],
         };
         await dio.patch(
           '/api/v1/ledger/project-composite-transaction/$bankTransactionId/',
@@ -220,14 +229,15 @@ class PaymentRepository {
 
       // 2순위: ContractPayment 직접 PATCH
       final data = <String, dynamic>{};
-      if (contractId != null) data['contract'] = contractId;
-      if (installmentOrderId != null) data['installment_order'] = installmentOrderId;
+      if (contractId != null) {
+        data['contract'] = contractId;
+      }
+      if (installmentOrderId != null) {
+        data['installment_order'] = installmentOrderId;
+      }
 
       if (data.isNotEmpty) {
-        await dio.patch(
-          '/api/v1/ledger/payment/$paymentPk/',
-          data: data,
-        );
+        await dio.patch('/api/v1/ledger/payment/$paymentPk/', data: data);
         return true;
       }
       return false;
@@ -256,9 +266,7 @@ class PaymentRepository {
       final response = await dio.get(
         '/pdf/bill/',
         queryParameters: queryParams,
-        options: Options(
-          responseType: ResponseType.bytes,
-        ),
+        options: Options(responseType: ResponseType.bytes),
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -280,11 +288,13 @@ class PaymentRepository {
 
       final List<dynamic> results =
           response.data is Map && response.data.containsKey('results')
-              ? response.data['results']
-              : (response.data is List ? response.data : []);
+          ? response.data['results']
+          : (response.data is List ? response.data : []);
 
       if (results.isNotEmpty) {
-        return SalesBillIssueModel.fromJson(results.first as Map<String, dynamic>);
+        return SalesBillIssueModel.fromJson(
+          results.first as Map<String, dynamic>,
+        );
       }
       return null;
     } catch (e) {
