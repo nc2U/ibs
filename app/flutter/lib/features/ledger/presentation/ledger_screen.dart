@@ -797,43 +797,47 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                     ),
                   ],
 
-                  // B. 3대 서브 탭 바
-                  SliverToBoxAdapter(
-                    child: Container(
-                      color: context.colors.bgSurface,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      child: Row(
-                        children: [
-                          _SubTabButton(
-                            title: '출납 내역',
-                            icon: Icons.receipt_outlined,
-                            isSelected: currentTab == LedgerSubTab.transactions,
-                            onTap: () {
-                              ref.read(ledgerCurrentSubTabProvider.notifier).state =
-                                  LedgerSubTab.transactions;
-                            },
-                          ),
-                          const SizedBox(width: 6),
-                          _SubTabButton(
-                            title: '계좌별 잔액',
-                            icon: Icons.account_balance_outlined,
-                            isSelected: currentTab == LedgerSubTab.balanceStatus,
-                            onTap: () {
-                              ref.read(ledgerCurrentSubTabProvider.notifier).state =
-                                  LedgerSubTab.balanceStatus;
-                            },
-                          ),
-                          const SizedBox(width: 6),
-                          _SubTabButton(
-                            title: '전도금 정산',
-                            icon: Icons.business_center_outlined,
-                            isSelected: currentTab == LedgerSubTab.imprest,
-                            onTap: () {
-                              ref.read(ledgerCurrentSubTabProvider.notifier).state =
-                                  LedgerSubTab.imprest;
-                            },
-                          ),
-                        ],
+                  // B. 3대 서브 탭 바 (상단 고정 Sticky Header)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedHeaderDelegate(
+                      height: 49.0,
+                      child: Container(
+                        color: context.colors.bgSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        child: Row(
+                          children: [
+                            _SubTabButton(
+                              title: '출납 내역',
+                              icon: Icons.receipt_outlined,
+                              isSelected: currentTab == LedgerSubTab.transactions,
+                              onTap: () {
+                                ref.read(ledgerCurrentSubTabProvider.notifier).state =
+                                    LedgerSubTab.transactions;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '계좌별 잔액',
+                              icon: Icons.account_balance_outlined,
+                              isSelected: currentTab == LedgerSubTab.balanceStatus,
+                              onTap: () {
+                                ref.read(ledgerCurrentSubTabProvider.notifier).state =
+                                    LedgerSubTab.balanceStatus;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '전도금 정산',
+                              icon: Icons.business_center_outlined,
+                              isSelected: currentTab == LedgerSubTab.imprest,
+                              onTap: () {
+                                ref.read(ledgerCurrentSubTabProvider.notifier).state =
+                                    LedgerSubTab.imprest;
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1985,5 +1989,28 @@ class _DatePresetChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _PinnedHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return height != oldDelegate.height || child != oldDelegate.child;
   }
 }
