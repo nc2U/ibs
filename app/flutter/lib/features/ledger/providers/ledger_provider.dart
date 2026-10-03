@@ -7,7 +7,7 @@ import '../data/models/ledger_models.dart';
 enum LedgerSubTab {
   transactions, // 💳 입출금 출납내역
   balanceStatus, // 🏦 계좌별 잔액현황
-  imprest,      // 💼 현장 전도금 관리
+  imprest,      // 💼 프로젝트 전도금/운영비 관리
 }
 
 /// 현재 선택된 서브 탭
@@ -72,6 +72,17 @@ final ledgerBalanceByAccountProvider =
 
   final repository = ref.watch(ledgerRepositoryProvider);
   return repository.fetchBalanceByAccount(selectedProject.realProjectId);
+});
+
+/// 프로젝트 전도금/운영비 계좌 목록 프로바이더 (운영비, 전도금 키워드 필터링)
+final ledgerImprestAccountsProvider =
+    Provider.autoDispose<AsyncValue<List<ProjectBalanceByAccountModel>>>((ref) {
+  final balancesAsync = ref.watch(ledgerBalanceByAccountProvider);
+  return balancesAsync.whenData((items) {
+    return items
+        .where((i) => i.bankAcc.contains('운영비') || i.bankAcc.contains('전도금'))
+        .toList();
+  });
 });
 
 /// ── 1. 프로젝트 거래 전표 무한 스크롤 Notifier ──────────────────────────────
@@ -269,4 +280,3 @@ final monthlyCashflowChartProvider =
 
   return monthlyMap.values.toList();
 });
-
