@@ -35,14 +35,12 @@ class PaymentListScreen extends ConsumerStatefulWidget {
 class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _transactionsScrollController = ScrollController();
-  final ScrollController _contractsScrollController = ScrollController();
   Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _transactionsScrollController.addListener(_onTransactionsScroll);
-    _contractsScrollController.addListener(_onContractsScroll);
 
     // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,21 +59,21 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     _debounceTimer?.cancel();
     _searchController.dispose();
     _transactionsScrollController.dispose();
-    _contractsScrollController.dispose();
     super.dispose();
   }
 
   void _onTransactionsScroll() {
     if (_transactionsScrollController.position.pixels >=
         _transactionsScrollController.position.maxScrollExtent - 200) {
-      ref.read(paymentTransactionsProvider.notifier).fetchNextPage();
-    }
-  }
-
-  void _onContractsScroll() {
-    if (_contractsScrollController.position.pixels >=
-        _contractsScrollController.position.maxScrollExtent - 200) {
-      ref.read(validContractListProvider.notifier).fetchNextPage();
+      final currentTab = ref.read(paymentCurrentSubTabProvider);
+      if (currentTab == PaymentSubTab.transactions) {
+        ref.read(paymentTransactionsProvider.notifier).fetchNextPage();
+      } else if (currentTab == PaymentSubTab.byContract) {
+        final selectedContract = ref.read(selectedContractForPaymentProvider);
+        if (selectedContract == null) {
+          ref.read(validContractListProvider.notifier).fetchNextPage();
+        }
+      }
     }
   }
 
@@ -1038,653 +1036,712 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
           ),
           Divider(color: context.colors.border, height: 1),
 
-          // ── 2. KPI 대시보드 (수납 현황 요약 배너) ───────────────────────────
-          aggregateAsync.when(
-            loading: () => const SizedBox(
-              height: 112,
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (aggregate) {
-              if (aggregate == null) return const SizedBox.shrink();
-
-              final salesRate = aggregate.totalBudget > 0
-                  ? (aggregate.totalContractAmount / aggregate.totalBudget * 100).toStringAsFixed(1)
-                  : '-';
-              final payRate = aggregate.totalContractAmount > 0
-                  ? (aggregate.totalPaidAmount / aggregate.totalContractAmount * 100).toStringAsFixed(1)
-                  : '-';
-
-              return Container(
-                color: context.colors.bgCard,
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── 헤더행: 총 매출예산 (A) ────────────────────────
-                    Row(
-                      children: [
-                        Icon(Icons.account_balance_outlined, size: 13, color: context.colors.textMuted),
-                        const SizedBox(width: 5),
-                        Text(
-                          '총 매출예산 (A)',
-                          style: AppTextStyles.caption.copyWith(
-                            color: context.colors.textMuted,
-                            fontSize: 10.5,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatToBillion(aggregate.totalBudget),
-                          style: AppTextStyles.titleSm.copyWith(
-                            color: context.colors.textPrimary,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Divider(color: context.colors.border, height: 1),
-                    const SizedBox(height: 7),
-                    // ── 분양 행: 총분양금액(B) | 미분양금액(A-B) | 분양율 ──
-                    Row(
-                      children: [
-                        _KpiItem(
-                          label: '총 분양금액 (B)',
-                          value: _formatToBillion(aggregate.totalContractAmount),
-                          color: const Color(0xFF38BDF8),
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '미분양금액 (A-B)',
-                          value: _formatToBillion(aggregate.unsoldAmount),
-                          color: context.colors.textSecond,
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '분양율',
-                          value: '$salesRate%',
-                          color: const Color(0xFF38BDF8),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 7),
-                    Divider(color: context.colors.border, height: 1),
-                    const SizedBox(height: 7),
-                    // ── 수납 행: 총수납금액(C) | 미수납금액(B-C) | 수납율 ──
-                    Row(
-                      children: [
-                        _KpiItem(
-                          label: '총 수납금액 (C)',
-                          value: _formatToBillion(aggregate.totalPaidAmount),
-                          color: const Color(0xFF10B981),
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '미수납금액 (B-C)',
-                          value: _formatToBillion(aggregate.totalUnpaidAmount),
-                          color: const Color(0xFFF59E0B),
-                        ),
-                        _divider(),
-                        _KpiItem(
-                          label: '수납율',
-                          value: '$payRate%',
-                          color: const Color(0xFF818CF8),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 3. 3대 서브 탭 바 ──────────────────────────────────────────
-          Container(
-            color: context.colors.bgSurface,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              children: [
-                _SubTabButton(
-                  title: '납부 내역',
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: currentTab == PaymentSubTab.transactions,
-                  onTap: () {
-                    ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.transactions;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '계약건별 납부',
-                  icon: Icons.person_search_outlined,
-                  isSelected: currentTab == PaymentSubTab.byContract,
-                  onTap: () {
-                    ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.byContract;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '회차별 현황',
-                  icon: Icons.bar_chart_rounded,
-                  isSelected: currentTab == PaymentSubTab.byInstallment,
-                  onTap: () {
-                    ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.byInstallment;
-                  },
-                ),
-              ],
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 4. 검색창 & 매칭 퀵 필터 (납부내역 & 계약건별 탭에서 활성화) ─────────
-          if (currentTab != PaymentSubTab.byInstallment) ...[
-            Container(
-              color: context.colors.bgCard,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                children: [
-                  Container(
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: context.colors.bgSurface,
-                      borderRadius: BorderRadius.zero,
-                      border: Border.all(color: context.colors.border, width: 0.8),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      style: AppTextStyles.bodySecond.copyWith(
-                        color: context.colors.textPrimary,
-                        fontSize: 13,
+          // ── 헤더 아래 전체를 CustomScrollView로 스크롤 가능하게 구성 ──────────────
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFF10B981),
+              onRefresh: () async {
+                ref.invalidate(paymentOverallAggregateProvider);
+                ref.invalidate(installmentStatusListProvider);
+                ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+                ref.read(validContractListProvider.notifier).fetchInitial();
+              },
+              child: CustomScrollView(
+                controller: _transactionsScrollController,
+                slivers: [
+                  // ── 2. KPI 대시보드 – 스크롤과 함께 올라감 ─────────────────────
+                  SliverToBoxAdapter(
+                    child: aggregateAsync.when(
+                      loading: () => const SizedBox(
+                        height: 112,
+                        child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
                       ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: currentTab == PaymentSubTab.transactions
-                            ? '입금자명, 계약자명, 동·호수, 계좌 검색...'
-                            : '계약자명, 동·호수, 연락처, 일련번호 검색...',
-                        hintStyle: AppTextStyles.bodySecond.copyWith(
-                          color: context.colors.textMuted,
-                          fontSize: 12.5,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          size: 18,
-                          color: context.colors.textMuted,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 16),
-                                color: context.colors.textMuted,
-                                onPressed: _onClearSearch,
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 9),
-                      ),
-                    ),
-                  ),
-                  // 납부 내역 탭 전용: 계약/회차 미매칭 퀵 필터 칩 바
-                  if (currentTab == PaymentSubTab.transactions) ...[
-                    const SizedBox(height: 8),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final currentFilter = ref.watch(paymentMatchFilterProvider);
-                        return Row(
-                          children: [
-                            _MatchFilterChip(
-                              label: '전체',
-                              isSelected: currentFilter == PaymentMatchFilter.all,
-                              onTap: () {
-                                ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.all;
-                                ref.read(paymentTransactionsProvider.notifier).fetchInitial();
-                              },
-                            ),
-                            const SizedBox(width: 6),
-                            _MatchFilterChip(
-                              label: '계약 미매칭',
-                              badgeColor: const Color(0xFFF59E0B),
-                              isSelected: currentFilter == PaymentMatchFilter.noContract,
-                              onTap: () {
-                                ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.noContract;
-                                ref.read(paymentTransactionsProvider.notifier).fetchInitial();
-                              },
-                            ),
-                            const SizedBox(width: 6),
-                            _MatchFilterChip(
-                              label: '회차 미지정',
-                              badgeColor: const Color(0xFFEF4444),
-                              isSelected: currentFilter == PaymentMatchFilter.noInstall,
-                              onTap: () {
-                                ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.noInstall;
-                                ref.read(paymentTransactionsProvider.notifier).fetchInitial();
-                              },
-                            ),
-                          ],
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (aggregate) {
+                        if (aggregate == null) return const SizedBox.shrink();
+
+                        final salesRate = aggregate.totalBudget > 0
+                            ? (aggregate.totalContractAmount / aggregate.totalBudget * 100).toStringAsFixed(1)
+                            : '-';
+                        final payRate = aggregate.totalContractAmount > 0
+                            ? (aggregate.totalPaidAmount / aggregate.totalContractAmount * 100).toStringAsFixed(1)
+                            : '-';
+
+                        return Container(
+                          color: context.colors.bgCard,
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ── 헤더행: 총 매출예산 (A) ────────────────────────
+                              Row(
+                                children: [
+                                  Icon(Icons.account_balance_outlined, size: 13, color: context.colors.textMuted),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '총 매출예산 (A)',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: context.colors.textMuted,
+                                      fontSize: 10.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatToBillion(aggregate.totalBudget),
+                                    style: AppTextStyles.titleSm.copyWith(
+                                      color: context.colors.textPrimary,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Divider(color: context.colors.border, height: 1),
+                              const SizedBox(height: 7),
+                              // ── 분양 행: 총분양금액(B) | 미분양금액(A-B) | 분양율 ──
+                              Row(
+                                children: [
+                                  _KpiItem(
+                                    label: '총 분양금액 (B)',
+                                    value: _formatToBillion(aggregate.totalContractAmount),
+                                    color: const Color(0xFF38BDF8),
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '미분양금액 (A-B)',
+                                    value: _formatToBillion(aggregate.unsoldAmount),
+                                    color: context.colors.textSecond,
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '분양율',
+                                    value: '$salesRate%',
+                                    color: const Color(0xFF38BDF8),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 7),
+                              Divider(color: context.colors.border, height: 1),
+                              const SizedBox(height: 7),
+                              // ── 수납 행: 총수납금액(C) | 미수납금액(B-C) | 수납율 ──
+                              Row(
+                                children: [
+                                  _KpiItem(
+                                    label: '총 수납금액 (C)',
+                                    value: _formatToBillion(aggregate.totalPaidAmount),
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '미수납금액 (B-C)',
+                                    value: _formatToBillion(aggregate.totalUnpaidAmount),
+                                    color: const Color(0xFFF59E0B),
+                                  ),
+                                  _divider(),
+                                  _KpiItem(
+                                    label: '수납율',
+                                    value: '$payRate%',
+                                    color: const Color(0xFF818CF8),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
+                  ),
+                  SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
+
+                  // ── 3. 탭 바 – 스크롤 시 상단에 고정(sticky) ─────────────────
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedHeaderDelegate(
+                      height: 49.0,
+                      child: Container(
+                        color: context.colors.bgSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        child: Row(
+                          children: [
+                            _SubTabButton(
+                              title: '납부 내역',
+                              icon: Icons.receipt_long_outlined,
+                              isSelected: currentTab == PaymentSubTab.transactions,
+                              onTap: () {
+                                ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.transactions;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '계약건별 납부',
+                              icon: Icons.person_search_outlined,
+                              isSelected: currentTab == PaymentSubTab.byContract,
+                              onTap: () {
+                                ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.byContract;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '회차별 현황',
+                              icon: Icons.bar_chart_rounded,
+                              isSelected: currentTab == PaymentSubTab.byInstallment,
+                              onTap: () {
+                                ref.read(paymentCurrentSubTabProvider.notifier).state = PaymentSubTab.byInstallment;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
+
+                  // ── 4. 검색창 & 매칭 퀵 필터 (납부내역 & 계약건별 탭에서만 활성화) ──
+                  if (currentTab != PaymentSubTab.byInstallment) ...[
+                    SliverToBoxAdapter(
+                      child: Container(
+                        color: context.colors.bgCard,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: context.colors.bgSurface,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(color: context.colors.border, width: 0.8),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: _onSearchChanged,
+                                style: AppTextStyles.bodySecond.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 13,
+                                ),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: currentTab == PaymentSubTab.transactions
+                                      ? '입금자명, 계약자명, 동·호수, 계좌 검색...'
+                                      : '계약자명, 동·호수, 연락처, 일련번호 검색...',
+                                  hintStyle: AppTextStyles.bodySecond.copyWith(
+                                    color: context.colors.textMuted,
+                                    fontSize: 12.5,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    size: 18,
+                                    color: context.colors.textMuted,
+                                  ),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear_rounded, size: 16),
+                                          color: context.colors.textMuted,
+                                          onPressed: _onClearSearch,
+                                        )
+                                      : null,
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                                ),
+                              ),
+                            ),
+                            // 납부 내역 탭 전용: 계약/회차 미매칭 퀵 필터 칩 바
+                            if (currentTab == PaymentSubTab.transactions) ...[
+                              const SizedBox(height: 8),
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final currentFilter = ref.watch(paymentMatchFilterProvider);
+                                  return Row(
+                                    children: [
+                                      _MatchFilterChip(
+                                        label: '전체',
+                                        isSelected: currentFilter == PaymentMatchFilter.all,
+                                        onTap: () {
+                                          ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.all;
+                                          ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+                                        },
+                                      ),
+                                      const SizedBox(width: 6),
+                                      _MatchFilterChip(
+                                        label: '계약 미매칭',
+                                        badgeColor: const Color(0xFFF59E0B),
+                                        isSelected: currentFilter == PaymentMatchFilter.noContract,
+                                        onTap: () {
+                                          ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.noContract;
+                                          ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+                                        },
+                                      ),
+                                      const SizedBox(width: 6),
+                                      _MatchFilterChip(
+                                        label: '회차 미지정',
+                                        badgeColor: const Color(0xFFEF4444),
+                                        isSelected: currentFilter == PaymentMatchFilter.noInstall,
+                                        onTap: () {
+                                          ref.read(paymentMatchFilterProvider.notifier).state = PaymentMatchFilter.noInstall;
+                                          ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
                   ],
+
+                  // ── 5. 탭별 맞춤 콘텐츠 (Slivers) ──
+                  ...switch (currentTab) {
+                    PaymentSubTab.transactions => _buildTransactionsSlivers(),
+                    PaymentSubTab.byContract => _buildByContractSlivers(),
+                    PaymentSubTab.byInstallment => _buildByInstallmentSlivers(),
+                  },
                 ],
               ),
             ),
-            Divider(color: context.colors.border, height: 1),
-          ],
-
-          // ── 5. 탭별 맞춤 리스트 ────────────────────────────────────────
-          Expanded(
-            child: switch (currentTab) {
-              PaymentSubTab.transactions => _buildTransactionsView(),
-              PaymentSubTab.byContract => _buildByContractView(),
-              PaymentSubTab.byInstallment => _buildByInstallmentView(),
-            },
           ),
         ],
       ),
     );
   }
 
-  /// 💰 1. 납부 내역 목록 뷰 (실시간 입금 거래 단위)
-  Widget _buildTransactionsView() {
+  /// 💰 1. 납부 내역 목록 Slivers
+  List<Widget> _buildTransactionsSlivers() {
     final state = ref.watch(paymentTransactionsProvider);
     final numFormat = NumberFormat('#,###');
 
     if (state.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: context.colors.accentProject,
+      return [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF10B981),
+            ),
+          ),
         ),
-      );
+      ];
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return Center(
-        child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
-      );
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+          ),
+        ),
+      ];
     }
 
     if (state.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              '조회된 수납 입금 내역이 없습니다.',
-              style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
+                const SizedBox(height: 12),
+                Text(
+                  '조회된 수납 입금 내역이 없습니다.',
+                  style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      );
+      ];
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _transactionsScrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, index) {
-        if (index == state.items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Center(
-              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-          );
-        }
-
-        final item = state.items[index];
-        final bool isUnmatched = item.isContractUnmatched || item.isInstallmentUnmatched;
-        final Color cardBorderColor = item.isContractUnmatched
-            ? const Color(0xFFF59E0B).withAlpha(160)
-            : (item.isInstallmentUnmatched
-                ? const Color(0xFFEF4444).withAlpha(160)
-                : context.colors.textDisabled.withAlpha(180));
-
-        return Container(
-          decoration: BoxDecoration(
-            color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: cardBorderColor,
-              width: isUnmatched ? 1.4 : 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isUnmatched
-                    ? (item.isContractUnmatched
-                        ? const Color(0xFFF59E0B).withAlpha(15)
-                        : const Color(0xFFEF4444).withAlpha(15))
-                    : Colors.black.withAlpha(12),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _showTransactionDetailBottomSheet(item),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 카드 상단 헤더
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    color: item.isContractUnmatched
-                        ? const Color(0xFFF59E0B).withAlpha(16)
-                        : (item.isInstallmentUnmatched
-                            ? const Color(0xFFEF4444).withAlpha(14)
-                            : context.colors.bgSurface),
-                    child: Row(
-                      children: [
-                        if (item.isContractUnmatched) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: const Text(
-                              '계약 미매칭',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ] else if (item.unitTypeName != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: item.typeBadgeBgColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Text(
-                              item.unitTypeName!,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: item.typeBadgeTextColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Text(
-                            item.unitStr ?? '-',
-                            style: AppTextStyles.titleSm.copyWith(
-                              color: item.isContractUnmatched
-                                  ? const Color(0xFFD97706)
-                                  : context.colors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ),
-                        if (item.isInstallmentUnmatched) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444).withAlpha(25),
-                              border: Border.all(color: const Color(0xFFEF4444).withAlpha(120), width: 0.7),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: const Text(
-                              '회차 미지정',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFEF4444),
-                              ),
-                            ),
-                          ),
-                        ] else ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withAlpha(20),
-                              border: Border.all(color: const Color(0xFF10B981).withAlpha(80), width: 0.6),
-                            ),
-                            child: Text(
-                              item.payName ?? '수납',
-                              style: const TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF10B981),
-                              ),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(width: 4),
-                        Icon(Icons.more_vert_rounded, size: 18, color: context.colors.textMuted),
-                      ],
-                    ),
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (ctx, index) {
+              if (index == state.items.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
-                  Divider(color: context.colors.border, height: 1),
+                );
+              }
 
-                  // 카드 본문
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.contractorName ?? (item.trader ?? '입금자 미상'),
-                                    style: AppTextStyles.titleSm.copyWith(
-                                      color: context.colors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14.5,
+              final item = state.items[index];
+              final bool isUnmatched = item.isContractUnmatched || item.isInstallmentUnmatched;
+              final Color cardBorderColor = item.isContractUnmatched
+                  ? const Color(0xFFF59E0B).withAlpha(160)
+                  : (item.isInstallmentUnmatched
+                      ? const Color(0xFFEF4444).withAlpha(160)
+                      : context.colors.textDisabled.withAlpha(180));
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.colors.bgCard,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(
+                      color: cardBorderColor,
+                      width: isUnmatched ? 1.4 : 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isUnmatched
+                            ? (item.isContractUnmatched
+                                ? const Color(0xFFF59E0B).withAlpha(15)
+                                : const Color(0xFFEF4444).withAlpha(15))
+                            : Colors.black.withAlpha(12),
+                        offset: const Offset(0, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showTransactionDetailBottomSheet(item),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 카드 상단 헤더
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            color: item.isContractUnmatched
+                                ? const Color(0xFFF59E0B).withAlpha(16)
+                                : (item.isInstallmentUnmatched
+                                    ? const Color(0xFFEF4444).withAlpha(14)
+                                    : context.colors.bgSurface),
+                            child: Row(
+                              children: [
+                                if (item.isContractUnmatched) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF59E0B),
+                                      borderRadius: BorderRadius.circular(2),
                                     ),
-                                  ),
-                                  if (item.isContractUnmatched && item.trader != null && item.trader!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '통장 표시: ${item.trader}',
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: const Color(0xFFD97706),
-                                        fontSize: 11,
+                                    child: const Text(
+                                      '계약 미매칭',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                ] else if (item.unitTypeName != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: item.typeBadgeBgColor,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: Text(
+                                      item.unitTypeName!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: item.typeBadgeTextColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                 ],
-                              ),
-                            ),
-                            Text(
-                              '입금일: ${item.dealDate}',
-                              style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          color: context.colors.bgSurface,
-                          child: Row(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('수납 금액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${numFormat.format(item.amount)}원',
+                                Expanded(
+                                  child: Text(
+                                    item.unitStr ?? '-',
                                     style: AppTextStyles.titleSm.copyWith(
-                                      color: const Color(0xFF10B981),
+                                      color: item.isContractUnmatched
+                                          ? const Color(0xFFD97706)
+                                          : context.colors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13.5,
                                     ),
                                   ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text('수납 계좌', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item.bankAccountName ?? '수납계좌',
-                                    style: AppTextStyles.bodySecond.copyWith(
-                                      color: context.colors.textPrimary,
-                                      fontSize: 11.5,
+                                ),
+                                if (item.isInstallmentUnmatched) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444).withAlpha(25),
+                                      border: Border.all(color: const Color(0xFFEF4444).withAlpha(120), width: 0.7),
+                                      borderRadius: BorderRadius.circular(2),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    child: const Text(
+                                      '회차 미지정',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFEF4444),
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withAlpha(20),
+                                      border: Border.all(color: const Color(0xFF10B981).withAlpha(80), width: 0.6),
+                                    ),
+                                    child: Text(
+                                      item.payName ?? '수납',
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF10B981),
+                                      ),
+                                    ),
                                   ),
                                 ],
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Icon(Icons.more_vert_rounded, size: 18, color: context.colors.textMuted),
+                              ],
+                            ),
                           ),
-                        ),
-                        if (isUnmatched) ...[
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: item.isContractUnmatched ? const Color(0xFFD97706) : const Color(0xFF0284C7),
-                                side: BorderSide(
-                                  color: item.isContractUnmatched ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
-                                  width: 1,
+                          Divider(color: context.colors.border, height: 1),
+
+                          // 카드 본문
+                          Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.contractorName ?? (item.trader ?? '입금자 미상'),
+                                            style: AppTextStyles.titleSm.copyWith(
+                                              color: context.colors.textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14.5,
+                                            ),
+                                          ),
+                                          if (item.isContractUnmatched && item.trader != null && item.trader!.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '통장 표시: ${item.trader}',
+                                              style: AppTextStyles.caption.copyWith(
+                                                color: const Color(0xFFD97706),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '입금일: ${item.dealDate}',
+                                      style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
+                                    ),
+                                  ],
                                 ),
-                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                                padding: const EdgeInsets.symmetric(vertical: 7),
-                              ),
-                              onPressed: () => _showMatchContractBottomSheet(item),
-                              icon: Icon(
-                                item.isContractUnmatched ? Icons.link_rounded : Icons.edit_calendar_outlined,
-                                size: 15,
-                              ),
-                              label: Text(
-                                item.isContractUnmatched ? '계약 건 즉시 매칭' : '납부 회차 지정',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  color: context.colors.bgSurface,
+                                  child: Row(
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('수납 금액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${numFormat.format(item.amount)}원',
+                                            style: AppTextStyles.titleSm.copyWith(
+                                              color: const Color(0xFF10B981),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Spacer(),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text('수납 계좌', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            item.bankAccountName ?? '수납계좌',
+                                            style: AppTextStyles.bodySecond.copyWith(
+                                              color: context.colors.textPrimary,
+                                              fontSize: 11.5,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isUnmatched) ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: item.isContractUnmatched ? const Color(0xFFD97706) : const Color(0xFF0284C7),
+                                        side: BorderSide(
+                                          color: item.isContractUnmatched ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8),
+                                          width: 1,
+                                        ),
+                                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                        padding: const EdgeInsets.symmetric(vertical: 7),
+                                      ),
+                                      onPressed: () => _showMatchContractBottomSheet(item),
+                                      icon: Icon(
+                                        item.isContractUnmatched ? Icons.link_rounded : Icons.edit_calendar_outlined,
+                                        size: 15,
+                                      ),
+                                      label: Text(
+                                        item.isContractUnmatched ? '계약 건 즉시 매칭' : '납부 회차 지정',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ],
-                      ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            childCount: itemCount,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  /// 📋 2. 계약건별 납부내역 Slivers
+  List<Widget> _buildByContractSlivers() {
+    final selectedContract = ref.watch(selectedContractForPaymentProvider);
+
+    if (selectedContract != null) {
+      return _buildSelectedContractPaymentSlivers(selectedContract);
+    }
+
+    return _buildContractSelectionListSlivers();
+  }
+
+  List<Widget> _buildContractSelectionListSlivers() {
+    final searchQuery = ref.watch(contractSearchQueryProvider);
+    final state = ref.watch(validContractListProvider);
+
+    if (searchQuery.trim().isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.colors.accentProject.withAlpha(15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person_search_outlined,
+                      size: 48,
+                      color: context.colors.accentProject,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '조회할 계약자를 검색해 주세요',
+                    style: AppTextStyles.titleSm.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '상단 검색창에 계약자명, 동·호수 또는 일련번호를\n입력하면 해당 계약자의 납부 내역이 표시됩니다.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodySecond.copyWith(
+                      color: context.colors.textMuted,
+                      fontSize: 13,
+                      height: 1.4,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  /// 📋 2. 계약건별 납부내역 뷰 (선택된 계약자 상세 수납 뷰 또는 계약자 선택 목록)
-  Widget _buildByContractView() {
-    final selectedContract = ref.watch(selectedContractForPaymentProvider);
-
-    if (selectedContract != null) {
-      return _buildSelectedContractPaymentView(selectedContract);
+        ),
+      ];
     }
 
-    return _buildContractSelectionListView();
-  }
+    if (state.isLoading) {
+      return [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981))),
+        ),
+      ];
+    }
 
-  /// 🔍 2-A. 계약자 선택 안내 및 검색 결과 뷰 (계약자가 아직 선택되지 않은 상태)
-  Widget _buildContractSelectionListView() {
-    final searchQuery = ref.watch(contractSearchQueryProvider);
-    final state = ref.watch(validContractListProvider);
+    if (state.error != null && state.items.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Text('검색 실패: ${state.error}', style: TextStyle(color: context.colors.error))),
+        ),
+      ];
+    }
 
-    // 검색어가 없는 초기 상태: 계약자 검색 안내 UI만 제공
-    if (searchQuery.trim().isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.colors.accentProject.withAlpha(15),
-                  shape: BoxShape.circle,
+    if (state.items.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
+                const SizedBox(height: 12),
+                Text(
+                  '\'$searchQuery\' 검색 결과와 일치하는 계약이 없습니다.',
+                  style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
                 ),
-                child: Icon(
-                  Icons.person_search_outlined,
-                  size: 48,
-                  color: context.colors.accentProject,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '조회할 계약자를 검색해 주세요',
-                style: AppTextStyles.titleSm.copyWith(
-                  color: context.colors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '상단 검색창에 계약자명, 동·호수 또는 일련번호를\n입력하면 해당 계약자의 납부 내역이 표시됩니다.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodySecond.copyWith(
-                  color: context.colors.textMuted,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      );
-    }
-
-    // 검색 중 로딩
-    if (state.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.accentProject),
-      );
-    }
-
-    // 검색 에러
-    if (state.error != null && state.items.isEmpty) {
-      return Center(child: Text('검색 실패: ${state.error}', style: TextStyle(color: context.colors.error)));
-    }
-
-    // 검색 결과 없음
-    if (state.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              '\'$searchQuery\' 검색 결과와 일치하는 계약이 없습니다.',
-              style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
-            ),
-          ],
-        ),
-      );
+      ];
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return Column(
-      children: [
-        // 상단 안내 배너
-        Container(
+    return [
+      SliverToBoxAdapter(
+        child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: context.colors.bgSurface,
@@ -1701,16 +1758,13 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             ],
           ),
         ),
-        Divider(color: context.colors.border, height: 1),
-
-        // 검색된 계약 목록
-        Expanded(
-          child: ListView.separated(
-            controller: _contractsScrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            itemCount: itemCount,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (ctx, index) {
+      ),
+      SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (ctx, index) {
               if (index == state.items.length) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
@@ -1719,771 +1773,782 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
               }
 
               final item = state.items[index];
-              return _ByContractPaymentCard(
-                contract: item,
-                onSelect: () {
-                  ref.read(selectedContractForPaymentProvider.notifier).state = item;
-                },
-                onCall: () => _makePhoneCall(
-                  item.contractor?.contact?.cellPhone,
-                  contractorName: item.contractor?.name,
-                  unitStr: item.displayUnit,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ByContractPaymentCard(
+                  contract: item,
+                  onSelect: () {
+                    ref.read(selectedContractForPaymentProvider.notifier).state = item;
+                  },
+                  onCall: () => _makePhoneCall(
+                    item.contractor?.contact?.cellPhone,
+                    contractorName: item.contractor?.name,
+                    unitStr: item.displayUnit,
+                  ),
                 ),
               );
             },
+            childCount: itemCount,
           ),
         ),
-      ],
-    );
+      ),
+    ];
   }
 
-  /// 👤 2-B. 선택된 계약자의 전체 수납 내역 상세 뷰
-  Widget _buildSelectedContractPaymentView(ContractItemModel contract) {
+  List<Widget> _buildSelectedContractPaymentSlivers(ContractItemModel contract) {
     final paymentsAsync = ref.watch(paymentsByContractProvider);
     final numFormat = NumberFormat('#,###');
     final contractor = contract.contractor;
 
-    return CustomScrollView(
-      slivers: [
-        // ── 1. 상단 고정영역 통합: 프로필 + 금액 요약 + 문서 발급/기준회차 (SliverToBoxAdapter) ──
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                color: context.colors.bgCard,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // (1) 헤더: 차수, 타입, 계약자명 (동·호수), 전화, 계약자 변경
-                    Row(
-                      children: [
-                        if (contract.orderGroupName != null && contract.orderGroupName!.isNotEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4F46E5), // 인디고 솔리드 배경으로 확실한 시인성 확보
-                              borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF4F46E5).withAlpha(40),
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              contract.orderGroupName!,
-                              style: const TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white, // 흰색 볼드 글씨로 선명하게
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                        ],
+    return [
+      SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              color: context.colors.bgCard,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (contract.orderGroupName != null && contract.orderGroupName!.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: contract.parsedTypeColor,
+                            color: const Color(0xFF4F46E5),
                             borderRadius: BorderRadius.circular(2),
-                            border: Border.all(color: contract.typeBorderColor, width: 0.8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4F46E5).withAlpha(40),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                           ),
                           child: Text(
-                            contract.unitTypeName ?? '타입',
-                            style: TextStyle(
+                            contract.orderGroupName!,
+                            style: const TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
-                              color: contract.typeTextColor,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            '${contractor?.name ?? '계약자'} (${contract.displayUnit})',
-                            style: AppTextStyles.titleSm.copyWith(
-                              color: context.colors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (contractor?.contact?.cellPhone != null) ...[
-                          IconButton(
-                            icon: const Icon(Icons.phone_outlined, size: 17, color: Color(0xFF0D9488)),
-                            tooltip: '전화 연결',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => _makePhoneCall(
-                              contractor!.contact!.cellPhone,
-                              contractorName: contractor.name,
-                              unitStr: contract.displayUnit,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: context.colors.textSecond,
-                            side: BorderSide(color: context.colors.border),
-                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: () {
-                            ref.read(selectedContractForPaymentProvider.notifier).state = null;
-                          },
-                          icon: const Icon(Icons.sync_alt_rounded, size: 12),
-                          label: const Text('변경', style: TextStyle(fontSize: 10.5)),
-                        ),
+                        const SizedBox(width: 5),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // (2) 분양금액 / 기수납 / 수납률 요약 바 (컴팩트 1행)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      color: context.colors.bgSurface,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('공급가', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
-                                const SizedBox(height: 1),
-                                Text(
-                                  contract.price > 0 ? '${numFormat.format(contract.price)}원' : '산정전',
-                                  style: AppTextStyles.bodySecond.copyWith(
-                                    color: context.colors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: contract.parsedTypeColor,
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(color: contract.typeBorderColor, width: 0.8),
+                        ),
+                        child: Text(
+                          contract.unitTypeName ?? '타입',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: contract.typeTextColor,
                           ),
-                          Container(width: 1, height: 18, color: context.colors.border),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('기수납 누계', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
-                                const SizedBox(height: 1),
-                                Text(
-                                  '${numFormat.format(contract.totalPaid)}원',
-                                  style: AppTextStyles.bodySecond.copyWith(
-                                    color: const Color(0xFF10B981),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(width: 1, height: 18, color: context.colors.border),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('수납률', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
-                                const SizedBox(height: 1),
-                                Text(
-                                  '${contract.paymentRate.toStringAsFixed(1)}%',
-                                  style: AppTextStyles.bodySecond.copyWith(
-                                    color: const Color(0xFF38BDF8),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // (3) 문서 발급 & 기준 회차 설정 바
-                    Builder(
-                      builder: (context) {
-                        final selectedProject = ref.watch(selectedRealEstateProjectProvider);
-                        final billIssueAsync = ref.watch(salesBillIssueProvider);
-                        final installmentOrdersAsync = ref.watch(installmentStatusListProvider);
-
-                        final isFullyPaid = contract.price > 0 && contract.paymentRate >= 100.0;
-                        final hasPaid = contract.totalPaid > 0;
-                        final billIssue = billIssueAsync.valueOrNull;
-                        final installList = installmentOrdersAsync.valueOrNull ?? [];
-
-                        String currentOrderName = '기본(2차)';
-                        if (billIssue?.nowPaymentOrder != null && installList.isNotEmpty) {
-                          final matched = installList.where((o) => o.orderId == billIssue!.nowPaymentOrder).toList();
-                          if (matched.isNotEmpty) {
-                            currentOrderName = matched.first.payName;
-                          }
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: isFullyPaid ? context.colors.bgSurface : const Color(0xFFEF4444).withAlpha(12),
-                            border: Border.all(
-                              color: isFullyPaid ? context.colors.border : const Color(0xFFEF4444).withAlpha(60),
-                              width: 0.8,
-                            ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${contractor?.name ?? '계약자'} (${contract.displayUnit})',
+                          style: AppTextStyles.titleSm.copyWith(
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (contractor?.contact?.cellPhone != null) ...[
+                        IconButton(
+                          icon: const Icon(Icons.phone_outlined, size: 17, color: Color(0xFF0D9488)),
+                          tooltip: '전화 연결',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _makePhoneCall(
+                            contractor!.contact!.cellPhone,
+                            contractorName: contractor.name,
+                            unitStr: contract.displayUnit,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: context.colors.textSecond,
+                          side: BorderSide(color: context.colors.border),
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          ref.read(selectedContractForPaymentProvider.notifier).state = null;
+                        },
+                        icon: const Icon(Icons.sync_alt_rounded, size: 12),
+                        label: const Text('변경', style: TextStyle(fontSize: 10.5)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    color: context.colors.bgSurface,
+                    child: Row(
+                      children: [
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    isFullyPaid ? Icons.check_circle_outlined : Icons.receipt_long_outlined,
-                                    size: 15,
-                                    color: isFullyPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: Text(
-                                      isFullyPaid ? '전액 완납 완료' : '문서 발급',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: isFullyPaid ? context.colors.textSecond : context.colors.textPrimary,
-                                      ),
+                              Text('공급가', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
+                              const SizedBox(height: 1),
+                              Text(
+                                contract.price > 0 ? '${numFormat.format(contract.price)}원' : '산정전',
+                                style: AppTextStyles.bodySecond.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(width: 1, height: 18, color: context.colors.border),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('기수납 누계', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
+                              const SizedBox(height: 1),
+                              Text(
+                                '${numFormat.format(contract.totalPaid)}원',
+                                style: AppTextStyles.bodySecond.copyWith(
+                                  color: const Color(0xFF10B981),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(width: 1, height: 18, color: context.colors.border),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('수납률', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10)),
+                              const SizedBox(height: 1),
+                              Text(
+                                '${contract.paymentRate.toStringAsFixed(1)}%',
+                                style: AppTextStyles.bodySecond.copyWith(
+                                  color: const Color(0xFF38BDF8),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Builder(
+                    builder: (context) {
+                      final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+                      final billIssueAsync = ref.watch(salesBillIssueProvider);
+                      final installmentOrdersAsync = ref.watch(installmentStatusListProvider);
+
+                      final isFullyPaid = contract.price > 0 && contract.paymentRate >= 100.0;
+                      final hasPaid = contract.totalPaid > 0;
+                      final billIssue = billIssueAsync.valueOrNull;
+                      final installList = installmentOrdersAsync.valueOrNull ?? [];
+
+                      String currentOrderName = '기본(2차)';
+                      if (billIssue?.nowPaymentOrder != null && installList.isNotEmpty) {
+                        final matched = installList.where((o) => o.orderId == billIssue!.nowPaymentOrder).toList();
+                        if (matched.isNotEmpty) {
+                          currentOrderName = matched.first.payName;
+                        }
+                      }
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: isFullyPaid ? context.colors.bgSurface : const Color(0xFFEF4444).withAlpha(12),
+                          border: Border.all(
+                            color: isFullyPaid ? context.colors.border : const Color(0xFFEF4444).withAlpha(60),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  isFullyPaid ? Icons.check_circle_outlined : Icons.receipt_long_outlined,
+                                  size: 15,
+                                  color: isFullyPaid ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    isFullyPaid ? '전액 완납 완료' : '문서 발급',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isFullyPaid ? context.colors.textSecond : context.colors.textPrimary,
                                     ),
                                   ),
-                                  // 📑 납부확인서 발급 버튼 (고지서와 동일한 ElevatedButton 타입 - Teal 솔리드 배경)
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: hasPaid ? const Color(0xFF0D9488) : context.colors.bgSurface,
-                                      foregroundColor: hasPaid ? Colors.white : context.colors.textDisabled,
-                                      elevation: 0,
-                                      side: BorderSide(
-                                        color: hasPaid ? const Color(0xFF0D9488) : context.colors.border,
-                                        width: 0.8,
-                                      ),
-                                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: hasPaid ? const Color(0xFF0D9488) : context.colors.bgSurface,
+                                    foregroundColor: hasPaid ? Colors.white : context.colors.textDisabled,
+                                    elevation: 0,
+                                    side: BorderSide(
+                                      color: hasPaid ? const Color(0xFF0D9488) : context.colors.border,
+                                      width: 0.8,
                                     ),
-                                    onPressed: hasPaid
-                                        ? () => _downloadAndSharePaymentCertPdf(contract: contract)
-                                        : null,
-                                    icon: Icon(
-                                      Icons.verified_outlined,
-                                      size: 11.5,
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: hasPaid
+                                      ? () => _downloadAndSharePaymentCertPdf(contract: contract)
+                                      : null,
+                                  icon: Icon(
+                                    Icons.verified_outlined,
+                                    size: 11.5,
+                                    color: hasPaid ? Colors.white : context.colors.textDisabled,
+                                  ),
+                                  label: Text(
+                                    '납부확인서',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
                                       color: hasPaid ? Colors.white : context.colors.textDisabled,
                                     ),
-                                    label: Text(
-                                      '납부확인서',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isFullyPaid ? context.colors.bgSurface : const Color(0xFFEF4444),
+                                    foregroundColor: isFullyPaid ? context.colors.textDisabled : Colors.white,
+                                    elevation: 0,
+                                    side: BorderSide(
+                                      color: isFullyPaid ? context.colors.border : const Color(0xFFEF4444),
+                                      width: 0.8,
+                                    ),
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: (!isFullyPaid && selectedProject != null)
+                                      ? () => _downloadAndSharePaymentBillPdf(
+                                            projectId: selectedProject.realProjectId,
+                                            contract: contract,
+                                          )
+                                      : null,
+                                  icon: Icon(
+                                    Icons.picture_as_pdf_rounded,
+                                    size: 11.5,
+                                    color: isFullyPaid ? context.colors.textDisabled : Colors.white,
+                                  ),
+                                  label: Text(
+                                    '고지서 발급',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isFullyPaid ? context.colors.textDisabled : Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (billIssue != null) ...[
+                              const SizedBox(height: 5),
+                              Divider(color: context.colors.border.withAlpha(80), height: 1),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text(
+                                    '고지 기준 회차: ',
+                                    style: TextStyle(fontSize: 10.5, color: context.colors.textMuted),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444).withAlpha(18),
+                                      border: Border.all(color: const Color(0xFFEF4444).withAlpha(90), width: 0.6),
+                                    ),
+                                    child: Text(
+                                      currentOrderName,
+                                      style: const TextStyle(
+                                        fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: hasPaid ? Colors.white : context.colors.textDisabled,
+                                        color: Color(0xFFEF4444),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 5),
-                                  // 📄 고지서 발급 버튼 (동일한 ElevatedButton 타입 - Red 솔리드 배경)
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isFullyPaid ? context.colors.bgSurface : const Color(0xFFEF4444),
-                                      foregroundColor: isFullyPaid ? context.colors.textDisabled : Colors.white,
-                                      elevation: 0,
-                                      side: BorderSide(
-                                        color: isFullyPaid ? context.colors.border : const Color(0xFFEF4444),
-                                        width: 0.8,
-                                      ),
-                                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  const Spacer(),
+                                  InkWell(
+                                    onTap: () => _showEditNowPaymentOrderDialog(
+                                      billIssue: billIssue,
+                                      installmentOrders: installList,
                                     ),
-                                    onPressed: (!isFullyPaid && selectedProject != null)
-                                        ? () => _downloadAndSharePaymentBillPdf(
-                                              projectId: selectedProject.realProjectId,
-                                              contract: contract,
-                                            )
-                                        : null,
-                                    icon: Icon(
-                                      Icons.picture_as_pdf_rounded,
-                                      size: 11.5,
-                                      color: isFullyPaid ? context.colors.textDisabled : Colors.white,
-                                    ),
-                                    label: Text(
-                                      '고지서 발급',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: isFullyPaid ? context.colors.textDisabled : Colors.white,
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.tune_rounded, size: 12, color: context.colors.accentProject),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '기준 변경',
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: context.colors.accentProject,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                              if (billIssue != null) ...[
-                                const SizedBox(height: 5),
-                                Divider(color: context.colors.border.withAlpha(80), height: 1),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '고지 기준 회차: ',
-                                      style: TextStyle(fontSize: 10.5, color: context.colors.textMuted),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEF4444).withAlpha(18),
-                                        border: Border.all(color: const Color(0xFFEF4444).withAlpha(90), width: 0.6),
-                                      ),
-                                      child: Text(
-                                        currentOrderName,
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFEF4444),
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    InkWell(
-                                      onTap: () => _showEditNowPaymentOrderDialog(
-                                        billIssue: billIssue,
-                                        installmentOrders: installList,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.tune_rounded, size: 12, color: context.colors.accentProject),
-                                          const SizedBox(width: 2),
-                                          Text(
-                                            '기준 변경',
-                                            style: TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: context.colors.accentProject,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
                             ],
-                          ),
-                        );
-                      },
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: context.colors.border, height: 1),
+          ],
+        ),
+      ),
+      paymentsAsync.when(
+        loading: () => const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)),
+          ),
+        ),
+        error: (err, _) => SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Text('수납 내역 조회 실패: $err', style: TextStyle(color: context.colors.error)),
+          ),
+        ),
+        data: (payments) {
+          if (payments.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.receipt_long_outlined, size: 40, color: context.colors.textDisabled),
+                    const SizedBox(height: 12),
+                    Text(
+                      '등록된 수납(입금) 내역이 없습니다.',
+                      style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
                     ),
                   ],
                 ),
               ),
-              Divider(color: context.colors.border, height: 1),
-            ],
-          ),
-        ),
+            );
+          }
 
-        // ── 2. 중단 수납 내역 리스트 (통합 스크롤 SliverList) ──
-        paymentsAsync.when(
-          loading: () => const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)),
-            ),
-          ),
-          error: (err, _) => SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Text('수납 내역 조회 실패: $err', style: TextStyle(color: context.colors.error)),
-            ),
-          ),
-          data: (payments) {
-            if (payments.isEmpty) {
-              return SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+          final totalPaidSum = payments.fold<int>(0, (sum, p) => sum + p.amount);
+
+          return SliverMainAxisGroup(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  color: context.colors.bgSurface,
+                  child: Row(
                     children: [
-                      Icon(Icons.receipt_long_outlined, size: 40, color: context.colors.textDisabled),
-                      const SizedBox(height: 12),
                       Text(
-                        '등록된 수납(입금) 내역이 없습니다.',
-                        style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
+                        '납부 내역 (${payments.length}건)',
+                        style: AppTextStyles.caption.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '합계: ${numFormat.format(totalPaidSum)}원',
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFF10B981),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              );
-            }
-
-            final totalPaidSum = payments.fold<int>(0, (sum, p) => sum + p.amount);
-
-            return SliverMainAxisGroup(
-              slivers: [
-                // 목록 헤더 바
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    color: context.colors.bgSurface,
-                    child: Row(
-                      children: [
-                        Text(
-                          '납부 내역 (${payments.length}건)',
-                          style: AppTextStyles.caption.copyWith(
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '합계: ${numFormat.format(totalPaidSum)}원',
-                          style: AppTextStyles.caption.copyWith(
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
-
-                // 납부 내역 아이템들
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, idx) {
-                        final p = payments[idx];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: context.colors.bgCard,
-                              border: Border.all(
-                                color: p.isInstallmentUnmatched
-                                    ? const Color(0xFFEF4444).withAlpha(140)
-                                    : context.colors.border,
-                                width: 1,
-                              ),
+              ),
+              SliverToBoxAdapter(child: Divider(color: context.colors.border, height: 1)),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, idx) {
+                      final p = payments[idx];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.colors.bgCard,
+                            border: Border.all(
+                              color: p.isInstallmentUnmatched
+                                  ? const Color(0xFFEF4444).withAlpha(140)
+                                  : context.colors.border,
+                              width: 1,
                             ),
-                            child: InkWell(
-                              onTap: () => _showTransactionDetailBottomSheet(p, showContractorPaymentLink: false),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                          decoration: BoxDecoration(
+                          ),
+                          child: InkWell(
+                            onTap: () => _showTransactionDetailBottomSheet(p, showContractorPaymentLink: false),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: p.isInstallmentUnmatched
+                                              ? const Color(0xFFEF4444).withAlpha(20)
+                                              : const Color(0xFF10B981).withAlpha(20),
+                                          border: Border.all(
                                             color: p.isInstallmentUnmatched
-                                                ? const Color(0xFFEF4444).withAlpha(20)
-                                                : const Color(0xFF10B981).withAlpha(20),
-                                            border: Border.all(
-                                              color: p.isInstallmentUnmatched
-                                                  ? const Color(0xFFEF4444).withAlpha(100)
-                                                  : const Color(0xFF10B981).withAlpha(80),
-                                              width: 0.6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            p.payName ?? (p.isInstallmentUnmatched ? '회차 미지정' : '수납'),
-                                            style: TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: p.isInstallmentUnmatched
-                                                  ? const Color(0xFFEF4444)
-                                                  : const Color(0xFF10B981),
-                                            ),
+                                                ? const Color(0xFFEF4444).withAlpha(100)
+                                                : const Color(0xFF10B981).withAlpha(80),
+                                            width: 0.6,
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '수납일: ${p.dealDate}',
-                                          style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          '${numFormat.format(p.amount)}원',
-                                          style: AppTextStyles.titleSm.copyWith(
-                                            color: const Color(0xFF10B981),
+                                        child: Text(
+                                          p.payName ?? (p.isInstallmentUnmatched ? '회차 미지정' : '수납'),
+                                          style: TextStyle(
+                                            fontSize: 10.5,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13.5,
+                                            color: p.isInstallmentUnmatched
+                                                ? const Color(0xFFEF4444)
+                                                : const Color(0xFF10B981),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '입금계좌: ${p.bankAccountName ?? '-'}${p.trader != null && p.trader!.isNotEmpty ? ' (${p.trader})' : ''}',
-                                            style: AppTextStyles.caption.copyWith(color: context.colors.textSecond, fontSize: 10.5),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '수납일: ${p.dealDate}',
+                                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '${numFormat.format(p.amount)}원',
+                                        style: AppTextStyles.titleSm.copyWith(
+                                          color: const Color(0xFF10B981),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
                                         ),
-                                        InkWell(
-                                          onTap: () => _showChangeInstallmentBottomSheet(p),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.edit_calendar_outlined,
-                                                  size: 12,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '입금계좌: ${p.bankAccountName ?? '-'}${p.trader != null && p.trader!.isNotEmpty ? ' (${p.trader})' : ''}',
+                                          style: AppTextStyles.caption.copyWith(color: context.colors.textSecond, fontSize: 10.5),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _showChangeInstallmentBottomSheet(p),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.edit_calendar_outlined,
+                                                size: 12,
+                                                color: p.isInstallmentUnmatched
+                                                    ? const Color(0xFFEF4444)
+                                                    : const Color(0xFF38BDF8),
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                p.isInstallmentUnmatched ? '회차 지정' : '회차 변경',
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
                                                   color: p.isInstallmentUnmatched
                                                       ? const Color(0xFFEF4444)
                                                       : const Color(0xFF38BDF8),
+                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                                const SizedBox(width: 2),
-                                                Text(
-                                                  p.isInstallmentUnmatched ? '회차 지정' : '회차 변경',
-                                                  style: TextStyle(
-                                                    fontSize: 10.5,
-                                                    color: p.isInstallmentUnmatched
-                                                        ? const Color(0xFFEF4444)
-                                                        : const Color(0xFF38BDF8),
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                      childCount: payments.length,
-                    ),
+                        ),
+                      );
+                    },
+                    childCount: payments.length,
                   ),
                 ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
+              ),
+            ],
+          );
+        },
+      ),
+    ];
   }
 
-  /// 📊 3. 회차별 납부 현황 뷰 (차수/회차별 집계 카드 목록)
-  Widget _buildByInstallmentView() {
+  /// 📊 3. 회차별 납부 현황 Slivers
+  List<Widget> _buildByInstallmentSlivers() {
     final listAsync = ref.watch(installmentStatusListProvider);
     final numFormat = NumberFormat('#,###');
 
     return listAsync.when(
-      loading: () => Center(
-        child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.accentProject),
-      ),
-      error: (err, _) => Center(
-        child: Text('회차별 현황 로드 실패: $err', style: TextStyle(color: context.colors.error)),
-      ),
+      loading: () => [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+          ),
+        ),
+      ],
+      error: (err, _) => [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Text('회차별 현황 로드 실패: $err', style: TextStyle(color: context.colors.error)),
+          ),
+        ),
+      ],
       data: (items) {
         if (items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.bar_chart_outlined, size: 40, color: context.colors.textDisabled),
-                const SizedBox(height: 12),
-                Text('등록된 납부 회차 정보가 없습니다.', style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted)),
-              ],
+          return [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bar_chart_outlined, size: 40, color: context.colors.textDisabled),
+                    const SizedBox(height: 12),
+                    Text('등록된 납부 회차 정보가 없습니다.', style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted)),
+                  ],
+                ),
+              ),
             ),
-          );
+          ];
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (ctx, index) {
-            final order = items[index];
+        return [
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, index) {
+                  final order = items[index];
 
-            return Container(
-              decoration: BoxDecoration(
-                color: context.colors.bgCard,
-                borderRadius: BorderRadius.zero,
-                border: Border.all(
-                  color: context.colors.textDisabled.withAlpha(180),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(12),
-                    offset: const Offset(0, 2),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 상단 헤더
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                    color: context.colors.bgSurface,
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF38BDF8).withAlpha(25),
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(color: const Color(0xFF38BDF8).withAlpha(100), width: 0.8),
-                          ),
-                          child: Text(
-                            order.payName,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF38BDF8),
-                            ),
-                          ),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.colors.bgCard,
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(
+                          color: context.colors.textDisabled.withAlpha(180),
+                          width: 1.2,
                         ),
-                        if (order.aliasName != null && order.aliasName!.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '(${order.aliasName})',
-                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(12),
+                            offset: const Offset(0, 2),
+                            blurRadius: 4,
                           ),
                         ],
-                        const Spacer(),
-                        Text(
-                          '약정일: ${order.displayDueDate}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: context.colors.textMuted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(color: context.colors.border, height: 1),
-
-                  // 본문 요약 바
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '수납률: ${order.collectionRate.toStringAsFixed(1)}%',
-                              style: AppTextStyles.titleSm.copyWith(
-                                color: order.collectionRate >= 90
-                                    ? const Color(0xFF10B981)
-                                    : (order.collectionRate >= 50 ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B)),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                              ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 상단 헤더
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                            color: context.colors.bgSurface,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF38BDF8).withAlpha(25),
+                                    borderRadius: BorderRadius.circular(2),
+                                    border: Border.all(color: const Color(0xFF38BDF8).withAlpha(100), width: 0.8),
+                                  ),
+                                  child: Text(
+                                    order.payName,
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF38BDF8),
+                                    ),
+                                  ),
+                                ),
+                                if (order.aliasName != null && order.aliasName!.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '(${order.aliasName})',
+                                    style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
+                                  ),
+                                ],
+                                const Spacer(),
+                                Text(
+                                  '약정일: ${order.displayDueDate}',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: context.colors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const Spacer(),
-                            if (order.payRatio > 0)
-                              Text(
-                                '회당 비율: ${order.payRatio.toStringAsFixed(0)}%',
-                                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        // 프로그레스 바
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: LinearProgressIndicator(
-                            value: (order.collectionRate / 100).clamp(0.0, 1.0),
-                            minHeight: 6,
-                            backgroundColor: context.colors.border,
-                            color: order.collectionRate >= 90
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF38BDF8),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          Divider(color: context.colors.border, height: 1),
 
-                        // 금액 요약 박스
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          color: context.colors.bgSurface,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          // 본문 요약 바
+                          Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Text('실제 수납액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
-                                    const SizedBox(height: 2),
                                     Text(
-                                      order.totalPaidAmount > 0
-                                          ? '${numFormat.format(order.totalPaidAmount)}원'
-                                          : '0원',
-                                      style: AppTextStyles.bodySecond.copyWith(
-                                        color: const Color(0xFF10B981),
+                                      '수납률: ${order.collectionRate.toStringAsFixed(1)}%',
+                                      style: AppTextStyles.titleSm.copyWith(
+                                        color: order.collectionRate >= 90
+                                            ? const Color(0xFF10B981)
+                                            : (order.collectionRate >= 50 ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B)),
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        fontSize: 14.5,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              Container(width: 1, height: 20, color: context.colors.border),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('총 약정액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      order.totalDueAmount > 0
-                                          ? '${numFormat.format(order.totalDueAmount)}원'
-                                          : '산정 전',
-                                      style: AppTextStyles.bodySecond.copyWith(
-                                        color: context.colors.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                    const Spacer(),
+                                    if (order.payRatio > 0)
+                                      Text(
+                                        '회당 비율: ${order.payRatio.toStringAsFixed(0)}%',
+                                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
                                       ),
-                                    ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 10),
+
+                                // 프로그레스 바
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: (order.collectionRate / 100).clamp(0.0, 1.0),
+                                    minHeight: 6,
+                                    backgroundColor: context.colors.border,
+                                    color: order.collectionRate >= 90
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF38BDF8),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // 금액 요약 박스
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  color: context.colors.bgSurface,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('실제 수납액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              order.totalPaidAmount > 0
+                                                  ? '${numFormat.format(order.totalPaidAmount)}원'
+                                                  : '0원',
+                                              style: AppTextStyles.bodySecond.copyWith(
+                                                color: const Color(0xFF10B981),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(width: 1, height: 20, color: context.colors.border),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('총 약정액', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 10.5)),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              order.totalDueAmount > 0
+                                                  ? '${numFormat.format(order.totalDueAmount)}원'
+                                                  : '산정 전',
+                                              style: AppTextStyles.bodySecond.copyWith(
+                                                color: context.colors.textPrimary,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  );
+                },
+                childCount: items.length,
               ),
-            );
-          },
-        );
+            ),
+          ),
+        ];
       },
     );
   }
@@ -3825,6 +3890,29 @@ class _InstallmentChangeBottomSheetState extends ConsumerState<_InstallmentChang
         ],
       ),
     );
+  }
+}
+
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _PinnedHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return height != oldDelegate.height || child != oldDelegate.child;
   }
 }
 
