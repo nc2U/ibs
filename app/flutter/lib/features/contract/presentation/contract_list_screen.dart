@@ -38,6 +38,18 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   Timer? _debounceTimer;
   bool _showUnitMatrix = false; // 🏢 동호수 배치도 뷰 토글 상태
 
+  ScrollController get _activeScrollController {
+    final currentTab = ref.read(contractCurrentSubTabProvider);
+    switch (currentTab) {
+      case ContractSubTab.contracts:
+        return _contractsScrollController;
+      case ContractSubTab.successions:
+        return _successionsScrollController;
+      case ContractSubTab.releases:
+        return _releasesScrollController;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -531,7 +543,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
       backgroundColor: context.colors.bgPrimary,
       body: Column(
         children: [
-          // ── 1. 계약 모듈 헤더 배너 ─────────────────────────────────────────
+          // ── 1. 계약 모듈 헤더 배너 (고정) ─────────────────────────────────
           Container(
             color: context.colors.bgSurface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -615,218 +627,252 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
           ),
           Divider(color: context.colors.border, height: 1),
 
-          // ── 2. KPI 대시보드 (분양 현황 요약 카드) ───────────────────────────
-          aggregateAsync.when(
-            loading: () => const SizedBox(
-              height: 72,
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (aggregate) {
-              return Container(
-                color: context.colors.bgCard,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  children: [
-                    _KpiItem(
-                      label: '총 세대수',
-                      value: '${numFormat.format(aggregate.totalUnits)}세대',
-                      color: context.colors.textPrimary,
-                    ),
-                    _divider(),
-                    _KpiItem(
-                      label: '계약 완료',
-                      value: '${numFormat.format(aggregate.contsNum)}세대',
-                      color: const Color(0xFF38BDF8),
-                    ),
-                    _divider(),
-                    _KpiItem(
-                      label: '분양률',
-                      value: '${aggregate.contractRate.toStringAsFixed(1)}%',
-                      color: const Color(0xFF34D399),
-                    ),
-                    _divider(),
-                    _KpiItem(
-                      label: '청약(대기)',
-                      value: '${numFormat.format(aggregate.subsNum)}건',
-                      color: const Color(0xFFFBBF24),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 3. 3대 서브도메인 탭 (유효 계약 / 권리의무 승계 / 계약 해약) ────────
-          Container(
-            color: context.colors.bgSurface,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              children: [
-                _SubTabButton(
-                  title: '계약 목록',
-                  icon: Icons.assignment_outlined,
-                  isSelected: currentTab == ContractSubTab.contracts,
-                  onTap: () {
-                    ref.read(contractCurrentSubTabProvider.notifier).state =
-                        ContractSubTab.contracts;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '권리 의무 승계',
-                  icon: Icons.swap_horiz_rounded,
-                  isSelected: currentTab == ContractSubTab.successions,
-                  onTap: () {
-                    ref.read(contractCurrentSubTabProvider.notifier).state =
-                        ContractSubTab.successions;
-                  },
-                ),
-                const SizedBox(width: 6),
-                _SubTabButton(
-                  title: '계약 해지',
-                  icon: Icons.cancel_outlined,
-                  isSelected: currentTab == ContractSubTab.releases,
-                  onTap: () {
-                    ref.read(contractCurrentSubTabProvider.notifier).state =
-                        ContractSubTab.releases;
-                  },
-                ),
-              ],
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 4. 검색창 & 유효 계약 탭 전용 [동호수 배치도 / 목록형] 토글 버튼 ────
-          Container(
-            color: context.colors.bgCard,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                // 검색 입력 필드
-                Expanded(
-                  child: Container(
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: context.colors.bgSurface,
-                      borderRadius: BorderRadius.zero,
-                      border: Border.all(color: context.colors.border, width: 0.8),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      style: AppTextStyles.bodySecond.copyWith(
-                        color: context.colors.textPrimary,
-                        fontSize: 13,
+          // ── 아래부터 스크롤 가능한 본문 영역 (CustomScrollView) ───────────────
+          Expanded(
+            child: RefreshIndicator(
+              color: context.colors.accentProject,
+              onRefresh: () async {
+                ref.invalidate(contractAggregateProvider);
+                ref.invalidate(buildingUnitsProvider);
+                ref.invalidate(unitTypesProvider);
+                ref.invalidate(allHouseUnitsProvider);
+                ref.read(validContractListProvider.notifier).fetchInitial();
+                ref.read(successionListProvider.notifier).fetchInitial();
+                ref.read(contractorReleaseListProvider.notifier).fetchInitial();
+              },
+              child: CustomScrollView(
+                controller: _activeScrollController,
+                slivers: [
+                  // A. KPI 대시보드 (분양 현황 요약 카드 - 스크롤 연동)
+                  SliverToBoxAdapter(
+                    child: aggregateAsync.when(
+                      loading: () => const SizedBox(
+                        height: 72,
+                        child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
                       ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: currentTab == ContractSubTab.contracts
-                            ? (_showUnitMatrix
-                                ? '동호수 배치도 보는 중...'
-                                : '계약자명, 동·호수, 연락처, 일련번호 검색...')
-                            : (currentTab == ContractSubTab.successions
-                                ? '양도인, 양수인, 일련번호 검색...'
-                                : '해약 신청자명 검색...'),
-                        hintStyle: AppTextStyles.bodySecond.copyWith(
-                          color: context.colors.textMuted,
-                          fontSize: 12.5,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          size: 18,
-                          color: context.colors.textMuted,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 16),
-                                color: context.colors.textMuted,
-                                onPressed: _onClearSearch,
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 9),
-                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (aggregate) {
+                        return Container(
+                          color: context.colors.bgCard,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          child: Row(
+                            children: [
+                              _KpiItem(
+                                label: '총 세대수',
+                                value: '${numFormat.format(aggregate.totalUnits)}세대',
+                                color: context.colors.textPrimary,
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '계약 완료',
+                                value: '${numFormat.format(aggregate.contsNum)}세대',
+                                color: const Color(0xFF38BDF8),
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '분양률',
+                                value: '${aggregate.contractRate.toStringAsFixed(1)}%',
+                                color: const Color(0xFF34D399),
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '청약(대기)',
+                                value: '${numFormat.format(aggregate.subsNum)}건',
+                                color: const Color(0xFFFBBF24),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
 
-                // 🏢 유효 계약 탭일 때만 검색창 오른쪽에 '동호수 배치도' 토글 버튼 제공
-                if (currentTab == ContractSubTab.contracts) ...[
-                  const SizedBox(width: 8),
-                  Material(
-                    color: _showUnitMatrix
-                        ? context.colors.accentProject
-                        : context.colors.bgSurface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                      side: BorderSide(
-                        color: _showUnitMatrix
-                            ? context.colors.accentProject
-                            : context.colors.border,
-                        width: 0.8,
-                      ),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _showUnitMatrix = !_showUnitMatrix;
-                        });
-                      },
-                      borderRadius: BorderRadius.zero,
+                  // B. 3대 서브도메인 탭 (상단 고정 Sticky Header)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedHeaderDelegate(
+                      height: 49.0,
                       child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        color: context.colors.bgSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              _showUnitMatrix
-                                  ? Icons.view_list_rounded
-                                  : Icons.grid_view_rounded,
-                              size: 16,
-                              color: _showUnitMatrix
-                                  ? Colors.white
-                                  : context.colors.accentProject,
+                            _SubTabButton(
+                              title: '계약 목록',
+                              icon: Icons.assignment_outlined,
+                              isSelected: currentTab == ContractSubTab.contracts,
+                              onTap: () {
+                                ref.read(contractCurrentSubTabProvider.notifier).state =
+                                    ContractSubTab.contracts;
+                              },
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              _showUnitMatrix ? '목록 보기' : '동호수 배치도',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: _showUnitMatrix
-                                    ? Colors.white
-                                    : context.colors.textPrimary,
-                              ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '권리 의무 승계',
+                              icon: Icons.swap_horiz_rounded,
+                              isSelected: currentTab == ContractSubTab.successions,
+                              onTap: () {
+                                ref.read(contractCurrentSubTabProvider.notifier).state =
+                                    ContractSubTab.successions;
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SubTabButton(
+                              title: '계약 해지',
+                              icon: Icons.cancel_outlined,
+                              isSelected: currentTab == ContractSubTab.releases,
+                              onTap: () {
+                                ref.read(contractCurrentSubTabProvider.notifier).state =
+                                    ContractSubTab.releases;
+                              },
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
 
-          // ── 5. 탭별 맞춤 리스트 ────────────────────────────────────────
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                switch (currentTab) {
-                  case ContractSubTab.contracts:
-                    return _showUnitMatrix
-                        ? const UnitMatrixView()
-                        : _buildContractsView();
-                  case ContractSubTab.successions:
-                    return _buildSuccessionsView();
-                  case ContractSubTab.releases:
-                    return _buildReleasesView();
-                }
-              },
+                  // C. 검색창 & 유효 계약 탭 전용 [동호수 배치도 / 목록형] 토글 버튼
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: context.colors.bgCard,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          // 검색 입력 필드
+                          Expanded(
+                            child: Container(
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: context.colors.bgSurface,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(color: context.colors.border, width: 0.8),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: _onSearchChanged,
+                                style: AppTextStyles.bodySecond.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 13,
+                                ),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: currentTab == ContractSubTab.contracts
+                                      ? (_showUnitMatrix
+                                          ? '동호수 배치도 보는 중...'
+                                          : '계약자명, 동·호수, 연락처, 일련번호 검색...')
+                                      : (currentTab == ContractSubTab.successions
+                                          ? '양도인, 양수인, 일련번호 검색...'
+                                          : '해약 신청자명 검색...'),
+                                  hintStyle: AppTextStyles.bodySecond.copyWith(
+                                    color: context.colors.textMuted,
+                                    fontSize: 12.5,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    size: 18,
+                                    color: context.colors.textMuted,
+                                  ),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear_rounded, size: 16),
+                                          color: context.colors.textMuted,
+                                          onPressed: _onClearSearch,
+                                        )
+                                      : null,
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 🏢 유효 계약 탭일 때만 검색창 오른쪽에 '동호수 배치도' 토글 버튼 제공
+                          if (currentTab == ContractSubTab.contracts) ...[
+                            const SizedBox(width: 8),
+                            Material(
+                              color: _showUnitMatrix
+                                  ? context.colors.accentProject
+                                  : context.colors.bgSurface,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                                side: BorderSide(
+                                  color: _showUnitMatrix
+                                      ? context.colors.accentProject
+                                      : context.colors.border,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _showUnitMatrix = !_showUnitMatrix;
+                                  });
+                                },
+                                borderRadius: BorderRadius.zero,
+                                child: Container(
+                                  height: 38,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _showUnitMatrix
+                                            ? Icons.view_list_rounded
+                                            : Icons.grid_view_rounded,
+                                        size: 16,
+                                        color: _showUnitMatrix
+                                            ? Colors.white
+                                            : context.colors.accentProject,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        _showUnitMatrix ? '목록 보기' : '동호수 배치도',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: _showUnitMatrix
+                                              ? Colors.white
+                                              : context.colors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
+
+                  // D. 탭별 맞춤 리스트 (Slivers)
+                  Builder(
+                    builder: (context) {
+                      switch (currentTab) {
+                        case ContractSubTab.contracts:
+                          return _showUnitMatrix
+                              ? const SliverFillRemaining(child: UnitMatrixView())
+                              : _buildContractsSliver();
+                        case ContractSubTab.successions:
+                          return _buildSuccessionsSliver();
+                        case ContractSubTab.releases:
+                          return _buildReleasesSliver();
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -834,201 +880,234 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
     );
   }
 
-  /// 1. 유효 계약 목록 뷰
-  Widget _buildContractsView() {
+  /// 1. 유효 계약 목록 Sliver 뷰
+  Widget _buildContractsSliver() {
     final state = ref.watch(validContractListProvider);
 
     if (state.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: context.colors.accentProject,
+      return SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.colors.accentProject,
+          ),
         ),
       );
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return Center(
-        child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+      return SliverFillRemaining(
+        child: Center(
+          child: Text('데이터 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+        ),
       );
     }
 
     if (state.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              '일치하는 유효 계약 정보가 없습니다.',
-              style: AppTextStyles.bodySecond.copyWith(
-                color: context.colors.textMuted,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off_rounded, size: 40, color: context.colors.textDisabled),
+              const SizedBox(height: 12),
+              Text(
+                '일치하는 유효 계약 정보가 없습니다.',
+                style: AppTextStyles.bodySecond.copyWith(
+                  color: context.colors.textMuted,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _contractsScrollController,
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, index) {
-        if (index == state.items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (ctx, index) {
+            if (index == state.items.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
 
-        final item = state.items[index];
-        return _ContractCard(
-          contract: item,
-          onMoreTap: () => _showActionBottomSheet(item),
-        );
-      },
+            final item = state.items[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ContractCard(
+                contract: item,
+                onMoreTap: () => _showActionBottomSheet(item),
+              ),
+            );
+          },
+          childCount: itemCount,
+        ),
+      ),
     );
   }
 
-  /// 2. 권리의무 승계 목록 뷰
-  Widget _buildSuccessionsView() {
+  /// 2. 권리의무 승계 목록 Sliver 뷰
+  Widget _buildSuccessionsSliver() {
     final state = ref.watch(successionListProvider);
 
     if (state.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: context.colors.accentProject,
+      return SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.colors.accentProject,
+          ),
         ),
       );
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return Center(
-        child: Text('승계 내역 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+      return SliverFillRemaining(
+        child: Center(
+          child: Text('승계 내역 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+        ),
       );
     }
 
     if (state.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.swap_horiz_rounded, size: 40, color: context.colors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              '등록된 권리의무 승계 내역이 없습니다.',
-              style: AppTextStyles.bodySecond.copyWith(
-                color: context.colors.textMuted,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.swap_horiz_rounded, size: 40, color: context.colors.textDisabled),
+              const SizedBox(height: 12),
+              Text(
+                '등록된 권리의무 승계 내역이 없습니다.',
+                style: AppTextStyles.bodySecond.copyWith(
+                  color: context.colors.textMuted,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _successionsScrollController,
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, index) {
-        if (index == state.items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (ctx, index) {
+            if (index == state.items.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
 
-        final item = state.items[index];
-        return _SuccessionCard(
-          succession: item,
-          onCallBuyer: () => _makePhoneCall(item.buyerCellPhone),
-        );
-      },
+            final item = state.items[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SuccessionCard(
+                succession: item,
+                onCallBuyer: () => _makePhoneCall(item.buyerCellPhone),
+              ),
+            );
+          },
+          childCount: itemCount,
+        ),
+      ),
     );
   }
 
-  /// 3. 계약 해약/해지 목록 뷰
-  Widget _buildReleasesView() {
+  /// 3. 계약 해약/해지 목록 Sliver 뷰
+  Widget _buildReleasesSliver() {
     final state = ref.watch(contractorReleaseListProvider);
 
     if (state.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: context.colors.accentProject,
+      return SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.colors.accentProject,
+          ),
         ),
       );
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return Center(
-        child: Text('해약 내역 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+      return SliverFillRemaining(
+        child: Center(
+          child: Text('해약 내역 로드 실패: ${state.error}', style: TextStyle(color: context.colors.error)),
+        ),
       );
     }
 
     if (state.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cancel_outlined, size: 40, color: context.colors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              '등록된 계약 해약 내역이 없습니다.',
-              style: AppTextStyles.bodySecond.copyWith(
-                color: context.colors.textMuted,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cancel_outlined, size: 40, color: context.colors.textDisabled),
+              const SizedBox(height: 12),
+              Text(
+                '등록된 계약 해약 내역이 없습니다.',
+                style: AppTextStyles.bodySecond.copyWith(
+                  color: context.colors.textMuted,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
 
-    return ListView.separated(
-      controller: _releasesScrollController,
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, index) {
-        if (index == state.items.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (ctx, index) {
+            if (index == state.items.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
 
-        final item = state.items[index];
-        return _ReleaseCard(release: item);
-      },
+            final item = state.items[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ReleaseCard(release: item),
+            );
+          },
+          childCount: itemCount,
+        ),
+      ),
     );
   }
 
@@ -2873,5 +2952,28 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
         ),
       ],
     );
+  }
+}
+
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _PinnedHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return height != oldDelegate.height || child != oldDelegate.child;
   }
 }
