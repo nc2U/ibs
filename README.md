@@ -1,5 +1,6 @@
 [![Build](https://github.com/nc2U/ibs/actions/workflows/ci-cd-django-helm-prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
 [![Build](https://github.com/nc2U/ibs/actions/workflows/ci-cd-vue-static-prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+[![Build](https://github.com/nc2U/ibs/actions/workflows/ci-cd-flutter-prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
 ![License](https://img.shields.io/github/license/nc2U/ibs)
 ![Last Commit](https://img.shields.io/github/last-commit/nc2U/ibs)
 ![Issues](https://img.shields.io/github/issues/nc2U/ibs)
