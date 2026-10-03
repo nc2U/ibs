@@ -1,5 +1,5 @@
-[![Build](https://github.com/nc2U/ibs/actions/workflows/django_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
-[![Build](https://github.com/nc2U/ibs/actions/workflows/vue_prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+[![Build](https://github.com/nc2U/ibs/actions/workflows/ci-cd-django-helm-prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
+[![Build](https://github.com/nc2U/ibs/actions/workflows/ci-cd-vue-static-prod.yml/badge.svg)](https://github.com/nc2U/ibs/actions)
 ![License](https://img.shields.io/github/license/nc2U/ibs)
 ![Last Commit](https://img.shields.io/github/last-commit/nc2U/ibs)
 ![Issues](https://img.shields.io/github/issues/nc2U/ibs)
@@ -176,8 +176,8 @@ pnpm build    # npm run build (or) yarn build
 - Kubernetes cluster
 - Helm
 - CI/CD server with helm installed
-- NFS Storage server(ip)
-- domain(to deploy)
+- NFS Storage server (ip)
+- domain (to deploy)
 - GitHub account (for using GitHub Actions)
 - Docker hub account
 - Slack incoming url
@@ -224,7 +224,7 @@ in the [installation docs](https://cert-manager.io/docs/releases/).
 
 Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources. This is
 performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed
-custom resources. (Please use version 17.*, as version 18.* has compatibility issues with the current version of
+custom resources. (Please use version 17. *, as version 18.* has compatibility issues with the current version of
 ingress-nginx Release.)
 
 ```bash
@@ -269,7 +269,7 @@ Use an existing GitHub account or create a new one and fork this project.
 Afterward, go to the Settings > Secrets and variables > Actions menu and click the 'New repository secret' button to
 create Repository secrets with the keys and values below.
 
-- CICD_HOST: # cicd server host(ip or domain)
+- CICD_HOST: # cicd server host (ip or domain)
 - CICD_PASS: # cicd server user password
 - CICD_PATH: # cicd helm chart & volume path
 - CICD_USER: # cicd server user
@@ -283,7 +283,7 @@ create Repository secrets with the keys and values below.
 - EMAIL_HOST: # your-smtp-server.com
 - EMAIL_HOST_PASSWORD: # your-access-password
 - EMAIL_HOST_USER: # your-access-id-or-email
-- NFS_HOST: # nfs storage server host(ip or domain)
+- NFS_HOST: # nfs storage server host (ip or domain)
 - NFS_PASS: # nfs storage server user password
 - NFS_PATH: # nfs storage server path (absolute path)
 - NFS_USER: # nfs storage server user
