@@ -1,8 +1,8 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../data/models/sales_models.dart';
 
@@ -70,20 +70,28 @@ class BankingCsvHelper {
         csvBuffer.writeln(row.join(','));
       }
 
-      final tempDir = await getTemporaryDirectory();
       final cleanTitle = periodTitle.replaceAll(RegExp(r'[\\/:*?"<>|\s]'), '_');
       final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final fileName = '은행이체명세_${cleanTitle}_$dateStr.csv';
-      final file = File('${tempDir.path}/$fileName');
+      final bytes = Uint8List.fromList(utf8.encode(csvBuffer.toString()));
 
-      await file.writeAsString(csvBuffer.toString());
+      final xFile = XFile.fromData(
+        bytes,
+        name: fileName,
+        mimeType: 'text/csv',
+      );
 
-      // 모바일 공유 시트 호출
-      // ignore: deprecated_member_use
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box != null && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
+
+      if (!context.mounted) return;
+
+      // 모바일 공유 시트 / 웹 다운로드 호출
       await AppShareHelper.shareXFiles(
-        [XFile(file.path, mimeType: 'text/csv')],
+        [xFile],
         text: '[$periodTitle] 은행 대량 이체용 지급 명세서 (${payouts.length}건)',
         subject: '은행 대량 이체 파일 - $periodTitle',
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       if (context.mounted) {
