@@ -33,7 +33,6 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _transactionsScrollController = ScrollController();
   Timer? _debounceTimer;
-  bool _isSummaryExpanded = true;
 
   @override
   void initState() {
@@ -687,24 +686,6 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                 ),
                 IconButton(
                   onPressed: () {
-                    setState(() => _isSummaryExpanded = !_isSummaryExpanded);
-                  },
-                  icon: Icon(
-                    _isSummaryExpanded
-                        ? Icons.analytics_rounded
-                        : Icons.analytics_outlined,
-                    size: 19,
-                    color: _isSummaryExpanded
-                        ? context.colors.accentProject
-                        : context.colors.textMuted,
-                  ),
-                  tooltip: _isSummaryExpanded ? '자금 현황/차트 숨기기' : '자금 현황/차트 보기',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  onPressed: () {
                     ref.invalidate(ledgerOverallAggregateProvider);
                     ref.invalidate(ledgerBalanceByAccountProvider);
                     ref.invalidate(projectBankAccountsProvider);
@@ -734,68 +715,66 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
               child: CustomScrollView(
                 controller: _transactionsScrollController,
                 slivers: [
-                  // A. KPI 대시보드 및 캐시플로우 미니 차트 (접기/펼치기 및 스크롤 연동)
-                  if (_isSummaryExpanded) ...[
-                    SliverToBoxAdapter(
-                      child: aggregateAsync.when(
-                        loading: () => const SizedBox(
-                          height: 64,
-                          child: Center(
-                            child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
-                          ),
+                  // A. KPI 대시보드 및 캐시플로우 미니 차트 (스크롤 연동)
+                  SliverToBoxAdapter(
+                    child: aggregateAsync.when(
+                      loading: () => const SizedBox(
+                        height: 64,
+                        child: Center(
+                          child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2)),
                         ),
-                        error: (_, __) => const SizedBox.shrink(),
-                        data: (aggregate) {
-                          if (aggregate == null) return const SizedBox.shrink();
-                          return Container(
-                            color: context.colors.bgCard,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            child: Row(
-                              children: [
-                                _KpiItem(
-                                  label: '총 잔고액',
-                                  value: _formatToBillion(aggregate.totalBalance),
-                                  color: const Color(0xFF38BDF8),
-                                ),
-                                _divider(),
-                                _KpiItem(
-                                  label: '당월 입금',
-                                  value: _formatToBillion(aggregate.monthIncome),
-                                  color: const Color(0xFF10B981),
-                                ),
-                                _divider(),
-                                _KpiItem(
-                                  label: '당월 지출',
-                                  value: _formatToBillion(aggregate.monthExpense),
-                                  color: const Color(0xFFEF4444),
-                                ),
-                                _divider(),
-                                _KpiItem(
-                                  label: '당월 수지차',
-                                  value: _formatToBillion(aggregate.monthBalance),
-                                  color: aggregate.monthBalance >= 0
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFEF4444),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
                       ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (aggregate) {
+                        if (aggregate == null) return const SizedBox.shrink();
+                        return Container(
+                          color: context.colors.bgCard,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          child: Row(
+                            children: [
+                              _KpiItem(
+                                label: '총 잔고액',
+                                value: _formatToBillion(aggregate.totalBalance),
+                                color: const Color(0xFF38BDF8),
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '당월 입금',
+                                value: _formatToBillion(aggregate.monthIncome),
+                                color: const Color(0xFF10B981),
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '당월 지출',
+                                value: _formatToBillion(aggregate.monthExpense),
+                                color: const Color(0xFFEF4444),
+                              ),
+                              _divider(),
+                              _KpiItem(
+                                label: '당월 수지차',
+                                value: _formatToBillion(aggregate.monthBalance),
+                                color: aggregate.monthBalance >= 0
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFEF4444),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    const SliverToBoxAdapter(
-                      child: Divider(height: 1),
-                    ),
-                    const SliverToBoxAdapter(
-                      child: CashflowMiniChartCard(),
-                    ),
-                    const SliverToBoxAdapter(
-                      child: Divider(height: 1),
-                    ),
-                  ],
+                  ),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: CashflowMiniChartCard(),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: Divider(height: 1),
+                  ),
 
                   // B. 3대 서브 탭 바 (상단 고정 Sticky Header)
                   SliverPersistentHeader(
