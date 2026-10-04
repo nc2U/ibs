@@ -84,8 +84,8 @@ class TokenStorage {
     await _storage.delete(key: _savedEmailKey);
   }
 
-  // 모든 토큰 삭제 (로그아웃 시 - 보안을 위해 생체 인증 토큰도 함께 삭제)
-  Future<void> clearTokens({bool clearBiometric = true}) async {
+  // 모든 토큰 삭제 (일반 로그아웃 시 생체 로그인 토큰은 보존)
+  Future<void> clearTokens({bool clearBiometric = false}) async {
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
     _inMemoryUserData = null;

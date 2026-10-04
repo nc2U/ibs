@@ -116,9 +116,9 @@ class AuthService {
     }
   }
 
-  /// 로그아웃 (토큰 및 생체 인증 세션 삭제)
+  /// 로그아웃 (일반 세션 토큰 삭제, 생체 로그인 세션은 유지)
   Future<void> logout() async {
-    await _tokenStorage.clearTokens(clearBiometric: true);
+    await _tokenStorage.clearTokens(clearBiometric: false);
   }
 
   /// 로그인 상태 확인
