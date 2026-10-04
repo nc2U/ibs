@@ -262,7 +262,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, state) {
               final roomId = int.tryParse(state.pathParameters['roomId'] ?? '') ?? 0;
               final initialRoom = state.extra as ChatRoomModel?;
-              return ChatRoomScreen(roomId: roomId, initialRoom: initialRoom);
+              final initialMessageId = int.tryParse(state.uri.queryParameters['messageId'] ?? '');
+              return ChatRoomScreen(
+                roomId: roomId,
+                initialRoom: initialRoom,
+                initialMessageId: initialMessageId,
+              );
             },
           ),
         ],

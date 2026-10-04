@@ -47,24 +47,30 @@ const globalSearchRoomResults = computed(() => {
 const globalSearchMessageResults = ref<ChatMessage[]>([])
 const isGlobalSearchingMessages = ref(false)
 let globalSearchDebounceTimer: any = null
+const globalSearchSeq = ref(0)
 
 const handleGlobalSearchChange = () => {
   clearTimeout(globalSearchDebounceTimer)
   const q = globalSearchQuery.value.trim()
+  const seq = ++globalSearchSeq.value
   if (!q) {
     globalSearchMessageResults.value = []
     isGlobalSearchingMessages.value = false
     return
   }
+  isGlobalSearchingMessages.value = true
   globalSearchDebounceTimer = setTimeout(async () => {
-    isGlobalSearchingMessages.value = true
     try {
       const res = await chatStore.searchMessages({ q, page: 1, pageSize: 30 })
+      if (seq !== globalSearchSeq.value) return
       globalSearchMessageResults.value = res.results || []
     } catch (_) {
+      if (seq !== globalSearchSeq.value) return
       globalSearchMessageResults.value = []
     } finally {
-      isGlobalSearchingMessages.value = false
+      if (seq === globalSearchSeq.value) {
+        isGlobalSearchingMessages.value = false
+      }
     }
   }, 350)
 }
@@ -78,50 +84,70 @@ const clearGlobalSearch = () => {
 // ── 🔍 2. 대화방 내부 검색 & 점프 및 하이라이트 상태 ─────────────
 const isRoomSearching = ref(false)
 const roomSearchQuery = ref('')
+const matchedMessageIds = ref<number[]>([]) // 서버 전체 영구 이력 검색 결과 ID들 (오래된 순)
+const matchHasMore = ref(false)
+const currentMatchIndex = ref(-1)
+const isRoomSearchLoading = ref(false)
+let roomSearchDebounceTimer: any = null
+const roomSearchSeq = ref(0)
 const highlightedMessageId = ref<number | null>(null)
 let highlightTimer: any = null
 
-const matchedMessageIndices = computed(() => {
-  const q = roomSearchQuery.value.trim().toLowerCase()
-  if (!q || !messages.value.length) return []
-  const indices: number[] = []
-  messages.value.forEach((m, idx) => {
-    if (m.is_deleted) return
-    const content = (m.content || '').toLowerCase()
-    const fileName = (m.file_name || '').toLowerCase()
-    const refTitle = (m.ref_title || '').toLowerCase()
-    if (content.includes(q) || fileName.includes(q) || refTitle.includes(q)) {
-      indices.push(idx)
-    }
-  })
-  return indices
-})
-const currentMatchIndex = ref(-1)
-
 const handleRoomSearchChange = () => {
-  if (matchedMessageIndices.value.length > 0) {
-    currentMatchIndex.value = matchedMessageIndices.value.length - 1
-    jumpToMessageByIndex(matchedMessageIndices.value[currentMatchIndex.value])
-  } else {
+  clearTimeout(roomSearchDebounceTimer)
+  const q = roomSearchQuery.value.trim()
+  const seq = ++roomSearchSeq.value
+  if (!q || !currentRoom.value) {
+    matchedMessageIds.value = []
+    matchHasMore.value = false
     currentMatchIndex.value = -1
+    isRoomSearchLoading.value = false
+    return
   }
+  isRoomSearchLoading.value = true
+  roomSearchDebounceTimer = setTimeout(async () => {
+    try {
+      const res = await chatStore.searchMessages({
+        room: currentRoom.value!.id,
+        q,
+        pageSize: 100,
+      })
+      if (seq !== roomSearchSeq.value) return
+      const ids = (res.results || []).map((m: ChatMessage) => m.id).reverse()
+      matchedMessageIds.value = ids
+      matchHasMore.value = res.has_more || false
+      currentMatchIndex.value = ids.length ? ids.length - 1 : -1
+      if (ids.length) {
+        jumpToMessageById(ids[currentMatchIndex.value])
+      }
+    } catch (_) {
+      if (seq !== roomSearchSeq.value) return
+      matchedMessageIds.value = []
+      currentMatchIndex.value = -1
+    } finally {
+      if (seq === roomSearchSeq.value) {
+        isRoomSearchLoading.value = false
+      }
+    }
+  }, 350)
 }
 
 const navigateMatch = (direction: 'prev' | 'next') => {
-  const matches = matchedMessageIndices.value
-  if (!matches.length) return
+  const ids = matchedMessageIds.value
+  if (!ids.length) return
   if (direction === 'prev') {
-    currentMatchIndex.value = (currentMatchIndex.value - 1 + matches.length) % matches.length
+    currentMatchIndex.value = (currentMatchIndex.value - 1 + ids.length) % ids.length
   } else {
-    currentMatchIndex.value = (currentMatchIndex.value + 1) % matches.length
+    currentMatchIndex.value = (currentMatchIndex.value + 1) % ids.length
   }
-  jumpToMessageByIndex(matches[currentMatchIndex.value])
+  jumpToMessageById(ids[currentMatchIndex.value])
 }
 
-const jumpToMessageByIndex = (msgIdx: number) => {
-  const targetMsg = messages.value[msgIdx]
-  if (!targetMsg) return
-  highlightMessage(targetMsg.id)
+const jumpToMessageById = async (messageId: number) => {
+  await chatStore.loadAround(messageId)
+  nextTick(() => {
+    highlightMessage(messageId)
+  })
 }
 
 const highlightMessage = (messageId: number) => {
@@ -147,24 +173,11 @@ const jumpToMessageFromSearch = async (targetMsg: ChatMessage) => {
     await chatStore.enterRoom(targetRoom)
   }
 
-  // 2. 현재 방 메시지에 있는지 확인
-  const existingIdx = messages.value.findIndex(m => m.id === targetMsg.id)
-  if (existingIdx !== -1) {
+  // 2. 전후 맥락 로드 & 이동
+  await chatStore.loadAround(targetMsg.id)
+  nextTick(() => {
     highlightMessage(targetMsg.id)
-  } else {
-    // 백엔드 context API로 전후 메시지 병합 로드
-    try {
-      const contextRes = await chatStore.fetchMessageContext(targetMsg.id, 20)
-      if (contextRes.results && contextRes.results.length) {
-        chatStore.messages = contextRes.results
-        nextTick(() => {
-          highlightMessage(targetMsg.id)
-        })
-      }
-    } catch (_) {
-      highlightMessage(targetMsg.id)
-    }
-  }
+  })
 }
 
 // ── 📂 3. 영구 보존 파일/미디어 서랍 모달 상태 ───────────────────
@@ -236,18 +249,65 @@ const getRoomDisplayName = (room: ChatRoom) => {
   return '그룹 대화방'
 }
 
-const scrollToBottom = () => {
+const showScrollToBottomBtn = ref(false)
+let lastMessageCount = 0
+
+const scrollToBottom = (force = false) => {
   nextTick(() => {
-    if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    if (!messageContainer.value) return
+    const el = messageContainer.value
+    const maxScroll = el.scrollHeight - el.clientHeight
+    const isNearBottom = maxScroll - el.scrollTop <= 150
+    if (force || isNearBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     }
   })
 }
 
+// 📜 무한 스크롤 & 위치 보존 핸들러
+const handleMessagesScroll = async (e: Event) => {
+  const el = e.target as HTMLElement
+  if (!el) return
+  const currentScroll = el.scrollTop
+  const maxScroll = el.scrollHeight - el.clientHeight
+  const isNearBottom = maxScroll - currentScroll <= 150
+
+  // 과거 구간을 보는 중이거나 하단에서 멀어지면 최신 이동 버튼 노출
+  showScrollToBottomBtn.value = !isNearBottom || !chatStore.atLatest
+
+  // ⬆️ 상단 근처: 더 오래된 대화 로드 (보던 위치 보존)
+  if (currentScroll <= 60 && chatStore.hasMoreOlder && !chatStore.isLoadingOlder) {
+    const oldScrollHeight = el.scrollHeight
+    const oldScrollTop = el.scrollTop
+    const loaded = await chatStore.loadOlder()
+    if (loaded) {
+      nextTick(() => {
+        el.scrollTop = oldScrollTop + (el.scrollHeight - oldScrollHeight)
+      })
+    }
+  }
+
+  // ⬇️ 과거 구간 하단: 이어지는 최근 대화 로드
+  if (isNearBottom && !chatStore.atLatest && !chatStore.isLoadingNewer) {
+    await chatStore.loadNewer()
+  }
+}
+
+const handleJumpToLatest = async () => {
+  await chatStore.jumpToLatest()
+  scrollToBottom(true)
+}
+
 watch(
   () => messages.value.length,
-  () => {
-    scrollToBottom()
+  (newLen) => {
+    if (newLen > lastMessageCount) {
+      // 최신 구간을 보고 있을 때만 새 메시지 수신 시 하단 스크롤
+      if (chatStore.atLatest) {
+        scrollToBottom(false)
+      }
+    }
+    lastMessageCount = newLen
   },
 )
 
@@ -368,8 +428,10 @@ const handleFileSelected = async (event: Event) => {
 const processFileUpload = async (file: File) => {
   try {
     isUploading.value = true
-    await chatStore.uploadFile(file)
-    scrollToBottom()
+    const replyId = replyingTo.value?.id
+    await chatStore.uploadFile(file, '', replyId)
+    replyingTo.value = null
+    scrollToBottom(true)
   } catch (err) {
     alert('파일 전송에 실패했습니다. 다시 시도해주세요.')
   } finally {
@@ -564,7 +626,6 @@ const formatTime = (dateStr: string) => {
       temporary
       width="480"
       class="chat-drawer shadow-lg"
-      :class="{ 'dark-drawer': isDark }"
     >
       <div class="d-flex flex-column h-100 chat-main-container">
         <!-- ── 헤더 ────────────────────────────────────────────── -->
@@ -724,17 +785,25 @@ const formatTime = (dateStr: string) => {
             class="text-xs flex-grow-1 mr-2"
             @update:model-value="handleRoomSearchChange"
           />
-          <div class="text-xs mr-2 text-nowrap font-weight-bold" style="min-width: 50px">
-            <span v-if="roomSearchQuery.trim() && matchedMessageIndices.length">
-              {{ currentMatchIndex + 1 }} / {{ matchedMessageIndices.length }}
+          <div class="text-xs mr-2 text-nowrap font-weight-bold d-flex align-items-center" style="min-width: 50px">
+            <v-progress-circular
+              v-if="isRoomSearchLoading"
+              indeterminate
+              size="12"
+              width="2"
+              color="primary"
+              class="mr-1"
+            />
+            <span v-if="roomSearchQuery.trim() && matchedMessageIds.length">
+              {{ currentMatchIndex + 1 }} / {{ matchedMessageIds.length }}{{ matchHasMore ? '+' : '' }}
             </span>
-            <span v-else-if="roomSearchQuery.trim()" class="text-muted"> 0건 </span>
+            <span v-else-if="roomSearchQuery.trim() && !isRoomSearchLoading" class="text-muted"> 0건 </span>
           </div>
           <v-btn
             icon="mdi-chevron-up"
             size="x-small"
             variant="text"
-            :disabled="matchedMessageIndices.length <= 1"
+            :disabled="matchedMessageIds.length <= 1"
             title="이전 결과"
             @click="navigateMatch('prev')"
           />
@@ -742,7 +811,7 @@ const formatTime = (dateStr: string) => {
             icon="mdi-chevron-down"
             size="x-small"
             variant="text"
-            :disabled="matchedMessageIndices.length <= 1"
+            :disabled="matchedMessageIds.length <= 1"
             title="다음 결과"
             @click="navigateMatch('next')"
           />
@@ -756,6 +825,8 @@ const formatTime = (dateStr: string) => {
               () => {
                 isRoomSearching = false
                 roomSearchQuery = ''
+                matchedMessageIds = []
+                currentMatchIndex = -1
               }
             "
           />
@@ -1129,7 +1200,16 @@ const formatTime = (dateStr: string) => {
           </div>
 
           <!-- 메시지 리스트 -->
-          <div ref="messageContainer" class="flex-grow-1 overflow-y-auto p-3 chat-messages-area">
+          <div
+            ref="messageContainer"
+            class="flex-grow-1 overflow-y-auto p-3 chat-messages-area"
+            @scroll="handleMessagesScroll"
+          >
+            <!-- ⬆️ 과거 대화 로딩 인디케이터 -->
+            <div v-if="chatStore.isLoadingOlder" class="text-center py-2">
+              <v-progress-circular indeterminate size="18" width="2" color="primary" />
+            </div>
+
             <!-- 메시지 없음 안내 (Empty State) -->
             <div v-if="messages.length === 0" class="text-center py-6 px-3">
               <div
@@ -1428,6 +1508,18 @@ const formatTime = (dateStr: string) => {
                 @click="handleSendMessage()"
               />
             </div>
+
+            <!-- ── 최신 대화로 복귀 / 하단 이동 플로팅 버튼 ── -->
+            <v-btn
+              v-if="showScrollToBottomBtn"
+              icon="mdi-arrow-down"
+              size="small"
+              color="primary"
+              class="chat-scroll-bottom-fab position-absolute elevation-3"
+              style="bottom: 74px; right: 16px; z-index: 20"
+              :title="!chatStore.atLatest ? '최신 대화로 복귀' : '하단으로 이동'"
+              @click="handleJumpToLatest"
+            />
           </div>
         </div>
       </div>
@@ -1570,9 +1662,9 @@ const formatTime = (dateStr: string) => {
               size="small"
               class="mr-2"
             />
-            <span>{{
-              currentRoom?.room_type === 'channel' ? '채널 참여 멤버' : '대화방 참여자'
-            }}</span>
+            <span>
+              {{ currentRoom?.room_type === 'channel' ? '채널 참여 멤버' : '대화방 참여자' }}
+            </span>
             <v-chip size="x-small" color="primary" class="ml-2 font-weight-bold">
               {{ currentRoom?.members?.length || 0 }}명
             </v-chip>
@@ -1942,15 +2034,15 @@ const formatTime = (dateStr: string) => {
   opacity: 1;
   visibility: visible;
 }
-.dark-drawer .msg-action-toolbar {
+.dark-theme .msg-action-toolbar {
   background-color: #242b3a !important;
   border-color: #3e485e !important;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
 }
-.dark-drawer .msg-action-toolbar .v-btn {
+.dark-theme .msg-action-toolbar .v-btn {
   color: #cbd5e1 !important;
 }
-.dark-drawer .msg-action-toolbar .v-btn:hover {
+.dark-theme .msg-action-toolbar .v-btn:hover {
   color: #ffffff !important;
   background-color: #333c52 !important;
 }
@@ -1958,7 +2050,7 @@ const formatTime = (dateStr: string) => {
   color: #ef4444 !important;
   background-color: rgba(239, 68, 68, 0.12) !important;
 }
-.dark-drawer .msg-action-toolbar .delete-btn:hover {
+.dark-theme .msg-action-toolbar .delete-btn:hover {
   color: #f87171 !important;
   background-color: rgba(239, 68, 68, 0.22) !important;
 }
@@ -1979,7 +2071,7 @@ const formatTime = (dateStr: string) => {
   font-size: 0.68rem;
   line-height: 1;
 }
-.dark-drawer .unread-count-badge {
+.dark-theme .unread-count-badge {
   color: #facc15;
 }
 
@@ -1991,7 +2083,7 @@ const formatTime = (dateStr: string) => {
   box-shadow: none !important;
   cursor: default !important;
 }
-.dark-drawer .deleted-bubble {
+.dark-theme .deleted-bubble {
   background-color: rgba(255, 255, 255, 0.03) !important;
   color: #64748b !important;
   border: 1px dashed #334155 !important;
@@ -2003,10 +2095,10 @@ const formatTime = (dateStr: string) => {
   font-size: 0.82rem;
   letter-spacing: -0.2px;
 }
-.dark-drawer .deleted-msg-content {
+.dark-theme .deleted-msg-content {
   color: #64748b !important; /* 다크모드에서 일반 텍스트 대비 차분하게 톤 다운 */
 }
-.dark-drawer .deleted-msg-content .v-icon {
+.dark-theme .deleted-msg-content .v-icon {
   color: #64748b !important;
   opacity: 0.8;
 }
@@ -2037,14 +2129,14 @@ const formatTime = (dateStr: string) => {
 }
 
 /* 다크모드 답장 원본 인용 박스 */
-.dark-drawer .reply-quote-box {
+.dark-theme .reply-quote-box {
   background-color: rgba(0, 0, 0, 0.3) !important;
   border-left: 3px solid #60a5fa !important;
 }
-.dark-drawer .reply-quote-sender {
+.dark-theme .reply-quote-sender {
   color: #93c5fd !important;
 }
-.dark-drawer .reply-quote-content {
+.dark-theme .reply-quote-content {
   color: #cbd5e1 !important;
 }
 
@@ -2053,7 +2145,7 @@ const formatTime = (dateStr: string) => {
   background-color: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 }
-.dark-drawer .reply-target-bar {
+.dark-theme .reply-target-bar {
   background-color: #1a1e27 !important;
   border-color: #2e3547 !important;
   color: #f1f5f9 !important;
@@ -2126,45 +2218,45 @@ const formatTime = (dateStr: string) => {
 /* ==========================================================================
    다크 모드 (IBS CoreUI 다크 테마 일원화)
    ========================================================================== */
-.dark-drawer .chat-main-container {
+.dark-theme .chat-main-container {
   background-color: #1e222d !important;
   color: #f1f5f9 !important;
 }
-.dark-drawer .chat-header,
-.dark-drawer .chat-tabs-area,
-.dark-drawer .chat-input-area {
+.dark-theme .chat-header,
+.dark-theme .chat-tabs-area,
+.dark-theme .chat-input-area {
   background-color: #1e222d !important;
   border-color: #2e3547 !important;
 }
-.dark-drawer .room-header-title {
+.dark-theme .room-header-title {
   color: #f8fafc !important;
 }
-.dark-drawer .chat-messages-area {
+.dark-theme .chat-messages-area {
   background-color: #11141a !important;
 }
-.dark-drawer .chat-room-item:hover,
-.dark-drawer .user-list-item:hover {
+.dark-theme .chat-room-item:hover,
+.dark-theme .user-list-item:hover {
   background-color: #282e3f !important;
 }
-.dark-drawer .empty-state-text,
-.dark-drawer .timestamp-text {
+.dark-theme .empty-state-text,
+.dark-theme .timestamp-text {
   color: #94a3b8 !important;
   font-size: 0.72rem;
 }
-.dark-drawer .sender-name-label {
+.dark-theme .sender-name-label {
   color: #cbd5e1 !important;
   font-weight: 600;
   font-size: 0.75rem;
 }
 
 /* 다크모드 말풍선: 눈이 편안한 고급 슬레이트 블루(내 메시지) & 다크 차콜(상대 메시지) */
-.dark-drawer .my-bubble:not(.deleted-bubble) {
+.dark-theme .my-bubble:not(.deleted-bubble) {
   background-color: #2b3a55 !important; /* 눈이 아주 편안한 차분한 슬레이트 네이비/블루 */
   color: #f8fafc !important; /* 맑고 선명한 화이트 */
   border: 1px solid #3d4f72 !important;
   border-radius: 14px 14px 2px 14px;
 }
-.dark-drawer .other-bubble:not(.deleted-bubble) {
+.dark-theme .other-bubble:not(.deleted-bubble) {
   background-color: #202430 !important;
   color: #e2e8f0 !important;
   border: 1px solid #2d3345 !important;
@@ -2172,27 +2264,27 @@ const formatTime = (dateStr: string) => {
 }
 
 /* 다크모드 리치 카드 & 첨부파일 카드 */
-.dark-drawer .my-bubble .ref-card,
-.dark-drawer .my-bubble .file-attachment-card {
+.dark-theme .my-bubble .ref-card,
+.dark-theme .my-bubble .file-attachment-card {
   background-color: rgba(0, 0, 0, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
 }
-.dark-drawer .other-bubble .ref-card,
-.dark-drawer .other-bubble .file-attachment-card {
+.dark-theme .other-bubble .ref-card,
+.dark-theme .other-bubble .file-attachment-card {
   background-color: #171a22 !important;
   border-color: #2d3345 !important;
   padding: 6px 9px;
   color: #e2e8f0 !important;
 }
-.dark-drawer .other-bubble .ref-card-title {
+.dark-theme .other-bubble .ref-card-title {
   color: #93c5fd !important;
   font-weight: 600;
 }
-.dark-drawer .other-bubble .ref-card-sub {
+.dark-theme .other-bubble .ref-card-sub {
   color: #94a3b8 !important;
 }
-.dark-drawer .chat-image-preview img {
+.dark-theme .chat-image-preview img {
   border-color: #2d3345;
 }
 
@@ -2209,7 +2301,7 @@ const formatTime = (dateStr: string) => {
   pointer-events: none;
   backdrop-filter: blur(2px);
 }
-.dark-drawer .drag-drop-overlay {
+.dark-theme .drag-drop-overlay {
   background-color: rgba(20, 23, 31, 0.92) !important;
   border-color: #3b82f6 !important;
 }
@@ -2240,7 +2332,7 @@ const formatTime = (dateStr: string) => {
   filter: brightness(0.96);
   transform: translateY(-1px);
 }
-.dark-drawer .self-chat-highlight:hover {
+.dark-theme .self-chat-highlight:hover {
   filter: brightness(1.15);
 }
 

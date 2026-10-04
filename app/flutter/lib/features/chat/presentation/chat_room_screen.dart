@@ -24,10 +24,14 @@ class ChatRoomScreen extends ConsumerStatefulWidget {
   final int roomId;
   final ChatRoomModel? initialRoom;
 
+  /// 검색 결과/보관함 등에서 진입 시 바로 이동할 대상 메시지 ID
+  final int? initialMessageId;
+
   const ChatRoomScreen({
     super.key,
     required this.roomId,
     this.initialRoom,
+    this.initialMessageId,
   });
 
   @override
@@ -48,10 +52,18 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   // 🔍 인앱 검색 및 하이라이트 상태
   bool _isSearching = false;
   final _searchController = TextEditingController();
-  List<int> _matchedMessageIndices = [];
+  List<int> _matchedMessageIds = []; // 오래된 순 → 최신 순 (서버 전체 이력 검색 결과)
+  bool _matchHasMore = false;
   int _currentMatchIndex = -1;
+  bool _isSearchLoading = false;
+  Timer? _searchDebounce;
+  int _searchSeq = 0;
   int? _highlightedMessageId;
   Timer? _highlightTimer;
+
+  // 🎯 메시지 위치 점프용 키 / 점프 진행 상태
+  final Map<int, GlobalKey> _messageKeys = {};
+  bool _isJumping = false;
 
   @override
   void initState() {
@@ -61,7 +73,11 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
     // 대화방 진입 즉시 최신 메시지 동기화 & 읽음 처리 & 전역 배지 갱신
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chatRoomNotifierProvider(widget.roomId).notifier).refreshMessages();
+      if (widget.initialMessageId != null) {
+        _jumpToTargetMessage(widget.initialMessageId!);
+      } else {
+        ref.read(chatRoomNotifierProvider(widget.roomId).notifier).refreshMessages();
+      }
       ref.read(chatRepositoryProvider).markAsRead(widget.roomId).then((_) {
         if (mounted) {
           ref.invalidate(totalUnreadChatCountProvider);
@@ -73,12 +89,41 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    final isNearBottom = currentScroll >= maxScroll - 150;
-    if (_showScrollToBottomBtn == isNearBottom) {
-      setState(() => _showScrollToBottomBtn = !isNearBottom);
+    final pos = _scrollController.position;
+    final currentScroll = pos.pixels;
+    final isNearBottom = currentScroll >= pos.maxScrollExtent - 150;
+    final notifier = ref.read(chatRoomNotifierProvider(widget.roomId).notifier);
+
+    // 과거 구간(window)을 보는 중에는 항상 '최신 대화로' 버튼을 노출
+    final showBtn = !isNearBottom || !notifier.atLatest;
+    if (_showScrollToBottomBtn != showBtn) {
+      setState(() => _showScrollToBottomBtn = showBtn);
     }
+
+    if (_isJumping) return;
+    // ⬆️ 상단 근처: 더 오래된 대화 자동 로드 (영구 보존 이력 무한 스크롤)
+    if (currentScroll <= 200 && notifier.hasMoreOlder && !notifier.isLoadingOlder) {
+      _loadOlderPreservingScroll();
+    }
+    // ⬇️ 과거 구간 하단: 이어지는 최근 대화 로드
+    if (isNearBottom && !notifier.atLatest) {
+      notifier.loadNewer();
+    }
+  }
+
+  Future<void> _loadOlderPreservingScroll() async {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final oldMax = pos.maxScrollExtent;
+    final oldPixels = pos.pixels;
+    final loaded = await ref.read(chatRoomNotifierProvider(widget.roomId).notifier).loadOlder();
+    if (!loaded || !mounted) return;
+    // 위쪽에 메시지가 추가된 만큼 오프셋을 보정하여 보던 위치 유지
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final newMax = _scrollController.position.maxScrollExtent;
+      _scrollController.jumpTo(oldPixels + (newMax - oldMax));
+    });
   }
 
   void _onInputTextChanged() {
@@ -96,77 +141,109 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     }
   }
 
-  void _onSearchQueryChanged(String query, List<ChatMessageModel> messages) {
-    if (query.trim().isEmpty) {
+  /// 🔍 대화방 내 검색 - 로드된 50개가 아닌 서버의 전체 영구 이력을 대상으로 한다.
+  void _onSearchQueryChanged(String query) {
+    _searchDebounce?.cancel();
+    final q = query.trim();
+    final seq = ++_searchSeq;
+    if (q.isEmpty) {
       setState(() {
-        _matchedMessageIndices = [];
+        _matchedMessageIds = [];
+        _matchHasMore = false;
         _currentMatchIndex = -1;
+        _isSearchLoading = false;
       });
       return;
     }
-    final q = query.trim().toLowerCase();
-    final matches = <int>[];
-    for (int i = 0; i < messages.length; i++) {
-      final m = messages[i];
-      if (m.isDeleted) continue;
-      final content = m.content.toLowerCase();
-      final fileName = m.fileName.toLowerCase();
-      final refTitle = m.refTitle.toLowerCase();
-      if (content.contains(q) || fileName.contains(q) || refTitle.contains(q)) {
-        matches.add(i);
-      }
-    }
-    setState(() {
-      _matchedMessageIndices = matches;
-      if (matches.isNotEmpty) {
-        _currentMatchIndex = matches.length - 1;
-        _scrollToMessageIndex(matches[_currentMatchIndex], messages);
-      } else {
-        _currentMatchIndex = -1;
+    setState(() => _isSearchLoading = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final res = await ref.read(chatRepositoryProvider).searchMessages(
+              query: q,
+              roomId: widget.roomId,
+              pageSize: 100,
+            );
+        // 늦게 도착한 이전 검색어 응답 무시
+        if (!mounted || seq != _searchSeq) return;
+        final results = res['results'] as List<ChatMessageModel>;
+        final ids = results.map((m) => m.id).toList().reversed.toList();
+        setState(() {
+          _matchedMessageIds = ids;
+          _matchHasMore = res['has_more'] as bool? ?? false;
+          _isSearchLoading = false;
+          _currentMatchIndex = ids.isEmpty ? -1 : ids.length - 1;
+        });
+        if (ids.isNotEmpty) _jumpToTargetMessage(ids.last);
+      } catch (_) {
+        if (!mounted || seq != _searchSeq) return;
+        setState(() => _isSearchLoading = false);
       }
     });
   }
 
-  void _navigateMatch(bool next, List<ChatMessageModel> messages) {
-    if (_matchedMessageIndices.isEmpty) return;
-    int newIdx = _currentMatchIndex;
-    if (next) {
-      newIdx = (_currentMatchIndex + 1) % _matchedMessageIndices.length;
-    } else {
-      newIdx = (_currentMatchIndex - 1 + _matchedMessageIndices.length) % _matchedMessageIndices.length;
-    }
-    setState(() {
-      _currentMatchIndex = newIdx;
-    });
-    _scrollToMessageIndex(_matchedMessageIndices[newIdx], messages);
+  void _navigateMatch(bool next) {
+    final len = _matchedMessageIds.length;
+    if (len == 0) return;
+    final newIdx = next
+        ? (_currentMatchIndex + 1) % len
+        : (_currentMatchIndex - 1 + len) % len;
+    setState(() => _currentMatchIndex = newIdx);
+    _jumpToTargetMessage(_matchedMessageIds[newIdx]);
   }
 
-  void _scrollToMessageIndex(int listIndex, List<ChatMessageModel> messages) {
-    if (!_scrollController.hasClients || listIndex < 0 || listIndex >= messages.length) return;
-    final targetMsg = messages[listIndex];
-    setState(() {
-      _highlightedMessageId = targetMsg.id;
-    });
+  void _highlightMessage(int messageId) {
+    setState(() => _highlightedMessageId = messageId);
     _highlightTimer?.cancel();
     _highlightTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) setState(() => _highlightedMessageId = null);
     });
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final itemExtentEstimate = maxScroll / (messages.isEmpty ? 1 : messages.length);
-    final targetOffset = (listIndex * itemExtentEstimate).clamp(0.0, maxScroll);
-
-    _scrollController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
   }
 
-  void _jumpToTargetMessage(int messageId, List<ChatMessageModel> messages) {
-    final idx = messages.indexWhere((m) => m.id == messageId);
-    if (idx != -1) {
-      _scrollToMessageIndex(idx, messages);
+  /// 🎯 대상 메시지로 이동 (로드되지 않은 과거 메시지는 전후 맥락 API로 불러온 뒤 이동)
+  Future<void> _jumpToTargetMessage(int messageId) async {
+    if (_isJumping) return;
+    _isJumping = true;
+    try {
+      final notifier = ref.read(chatRoomNotifierProvider(widget.roomId).notifier);
+      final ok = await notifier.loadAround(messageId);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('해당 메시지를 불러오지 못했습니다.')),
+        );
+        return;
+      }
+      _highlightMessage(messageId);
+      await _ensureMessageVisible(messageId);
+    } finally {
+      _isJumping = false;
+    }
+  }
+
+  /// 메시지 높이가 제각각이어도 정확히 이동하도록 GlobalKey + ensureVisible 사용.
+  /// 아직 빌드되지 않은 항목은 인덱스 비율로 근사 위치로 이동해 빌드시킨 뒤 재시도한다.
+  Future<void> _ensureMessageVisible(int messageId) async {
+    for (var attempt = 0; attempt < 6; attempt++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final ctx = _messageKeys[messageId]?.currentContext;
+      if (ctx != null && ctx.mounted) {
+        await Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.4,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        return;
+      }
+
+      final msgs = ref.read(chatRoomNotifierProvider(widget.roomId)).valueOrNull ?? [];
+      final idx = msgs.indexWhere((m) => m.id == messageId);
+      if (idx < 0) return;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final ratio = msgs.length > 1 ? idx / (msgs.length - 1) : 0.0;
+      _scrollController.jumpTo((maxScroll * ratio).clamp(0.0, maxScroll));
     }
   }
 
@@ -174,6 +251,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   void dispose() {
     _typingTimer?.cancel();
     _highlightTimer?.cancel();
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _textController.removeListener(_onInputTextChanged);
     _scrollController.removeListener(_onScroll);
@@ -203,7 +281,8 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   setState(() {
                     _isSearching = false;
                     _searchController.clear();
-                    _matchedMessageIndices = [];
+                    _matchedMessageIds = [];
+                    _matchHasMore = false;
                     _currentMatchIndex = -1;
                     _highlightedMessageId = null;
                   });
@@ -219,18 +298,26 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   border: InputBorder.none,
                   isDense: true,
                 ),
-                onChanged: (val) {
-                  final msgs = messagesAsync.valueOrNull ?? [];
-                  _onSearchQueryChanged(val, msgs);
-                },
+                onChanged: _onSearchQueryChanged,
               ),
               actions: [
-                if (_matchedMessageIndices.isNotEmpty) ...[
+                if (_isSearchLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                if (_matchedMessageIds.isNotEmpty) ...[
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        '${_currentMatchIndex + 1}/${_matchedMessageIndices.length}',
+                        '${_currentMatchIndex + 1}/${_matchedMessageIds.length}${_matchHasMore ? '+' : ''}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -242,18 +329,12 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   IconButton(
                     icon: Icon(Icons.keyboard_arrow_up_rounded, color: context.colors.textPrimary, size: 22),
                     tooltip: '이전 일치 항목',
-                    onPressed: () {
-                      final msgs = messagesAsync.valueOrNull ?? [];
-                      _navigateMatch(false, msgs);
-                    },
+                    onPressed: () => _navigateMatch(false),
                   ),
                   IconButton(
                     icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textPrimary, size: 22),
                     tooltip: '다음 일치 항목',
-                    onPressed: () {
-                      final msgs = messagesAsync.valueOrNull ?? [];
-                      _navigateMatch(true, msgs);
-                    },
+                    onPressed: () => _navigateMatch(true),
                   ),
                 ],
                 if (_searchController.text.isNotEmpty)
@@ -261,8 +342,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                     icon: Icon(Icons.clear_rounded, color: context.colors.textMuted, size: 18),
                     onPressed: () {
                       _searchController.clear();
-                      final msgs = messagesAsync.valueOrNull ?? [];
-                      _onSearchQueryChanged('', msgs);
+                      _onSearchQueryChanged('');
                     },
                   ),
               ],
@@ -308,12 +388,11 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   icon: Icon(Icons.folder_shared_outlined, color: context.colors.accentWork, size: 22),
                   tooltip: '대화방 보관함 (영구 보존 파일/미디어)',
                   onPressed: () {
-                    final msgs = messagesAsync.valueOrNull ?? [];
                     ChatFilesSheet.show(
                       context,
                       roomId: widget.roomId,
                       roomTitle: roomTitle,
-                      onJumpToMessage: (id) => _jumpToTargetMessage(id, msgs),
+                      onJumpToMessage: _jumpToTargetMessage,
                     );
                   },
                 ),
@@ -377,9 +456,17 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                     if (messages.length != _lastMessageCount) {
                       final isNew = messages.length > _lastMessageCount;
                       _lastMessageCount = messages.length;
-                      if (isNew) {
+                      // 점프 중이거나 과거 구간을 보는 중에는 자동 하단 이동 금지
+                      final notifier =
+                          ref.read(chatRoomNotifierProvider(widget.roomId).notifier);
+                      if (isNew && !_isJumping && notifier.atLatest) {
                         _scrollToBottom(force: false);
                       }
+                    }
+                    // 더 이상 목록에 없는 메시지의 GlobalKey 정리
+                    if (_messageKeys.length > messages.length + 50) {
+                      final ids = messages.map((m) => m.id).toSet();
+                      _messageKeys.removeWhere((id, _) => !ids.contains(id));
                     }
 
                 if (messages.isEmpty) {
@@ -453,7 +540,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                                  (msg.sender != null && currentUsername.isNotEmpty && msg.sender!.username == currentUsername);
                     final showSender = !isMe && (index == 0 || messages[index - 1].sender?.pk != msg.sender?.pk);
 
-                    return _buildMessageItem(context, msg, isMe, showSender);
+                    return KeyedSubtree(
+                      key: _messageKeys.putIfAbsent(msg.id, () => GlobalKey()),
+                      child: _buildMessageItem(context, msg, isMe, showSender),
+                    );
                   },
                 );
               },
@@ -483,9 +573,15 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               child: FloatingActionButton.small(
                 backgroundColor: context.colors.bgSurface,
                 foregroundColor: context.colors.textPrimary,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 elevation: 3,
-                onPressed: () => _scrollToBottom(force: true),
+                onPressed: () async {
+                  final notifier =
+                      ref.read(chatRoomNotifierProvider(widget.roomId).notifier);
+                  // 과거 구간을 보는 중이면 최신 대화를 다시 불러온 뒤 하단으로 이동
+                  if (!notifier.atLatest) await notifier.jumpToLatest();
+                  _scrollToBottom(force: true);
+                },
                 child: const Icon(Icons.arrow_downward_rounded, size: 18),
               ),
             ),

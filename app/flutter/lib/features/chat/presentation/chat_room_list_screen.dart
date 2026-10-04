@@ -31,6 +31,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
   List<ChatMessageModel> _searchMessageResults = [];
   bool _isSearchingMessages = false;
   Timer? _searchDebounce;
+  int _searchSeq = 0;
 
   @override
   void initState() {
@@ -47,29 +48,35 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
   }
 
   void _onSearchQueryChanged(String query) {
-    setState(() {});
     _searchDebounce?.cancel();
-    if (query.trim().isEmpty) {
+    final q = query.trim();
+    final seq = ++_searchSeq;
+    if (q.isEmpty) {
       setState(() {
         _searchMessageResults = [];
         _isSearchingMessages = false;
       });
       return;
     }
+    // 입력 즉시 로딩 상태 표시 (결과 영역/지우기 버튼 갱신 포함)
+    setState(() => _isSearchingMessages = true);
 
     _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
-      setState(() => _isSearchingMessages = true);
       try {
         final repo = ref.read(chatRepositoryProvider);
-        final res = await repo.searchMessages(query: query.trim(), page: 1, pageSize: 30);
-        if (mounted) {
-          setState(() {
-            _searchMessageResults = res['results'] as List<ChatMessageModel>;
-            _isSearchingMessages = false;
-          });
-        }
+        final res = await repo.searchMessages(query: q, page: 1, pageSize: 30);
+        // 늦게 도착한 이전 검색어의 응답이 최신 결과를 덮어쓰지 않도록 무시
+        if (!mounted || seq != _searchSeq) return;
+        setState(() {
+          _searchMessageResults = res['results'] as List<ChatMessageModel>;
+          _isSearchingMessages = false;
+        });
       } catch (_) {
-        if (mounted) setState(() => _isSearchingMessages = false);
+        if (!mounted || seq != _searchSeq) return;
+        setState(() {
+          _searchMessageResults = [];
+          _isSearchingMessages = false;
+        });
       }
     });
   }
@@ -947,7 +954,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
               onTap: () {
                 // 해당 대화방으로 이동
                 final room = allRooms.where((r) => r.id == msg.roomId).firstOrNull;
-                context.push('/chat/${msg.roomId}', extra: room).then((_) {
+                context.push('/chat/${msg.roomId}?messageId=${msg.id}', extra: room).then((_) {
                   ref.invalidate(chatRoomsProvider);
                   ref.invalidate(totalUnreadChatCountProvider);
                 });

@@ -25,7 +25,16 @@ export const useChat = defineStore('chat', () => {
   const usersList = ref<any[]>([])
   const isLoadingUsers = ref(false)
 
+  // 📜 커서 기반 페이지네이션 & 윈도우잉 상태
+  const hasMoreOlder = ref(false)
+  const isLoadingOlder = ref(false)
+  const isLoadingNewer = ref(false)
+  const atLatest = ref(true)
+
   let ws: WebSocket | null = null
+  let reconnectTimer: any = null
+  let reconnectAttempts = 0
+  let hasConnectedOnce = false
 
   const channelRooms = computed(() => rooms.value.filter(r => r.room_type === 'channel'))
   const selfRoom = computed(() => rooms.value.find(r => r.room_type === 'self'))
@@ -118,18 +127,39 @@ export const useChat = defineStore('chat', () => {
     }
   }
 
+  /// 1. 커서 기반 메시지 페이지 조회
+  const fetchMessagePage = async (
+    roomId: number,
+    options: { beforeId?: number; afterId?: number } = {},
+  ): Promise<{ results: ChatMessage[]; has_more: boolean }> => {
+    try {
+      const res = await api.get('/chat-message/', {
+        params: {
+          room: roomId,
+          ...(options.beforeId ? { before_id: options.beforeId } : {}),
+          ...(!options.beforeId && options.afterId ? { after_id: options.afterId } : {}),
+        },
+        hideProgress: true,
+      } as any)
+      const data = res.data
+      const results: ChatMessage[] = data.results || data || []
+      const has_more: boolean = data.has_more ?? false
+      return { results, has_more }
+    } catch (_) {
+      return { results: [], has_more: false }
+    }
+  }
+
   const enterRoom = async (room: ChatRoom) => {
     leaveRoom()
     currentRoom.value = room
     messages.value = []
+    atLatest.value = true
 
     try {
-      const res = await api.get('/chat-message/', {
-        params: { room: room.id },
-        hideProgress: true,
-      } as any)
-      // 백엔드에서 order_by('created')로 오래된 순 -> 최신 순 정렬되어 오므로 그대로 할당
-      messages.value = res.data.results || res.data
+      const page = await fetchMessagePage(room.id)
+      messages.value = page.results
+      hasMoreOlder.value = page.has_more
 
       // 읽음 처리 (마지막 메시지 ID 전달)
       const lastMsg = messages.value.length ? messages.value[messages.value.length - 1] : null
@@ -145,12 +175,124 @@ export const useChat = defineStore('chat', () => {
   }
 
   const leaveRoom = () => {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+    reconnectAttempts = 0
+    hasConnectedOnce = false
     if (ws) {
       ws.close()
       ws = null
     }
     currentRoom.value = null
     messages.value = []
+    hasMoreOlder.value = false
+    atLatest.value = true
+  }
+
+  /// ⬆️ 더 오래된 메시지 불러오기 (위로 스크롤 시)
+  const loadOlder = async (): Promise<boolean> => {
+    if (isLoadingOlder.value || !hasMoreOlder.value || !messages.value.length || !currentRoom.value) {
+      return false
+    }
+    isLoadingOlder.value = true
+    try {
+      const firstId = messages.value[0].id
+      const page = await fetchMessagePage(currentRoom.value.id, { beforeId: firstId })
+      hasMoreOlder.value = page.has_more
+
+      const existingIds = new Set(messages.value.map(m => m.id))
+      const older = page.results.filter(m => !existingIds.has(m.id))
+      if (older.length) {
+        messages.value = [...older, ...messages.value]
+      }
+      return older.length > 0
+    } catch (_) {
+      return false
+    } finally {
+      isLoadingOlder.value = false
+    }
+  }
+
+  /// ⬇️ 과거 구간(window)을 보는 중 아래로 스크롤 시 최근 메시지 불러오기
+  const loadNewer = async (): Promise<boolean> => {
+    if (isLoadingNewer.value || atLatest.value || !messages.value.length || !currentRoom.value) {
+      return false
+    }
+    isLoadingNewer.value = true
+    try {
+      const lastId = messages.value[messages.value.length - 1].id
+      const page = await fetchMessagePage(currentRoom.value.id, { afterId: lastId })
+      const existingIds = new Set(messages.value.map(m => m.id))
+      const newer = page.results.filter(m => !existingIds.has(m.id))
+
+      if (!page.has_more) atLatest.value = true
+      if (newer.length || atLatest.value) {
+        messages.value = [...messages.value, ...newer]
+      }
+      if (atLatest.value && messages.value.length) {
+        const last = messages.value[messages.value.length - 1]
+        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, {
+          hideProgress: true,
+        } as any)
+      }
+      return newer.length > 0
+    } catch (_) {
+      return false
+    } finally {
+      isLoadingNewer.value = false
+    }
+  }
+
+  /// 🎯 특정 메시지 전후 맥락을 불러와 목록을 해당 구간으로 교체 (윈도우 전환)
+  const loadAround = async (messageId: number): Promise<boolean> => {
+    if (!currentRoom.value) return false
+    if (messages.value.some(m => m.id === messageId)) return true
+    try {
+      const contextRes = await fetchMessageContext(messageId, 20)
+      if (contextRes.results && contextRes.results.length) {
+        hasMoreOlder.value = true
+        atLatest.value = false
+        messages.value = contextRes.results
+        return messages.value.some(m => m.id === messageId)
+      }
+      return false
+    } catch (_) {
+      return false
+    }
+  }
+
+  /// 🔽 최신 대화로 복귀 (과거 구간을 보고 있을 때)
+  const jumpToLatest = async () => {
+    if (!currentRoom.value) return
+    try {
+      const page = await fetchMessagePage(currentRoom.value.id)
+      hasMoreOlder.value = page.has_more
+      atLatest.value = true
+      messages.value = page.results
+      const last = messages.value.length ? messages.value[messages.value.length - 1] : null
+      if (last) {
+        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, {
+          hideProgress: true,
+        } as any)
+      }
+    } catch (_) {}
+  }
+
+  /// 최신 메시지 갱신 (삭제 등 반영)
+  const refreshMessages = async () => {
+    if (!currentRoom.value || !atLatest.value) return
+    try {
+      const page = await fetchMessagePage(currentRoom.value.id)
+      const fetched = page.results
+      if (!fetched.length) {
+        messages.value = []
+        return
+      }
+      const firstId = fetched[0].id
+      const kept = messages.value.filter(m => m.id < firstId)
+      if (!kept.length) hasMoreOlder.value = page.has_more
+      messages.value = [...kept, ...fetched]
+    } catch (_) {}
   }
 
   const exitAndHideRoom = async (roomId: number) => {
@@ -166,6 +308,37 @@ export const useChat = defineStore('chat', () => {
     }
   }
 
+  /// 재연결 직후 끊겨 있던 동안 놓친 메시지를 보충
+  const syncMissedMessages = async () => {
+    if (!currentRoom.value || !atLatest.value || !messages.value.length) return
+    try {
+      let lastId = messages.value[messages.value.length - 1].id
+      for (let i = 0; i < 5; i++) {
+        const page = await fetchMessagePage(currentRoom.value.id, { afterId: lastId })
+        if (!currentRoom.value || !atLatest.value) return
+        const existingIds = new Set(messages.value.map(m => m.id))
+        const newer = page.results.filter(m => !existingIds.has(m.id))
+        if (newer.length) {
+          messages.value = [...messages.value, ...newer]
+          lastId = newer[newer.length - 1].id
+        }
+        if (!page.has_more || !newer.length) break
+      }
+    } catch (_) {}
+  }
+
+  const scheduleReconnect = (roomId: number) => {
+    if (!currentRoom.value || currentRoom.value.id !== roomId) return
+    clearTimeout(reconnectTimer)
+    const delaySeconds = Math.min(20, Math.max(2, Math.pow(2, reconnectAttempts)))
+    reconnectAttempts++
+    reconnectTimer = setTimeout(() => {
+      if (currentRoom.value && currentRoom.value.id === roomId && (!ws || ws.readyState === WebSocket.CLOSED)) {
+        connectWebSocket(roomId)
+      }
+    }, delaySeconds * 1000)
+  }
+
   const connectWebSocket = (roomId: number) => {
     if (ws) ws.close()
 
@@ -179,6 +352,11 @@ export const useChat = defineStore('chat', () => {
 
     ws.onopen = () => {
       isConnecting.value = false
+      reconnectAttempts = 0
+      if (hasConnectedOnce) {
+        syncMissedMessages()
+      }
+      hasConnectedOnce = true
     }
 
     ws.onmessage = event => {
@@ -187,9 +365,11 @@ export const useChat = defineStore('chat', () => {
         if (payload.type === 'chat_message') {
           const msg = payload.data || payload.message
           if (msg) {
-            // 이미 추가된 메시지가 아닌 경우에만 push
-            if (!messages.value.some(m => m.id === msg.id)) {
-              messages.value.push(msg)
+            // 과거 구간(window)을 보는 중에는 목록 연속성이 깨지므로 추가하지 않는다
+            if (atLatest.value) {
+              if (!messages.value.some(m => m.id === msg.id)) {
+                messages.value.push(msg)
+              }
             }
             const myId = getMyUserId()
             const myUsername = getMyUsername()
@@ -253,15 +433,19 @@ export const useChat = defineStore('chat', () => {
 
     ws.onclose = () => {
       isConnecting.value = false
+      scheduleReconnect(roomId)
     }
 
     ws.onerror = () => {
       isConnecting.value = false
+      scheduleReconnect(roomId)
     }
   }
 
   const sendMessage = async (content: string, extra: Partial<ChatMessage> = {}) => {
     if (!content.trim() || !currentRoom.value) return
+
+    if (!atLatest.value) await jumpToLatest()
 
     const roomId = currentRoom.value.id
     const payload = {
@@ -298,8 +482,10 @@ export const useChat = defineStore('chat', () => {
     } catch (_) {}
   }
 
-  const uploadFile = async (file: File, comment = '') => {
+  const uploadFile = async (file: File, comment = '', replyToId?: number) => {
     if (!currentRoom.value) return
+
+    if (!atLatest.value) await jumpToLatest()
 
     const isImg = file.type.startsWith('image/')
     const formData = new FormData()
@@ -309,6 +495,9 @@ export const useChat = defineStore('chat', () => {
     formData.append('file', file)
     formData.append('file_name', file.name)
     formData.append('file_size', String(file.size))
+    if (replyToId) {
+      formData.append('reply_to', String(replyToId))
+    }
 
     try {
       const res = await api.post('/chat-message/', formData, {
@@ -332,27 +521,9 @@ export const useChat = defineStore('chat', () => {
         params: targetRoomId ? { room: targetRoomId } : {},
         hideProgress: true,
       } as any)
-      // 웹소켓 미연결 시 로컬 폴백 (웹소켓 연결 시에는 ws.onmessage의 delete_message 이벤트가 자동 처리)
+      // 웹소켓 미연결 시 로컬 동기화 (웹소켓 연결 시에는 ws.onmessage의 delete_message 이벤트가 자동 처리)
       if (!ws || ws.readyState !== WebSocket.OPEN) {
-        const target = messages.value.find(m => m.id === messageId)
-        if (target) {
-          const isSelf = currentRoom.value?.room_type === 'self'
-          const isDirectUnread =
-            currentRoom.value?.room_type === 'direct' && (target.unread_count || 0) > 0
-          const isUnder5Min = Date.now() - new Date(target.created).getTime() <= 5 * 60 * 1000
-          if (isSelf || isDirectUnread || isUnder5Min) {
-            messages.value = messages.value.filter(m => m.id !== messageId)
-          } else {
-            target.is_deleted = true
-            target.content = '삭제된 메시지입니다.'
-            target.file = null
-            target.file_name = ''
-            target.file_size = 0
-            target.ref_id = null
-            target.ref_title = ''
-            target.ref_sub = ''
-          }
-        }
+        await refreshMessages()
       }
     } catch (e) {
       throw e
@@ -435,6 +606,10 @@ export const useChat = defineStore('chat', () => {
     isConnecting,
     usersList,
     isLoadingUsers,
+    hasMoreOlder,
+    isLoadingOlder,
+    isLoadingNewer,
+    atLatest,
     toggleDrawer,
     openDrawer,
     closeDrawer,
@@ -452,5 +627,11 @@ export const useChat = defineStore('chat', () => {
     searchMessages,
     fetchMessageContext,
     fetchChatFiles,
+    fetchMessagePage,
+    loadOlder,
+    loadNewer,
+    loadAround,
+    jumpToLatest,
+    refreshMessages,
   }
 })

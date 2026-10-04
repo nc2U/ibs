@@ -44,22 +44,42 @@ class ChatRepository {
     return ChatRoomModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// 3. 대화방 이전 메시지 내역 조회 (REST API)
-  Future<List<ChatMessageModel>> fetchMessages(int roomId) async {
+  /// 3. 대화방 메시지 내역 조회 (REST API, 커서 페이지네이션)
+  /// - 기본: 최신 N개 / [beforeId]: 해당 ID 이전 메시지 / [afterId]: 해당 ID 이후 메시지
+  /// - 반환 메시지는 항상 오래된 순 → 최신 순 정렬
+  Future<({List<ChatMessageModel> messages, bool hasMore})> fetchMessagePage(
+    int roomId, {
+    int? beforeId,
+    int? afterId,
+  }) async {
     final response = await _dio.get(
       '/api/v1/chat-message/',
-      queryParameters: {'room': roomId},
+      queryParameters: {
+        'room': roomId,
+        if (beforeId != null) 'before_id': beforeId,
+        if (beforeId == null && afterId != null) 'after_id': afterId,
+      },
     );
     final dynamic data = response.data;
 
     List<dynamic> list = [];
+    bool hasMore = false;
     if (data is List) {
       list = data;
-    } else if (data is Map<String, dynamic> && data['results'] is List) {
-      list = data['results'] as List<dynamic>;
+    } else if (data is Map<String, dynamic>) {
+      if (data['results'] is List) list = data['results'] as List<dynamic>;
+      hasMore = data['has_more'] as bool? ?? false;
     }
 
-    return list.map((json) => ChatMessageModel.fromJson(json as Map<String, dynamic>)).toList();
+    final messages = list
+        .map((json) => ChatMessageModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+    return (messages: messages, hasMore: hasMore);
+  }
+
+  /// 3-1. 최신 메시지 한 페이지 조회 (기존 호환)
+  Future<List<ChatMessageModel>> fetchMessages(int roomId) async {
+    return (await fetchMessagePage(roomId)).messages;
   }
 
   /// 4. 메시지 읽음 처리
@@ -91,6 +111,7 @@ class ChatRepository {
     required String messageType,
     String? content,
     int? fileSize,
+    int? replyToId,
   }) async {
     final size = fileSize ?? fileBytes.length;
     final formData = FormData.fromMap({
@@ -100,6 +121,7 @@ class ChatRepository {
       'file': MultipartFile.fromBytes(fileBytes, filename: fileName),
       'file_name': fileName,
       'file_size': size,
+      if (replyToId != null) 'reply_to': replyToId,
     });
 
     final response = await _dio.post('/api/v1/chat-message/', data: formData);
@@ -112,6 +134,7 @@ class ChatRepository {
     required XFile file,
     required String messageType,
     String? content,
+    int? replyToId,
   }) async {
     final bytes = await file.readAsBytes();
     final length = await file.length();
@@ -122,6 +145,7 @@ class ChatRepository {
       messageType: messageType,
       content: content,
       fileSize: length,
+      replyToId: replyToId,
     );
   }
 
@@ -131,6 +155,7 @@ class ChatRepository {
     required dynamic file,
     required String messageType,
     String? content,
+    int? replyToId,
   }) async {
     if (file is XFile) {
       return sendXFileMessage(
@@ -138,6 +163,7 @@ class ChatRepository {
         file: file,
         messageType: messageType,
         content: content,
+        replyToId: replyToId,
       );
     }
     // dart:io File 또는 duck-typed 파일 객체
@@ -164,6 +190,7 @@ class ChatRepository {
       messageType: messageType,
       content: content,
       fileSize: size,
+      replyToId: replyToId,
     );
   }
 
