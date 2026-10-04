@@ -126,7 +126,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                   padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                   decoration: BoxDecoration(
                     color: context.colors.bgCard,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: context.colors.border),
                   ),
                   child: Column(
@@ -238,7 +238,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
           height: 38,
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
@@ -394,12 +394,13 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
               // + 담당자 배정 버튼
               Material(
                 color: const Color(0xFF8B5CF6),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 child: InkWell(
                   onTap: () => showContractAgentFormSheet(
                     context,
                     projectId: project.realProjectId,
                   ),
+                  borderRadius: BorderRadius.circular(6),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     child: Row(
@@ -452,7 +453,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isMapped
               ? const Color(0xFF8B5CF6).withAlpha(50)
@@ -460,6 +461,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
           width: 0.8,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(13),
         child: Column(
@@ -793,7 +795,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.colors.textPrimary,
                         side: BorderSide(color: context.colors.border, width: 0.8),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         minimumSize: Size.zero,
                       ),
@@ -812,7 +814,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF8B5CF6),
                         foregroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         minimumSize: Size.zero,
                       ),
@@ -847,7 +849,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
         builder: (context, setModalState) {
           return AlertDialog(
             backgroundColor: context.colors.bgCard,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -993,7 +995,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                         hintStyle: TextStyle(fontSize: 11, color: context.colors.textMuted),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(6),
                           borderSide: BorderSide(color: const Color(0xFFEF4444).withAlpha(80)),
                         ),
                       ),
@@ -1012,7 +1014,7 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: Text(isApproved ? '승인으로 저장' : '보류로 저장'),

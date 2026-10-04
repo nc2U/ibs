@@ -18,6 +18,7 @@ void showPolicyFormSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.colors.bgCard,
+    clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -228,7 +229,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           '정책 삭제 확인',
           style: AppTextStyles.titleSm.copyWith(
@@ -248,7 +249,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
@@ -355,10 +356,10 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                           child: TextFormField(
                             controller: _nameController,
                             style: const TextStyle(fontSize: 13),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: '정책 명칭 *',
                               hintText: '예: 84A 정규 분양 수수료 기준',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                               isDense: true,
                             ),
                             validator: (val) {
@@ -379,6 +380,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                               color: _isActive
                                   ? const Color(0xFF10B981).withAlpha(20)
                                   : context.colors.bgSurface,
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: _isActive
                                     ? const Color(0xFF10B981)
@@ -430,9 +432,9 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                           child: DropdownButtonFormField<int?>(
                             initialValue: _selectedOrderGroupId,
                             style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: '공급 차수',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                               isDense: true,
                             ),
                             items: [
@@ -456,9 +458,9 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                           child: DropdownButtonFormField<int?>(
                             initialValue: _selectedUnitTypeId,
                             style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: '유니트 타입',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                               isDense: true,
                             ),
                             items: [
@@ -610,9 +612,9 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                     DropdownButtonFormField<String>(
                       initialValue: _payCondition,
                       style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '지급 조건 *',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                         isDense: true,
                       ),
                       items: const [
@@ -646,11 +648,11 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                           child: InkWell(
                             onTap: () => _selectDate(context, true),
                             child: InputDecorator(
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: '적용 시작일 *',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                                 isDense: true,
-                                suffixIcon: Icon(Icons.calendar_today, size: 16),
+                                suffixIcon: const Icon(Icons.calendar_today, size: 16),
                               ),
                               child: Text(
                                 _startDate != null
@@ -668,7 +670,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                             child: InputDecorator(
                               decoration: InputDecoration(
                                 labelText: '적용 종료일',
-                                border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                                 isDense: true,
                                 suffixIcon: _endDate != null
                                     ? IconButton(
@@ -713,7 +715,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFEF4444),
                         side: const BorderSide(color: Color(0xFFEF4444)),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                       onPressed: _isSubmitting ? null : _handleDelete,
@@ -725,7 +727,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFEC4899),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: _isSubmitting ? null : _handleSave,
@@ -763,6 +765,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
         padding: const EdgeInsets.symmetric(vertical: 3),
         decoration: BoxDecoration(
           color: color.withAlpha(20),
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(color: color.withAlpha(60), width: 0.7),
         ),
         child: Text(
@@ -792,7 +795,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
         isDense: true,
         suffixText: '원',
         suffixStyle: TextStyle(fontSize: 11, color: context.colors.textMuted),
@@ -801,7 +804,7 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
           margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             color: accentColor,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
       ),

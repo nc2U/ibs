@@ -14,6 +14,7 @@ void showAgencyTeamManageSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -50,7 +51,7 @@ class _AgencyTeamManageSheetState
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             agency == null ? '신규 분양 대행사 등록' : '대행사 정보 수정',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -62,10 +63,10 @@ class _AgencyTeamManageSheetState
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: '대행사명 *',
                     hintText: '예: ㈜미래분양대행',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   style: const TextStyle(fontSize: 13),
                 ),
@@ -96,7 +97,7 @@ class _AgencyTeamManageSheetState
                                   : context.colors.border,
                               width: isDirect ? 1.4 : 0.8,
                             ),
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +145,7 @@ class _AgencyTeamManageSheetState
                                   : context.colors.border,
                               width: !isDirect ? 1.4 : 0.8,
                             ),
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -182,9 +183,9 @@ class _AgencyTeamManageSheetState
                   const SizedBox(height: 14),
                   TextField(
                     controller: ceoController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '대표자명',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     style: const TextStyle(fontSize: 13),
                   ),
@@ -192,18 +193,18 @@ class _AgencyTeamManageSheetState
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '대표 전화번호',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     style: const TextStyle(fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: bizController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '사업자등록번호',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     style: const TextStyle(fontSize: 13),
                   ),
@@ -219,7 +220,7 @@ class _AgencyTeamManageSheetState
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
@@ -260,7 +261,7 @@ class _AgencyTeamManageSheetState
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           team == null ? '영업 팀 신설' : '팀 명칭 수정',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -270,10 +271,10 @@ class _AgencyTeamManageSheetState
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '팀 / 본부 명칭 *',
                 hintText: '예: 영업1본부, 분양1팀',
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
               ),
               style: const TextStyle(fontSize: 13),
             ),
@@ -287,7 +288,7 @@ class _AgencyTeamManageSheetState
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF6366F1),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () async {
               if (nameController.text.trim().isEmpty) return;
@@ -320,7 +321,7 @@ class _AgencyTeamManageSheetState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('대행사 삭제 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Text("'${agency.name}' 대행사를 삭제하시겠습니까?\n(소속 팀 및 인력이 함께 삭제되거나 오류가 발생할 수 있습니다)"),
         actions: [
@@ -328,7 +329,7 @@ class _AgencyTeamManageSheetState
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
@@ -348,7 +349,7 @@ class _AgencyTeamManageSheetState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('영업 팀 삭제 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Text("'${team.name}' 팀을 삭제하시겠습니까?"),
         actions: [
@@ -356,7 +357,7 @@ class _AgencyTeamManageSheetState
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
@@ -435,7 +436,7 @@ class _AgencyTeamManageSheetState
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     minimumSize: Size.zero,
                   ),
@@ -486,8 +487,10 @@ class _AgencyTeamManageSheetState
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 14),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: context.colors.border, width: 0.8),
                       ),
                       child: Column(
@@ -505,6 +508,7 @@ class _AgencyTeamManageSheetState
                                     color: agency.isDirectManaged
                                         ? const Color(0xFF10B981).withAlpha(20)
                                         : const Color(0xFFF59E0B).withAlpha(20),
+                                    borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
                                       color: agency.isDirectManaged
                                           ? const Color(0xFF10B981)
@@ -623,6 +627,7 @@ class _AgencyTeamManageSheetState
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: context.colors.bgCard,
+                                          borderRadius: BorderRadius.circular(6),
                                           border: Border.all(color: context.colors.border, width: 0.8),
                                         ),
                                         child: Row(

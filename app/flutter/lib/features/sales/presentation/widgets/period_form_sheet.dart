@@ -16,6 +16,7 @@ void showPeriodFormSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -214,7 +215,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           '정산 회차 삭제',
           style: AppTextStyles.titleSm.copyWith(
@@ -234,7 +235,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
@@ -337,10 +338,10 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                     TextFormField(
                       controller: _titleController,
                       style: const TextStyle(fontSize: 13),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '정산 회차명 *',
                         hintText: '예: 2026년 9월 1회차 수수료 정산',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                         isDense: true,
                       ),
                       validator: (val) {
@@ -357,6 +358,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFF6366F1).withAlpha(12),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: const Color(0xFF6366F1).withAlpha(50),
                           width: 0.8,
@@ -401,7 +403,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 labelText: '대상 시작일 *',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                                 isDense: true,
                                 suffixIcon: Icon(Icons.calendar_today, size: 16),
                               ),
@@ -421,7 +423,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 labelText: '대상 종료일 *',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                                 isDense: true,
                                 suffixIcon: Icon(Icons.calendar_today, size: 16),
                               ),
@@ -444,7 +446,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: '지급 예정일',
-                          border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                          border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                           isDense: true,
                           suffixIcon: _payoutDate != null
                               ? IconButton(
@@ -476,7 +478,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                         style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
                         decoration: const InputDecoration(
                           labelText: '정산 상태',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                           isDense: true,
                         ),
                         items: const [
@@ -508,7 +510,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFEF4444),
                         side: const BorderSide(color: Color(0xFFEF4444)),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                       onPressed: _isSubmitting ? null : _handleDelete,
@@ -520,7 +522,7 @@ class _PeriodFormSheetState extends ConsumerState<PeriodFormSheet> {
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF6366F1),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: _isSubmitting ? null : _handleSave,

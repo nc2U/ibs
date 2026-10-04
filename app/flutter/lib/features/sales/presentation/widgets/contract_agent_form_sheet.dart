@@ -19,6 +19,7 @@ void showContractAgentFormSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -226,7 +227,7 @@ class _ContractAgentFormSheetState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('배정 해제 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: const Text('해당 계약의 영업 담당자 배정을 해제(삭제)하시겠습니까?'),
         actions: [
@@ -237,7 +238,7 @@ class _ContractAgentFormSheetState
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('해제'),
@@ -382,7 +383,7 @@ class _ContractAgentFormSheetState
                         initialValue: _selectedContractId,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                           hintText: '계약 건 선택',
                         ),
                         isExpanded: true,
@@ -407,8 +408,10 @@ class _ContractAgentFormSheetState
                     ),
                     const SizedBox(height: 6),
                     Container(
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: context.colors.border),
                       ),
                       child: Row(
@@ -490,7 +493,7 @@ class _ContractAgentFormSheetState
                         initialValue: _selectedAgencyId,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                           hintText: '외주 분양대행사 선택',
                         ),
                         isExpanded: true,
@@ -524,7 +527,7 @@ class _ContractAgentFormSheetState
                         initialValue: _selectedSalesPersonId,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                           hintText: '상담사 선택',
                         ),
                         isExpanded: true,
@@ -545,6 +548,7 @@ class _ContractAgentFormSheetState
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
                           ),
                           child: const Row(
@@ -577,7 +581,7 @@ class _ContractAgentFormSheetState
                       initialValue: _selectedPolicyId,
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                         hintText: '기본 정책 적용 (미지정)',
                       ),
                       isExpanded: true,
@@ -659,7 +663,7 @@ class _ContractAgentFormSheetState
                             decoration: InputDecoration(
                               labelText: '중개사/MGM 성명',
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                             ),
                             style: const TextStyle(fontSize: 13),
                           ),
@@ -672,7 +676,7 @@ class _ContractAgentFormSheetState
                             decoration: InputDecoration(
                               labelText: 'MGM 연락처',
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                             ),
                             style: const TextStyle(fontSize: 13),
                           ),
@@ -689,7 +693,7 @@ class _ContractAgentFormSheetState
                       decoration: InputDecoration(
                         labelText: 'MGM 지급 수수료 (원)',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                         suffixText: '원',
                       ),
                       style: const TextStyle(fontSize: 13),
@@ -703,7 +707,7 @@ class _ContractAgentFormSheetState
                       decoration: InputDecoration(
                         labelText: '비고 / 특이사항',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                       ),
                       style: const TextStyle(fontSize: 13),
                     ),
@@ -730,6 +734,7 @@ class _ContractAgentFormSheetState
                         color: _isSettlementApproved
                             ? const Color(0xFF10B981).withAlpha(15)
                             : const Color(0xFFEF4444).withAlpha(15),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _isSettlementApproved
                               ? const Color(0xFF10B981).withAlpha(80)
@@ -792,7 +797,7 @@ class _ContractAgentFormSheetState
                                 hintStyle: TextStyle(fontSize: 11, color: context.colors.textMuted),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
+                                  borderRadius: BorderRadius.circular(6),
                                   borderSide: BorderSide(color: const Color(0xFFEF4444).withAlpha(80)),
                                 ),
                               ),
@@ -819,7 +824,7 @@ class _ContractAgentFormSheetState
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.error,
                       side: BorderSide(color: context.colors.error),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onPressed: _isSubmitting ? null : _handleDelete,
@@ -831,7 +836,7 @@ class _ContractAgentFormSheetState
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF8B5CF6),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: _isSubmitting ? null : _handleSubmit,

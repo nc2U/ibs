@@ -282,7 +282,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
           // [⚙️ 조직 관리] 버튼
           Material(
             color: const Color(0xFF6366F1),
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             child: InkWell(
               onTap: () => showAgencyTeamManageSheet(
                 context,
@@ -327,7 +327,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
           height: 38,
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
@@ -480,7 +480,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
               // [+ 인력 등록] 버튼
               Material(
                 color: const Color(0xFF10B981),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 child: InkWell(
                   onTap: () => showPersonFormSheet(
                     context,
@@ -546,7 +546,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -579,8 +579,8 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF10B981),
                       side: const BorderSide(color: Color(0xFF10B981)),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ],
@@ -614,7 +614,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isActive
               ? const Color(0xFF6366F1).withAlpha(50)
@@ -808,7 +808,7 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
                           const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF10B981).withAlpha(20),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: const Color(0xFF10B981).withAlpha(70),
                           width: 0.8,

@@ -18,6 +18,7 @@ void showPersonPayoutHistorySheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.colors.bgCard,
+    clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -156,7 +157,7 @@ class _PersonPayoutHistorySheetState
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: context.colors.bgSurface,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                     color: context.colors.border, width: 0.8),
                               ),
@@ -233,6 +234,7 @@ class _PersonPayoutHistorySheetState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
@@ -322,6 +324,7 @@ class _PersonPayoutHistorySheetState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFEF4444).withAlpha(15),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: const Color(0xFFEF4444).withAlpha(80),
           width: 0.8,
@@ -370,6 +373,7 @@ class _PersonPayoutHistorySheetState
                         color: c.isSettled
                             ? const Color(0xFF10B981).withAlpha(30)
                             : const Color(0xFFEF4444).withAlpha(30),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         c.isSettled ? '상계완료' : '미상계',
@@ -456,6 +460,7 @@ class _PersonPayoutHistorySheetState
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border, width: 0.8),
             ),
             child: Column(
@@ -477,6 +482,7 @@ class _PersonPayoutHistorySheetState
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: statusColor.withAlpha(25),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: statusColor, width: 0.6),
                       ),
                       child: Text(

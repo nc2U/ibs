@@ -19,6 +19,7 @@ void showPersonFormSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.colors.bgCard,
+    clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -190,7 +191,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('인력 삭제 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Text("'${widget.existingPerson!.name}' 인력 정보를 삭제하시겠습니까?\n(기 체결된 계약 실적이 있는 경우 삭제가 제한될 수 있습니다)"),
         actions: [
@@ -201,7 +202,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
@@ -315,7 +316,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 decoration: InputDecoration(
                                   hintText: '상담사 성명',
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 style: const TextStyle(fontSize: 13),
                                 validator: (val) => val == null || val.trim().isEmpty ? '성명을 입력해 주세요.' : null,
@@ -336,7 +337,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 decoration: InputDecoration(
                                   hintText: '010-0000-0000',
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 style: const TextStyle(fontSize: 13),
                                 validator: (val) => val == null || val.trim().isEmpty ? '연락처를 입력해 주세요.' : null,
@@ -361,7 +362,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 initialValue: _selectedTeamId,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 isExpanded: true,
                                 hint: const Text('팀 선택', style: TextStyle(fontSize: 12)),
@@ -389,7 +390,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 initialValue: _duty,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 isExpanded: true,
                                 items: const [
@@ -421,7 +422,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 initialValue: _status,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 isExpanded: true,
                                 items: const [
@@ -445,7 +446,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 initialValue: _taxType,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                                 ),
                                 isExpanded: true,
                                 items: const [
@@ -540,7 +541,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                               labelText: '은행명',
                               hintText: '예: 국민, 신한',
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                             ),
                             style: const TextStyle(fontSize: 12.5),
                           ),
@@ -554,7 +555,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                             decoration: InputDecoration(
                               labelText: '계좌번호',
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                             ),
                             style: const TextStyle(fontSize: 12.5),
                           ),
@@ -567,7 +568,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                             decoration: InputDecoration(
                               labelText: '예금주',
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                             ),
                             style: const TextStyle(fontSize: 12.5),
                           ),
@@ -592,6 +593,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
                             color: context.colors.bgSurface,
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: const Color(0xFF6366F1).withAlpha(80)),
                           ),
                           child: Row(
@@ -623,7 +625,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                       decoration: InputDecoration(
                         labelText: '비고 / 특이사항',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: context.colors.border)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
                       ),
                       style: const TextStyle(fontSize: 12.5),
                     ),
@@ -644,7 +646,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.error,
                       side: BorderSide(color: context.colors.error),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onPressed: _isSubmitting ? null : _handleDelete,
@@ -656,7 +658,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: _isSubmitting ? null : _handleSubmit,

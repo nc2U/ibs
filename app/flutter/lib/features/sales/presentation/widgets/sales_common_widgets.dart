@@ -25,7 +25,7 @@ Widget buildSingleKpiTile({
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     decoration: BoxDecoration(
       color: context.colors.bgCard,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(
         color: accentColor.withAlpha(60),
         width: 0.8,
@@ -84,7 +84,7 @@ Widget buildFilterChip({
   return Material(
     color: isSelected ? activeColor.withAlpha(25) : context.colors.bgCard,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(4),
       side: BorderSide(
         color: isSelected ? activeColor : context.colors.border,
         width: 0.8,
@@ -92,6 +92,7 @@ Widget buildFilterChip({
     ),
     child: InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
@@ -117,7 +118,7 @@ Widget buildErrorBanner({
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
       color: context.colors.bgCard,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: context.colors.error.withAlpha(80)),
     ),
     child: Row(
@@ -138,7 +139,7 @@ Widget buildErrorBanner({
           style: OutlinedButton.styleFrom(
             foregroundColor: context.colors.textPrimary,
             side: BorderSide(color: context.colors.border),
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -161,7 +162,7 @@ Widget buildInfoBanner({
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: context.colors.bgCard,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: color.withAlpha(70), width: 1),
     ),
     child: Row(
@@ -172,7 +173,7 @@ Widget buildInfoBanner({
           height: 36,
           decoration: BoxDecoration(
             color: color.withAlpha(25),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: color.withAlpha(70), width: 0.8),
           ),
           child: Icon(icon, size: 20, color: color),
@@ -231,7 +232,7 @@ Future<void> makePhoneCall(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       actionsPadding: const EdgeInsets.all(12),
@@ -268,7 +269,7 @@ Future<void> makePhoneCall(
         FilledButton(
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF10B981),
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           onPressed: () => Navigator.of(ctx).pop(true),
           child: const Text('통화 연결'),

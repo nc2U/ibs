@@ -19,6 +19,7 @@ void showPayoutDetailSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -212,6 +213,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: context.colors.bgSurface,
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: context.colors.border, width: 0.8),
                     ),
                     child: Column(
@@ -233,6 +235,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF38BDF8).withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                     color: const Color(0xFF38BDF8).withAlpha(80),
                                     width: 0.8),
@@ -252,6 +255,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: context.colors.bgCard,
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: context.colors.border, width: 0.8),
                               ),
                               child: Text(
@@ -268,6 +272,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: _getStatusColor(_payout.payStatus).withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                     color: _getStatusColor(_payout.payStatus).withAlpha(80),
                                     width: 0.8),
@@ -312,6 +317,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981).withAlpha(15),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: const Color(0xFF10B981).withAlpha(60),
                         width: 1,
@@ -397,8 +403,10 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
 
                   // 4. 원천징수 세액 상세 테이블
                   Container(
+                    clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: context.colors.bgCard,
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: context.colors.border, width: 0.8),
                     ),
                     child: Column(
@@ -562,8 +570,8 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF38BDF8),
                             side: const BorderSide(color: Color(0xFF38BDF8)),
-                            shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           onPressed: _isUpdatingStatus
@@ -579,8 +587,8 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF10B981),
                             side: const BorderSide(color: Color(0xFF10B981)),
-                            shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           onPressed: _isUpdatingStatus
@@ -596,8 +604,8 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFEF4444),
                             side: const BorderSide(color: Color(0xFFEF4444)),
-                            shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           onPressed: _isUpdatingStatus
@@ -628,6 +636,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: context.colors.bgSurface,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Column(

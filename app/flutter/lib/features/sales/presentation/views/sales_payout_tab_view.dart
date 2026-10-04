@@ -54,7 +54,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             const Icon(Icons.done_all_rounded, size: 20, color: Color(0xFF10B981)),
@@ -84,7 +84,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('지급 종결'),
@@ -138,7 +138,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             const Icon(Icons.playlist_add_check, size: 20, color: Color(0xFF10B981)),
@@ -169,7 +169,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('일괄 변경'),
@@ -312,7 +312,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: context.colors.border),
               ),
               child: const Center(
@@ -383,7 +383,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: context.colors.bgCard,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFF10B981).withAlpha(80), width: 0.8),
         ),
         child: Column(
@@ -416,9 +416,10 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
         summary.paidCount == summary.totalCount;
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
@@ -477,7 +478,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: pColor.withAlpha(25),
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: pColor.withAlpha(90), width: 0.5),
                               ),
                               child: Text(
@@ -519,7 +520,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                                 ? const Color(0xFF0284C7)
                                 : const Color(0xFFF59E0B))
                         .withAlpha(25),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: (period.isCompleted
                               ? const Color(0xFF10B981)
@@ -581,7 +582,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                     ),
@@ -684,7 +685,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
         Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: ValueListenableBuilder<TextEditingValue>(
@@ -793,7 +794,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
@@ -808,7 +809,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     ref.read(payoutTabSelectedIdsProvider.notifier).state = {};
                   } else {
                     ref.read(payoutTabSelectedIdsProvider.notifier).state =
-                        filteredList.map((e) => e.id).toSet();
+                            filteredList.map((e) => e.id).toSet();
                   }
                 },
                 child: Row(
@@ -820,7 +821,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                       child: Checkbox(
                         value: isAllSelected,
                         activeColor: const Color(0xFF10B981),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         onChanged: (val) {
                           if (val == true) {
                             ref.read(payoutTabSelectedIdsProvider.notifier).state =
@@ -864,7 +865,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF10B981),
                   side: const BorderSide(color: Color(0xFF10B981), width: 0.8),
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   minimumSize: Size.zero,
                 ),
@@ -897,7 +898,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0284C7),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                     ),
@@ -912,7 +913,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                     ),
@@ -927,7 +928,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFEF4444),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                     ),
@@ -993,7 +994,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -1023,7 +1024,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -1039,7 +1040,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: context.colors.textSecond,
                     side: BorderSide(color: context.colors.border),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   onPressed: () {
                     _payoutSearchController.clear();
@@ -1128,9 +1129,10 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
     }
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: isSelected ? const Color(0xFF10B981).withAlpha(10) : context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isSelected ? const Color(0xFF10B981) : context.colors.border,
           width: isSelected ? 1.2 : 0.8,
@@ -1154,7 +1156,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                       child: Checkbox(
                         value: isSelected,
                         activeColor: const Color(0xFF10B981),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         onChanged: (val) {
                           final currentSet = {...ref.read(payoutTabSelectedIdsProvider)};
                           if (val == true) {
@@ -1198,7 +1200,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: dutyColor.withAlpha(20),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: dutyColor.withAlpha(70), width: 0.5),
                       ),
                       child: Text(
@@ -1235,7 +1237,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: statusColor.withAlpha(25),
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                           ),
                           child: Row(
@@ -1260,7 +1262,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: statusColor.withAlpha(25),
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                         ),
                         child: Text(
@@ -1303,7 +1305,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: context.colors.bgSurface,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: context.colors.borderSubtle, width: 0.8),
                   ),
                   child: Row(
@@ -1565,7 +1567,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
         Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: TextField(
@@ -1667,6 +1669,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Center(
@@ -1681,6 +1684,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Center(
@@ -1737,8 +1741,10 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(14),
@@ -1761,6 +1767,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                   color: ap.isDirectManaged
                       ? const Color(0xFF0284C7).withAlpha(25)
                       : const Color(0xFF8B5CF6).withAlpha(25),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   ap.isDirectManaged ? '직영운영' : '외주대행',
@@ -1789,6 +1796,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: statusColor.withAlpha(25),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                     ),
                     child: Row(
@@ -1813,6 +1821,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(25),
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                   ),
                   child: Text(
@@ -1849,6 +1858,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: context.colors.bgSurface,
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(color: context.colors.borderSubtle, width: 0.8),
             ),
             child: Row(

@@ -73,6 +73,49 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     ref.read(policySearchQueryProvider.notifier).state = '';
   }
 
+  /// 현재 선택된 탭의 데이터 새로고침
+  Future<void> _refreshCurrentTab() async {
+    switch (_currentTab) {
+      case SalesSubTab.performance:
+        await Future.wait([
+          ref.refresh(simpleContractsProvider.future),
+          ref.refresh(rawContractSalesAgentsProvider.future),
+          ref.refresh(salesTeamsProvider.future),
+          ref.refresh(salesPersonsProvider.future),
+          ref.refresh(salesPoliciesProvider.future),
+        ]);
+        break;
+      case SalesSubTab.settlement:
+        await Future.wait([
+          ref.refresh(settlementPeriodsProvider.future),
+          ref.refresh(commissionPayoutsProvider.future),
+          ref.refresh(agencyPayoutsProvider.future),
+        ]);
+        break;
+      case SalesSubTab.payout:
+        await Future.wait([
+          ref.refresh(settlementPeriodsProvider.future),
+          ref.refresh(payoutTabPayoutsProvider.future),
+          ref.refresh(payoutTabAgencyPayoutsProvider.future),
+        ]);
+        break;
+      case SalesSubTab.policy:
+        await Future.wait([
+          ref.refresh(salesPoliciesProvider.future),
+          ref.refresh(orderGroupsProvider.future),
+          ref.refresh(unitTypesProvider.future),
+        ]);
+        break;
+      case SalesSubTab.organization:
+        await Future.wait([
+          ref.refresh(salesAgenciesProvider.future),
+          ref.refresh(salesTeamsProvider.future),
+          ref.refresh(salesPersonsProvider.future),
+        ]);
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트 변경 시 5개 탭의 모든 검색어와 필터 초기화 ──
@@ -110,7 +153,107 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       backgroundColor: context.colors.bgPrimary,
       body: Column(
         children: [
-          // ── 상단 서브 탭 바 (IBS Global Flat radius=0) ─────────────────
+          // ── 상단 글로벌 헤더 배너 (뒤로가기 연동 & 프로젝트 명 표기) ───
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: context.colors.bgSurface,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  tooltip: '뒤로가기',
+                  color: context.colors.textPrimary,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      widget.onBackToMain();
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withAlpha(30),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.real_estate_agent_outlined,
+                    size: 20,
+                    color: Color(0xFF8B5CF6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '분양 대행 관리',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B5CF6).withAlpha(20),
+                              border: Border.all(
+                                color: const Color(0xFF8B5CF6).withAlpha(120),
+                                width: 0.8,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'SALES',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF8B5CF6),
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        selectedProject?.name ?? '부동산 개발 프로젝트',
+                        style: AppTextStyles.caption.copyWith(
+                          color: context.colors.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _refreshCurrentTab,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  tooltip: '새로고침',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  color: context.colors.textSecond,
+                ),
+              ],
+            ),
+          ),
+          Divider(color: context.colors.border, height: 1),
+
+          // ── 상단 서브 탭 바 ──────────────────────────────────────
           if (availableTabs.isNotEmpty)
             Container(
               width: double.infinity,
@@ -173,11 +316,30 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           Expanded(
             child: selectedProject == null
                 ? Center(
-                    child: Text(
-                      '프로젝트를 먼저 선택해 주세요.',
-                      style: AppTextStyles.bodySecond.copyWith(
-                        color: context.colors.textMuted,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.folder_open_outlined,
+                          size: 48,
+                          color: context.colors.textDisabled,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '선택된 프로젝트가 없습니다.',
+                          style: AppTextStyles.bodyMd.copyWith(
+                            color: context.colors.textMuted,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '상단에서 프로젝트를 먼저 선택해 주세요.',
+                          style: AppTextStyles.caption.copyWith(
+                            color: context.colors.textDisabled,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : availableTabs.isEmpty
@@ -217,7 +379,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     return Material(
       color: isSelected ? primaryColor : context.colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(6),
         side: BorderSide(
           color: isSelected ? primaryColor : context.colors.border,
           width: 0.8,
@@ -225,7 +387,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       ),
       child: InkWell(
         onTap: () => setState(() => _currentTab = tab),
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(6),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(

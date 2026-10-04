@@ -71,7 +71,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             const Icon(Icons.calculate_outlined, size: 20, color: Color(0xFF06B6D4)),
@@ -103,6 +103,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
                   ),
                   child: Column(
@@ -173,7 +174,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF06B6D4),
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('정산 계산 실행'),
@@ -223,7 +224,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             const Icon(Icons.verified_outlined, size: 20, color: Color(0xFF10B981)),
@@ -253,7 +254,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('정산 확정하기'),
@@ -342,7 +343,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: context.colors.border),
               ),
               child: const Center(
@@ -404,7 +405,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: context.colors.bgCard,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFF06B6D4).withAlpha(80), width: 0.8),
         ),
         child: Column(
@@ -430,7 +431,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF06B6D4),
                   side: const BorderSide(color: Color(0xFF06B6D4)),
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
                 icon: const Icon(Icons.add_rounded, size: 16),
@@ -455,9 +456,10 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
     }
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
@@ -515,7 +517,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: pColor.withAlpha(20),
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: pColor.withAlpha(60), width: 0.5),
                               ),
                               child: Text(
@@ -551,7 +553,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(25),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: statusColor.withAlpha(100), width: 0.8),
                   ),
                   child: Text(
@@ -633,7 +635,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.textSecond,
                       side: BorderSide(color: context.colors.border),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       minimumSize: Size.zero,
                     ),
@@ -649,7 +651,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF06B6D4),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                     ),
@@ -666,7 +668,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                     ),
@@ -682,7 +684,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0284C7).withAlpha(20),
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFF0284C7).withAlpha(80), width: 0.8),
                     ),
                     child: const Row(
@@ -705,7 +707,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981).withAlpha(20),
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFF10B981).withAlpha(80), width: 0.8),
                     ),
                     child: const Row(
@@ -874,7 +876,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
         Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: ValueListenableBuilder<TextEditingValue>(
@@ -1045,7 +1047,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -1073,7 +1075,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF06B6D4),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                     icon: const Icon(Icons.auto_mode_rounded, size: 16),
@@ -1091,7 +1093,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
             padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -1107,7 +1109,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   style: OutlinedButton.styleFrom(
                     foregroundColor: context.colors.textSecond,
                     side: BorderSide(color: context.colors.border),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                   onPressed: () {
                     _settlementSearchController.clear();
@@ -1190,9 +1192,10 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
     }
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Material(
@@ -1238,7 +1241,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: dutyColor.withAlpha(20),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: dutyColor.withAlpha(70), width: 0.5),
                       ),
                       child: Text(
@@ -1262,7 +1265,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: statusColor.withAlpha(25),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: statusColor.withAlpha(90), width: 0.8),
                       ),
                       child: Text(
@@ -1305,7 +1308,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: context.colors.bgSurface,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1402,7 +1405,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
       decoration: BoxDecoration(
         color: color.withAlpha(15),
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withAlpha(50), width: 0.5),
       ),
       child: Text(
@@ -1431,6 +1434,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
         return Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           padding: const EdgeInsets.all(14),
@@ -1470,6 +1474,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: context.colors.bgSurface,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: context.colors.border, width: 0.5),
                   ),
                   child: Column(
@@ -1494,6 +1499,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                                   color: ap.isDirectManaged
                                       ? const Color(0xFF0284C7).withAlpha(25)
                                       : const Color(0xFF8B5CF6).withAlpha(25),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   ap.isDirectManaged ? '직영' : '외주',
@@ -1572,6 +1578,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
         return Container(
           decoration: BoxDecoration(
             color: const Color(0xFFEF4444).withAlpha(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFEF4444).withAlpha(60), width: 0.8),
           ),
           padding: const EdgeInsets.all(14),
@@ -1616,6 +1623,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: context.colors.bgCard,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: context.colors.border, width: 0.5),
                   ),
                   child: Row(
@@ -1626,6 +1634,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                           color: c.isSettled
                               ? const Color(0xFF10B981).withAlpha(20)
                               : const Color(0xFFEF4444).withAlpha(20),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           c.isSettled ? '상계완료' : '미상계',

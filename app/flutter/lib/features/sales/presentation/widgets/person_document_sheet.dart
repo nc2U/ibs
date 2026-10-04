@@ -1,15 +1,18 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import 'dart:math';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
 import '../../data/sales_repository.dart';
@@ -26,6 +29,7 @@ void showPersonDocumentSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.colors.bgCard,
+    clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -113,7 +117,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     return '${(bytes / pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}';
   }
 
-  /// 파일 다운로드 및 로컬 캐시 경로 반환
+  /// 파일 다운로드 및 로컬 캐시 경로 반환 (모바일/데스크톱 전용)
   Future<String?> _downloadDocumentFile(SalesPersonDocumentModel doc) async {
     if (doc.file == null || doc.file!.isEmpty) {
       if (mounted) {
@@ -139,7 +143,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     final savePath = '${tempDir.path}/doc_${doc.id}_$cleanFileName';
 
     // 이미 다운로드된 파일이 있으면 재사용
-    final targetFile = File(savePath);
+    final targetFile = io.File(savePath);
     if (await targetFile.exists() && await targetFile.length() > 0) {
       return savePath;
     }
@@ -150,8 +154,29 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     return savePath;
   }
 
-  /// 파일 다운로드 후 OS 기본 뷰어로 열람
+  /// 파일 다운로드 후 OS 기본 뷰어로 열람 (웹은 새 탭 열람)
   Future<void> _viewDocument(SalesPersonDocumentModel doc) async {
+    if (doc.file == null || doc.file!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('등록된 파일 링크가 없습니다.')),
+        );
+      }
+      return;
+    }
+
+    if (kIsWeb) {
+      final fileUrl = doc.file!;
+      if (await canLaunchUrlString(fileUrl)) {
+        await launchUrlString(fileUrl, mode: LaunchMode.platformDefault);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('문서를 열 수 없습니다.')),
+        );
+      }
+      return;
+    }
+
     setState(() => _downloadingDocId = doc.id);
     try {
       final savePath = await _downloadDocumentFile(doc);
@@ -177,17 +202,44 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     }
   }
 
-  /// 파일 다운로드 후 네이티브 공유 시트 호출
+  /// 파일 다운로드 후 네이티브 공유 시트 호출 (웹은 XFile.fromData로 브라우저 다운로드)
   Future<void> _shareDocument(SalesPersonDocumentModel doc) async {
+    if (doc.file == null || doc.file!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('등록된 파일 링크가 없습니다.')),
+        );
+      }
+      return;
+    }
+
     setState(() => _sharingDocId = doc.id);
     try {
-      final savePath = await _downloadDocumentFile(doc);
-      if (savePath == null) return;
-
       final title = doc.title.isNotEmpty ? doc.title : (doc.fileName ?? '증빙서류');
       final personName = widget.person.name;
 
-      // ignore: deprecated_member_use
+      if (kIsWeb) {
+        final dio = ref.read(dioProvider);
+        final response = await dio.get<List<int>>(
+          doc.file!,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        final bytes = Uint8List.fromList(response.data ?? []);
+        var fileName = doc.fileName ?? doc.file!.split('/').last;
+        if (fileName.contains('?')) fileName = fileName.split('?').first;
+
+        final xFile = XFile.fromData(bytes, name: fileName);
+        await AppShareHelper.shareXFiles(
+          [xFile],
+          text: '[$personName] $title',
+          subject: '영업 인력 증빙 서류 - $personName ($title)',
+        );
+        return;
+      }
+
+      final savePath = await _downloadDocumentFile(doc);
+      if (savePath == null) return;
+
       await AppShareHelper.shareXFiles(
         [XFile(savePath)],
         text: '[$personName] $title',
@@ -295,6 +347,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFF6366F1).withAlpha(20),
+                              borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: const Color(0xFF6366F1).withAlpha(70),
                                 width: 0.8,
@@ -380,6 +433,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                         margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
                           color: context.colors.bgSurface,
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: context.colors.border, width: 0.8),
                         ),
                         child: Row(
@@ -444,6 +498,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                           padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                           decoration: BoxDecoration(
                             color: context.colors.bgSurface,
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: context.colors.border, width: 0.8),
                           ),
                           child: Column(
@@ -513,6 +568,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: doc.isVerified
               ? const Color(0xFF10B981).withAlpha(60)
@@ -520,6 +576,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
           width: 0.8,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,6 +589,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: typeColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: typeColor.withAlpha(80), width: 0.8),
                 ),
                 child: Text(
@@ -551,6 +609,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                   color: doc.isVerified
                       ? const Color(0xFF10B981).withAlpha(20)
                       : const Color(0xFFF59E0B).withAlpha(20),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: doc.isVerified
                         ? const Color(0xFF10B981).withAlpha(80)
@@ -650,12 +709,16 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
               // 1. [열람] 버튼
               Material(
                 color: const Color(0xFF6366F1).withAlpha(15),
-                shape: Border.all(
-                  color: const Color(0xFF6366F1).withAlpha(70),
-                  width: 0.8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: BorderSide(
+                    color: const Color(0xFF6366F1).withAlpha(70),
+                    width: 0.8,
+                  ),
                 ),
                 child: InkWell(
                   onTap: isDownloading ? null : () => _viewDocument(doc),
+                  borderRadius: BorderRadius.circular(6),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Row(
@@ -698,12 +761,16 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
               // 2. [공유] 버튼
               Material(
                 color: const Color(0xFF0EA5E9).withAlpha(15),
-                shape: Border.all(
-                  color: const Color(0xFF0EA5E9).withAlpha(70),
-                  width: 0.8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: BorderSide(
+                    color: const Color(0xFF0EA5E9).withAlpha(70),
+                    width: 0.8,
+                  ),
                 ),
                 child: InkWell(
                   onTap: isSharing ? null : () => _shareDocument(doc),
+                  borderRadius: BorderRadius.circular(6),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Row(
@@ -749,14 +816,18 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
                   color: doc.isVerified
                       ? context.colors.borderSubtle
                       : const Color(0xFF10B981).withAlpha(15),
-                  shape: Border.all(
-                    color: doc.isVerified
-                        ? context.colors.border
-                        : const Color(0xFF10B981).withAlpha(70),
-                    width: 0.8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: BorderSide(
+                      color: doc.isVerified
+                          ? context.colors.border
+                          : const Color(0xFF10B981).withAlpha(70),
+                      width: 0.8,
+                    ),
                   ),
                   child: InkWell(
                     onTap: isVerifying ? null : () => _toggleVerify(doc),
+                    borderRadius: BorderRadius.circular(6),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                       child: Row(

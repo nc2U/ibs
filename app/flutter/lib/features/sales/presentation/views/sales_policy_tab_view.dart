@@ -162,7 +162,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
           height: 38,
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
@@ -355,7 +355,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
               // [+ 정책 등록] 버튼
               Material(
                 color: const Color(0xFFEC4899),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 child: InkWell(
                   onTap: () => showPolicyFormSheet(
                     context,
@@ -421,7 +421,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.colors.border),
             ),
             child: Column(
@@ -454,8 +454,8 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFEC4899),
                       side: const BorderSide(color: Color(0xFFEC4899)),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ],
@@ -484,9 +484,10 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isActive
               ? const Color(0xFFEC4899).withAlpha(50)
@@ -528,6 +529,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
                     color: isActive
                         ? const Color(0xFF10B981).withAlpha(20)
                         : context.colors.borderSubtle,
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: isActive
                           ? const Color(0xFF10B981).withAlpha(80)
@@ -583,6 +585,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: context.colors.bgSurface,
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: context.colors.border, width: 0.7),
                   ),
                   child: Text(
@@ -598,6 +601,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF38BDF8).withAlpha(15),
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: const Color(0xFF38BDF8).withAlpha(60),
                       width: 0.7,
@@ -660,7 +664,7 @@ class _SalesPolicyTabViewState extends ConsumerState<SalesPolicyTabView> {
             // 3. 직책별 분배 시각화 바
             if (total > 0) ...[
               ClipRRect(
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(3),
                 child: Row(
                   children: [
                     if (policy.agentFee > 0)

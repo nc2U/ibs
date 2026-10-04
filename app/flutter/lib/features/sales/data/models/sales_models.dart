@@ -1,6 +1,26 @@
 /// 분양 대행 관리 (Sales Agency) 데이터 모델
 library;
 
+int _parseInt(dynamic val, [int fallback = 0]) {
+  if (val == null) return fallback;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val) ?? double.tryParse(val)?.toInt() ?? fallback;
+  }
+  return fallback;
+}
+
+int? _tryParseInt(dynamic val) {
+  if (val == null) return null;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val) ?? double.tryParse(val)?.toInt();
+  }
+  return null;
+}
+
 /// 간단 계약 선택지 모델
 class SimpleContractOption {
   final int value;
@@ -13,7 +33,7 @@ class SimpleContractOption {
 
   factory SimpleContractOption.fromJson(Map<String, dynamic> json) {
     return SimpleContractOption(
-      value: json['value'] as int? ?? 0,
+      value: _parseInt(json['value']),
       label: json['label'] as String? ?? '',
     );
   }
@@ -45,14 +65,14 @@ class SalesAgencyModel {
 
   factory SalesAgencyModel.fromJson(Map<String, dynamic> json) {
     return SalesAgencyModel(
-      id: json['id'] as int? ?? 0,
-      project: json['project'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      project: _parseInt(json['project']),
       name: json['name'] as String? ?? '',
       isDirectManaged: json['is_direct_managed'] as bool? ?? false,
       businessNumber: json['business_number'] as String?,
       ceoName: json['ceo_name'] as String?,
       phone: json['phone'] as String?,
-      order: json['order'] as int? ?? 1,
+      order: _parseInt(json['order'], 1),
       isActive: json['is_active'] as bool? ?? true,
     );
   }
@@ -84,15 +104,15 @@ class SalesTeamModel {
 
   factory SalesTeamModel.fromJson(Map<String, dynamic> json) {
     return SalesTeamModel(
-      id: json['id'] as int? ?? 0,
-      agency: json['agency'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      agency: _parseInt(json['agency']),
       agencyName: json['agency_name'] as String?,
-      parent: json['parent'] as int?,
+      parent: _tryParseInt(json['parent']),
       parentName: json['parent_name'] as String?,
       name: json['name'] as String? ?? '',
-      order: json['order'] as int? ?? 1,
+      order: _parseInt(json['order'], 1),
       isActive: json['is_active'] as bool? ?? true,
-      membersCount: json['members_count'] as int? ?? 0,
+      membersCount: _parseInt(json['members_count']),
     );
   }
 }
@@ -154,11 +174,11 @@ class SalesPersonModel {
         [];
 
     return SalesPersonModel(
-      id: json['id'] as int? ?? 0,
-      team: json['team'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      team: _parseInt(json['team']),
       teamName: json['team_name'] as String?,
       agencyName: json['agency_name'] as String?,
-      user: json['user'] as int?,
+      user: _tryParseInt(json['user']),
       name: json['name'] as String? ?? '',
       duty: json['duty'] as String? ?? '1',
       dutyDisplay: json['duty_display'] as String?,
@@ -174,7 +194,7 @@ class SalesPersonModel {
       joinDate: json['join_date'] as String?,
       quitDate: json['quit_date'] as String?,
       notes: json['notes'] as String?,
-      documentsCount: json['documents_count'] as int? ?? docsList.length,
+      documentsCount: _parseInt(json['documents_count'], docsList.length),
       documents: docsList,
     );
   }
@@ -224,8 +244,8 @@ class SalesPersonDocumentModel {
 
   factory SalesPersonDocumentModel.fromJson(Map<String, dynamic> json) {
     return SalesPersonDocumentModel(
-      id: json['id'] as int? ?? 0,
-      salesPerson: json['sales_person'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      salesPerson: _parseInt(json['sales_person']),
       salesPersonName: json['sales_person_name'] as String?,
       docType: json['doc_type'] as String? ?? '1',
       docTypeDisplay: json['doc_type_display'] as String?,
@@ -233,12 +253,12 @@ class SalesPersonDocumentModel {
       file: json['file'] as String?,
       fileName: json['file_name'] as String?,
       fileType: json['file_type'] as String?,
-      fileSize: json['file_size'] as int?,
+      fileSize: _tryParseInt(json['file_size']),
       isVerified: json['is_verified'] as bool? ?? false,
       verifiedAt: json['verified_at'] as String?,
-      verifiedBy: json['verified_by'] as int?,
+      verifiedBy: _tryParseInt(json['verified_by']),
       verifiedByName: json['verified_by_name'] as String?,
-      uploader: json['uploader'] as int?,
+      uploader: _tryParseInt(json['uploader']),
       uploaderName: json['uploader_name'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
@@ -286,17 +306,17 @@ class CommissionPolicyModel {
 
   factory CommissionPolicyModel.fromJson(Map<String, dynamic> json) {
     return CommissionPolicyModel(
-      id: json['id'] as int? ?? 0,
-      project: json['project'] as int? ?? 0,
-      orderGroup: json['order_group'] as int?,
+      id: _parseInt(json['id']),
+      project: _parseInt(json['project']),
+      orderGroup: _tryParseInt(json['order_group']),
       orderGroupName: json['order_group_name'] as String?,
-      unitType: json['unit_type'] as int?,
+      unitType: _tryParseInt(json['unit_type']),
       unitTypeName: json['unit_type_name'] as String?,
       name: json['name'] as String? ?? '',
-      agentFee: json['agent_fee'] as int? ?? 0,
-      leaderFee: json['leader_fee'] as int? ?? 0,
-      directorFee: json['director_fee'] as int? ?? 0,
-      agencyFee: json['agency_fee'] as int? ?? 0,
+      agentFee: _parseInt(json['agent_fee']),
+      leaderFee: _parseInt(json['leader_fee']),
+      directorFee: _parseInt(json['director_fee']),
+      agencyFee: _parseInt(json['agency_fee']),
       payCondition: json['pay_condition'] as String? ?? '1',
       payConditionDisplay: json['pay_condition_display'] as String?,
       startDate: json['start_date'] as String? ?? '',
@@ -318,7 +338,7 @@ class OrderGroupOption {
 
   factory OrderGroupOption.fromJson(Map<String, dynamic> json) {
     return OrderGroupOption(
-      id: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      id: _parseInt(json['pk'] ?? json['id']),
       name: json['name'] as String? ?? '',
     );
   }
@@ -334,7 +354,7 @@ class UnitTypeOption {
 
   factory UnitTypeOption.fromJson(Map<String, dynamic> json) {
     return UnitTypeOption(
-      id: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      id: _parseInt(json['pk'] ?? json['id']),
       name: json['name'] as String? ?? '',
       color: json['color'] as String?,
     );
@@ -403,26 +423,26 @@ class ContractSalesAgentModel {
 
   factory ContractSalesAgentModel.fromJson(Map<String, dynamic> json) {
     return ContractSalesAgentModel(
-      id: json['id'] as int? ?? 0,
-      contract: json['contract'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      contract: _parseInt(json['contract']),
       contractSerial: json['contract_serial'] as String?,
       contractorName: json['contractor_name'] as String?,
       orderGroupName: json['order_group_name'] as String?,
       unitTypeName: json['unit_type_name'] as String?,
       unitInfo: json['unit_info'] as String?,
-      agency: json['agency'] as int?,
+      agency: _tryParseInt(json['agency']),
       agencyName: json['agency_name'] as String?,
       isDirectManaged: json['is_direct_managed'] as bool? ?? true,
-      salesPerson: json['sales_person'] as int?,
+      salesPerson: _tryParseInt(json['sales_person']),
       salesPersonName: json['sales_person_name'] as String?,
-      team: json['team'] as int?,
+      team: _tryParseInt(json['team']),
       teamName: json['team_name'] as String?,
-      policy: json['policy'] as int?,
+      policy: _tryParseInt(json['policy']),
       policyName: json['policy_name'] as String?,
       contractDate: json['contract_date'] as String?,
       mgmName: json['mgm_name'] as String?,
       mgmPhone: json['mgm_phone'] as String?,
-      mgmFee: json['mgm_fee'] as int? ?? 0,
+      mgmFee: _parseInt(json['mgm_fee']),
       note: json['note'] as String?,
       isSettlementApproved: json['is_settlement_approved'] as bool? ?? true,
       approvalNote: json['approval_note'] as String?,
@@ -489,14 +509,14 @@ class PayoutContractDetailModel {
 
   factory PayoutContractDetailModel.fromJson(Map<String, dynamic> json) {
     return PayoutContractDetailModel(
-      id: json['id'] as int? ?? 0,
-      payout: json['payout'] as int? ?? 0,
-      contract: json['contract'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      payout: _parseInt(json['payout']),
+      contract: _parseInt(json['contract']),
       contractSerial: json['contract_serial'] as String?,
       contractorName: json['contractor_name'] as String?,
       roleType: json['role_type'] as String? ?? 'agent',
       roleTypeDisplay: json['role_type_display'] as String?,
-      unitFee: json['unit_fee'] as int? ?? 0,
+      unitFee: _parseInt(json['unit_fee']),
     );
   }
 }
@@ -562,22 +582,22 @@ class CommissionPayoutModel {
         [];
 
     return CommissionPayoutModel(
-      id: json['id'] as int? ?? 0,
-      period: json['period'] as int? ?? 0,
-      salesPerson: json['sales_person'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      period: _parseInt(json['period']),
+      salesPerson: _parseInt(json['sales_person']),
       salesPersonName: json['sales_person_name'] as String?,
       dutyDisplay: json['duty_display'] as String?,
       teamName: json['team_name'] as String?,
-      basePay: json['base_pay'] as int? ?? 0,
-      contractCount: json['contract_count'] as int? ?? 0,
-      commissionAmount: json['commission_amount'] as int? ?? 0,
-      bonusAmount: json['bonus_amount'] as int? ?? 0,
-      deductionAmount: json['deduction_amount'] as int? ?? 0,
-      grossAmount: json['gross_amount'] as int? ?? 0,
-      incomeTax: json['income_tax'] as int? ?? 0,
-      localIncomeTax: json['local_income_tax'] as int? ?? 0,
-      totalTax: json['total_tax'] as int? ?? 0,
-      netAmount: json['net_amount'] as int? ?? 0,
+      basePay: _parseInt(json['base_pay']),
+      contractCount: _parseInt(json['contract_count']),
+      commissionAmount: _parseInt(json['commission_amount']),
+      bonusAmount: _parseInt(json['bonus_amount']),
+      deductionAmount: _parseInt(json['deduction_amount']),
+      grossAmount: _parseInt(json['gross_amount']),
+      incomeTax: _parseInt(json['income_tax']),
+      localIncomeTax: _parseInt(json['local_income_tax']),
+      totalTax: _parseInt(json['total_tax']),
+      netAmount: _parseInt(json['net_amount']),
       payStatus: json['pay_status'] as String? ?? '1',
       payStatusDisplay: json['pay_status_display'] as String?,
       paidDate: json['paid_date'] as String?,
@@ -643,32 +663,38 @@ class SettlementPeriodModel {
   bool get isCompleted => status == '3';
 
   factory SettlementPeriodModel.fromJson(Map<String, dynamic> json) {
-    final gross = json['total_gross_amount'] as int? ?? 0;
-    final agencyFee = json['agency_fee_total'] as int? ?? 0;
-    final supply = json['billing_supply_price'] as int? ?? (gross + agencyFee);
-    final vat = json['billing_vat'] as int? ?? (supply * 0.1).floor();
-    final totalBilling = json['billing_total_amount'] as int? ?? (supply + vat);
+    final gross = _parseInt(json['total_gross_amount']);
+    final agencyFee = _parseInt(json['agency_fee_total']);
+    final supply = json['billing_supply_price'] != null
+        ? _parseInt(json['billing_supply_price'])
+        : (gross + agencyFee);
+    final vat = json['billing_vat'] != null
+        ? _parseInt(json['billing_vat'])
+        : (supply * 0.1).floor();
+    final totalBilling = json['billing_total_amount'] != null
+        ? _parseInt(json['billing_total_amount'])
+        : (supply + vat);
 
     return SettlementPeriodModel(
-      id: json['id'] as int? ?? 0,
-      project: json['project'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      project: _parseInt(json['project']),
       title: json['title'] as String? ?? '',
       startDate: json['start_date'] as String? ?? '',
       endDate: json['end_date'] as String? ?? '',
       payoutDate: json['payout_date'] as String?,
       status: json['status'] as String? ?? '1',
       statusDisplay: json['status_display'] as String?,
-      totalContracts: json['total_contracts'] as int? ?? 0,
+      totalContracts: _parseInt(json['total_contracts']),
       totalGrossAmount: gross,
-      totalTaxAmount: json['total_tax_amount'] as int? ?? 0,
-      totalNetAmount: json['total_net_amount'] as int? ?? 0,
+      totalTaxAmount: _parseInt(json['total_tax_amount']),
+      totalNetAmount: _parseInt(json['total_net_amount']),
       agencyFeeTotal: agencyFee,
       billingSupplyPrice: supply,
       billingVat: vat,
       billingTotalAmount: totalBilling,
-      payoutCount: json['payout_count'] as int? ?? 0,
-      agencyPayoutCount: json['agency_payout_count'] as int? ?? 0,
-      createdBy: json['created_by'] as int?,
+      payoutCount: _parseInt(json['payout_count']),
+      agencyPayoutCount: _parseInt(json['agency_payout_count']),
+      createdBy: _tryParseInt(json['created_by']),
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -719,16 +745,16 @@ class AgencyPayoutModel {
 
   factory AgencyPayoutModel.fromJson(Map<String, dynamic> json) {
     return AgencyPayoutModel(
-      id: json['id'] as int? ?? 0,
-      period: json['period'] as int? ?? 0,
-      agency: json['agency'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      period: _parseInt(json['period']),
+      agency: _parseInt(json['agency']),
       agencyName: json['agency_name'] as String?,
       isDirectManaged: json['is_direct_managed'] as bool? ?? false,
-      contractCount: json['contract_count'] as int? ?? 0,
-      agencyFeeSum: json['agency_fee_sum'] as int? ?? 0,
-      unallocatedFee: json['unallocated_fee'] as int? ?? 0,
-      vatAmount: json['vat_amount'] as int? ?? 0,
-      totalAmount: json['total_amount'] as int? ?? 0,
+      contractCount: _parseInt(json['contract_count']),
+      agencyFeeSum: _parseInt(json['agency_fee_sum']),
+      unallocatedFee: _parseInt(json['unallocated_fee']),
+      vatAmount: _parseInt(json['vat_amount']),
+      totalAmount: _parseInt(json['total_amount']),
       payStatus: json['pay_status'] as String? ?? '1',
       payStatusDisplay: json['pay_status_display'] as String?,
       paidDate: json['paid_date'] as String?,
@@ -795,8 +821,8 @@ class OrgHealthCheckResult {
 
     return OrgHealthCheckResult(
       isHealthy: json['is_healthy'] as bool? ?? true,
-      errorCount: json['error_count'] as int? ?? 0,
-      warningCount: json['warning_count'] as int? ?? 0,
+      errorCount: _parseInt(json['error_count']),
+      warningCount: _parseInt(json['warning_count']),
       items: list,
     );
   }
@@ -830,15 +856,15 @@ class CommissionClawbackModel {
 
   factory CommissionClawbackModel.fromJson(Map<String, dynamic> json) {
     return CommissionClawbackModel(
-      id: json['id'] as int? ?? 0,
-      contract: json['contract'] as int? ?? 0,
+      id: _parseInt(json['id']),
+      contract: _parseInt(json['contract']),
       contractSerial: json['contract_serial'] as String?,
-      salesPerson: json['sales_person'] as int? ?? 0,
+      salesPerson: _parseInt(json['sales_person']),
       salesPersonName: json['sales_person_name'] as String?,
-      amount: json['amount'] as int? ?? 0,
+      amount: _parseInt(json['amount']),
       reason: json['reason'] as String? ?? '',
       isSettled: json['is_settled'] as bool? ?? false,
-      settledPayout: json['settled_payout'] as int?,
+      settledPayout: _tryParseInt(json['settled_payout']),
       createdAt: json['created_at'] as String?,
     );
   }
