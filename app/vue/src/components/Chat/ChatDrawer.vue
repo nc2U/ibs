@@ -300,7 +300,7 @@ const handleJumpToLatest = async () => {
 
 watch(
   () => messages.value.length,
-  (newLen) => {
+  newLen => {
     if (newLen > lastMessageCount) {
       // 최신 구간을 보고 있을 때만 새 메시지 수신 시 하단 스크롤
       if (chatStore.atLatest) {
@@ -632,13 +632,13 @@ const formatTime = (dateStr: string) => {
         <div
           class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0"
         >
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center overflow-hidden mr-2" style="min-width: 0; flex: 1 1 auto;">
             <v-btn
               v-if="currentRoom"
               icon="mdi-chevron-left"
               variant="text"
               size="small"
-              class="mr-1"
+              class="mr-1 flex-shrink-0"
               @click="handleBackToList"
             />
             <v-icon
@@ -653,20 +653,24 @@ const formatTime = (dateStr: string) => {
               "
               size="small"
               :color="currentRoom?.room_type === 'self' ? 'info' : 'primary'"
-              class="mr-2"
+              class="mr-2 flex-shrink-0"
             />
-            <span class="font-weight-bold text-truncate room-header-title" style="max-width: 260px">
+            <span class="font-weight-bold text-truncate room-header-title">
               {{ currentRoom ? getRoomDisplayName(currentRoom) : '실시간 사내 메신저' }}
             </span>
             <span
-              v-if="currentRoom?.project_name"
-              class="text-xs text-muted ml-2 text-truncate"
+              v-if="
+                currentRoom?.project_name &&
+                currentRoom.room_type !== 'channel' &&
+                currentRoom.project_name !== getRoomDisplayName(currentRoom)
+              "
+              class="text-xs text-muted ml-2 text-truncate flex-shrink-0"
               style="max-width: 120px"
             >
               {{ currentRoom.project_name }}
             </span>
           </div>
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center flex-shrink-0 ml-auto">
             <!-- ── 대화방 진입 시 액션 버튼들 ── -->
             <template v-if="currentRoom">
               <!-- 🔍 대화방 내 검색 토글 버튼 -->
@@ -712,7 +716,7 @@ const formatTime = (dateStr: string) => {
                 <v-badge
                   v-if="(currentRoom.members?.length || 0) > 0"
                   :content="currentRoom.members.length"
-                  color="primary"
+                  color="blue-grey-lighten-1"
                   inline
                 >
                   <v-icon icon="mdi-account-group-outline" size="small" />
@@ -785,7 +789,10 @@ const formatTime = (dateStr: string) => {
             class="text-xs flex-grow-1 mr-2"
             @update:model-value="handleRoomSearchChange"
           />
-          <div class="text-xs mr-2 text-nowrap font-weight-bold d-flex align-items-center" style="min-width: 50px">
+          <div
+            class="text-xs mr-2 text-nowrap font-weight-bold d-flex align-items-center"
+            style="min-width: 50px"
+          >
             <v-progress-circular
               v-if="isRoomSearchLoading"
               indeterminate
@@ -795,9 +802,12 @@ const formatTime = (dateStr: string) => {
               class="mr-1"
             />
             <span v-if="roomSearchQuery.trim() && matchedMessageIds.length">
-              {{ currentMatchIndex + 1 }} / {{ matchedMessageIds.length }}{{ matchHasMore ? '+' : '' }}
+              {{ currentMatchIndex + 1 }} / {{ matchedMessageIds.length
+              }}{{ matchHasMore ? '+' : '' }}
             </span>
-            <span v-else-if="roomSearchQuery.trim() && !isRoomSearchLoading" class="text-muted"> 0건 </span>
+            <span v-else-if="roomSearchQuery.trim() && !isRoomSearchLoading" class="text-muted">
+              0건
+            </span>
           </div>
           <v-btn
             icon="mdi-chevron-up"
