@@ -57,3 +57,23 @@ export interface ChatMessage {
   unread_count?: number
   created: string
 }
+
+export interface ChatSearchResult {
+  count: number
+  page: number
+  has_more: boolean
+  results: ChatMessage[]
+}
+
+export interface ChatFilesResult {
+  count: number
+  page: number
+  has_more: boolean
+  results: ChatMessage[]
+}
+
+export interface ChatContextResult {
+  room_id: number
+  target_message_id: number
+  results: ChatMessage[]
+}

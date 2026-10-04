@@ -26,6 +26,198 @@ const userSearchQuery = ref('')
 
 const isMembersDrawerOpen = ref(false)
 
+// ── 🔍 1. 대화방 목록 전역 통합 검색 상태 ────────────────────────
+const isGlobalSearching = ref(false)
+const globalSearchQuery = ref('')
+const globalSearchRoomResults = computed(() => {
+  const q = globalSearchQuery.value.trim().toLowerCase()
+  if (!q) return []
+  return chatStore.rooms.filter(room => {
+    const name = getRoomDisplayName(room).toLowerCase()
+    const desc = (room.description || '').toLowerCase()
+    const memberMatch = room.members?.some(
+      (m: any) =>
+        (m.username || '').toLowerCase().includes(q) ||
+        (m.name || '').toLowerCase().includes(q) ||
+        (m.profile?.name || '').toLowerCase().includes(q),
+    )
+    return name.includes(q) || desc.includes(q) || memberMatch
+  })
+})
+const globalSearchMessageResults = ref<ChatMessage[]>([])
+const isGlobalSearchingMessages = ref(false)
+let globalSearchDebounceTimer: any = null
+
+const handleGlobalSearchChange = () => {
+  clearTimeout(globalSearchDebounceTimer)
+  const q = globalSearchQuery.value.trim()
+  if (!q) {
+    globalSearchMessageResults.value = []
+    isGlobalSearchingMessages.value = false
+    return
+  }
+  globalSearchDebounceTimer = setTimeout(async () => {
+    isGlobalSearchingMessages.value = true
+    try {
+      const res = await chatStore.searchMessages({ q, page: 1, pageSize: 30 })
+      globalSearchMessageResults.value = res.results || []
+    } catch (_) {
+      globalSearchMessageResults.value = []
+    } finally {
+      isGlobalSearchingMessages.value = false
+    }
+  }, 350)
+}
+
+const clearGlobalSearch = () => {
+  globalSearchQuery.value = ''
+  globalSearchMessageResults.value = []
+  isGlobalSearching.value = false
+}
+
+// ── 🔍 2. 대화방 내부 검색 & 점프 및 하이라이트 상태 ─────────────
+const isRoomSearching = ref(false)
+const roomSearchQuery = ref('')
+const highlightedMessageId = ref<number | null>(null)
+let highlightTimer: any = null
+
+const matchedMessageIndices = computed(() => {
+  const q = roomSearchQuery.value.trim().toLowerCase()
+  if (!q || !messages.value.length) return []
+  const indices: number[] = []
+  messages.value.forEach((m, idx) => {
+    if (m.is_deleted) return
+    const content = (m.content || '').toLowerCase()
+    const fileName = (m.file_name || '').toLowerCase()
+    const refTitle = (m.ref_title || '').toLowerCase()
+    if (content.includes(q) || fileName.includes(q) || refTitle.includes(q)) {
+      indices.push(idx)
+    }
+  })
+  return indices
+})
+const currentMatchIndex = ref(-1)
+
+const handleRoomSearchChange = () => {
+  if (matchedMessageIndices.value.length > 0) {
+    currentMatchIndex.value = matchedMessageIndices.value.length - 1
+    jumpToMessageByIndex(matchedMessageIndices.value[currentMatchIndex.value])
+  } else {
+    currentMatchIndex.value = -1
+  }
+}
+
+const navigateMatch = (direction: 'prev' | 'next') => {
+  const matches = matchedMessageIndices.value
+  if (!matches.length) return
+  if (direction === 'prev') {
+    currentMatchIndex.value = (currentMatchIndex.value - 1 + matches.length) % matches.length
+  } else {
+    currentMatchIndex.value = (currentMatchIndex.value + 1) % matches.length
+  }
+  jumpToMessageByIndex(matches[currentMatchIndex.value])
+}
+
+const jumpToMessageByIndex = (msgIdx: number) => {
+  const targetMsg = messages.value[msgIdx]
+  if (!targetMsg) return
+  highlightMessage(targetMsg.id)
+}
+
+const highlightMessage = (messageId: number) => {
+  highlightedMessageId.value = messageId
+  clearTimeout(highlightTimer)
+  highlightTimer = setTimeout(() => {
+    highlightedMessageId.value = null
+  }, 3000)
+
+  nextTick(() => {
+    const el = document.getElementById(`chat-msg-${messageId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  })
+}
+
+// 타깃 메시지로 점프 (전후 맥락 포함 로드)
+const jumpToMessageFromSearch = async (targetMsg: ChatMessage) => {
+  // 1. 방 진입
+  const targetRoom = chatStore.rooms.find(r => r.id === targetMsg.room)
+  if (targetRoom && (!currentRoom.value || currentRoom.value.id !== targetRoom.id)) {
+    await chatStore.enterRoom(targetRoom)
+  }
+
+  // 2. 현재 방 메시지에 있는지 확인
+  const existingIdx = messages.value.findIndex(m => m.id === targetMsg.id)
+  if (existingIdx !== -1) {
+    highlightMessage(targetMsg.id)
+  } else {
+    // 백엔드 context API로 전후 메시지 병합 로드
+    try {
+      const contextRes = await chatStore.fetchMessageContext(targetMsg.id, 20)
+      if (contextRes.results && contextRes.results.length) {
+        chatStore.messages = contextRes.results
+        nextTick(() => {
+          highlightMessage(targetMsg.id)
+        })
+      }
+    } catch (_) {
+      highlightMessage(targetMsg.id)
+    }
+  }
+}
+
+// ── 📂 3. 영구 보존 파일/미디어 서랍 모달 상태 ───────────────────
+const isFilesDrawerOpen = ref(false)
+const filesActiveTab = ref<'media' | 'doc' | 'link'>('media')
+const chatFiles = ref<ChatMessage[]>([])
+const isLoadingFiles = ref(false)
+const filesSearchQuery = ref('')
+
+const openFilesDrawer = async () => {
+  if (!currentRoom.value) return
+  isFilesDrawerOpen.value = true
+  filesSearchQuery.value = ''
+  await loadChatFiles()
+}
+
+const loadChatFiles = async () => {
+  if (!currentRoom.value) return
+  isLoadingFiles.value = true
+  try {
+    const res = await chatStore.fetchChatFiles({
+      room: currentRoom.value.id,
+      tab: filesActiveTab.value,
+      pageSize: 50,
+    })
+    chatFiles.value = res.results || []
+  } catch (_) {
+    chatFiles.value = []
+  } finally {
+    isLoadingFiles.value = false
+  }
+}
+
+watch(filesActiveTab, () => {
+  loadChatFiles()
+})
+
+const filteredChatFiles = computed(() => {
+  const q = filesSearchQuery.value.trim().toLowerCase()
+  if (!q) return chatFiles.value
+  return chatFiles.value.filter(f => {
+    const name = (f.file_name || '').toLowerCase()
+    const content = (f.content || '').toLowerCase()
+    const title = (f.ref_title || '').toLowerCase()
+    return name.includes(q) || content.includes(q) || title.includes(q)
+  })
+})
+
+const handleJumpFromFiles = (msg: ChatMessage) => {
+  isFilesDrawerOpen.value = false
+  jumpToMessageFromSearch(msg)
+}
+
 const getRoomDisplayName = (room: ChatRoom) => {
   if (room.room_type === 'self') return '나와의 채팅'
   if (room.room_type === 'direct' && room.members?.length) {
@@ -414,53 +606,159 @@ const formatTime = (dateStr: string) => {
             </span>
           </div>
           <div class="d-flex align-items-center">
-            <!-- 대화방 진입 시: 참여 멤버 목록 버튼 (나와의 채팅 제외) -->
-            <v-btn
-              v-if="currentRoom && currentRoom.room_type !== 'self'"
-              icon="mdi-account-group-outline"
-              variant="text"
-              size="small"
-              color="primary"
-              class="mr-1"
-              title="참여 멤버 목록"
-              @click="isMembersDrawerOpen = !isMembersDrawerOpen"
-            >
-              <v-badge
-                v-if="(currentRoom.members?.length || 0) > 0"
-                :content="currentRoom.members.length"
+            <!-- ── 대화방 진입 시 액션 버튼들 ── -->
+            <template v-if="currentRoom">
+              <!-- 🔍 대화방 내 검색 토글 버튼 -->
+              <v-btn
+                icon="mdi-magnify"
+                variant="text"
+                size="small"
+                :color="isRoomSearching ? 'primary' : undefined"
+                class="mr-1"
+                title="대화방 내 검색"
+                @click="
+                  () => {
+                    isRoomSearching = !isRoomSearching
+                    if (!isRoomSearching) {
+                      roomSearchQuery = ''
+                    }
+                  }
+                "
+              />
+
+              <!-- 📂 영구 보존 파일/미디어 서랍 모달 열기 버튼 -->
+              <v-btn
+                icon="mdi-folder-open-outline"
+                variant="text"
+                size="small"
                 color="primary"
-                inline
+                class="mr-1"
+                title="파일/미디어 보관함 서랍"
+                @click="openFilesDrawer"
+              />
+
+              <!-- 참여 멤버 목록 버튼 (나와의 채팅 제외) -->
+              <v-btn
+                v-if="currentRoom.room_type !== 'self'"
+                icon="mdi-account-group-outline"
+                variant="text"
+                size="small"
+                color="primary"
+                class="mr-1"
+                title="참여 멤버 목록"
+                @click="isMembersDrawerOpen = !isMembersDrawerOpen"
               >
-                <v-icon icon="mdi-account-group-outline" size="small" />
-              </v-badge>
-              <v-icon v-else icon="mdi-account-group-outline" size="small" />
-            </v-btn>
+                <v-badge
+                  v-if="(currentRoom.members?.length || 0) > 0"
+                  :content="currentRoom.members.length"
+                  color="primary"
+                  inline
+                >
+                  <v-icon icon="mdi-account-group-outline" size="small" />
+                </v-badge>
+                <v-icon v-else icon="mdi-account-group-outline" size="small" />
+              </v-btn>
 
-            <!-- 1:1 대화방일 때: 대화방 나가기 버튼 -->
-            <v-btn
-              v-if="currentRoom && currentRoom.room_type === 'direct'"
-              icon="mdi-exit-to-app"
-              variant="text"
-              size="small"
-              color="secondary"
-              class="mr-1"
-              title="대화방 나가기 (목록에서 숨김)"
-              @click="confirmLeaveRoom(currentRoom)"
-            />
+              <!-- 1:1 대화방일 때: 대화방 나가기 버튼 -->
+              <v-btn
+                v-if="currentRoom.room_type === 'direct'"
+                icon="mdi-exit-to-app"
+                variant="text"
+                size="small"
+                color="secondary"
+                class="mr-1"
+                title="대화방 나가기 (목록에서 숨김)"
+                @click="confirmLeaveRoom(currentRoom)"
+              />
+            </template>
 
-            <!-- 목록 화면: 새 1:1 대화 버튼 -->
-            <v-btn
-              v-if="!currentRoom"
-              icon="mdi-account-plus-outline"
-              variant="text"
-              size="small"
-              color="primary"
-              class="mr-1"
-              title="새 1:1 대화"
-              @click="openUserSelectModal"
-            />
+            <!-- ── 목록 화면 액션 버튼들 ── -->
+            <template v-else>
+              <!-- 🔍 전역 검색 토글 버튼 -->
+              <v-btn
+                icon="mdi-magnify"
+                variant="text"
+                size="small"
+                :color="isGlobalSearching ? 'primary' : undefined"
+                class="mr-1"
+                title="통합 검색"
+                @click="
+                  () => {
+                    isGlobalSearching = !isGlobalSearching
+                    if (!isGlobalSearching) {
+                      clearGlobalSearch()
+                    }
+                  }
+                "
+              />
+
+              <!-- 새 1:1 대화 버튼 -->
+              <v-btn
+                icon="mdi-account-plus-outline"
+                variant="text"
+                size="small"
+                color="primary"
+                class="mr-1"
+                title="새 1:1 대화"
+                @click="openUserSelectModal"
+              />
+            </template>
+
             <v-btn icon="mdi-close" variant="text" size="small" @click="chatStore.closeDrawer" />
           </div>
+        </div>
+
+        <!-- ── 대화방 내 검색 툴바 (isRoomSearching 활성화 시 노출) ── -->
+        <div
+          v-if="currentRoom && isRoomSearching"
+          class="px-3 py-2 border-bottom d-flex align-items-center flex-shrink-0"
+          :class="{ 'bg-grey-darken-4': isDark, 'bg-grey-lighten-5': !isDark }"
+        >
+          <v-text-field
+            v-model="roomSearchQuery"
+            placeholder="이 대화방에서 검색..."
+            density="compact"
+            variant="outlined"
+            hide-details
+            autofocus
+            class="text-xs flex-grow-1 mr-2"
+            @update:model-value="handleRoomSearchChange"
+          />
+          <div class="text-xs mr-2 text-nowrap font-weight-bold" style="min-width: 50px">
+            <span v-if="roomSearchQuery.trim() && matchedMessageIndices.length">
+              {{ currentMatchIndex + 1 }} / {{ matchedMessageIndices.length }}
+            </span>
+            <span v-else-if="roomSearchQuery.trim()" class="text-muted"> 0건 </span>
+          </div>
+          <v-btn
+            icon="mdi-chevron-up"
+            size="x-small"
+            variant="text"
+            :disabled="matchedMessageIndices.length <= 1"
+            title="이전 결과"
+            @click="navigateMatch('prev')"
+          />
+          <v-btn
+            icon="mdi-chevron-down"
+            size="x-small"
+            variant="text"
+            :disabled="matchedMessageIndices.length <= 1"
+            title="다음 결과"
+            @click="navigateMatch('next')"
+          />
+          <v-btn
+            icon="mdi-close"
+            size="x-small"
+            variant="text"
+            class="ml-1"
+            title="검색 닫기"
+            @click="
+              () => {
+                isRoomSearching = false
+                roomSearchQuery = ''
+              }
+            "
+          />
         </div>
 
         <!-- ── 1. 대화방 목록 뷰 ────────────────────────────────── -->
@@ -468,176 +766,197 @@ const formatTime = (dateStr: string) => {
           v-if="!currentRoom"
           class="chat-list-body d-flex flex-column flex-grow-1 overflow-hidden"
         >
-          <!-- 탭 바 -->
-          <div class="px-3 pt-2 border-bottom flex-shrink-0 chat-tabs-area">
-            <v-tabs v-model="activeTab" density="compact" color="primary" grow>
-              <v-tab value="channel">
-                🏢 워크스페이스 채널
-                <v-badge
-                  v-if="chatStore.channelUnreadCount > 0"
-                  :content="chatStore.channelUnreadCount"
-                  color="error"
-                  inline
-                  class="ml-1"
-                />
-              </v-tab>
-              <v-tab value="direct">
-                🔒 1:1 DM
-                <v-badge
-                  v-if="chatStore.directUnreadCount > 0"
-                  :content="chatStore.directUnreadCount"
-                  color="error"
-                  inline
-                  class="ml-1"
-                />
-              </v-tab>
-            </v-tabs>
+          <!-- 🔍 전역 검색 바 (isGlobalSearching 활성화 시 노출) -->
+          <div
+            v-if="isGlobalSearching"
+            class="px-3 py-2 border-bottom flex-shrink-0"
+            :class="{ 'bg-grey-darken-4': isDark, 'bg-grey-lighten-5': !isDark }"
+          >
+            <v-text-field
+              v-model="globalSearchQuery"
+              placeholder="대화방, 참여자, 메시지 검색..."
+              density="compact"
+              variant="outlined"
+              hide-details
+              autofocus
+              clearable
+              prepend-inner-icon="mdi-magnify"
+              class="text-xs"
+              @update:model-value="handleGlobalSearchChange"
+              @click:clear="clearGlobalSearch"
+            />
           </div>
 
-          <!-- 방 목록 -->
-          <div class="flex-grow-1 overflow-y-auto p-2">
-            <!-- 채널 목록 -->
-            <div v-if="activeTab === 'channel'">
-              <div
-                v-if="chatStore.channelRooms.length === 0"
-                class="text-center py-8 text-sm empty-state-text"
+          <!-- 🔍 전역 검색 결과 화면 (isGlobalSearching && 검색어 입력 시) -->
+          <div
+            v-if="isGlobalSearching && globalSearchQuery.trim()"
+            class="flex-grow-1 overflow-y-auto p-2"
+          >
+            <!-- 1) 대화방 / 참여자 검색 결과 -->
+            <div class="px-2 py-1 text-xs font-weight-bold text-muted d-flex align-items-center">
+              <span>대화방 / 참여자 ({{ globalSearchRoomResults.length }}건)</span>
+            </div>
+            <div v-if="globalSearchRoomResults.length === 0" class="text-xs text-muted px-2 py-2">
+              일치하는 대화방이 없습니다.
+            </div>
+            <v-list v-else density="compact" class="bg-transparent py-0 mb-3">
+              <v-list-item
+                v-for="room in globalSearchRoomResults"
+                :key="room.id"
+                class="rounded-lg mb-1 chat-room-item"
+                @click="
+                  () => {
+                    isGlobalSearching = false
+                    handleSelectRoom(room)
+                  }
+                "
               >
-                <v-icon icon="mdi-pound-box-outline" size="large" class="mb-2 opacity-50" /><br />
-                참여 중인 워크스페이스 채널이 없습니다.
-              </div>
-              <v-list v-else density="compact" class="bg-transparent py-0">
-                <v-list-item
-                  v-for="room in chatStore.channelRooms"
-                  :key="room.id"
-                  class="rounded-lg mb-1 chat-room-item"
-                  @click="handleSelectRoom(room)"
+                <template #prepend>
+                  <v-avatar
+                    :color="room.room_type === 'channel' ? 'primary' : 'success'"
+                    variant="tonal"
+                    size="34"
+                    class="mr-2"
+                  >
+                    <v-icon
+                      :icon="room.room_type === 'channel' ? 'mdi-pound' : 'mdi-account'"
+                      size="small"
+                    />
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold text-sm">
+                  {{ getRoomDisplayName(room) }}
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-xs text-truncate">
+                  {{ room.last_message?.content || room.description || '대화 기록 있음' }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+
+            <v-divider class="my-2" />
+
+            <!-- 2) 메시지 / 파일 내용 검색 결과 -->
+            <div class="px-2 py-1 text-xs font-weight-bold text-muted d-flex align-items-center">
+              <span>메시지 / 파일 검색 ({{ globalSearchMessageResults.length }}건)</span>
+              <v-progress-circular
+                v-if="isGlobalSearchingMessages"
+                indeterminate
+                size="14"
+                width="2"
+                color="primary"
+                class="ml-2"
+              />
+            </div>
+            <div
+              v-if="!isGlobalSearchingMessages && globalSearchMessageResults.length === 0"
+              class="text-xs text-muted px-2 py-2"
+            >
+              일치하는 메시지가 없습니다.
+            </div>
+            <v-list v-else density="compact" class="bg-transparent py-0">
+              <v-list-item
+                v-for="msg in globalSearchMessageResults"
+                :key="msg.id"
+                class="rounded-lg mb-1 chat-room-item border"
+                @click="jumpToMessageFromSearch(msg)"
+              >
+                <template #prepend>
+                  <v-avatar
+                    :color="
+                      msg.message_type === 'file' || msg.message_type === 'image'
+                        ? 'warning'
+                        : 'info'
+                    "
+                    variant="tonal"
+                    size="34"
+                    class="mr-2"
+                  >
+                    <v-icon
+                      :icon="
+                        msg.message_type === 'image'
+                          ? 'mdi-image-outline'
+                          : msg.message_type === 'file'
+                            ? 'mdi-file-document-outline'
+                            : 'mdi-comment-text-outline'
+                      "
+                      size="small"
+                    />
+                  </v-avatar>
+                </template>
+                <v-list-item-title
+                  class="font-weight-bold text-xs d-flex align-items-center justify-content-between"
                 >
-                  <template #prepend>
-                    <v-avatar color="primary" variant="tonal" size="36" class="mr-3">
-                      <v-icon icon="mdi-pound" size="small" />
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-bold text-sm">
-                    {{ room.project_name || room.title }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="text-xs text-truncate">
-                    {{ room.last_message?.content || '대화를 시작해보세요' }}
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <div class="text-right">
-                      <div class="text-xs timestamp-text">
-                        {{ formatTime(room.last_message?.created || room.updated) }}
-                      </div>
-                      <v-badge
-                        v-if="room.unread_count > 0"
-                        :content="room.unread_count"
-                        color="error"
-                        inline
-                        class="mt-1"
-                      />
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
+                  <span>{{ msg.sender?.username || '알 수 없음' }}</span>
+                  <span class="text-muted font-weight-normal timestamp-text">{{
+                    formatTime(msg.created)
+                  }}</span>
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-xs text-truncate mt-0.5">
+                  {{ msg.content || (msg.file_name ? `📎 파일: ${msg.file_name}` : '메시지') }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </div>
+
+          <!-- 탭 바 및 일반 목록 (검색 중이 아닐 때) -->
+          <template v-else>
+            <!-- 탭 바 -->
+            <div class="px-3 pt-2 border-bottom flex-shrink-0 chat-tabs-area">
+              <v-tabs v-model="activeTab" density="compact" color="primary" grow>
+                <v-tab value="channel">
+                  🏢 워크스페이스 채널
+                  <v-badge
+                    v-if="chatStore.channelUnreadCount > 0"
+                    :content="chatStore.channelUnreadCount"
+                    color="error"
+                    inline
+                    class="ml-1"
+                  />
+                </v-tab>
+                <v-tab value="direct">
+                  🔒 1:1 DM
+                  <v-badge
+                    v-if="chatStore.directUnreadCount > 0"
+                    :content="chatStore.directUnreadCount"
+                    color="error"
+                    inline
+                    class="ml-1"
+                  />
+                </v-tab>
+              </v-tabs>
             </div>
 
-            <!-- 1:1 DM 목록 -->
-            <div v-else>
-              <!-- ── 나와의 채팅 (최상단 고정 아이템) ── -->
-              <div class="mb-2">
-                <v-list-item
-                  class="rounded-lg mb-1 chat-room-item self-chat-highlight border"
-                  :class="{
-                    'border-info bg-blue-grey-darken-4': isDark,
-                    'border-info bg-light-blue-lighten-5': !isDark,
-                  }"
-                  @click="handleSelectSelfChat"
+            <!-- 방 목록 -->
+            <div class="flex-grow-1 overflow-y-auto p-2">
+              <!-- 채널 목록 -->
+              <div v-if="activeTab === 'channel'">
+                <div
+                  v-if="chatStore.channelRooms.length === 0"
+                  class="text-center py-8 text-sm empty-state-text"
                 >
-                  <template #prepend>
-                    <v-avatar color="info" variant="flat" size="36" class="mr-3">
-                      <v-icon icon="mdi-bookmark-check" size="small" color="white" />
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-bold text-sm d-flex align-items-center">
-                    나와의 채팅
-                    <v-chip
-                      size="x-small"
-                      color="info"
-                      variant="flat"
-                      class="ml-1 font-weight-medium px-1.5"
-                    >
-                      나
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="text-xs text-truncate">
-                    {{
-                      chatStore.selfRoom?.last_message?.content ||
-                      '나만의 메모, 사진, 도면 파일을 보관해보세요'
-                    }}
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <div class="text-right">
-                      <div v-if="chatStore.selfRoom?.last_message" class="text-xs timestamp-text">
-                        {{ formatTime(chatStore.selfRoom.last_message.created) }}
-                      </div>
-                      <v-icon
-                        icon="mdi-pin"
-                        size="x-small"
-                        color="info"
-                        class="mt-1"
-                        title="상단 고정"
-                      />
-                    </div>
-                  </template>
-                </v-list-item>
-              </div>
-
-              <!-- 일반 1:1 대화 섹션 구분선 -->
-              <div class="d-flex align-items-center px-1 my-2">
-                <span class="text-xs text-muted font-weight-medium text-nowrap flex-shrink-0 mr-2">
-                  1:1 대화
-                </span>
-                <v-divider class="my-0" />
-              </div>
-
-              <div
-                v-if="chatStore.directRooms.length === 0"
-                class="text-center py-6 text-sm empty-state-text"
-              >
-                <v-icon icon="mdi-message-outline" size="large" class="mb-2 opacity-50" /><br />
-                진행 중인 1:1 대화가 없습니다.<br />
-                <v-btn
-                  color="primary"
-                  size="small"
-                  variant="flat"
-                  class="mt-3"
-                  prepend-icon="mdi-account-plus"
-                  @click="openUserSelectModal"
-                >
-                  대화 상대 선택
-                </v-btn>
-              </div>
-              <v-list v-else density="compact" class="bg-transparent py-0">
-                <v-list-item
-                  v-for="room in chatStore.directRooms"
-                  :key="room.id"
-                  class="rounded-lg mb-1 chat-room-item"
-                  @click="handleSelectRoom(room)"
-                >
-                  <template #prepend>
-                    <v-avatar color="success" variant="tonal" size="36" class="mr-3">
-                      <v-icon icon="mdi-account" size="small" />
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-bold text-sm">
-                    {{ getRoomDisplayName(room) }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="text-xs text-truncate">
-                    {{ room.last_message?.content || '대화를 시작해보세요' }}
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <div class="d-flex align-items-center">
-                      <div class="text-right mr-2">
+                  <v-icon icon="mdi-pound-box-outline" size="large" class="mb-2 opacity-50" /><br />
+                  참여 중인 워크스페이스 채널이 없습니다.
+                </div>
+                <v-list v-else density="compact" class="bg-transparent py-0">
+                  <v-list-item
+                    v-for="room in chatStore.channelRooms"
+                    :key="room.id"
+                    class="rounded-lg mb-1 chat-room-item"
+                    @click="handleSelectRoom(room)"
+                  >
+                    <template #prepend>
+                      <v-avatar color="primary" variant="tonal" size="36" class="mr-3">
+                        <v-icon icon="mdi-pound" size="small" />
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-bold text-sm">
+                      {{ room.project_name || room.title }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="text-xs text-truncate">
+                      {{ room.last_message?.content || '대화를 시작해보세요' }}
+                    </v-list-item-subtitle>
+                    <template #append>
+                      <div class="text-right">
                         <div class="text-xs timestamp-text">
                           {{ formatTime(room.last_message?.created || room.updated) }}
                         </div>
@@ -649,21 +968,137 @@ const formatTime = (dateStr: string) => {
                           class="mt-1"
                         />
                       </div>
-                      <v-btn
-                        icon="mdi-close"
-                        variant="text"
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </div>
+
+              <!-- 1:1 DM 목록 -->
+              <div v-else>
+                <!-- ── 나와의 채팅 (최상단 고정 아이템) ── -->
+                <div class="mb-2">
+                  <v-list-item
+                    class="rounded-lg mb-1 chat-room-item self-chat-highlight border"
+                    :class="{
+                      'border-info bg-blue-grey-darken-4': isDark,
+                      'border-info bg-light-blue-lighten-5': !isDark,
+                    }"
+                    @click="handleSelectSelfChat"
+                  >
+                    <template #prepend>
+                      <v-avatar color="info" variant="flat" size="36" class="mr-3">
+                        <v-icon icon="mdi-bookmark-check" size="small" color="white" />
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-bold text-sm d-flex align-items-center">
+                      나와의 채팅
+                      <v-chip
                         size="x-small"
-                        color="secondary"
-                        class="leave-dm-btn"
-                        title="대화방 나가기 (목록에서 숨김)"
-                        @click.stop="confirmLeaveRoom(room)"
-                      />
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
+                        color="info"
+                        variant="flat"
+                        class="ml-1 font-weight-medium px-1.5"
+                      >
+                        나
+                      </v-chip>
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="text-xs text-truncate">
+                      {{
+                        chatStore.selfRoom?.last_message?.content ||
+                        '나만의 메모, 사진, 도면 파일을 보관해보세요'
+                      }}
+                    </v-list-item-subtitle>
+                    <template #append>
+                      <div class="text-right">
+                        <div v-if="chatStore.selfRoom?.last_message" class="text-xs timestamp-text">
+                          {{ formatTime(chatStore.selfRoom.last_message.created) }}
+                        </div>
+                        <v-icon
+                          icon="mdi-pin"
+                          size="x-small"
+                          color="info"
+                          class="mt-1"
+                          title="상단 고정"
+                        />
+                      </div>
+                    </template>
+                  </v-list-item>
+                </div>
+
+                <!-- 일반 1:1 대화 섹션 구분선 -->
+                <div class="d-flex align-items-center px-1 my-2">
+                  <span
+                    class="text-xs text-muted font-weight-medium text-nowrap flex-shrink-0 mr-2"
+                  >
+                    1:1 대화
+                  </span>
+                  <v-divider class="my-0" />
+                </div>
+
+                <div
+                  v-if="chatStore.directRooms.length === 0"
+                  class="text-center py-6 text-sm empty-state-text"
+                >
+                  <v-icon icon="mdi-message-outline" size="large" class="mb-2 opacity-50" /><br />
+                  진행 중인 1:1 대화가 없습니다.<br />
+                  <v-btn
+                    color="primary"
+                    size="small"
+                    variant="flat"
+                    class="mt-3"
+                    prepend-icon="mdi-account-plus"
+                    @click="openUserSelectModal"
+                  >
+                    대화 상대 선택
+                  </v-btn>
+                </div>
+                <v-list v-else density="compact" class="bg-transparent py-0">
+                  <v-list-item
+                    v-for="room in chatStore.directRooms"
+                    :key="room.id"
+                    class="rounded-lg mb-1 chat-room-item"
+                    @click="handleSelectRoom(room)"
+                  >
+                    <template #prepend>
+                      <v-avatar color="success" variant="tonal" size="36" class="mr-3">
+                        <v-icon icon="mdi-account" size="small" />
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-bold text-sm">
+                      {{ getRoomDisplayName(room) }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="text-xs text-truncate">
+                      {{ room.last_message?.content || '대화를 시작해보세요' }}
+                    </v-list-item-subtitle>
+                    <template #append>
+                      <div class="d-flex align-items-center">
+                        <div class="text-right mr-2">
+                          <div class="text-xs timestamp-text">
+                            {{ formatTime(room.last_message?.created || room.updated) }}
+                          </div>
+                          <v-badge
+                            v-if="room.unread_count > 0"
+                            :content="room.unread_count"
+                            color="error"
+                            inline
+                            class="mt-1"
+                          />
+                        </div>
+                        <v-btn
+                          icon="mdi-close"
+                          variant="text"
+                          size="x-small"
+                          color="secondary"
+                          class="leave-dm-btn"
+                          title="대화방 나가기 (목록에서 숨김)"
+                          @click.stop="confirmLeaveRoom(room)"
+                        />
+                      </div>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- ── 2. 대화방 채팅창 뷰 ──────────────────────────────── -->
@@ -778,10 +1213,15 @@ const formatTime = (dateStr: string) => {
 
                   <!-- 말풍선 박스 -->
                   <div
+                    :id="`chat-msg-${msg.id}`"
                     class="p-2.5 rounded-lg text-sm chat-bubble shadow-sm position-relative msg-bubble-wrapper"
                     :class="[
                       msg.sender?.pk === currentUserId ? 'my-bubble' : 'other-bubble',
-                      { 'deleted-bubble': msg.is_deleted, 'cursor-pointer': !msg.is_deleted },
+                      {
+                        'deleted-bubble': msg.is_deleted,
+                        'cursor-pointer': !msg.is_deleted,
+                        'highlighted-bubble': highlightedMessageId === msg.id,
+                      },
                     ]"
                     :title="msg.is_deleted ? '' : '더블클릭하여 답장/댓글 쓰기'"
                     @dblclick="!msg.is_deleted && setReplyTarget(msg)"
@@ -1209,6 +1649,196 @@ const formatTime = (dateStr: string) => {
       </v-card>
     </v-dialog>
 
+    <!-- ── 4. 영구 보존 파일/미디어 서랍 모달 ──────────────────────── -->
+    <v-dialog v-model="isFilesDrawerOpen" max-width="560">
+      <v-card class="rounded-lg user-select-modal-card">
+        <v-card-title
+          class="font-weight-bold text-md border-bottom d-flex justify-content-between align-items-center p-3"
+        >
+          <div class="d-flex align-items-center text-truncate mr-2">
+            <v-icon icon="mdi-folder-open-outline" color="primary" size="small" class="mr-2" />
+            <span class="text-truncate">대화방 보관함 서랍</span>
+            <span
+              v-if="currentRoom"
+              class="text-xs text-muted ml-2 text-truncate font-weight-normal"
+            >
+              ({{ getRoomDisplayName(currentRoom) }})
+            </span>
+          </div>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="isFilesDrawerOpen = false" />
+        </v-card-title>
+        <v-card-text class="p-3">
+          <!-- 탭 전환: 사진/미디어, 문서/파일, 공유 링크 -->
+          <v-tabs
+            v-model="filesActiveTab"
+            density="compact"
+            color="primary"
+            grow
+            class="mb-3 border-bottom"
+          >
+            <v-tab value="media">
+              <v-icon icon="mdi-image-multiple-outline" size="small" class="mr-1" />
+              사진/미디어
+            </v-tab>
+            <v-tab value="doc">
+              <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+              문서/파일
+            </v-tab>
+            <v-tab value="link">
+              <v-icon icon="mdi-link-variant" size="small" class="mr-1" />
+              공유 링크
+            </v-tab>
+          </v-tabs>
+
+          <!-- 보관함 내 검색 바 -->
+          <v-text-field
+            v-model="filesSearchQuery"
+            placeholder="보관함 내 검색 (파일명, 내용, 제목)..."
+            density="compact"
+            variant="outlined"
+            prepend-inner-icon="mdi-magnify"
+            clearable
+            hide-details
+            class="text-xs mb-3"
+          />
+
+          <!-- 로딩 상태 -->
+          <div v-if="isLoadingFiles" class="text-center py-6">
+            <v-progress-circular indeterminate size="28" color="primary" />
+          </div>
+
+          <!-- 빈 상태 -->
+          <div
+            v-else-if="filteredChatFiles.length === 0"
+            class="text-center py-8 text-xs empty-state-text"
+          >
+            <v-icon icon="mdi-folder-alert-outline" size="36" class="mb-2 opacity-40" /><br />
+            보관된 항목이 없습니다.
+          </div>
+
+          <!-- 탭별 컨텐츠 -->
+          <div v-else style="max-height: 400px; overflow-y: auto">
+            <!-- 1) 사진/미디어 그리드 뷰 -->
+            <div v-if="filesActiveTab === 'media'" class="row g-2">
+              <div
+                v-for="item in filteredChatFiles"
+                :key="item.id"
+                class="col-4 col-sm-3 position-relative"
+              >
+                <div
+                  class="rounded border overflow-hidden position-relative chat-file-media-thumb"
+                  style="aspect-ratio: 1; cursor: pointer"
+                  :title="`${item.file_name || '사진'} (클릭 시 대화 위치로 이동)`"
+                  @click="handleJumpFromFiles(item)"
+                >
+                  <img
+                    v-if="item.file"
+                    :src="item.file"
+                    :alt="item.file_name || '사진'"
+                    class="w-100 h-100 object-fit-cover"
+                  />
+                  <div
+                    class="media-thumb-overlay p-1 d-flex justify-content-between align-items-end text-white text-xs"
+                  >
+                    <span class="text-truncate" style="font-size: 10px">{{
+                      formatTime(item.created)
+                    }}</span>
+                    <v-btn
+                      v-if="item.file"
+                      :href="item.file"
+                      target="_blank"
+                      download
+                      icon="mdi-download"
+                      size="x-small"
+                      variant="text"
+                      density="compact"
+                      color="white"
+                      @click.stop
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2) 문서/파일 리스트 뷰 -->
+            <v-list
+              v-else-if="filesActiveTab === 'doc'"
+              density="compact"
+              class="bg-transparent py-0"
+            >
+              <v-list-item
+                v-for="item in filteredChatFiles"
+                :key="item.id"
+                class="rounded-lg mb-1 chat-room-item border"
+                @click="handleJumpFromFiles(item)"
+              >
+                <template #prepend>
+                  <v-avatar color="primary" variant="tonal" size="36" class="mr-2">
+                    <v-icon icon="mdi-file-document-outline" size="small" />
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold text-xs text-truncate">
+                  {{ item.file_name || '문서 파일' }}
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-xs text-muted d-flex align-items-center mt-0.5">
+                  <span>{{ formatFileSize(item.file_size) }}</span>
+                  <span class="mx-1.5">•</span>
+                  <span>{{ item.sender?.username || '알 수 없음' }}</span>
+                  <span class="mx-1.5">•</span>
+                  <span>{{ formatTime(item.created) }}</span>
+                </v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    v-if="item.file"
+                    :href="item.file"
+                    target="_blank"
+                    download
+                    icon="mdi-download"
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    title="다운로드"
+                    @click.stop
+                  />
+                </template>
+              </v-list-item>
+            </v-list>
+
+            <!-- 3) 공유 링크 / 리치 카드 리스트 뷰 -->
+            <v-list v-else density="compact" class="bg-transparent py-0">
+              <v-list-item
+                v-for="item in filteredChatFiles"
+                :key="item.id"
+                class="rounded-lg mb-1 chat-room-item border"
+                @click="handleJumpFromFiles(item)"
+              >
+                <template #prepend>
+                  <v-avatar color="info" variant="tonal" size="36" class="mr-2">
+                    <v-icon
+                      :icon="item.ref_id ? 'mdi-file-tree-outline' : 'mdi-link-variant'"
+                      size="small"
+                    />
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold text-xs text-truncate">
+                  {{ item.ref_title || item.content || '공유 링크' }}
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-xs text-muted d-flex align-items-center mt-0.5">
+                  <span v-if="item.ref_sub" class="text-truncate mr-2">{{ item.ref_sub }}</span>
+                  <span>{{ item.sender?.username || '알 수 없음' }}</span>
+                  <span class="mx-1.5">•</span>
+                  <span>{{ formatTime(item.created) }}</span>
+                </v-list-item-subtitle>
+                <template #append>
+                  <v-icon icon="mdi-chevron-right" size="small" class="opacity-60" />
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <!-- ── 클립보드 복사 알림 스낵바 ────────────────────────────── -->
     <v-snackbar
       v-model="copySnackbar"
@@ -1612,5 +2242,41 @@ const formatTime = (dateStr: string) => {
 }
 .dark-drawer .self-chat-highlight:hover {
   filter: brightness(1.15);
+}
+
+/* ── 🔍 검색 하이라이트 말풍선 효과 (골드 앰버 발광 애니메이션) ──── */
+.highlighted-bubble {
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.65) !important;
+  animation: pulse-amber-glow 1.5s infinite alternate;
+}
+@keyframes pulse-amber-glow {
+  0% {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.85);
+    transform: scale(1.015);
+  }
+}
+
+/* 대화방 내 검색 바 */
+.in-room-search-bar {
+  background-color: #f8fafc;
+}
+
+/* 보관함 서랍 미디어 썸네일 오버레이 */
+.chat-file-media-thumb:hover .media-thumb-overlay {
+  opacity: 1;
+}
+.media-thumb-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
 }
 </style>

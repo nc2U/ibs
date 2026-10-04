@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/api'
 import Cookies from 'js-cookie'
-import type { ChatRoom, ChatMessage } from '@/store/types/chat'
+import type {
+  ChatRoom,
+  ChatMessage,
+  ChatSearchResult,
+  ChatFilesResult,
+  ChatContextResult,
+} from '@/store/types/chat'
 import { useAccount } from '@/store/pinia/account'
 
 export const useChat = defineStore('chat', () => {
@@ -353,6 +359,68 @@ export const useChat = defineStore('chat', () => {
     }
   }
 
+  // ── 🔍 검색 & 전후 맥락 & 영구 파일 서랍 액션 ───────────────────
+  const searchMessages = async (params: {
+    q: string
+    room?: number
+    type?: 'all' | 'text' | 'file' | 'image'
+    page?: number
+    pageSize?: number
+  }): Promise<ChatSearchResult> => {
+    try {
+      const res = await api.get('/chat-message/search/', {
+        params: {
+          q: params.q,
+          room: params.room,
+          type: params.type || 'all',
+          page: params.page || 1,
+          page_size: params.pageSize || 30,
+        },
+        hideProgress: true,
+      } as any)
+      return res.data
+    } catch (e) {
+      throw e
+    }
+  }
+
+  const fetchMessageContext = async (
+    messageId: number,
+    limit = 15,
+  ): Promise<ChatContextResult> => {
+    try {
+      const res = await api.get('/chat-message/context/', {
+        params: { message_id: messageId, limit },
+        hideProgress: true,
+      } as any)
+      return res.data
+    } catch (e) {
+      throw e
+    }
+  }
+
+  const fetchChatFiles = async (params: {
+    room: number
+    tab?: 'all' | 'media' | 'doc' | 'link'
+    page?: number
+    pageSize?: number
+  }): Promise<ChatFilesResult> => {
+    try {
+      const res = await api.get('/chat-message/files/', {
+        params: {
+          room: params.room,
+          tab: params.tab || 'all',
+          page: params.page || 1,
+          page_size: params.pageSize || 30,
+        },
+        hideProgress: true,
+      } as any)
+      return res.data
+    } catch (e) {
+      throw e
+    }
+  }
+
   return {
     isDrawerOpen,
     rooms,
@@ -381,5 +449,8 @@ export const useChat = defineStore('chat', () => {
     sendMessage,
     uploadFile,
     deleteMessage,
+    searchMessages,
+    fetchMessageContext,
+    fetchChatFiles,
   }
 })
