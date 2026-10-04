@@ -231,7 +231,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
         : null;
 
     final projectIssuesAsync = projectSlug.isNotEmpty
-        ? ref.watch(issueListProvider)
+        ? ref.watch(projectIssuesProvider(projectSlug))
         : null;
 
     final statusListAsync = ref.watch(issueStatusListProvider);
@@ -1054,8 +1054,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             ),
                             error: (_, __) =>
                                 _buildParentIssueSelector(const []),
-                            data: (state) {
-                              final candidateIssues = state.items
+                            data: (issues) {
+                              final candidateIssues = issues
                                   .where((i) =>
                                       widget.initialIssue == null ||
                                       i.pk != widget.initialIssue!.pk)
@@ -1241,8 +1241,9 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
       maxChildSize: 0.92,
       expand: false,
       builder: (context, scrollController) {
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
         return Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

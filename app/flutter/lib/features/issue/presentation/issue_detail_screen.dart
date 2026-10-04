@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,20 +101,118 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
     }
   }
 
-  Future<void> _attachPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.camera);
-    if (picked == null) return;
+  Future<void> _showAttachmentMenu() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: context.colors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.camera_alt_outlined, color: context.colors.accentWork),
+              title: Text('카메라로 촬영', style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined, color: context.colors.accentWork),
+              title: Text('사진 앨범에서 선택', style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.attach_file_rounded, color: context.colors.accentWork),
+              title: Text('문서/파일 선택', style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadFile();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Future<void> _pickAndUploadImage(ImageSource source) async {
     try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+      if (picked == null) return;
+
       await ref
           .read(issueRepositoryProvider)
-          .uploadFile(widget.issueId, File(picked.path));
+          .uploadFile(widget.issueId, picked);
+
       ref.invalidate(issueDetailProvider(widget.issueId));
+      ref.invalidate(issueLogProvider(widget.issueId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('사진이 첨부되었습니다.'),
+            backgroundColor: context.colors.success,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('사진 업로드에 실패했습니다.'),
+            backgroundColor: context.colors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(withData: true);
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('파일 데이터를 읽어올 수 없습니다.'),
+              backgroundColor: context.colors.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      await ref
+          .read(issueRepositoryProvider)
+          .uploadFileBytes(widget.issueId, bytes, file.name);
+
+      ref.invalidate(issueDetailProvider(widget.issueId));
+      ref.invalidate(issueLogProvider(widget.issueId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${file.name} 파일이 첨부되었습니다.'),
             backgroundColor: context.colors.success,
           ),
         );
@@ -399,7 +497,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
             onTogglePrivate: () =>
                 setState(() => _isPrivateComment = !_isPrivateComment),
             onSend: _sendComment,
-            onAttachPhoto: _attachPhoto,
+            onAttachPhoto: _showAttachmentMenu,
           ),
       ],
     );
@@ -982,7 +1080,7 @@ class _HistoryTabChip extends StatelessWidget {
           color: selected
               ? context.colors.accentWork.withAlpha(35)
               : context.colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: selected ? context.colors.accentWork : context.colors.border,
             width: selected ? 1.2 : 0.8,
@@ -1070,9 +1168,9 @@ class _CommentInputBar extends StatelessWidget {
             children: [
               // 카메라/사진 첨부 버튼
               IconButton(
-                icon: Icon(Icons.camera_alt_outlined,
+                icon: Icon(Icons.attach_file_rounded,
                     color: context.colors.textMuted, size: 20),
-                tooltip: '사진 첨부',
+                tooltip: '파일/사진 첨부',
                 onPressed: onAttachPhoto,
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),

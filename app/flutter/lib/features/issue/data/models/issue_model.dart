@@ -339,8 +339,11 @@ class IssueFilterModel {
   final String? projectStatus; // '1': 활성 프로젝트만 (닫힌 프로젝트 제외)
   final String? statusExclude;
   final bool? statusClosed; // true: 완료됨, false: 진행 중
+  final String? search; // 전체내용 검색 (any_searchable)
+  final String? subject; // 제목 검색 (subject)
   final String ordering;
   final int page;
+  final int? pageSize;
 
   const IssueFilterModel({
     this.assignedTo,
@@ -349,8 +352,11 @@ class IssueFilterModel {
     this.projectStatus = '1',
     this.statusExclude,
     this.statusClosed,
+    this.search,
+    this.subject,
     this.ordering = '-updated',
     this.page = 1,
+    this.pageSize,
   });
 
   Map<String, dynamic> toQueryParams() {
@@ -364,6 +370,9 @@ class IssueFilterModel {
     if (projectStatus != null) params['project_status'] = projectStatus;
     if (statusExclude != null) params['status__exclude'] = statusExclude;
     if (statusClosed != null) params['status__closed'] = statusClosed! ? '1' : '0';
+    if (search != null && search!.isNotEmpty) params['any_searchable'] = search;
+    if (subject != null && subject!.isNotEmpty) params['subject'] = subject;
+    if (pageSize != null) params['page_size'] = pageSize;
     return params;
   }
 
@@ -374,14 +383,20 @@ class IssueFilterModel {
     String? projectStatus,
     String? statusExclude,
     bool? statusClosed,
+    String? search,
+    String? subject,
     String? ordering,
     int? page,
+    int? pageSize,
     bool clearAssignedTo = false,
     bool clearMyIssue = false,
     bool clearProjectSlug = false,
     bool clearProjectStatus = false,
     bool clearStatusExclude = false,
     bool clearStatusClosed = false,
+    bool clearSearch = false,
+    bool clearSubject = false,
+    bool clearPageSize = false,
   }) {
     return IssueFilterModel(
       assignedTo: clearAssignedTo ? null : assignedTo ?? this.assignedTo,
@@ -390,8 +405,11 @@ class IssueFilterModel {
       projectStatus: clearProjectStatus ? null : projectStatus ?? this.projectStatus,
       statusExclude: clearStatusExclude ? null : statusExclude ?? this.statusExclude,
       statusClosed: clearStatusClosed ? null : statusClosed ?? this.statusClosed,
+      search: clearSearch ? null : search ?? this.search,
+      subject: clearSubject ? null : subject ?? this.subject,
       ordering: ordering ?? this.ordering,
       page: page ?? this.page,
+      pageSize: clearPageSize ? null : pageSize ?? this.pageSize,
     );
   }
 }

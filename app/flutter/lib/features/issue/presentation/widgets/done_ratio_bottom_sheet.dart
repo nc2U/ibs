@@ -59,6 +59,7 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
       await widget.ref
           .read(issueDetailProvider(widget.issueId).notifier)
           .updateDoneRatio(_ratio.round());
+      widget.ref.invalidate(issueListProvider);
       if (mounted) Navigator.pop(context);
     } catch (_) {
       if (mounted) {

@@ -50,6 +50,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
     if (_viewMode == _ViewMode.list &&
         _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200) {
@@ -59,6 +60,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
   void _applyFilter() {
     final project = ref.read(selectedProjectProvider);
+    final pageSize = _viewMode == _ViewMode.list ? 20 : 100;
     IssueFilterModel filter;
 
     switch (_filterMode) {
@@ -69,6 +71,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
           statusClosed: false,
           projectSlug: project?.slug,
           ordering: '-updated',
+          pageSize: pageSize,
         );
         break;
       case _FilterMode.inProgress:
@@ -77,6 +80,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
           statusClosed: false,
           projectSlug: project?.slug,
           ordering: '-updated',
+          pageSize: pageSize,
         );
         break;
       case _FilterMode.completed:
@@ -85,6 +89,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
           statusClosed: true,
           projectSlug: project?.slug,
           ordering: '-updated',
+          pageSize: pageSize,
         );
         break;
     }
@@ -98,7 +103,9 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
   }
 
   void _onViewModeChanged(_ViewMode mode) {
+    if (_viewMode == mode) return;
     setState(() => _viewMode = mode);
+    _applyFilter();
   }
 
   void _navigateToDetail(IssueModel issue) {
@@ -176,7 +183,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: context.colors.bgCard,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: context.colors.border, width: 0.8),
                 ),
                 padding: const EdgeInsets.all(2),
@@ -313,7 +320,7 @@ class _FilterChip extends StatelessWidget {
           color: selected
               ? context.colors.accentWork.withAlpha(40)
               : context.colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: selected ? context.colors.accentWork : context.colors.border,
             width: selected ? 1.4 : 0.8,
@@ -350,14 +357,14 @@ class _ViewModeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: selected
               ? context.colors.accentWork.withAlpha(40)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.zero,
         ),
         child: Icon(
           icon,

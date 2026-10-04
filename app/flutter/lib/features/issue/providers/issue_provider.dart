@@ -132,24 +132,30 @@ class IssueDetailNotifier
     return ref.read(issueRepositoryProvider).fetchIssueDetail(id);
   }
 
-  /// 진척률 업데이트 (Optimistic Update)
+  /// 진척률 업데이트 (Optimistic Update 지원)
   Future<void> updateDoneRatio(int ratio) async {
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current != null) {
+      final updatedIssue = current.copyWith(doneRatio: ratio);
 
-    final updatedIssue = current.copyWith(doneRatio: ratio);
+      // 상세 화면 및 목록 화면 모두 즉시 Optimistic 반영
+      state = AsyncData(updatedIssue);
+      ref.read(issueListProvider.notifier).updateSingleIssue(updatedIssue);
 
-    // 상세 화면 및 목록 화면 모두 즉시 Optimistic 반영
-    state = AsyncData(updatedIssue);
-    ref.read(issueListProvider.notifier).updateSingleIssue(updatedIssue);
-
-    try {
-      await ref.read(issueRepositoryProvider).updateDoneRatio(current.pk, ratio);
-    } catch (_) {
-      // 실패 시 원래 값으로 롤백
-      state = AsyncData(current);
-      ref.read(issueListProvider.notifier).updateSingleIssue(current);
-      rethrow;
+      try {
+        await ref.read(issueRepositoryProvider).updateDoneRatio(current.pk, ratio);
+        ref.invalidate(issueLogProvider(current.pk));
+      } catch (_) {
+        // 실패 시 원래 값으로 롤백
+        state = AsyncData(current);
+        ref.read(issueListProvider.notifier).updateSingleIssue(current);
+        rethrow;
+      }
+    } else {
+      // 목록 화면 등에서 상세 프로바이더가 아직 초기화되지 않은 상태에서 호출된 경우
+      await ref.read(issueRepositoryProvider).updateDoneRatio(arg, ratio);
+      ref.invalidate(issueListProvider);
+      ref.invalidateSelf();
     }
   }
 
@@ -189,8 +195,10 @@ class IssueCommentNotifier
     await ref
         .read(issueRepositoryProvider)
         .addComment(arg, content, isPrivate: isPrivate);
-    // 댓글 추가 후 다시 로드
+    // 댓글 추가 후 댓글 목록, 변경 로그, 상세 화면 동기화
     ref.invalidateSelf();
+    ref.invalidate(issueLogProvider(arg));
+    ref.invalidate(issueDetailProvider(arg));
   }
 }
 
@@ -230,4 +238,18 @@ final issueStatusListProvider =
 final issuePriorityListProvider =
     FutureProvider<List<IssuePriorityModel>>((ref) async {
   return ref.watch(issueRepositoryProvider).fetchPriorities();
+});
+
+/// 특정 프로젝트의 상위 업무 후보 목록 조회 (필터 무관 전체 목록)
+final projectIssuesProvider =
+    FutureProvider.family<List<IssueModel>, String>((ref, projectSlug) async {
+  if (projectSlug.isEmpty) return const [];
+  final repo = ref.watch(issueRepositoryProvider);
+  final res = await repo.fetchIssues(
+    IssueFilterModel(
+      projectSlug: projectSlug,
+      pageSize: 100,
+    ),
+  );
+  return res.results;
 });

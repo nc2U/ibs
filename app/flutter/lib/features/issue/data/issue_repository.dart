@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/providers/dio_provider.dart';
 import 'models/issue_model.dart';
@@ -98,13 +99,30 @@ class IssueRepository {
     );
   }
 
-  /// 파일 첨부 (multipart/form-data)
-  Future<void> uploadFile(int issueId, File file) async {
+  /// 파일 첨부 (Web / Mobile / Desktop 공용 지원)
+  Future<void> uploadFile(int issueId, XFile file) async {
+    final bytes = await file.readAsBytes();
     final formData = FormData.fromMap({
       'issue': issueId,
-      'file': await MultipartFile.fromFile(
-        file.path,
-        filename: file.path.split('/').last,
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.name,
+      ),
+    });
+    await _dio.post(
+      ApiEndpoints.issueFiles,
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+  }
+
+  /// 바이트 기반 파일 첨부
+  Future<void> uploadFileBytes(int issueId, Uint8List bytes, String fileName) async {
+    final formData = FormData.fromMap({
+      'issue': issueId,
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
       ),
     });
     await _dio.post(

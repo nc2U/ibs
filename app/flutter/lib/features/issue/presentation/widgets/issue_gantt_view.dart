@@ -25,9 +25,10 @@ class IssueGanttView extends StatefulWidget {
 }
 
 class _IssueGanttViewState extends State<IssueGanttView> {
-  final ScrollController _horizontalHeaderController = ScrollController();
   final ScrollController _horizontalBodyController = ScrollController();
-  final ScrollController _verticalController = ScrollController();
+  final ScrollController _verticalTitleController = ScrollController();
+  final ScrollController _verticalBodyController = ScrollController();
+  bool _isSyncingVertical = false;
 
   late DateTime _rangeStart;
   late DateTime _rangeEnd;
@@ -42,11 +43,24 @@ class _IssueGanttViewState extends State<IssueGanttView> {
     super.initState();
     _calculateDateRange();
 
-    // 헤더와 바디의 가로 스크롤 동기화
-    _horizontalBodyController.addListener(() {
-      if (_horizontalHeaderController.hasClients &&
-          _horizontalHeaderController.offset != _horizontalBodyController.offset) {
-        _horizontalHeaderController.jumpTo(_horizontalBodyController.offset);
+    // 좌측 업무명과 우측 간트 바디의 세로 스크롤 양방향 동기화
+    _verticalTitleController.addListener(() {
+      if (_isSyncingVertical) return;
+      if (_verticalBodyController.hasClients &&
+          _verticalBodyController.offset != _verticalTitleController.offset) {
+        _isSyncingVertical = true;
+        _verticalBodyController.jumpTo(_verticalTitleController.offset);
+        _isSyncingVertical = false;
+      }
+    });
+
+    _verticalBodyController.addListener(() {
+      if (_isSyncingVertical) return;
+      if (_verticalTitleController.hasClients &&
+          _verticalTitleController.offset != _verticalBodyController.offset) {
+        _isSyncingVertical = true;
+        _verticalTitleController.jumpTo(_verticalBodyController.offset);
+        _isSyncingVertical = false;
       }
     });
 
@@ -65,9 +79,9 @@ class _IssueGanttViewState extends State<IssueGanttView> {
 
   @override
   void dispose() {
-    _horizontalHeaderController.dispose();
     _horizontalBodyController.dispose();
-    _verticalController.dispose();
+    _verticalTitleController.dispose();
+    _verticalBodyController.dispose();
     super.dispose();
   }
 
@@ -234,7 +248,8 @@ class _IssueGanttViewState extends State<IssueGanttView> {
                       // 업무 제목 세로 리스트
                       Expanded(
                         child: ListView.builder(
-                          controller: _verticalController,
+                          controller: _verticalTitleController,
+                          physics: const ClampingScrollPhysics(),
                           itemCount: widget.issues.length,
                           itemBuilder: (context, index) {
                             final issue = widget.issues[index];
@@ -394,6 +409,7 @@ class _IssueGanttViewState extends State<IssueGanttView> {
                           // 타임라인 바디 그리드 + 업무 바
                           Expanded(
                             child: ListView.builder(
+                              controller: _verticalBodyController,
                               physics: const ClampingScrollPhysics(),
                               itemCount: widget.issues.length,
                               itemBuilder: (context, index) {
@@ -475,6 +491,7 @@ class _IssueGanttViewState extends State<IssueGanttView> {
     final trackerColor = _getTrackerColor(issue.tracker.name, context);
 
     return Positioned(
+      top: 13,
       left: left,
       width: width,
       child: GestureDetector(
