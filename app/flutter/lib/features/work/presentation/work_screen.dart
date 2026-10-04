@@ -27,7 +27,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
   bool _isDocsView = false;
 
   void _openDocsView() {
-    final currentWs = ref.read(selectedProjectProvider);
+    final currentWs = ref.read(selectedWorkspaceProvider);
     if (currentWs != null) {
       ref.read(docsContextProvider.notifier).state = DocsContext.workspace(
         SimpleProjectModel(
@@ -69,62 +69,72 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
       }
     });
 
-    return DefaultTabController(
-      length: 2,
-      initialIndex: widget.initialIndex,
-      child: Scaffold(
-        backgroundColor: context.colors.bgPrimary,
-        body: Column(
-          children: [
-            // ── 워크스페이스 고정 선택 바 (공용 컴포넌트) ─────────────────────
-            WorkspaceSelectorBar(
-              trailing: ref.can(Perm.docsRead)
-                  ? InkWell(
-                      onTap: _isDocsView ? _closeDocsView : _openDocsView,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _isDocsView
-                              ? context.colors.accentWork.withAlpha(30)
-                              : const Color(0xFF6A1B9A),
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(
+    final selectedWs = ref.watch(selectedWorkspaceProvider);
+
+    return PopScope(
+      canPop: !_isDocsView,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isDocsView) {
+          _closeDocsView();
+        }
+      },
+      child: DefaultTabController(
+        key: ValueKey(widget.initialIndex),
+        length: 2,
+        initialIndex: widget.initialIndex,
+        child: Scaffold(
+          backgroundColor: context.colors.bgPrimary,
+          body: Column(
+            children: [
+              // ── 워크스페이스 고정 선택 바 (공용 컴포넌트) ─────────────────────
+              WorkspaceSelectorBar(
+                trailing: ref.can(Perm.docsRead, projectSlug: selectedWs?.slug)
+                    ? InkWell(
+                        onTap: _isDocsView ? _closeDocsView : _openDocsView,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
                             color: _isDocsView
-                                ? context.colors.accentWork
-                                : const Color(0xFFAB47BC),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isDocsView
-                                  ? Icons.arrow_back_rounded
-                                  : Icons.folder_shared_outlined,
-                              size: 13,
+                                ? context.colors.accentWork.withAlpha(30)
+                                : const Color(0xFF6A1B9A),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
                               color: _isDocsView
                                   ? context.colors.accentWork
-                                  : Colors.white,
+                                  : const Color(0xFFAB47BC),
+                              width: 0.8,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isDocsView ? '업무 목록' : '문서함',
-                              style: AppTextStyles.label.copyWith(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isDocsView
+                                    ? Icons.arrow_back_rounded
+                                    : Icons.folder_shared_outlined,
+                                size: 13,
                                 color: _isDocsView
                                     ? context.colors.accentWork
                                     : Colors.white,
-                                fontSize: 11,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                _isDocsView ? '업무 목록' : '문서함',
+                                style: AppTextStyles.label.copyWith(
+                                  color: _isDocsView
+                                      ? context.colors.accentWork
+                                      : Colors.white,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    )
-                  : null,
-            ),
-            Divider(color: context.colors.border, height: 1),
+                      )
+                    : null,
+              ),
+              Divider(color: context.colors.border, height: 1),
 
             // ── 바디 영역 (문서함 뷰 VS 기본 업무/회의 탭 뷰) ────────────────────
             Expanded(
@@ -187,23 +197,28 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                   return ListenableBuilder(
                     listenable: controller,
                     builder: (context, child) {
-                      final selectedProject =
-                          ref.watch(selectedProjectProvider);
+                      final selectedWs =
+                          ref.watch(selectedWorkspaceProvider);
                       final allProjects =
                           ref.watch(projectListProvider).valueOrNull ?? [];
-                      final currentProj = selectedProject != null
+                      final currentProj = selectedWs != null
                           ? allProjects
-                              .where((p) => p.slug == selectedProject.slug)
+                              .where((p) => p.slug == selectedWs.slug)
                               .firstOrNull
                           : null;
                       final isMeetingModuleEnabled =
                           currentProj?.module?.meeting ?? true;
+                      final isIssueModuleEnabled =
+                          currentProj?.module?.issue ?? true;
 
                       final isMeetingTab = controller.index == 0;
                       final canCreate = isMeetingTab
-                          ? (ref.can(Perm.meetingCreate) &&
+                          ? (ref.can(Perm.meetingCreate,
+                                  projectSlug: selectedWs?.slug) &&
                               isMeetingModuleEnabled)
-                          : ref.can(Perm.issueCreate);
+                          : (ref.can(Perm.issueCreate,
+                                  projectSlug: selectedWs?.slug) &&
+                              isIssueModuleEnabled);
 
                       if (!canCreate) return const SizedBox.shrink();
 
@@ -234,7 +249,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                           if (isMeetingTab) {
                             context.go('/work/meetings/new');
                           } else {
-                            context.go('/work/issues/new');
+                            final wsSlug = selectedWs?.slug;
+                            context.go(wsSlug != null
+                                ? '/work/issues/new?project_slug=$wsSlug'
+                                : '/work/issues/new');
                           }
                         },
                       );
@@ -242,6 +260,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                   );
                 },
               ),
+        ),
       ),
     );
   }
