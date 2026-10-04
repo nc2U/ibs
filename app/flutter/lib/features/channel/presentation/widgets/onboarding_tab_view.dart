@@ -49,7 +49,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
                           fontSize: 13,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.zero,
                           side: BorderSide(
                             color: isSelected
                                 ? context.colors.accentProject
@@ -108,7 +108,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: context.colors.accentProject.withAlpha(100)),
       ),
       child: Column(
@@ -226,7 +226,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
               margin: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: CheckboxListTile(
@@ -256,7 +256,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
     final guides = [
       {
         'title': '🏢 워크스페이스 선택 및 이동',
-        'desc': '본사관리, 분양 프로젝트, 현장 등 원하는 공간으로 1초 만에 전환하는 방법',
+        'desc': '본사관리, 분양 프로젝트 등 원하는 공간으로 1초 만에 전환하는 방법',
         'badge': '기초',
       },
       {
@@ -302,7 +302,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Row(
@@ -344,7 +344,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
     final processes = [
       {'title': '지출결의 및 자금 집행 프로세스', 'dept': '재무회계', 'time': '3단계'},
       {'title': '시행 부지 인허가 및 심의 보고 절차', 'dept': '개발사업', 'time': '5단계'},
-      {'title': '현장 공정률 및 안전점검 등록 절차', 'dept': '건설사업', 'time': '4단계'},
+      {'title': '프로젝트 공정률 및 안전점검 등록 절차', 'dept': '건설사업', 'time': '4단계'},
       {'title': '분양 계약 해지 및 명의변경 승계 절차', 'dept': '분양마케팅', 'time': '3단계'},
     ];
 
@@ -364,7 +364,7 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
               tileColor: context.colors.bgCard,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
                 side: BorderSide(color: context.colors.border, width: 0.8),
               ),
               leading: const Icon(Icons.account_tree_outlined,

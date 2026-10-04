@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -133,7 +135,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
-    final selectedProject = ref.read(selectedProjectProvider);
+    final selectedProject = ref.read(selectedWorkspaceProvider);
 
     setState(() => _isSubmittingComment = true);
     try {
@@ -211,6 +213,14 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
   }
 
   Future<void> _downloadAndOpenFile(PostFileModel file) async {
+    if (kIsWeb) {
+      final uri = Uri.tryParse(file.file);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     setState(() => _isDownloadingFile = true);
     try {
       final dio = ref.read(dioProvider);
@@ -244,6 +254,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final detailAsync = ref.watch(postDetailProvider(widget.post.pk));
     final post = detailAsync.value ?? widget.post;
     final commentsAsync = ref.watch(postCommentsProvider(widget.post.pk));
+    final selectedProject = ref.watch(selectedWorkspaceProvider);
 
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isAuthor = currentUser != null &&
@@ -252,12 +263,18 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
             currentUser.username == post.creator!.username);
 
     final canUpdate = isAuthor
-        ? ref.can(Perm.forumOwnUpdate) || ref.can(Perm.forumUpdate) || ref.can(Perm.forumManage)
-        : ref.can(Perm.forumUpdate) || ref.can(Perm.forumManage);
+        ? ref.can(Perm.forumOwnUpdate, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumUpdate, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)
+        : ref.can(Perm.forumUpdate, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
 
     final canDelete = isAuthor
-        ? ref.can(Perm.forumOwnDelete) || ref.can(Perm.forumDelete) || ref.can(Perm.forumManage)
-        : ref.can(Perm.forumDelete) || ref.can(Perm.forumManage);
+        ? ref.can(Perm.forumOwnDelete, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumDelete, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)
+        : ref.can(Perm.forumDelete, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
 
     return Container(
       constraints: BoxConstraints(

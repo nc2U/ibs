@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
@@ -133,6 +135,14 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
   }
 
   Future<void> _downloadAndOpenFile(NoticeFileModel file) async {
+    if (kIsWeb) {
+      final uri = Uri.tryParse(file.file);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     setState(() => _isDownloadingFile = true);
     try {
       final dio = ref.read(dioProvider);

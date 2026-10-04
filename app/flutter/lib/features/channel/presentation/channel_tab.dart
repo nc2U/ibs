@@ -57,6 +57,19 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
   }
 
   @override
+  void didUpdateWidget(covariant ChannelTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      final targetIdx = (widget.initialIndex >= 0 && widget.initialIndex < 3)
+          ? widget.initialIndex
+          : 0;
+      if (_tabController.index != targetIdx) {
+        _tabController.animateTo(targetIdx);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
@@ -64,7 +77,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
 
   @override
   Widget build(BuildContext context) {
-    final selectedProject = ref.watch(selectedProjectProvider);
+    final selectedProject = ref.watch(selectedWorkspaceProvider);
     final isNewsDisabled =
         selectedProject != null && (selectedProject.module?.news == false);
     final isForumDisabled =
@@ -82,10 +95,12 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
     final isForumMgr = isSuper ||
         (activeForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
 
-    final canManageNews = !isNewsDisabled && ref.can(Perm.newsManage);
+    final canManageNews = !isNewsDisabled &&
+        ref.can(Perm.newsManage, projectSlug: selectedProject?.slug);
     final canCreatePost = !isForumDisabled &&
         hasForums &&
-        (ref.can(Perm.forumCreate) || ref.can(Perm.forumManage)) &&
+        (ref.can(Perm.forumCreate, projectSlug: selectedProject?.slug) ||
+            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)) &&
         ((activeForum?.managerOnly ?? false) ? isForumMgr : true);
 
     return Scaffold(

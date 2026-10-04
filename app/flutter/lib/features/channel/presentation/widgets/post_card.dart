@@ -36,7 +36,7 @@ class PostCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.zero,
         border: Border.all(
           color: post.isNotice ? _noticeAccent.withAlpha(isDark ? 90 : 130) : context.colors.border,
           width: 0.8,
@@ -44,10 +44,10 @@ class PostCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.zero,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.zero,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Column(
@@ -61,7 +61,7 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: _noticeAccent.withAlpha(25),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: _noticeAccent.withAlpha(90), width: 0.8),
                         ),
                         child: const Text(
@@ -81,7 +81,7 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: context.colors.accentChannel.withAlpha(18),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: context.colors.accentChannel.withAlpha(60), width: 0.8),
                         ),
                         child: Text(
@@ -106,7 +106,7 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
                         decoration: BoxDecoration(
                           color: context.colors.warning.withAlpha(30),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: Text(
                           'N',

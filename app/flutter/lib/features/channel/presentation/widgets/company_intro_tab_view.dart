@@ -114,7 +114,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.zero,
         border: Border.all(
           color: context.colors.border.withAlpha(120),
           width: 0.8,
@@ -344,10 +344,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: context.colors.bgCard,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(6),
-                        bottomRight: Radius.circular(6),
-                      ),
+                      borderRadius: BorderRadius.zero,
                       border: Border(
                         left: BorderSide(
                           color: context.colors.accentCorp,
@@ -428,7 +425,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
         Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.zero,
             border: Border.all(
               color: context.colors.border.withAlpha(120),
               width: 0.8,
@@ -475,7 +472,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: context.colors.bgSurface,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.zero,
                             border: Border.all(
                                 color: context.colors.border, width: 0.6),
                           ),
@@ -551,7 +548,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
         Container(
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.zero,
             border: Border.all(
               color: context.colors.border.withAlpha(120),
               width: 0.8,

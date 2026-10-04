@@ -111,7 +111,7 @@ class _CorporateLoungeViewState extends ConsumerState<CorporateLoungeView> {
           color: isSelected
               ? activeColor.withAlpha(25)
               : context.colors.bgSurface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: isSelected ? activeColor : context.colors.border,
             width: isSelected ? 1.4 : 0.8,

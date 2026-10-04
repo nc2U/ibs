@@ -155,7 +155,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                                 fontSize: 13,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.zero,
                                 side: BorderSide(
                                   color: isSelected ? context.colors.accentTech : context.colors.border,
                                   width: 0.8,
@@ -227,7 +227,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                                 padding: const EdgeInsets.symmetric(vertical: 40),
                                 decoration: BoxDecoration(
                                   color: context.colors.bgCard,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.zero,
                                   border: Border.all(color: context.colors.border, width: 0.8),
                                 ),
                                 child: Center(
@@ -270,7 +270,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Theme(
@@ -282,7 +282,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: context.colors.accentTech.withAlpha(30),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.zero,
             ),
             child: Text(
               'Q',
@@ -312,7 +312,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: context.colors.bgSurface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.zero,
               ),
               child: faq.content.isNotEmpty
                   ? HtmlWidget(
@@ -376,7 +376,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.colors.bgCard,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: context.colors.accentTech.withAlpha(60), width: 0.8),
                 ),
                 child: Column(
@@ -422,7 +422,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: context.colors.border, width: 0.8),
             ),
             child: Column(
@@ -470,7 +470,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             filled: true,
             fillColor: context.colors.bgCard,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               borderSide: BorderSide(color: context.colors.border),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -486,7 +486,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             filled: true,
             fillColor: context.colors.bgCard,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               borderSide: BorderSide(color: context.colors.border),
             ),
             contentPadding: const EdgeInsets.all(14),
@@ -500,7 +500,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: context.colors.accentTech,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             onPressed: _isSubmitting ? null : _submitTechSupport,
             icon: _isSubmitting
@@ -523,7 +523,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Row(
@@ -551,7 +551,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: context.colors.accentTech),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             onPressed: () => setState(() => _selectedCategoryId = -1),
             child: Text(

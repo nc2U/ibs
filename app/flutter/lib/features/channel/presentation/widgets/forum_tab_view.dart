@@ -49,7 +49,18 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
 
   @override
   Widget build(BuildContext context) {
-    final canRead = ref.can(Perm.forumRead);
+    final selectedProject = ref.watch(selectedWorkspaceProvider);
+
+    ref.listen(selectedWorkspaceProvider, (prev, next) {
+      if (prev != next) {
+        ref.read(selectedForumIdProvider.notifier).state = null;
+        ref.read(selectedCategoryIdProvider.notifier).state = null;
+        ref.read(postSearchProvider.notifier).state = '';
+        _searchController.clear();
+      }
+    });
+
+    final canRead = ref.can(Perm.forumRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
       return const Center(
         child: Padding(
@@ -67,7 +78,6 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
     final categoriesAsync = ref.watch(categoryListProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
     final postListAsync = ref.watch(postListProvider);
-    final selectedProject = ref.watch(selectedProjectProvider);
 
     final isForumDisabled =
         selectedProject != null && (selectedProject.module?.forum == false);

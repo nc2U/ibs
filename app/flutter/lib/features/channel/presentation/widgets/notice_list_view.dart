@@ -49,7 +49,16 @@ class _NoticeListViewState extends ConsumerState<NoticeListView> {
 
   @override
   Widget build(BuildContext context) {
-    final canRead = ref.can(Perm.newsRead);
+    final selectedProject = ref.watch(selectedWorkspaceProvider);
+
+    ref.listen(selectedWorkspaceProvider, (prev, next) {
+      if (prev != next) {
+        ref.read(noticeSearchProvider.notifier).state = '';
+        _searchController.clear();
+      }
+    });
+
+    final canRead = ref.can(Perm.newsRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
       return const Center(
         child: Padding(
@@ -63,7 +72,6 @@ class _NoticeListViewState extends ConsumerState<NoticeListView> {
     }
 
     final noticeListAsync = ref.watch(noticeListProvider);
-    final selectedProject = ref.watch(selectedProjectProvider);
 
     return Column(
       children: [
