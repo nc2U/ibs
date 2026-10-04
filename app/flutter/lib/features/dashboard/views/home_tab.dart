@@ -2,14 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
+import '../../../core/widgets/notification_sheet.dart';
 import '../../approval/providers/approval_providers.dart';
+import '../../chat/providers/chat_provider.dart';
 
 /// 홈 탭 — 3대 카테고리 히어로 카드 + 채널(공지/게시판) 퀵 카드
-/// ── 배경색과 확연히 분리되면서도 눈이 편안한 프리미엄 서페이스 컬러 적용
+/// ── 당겨서 새로고침(Pull-to-Refresh) 및 반응형 오버플로우 방어 레이아웃 적용
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
+
+  Future<void> _handleRefresh(WidgetRef ref) async {
+    ref.read(notificationListProvider.notifier).fetchNotifications();
+    ref.invalidate(pendingApprovalsProvider);
+    ref.invalidate(totalUnreadChatCountProvider);
+    ref.invalidate(chatRoomsProvider);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,12 +30,12 @@ class HomeTab extends ConsumerWidget {
 
     return Column(
       children: [
-        // ── 고정된 상단 통합 검색 바 ──────────────────────────────────────
+        // ── 고정된 상단 통합 검색 바 (뒤로가기 스택 유지를 위해 context.push 사용) ───
         Container(
           color: context.colors.bgPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: InkWell(
-            onTap: () => context.go(AppRoutes.search),
+            onTap: () => context.push(AppRoutes.search),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -77,117 +89,280 @@ class HomeTab extends ConsumerWidget {
         ),
         Divider(color: context.colors.border, height: 1),
 
-        // ── 스크롤 가능한 본문 영역 ─────────────────────────────────────
+        // ── 스크롤 가능한 본문 영역 (당겨서 새로고침 지원) ────────────────────
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-          // ── 01. 업무 관리 (Work Core — Azure Blue) ──────────────────────
-          _HeroCard(
-            categoryNum: '01',
-            title: '업무 관리',
-            englishTitle: 'WORK CORE',
-            description: '워크스페이스 회의, 업무, 액션아이템 등 협업 관리',
-            icon: Icons.task_alt_rounded,
-            accentColor: context.colors.accentWork,
-            gradientColors: isDark
-                ? const [Color(0xFF232D42), Color(0xFF1B2334)]
-                : const [Color(0xFFFFFFFF), Color(0xFFF0F9FF)],
-            badgeText: '협업 시스템',
-            onTap: () => context.go(AppRoutes.work),
-          ),
-          const SizedBox(height: 12),
+          child: RefreshIndicator(
+            onRefresh: () => _handleRefresh(ref),
+            color: context.colors.accentWork,
+            backgroundColor: context.colors.bgCard,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── 00. 사용자 인사 & 현황 브리핑 바 ────────────────────────
+                  _UserBriefingHeader(pendingCount: pendingCount),
+                  const SizedBox(height: 14),
 
-          // ── 02. 프로젝트 관리 (Project Core — Mint Emerald) ─────────────
-          _HeroCard(
-            categoryNum: '02',
-            title: '프로젝트 관리',
-            englishTitle: 'PROJECT CORE',
-            description: '프로젝트 계약, 수납, 입출금, 부지 및 사업지 데이터',
-            icon: Icons.business_center_rounded,
-            accentColor: context.colors.accentProject,
-            gradientColors: isDark
-                ? const [Color(0xFF1F332E), Color(0xFF182824)]
-                : const [Color(0xFFFFFFFF), Color(0xFFF0FDF4)],
-            badgeText: '데이터 관리',
-            onTap: () => context.go(AppRoutes.project),
-          ),
-          const SizedBox(height: 12),
-
-          // ── 03. 전자 결재 (Approval Core — Midnight Navy) ─────────────────
-          _HeroCard(
-            categoryNum: '03',
-            title: '전자결재',
-            englishTitle: 'APPROVAL CORE',
-            description: '기안/미결함, 승인/반려/위임, 모바일 전자서명 및 알림',
-            icon: Icons.draw_rounded,
-            accentColor: context.colors.accentApproval,
-            gradientColors: isDark
-                ? const [Color(0xFF1E2238), Color(0xFF171B2E)]
-                : const [Color(0xFFFFFFFF), Color(0xFFEFF6FF)],
-            badgeText: pendingCount > 0 ? '미결 $pendingCount건' : '결재 시스템',
-            onTap: () => context.go(AppRoutes.approval),
-          ),
-          const SizedBox(height: 24),
-
-          // ── 채널 섹션 헤더 ─────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.campaign_rounded,
-                  size: 15,
-                  color: context.colors.textMuted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '채널',
-                  style: AppTextStyles.label.copyWith(
-                    color: context.colors.textMuted,
-                    letterSpacing: 1.0,
+                  // ── 01. 업무 관리 (Work Core — Azure Blue) ──────────────────
+                  _HeroCard(
+                    categoryNum: '01',
+                    title: '업무 관리',
+                    englishTitle: 'WORK CORE',
+                    description: '워크스페이스 회의, 업무, 액션아이템 등 협업 관리',
+                    icon: Icons.task_alt_rounded,
+                    accentColor: context.colors.accentWork,
+                    gradientColors: isDark
+                        ? const [Color(0xFF232D42), Color(0xFF1B2334)]
+                        : const [Color(0xFFFFFFFF), Color(0xFFF0F9FF)],
+                    badgeText: '협업 시스템',
+                    onTap: () => context.go(AppRoutes.work),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Divider(
-                    color: context.colors.border,
-                    thickness: 0.8,
-                    height: 1,
+                  const SizedBox(height: 12),
+
+                  // ── 02. 프로젝트 관리 (Project Core — Mint Emerald) ─────────
+                  _HeroCard(
+                    categoryNum: '02',
+                    title: '프로젝트 관리',
+                    englishTitle: 'PROJECT CORE',
+                    description: '프로젝트 계약, 수납, 입출금, 부지 및 사업지 데이터',
+                    icon: Icons.business_center_rounded,
+                    accentColor: context.colors.accentProject,
+                    gradientColors: isDark
+                        ? const [Color(0xFF1F332E), Color(0xFF182824)]
+                        : const [Color(0xFFFFFFFF), Color(0xFFF0FDF4)],
+                    badgeText: '데이터 관리',
+                    onTap: () => context.go(AppRoutes.project),
                   ),
-                ),
-              ],
-            ),
-          ),
+                  const SizedBox(height: 12),
 
-          // ── 채널 Quick Card 1: 소통 피드 ───────────────────────────────
-          _ChannelQuickCard(
-            title: '소통 피드',
-            subtitle: '워크스페이스 공지사항 및 게시판 소통',
-            icon: Icons.forum_outlined,
-            accentColor: context.colors.accentChannel,
-            badgeText: '공지·게시판',
-            onTap: () => context.go('${AppRoutes.channel}?section=0&tab=0'),
-          ),
-          const SizedBox(height: 10),
+                  // ── 03. 전자 결재 (Approval Core — Midnight Navy) ─────────────
+                  _HeroCard(
+                    categoryNum: '03',
+                    title: '전자결재',
+                    englishTitle: 'APPROVAL CORE',
+                    description: '기안/미결함, 승인/반려/위임, 모바일 전자서명 및 알림',
+                    icon: Icons.draw_rounded,
+                    accentColor: context.colors.accentApproval,
+                    gradientColors: isDark
+                        ? const [Color(0xFF1E2238), Color(0xFF171B2E)]
+                        : const [Color(0xFFFFFFFF), Color(0xFFEFF6FF)],
+                    badgeText: pendingCount > 0 ? '미결 $pendingCount건' : '결재 시스템',
+                    onTap: () => context.go(AppRoutes.approval),
+                  ),
+                  const SizedBox(height: 24),
 
-          // ── 채널 Quick Card 2: 전사 라운지 & 온보딩 ──────────────────
-          _ChannelQuickCard(
-            title: '전사 라운지 & 온보딩',
-            subtitle: '기업 철학·사명, 온보딩 로드맵, FAQ·기술지원',
-            icon: Icons.domain_rounded,
-            accentColor: context.colors.accentChannel,
-            badgeText: '회사소개·가이드',
-            onTap: () => context.go('${AppRoutes.channel}?section=1&tab=0'),
-          ),
-          const SizedBox(height: 16),
-              ],
+                  // ── 채널 섹션 헤더 ─────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.campaign_rounded,
+                          size: 15,
+                          color: context.colors.textMuted,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '채널',
+                          style: AppTextStyles.label.copyWith(
+                            color: context.colors.textMuted,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Divider(
+                            color: context.colors.border,
+                            thickness: 0.8,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── 채널 Quick Card 1: 소통 피드 ───────────────────────────
+                  _ChannelQuickCard(
+                    title: '소통 피드',
+                    subtitle: '워크스페이스 공지사항 및 게시판 소통',
+                    icon: Icons.forum_outlined,
+                    accentColor: context.colors.accentChannel,
+                    badgeText: '공지·게시판',
+                    onTap: () => context.go('${AppRoutes.channel}?section=0&tab=0'),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ── 채널 Quick Card 2: 전사 라운지 & 온보딩 ──────────────
+                  _ChannelQuickCard(
+                    title: '전사 라운지 & 온보딩',
+                    subtitle: '기업 철학·사명, 온보딩 로드맵, FAQ·기술지원',
+                    icon: Icons.domain_rounded,
+                    accentColor: context.colors.accentChannel,
+                    badgeText: '회사소개·가이드',
+                    onTap: () => context.go('${AppRoutes.channel}?section=1&tab=0'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── 사용자 환영 및 업무/결재 요약 브리핑 헤더 ──────────────────────────────────
+class _UserBriefingHeader extends ConsumerWidget {
+  final int pendingCount;
+  const _UserBriefingHeader({required this.pendingCount});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final displayName = user?.nameOrUsername ?? '사용자';
+    final unreadNotif = ref.watch(unreadNotificationCountProvider);
+    final unreadChat = ref.watch(totalUnreadChatCountProvider).valueOrNull ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: context.colors.border, width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: AppTextStyles.titleSm.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '님, 환영합니다',
+                      style: AppTextStyles.bodySm.copyWith(
+                        color: context.colors.textSecond,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () => context.push(AppRoutes.profile),
+                child: Text(
+                  '내 설정 >',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.accentWork,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _BriefingChip(
+                  label: '결재 대기',
+                  count: pendingCount,
+                  color: context.colors.accentApproval,
+                  onTap: () => context.go(AppRoutes.approval),
+                ),
+                const SizedBox(width: 8),
+                _BriefingChip(
+                  label: '새 알림',
+                  count: unreadNotif,
+                  color: context.colors.accentWork,
+                  onTap: () => NotificationSheet.show(context),
+                ),
+                if (unreadChat > 0) ...[
+                  const SizedBox(width: 8),
+                  _BriefingChip(
+                    label: '새 메시지',
+                    count: unreadChat,
+                    color: Colors.redAccent,
+                    onTap: () => context.push(AppRoutes.chat),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BriefingChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _BriefingChip({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasItems = count > 0;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.zero,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: hasItems ? color.withAlpha(20) : context.colors.bgPrimary,
+          borderRadius: BorderRadius.zero,
+          border: Border.all(
+            color: hasItems ? color.withAlpha(80) : context.colors.border,
+            width: 0.6,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: hasItems ? color : context.colors.textMuted,
+                fontWeight: hasItems ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: hasItems ? color : context.colors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -224,7 +399,7 @@ class _HeroCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.zero,
       child: Container(
-        height: 136,
+        constraints: const BoxConstraints(minHeight: 136),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: gradientColors,
@@ -261,19 +436,21 @@ class _HeroCard extends StatelessWidget {
               ),
             ),
 
-            // 2. 배경 수치 워터마크 (우측 하단)
+            // 2. 배경 수치 워터마크 (우측 하단 - 터치 이벤트 무시)
             Positioned(
               right: -6,
               bottom: -22,
-              child: Text(
-                categoryNum,
-                style: TextStyle(
-                  fontSize: 90,
-                  fontWeight: FontWeight.w900,
-                  color: isDark
-                      ? accentColor.withAlpha(20)
-                      : accentColor.withAlpha(22),
-                  letterSpacing: -4,
+              child: IgnorePointer(
+                child: Text(
+                  categoryNum,
+                  style: TextStyle(
+                    fontSize: 90,
+                    fontWeight: FontWeight.w900,
+                    color: isDark
+                        ? accentColor.withAlpha(20)
+                        : accentColor.withAlpha(22),
+                    letterSpacing: -4,
+                  ),
                 ),
               ),
             ),
@@ -287,47 +464,58 @@ class _HeroCard extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8.5),
-                            decoration: BoxDecoration(
-                              color: accentColor.withAlpha(28),
-                              borderRadius: BorderRadius.circular(2),
-                              border: Border.all(
-                                color: accentColor.withAlpha(65),
-                                width: 0.8,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8.5),
+                              decoration: BoxDecoration(
+                                color: accentColor.withAlpha(28),
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: accentColor.withAlpha(65),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Icon(icon, color: accentColor, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    englishTitle,
+                                    style: AppTextStyles.label.copyWith(
+                                      color: accentColor,
+                                      letterSpacing: 1.4,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    title,
+                                    style: AppTextStyles.titleLg.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: context.colors.textPrimary,
+                                      letterSpacing: -0.3,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Icon(icon, color: accentColor, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                englishTitle,
-                                style: AppTextStyles.label.copyWith(
-                                  color: accentColor,
-                                  letterSpacing: 1.4,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 10.5,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                title,
-                                style: AppTextStyles.titleLg.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: context.colors.textPrimary,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3.5),
@@ -351,6 +539,7 @@ class _HeroCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
                   Text(
                     description,
                     style: AppTextStyles.bodySecond.copyWith(
@@ -358,7 +547,7 @@ class _HeroCard extends StatelessWidget {
                       fontSize: 12.5,
                       letterSpacing: -0.15,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -422,10 +611,14 @@ class _ChannelQuickCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: AppTextStyles.titleSm.copyWith(
-                          color: context.colors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: AppTextStyles.titleSm.copyWith(
+                            color: context.colors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (badgeText != null) ...[
