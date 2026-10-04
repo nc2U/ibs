@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +25,10 @@ class MeetingListScreen extends ConsumerStatefulWidget {
 
 class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
   _MeetingFilterMode _filterMode = _MeetingFilterMode.all;
+  bool _onlyConfirmed = false;
 
   @override
   void initState() {
@@ -35,11 +39,14 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(meetingListProvider.notifier).loadMore();
@@ -64,15 +71,36 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
         break;
     }
 
+    final query = _searchController.text.trim();
     ref.read(meetingFilterProvider.notifier).state = MeetingFilterModel(
       projectSlug: project?.slug,
       status: statusParam,
+      search: query.isEmpty ? null : query,
+      isConfirmed: _onlyConfirmed ? true : null,
       ordering: '-meeting_date',
     );
   }
 
+  void _onSearchChanged(String val) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _applyFilter();
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _debounceTimer?.cancel();
+    _applyFilter();
+  }
+
   void _onFilterChanged(_MeetingFilterMode mode) {
     setState(() => _filterMode = mode);
+    _applyFilter();
+  }
+
+  void _toggleOnlyConfirmed() {
+    setState(() => _onlyConfirmed = !_onlyConfirmed);
     _applyFilter();
   }
 
@@ -121,36 +149,82 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
 
     return Column(
       children: [
-        // ── 필터 칩 바 (1: 준비, 2: 종료, 3: 취소) ──────────────────────────────
+        // ── 검색 바 ────────────────────────────────────────────────────────────
         Container(
           color: context.colors.bgSurface,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              _FilterChip(
-                label: '전체',
-                selected: _filterMode == _MeetingFilterMode.all,
-                onTap: () => _onFilterChanged(_MeetingFilterMode.all),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+            decoration: InputDecoration(
+              hintText: '회의 제목, 의제, 내용, 결정사항 검색',
+              hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+              prefixIcon: Icon(Icons.search, size: 20, color: context.colors.textMuted),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear, size: 18, color: context.colors.textMuted),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
+              filled: true,
+              fillColor: context.colors.bgCard,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: context.colors.border, width: 0.8),
               ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: '준비',
-                selected: _filterMode == _MeetingFilterMode.prepared,
-                onTap: () => _onFilterChanged(_MeetingFilterMode.prepared),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: context.colors.border, width: 0.8),
               ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: '종료',
-                selected: _filterMode == _MeetingFilterMode.closed,
-                onTap: () => _onFilterChanged(_MeetingFilterMode.closed),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: context.colors.accentWork, width: 1.2),
               ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: '취소',
-                selected: _filterMode == _MeetingFilterMode.cancelled,
-                onTap: () => _onFilterChanged(_MeetingFilterMode.cancelled),
-              ),
-            ],
+            ),
+          ),
+        ),
+
+        // ── 필터 칩 바 (전체 / 준비 / 종료 / 취소 / 확정됨) ─────────────────────────
+        Container(
+          color: context.colors.bgSurface,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: '전체',
+                  selected: _filterMode == _MeetingFilterMode.all,
+                  onTap: () => _onFilterChanged(_MeetingFilterMode.all),
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: '준비',
+                  selected: _filterMode == _MeetingFilterMode.prepared,
+                  onTap: () => _onFilterChanged(_MeetingFilterMode.prepared),
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: '종료',
+                  selected: _filterMode == _MeetingFilterMode.closed,
+                  onTap: () => _onFilterChanged(_MeetingFilterMode.closed),
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: '취소',
+                  selected: _filterMode == _MeetingFilterMode.cancelled,
+                  onTap: () => _onFilterChanged(_MeetingFilterMode.cancelled),
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: '확정됨',
+                  selected: _onlyConfirmed,
+                  onTap: _toggleOnlyConfirmed,
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -232,7 +306,7 @@ class _FilterChip extends StatelessWidget {
           color: selected
               ? context.colors.accentWork.withAlpha(40)
               : context.colors.bgCard,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: selected ? context.colors.accentWork : context.colors.border,
             width: selected ? 1.5 : 0.8,

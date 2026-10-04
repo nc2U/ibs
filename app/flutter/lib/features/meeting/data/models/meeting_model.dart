@@ -127,6 +127,11 @@ class MeetingFilterModel {
   final String? projectSlug;
   final String? projectStatus; // '1': 활성 프로젝트만 (닫힌 프로젝트 제외)
   final String? status;
+  final String? search;
+  final bool? isConfirmed;
+  final int? attendees;
+  final int? creator;
+  final int? category;
   final String ordering;
   final int page;
 
@@ -134,6 +139,11 @@ class MeetingFilterModel {
     this.projectSlug,
     this.projectStatus = '1',
     this.status,
+    this.search,
+    this.isConfirmed,
+    this.attendees,
+    this.creator,
+    this.category,
     this.ordering = '-meeting_date',
     this.page = 1,
   });
@@ -146,6 +156,11 @@ class MeetingFilterModel {
     if (projectSlug != null) params['project__search'] = projectSlug;
     if (projectStatus != null) params['project_status'] = projectStatus;
     if (status != null) params['status'] = status;
+    if (search != null && search!.trim().isNotEmpty) params['search'] = search!.trim();
+    if (isConfirmed != null) params['is_confirmed'] = isConfirmed;
+    if (attendees != null) params['attendees'] = attendees;
+    if (creator != null) params['creator'] = creator;
+    if (category != null) params['category'] = category;
     return params;
   }
 
@@ -153,16 +168,31 @@ class MeetingFilterModel {
     String? projectSlug,
     String? projectStatus,
     String? status,
+    String? search,
+    bool? isConfirmed,
+    int? attendees,
+    int? creator,
+    int? category,
     String? ordering,
     int? page,
     bool clearProjectSlug = false,
     bool clearProjectStatus = false,
     bool clearStatus = false,
+    bool clearSearch = false,
+    bool clearIsConfirmed = false,
+    bool clearAttendees = false,
+    bool clearCreator = false,
+    bool clearCategory = false,
   }) {
     return MeetingFilterModel(
       projectSlug: clearProjectSlug ? null : projectSlug ?? this.projectSlug,
       projectStatus: clearProjectStatus ? null : projectStatus ?? this.projectStatus,
       status: clearStatus ? null : status ?? this.status,
+      search: clearSearch ? null : search ?? this.search,
+      isConfirmed: clearIsConfirmed ? null : isConfirmed ?? this.isConfirmed,
+      attendees: clearAttendees ? null : attendees ?? this.attendees,
+      creator: clearCreator ? null : creator ?? this.creator,
+      category: clearCategory ? null : category ?? this.category,
       ordering: ordering ?? this.ordering,
       page: page ?? this.page,
     );

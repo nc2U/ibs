@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,8 +13,8 @@ class MeetingRepository {
 
   MeetingRepository(this._dio);
 
-  /// 회의록 PDF 다운로드 (임시 파일 경로 반환)
-  Future<String> downloadMeetingPdf(int meetingId, String title) async {
+  /// 회의록 PDF 다운로드 (바이트 배열 반환 - Web 및 모바일 공통 지원)
+  Future<List<int>> downloadMeetingPdfBytes(int meetingId) async {
     final response = await _dio.get(
       '/pdf/work/meeting/$meetingId/',
       options: Options(
@@ -21,12 +22,17 @@ class MeetingRepository {
         headers: {'Accept': 'application/pdf, */*'},
       ),
     );
+    return response.data as List<int>;
+  }
 
+  /// 회의록 PDF 다운로드 (모바일/데스크톱 로컬 임시 파일 경로 반환)
+  Future<String> downloadMeetingPdf(int meetingId, String title) async {
+    final bytes = await downloadMeetingPdfBytes(meetingId);
     final tempDir = await getTemporaryDirectory();
     final sanitizedTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
     final filePath = '${tempDir.path}/회의록_${sanitizedTitle}_#$meetingId.pdf';
     final file = File(filePath);
-    await file.writeAsBytes(response.data as List<int>);
+    await file.writeAsBytes(bytes);
     return filePath;
   }
 
@@ -121,11 +127,11 @@ class MeetingRepository {
     return data['is_confirmed'] as bool? ?? false;
   }
 
-  /// AI 음성 회의록 생성 (POST /api/v1/meeting/ai-summarize/)
-  Future<Map<String, dynamic>> aiSummarizeAudio(File audioFile) async {
-    final fileName = audioFile.path.split('/').last;
+  /// AI 음성 회의록 생성 (바이트 기반 - Web 및 모바일 공통 지원)
+  Future<Map<String, dynamic>> aiSummarizeAudioBytes(
+      Uint8List bytes, String fileName) async {
     final formData = FormData.fromMap({
-      'audio': await MultipartFile.fromFile(audioFile.path, filename: fileName),
+      'audio': MultipartFile.fromBytes(bytes, filename: fileName),
     });
 
     final response = await _dio.post(
@@ -138,6 +144,13 @@ class MeetingRepository {
     );
 
     return response.data as Map<String, dynamic>;
+  }
+
+  /// AI 음성 회의록 생성 (File 기반)
+  Future<Map<String, dynamic>> aiSummarizeAudio(File audioFile) async {
+    final bytes = await audioFile.readAsBytes();
+    final fileName = audioFile.path.split(Platform.pathSeparator).last;
+    return aiSummarizeAudioBytes(bytes, fileName);
   }
 }
 

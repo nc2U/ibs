@@ -93,6 +93,12 @@ class MeetingDetailScreen extends ConsumerWidget {
                       tooltip: '삭제',
                       onPressed: () => _handleDelete(context, ref, meeting),
                     ),
+                  // ── 회의록 PDF 출력/공유 버튼 ───────────────────────────────
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 22),
+                    tooltip: '회의록 PDF 출력/공유',
+                    onPressed: () => exportMeetingPdf(context, ref, meeting),
+                  ),
                 ],
               );
             },
@@ -286,7 +292,7 @@ class MeetingDetailScreen extends ConsumerWidget {
                 color: context.colors.warning.withAlpha(25),
                 border: Border.all(
                     color: context.colors.warning.withAlpha(80), width: 0.8),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.zero,
               ),
               child: Row(
                 children: [
@@ -408,7 +414,7 @@ class MeetingDetailScreen extends ConsumerWidget {
                         ref.invalidate(meetingDetailProvider(meeting.pk));
                       }
                     },
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
@@ -520,7 +526,7 @@ class _InfoCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: context.colors.accentProject.withAlpha(30),
                       border: Border.all(color: context.colors.accentProject.withAlpha(80)),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: Text(
                       '확정됨',
@@ -646,7 +652,7 @@ class _SectionLabel extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
                 color: context.colors.accentWork.withAlpha(40),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.zero,
               ),
               child: Text('$count',
                   style: AppTextStyles.label
@@ -684,7 +690,7 @@ class _MeetingIssueTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: context.colors.accentWork.withAlpha(30),
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.zero,
               ),
               child: Text(issue.status,
                   style: AppTextStyles.label

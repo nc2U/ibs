@@ -52,7 +52,7 @@ class MeetingCard extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: context.colors.accentProject.withAlpha(30),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(
                           color: context.colors.accentProject.withAlpha(80)),
                     ),
@@ -217,7 +217,7 @@ class _CategoryBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: textColor.withAlpha(25),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: textColor.withAlpha(70)),
       ),
       child: Text(
@@ -242,7 +242,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withAlpha(70)),
       ),
       child: Text(

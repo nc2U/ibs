@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -196,11 +197,26 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'webm'],
+        withData: true,
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        await _processAudioFileWithAi(file);
+      if (result != null && result.files.isNotEmpty) {
+        final pickedFile = result.files.single;
+        final fileName = pickedFile.name;
+        Uint8List? bytes = pickedFile.bytes;
+        File? localFile;
+
+        if (bytes == null && pickedFile.path != null) {
+          final f = File(pickedFile.path!);
+          if (f.existsSync()) {
+            bytes = await f.readAsBytes();
+            localFile = f;
+          }
+        }
+
+        if (bytes != null) {
+          await _processAudioBytesWithAi(bytes, fileName, tempFileToDelete: localFile);
+        }
       }
     } catch (e) {
       debugPrint('Error picking audio file: $e');
@@ -208,6 +224,20 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   }
 
   Future<void> _processAudioFileWithAi(File audioFile) async {
+    try {
+      final bytes = await audioFile.readAsBytes();
+      final fileName = audioFile.path.split(Platform.pathSeparator).last;
+      await _processAudioBytesWithAi(bytes, fileName, tempFileToDelete: audioFile);
+    } catch (e) {
+      debugPrint('Error reading audio file: $e');
+    }
+  }
+
+  Future<void> _processAudioBytesWithAi(
+    Uint8List bytes,
+    String fileName, {
+    File? tempFileToDelete,
+  }) async {
     setState(() {
       _isAiAnalyzing = true;
       _aiStatusMessage = 'AI 음성 인식 및 회의록 분석 중...';
@@ -215,7 +245,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
     try {
       final repo = ref.read(meetingRepositoryProvider);
-      final aiData = await repo.aiSummarizeAudio(audioFile);
+      final aiData = await repo.aiSummarizeAudioBytes(bytes, fileName);
 
       if (mounted) {
         setState(() {
@@ -265,7 +295,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     } finally {
       // 분석 완료 즉시 임시 오디오 파일 삭제
       try {
-        if (audioFile.existsSync()) await audioFile.delete();
+        if (tempFileToDelete != null && tempFileToDelete.existsSync()) {
+          await tempFileToDelete.delete();
+        }
       } catch (_) {}
 
       if (mounted) {
@@ -518,7 +550,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: context.colors.accentWork.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(
                       color: context.colors.accentWork.withAlpha(60),
                       width: 1,
@@ -575,7 +607,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.red.withAlpha(25),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                             border: Border.all(color: Colors.redAccent.withAlpha(80)),
                           ),
                           child: Row(
@@ -778,7 +810,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                   Text('카테고리 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                   InkWell(
                     onTap: _showAddCategoryDialog,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Row(
@@ -870,7 +902,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                       horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: context.colors.accentWork.withAlpha(40),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.zero,
                                   ),
                                   child: Text('${_selectedAttendeePks.length}',
                                       style: AppTextStyles.label.copyWith(
@@ -882,7 +914,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                           const SizedBox(height: 6),
                           InkWell(
                             onTap: () => _openAttendeePicker(members),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.zero,
                             child: Container(
                               width: double.infinity,
                               constraints: const BoxConstraints(minHeight: 48),
@@ -890,7 +922,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                   horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: context.colors.bgCard,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.zero,
                                 border: Border.all(
                                     color: context.colors.border, width: 0.8),
                               ),
@@ -921,8 +953,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                                         width: 0.8,
                                                       ),
                                                       borderRadius:
-                                                          BorderRadius.circular(
-                                                              4),
+                                                          BorderRadius.zero,
                                                     ),
                                                     child: Text(
                                                       u.username,
@@ -1048,164 +1079,173 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       isScrollControlled: true,
       backgroundColor: context.colors.bgCard,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.zero,
       ),
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filteredMembers = allMembers.where((u) {
-              if (searchQuery.trim().isEmpty) return true;
-              final query = searchQuery.toLowerCase();
-              final username = u.username.toLowerCase();
-              final email = (u.email ?? '').toLowerCase();
-              return username.contains(query) || email.contains(query);
-            }).toList();
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              final filteredMembers = allMembers.where((u) {
+                if (searchQuery.trim().isEmpty) return true;
+                final query = searchQuery.toLowerCase();
+                final username = u.username.toLowerCase();
+                final email = (u.email ?? '').toLowerCase();
+                return username.contains(query) || email.contains(query);
+              }).toList();
 
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.7,
-              minChildSize: 0.4,
-              maxChildSize: 0.9,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    // 드래그 핸들바
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: context.colors.textDisabled.withAlpha(80),
-                          borderRadius: BorderRadius.circular(2),
+              return DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: 0.7,
+                minChildSize: 0.4,
+                maxChildSize: 0.9,
+                builder: (context, scrollController) {
+                  return Column(
+                    children: [
+                      // 드래그 핸들바
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: context.colors.textDisabled.withAlpha(80),
+                            borderRadius: BorderRadius.zero,
+                          ),
                         ),
                       ),
-                    ),
-                    // 상단 헤더
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Row(
-                        children: [
-                          Text('참석자 선택', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: context.colors.accentWork.withAlpha(40),
-                              borderRadius: BorderRadius.circular(10),
+                      // 상단 헤더
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Row(
+                          children: [
+                            Text('참석자 선택', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: context.colors.accentWork.withAlpha(40),
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              child: Text('${tempSelected.length}명',
+                                  style: AppTextStyles.label.copyWith(color: context.colors.accentWork)),
                             ),
-                            child: Text('${tempSelected.length}명',
-                                style: AppTextStyles.label.copyWith(color: context.colors.accentWork)),
-                          ),
-                          const Spacer(),
-                          if (tempSelected.isNotEmpty)
-                            TextButton(
-                              onPressed: () {
-                                setModalState(() => tempSelected.clear());
-                              },
-                              child: Text('전체 해제', style: AppTextStyles.caption.copyWith(color: context.colors.accentApproval)),
+                            const Spacer(),
+                            if (tempSelected.isNotEmpty)
+                              TextButton(
+                                onPressed: () {
+                                  setModalState(() => tempSelected.clear());
+                                },
+                                child: Text('전체 해제', style: AppTextStyles.caption.copyWith(color: context.colors.accentApproval)),
+                              ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.colors.accentWork,
+                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('완료', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.colors.accentWork,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('완료', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // 검색창
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: TextField(
-                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
-                        decoration: InputDecoration(
-                          hintText: '이름 또는 이메일 검색',
-                          hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
-                          prefixIcon: Icon(Icons.search, size: 20, color: context.colors.textMuted),
-                          filled: true,
-                          fillColor: context.colors.bgPrimary,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: context.colors.border, width: 0.8),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: context.colors.border, width: 0.8),
-                          ),
+                          ],
                         ),
-                        onChanged: (v) {
-                          setModalState(() => searchQuery = v);
-                        },
                       ),
-                    ),
-                    Divider(height: 1, color: context.colors.border),
-                    // 멤버 목록
-                    Expanded(
-                      child: filteredMembers.isEmpty
-                          ? Center(
-                              child: Text(
-                                '검색 결과가 없습니다.',
-                                style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
-                              ),
-                            )
-                          : ListView.separated(
-                              controller: scrollController,
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              itemCount: filteredMembers.length,
-                              separatorBuilder: (_, __) => Divider(
-                                height: 1,
-                                color: context.colors.borderSubtle,
-                                indent: 56,
-                              ),
-                              itemBuilder: (context, idx) {
-                                final user = filteredMembers[idx];
-                                final isSelected = tempSelected.contains(user.pk);
+                      // 검색창
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: TextField(
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                          decoration: InputDecoration(
+                            hintText: '이름 또는 이메일 검색',
+                            hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                            prefixIcon: Icon(Icons.search, size: 20, color: context.colors.textMuted),
+                            filled: true,
+                            fillColor: context.colors.bgPrimary,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(color: context.colors.border, width: 0.8),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(color: context.colors.border, width: 0.8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(color: context.colors.accentWork, width: 1.2),
+                            ),
+                          ),
+                          onChanged: (v) {
+                            setModalState(() => searchQuery = v);
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, color: context.colors.border),
+                      // 멤버 목록
+                      Expanded(
+                        child: filteredMembers.isEmpty
+                            ? Center(
+                                child: Text(
+                                  '검색 결과가 없습니다.',
+                                  style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                                ),
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                itemCount: filteredMembers.length,
+                                separatorBuilder: (_, __) => Divider(
+                                  height: 1,
+                                  color: context.colors.borderSubtle,
+                                  indent: 56,
+                                ),
+                                itemBuilder: (context, idx) {
+                                  final user = filteredMembers[idx];
+                                  final isSelected = tempSelected.contains(user.pk);
 
-                                return CheckboxListTile(
-                                  value: isSelected,
-                                  activeColor: context.colors.accentWork,
-                                  checkColor: Colors.white,
-                                  title: Text(user.username, style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
-                                  subtitle: user.email != null && user.email!.isNotEmpty
-                                      ? Text(user.email!, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted))
-                                      : null,
-                                  secondary: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: isSelected
-                                        ? context.colors.accentWork.withAlpha(40)
-                                        : context.colors.bgSurface,
-                                    child: Text(
-                                      user.username.isNotEmpty ? user.username.substring(0, 1) : '?',
-                                      style: TextStyle(
-                                        color: isSelected ? context.colors.accentWork : context.colors.textMuted,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                  return CheckboxListTile(
+                                    value: isSelected,
+                                    activeColor: context.colors.accentWork,
+                                    checkColor: Colors.white,
+                                    title: Text(user.username, style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
+                                    subtitle: user.email != null && user.email!.isNotEmpty
+                                        ? Text(user.email!, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted))
+                                        : null,
+                                    secondary: CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: isSelected
+                                          ? context.colors.accentWork.withAlpha(40)
+                                          : context.colors.bgSurface,
+                                      child: Text(
+                                        user.username.isNotEmpty ? user.username.substring(0, 1) : '?',
+                                        style: TextStyle(
+                                          color: isSelected ? context.colors.accentWork : context.colors.textMuted,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  onChanged: (val) {
-                                    setModalState(() {
-                                      if (val == true) {
-                                        tempSelected.add(user.pk);
-                                      } else {
-                                        tempSelected.remove(user.pk);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
+                                    onChanged: (val) {
+                                      setModalState(() {
+                                        if (val == true) {
+                                          tempSelected.add(user.pk);
+                                        } else {
+                                          tempSelected.remove(user.pk);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -1223,15 +1263,15 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       fillColor: context.colors.bgCard,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: context.colors.accentWork, width: 1.5),
       ),
     );
