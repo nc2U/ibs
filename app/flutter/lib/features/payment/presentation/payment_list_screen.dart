@@ -1096,7 +1096,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
                   tooltip: '뒤로가기',
                   color: context.colors.textPrimary,
                   padding: EdgeInsets.zero,

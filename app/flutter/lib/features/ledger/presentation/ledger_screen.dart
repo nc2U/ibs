@@ -208,7 +208,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
               children: [
                 IconButton(
                   onPressed: widget.onBackToMain,
-                  icon: const Icon(Icons.arrow_back, size: 20),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
                   tooltip: '메인으로 돌아가기',
                   color: context.colors.textPrimary,
                   padding: const EdgeInsets.all(4),
