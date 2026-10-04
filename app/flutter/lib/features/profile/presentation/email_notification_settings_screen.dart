@@ -144,7 +144,7 @@ class _EmailNotificationSettingsScreenState
       isScrollControlled: true,
       backgroundColor: context.colors.bgCard,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.zero,
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -420,7 +420,7 @@ class _EmailNotificationSettingsScreenState
                                 backgroundColor: context.colors.accentWork.withAlpha(25),
                                 labelStyle: TextStyle(color: context.colors.accentWork, fontWeight: FontWeight.bold),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.zero,
                                   side: BorderSide(color: context.colors.accentWork.withAlpha(90), width: 0.8),
                                 ),
                                 deleteIcon: const Icon(Icons.close_rounded, size: 14),

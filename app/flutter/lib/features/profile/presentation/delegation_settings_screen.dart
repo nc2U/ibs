@@ -44,7 +44,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
       isScrollControlled: true,
       backgroundColor: context.colors.bgCard,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.zero,
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -108,7 +108,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                               isScrollControlled: true,
                               backgroundColor: context.colors.bgCard,
                               shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                borderRadius: BorderRadius.zero,
                               ),
                               builder: (sheetCtx) {
                                 return SafeArea(
@@ -205,13 +205,13 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                               setModalState(() => selectedDelegateeId = picked);
                             }
                           },
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.zero,
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                             decoration: BoxDecoration(
                               color: context.colors.bgInput,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: context.colors.border),
                             ),
                             child: Row(

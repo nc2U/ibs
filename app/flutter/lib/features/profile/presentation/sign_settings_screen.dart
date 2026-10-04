@@ -1,11 +1,10 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -23,7 +22,8 @@ class SignSettingsScreen extends ConsumerStatefulWidget {
 class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
   String _signType = 'STAMP'; // 'STAMP' (도장) 또는 'SIGN' (사인)
   String? _serverSignImageUrl;
-  File? _newSignImageFile;
+  Uint8List? _newSignBytes;
+  String? _newSignFileName;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -45,7 +45,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
     setState(() => _isLoading = false);
   }
 
-  /// 갤러리/사진첩에서 이미지 선택
+  /// 갤러리/사진첩에서 이미지 선택 (Web & Mobile 공통 바이트 지원)
   Future<void> _pickImageFromGallery() async {
     try {
       final picked = await _picker.pickImage(
@@ -55,8 +55,10 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
         imageQuality: 90,
       );
       if (picked != null) {
+        final bytes = await picked.readAsBytes();
         setState(() {
-          _newSignImageFile = File(picked.path);
+          _newSignBytes = bytes;
+          _newSignFileName = picked.name;
         });
       }
     } catch (e) {
@@ -71,9 +73,9 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
     }
   }
 
-  /// 직접 터치로 서명 그리기 다이얼로그 호출
+  /// 직접 터치로 서명 그리기 다이얼로그 호출 (메모리 버퍼 기반)
   Future<void> _openDrawPadModal() async {
-    final resultFile = await showModalBottomSheet<File?>(
+    final resultBytes = await showModalBottomSheet<Uint8List?>(
       context: context,
       isScrollControlled: true,
       enableDrag: false, // 서명 터치 제스처 시 바텀시트가 드래그되어 닫히거나 흔들리는 문제 방지
@@ -81,15 +83,16 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
       builder: (_) => const _SignPadBottomSheet(),
     );
 
-    if (resultFile != null && mounted) {
+    if (resultBytes != null && mounted) {
       setState(() {
-        _newSignImageFile = resultFile;
+        _newSignBytes = resultBytes;
+        _newSignFileName = 'drawn_sign_${DateTime.now().millisecondsSinceEpoch}.png';
         _signType = 'SIGN'; // 직접 서명한 경우 기본 타입을 서명으로 맞춤
       });
     }
   }
 
-  /// 서버로 저장 (multipart/form-data)
+  /// 서버로 저장 (multipart/form-data, Web/Mobile 공통 바이트 전송)
   Future<void> _saveSign() async {
     final user = ref.read(currentUserProvider).valueOrNull;
     final profilePk = user?.profile?.pk;
@@ -111,11 +114,10 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
         'sign_type': _signType,
       };
 
-      if (_newSignImageFile != null) {
-        final fileName = _newSignImageFile!.path.split('/').last;
-        mapData['sign_image'] = await MultipartFile.fromFile(
-          _newSignImageFile!.path,
-          filename: fileName,
+      if (_newSignBytes != null) {
+        mapData['sign_image'] = MultipartFile.fromBytes(
+          _newSignBytes!,
+          filename: _newSignFileName ?? 'sign.png',
         );
       }
 
@@ -174,7 +176,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
       );
     }
 
-    final hasImage = _newSignImageFile != null ||
+    final hasImage = _newSignBytes != null ||
         (_serverSignImageUrl != null && _serverSignImageUrl!.isNotEmpty);
 
     return Scaffold(
@@ -219,7 +221,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Row(
@@ -270,7 +272,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
             Container(
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Row(
@@ -278,14 +280,14 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                   Expanded(
                     child: InkWell(
                       onTap: () => setState(() => _signType = 'STAMP'),
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                      borderRadius: BorderRadius.zero,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: _signType == 'STAMP'
                               ? context.colors.accentApproval.withValues(alpha: 0.15)
                               : Colors.transparent,
-                          borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                          borderRadius: BorderRadius.zero,
                           border: _signType == 'STAMP'
                               ? Border.all(color: context.colors.accentApproval, width: 1.2)
                               : null,
@@ -321,14 +323,14 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                   Expanded(
                     child: InkWell(
                       onTap: () => setState(() => _signType = 'SIGN'),
-                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+                      borderRadius: BorderRadius.zero,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: _signType == 'SIGN'
                               ? context.colors.accentApproval.withValues(alpha: 0.15)
                               : Colors.transparent,
-                          borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+                          borderRadius: BorderRadius.zero,
                           border: _signType == 'SIGN'
                               ? Border.all(color: context.colors.accentApproval, width: 1.2)
                               : null,
@@ -380,7 +382,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                 height: 180,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(
                     color: hasImage ? context.colors.accentApproval : context.colors.border,
                     width: 1.5,
@@ -394,7 +396,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.zero,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -403,9 +405,9 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                         size: const Size(180, 180),
                         painter: _CheckerboardPainter(),
                       ),
-                      if (_newSignImageFile != null)
-                        Image.file(
-                          _newSignImageFile!,
+                      if (_newSignBytes != null)
+                        Image.memory(
+                          _newSignBytes!,
                           width: 150,
                           height: 150,
                           fit: BoxFit.contain,
@@ -465,7 +467,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                       foregroundColor: context.colors.textPrimary,
                       side: BorderSide(color: context.colors.border),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
                     onPressed: _pickImageFromGallery,
                     icon: const Icon(Icons.photo_library_outlined, size: 18),
@@ -480,7 +482,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
                     onPressed: _openDrawPadModal,
                     icon: const Icon(Icons.edit_outlined, size: 18),
@@ -496,7 +498,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: context.colors.bgSurface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,12 +582,9 @@ class _SignPadBottomSheetState extends State<_SignPadBottomSheet> {
       if (byteData == null) throw Exception('이미지 변환 실패');
 
       final buffer = byteData.buffer.asUint8List();
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/drawn_sign_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(buffer);
 
       if (mounted) {
-        Navigator.of(context).pop(file);
+        Navigator.of(context).pop(buffer);
       }
     } catch (e) {
       if (mounted) {
@@ -609,7 +608,7 @@ class _SignPadBottomSheetState extends State<_SignPadBottomSheet> {
       ),
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -643,11 +642,11 @@ class _SignPadBottomSheetState extends State<_SignPadBottomSheet> {
             height: 220,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: context.colors.accentApproval, width: 1.5),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.zero,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onPanDown: (details) {
@@ -692,7 +691,7 @@ class _SignPadBottomSheetState extends State<_SignPadBottomSheet> {
                   backgroundColor: context.colors.accentApproval,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 ),
                 onPressed: _isExporting ? null : _exportSignature,
                 child: _isExporting

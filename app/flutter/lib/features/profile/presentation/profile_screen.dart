@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/models/user_model.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/dio_provider.dart';
 import '../../../core/providers/theme_provider.dart';
@@ -134,7 +138,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
           color: context.colors.bgCard,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: BorderRadius.zero,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -176,8 +180,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ? Icon(Icons.check_rounded,
                         color: context.colors.accentWork)
                     : null,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
                 ),
                 onTap: () {
                   ref.read(themeModeProvider.notifier).setTheme(mode);
@@ -197,7 +201,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text('로그아웃', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
         content: Text(
           'IBS 워크스페이스에서\n로그아웃 하시겠습니까?',
@@ -216,8 +220,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6)),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('로그아웃'),
@@ -230,6 +234,261 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(authProvider.notifier).logout();
       if (mounted) context.go(AppRoutes.login);
     }
+  }
+
+  /// 프로필 정보(실명, 연락처, 생년월일, 아바타 사진) 수정 모달
+  Future<void> _openEditProfileModal(UserModel user) async {
+    final nameController = TextEditingController(text: user.profile?.name ?? '');
+    final phoneController = TextEditingController(text: user.profile?.cellPhone ?? '');
+    final birthDateController = TextEditingController(text: user.profile?.birthDate ?? '');
+    final emailController = TextEditingController(text: user.email ?? '');
+
+    Uint8List? newAvatarBytes;
+    String? newAvatarFileName;
+    bool isSaving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '프로필 정보 수정',
+                          style: AppTextStyles.titleLg.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(modalCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 아바타 사진 변경
+                    Center(
+                      child: Stack(
+                        children: [
+                          if (newAvatarBytes != null)
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundImage: MemoryImage(newAvatarBytes!),
+                            )
+                          else
+                            UserAvatar(user: user, radius: 40),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: () async {
+                                final picker = ImagePicker();
+                                final picked = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  maxWidth: 512,
+                                  maxHeight: 512,
+                                  imageQuality: 85,
+                                );
+                                if (picked != null) {
+                                  final bytes = await picked.readAsBytes();
+                                  setModalState(() {
+                                    newAvatarBytes = bytes;
+                                    newAvatarFileName = picked.name;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: context.colors.accentWork,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 성명 (이름)
+                    Text('성명 (이름)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: nameController,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      decoration: _flatInputDecoration('이름을 입력하세요'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 휴대폰 번호
+                    Text('연락처 (휴대폰)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      decoration: _flatInputDecoration('010-0000-0000'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 생년월일
+                    Text('생년월일', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: birthDateController,
+                      keyboardType: TextInputType.datetime,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      decoration: _flatInputDecoration('YYYY-MM-DD'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 이메일
+                    Text('이메일', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      decoration: _flatInputDecoration('example@email.com'),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 저장 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.colors.accentWork,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setModalState(() => isSaving = true);
+                                try {
+                                  final dio = ref.read(dioProvider);
+                                  final profilePk = user.profile?.pk;
+
+                                  final mapData = <String, dynamic>{
+                                    'name': nameController.text.trim(),
+                                    'cell_phone': phoneController.text.trim(),
+                                    'birth_date': birthDateController.text.trim().isEmpty
+                                        ? null
+                                        : birthDateController.text.trim(),
+                                    'email': emailController.text.trim(),
+                                  };
+
+                                  if (newAvatarBytes != null) {
+                                    mapData['image'] = MultipartFile.fromBytes(
+                                      newAvatarBytes!,
+                                      filename: newAvatarFileName ?? 'avatar.jpg',
+                                    );
+                                  }
+
+                                  final formData = FormData.fromMap(mapData);
+
+                                  if (profilePk != null) {
+                                    await dio.patch('/api/v1/profile/$profilePk/', data: formData);
+                                  } else {
+                                    await dio.post('/api/v1/profile/', data: formData);
+                                  }
+
+                                  ref.invalidate(currentUserProvider);
+
+                                  if (modalCtx.mounted) {
+                                    Navigator.pop(modalCtx);
+                                  }
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('프로필 정보가 성공적으로 수정되었습니다.'),
+                                        backgroundColor: context.colors.success,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('프로필 수정 실패: $e'),
+                                        backgroundColor: context.colors.error,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) setModalState(() => isSaving = false);
+                                }
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('저장하기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  InputDecoration _flatInputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+      filled: true,
+      fillColor: context.colors.bgPrimary,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: context.colors.accentWork, width: 1.2),
+      ),
+    );
   }
 
   @override
@@ -273,9 +532,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  UserAvatar(
-                    user: user,
-                    radius: 36,
+                  Stack(
+                    children: [
+                      UserAvatar(
+                        user: user,
+                        radius: 36,
+                      ),
+                      if (user != null)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () => _openEditProfileModal(user),
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: context.colors.accentWork,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -301,6 +584,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         style: AppTextStyles.caption
                             .copyWith(color: context.colors.textMuted)),
                   ],
+                  const SizedBox(height: 12),
+                  if (user != null)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.colors.accentWork,
+                        side: BorderSide(color: context.colors.accentWork.withAlpha(120), width: 0.8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      ),
+                      onPressed: () => _openEditProfileModal(user),
+                      icon: const Icon(Icons.badge_outlined, size: 16),
+                      label: const Text('프로필 정보 수정'),
+                    ),
                 ],
               ),
             ),

@@ -117,7 +117,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           builder: (dialogCtx, setDialogState) {
             return AlertDialog(
               backgroundColor: context.colors.bgCard,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
               title: Row(
                 children: [
                   Icon(Icons.mark_email_read_outlined, color: context.colors.accentWork, size: 22),
@@ -163,11 +163,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       filled: true,
                       fillColor: context.colors.bgInput,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.zero,
                         borderSide: BorderSide(color: context.colors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.zero,
                         borderSide: BorderSide(color: context.colors.border),
                       ),
                     ),
@@ -250,7 +250,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.colors.accentWork,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
                   child: isSending
                       ? const SizedBox(
@@ -295,7 +295,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: context.colors.info.withAlpha(20),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: context.colors.info.withAlpha(60), width: 0.8),
                 ),
                 child: Row(
@@ -373,11 +373,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   filled: true,
                   fillColor: context.colors.bgInput,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   suffixIcon: IconButton(
@@ -418,11 +418,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   filled: true,
                   fillColor: context.colors.bgInput,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   suffixIcon: IconButton(
@@ -469,11 +469,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   filled: true,
                   fillColor: context.colors.bgInput,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: context.colors.border),
                   ),
                   suffixIcon: IconButton(
@@ -505,7 +505,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   onPressed: _isLoading ? null : _handleSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.colors.accentWork,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     elevation: 0,
                   ),
                   child: _isLoading
