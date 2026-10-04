@@ -128,12 +128,27 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                  tooltip: '뒤로가기',
+                  color: context.colors.textPrimary,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      widget.onBackToMain();
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
                     color: const Color(0xFF38BDF8).withAlpha(30),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.assignment_outlined,
                       size: 20, color: Color(0xFF38BDF8)),
@@ -159,7 +174,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF38BDF8).withAlpha(20),
                               border: Border.all(color: const Color(0xFF38BDF8).withAlpha(120), width: 0.8),
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                             child: const Text(
                               'CONTRACT',
@@ -197,6 +212,38 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
             ),
           ),
           Divider(color: context.colors.border, height: 1),
+
+          if (selectedProject == null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.business_center_outlined,
+                      size: 48,
+                      color: context.colors.textDisabled,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '선택된 프로젝트가 없습니다.',
+                      style: AppTextStyles.titleSm.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '상단 메뉴에서 부동산 개발 프로젝트를 선택해 주세요.',
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
 
           // ── 아래부터 스크롤 가능한 본문 영역 (CustomScrollView) ───────────────
           Expanded(
@@ -328,7 +375,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                                 color: (currentTab == ContractSubTab.contracts && _showUnitMatrix)
                                     ? context.colors.bgPrimary
                                     : context.colors.bgSurface,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(color: context.colors.border, width: 0.8),
                               ),
                               child: TextField(
@@ -379,7 +426,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                                   ? context.colors.accentProject
                                   : context.colors.bgSurface,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(6),
                                 side: BorderSide(
                                   color: _showUnitMatrix
                                       ? context.colors.accentProject
@@ -393,7 +440,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                                     _showUnitMatrix = !_showUnitMatrix;
                                   });
                                 },
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(6),
                                 child: Container(
                                   height: 38,
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -453,6 +500,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
               ),
             ),
           ),
+          ],
         ],
       ),
     );
@@ -715,7 +763,7 @@ class _SubTabButton extends StatelessWidget {
             ? context.colors.accentProject.withAlpha(25)
             : context.colors.bgCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           side: BorderSide(
             color: isSelected ? context.colors.accentProject : context.colors.border,
             width: isSelected ? 1 : 0.8,
@@ -723,7 +771,7 @@ class _SubTabButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 38,
             alignment: Alignment.center,

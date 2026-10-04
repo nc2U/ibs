@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +42,7 @@ Future<void> makeContractPhoneCall(
     builder: (ctx) => AlertDialog(
       backgroundColor: context.colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: context.colors.border, width: 0.8),
       ),
       title: Row(
@@ -108,7 +109,7 @@ Future<void> makeContractPhoneCall(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0D9488),
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           onPressed: () => Navigator.pop(ctx, true),
@@ -166,7 +167,9 @@ class ContractActionSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       backgroundColor: context.colors.bgCard,
       builder: (ctx) => ContractActionSheet(contract: contract),
     );
@@ -204,7 +207,7 @@ class ContractActionSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.colors.border, width: 0.8),
                 boxShadow: [
                   BoxShadow(
@@ -265,11 +268,31 @@ class ContractActionSheet extends ConsumerWidget {
         return;
       }
 
-      // 임시 디렉토리에 파일 저장
-      final tempDir = await getTemporaryDirectory();
+      if (!context.mounted) return;
+
       final nowStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final cleanUnitStr = unitStr.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
       final fileName = '납부확인서_${contractorName}_${cleanUnitStr}_$nowStr.pdf';
+
+      if (kIsWeb) {
+        final xfile = XFile.fromData(
+          pdfBytes,
+          mimeType: 'application/pdf',
+          name: fileName,
+        );
+        final box = context.findRenderObject() as RenderBox?;
+        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        await AppShareHelper.shareXFiles(
+          [xfile],
+          subject: '분양대금 납부확인서 - $contractorName',
+          text: '$contractorName님 ($unitStr) 분양대금 납부확인서입니다.',
+          sharePositionOrigin: origin,
+        );
+        return;
+      }
+
+      // 임시 디렉토리에 파일 저장 (모바일 / 데스크톱)
+      final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(pdfBytes);
 
@@ -279,7 +302,10 @@ class ContractActionSheet extends ConsumerWidget {
       showModalBottomSheet(
         context: context,
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
         builder: (dialogCtx) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),

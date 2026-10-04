@@ -29,7 +29,7 @@ class ReleaseCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: context.colors.textDisabled.withAlpha(180),
           width: 1.2,
@@ -42,6 +42,7 @@ class ReleaseCard extends StatelessWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -69,7 +70,7 @@ class ReleaseCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(3),
                     border: Border.all(color: statusColor.withAlpha(80), width: 0.6),
                   ),
                   child: Text(
@@ -107,7 +108,7 @@ class ReleaseCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: context.colors.bgSurface,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(
                       children: [

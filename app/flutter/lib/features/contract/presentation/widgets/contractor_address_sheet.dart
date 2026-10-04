@@ -21,6 +21,10 @@ class ContractorAddressBottomSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (ctx) => ContractorAddressBottomSheet(contract: contract),
     );
   }
@@ -59,7 +63,11 @@ class ContractorAddressBottomSheet extends ConsumerWidget {
     return SafeArea(
       child: Container(
         height: MediaQuery.of(context).size.height * 0.75,
-        color: context.colors.bgCard,
+        decoration: BoxDecoration(
+          color: context.colors.bgCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             // ── 1. 헤더 바 ──────────────────────────────────────────
@@ -93,7 +101,7 @@ class ContractorAddressBottomSheet extends ConsumerWidget {
                       backgroundColor: const Color(0xFF10B981),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     ),
                     onPressed: () => _showAddAddressDialog(context, ref),
@@ -167,12 +175,13 @@ class _AddressHistoryCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: address.isCurrent ? const Color(0xFF10B981) : context.colors.border,
           width: address.isCurrent ? 1.4 : 0.8,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -186,7 +195,7 @@ class _AddressHistoryCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: address.isCurrent ? const Color(0xFF10B981) : context.colors.textDisabled.withAlpha(50),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
                     address.isCurrent ? '현재 적용 주소 (현주소)' : '이전 주소 (변경 이력)',
@@ -221,6 +230,7 @@ class _AddressHistoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(color: context.colors.textMuted.withAlpha(100), width: 0.6),
                       ),
                       child: Text('등본', style: TextStyle(fontSize: 10, color: context.colors.textMuted)),
@@ -247,6 +257,7 @@ class _AddressHistoryCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: const Color(0xFF38BDF8).withAlpha(20),
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(color: const Color(0xFF38BDF8), width: 0.6),
                       ),
                       child: const Text('우편',
@@ -387,7 +398,7 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
       scrollable: true,
       backgroundColor: context.colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: context.colors.border, width: 0.8),
       ),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -424,7 +435,10 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(8),
-              color: const Color(0xFF10B981).withAlpha(15),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withAlpha(15),
+                borderRadius: BorderRadius.circular(6),
+              ),
               child: Text(
                 '💡 새 주소를 등록하면 기존 주소는 변경 이력으로 안전하게 보관되고 새 주소가 현주소로 지정됩니다.',
                 style: TextStyle(fontSize: 11, color: context.colors.textPrimary, height: 1.3),
@@ -449,11 +463,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                     controller: _idZipController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '우편번호',
                       hintText: '12345',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onChanged: (_) {
                       if (_isSameAsId) _syncDmAddressWithId();
@@ -465,11 +479,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                   child: TextField(
                     controller: _idAddr1Controller,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '주민등록 기본주소',
                       hintText: '도로명 또는 지번 주소',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onChanged: (_) {
                       if (_isSameAsId) _syncDmAddressWithId();
@@ -486,11 +500,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                   child: TextField(
                     controller: _idAddr2Controller,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '상세주소',
                       hintText: '동·호수 등',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onChanged: (_) {
                       if (_isSameAsId) _syncDmAddressWithId();
@@ -503,11 +517,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                   child: TextField(
                     controller: _idAddr3Controller,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '참고항목',
                       hintText: '법정동/건물명',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onChanged: (_) {
                       if (_isSameAsId) _syncDmAddressWithId();
@@ -532,6 +546,7 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                       _syncDmAddressWithId();
                     });
                   },
+                  borderRadius: BorderRadius.circular(4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -562,11 +577,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                     enabled: !_isSameAsId,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '우편번호',
                       hintText: '12345',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ),
@@ -576,11 +591,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                     controller: _dmAddr1Controller,
                     enabled: !_isSameAsId,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '우편송부 기본주소',
                       hintText: '우편물 수령 도로명 주소',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ),
@@ -595,11 +610,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                     controller: _dmAddr2Controller,
                     enabled: !_isSameAsId,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '상세주소',
                       hintText: '동·호수 등',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ),
@@ -610,11 +625,11 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
                     controller: _dmAddr3Controller,
                     enabled: !_isSameAsId,
                     style: const TextStyle(fontSize: 12.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '참고항목',
                       hintText: '법정동/건물명',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ),
@@ -632,7 +647,7 @@ class _NewAddressDialogState extends ConsumerState<_NewAddressDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF10B981),
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           ),
           onPressed: _isLoading ? null : _submit,

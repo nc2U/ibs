@@ -22,6 +22,10 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (ctx) => ContractorConsultationBottomSheet(contract: contract),
     );
   }
@@ -59,7 +63,11 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
     return SafeArea(
       child: Container(
         height: MediaQuery.of(context).size.height * 0.75,
-        color: context.colors.bgCard,
+        decoration: BoxDecoration(
+          color: context.colors.bgCard,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             // ── 1. 헤더 바 ──────────────────────────────────────────
@@ -93,7 +101,7 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
                       backgroundColor: const Color(0xFFF59E0B),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     ),
                     onPressed: () => _showAddConsultationDialog(context, ref),
@@ -184,12 +192,13 @@ class _ConsultationLogCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: log.isImportant ? const Color(0xFFF59E0B) : context.colors.border,
           width: log.isImportant ? 1.2 : 0.8,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -204,7 +213,7 @@ class _ConsultationLogCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: channelColor.withAlpha(25),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(3),
                     border: Border.all(color: channelColor.withAlpha(120), width: 0.6),
                   ),
                   child: Text(
@@ -222,7 +231,7 @@ class _ConsultationLogCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: context.colors.accentProject.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
                     log.categoryKorean,
@@ -278,7 +287,10 @@ class _ConsultationLogCard extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
-                    color: const Color(0xFFF59E0B).withAlpha(15),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withAlpha(15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -394,7 +406,7 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
       scrollable: true,
       backgroundColor: context.colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: context.colors.border, width: 0.8),
       ),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -454,10 +466,12 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
                         setState(() => _selectedDate = picked);
                       }
                     },
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                       decoration: BoxDecoration(
                         color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: context.colors.border, width: 0.8),
                       ),
                       child: Row(
@@ -477,10 +491,10 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: _priority,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '중요도',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'low', child: Text('낮음')),
@@ -501,10 +515,10 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: _channel,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '상담채널',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'phone', child: Text('전화')),
@@ -521,10 +535,10 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '상담유형',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'payment', child: Text('납부상담')),
@@ -548,11 +562,11 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
             TextField(
               controller: _titleController,
               style: const TextStyle(fontSize: 13),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '상담 제목 (요약)',
                 hintText: '예: 2차 중도금 납부 일정 및 연체 문의',
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
               ),
             ),
             const SizedBox(height: 12),
@@ -562,11 +576,11 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
               controller: _contentController,
               maxLines: 4,
               style: const TextStyle(fontSize: 13),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '상세 상담 및 통화 내용',
                 hintText: '계약자와의 통화/면담 세부 내용을 입력하세요.',
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
               ),
             ),
             const SizedBox(height: 10),
@@ -602,11 +616,11 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
                 child: TextField(
                   controller: _followUpController,
                   style: const TextStyle(fontSize: 12.5),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: '후속조치 메모',
                     hintText: '예: 08/28 수납 확인 후 유선 회신 예정',
                     isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                 ),
               ),
@@ -622,7 +636,7 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF59E0B),
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           ),
           onPressed: _isLoading ? null : _submit,

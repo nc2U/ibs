@@ -4,6 +4,26 @@ library;
 import 'package:flutter/material.dart';
 
 
+int _parseInt(dynamic val) {
+  if (val == null) return 0;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val) ?? double.tryParse(val)?.toInt() ?? 0;
+  }
+  return 0;
+}
+
+int? _tryParseInt(dynamic val) {
+  if (val == null) return null;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val) ?? double.tryParse(val)?.toInt();
+  }
+  return null;
+}
+
 class ContractAggregateModel {
   final int totalUnits;
   final int subsNum;
@@ -19,10 +39,10 @@ class ContractAggregateModel {
 
   factory ContractAggregateModel.fromJson(Map<String, dynamic> json) {
     return ContractAggregateModel(
-      totalUnits: json['total_units'] ?? 0,
-      subsNum: json['subs_num'] ?? 0,
-      contsNum: json['conts_num'] ?? 0,
-      nonContsNum: json['non_conts_num'] ?? 0,
+      totalUnits: _parseInt(json['total_units']),
+      subsNum: _parseInt(json['subs_num']),
+      contsNum: _parseInt(json['conts_num']),
+      nonContsNum: _parseInt(json['non_conts_num']),
     );
   }
 
@@ -235,10 +255,10 @@ class ContractPriceModel {
   factory ContractPriceModel.fromJson(Map<String, dynamic> json) {
     return ContractPriceModel(
       pk: json['pk'],
-      price: json['price'] ?? 0,
-      priceBuild: json['price_build'],
-      priceLand: json['price_land'],
-      priceTax: json['price_tax'],
+      price: _parseInt(json['price']),
+      priceBuild: _tryParseInt(json['price_build']),
+      priceLand: _tryParseInt(json['price_land']),
+      priceTax: _tryParseInt(json['price_tax']),
     );
   }
 }
@@ -312,7 +332,7 @@ class ContractItemModel {
       contractPrice: json['contractprice'] != null
           ? ContractPriceModel.fromJson(json['contractprice'])
           : null,
-      totalPaid: json['total_paid'] ?? 0,
+      totalPaid: _parseInt(json['total_paid']),
       lastPaidOrderName: lastPaid != null ? lastPaid['pay_name'] : null,
     );
   }
@@ -470,7 +490,7 @@ class ContractorReleaseItemModel {
       requestDate: json['request_date'] ?? '',
       releaseType: json['release_type']?.toString() ?? '1',
       status: json['status']?.toString() ?? '1',
-      refundAmount: json['refund_amount'],
+      refundAmount: _tryParseInt(json['refund_amount']),
       refundAccountBank: json['refund_account_bank'],
       refundAccountNumber: json['refund_account_number'],
       refundAccountDepositor: json['refund_account_depositor'],
@@ -679,8 +699,8 @@ class UnitTypeItemModel {
       color: json['color']?.toString(),
       actualArea: json['actual_area']?.toString(),
       supplyArea: json['supply_area']?.toString(),
-      averagePrice: json['average_price'] as int?,
-      numUnit: json['num_unit'] as int?,
+      averagePrice: _tryParseInt(json['average_price']),
+      numUnit: _tryParseInt(json['num_unit']),
     );
   }
 }
@@ -747,9 +767,7 @@ class LayoutHouseUnitModel {
         }
         final priceObj = contract['contractprice'] ?? contract['contract_price'];
         if (priceObj is Map && priceObj['price'] != null) {
-          contPrice = priceObj['price'] is int
-              ? priceObj['price']
-              : int.tryParse(priceObj['price'].toString());
+          contPrice = _tryParseInt(priceObj['price']);
         }
       }
     }

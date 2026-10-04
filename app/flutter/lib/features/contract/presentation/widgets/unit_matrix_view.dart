@@ -1,5 +1,5 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/contract_repository.dart';
 import '../../data/models/contract_models.dart';
@@ -74,7 +75,7 @@ class UnitMatrixView extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.colors.border, width: 0.8),
                 boxShadow: [
                   BoxShadow(
@@ -136,12 +137,32 @@ class UnitMatrixView extends ConsumerWidget {
         return;
       }
 
-      // 임시 디렉토리에 파일 저장
-      final tempDir = await getTemporaryDirectory();
+      if (!context.mounted) return;
+
       final nowStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final typeLabel = isContractor ? '계약자포함' : '계약자미포함';
       final cleanProjName = selectedProject.name.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
       final fileName = '동호수현황표_${cleanProjName}_${typeLabel}_$nowStr.xlsx';
+
+      if (kIsWeb) {
+        final xfile = XFile.fromData(
+          excelBytes,
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          name: fileName,
+        );
+        final box = context.findRenderObject() as RenderBox?;
+        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        await AppShareHelper.shareXFiles(
+          [xfile],
+          subject: '${selectedProject.name} 동호수 현황표 ($typeLabel)',
+          text: '${selectedProject.name} 동호수 현황표 ($typeLabel) 파일입니다.',
+          sharePositionOrigin: origin,
+        );
+        return;
+      }
+
+      // 임시 디렉토리에 파일 저장
+      final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(excelBytes);
 
@@ -151,7 +172,10 @@ class UnitMatrixView extends ConsumerWidget {
       showModalBottomSheet(
         context: context,
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
         builder: (dialogCtx) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -196,7 +220,6 @@ class UnitMatrixView extends ConsumerWidget {
                   subtitle: const Text('본사 보고 또는 관계자에게 파일 전송', style: TextStyle(fontSize: 11.5)),
                   onTap: () async {
                     Navigator.pop(dialogCtx);
-                    // ignore: deprecated_member_use
                     await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
                       text: '${selectedProject.name} 동호수 현황표 ($typeLabel) 파일입니다.',
@@ -229,7 +252,10 @@ class UnitMatrixView extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -263,6 +289,7 @@ class UnitMatrixView extends ConsumerWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withAlpha(30),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFF10B981), width: 0.8),
                   ),
                   child: const Icon(Icons.person_rounded, size: 18, color: Color(0xFF10B981)),
@@ -282,6 +309,7 @@ class UnitMatrixView extends ConsumerWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF38BDF8).withAlpha(30),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFF38BDF8), width: 0.8),
                   ),
                   child: const Icon(Icons.grid_on_rounded, size: 18, color: Color(0xFF38BDF8)),
@@ -316,8 +344,9 @@ class UnitMatrixView extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      clipBehavior: Clip.antiAlias,
       backgroundColor: context.colors.bgCard,
       builder: (ctx) {
         return SafeArea(
@@ -338,6 +367,7 @@ class UnitMatrixView extends ConsumerWidget {
                             : (unit.isContracted
                                 ? const Color(0xFF10B981).withAlpha(30)
                                 : context.colors.accentProject.withAlpha(30)),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: unit.isHold
                               ? Colors.redAccent
@@ -536,10 +566,12 @@ class UnitMatrixView extends ConsumerWidget {
               // 엑셀 다운로드 / 공유 버튼
               InkWell(
                 onTap: () => _showExcelOptionDialog(context, ref),
+                borderRadius: BorderRadius.circular(6),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withAlpha(20),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFF10B981).withAlpha(120), width: 0.8),
                   ),
                   child: const Row(
@@ -717,8 +749,10 @@ class _BuildingMatrixCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.colors.border, width: 1),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -744,6 +778,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: const Color(0xFF10B981).withAlpha(100), width: 0.6),
                   ),
                   child: Text(
@@ -778,6 +813,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: context.colors.bgCard,
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: context.colors.border, width: 0.8),
                         ),
                         child: Text(
@@ -804,6 +840,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                               height: 36,
                               decoration: BoxDecoration(
                                 color: context.colors.bgCard.withAlpha(50),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: context.colors.border.withAlpha(60), width: 0.5),
                               ),
                               alignment: Alignment.center,
@@ -826,6 +863,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: InkWell(
                             onTap: () => onUnitTap(unit),
+                            borderRadius: BorderRadius.circular(4),
                             child: Container(
                               width: 54,
                               height: 36,
@@ -835,6 +873,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                                     : (unit.isContracted
                                         ? const Color(0xFF10B981).withAlpha(35)
                                         : context.colors.bgCard),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: unit.isHold
                                       ? Colors.redAccent
@@ -930,11 +969,12 @@ class _BuildingChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: selected ? const Color(0xFF38BDF8).withAlpha(40) : context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: selected ? const Color(0xFF38BDF8) : context.colors.border,
               width: selected ? 1.4 : 0.8,
@@ -989,7 +1029,7 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isBorder ? Colors.transparent : color,
             border: Border.all(color: color, width: 1.0),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(width: 4),

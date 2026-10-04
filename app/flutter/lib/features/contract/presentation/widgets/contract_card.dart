@@ -24,7 +24,7 @@ class ContractCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: context.colors.textDisabled.withAlpha(180),
           width: 1.2,
@@ -37,6 +37,7 @@ class ContractCard extends StatelessWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -56,7 +57,7 @@ class ContractCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: contract.parsedTypeColor,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(
                           color: contract.typeBorderColor,
                           width: 0.8,
@@ -87,7 +88,7 @@ class ContractCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF34D399).withAlpha(20),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(color: const Color(0xFF34D399).withAlpha(80), width: 0.6),
                       ),
                       child: const Text(
@@ -151,7 +152,7 @@ class ContractCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
                         color: context.colors.bgSurface,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         children: [

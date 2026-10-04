@@ -28,7 +28,7 @@ class SuccessionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: context.colors.textDisabled.withAlpha(180),
           width: 1.2,
@@ -41,6 +41,7 @@ class SuccessionCard extends StatelessWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,7 +65,7 @@ class SuccessionCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(3),
                     border: Border.all(color: statusColor.withAlpha(80), width: 0.6),
                   ),
                   child: Text(
@@ -153,6 +154,7 @@ class SuccessionCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                   ),
                 ],
