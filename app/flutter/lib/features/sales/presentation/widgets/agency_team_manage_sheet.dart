@@ -56,11 +56,13 @@ class _AgencyTeamManageSheetState
             agency == null ? '신규 분양 대행사 등록' : '대행사 정보 수정',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          content: SizedBox(
+            width: 440,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
@@ -212,7 +214,8 @@ class _AgencyTeamManageSheetState
               ],
             ),
           ),
-          actions: [
+        ),
+        actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('취소'),
@@ -266,19 +269,22 @@ class _AgencyTeamManageSheetState
           team == null ? '영업 팀 신설' : '팀 명칭 수정',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: '팀 / 본부 명칭 *',
-                hintText: '예: 영업1본부, 분양1팀',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: '팀 / 본부 명칭 *',
+                  hintText: '예: 영업1본부, 분양1팀',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                style: const TextStyle(fontSize: 13),
               ),
-              style: const TextStyle(fontSize: 13),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(

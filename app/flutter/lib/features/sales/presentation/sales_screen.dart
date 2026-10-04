@@ -35,6 +35,51 @@ class SalesScreen extends ConsumerStatefulWidget {
 
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   SalesSubTab _currentTab = SalesSubTab.performance;
+  final ScrollController _tabScrollController = ScrollController();
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabScrollController.addListener(_updateScrollIndicators);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollIndicators());
+  }
+
+  @override
+  void dispose() {
+    _tabScrollController.removeListener(_updateScrollIndicators);
+    _tabScrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateScrollIndicators() {
+    if (!_tabScrollController.hasClients) return;
+    final maxScroll = _tabScrollController.position.maxScrollExtent;
+    final currentScroll = _tabScrollController.offset;
+    final canLeft = currentScroll > 4;
+    final canRight = currentScroll < maxScroll - 4 && maxScroll > 0;
+
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      if (mounted) {
+        setState(() {
+          _canScrollLeft = canLeft;
+          _canScrollRight = canRight;
+        });
+      }
+    }
+  }
+
+  void _scrollTo(bool right) {
+    if (!_tabScrollController.hasClients) return;
+    final current = _tabScrollController.offset;
+    final target = right ? current + 140.0 : current - 140.0;
+    _tabScrollController.animateTo(
+      target.clamp(0.0, _tabScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
 
   /// 프로젝트 변경 시 이전 프로젝트의 모든 검색어와 필터 프로바이더 상태를 초기화
   void _resetAllFiltersAndSearch() {
@@ -255,61 +300,84 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
           // ── 상단 서브 탭 바 ──────────────────────────────────────
           if (availableTabs.isNotEmpty)
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: context.colors.bgSurface,
-                border: Border(
-                  bottom: BorderSide(color: context.colors.border, width: 1),
-                ),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Row(
-                  children: [
-                    if (canPerformance) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.performance,
-                        label: '계약 실적',
-                        icon: Icons.assignment_turned_in_outlined,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _updateScrollIndicators();
+                });
+
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: context.colors.bgSurface,
+                    border: Border(
+                      bottom: BorderSide(color: context.colors.border, width: 1),
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          _updateScrollIndicators();
+                          return false;
+                        },
+                        child: SingleChildScrollView(
+                          controller: _tabScrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              if (canPerformance) ...[
+                                _buildSubTabButton(
+                                  tab: SalesSubTab.performance,
+                                  label: '계약 실적',
+                                  icon: Icons.assignment_turned_in_outlined,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (canSettlement) ...[
+                                _buildSubTabButton(
+                                  tab: SalesSubTab.settlement,
+                                  label: '수수료 정산',
+                                  icon: Icons.calculate_outlined,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (canPayout) ...[
+                                _buildSubTabButton(
+                                  tab: SalesSubTab.payout,
+                                  label: '수수료 지급',
+                                  icon: Icons.account_balance_outlined,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (canPolicy) ...[
+                                _buildSubTabButton(
+                                  tab: SalesSubTab.policy,
+                                  label: '수수료 정책',
+                                  icon: Icons.rule_folder_outlined,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (canOrganization) ...[
+                                _buildSubTabButton(
+                                  tab: SalesSubTab.organization,
+                                  label: '영업 조직',
+                                  icon: Icons.groups_outlined,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      if (_canScrollLeft)
+                        _buildScrollHintButton(isRight: false),
+                      if (_canScrollRight)
+                        _buildScrollHintButton(isRight: true),
                     ],
-                    if (canSettlement) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.settlement,
-                        label: '수수료 정산',
-                        icon: Icons.calculate_outlined,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (canPayout) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.payout,
-                        label: '수수료 지급',
-                        icon: Icons.account_balance_outlined,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (canPolicy) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.policy,
-                        label: '수수료 정책',
-                        icon: Icons.rule_folder_outlined,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (canOrganization) ...[
-                      _buildSubTabButton(
-                        tab: SalesSubTab.organization,
-                        label: '영업 조직',
-                        icon: Icons.groups_outlined,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
 
           // ── 본문 영역 ──────────────────────────────────────────
@@ -427,5 +495,72 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       case SalesSubTab.organization:
         return SalesOrganizationTabView(project: project);
     }
+  }
+
+  /// 탭 바 좌우 스크롤 힌트 및 버튼 위젯
+  Widget _buildScrollHintButton({required bool isRight}) {
+    final bgColor = context.colors.bgSurface;
+    const primaryColor = Color(0xFF8B5CF6);
+
+    return Positioned(
+      left: isRight ? null : 0,
+      right: isRight ? 0 : null,
+      top: 0,
+      bottom: 1, // 하단 테두리 선 바로 위
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _scrollTo(isRight),
+        child: Container(
+          width: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: isRight ? Alignment.centerRight : Alignment.centerLeft,
+              end: isRight ? Alignment.centerLeft : Alignment.centerRight,
+              colors: [
+                bgColor,
+                bgColor.withAlpha(220),
+                bgColor.withAlpha(0),
+              ],
+              stops: const [0.0, 0.45, 1.0],
+            ),
+          ),
+          child: Align(
+            alignment: isRight ? Alignment.centerRight : Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: isRight ? 6 : 0,
+                left: isRight ? 0 : 6,
+              ),
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: primaryColor.withAlpha(140),
+                    width: 0.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isRight
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded,
+                  size: 16,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
