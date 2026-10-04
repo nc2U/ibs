@@ -116,7 +116,10 @@ class _ContractMatchBottomSheetState
     setState(() => _isSaving = true);
 
     final targetContractId = _selectedContract != null
-        ? (_selectedContract!['pk'] ?? _selectedContract!['id']) as int?
+        ? int.tryParse(
+            (_selectedContract!['pk'] ?? _selectedContract!['id'])?.toString() ??
+                '',
+          )
         : widget.paymentItem.contractId;
 
     final success = await ref
@@ -183,7 +186,7 @@ class _ContractMatchBottomSheetState
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D9488).withAlpha(25),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     isAlreadyContractMatched
@@ -238,6 +241,7 @@ class _ContractMatchBottomSheetState
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: context.colors.bgSurface,
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Column(
@@ -351,6 +355,7 @@ class _ContractMatchBottomSheetState
                       ),
                       decoration: BoxDecoration(
                         color: context.colors.success.withAlpha(15),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: context.colors.success.withAlpha(80),
                           width: 0.8,
@@ -393,6 +398,7 @@ class _ContractMatchBottomSheetState
                       height: 38,
                       decoration: BoxDecoration(
                         color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: context.colors.border,
                           width: 0.8,
@@ -482,11 +488,14 @@ class _ContractMatchBottomSheetState
                                 : name;
                           }
 
-                          final price =
-                              (cont['contractprice']?['price'] ??
-                                      cont['price'] ??
-                                      0)
-                                  as int;
+                          final price = int.tryParse(
+                            (cont['contractprice']?['price'] ??
+                                    cont['price'] ??
+                                    0)
+                                .toString()
+                                .split('.')
+                                .first,
+                          ) ?? 0;
 
                           return InkWell(
                             onTap: () {
@@ -494,12 +503,14 @@ class _ContractMatchBottomSheetState
                                 _selectedContract = cont;
                               });
                             },
+                            borderRadius: BorderRadius.circular(6),
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? context.colors.accentProject.withAlpha(20)
                                     : context.colors.bgSurface,
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: isSelected
                                       ? context.colors.accentProject
@@ -560,6 +571,8 @@ class _ContractMatchBottomSheetState
                                                 decoration: BoxDecoration(
                                                   color:
                                                       context.colors.bgPrimary,
+                                                  borderRadius:
+                                                      BorderRadius.circular(3),
                                                   border: Border.all(
                                                     color:
                                                         context.colors.border,
@@ -710,8 +723,8 @@ class _ContractMatchBottomSheetState
                             selected: isSelected,
                             selectedColor: const Color(0xFF0D9488),
                             backgroundColor: context.colors.bgSurface,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             side: BorderSide(
                               color: isSelected
@@ -748,8 +761,8 @@ class _ContractMatchBottomSheetState
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.textMuted,
                       side: BorderSide(color: context.colors.border),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),
@@ -764,8 +777,8 @@ class _ContractMatchBottomSheetState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0D9488),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),

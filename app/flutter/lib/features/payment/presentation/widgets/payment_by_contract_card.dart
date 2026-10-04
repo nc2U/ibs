@@ -25,7 +25,7 @@ class PaymentByContractCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: context.colors.textDisabled.withAlpha(180),
           width: 1.2,
@@ -40,8 +40,11 @@ class PaymentByContractCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onSelect,
+          borderRadius: BorderRadius.circular(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -60,7 +63,7 @@ class PaymentByContractCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: contract.parsedTypeColor,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: contract.typeBorderColor,
                           width: 0.8,
@@ -93,6 +96,7 @@ class PaymentByContractCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: context.colors.success.withAlpha(20),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: context.colors.success.withAlpha(80),
                           width: 0.6,
@@ -176,7 +180,10 @@ class PaymentByContractCard extends StatelessWidget {
                         horizontal: 10,
                         vertical: 8,
                       ),
-                      color: context.colors.bgSurface,
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                       child: Row(
                         children: [
                           Expanded(
@@ -245,8 +252,8 @@ class PaymentByContractCard extends StatelessWidget {
                           side: BorderSide(
                             color: context.colors.accentProject.withAlpha(120),
                           ),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 7),
                         ),

@@ -8,6 +8,21 @@ final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   return PaymentRepository(dio: dio);
 });
 
+int _parseInt(dynamic value, [int defaultValue = 0]) {
+  if (value == null) return defaultValue;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return defaultValue;
+    final intVal = int.tryParse(cleaned);
+    if (intVal != null) return intVal;
+    final doubleVal = double.tryParse(cleaned);
+    if (doubleVal != null) return doubleVal.toInt();
+  }
+  return defaultValue;
+}
+
 /// 대금 수납 관리 Repository
 class PaymentRepository {
   final Dio dio;
@@ -34,11 +49,11 @@ class PaymentRepository {
 
         for (final item in list) {
           if (item is Map) {
-            totalBudget += (item['total_budget'] ?? 0) as int;
-            totalContractAmt += (item['total_contract_amount'] ?? 0) as int;
-            totalPaid += (item['total_paid_amount'] ?? 0) as int;
-            totalUnpaid += (item['unpaid_amount'] ?? 0) as int;
-            totalUnsold += (item['unsold_amount'] ?? 0) as int;
+            totalBudget += _parseInt(item['total_budget']);
+            totalContractAmt += _parseInt(item['total_contract_amount']);
+            totalPaid += _parseInt(item['total_paid_amount']);
+            totalUnpaid += _parseInt(item['unpaid_amount']);
+            totalUnsold += _parseInt(item['unsold_amount']);
           }
         }
 

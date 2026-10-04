@@ -1,6 +1,6 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../../core/services/share_helper.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../contract/data/contract_repository.dart';
 import '../../contract/data/models/contract_models.dart';
@@ -145,7 +146,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.bgCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: context.colors.border, width: 0.8),
         ),
         title: Row(
@@ -188,7 +189,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
-              color: context.colors.bgSurface,
+              decoration: BoxDecoration(
+                color: context.colors.bgSurface,
+                borderRadius: BorderRadius.circular(6),
+              ),
               child: Row(
                 children: [
                   Icon(
@@ -223,8 +227,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF0D9488),
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
@@ -338,7 +342,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.colors.border, width: 0.8),
                 boxShadow: [
                   BoxShadow(
@@ -400,14 +404,26 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         return;
       }
 
-      // 임시 디렉토리에 파일 저장
-      final tempDir = await getTemporaryDirectory();
       final nowStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final cleanUnitStr = unitStr.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
       final fileName =
           '${filePrefix}_${contractorName}_${cleanUnitStr}_$nowStr.pdf';
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsBytes(pdfBytes);
+
+      final XFile xFile;
+      String? localPath;
+      if (kIsWeb) {
+        xFile = XFile.fromData(
+          pdfBytes,
+          mimeType: 'application/pdf',
+          name: fileName,
+        );
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(pdfBytes);
+        localPath = file.path;
+        xFile = XFile(localPath);
+      }
 
       if (!mounted) return;
 
@@ -415,7 +431,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       showModalBottomSheet(
         context: context,
         backgroundColor: context.colors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
         builder: (dialogCtx) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -447,32 +466,57 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 ),
                 const SizedBox(height: 12),
                 Divider(color: context.colors.border, height: 1),
-                ListTile(
-                  leading: const Icon(
-                    Icons.open_in_new_rounded,
-                    color: Color(0xFF0D9488),
-                  ),
-                  title: Text(
-                    openTitle,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13.5,
+                if (!kIsWeb)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.open_in_new_rounded,
+                      color: Color(0xFF0D9488),
                     ),
+                    title: Text(
+                      openTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    subtitle: Text(
+                      openSubtitle,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(dialogCtx);
+                      if (localPath != null) {
+                        final result = await OpenFilex.open(localPath);
+                        if (result.type != ResultType.done && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('파일 열기 실패: ${result.message}')),
+                          );
+                        }
+                      }
+                    },
+                  )
+                else
+                  ListTile(
+                    leading: const Icon(
+                      Icons.download_rounded,
+                      color: Color(0xFF0D9488),
+                    ),
+                    title: const Text(
+                      'PDF 파일 다운로드',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      '브라우저를 통해 PDF 파일을 기기에 다운로드합니다.',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(dialogCtx);
+                      await xFile.saveTo(fileName);
+                    },
                   ),
-                  subtitle: Text(
-                    openSubtitle,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(dialogCtx);
-                    final result = await OpenFilex.open(file.path);
-                    if (result.type != ResultType.done && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('파일 열기 실패: ${result.message}')),
-                      );
-                    }
-                  },
-                ),
                 ListTile(
                   leading: Icon(
                     Icons.share_outlined,
@@ -496,7 +540,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                         : null;
                     Navigator.pop(dialogCtx);
                     await AppShareHelper.shareXFiles(
-                      [XFile(file.path)],
+                      [xFile],
                       subject: '[$contractorName 고객님] $shareSubject',
                       sharePositionOrigin: origin,
                     );
@@ -535,8 +579,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         builder: (ctx, setModalState) {
           return AlertDialog(
             backgroundColor: context.colors.bgCard,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
             title: Row(
               children: [
@@ -544,7 +588,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     color: context.colors.error.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     Icons.tune_rounded,
@@ -571,7 +615,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
-                    color: context.colors.info.withAlpha(15),
+                    decoration: BoxDecoration(
+                      color: context.colors.info.withAlpha(15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Text(
                       '💡 선택한 회차를 기준으로 모든 계약자의 고지서 납부 도래 회차 및 연체/미납금이 계산됩니다.',
                       style: TextStyle(
@@ -594,6 +641,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: context.colors.border,
                         width: 0.8,
@@ -646,8 +694,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0D9488),
                   foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -726,7 +774,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       backgroundColor: context.colors.bgCard,
       builder: (ctx) {
         return SafeArea(
@@ -834,8 +885,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                         ? context.colors.error
                                         : const Color(0xFF0D9488)),
                               foregroundColor: Colors.white,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 11),
                             ),
@@ -872,8 +923,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: context.colors.textPrimary,
                               side: BorderSide(color: context.colors.border),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 11),
                             ),
@@ -913,8 +964,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                               color: Color(0xFF0D9488),
                               width: 0.9,
                             ),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 9),
                           ),
@@ -996,7 +1047,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       backgroundColor: context.colors.bgCard,
       builder: (ctx) => ContractMatchBottomSheet(paymentItem: item),
     );
@@ -1008,7 +1062,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       backgroundColor: context.colors.bgCard,
       builder: (ctx) => InstallmentChangeBottomSheet(paymentItem: item),
     );
@@ -1038,12 +1095,27 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                  tooltip: '뒤로가기',
+                  color: context.colors.textPrimary,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      widget.onBackToMain();
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
                     color: context.colors.success.withAlpha(30),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     Icons.payments_outlined,
@@ -1118,13 +1190,44 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
           Divider(color: context.colors.border, height: 1),
 
           // ── 헤더 아래 전체를 CustomScrollView로 스크롤 가능하게 구성 ──────────────
-          Expanded(
-            child: RefreshIndicator(
-              color: context.colors.success,
-              onRefresh: _refreshAll,
-              child: CustomScrollView(
-                controller: _transactionsScrollController,
-                slivers: [
+          if (selectedProject == null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.folder_open_outlined,
+                      size: 48,
+                      color: context.colors.textDisabled,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '선택된 프로젝트가 없습니다.',
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: context.colors.textMuted,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '상단에서 프로젝트를 먼저 선택해 주세요.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textDisabled,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: RefreshIndicator(
+                color: context.colors.success,
+                onRefresh: _refreshAll,
+                child: CustomScrollView(
+                  controller: _transactionsScrollController,
+                  slivers: [
                   // ── 2. KPI 대시보드 – 스크롤과 함께 올라감 ─────────────────────
                   SliverToBoxAdapter(
                     child: aggregateAsync.when(
@@ -1377,7 +1480,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: context.colors.bgSurface,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: context.colors.border,
                                   width: 0.8,
@@ -1601,7 +1704,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: context.colors.bgCard,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: cardBorderColor,
                     width: isUnmatched ? 1.4 : 1.2,
@@ -1620,6 +1723,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 ),
                 child: Material(
                   color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () => _showTransactionDetailBottomSheet(item),
                     child: Column(
@@ -1646,7 +1751,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: context.colors.warning,
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
                                     '계약 미매칭',
@@ -1666,7 +1771,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: item.typeBadgeBgColor,
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     item.unitTypeName!,
@@ -1874,8 +1979,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                             : context.colors.info,
                                         width: 1,
                                       ),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.zero,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 7,
@@ -2206,8 +2311,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: context.colors.textSecond,
                           side: BorderSide(color: context.colors.border),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -2238,7 +2343,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       horizontal: 10,
                       vertical: 6,
                     ),
-                    color: context.colors.bgSurface,
+                    decoration: BoxDecoration(
+                      color: context.colors.bgSurface,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -2416,8 +2524,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                           : context.colors.border,
                                       width: 0.8,
                                     ),
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 7,
@@ -2466,8 +2574,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                           : context.colors.error,
                                       width: 0.8,
                                     ),
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 7,
@@ -2880,7 +2988,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: context.colors.bgCard,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: context.colors.textDisabled.withAlpha(180),
                         width: 1.2,
@@ -2893,6 +3001,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                         ),
                       ],
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2912,7 +3021,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: context.colors.info.withAlpha(25),
-                                  borderRadius: BorderRadius.circular(2),
+                                  borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
                                     color: context.colors.info.withAlpha(100),
                                     width: 0.8,
@@ -3118,8 +3227,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.colors.textPrimary,
                   side: BorderSide(color: context.colors.border),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),

@@ -91,7 +91,7 @@ class _InstallmentChangeBottomSheetState
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D9488).withAlpha(25),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.edit_calendar_outlined,
@@ -140,6 +140,7 @@ class _InstallmentChangeBottomSheetState
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: context.colors.bgSurface,
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Column(
@@ -191,6 +192,7 @@ class _InstallmentChangeBottomSheetState
                           ),
                           decoration: BoxDecoration(
                             color: context.colors.info.withAlpha(20),
+                            borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: context.colors.info.withAlpha(80),
                               width: 0.6,
@@ -282,8 +284,8 @@ class _InstallmentChangeBottomSheetState
                                   ? context.colors.error
                                   : context.colors.textSecond,
                             ),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             side: BorderSide(
                               color: _selectedInstallmentOrderId == null
@@ -324,8 +326,8 @@ class _InstallmentChangeBottomSheetState
                                     ? Colors.white
                                     : context.colors.textPrimary,
                               ),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               side: BorderSide(
                                 color: isSel
@@ -363,8 +365,8 @@ class _InstallmentChangeBottomSheetState
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.textMuted,
                       side: BorderSide(color: context.colors.border),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),
@@ -379,8 +381,8 @@ class _InstallmentChangeBottomSheetState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0D9488),
                       foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),

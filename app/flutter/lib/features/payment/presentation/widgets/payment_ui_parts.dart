@@ -71,7 +71,7 @@ class PaymentSubTabButton extends StatelessWidget {
             ? context.colors.accentProject.withAlpha(25)
             : context.colors.bgCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           side: BorderSide(
             color: isSelected
                 ? context.colors.accentProject
@@ -81,7 +81,7 @@ class PaymentSubTabButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 38,
             alignment: Alignment.center,
@@ -184,12 +184,14 @@ class PaymentMatchFilterChip extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withAlpha(25)
               : context.colors.bgSurface,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: isSelected ? activeColor : context.colors.border,
             width: isSelected ? 1.2 : 0.8,

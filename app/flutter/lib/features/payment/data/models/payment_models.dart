@@ -1,5 +1,45 @@
 import 'package:flutter/material.dart';
 
+int _parseInt(dynamic value, [int defaultValue = 0]) {
+  if (value == null) return defaultValue;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return defaultValue;
+    final intVal = int.tryParse(cleaned);
+    if (intVal != null) return intVal;
+    final doubleVal = double.tryParse(cleaned);
+    if (doubleVal != null) return doubleVal.toInt();
+  }
+  return defaultValue;
+}
+
+int? _tryParseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return null;
+    final intVal = int.tryParse(cleaned);
+    if (intVal != null) return intVal;
+    final doubleVal = double.tryParse(cleaned);
+    if (doubleVal != null) return doubleVal.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value, [double defaultValue = 0.0]) {
+  if (value == null) return defaultValue;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value.trim()) ?? defaultValue;
+  }
+  return defaultValue;
+}
+
 /// 💰 1. 개별 납부 거래 내역 모델 (/api/v1/ledger/payment/)
 class PaymentTransactionItemModel {
   final int pk;
@@ -45,8 +85,10 @@ class PaymentTransactionItemModel {
     final contractRaw = json['contract'];
     final contract = contractRaw is Map ? contractRaw : null;
     final int? parsedContractId = contract != null
-        ? (contract['pk'] ?? contract['id'])
-        : (contractRaw is int ? contractRaw : json['contract_id']);
+        ? _tryParseInt(contract['pk'] ?? contract['id'])
+        : (contractRaw is int
+            ? contractRaw
+            : _tryParseInt(json['contract_id']));
 
     final contractor = contract != null && contract['contractor'] is Map
         ? contract['contractor']
@@ -65,13 +107,15 @@ class PaymentTransactionItemModel {
     final installRaw = json['installment_order'];
     final installmentOrder = installRaw is Map ? installRaw : null;
     final int? parsedInstallOrderId = installmentOrder != null
-        ? (installmentOrder['pk'] ?? installmentOrder['id'])
-        : (installRaw is int ? installRaw : json['installment_order_id']);
+        ? _tryParseInt(installmentOrder['pk'] ?? installmentOrder['id'])
+        : (installRaw is int
+            ? installRaw
+            : _tryParseInt(json['installment_order_id']));
 
     // accounting_entry 파싱
     final entryRaw = json['accounting_entry'];
     final int? parsedEntryId = entryRaw is Map
-        ? (entryRaw['pk'] ?? entryRaw['id'])
+        ? _tryParseInt(entryRaw['pk'] ?? entryRaw['id'])
         : (entryRaw is int ? entryRaw : null);
 
     // bank_account 파싱
@@ -83,38 +127,42 @@ class PaymentTransactionItemModel {
       final bldg = houseunit['building_unit']?.toString() ?? '';
       parsedUnit = bldg.isNotEmpty ? '$bldg동 $name호' : name;
     } else if (contract != null && contract['serial_number'] != null) {
-      parsedUnit = contract['serial_number'];
+      parsedUnit = contract['serial_number']?.toString();
     }
 
     return PaymentTransactionItemModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      dealId: json['deal_id'],
+      pk: _parseInt(json['pk'] ?? json['id']),
+      dealId: _tryParseInt(json['deal_id']),
       contractorName: contractor != null
-          ? contractor['name']
-          : (json['contractor_name'] ?? json['trader']),
+          ? contractor['name']?.toString()
+          : (json['contractor_name']?.toString() ?? json['trader']?.toString()),
       unitStr:
           parsedUnit ??
-          (json['unit_desc'] ?? (parsedContractId == null ? '계약 미매칭' : '-')),
+          (json['unit_desc']?.toString() ??
+              (parsedContractId == null ? '계약 미매칭' : '-')),
       unitTypeName: unitType != null
-          ? unitType['name']
-          : json['unit_type_name'],
+          ? unitType['name']?.toString()
+          : json['unit_type_name']?.toString(),
       unitTypeColor: unitType != null
-          ? unitType['color']
-          : json['unit_type_color'],
+          ? unitType['color']?.toString()
+          : json['unit_type_color']?.toString(),
       contractId: parsedContractId,
       installmentOrderId: parsedInstallOrderId,
       accountingEntryId: parsedEntryId,
-      bankTransactionId:
-          json['bank_transaction_id'] ?? json['bank_transaction']?['pk'],
-      isPaymentMismatch: json['is_payment_mismatch'] ?? false,
+      bankTransactionId: _tryParseInt(
+        json['bank_transaction_id'] ?? json['bank_transaction']?['pk'],
+      ),
+      isPaymentMismatch: json['is_payment_mismatch'] == true,
       payName: installmentOrder != null
-          ? installmentOrder['pay_name']
-          : (json['pay_name'] ?? (parsedInstallOrderId == null ? null : '-')),
-      amount: (json['income'] ?? json['amount'] ?? 0) as int,
+          ? installmentOrder['pay_name']?.toString()
+          : (json['pay_name']?.toString() ??
+              (parsedInstallOrderId == null ? null : '-')),
+      amount: _parseInt(json['income'] ?? json['amount']),
       dealDate: json['deal_date']?.toString() ?? '',
       bankAccountName: bankAcc != null
-          ? (bankAcc['alias_name'] ?? bankAcc['bank_name'])
-          : json['bank_account_name'],
+          ? (bankAcc['alias_name']?.toString() ??
+              bankAcc['bank_name']?.toString())
+          : json['bank_account_name']?.toString(),
       trader: json['trader']?.toString(),
       note: json['note']?.toString(),
     );
@@ -192,55 +240,49 @@ class InstallmentStatusItemModel {
     final collection = json['collection'] is Map ? json['collection'] : null;
     final duePeriod = json['due_period'] is Map ? json['due_period'] : null;
 
-    final totalDue =
-        (json['contract_amount'] ??
-                json['total_due_amount'] ??
-                json['amount'] ??
-                0)
-            as int;
+    final totalDue = _parseInt(
+      json['contract_amount'] ?? json['total_due_amount'] ?? json['amount'],
+    );
     final totalPaid = collection != null
-        ? (collection['actual_collected'] ??
-                  collection['collected_amount'] ??
-                  0)
-              as int
-        : (json['actual_collected'] ??
-                  json['total_paid_amount'] ??
-                  json['paid_amount'] ??
-                  0)
-              as int;
-    final unpaid =
-        (json['total_unpaid'] ??
-                (duePeriod != null ? duePeriod['unpaid_amount'] : null) ??
-                (totalDue > totalPaid ? totalDue - totalPaid : 0))
-            as int;
+        ? _parseInt(
+            collection['actual_collected'] ?? collection['collected_amount'],
+          )
+        : _parseInt(
+            json['actual_collected'] ??
+                json['total_paid_amount'] ??
+                json['paid_amount'],
+          );
+    final unpaid = _parseInt(
+      json['total_unpaid'] ??
+          (duePeriod != null ? duePeriod['unpaid_amount'] : null) ??
+          (totalDue > totalPaid ? totalDue - totalPaid : 0),
+    );
 
     double rate = 0.0;
     if (collection != null && collection['collection_rate'] != null) {
-      rate = double.tryParse(collection['collection_rate'].toString()) ?? 0.0;
+      rate = _parseDouble(collection['collection_rate']);
     } else if (json['collection_rate'] != null) {
-      rate = double.tryParse(json['collection_rate'].toString()) ?? 0.0;
+      rate = _parseDouble(json['collection_rate']);
     } else if (totalDue > 0) {
       rate = (totalPaid / totalDue) * 100;
     }
 
     return InstallmentStatusItemModel(
-      orderId: json['pk'] ?? json['id'] ?? 0,
-      payCode: json['pay_code'] ?? 0,
-      payTime: json['pay_time'] ?? 0,
+      orderId: _parseInt(json['pk'] ?? json['id']),
+      payCode: _parseInt(json['pay_code']),
+      payTime: _parseInt(json['pay_time']),
       payName: json['pay_name']?.toString() ?? '',
       aliasName: json['alias_name']?.toString(),
       payDueDate: json['pay_due_date']?.toString(),
-      payAmt: (json['pay_amt'] ?? 0) as int,
-      payRatio: (json['pay_ratio'] is num)
-          ? (json['pay_ratio'] as num).toDouble()
-          : 0.0,
-      isExceptPrice: json['is_except_price'] ?? false,
+      payAmt: _parseInt(json['pay_amt']),
+      payRatio: _parseDouble(json['pay_ratio']),
+      isExceptPrice: json['is_except_price'] == true,
       totalDueAmount: totalDue,
       totalPaidAmount: totalPaid,
       unpaidAmount: unpaid,
       collectionRate: rate,
-      paidCount: json['paid_count'] ?? 0,
-      totalCount: json['total_count'] ?? 0,
+      paidCount: _parseInt(json['paid_count']),
+      totalCount: _parseInt(json['total_count']),
     );
   }
 
@@ -271,26 +313,27 @@ class PaymentOverallAggregateModel {
   });
 
   factory PaymentOverallAggregateModel.fromJson(Map<String, dynamic> json) {
-    final budget =
-        (json['total_budget'] ?? json['total_sales_price'] ?? 0) as int;
-    final contractAmt = (json['total_contract_amount'] ?? 0) as int;
-    final totalPaid =
-        (json['total_paid_amount'] ??
-                json['total_paid'] ??
-                json['total_collected'] ??
-                0)
-            as int;
-    final unpaid =
-        (json['unpaid_amount'] ??
-                (contractAmt > totalPaid ? contractAmt - totalPaid : 0))
-            as int;
-    final unsold =
-        (json['unsold_amount'] ??
-                (budget > contractAmt ? budget - contractAmt : 0))
-            as int;
-    final rate = (json['payment_rate'] is num)
-        ? (json['payment_rate'] as num).toDouble()
-        : (contractAmt > 0 ? (totalPaid / contractAmt) * 100 : 0.0);
+    final budget = _parseInt(
+      json['total_budget'] ?? json['total_sales_price'],
+    );
+    final contractAmt = _parseInt(json['total_contract_amount']);
+    final totalPaid = _parseInt(
+      json['total_paid_amount'] ??
+          json['total_paid'] ??
+          json['total_collected'],
+    );
+    final unpaid = _parseInt(
+      json['unpaid_amount'] ??
+          (contractAmt > totalPaid ? contractAmt - totalPaid : 0),
+    );
+    final unsold = _parseInt(
+      json['unsold_amount'] ??
+          (budget > contractAmt ? budget - contractAmt : 0),
+    );
+    final rate = _parseDouble(
+      json['payment_rate'] ??
+          (contractAmt > 0 ? (totalPaid / contractAmt) * 100 : 0.0),
+    );
 
     return PaymentOverallAggregateModel(
       totalBudget: budget,
@@ -299,8 +342,8 @@ class PaymentOverallAggregateModel {
       totalUnpaidAmount: unpaid,
       unsoldAmount: unsold,
       paymentRate: rate,
-      totalUnits: json['total_units'] ?? 0,
-      contractedUnits: json['conts_num'] ?? 0,
+      totalUnits: _parseInt(json['total_units']),
+      contractedUnits: _parseInt(json['conts_num']),
     );
   }
 }
@@ -353,9 +396,9 @@ class SalesBillIssueModel {
 
   factory SalesBillIssueModel.fromJson(Map<String, dynamic> json) {
     return SalesBillIssueModel(
-      pk: json['pk'] as int? ?? json['id'] as int? ?? 0,
-      project: json['project'] as int? ?? 0,
-      nowPaymentOrder: json['now_payment_order'] as int?,
+      pk: _parseInt(json['pk'] ?? json['id']),
+      project: _parseInt(json['project']),
+      nowPaymentOrder: _tryParseInt(json['now_payment_order']),
       hostName: json['host_name']?.toString() ?? '',
       hostTel: json['host_tel']?.toString() ?? '',
       agency: json['agency']?.toString(),
