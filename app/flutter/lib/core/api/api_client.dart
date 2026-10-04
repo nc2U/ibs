@@ -32,7 +32,7 @@ String get _baseUrl => appBaseUrl;
 
 /// Dio 싱글톤 인스턴스 생성 함수
 /// Riverpod dioProvider에서 호출
-Dio createDio(TokenStorage tokenStorage) {
+Dio createDio(TokenStorage tokenStorage, {void Function()? onSessionExpired}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: _baseUrl,
@@ -50,7 +50,11 @@ Dio createDio(TokenStorage tokenStorage) {
 
   // 2) JWT 토큰 자동 갱신
   dio.interceptors.add(
-    AuthInterceptor(dio: dio, tokenStorage: tokenStorage),
+    AuthInterceptor(
+      dio: dio,
+      tokenStorage: tokenStorage,
+      onSessionExpired: onSessionExpired,
+    ),
   );
 
   return dio;
@@ -112,8 +116,13 @@ class RetryInterceptor extends Interceptor {
 class AuthInterceptor extends QueuedInterceptorsWrapper {
   final Dio dio;
   final TokenStorage tokenStorage;
+  final void Function()? onSessionExpired;
 
-  AuthInterceptor({required this.dio, required this.tokenStorage});
+  AuthInterceptor({
+    required this.dio,
+    required this.tokenStorage,
+    this.onSessionExpired,
+  });
 
   @override
   Future<void> onRequest(
@@ -159,11 +168,13 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
           final retryResponse = await dio.fetch(retryOptions);
           return handler.resolve(retryResponse);
         } catch (e) {
-          // 재시도도 실패 → 토큰 삭제
+          // 재시도도 실패 → 토큰 삭제 및 세션 만료 알림
           await tokenStorage.clearTokens();
+          onSessionExpired?.call();
         }
       } else {
         await tokenStorage.clearTokens();
+        onSessionExpired?.call();
       }
     }
     handler.next(err);
@@ -174,15 +185,27 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     if (refreshToken == null || refreshToken.isEmpty) return false;
 
     try {
-      // 인터셉터 없는 별도 Dio 인스턴스로 refresh 요청 (무한루프 방지)
-      final refreshDio = Dio(BaseOptions(baseUrl: _baseUrl));
+      // 인터셉터 없는 별도 Dio 인스턴스로 refresh 요청 (무한루프 방지 및 타임아웃 10초 설정)
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
       final response = await refreshDio.post(
         ApiEndpoints.jwtRefresh,
         data: {'refresh': refreshToken},
       );
       final newAccess = response.data['access'] as String?;
-      if (newAccess != null) {
+      if (newAccess != null && newAccess.isNotEmpty) {
         await tokenStorage.saveAccessToken(newAccess);
+
+        // 토큰 로테이션이 켜져 있는 경우 새로 발급된 refresh 토큰도 저장
+        final newRefresh = response.data['refresh'] as String?;
+        if (newRefresh != null && newRefresh.isNotEmpty) {
+          await tokenStorage.saveRefreshToken(newRefresh);
+        }
         return true;
       }
     } catch (_) {}

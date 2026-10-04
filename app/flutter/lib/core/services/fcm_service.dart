@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../router/app_router.dart';
 import 'app_badge_service.dart';
 
 /// 백엔드(_utils/push_service.py)와 일치하는 중요 알림 채널 ID
@@ -169,6 +173,16 @@ class FcmService {
         initSettings,
         onDidReceiveNotificationResponse: (response) {
           debugPrint('👆 [LocalNotification] 알림 탭: ${response.payload}');
+          if (response.payload != null && response.payload!.isNotEmpty) {
+            try {
+              final dynamic decoded = jsonDecode(response.payload!);
+              if (decoded is Map<String, dynamic>) {
+                handleNotificationNavigation(decoded);
+              }
+            } catch (e) {
+              debugPrint('⚠️ [LocalNotification] payload 파싱 오류: $e');
+            }
+          }
         },
       );
 
@@ -268,7 +282,7 @@ class FcmService {
                   presentSound: true,
                 ),
               ),
-              payload: message.data.toString(),
+              payload: jsonEncode(message.data),
             );
           }
 
@@ -285,7 +299,17 @@ class FcmService {
         // 8. 백그라운드 푸시 탭하여 앱 진입 시 리스너
         FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
           debugPrint('🚀 [FCM] 백그라운드 푸시 탭으로 앱 진입: ${message.data}');
+          handleNotificationNavigation(message.data);
         });
+
+        // 9. 앱 완전 종료(Terminated) 상태에서 푸시 탭으로 진입한 경우 확인
+        final initialMessage = await _messaging.getInitialMessage();
+        if (initialMessage != null) {
+          debugPrint('🚀 [FCM] 종료 상태에서 푸시 탭으로 실행: ${initialMessage.data}');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            handleNotificationNavigation(initialMessage.data);
+          });
+        }
 
         _isInitialized = true;
       } else {
@@ -293,6 +317,75 @@ class FcmService {
       }
     } catch (e) {
       debugPrint('⚠️ [FCM] 초기화 중 예외 발생: $e');
+    }
+  }
+
+  /// 알림 페이로드 데이터 기반 대상 화면 라우팅 처리
+  static void handleNotificationNavigation(Map<String, dynamic> data) {
+    if (data.isEmpty) return;
+
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null) {
+      debugPrint('⚠️ [FCM Routing] rootNavigatorKey context is null');
+      return;
+    }
+
+    try {
+      final category = data['category']?.toString() ?? '';
+      final targetType = data['target_type']?.toString() ?? '';
+      final targetId = data['target_id']?.toString() ?? data['id']?.toString() ?? '';
+      final roomId = data['room_id']?.toString() ?? data['roomId']?.toString() ?? '';
+
+      debugPrint('🧭 [FCM Routing] category=$category, targetType=$targetType, targetId=$targetId, roomId=$roomId');
+
+      // 1. 채팅 알림
+      if (category == 'chat' || targetType == 'chat_room' || targetType == 'chat_message' || roomId.isNotEmpty) {
+        final id = roomId.isNotEmpty ? roomId : targetId;
+        if (id.isNotEmpty) {
+          navContext.push('/chat/$id');
+          return;
+        }
+        navContext.push('/chat');
+        return;
+      }
+
+      // 2. 전자결재 알림
+      if (category == 'approval' || targetType == 'approval_doc' || targetType == 'approval') {
+        if (targetId.isNotEmpty) {
+          navContext.push('/approval/$targetId');
+          return;
+        }
+        navContext.push('/approval');
+        return;
+      }
+
+      // 3. 업무(이슈) 알림
+      if (category == 'issue' || targetType == 'issue' || targetType == 'work_issue') {
+        if (targetId.isNotEmpty) {
+          navContext.push('/work/issues/$targetId');
+          return;
+        }
+        navContext.push('/work/issues');
+        return;
+      }
+
+      // 4. 회의 알림
+      if (category == 'meeting' || targetType == 'meeting') {
+        if (targetId.isNotEmpty) {
+          navContext.push('/work/meetings/$targetId');
+          return;
+        }
+        navContext.push('/work/meetings');
+        return;
+      }
+
+      // 5. 공용문서 알림
+      if (category == 'docs' || targetType == 'doc') {
+        navContext.push('/docs');
+        return;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [FCM Routing] 라우팅 실패: $e');
     }
   }
 
