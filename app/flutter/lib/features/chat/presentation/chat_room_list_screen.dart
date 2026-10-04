@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +25,13 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // 🔍 전역 통합 검색 상태
+  bool _isSearching = false;
+  final _searchController = TextEditingController();
+  List<ChatMessageModel> _searchMessageResults = [];
+  bool _isSearchingMessages = false;
+  Timer? _searchDebounce;
+
   @override
   void initState() {
     super.initState();
@@ -32,8 +40,38 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onSearchQueryChanged(String query) {
+    setState(() {});
+    _searchDebounce?.cancel();
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchMessageResults = [];
+        _isSearchingMessages = false;
+      });
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      setState(() => _isSearchingMessages = true);
+      try {
+        final repo = ref.read(chatRepositoryProvider);
+        final res = await repo.searchMessages(query: query.trim(), page: 1, pageSize: 30);
+        if (mounted) {
+          setState(() {
+            _searchMessageResults = res['results'] as List<ChatMessageModel>;
+            _isSearchingMessages = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isSearchingMessages = false);
+      }
+    });
   }
 
   @override
@@ -44,129 +82,175 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: context.colors.bgSurface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          '실시간 메신저',
-          style: AppTextStyles.titleMd.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person_add_alt_1_rounded, color: context.colors.accentWork, size: 22),
-            tooltip: '새 대화 상대 선택',
-            onPressed: () => UserSelectSheet.show(context),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: context.colors.border, width: 0.8)),
-            ),
-            child: Builder(
-              builder: (context) {
-                final rooms = chatRoomsAsync.valueOrNull ?? [];
-                final channelUnread = rooms
-                    .where((r) => r.roomType == ChatRoomType.channel)
-                    .fold<int>(0, (sum, r) => sum + r.unreadCount);
-                final directUnread = rooms
-                    .where((r) => r.roomType != ChatRoomType.channel)
-                    .fold<int>(0, (sum, r) => sum + r.unreadCount);
+      appBar: _isSearching
+          ? AppBar(
+              backgroundColor: context.colors.bgSurface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_rounded, color: context.colors.textPrimary),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _searchMessageResults = [];
+                    _isSearchingMessages = false;
+                  });
+                },
+              ),
+              title: TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: _onSearchQueryChanged,
+                decoration: InputDecoration(
+                  hintText: '대화방, 참여자, 메시지 검색...',
+                  hintStyle: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+                  border: InputBorder.none,
+                ),
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+              ),
+              actions: [
+                if (_searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: context.colors.textMuted, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchQueryChanged('');
+                    },
+                  ),
+              ],
+            )
+          : AppBar(
+              backgroundColor: context.colors.bgSurface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
+                onPressed: () => context.pop(),
+              ),
+              title: Text(
+                '실시간 메신저',
+                style: AppTextStyles.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.search_rounded, color: context.colors.textPrimary, size: 24),
+                  tooltip: '통합 검색',
+                  onPressed: () => setState(() => _isSearching = true),
+                ),
+                IconButton(
+                  icon: Icon(Icons.person_add_alt_1_rounded, color: context.colors.accentWork, size: 22),
+                  tooltip: '새 대화 상대 선택',
+                  onPressed: () => UserSelectSheet.show(context),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: context.colors.border, width: 0.8)),
+                  ),
+                  child: Builder(
+                    builder: (context) {
+                      final rooms = chatRoomsAsync.valueOrNull ?? [];
+                      final channelUnread = rooms
+                          .where((r) => r.roomType == ChatRoomType.channel)
+                          .fold<int>(0, (sum, r) => sum + r.unreadCount);
+                      final directUnread = rooms
+                          .where((r) => r.roomType != ChatRoomType.channel)
+                          .fold<int>(0, (sum, r) => sum + r.unreadCount);
 
-                return TabBar(
-                  controller: _tabController,
-                  indicatorColor: context.colors.accentWork,
-                  indicatorWeight: 2.5,
-                  labelColor: context.colors.accentWork,
-                  unselectedLabelColor: context.colors.textMuted,
-                  labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.bold),
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('🏢 워크스페이스 채널'),
-                          if (channelUnread > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$channelUnread',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                      return TabBar(
+                        controller: _tabController,
+                        indicatorColor: context.colors.accentWork,
+                        indicatorWeight: 2.5,
+                        labelColor: context.colors.accentWork,
+                        unselectedLabelColor: context.colors.textMuted,
+                        labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.bold),
+                        tabs: [
+                          Tab(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('🏢 워크스페이스 채널'),
+                                if (channelUnread > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '$channelUnread',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('🔒 1:1 다이렉트 (DM)'),
-                          if (directUnread > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$directUnread',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                          ),
+                          Tab(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('🔒 1:1 다이렉트 (DM)'),
+                                if (directUnread > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '$directUnread',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
+                          ),
                         ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => UserSelectSheet.show(context),
-        backgroundColor: context.colors.accentWork,
-        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
-        label: const Text('1:1 대화 시작', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(chatRoomsProvider),
-        child: chatRoomsAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(16),
-            child: LoadingShimmer(itemHeight: 76, itemCount: 5),
-          ),
-          error: (err, _) => ErrorView(
-            message: '대화방 목록을 불러오지 못했습니다.',
-            onRetry: () => ref.invalidate(chatRoomsProvider),
-          ),
-          data: (rooms) {
-            final channelRooms = rooms.where((r) => r.roomType == ChatRoomType.channel).toList();
+      floatingActionButton: _isSearching
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => UserSelectSheet.show(context),
+              backgroundColor: context.colors.accentWork,
+              icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+              label: const Text('1:1 대화 시작', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+      body: _isSearching
+          ? _buildGlobalSearchResults(context, chatRoomsAsync.valueOrNull ?? [], currentUserId)
+          : RefreshIndicator(
+              onRefresh: () async => ref.invalidate(chatRoomsProvider),
+              child: chatRoomsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: LoadingShimmer(itemHeight: 76, itemCount: 5),
+                ),
+                error: (err, _) => ErrorView(
+                  message: '대화방 목록을 불러오지 못했습니다.',
+                  onRetry: () => ref.invalidate(chatRoomsProvider),
+                ),
+                data: (rooms) {
+                  final channelRooms = rooms.where((r) => r.roomType == ChatRoomType.channel).toList();
             final directRooms = rooms.where((r) => r.roomType == ChatRoomType.direct || r.roomType == ChatRoomType.group).toList();
             final selfRoom = rooms.where((r) => r.roomType == ChatRoomType.self).firstOrNull;
 
@@ -665,5 +749,212 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
       return DateFormat('a h:mm', 'ko').format(localTime);
     }
     return DateFormat('M월 d일', 'ko').format(localTime);
+  }
+
+  // 🔍 전역 통합 검색 결과 UI (대화방 매칭 + 메시지 매칭)
+  Widget _buildGlobalSearchResults(
+    BuildContext context,
+    List<ChatRoomModel> allRooms,
+    int currentUserId,
+  ) {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_rounded, size: 48, color: context.colors.textMuted.withAlpha(120)),
+            const SizedBox(height: 12),
+            Text(
+              '대화방, 참여자 또는 대화 내용/파일명을 검색해보세요.',
+              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final queryLower = query.toLowerCase();
+    // 1. 대화방 / 참여자 매칭
+    final matchedRooms = allRooms.where((room) {
+      final name = room.getDisplayName(currentUserId).toLowerCase();
+      final desc = room.description.toLowerCase();
+      final memberMatches = room.members.any((m) =>
+          m.username.toLowerCase().contains(queryLower) ||
+          m.name.toLowerCase().contains(queryLower) ||
+          (m.fullName?.toLowerCase().contains(queryLower) ?? false));
+      return name.contains(queryLower) || desc.contains(queryLower) || memberMatches;
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      children: [
+        // ── 1. 대화방 매칭 결과 ─────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Text(
+                '대화방 / 참여자 (${matchedRooms.length})',
+                style: AppTextStyles.titleSm.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (matchedRooms.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              '일치하는 대화방이 없습니다.',
+              style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+            ),
+          )
+        else
+          ...matchedRooms.map((room) {
+            final displayName = room.getDisplayName(currentUserId);
+            final isChannel = room.roomType == ChatRoomType.channel;
+
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isChannel
+                      ? context.colors.accentWork.withAlpha(25)
+                      : context.colors.accentCorp.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isChannel ? Icons.tag_rounded : Icons.person_rounded,
+                  color: isChannel ? context.colors.accentWork : context.colors.accentCorp,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                displayName,
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                room.lastMessage?.content ?? (room.description.isNotEmpty ? room.description : '대화 기록 있음'),
+                style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () {
+                context.push('/chat/${room.id}', extra: room).then((_) {
+                  ref.invalidate(chatRoomsProvider);
+                  ref.invalidate(totalUnreadChatCountProvider);
+                });
+              },
+            );
+          }),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Divider(height: 1),
+        ),
+
+        // ── 2. 메시지 / 파일 검색 결과 (영구 보존 데이터) ───────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Text(
+                '대화 내용 / 파일 검색 (${_searchMessageResults.length})',
+                style: AppTextStyles.titleSm.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
+              ),
+              if (_isSearchingMessages) ...[
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        if (!_isSearchingMessages && _searchMessageResults.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              '일치하는 메시지가 없습니다.',
+              style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+            ),
+          )
+        else
+          ..._searchMessageResults.map((msg) {
+            final hasFile = msg.fileUrl.isNotEmpty || msg.hasFile;
+            final isImg = msg.isImage;
+
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: hasFile ? Colors.amber.withAlpha(30) : Colors.blue.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  hasFile
+                      ? (isImg ? Icons.image_rounded : Icons.insert_drive_file_rounded)
+                      : Icons.chat_bubble_outline_rounded,
+                  color: hasFile ? Colors.amber.shade800 : Colors.blueAccent,
+                  size: 20,
+                ),
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    msg.senderName,
+                    style: AppTextStyles.bodySm.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatTime(msg.created),
+                    style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                  ),
+                ],
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  msg.content.isNotEmpty
+                      ? msg.content
+                      : (msg.fileName.isNotEmpty ? '📎 파일: ${msg.fileName}' : '메시지'),
+                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              onTap: () {
+                // 해당 대화방으로 이동
+                final room = allRooms.where((r) => r.id == msg.roomId).firstOrNull;
+                context.push('/chat/${msg.roomId}', extra: room).then((_) {
+                  ref.invalidate(chatRoomsProvider);
+                  ref.invalidate(totalUnreadChatCountProvider);
+                });
+              },
+            );
+          }),
+      ],
+    );
   }
 }

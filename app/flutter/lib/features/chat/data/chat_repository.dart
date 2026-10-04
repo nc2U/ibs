@@ -206,4 +206,78 @@ class ChatRepository {
       queryParameters: roomId != null ? {'room': roomId} : null,
     );
   }
+
+  /// 9. 메시지 & 파일 통합/방내 검색
+  Future<Map<String, dynamic>> searchMessages({
+    required String query,
+    int? roomId,
+    String type = 'all',
+    int page = 1,
+    int pageSize = 30,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/chat-message/search/',
+      queryParameters: {
+        'q': query,
+        if (roomId != null) 'room': roomId,
+        'type': type,
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    final data = response.data as Map<String, dynamic>;
+    final results = (data['results'] as List<dynamic>? ?? [])
+        .map((j) => ChatMessageModel.fromJson(j as Map<String, dynamic>))
+        .toList();
+    return {
+      'count': data['count'] as int? ?? 0,
+      'page': data['page'] as int? ?? page,
+      'has_more': data['has_more'] as bool? ?? false,
+      'results': results,
+    };
+  }
+
+  /// 10. 타깃 메시지 전후 맥락(Context) 메시지 조회
+  Future<List<ChatMessageModel>> fetchMessageContext(int messageId, {int limit = 15}) async {
+    final response = await _dio.get(
+      '/api/v1/chat-message/context/',
+      queryParameters: {
+        'message_id': messageId,
+        'limit': limit,
+      },
+    );
+    final data = response.data as Map<String, dynamic>;
+    final results = (data['results'] as List<dynamic>? ?? [])
+        .map((j) => ChatMessageModel.fromJson(j as Map<String, dynamic>))
+        .toList();
+    return results;
+  }
+
+  /// 11. 대화방 영구 보존 파일/미디어/링크 모아보기 서랍
+  Future<Map<String, dynamic>> fetchChatFiles({
+    required int roomId,
+    String tab = 'all',
+    int page = 1,
+    int pageSize = 30,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/chat-message/files/',
+      queryParameters: {
+        'room': roomId,
+        'tab': tab,
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    final data = response.data as Map<String, dynamic>;
+    final results = (data['results'] as List<dynamic>? ?? [])
+        .map((j) => ChatMessageModel.fromJson(j as Map<String, dynamic>))
+        .toList();
+    return {
+      'count': data['count'] as int? ?? 0,
+      'page': data['page'] as int? ?? page,
+      'has_more': data['has_more'] as bool? ?? false,
+      'results': results,
+    };
+  }
 }

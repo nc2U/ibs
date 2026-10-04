@@ -285,4 +285,33 @@ class ChatMessageModel {
       created: DateTime.tryParse(json['created']?.toString() ?? '') ?? DateTime.now(),
     );
   }
+
+  /// 보낸 사람 표시 이름
+  String get senderName =>
+      sender?.name.isNotEmpty == true ? sender!.name : (sender?.username ?? '알 수 없음');
+
+  /// 파일 URL (file 필드 또는 빈 문자열)
+  String get fileUrl => file ?? '';
+
+  /// 파일 첨부 여부
+  bool get hasFile => (file != null && file!.isNotEmpty) || fileName.isNotEmpty;
+
+  /// 이미지 여부
+  bool get isImage =>
+      messageType == ChatMessageType.image ||
+      fileName.toLowerCase().endsWith('.png') ||
+      fileName.toLowerCase().endsWith('.jpg') ||
+      fileName.toLowerCase().endsWith('.jpeg') ||
+      fileName.toLowerCase().endsWith('.gif') ||
+      fileName.toLowerCase().endsWith('.webp');
+
+  /// 미디어 여부
+  bool get isMedia =>
+      isImage ||
+      fileName.toLowerCase().endsWith('.mp4') ||
+      fileName.toLowerCase().endsWith('.mov');
+
+  /// 문서 여부
+  bool get isDocument =>
+      hasFile && !isMedia;
 }

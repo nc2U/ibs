@@ -17,6 +17,7 @@ import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/chat_repository.dart';
 import '../data/models/chat_model.dart';
 import '../providers/chat_provider.dart';
+import 'widgets/chat_files_sheet.dart';
 
 /// 실시간 대화방 화면 (채팅창)
 class ChatRoomScreen extends ConsumerStatefulWidget {
@@ -43,6 +44,14 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   int _lastMessageCount = 0;
   bool _showScrollToBottomBtn = false;
   Timer? _typingTimer;
+
+  // 🔍 인앱 검색 및 하이라이트 상태
+  bool _isSearching = false;
+  final _searchController = TextEditingController();
+  List<int> _matchedMessageIndices = [];
+  int _currentMatchIndex = -1;
+  int? _highlightedMessageId;
+  Timer? _highlightTimer;
 
   @override
   void initState() {
@@ -87,9 +96,85 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     }
   }
 
+  void _onSearchQueryChanged(String query, List<ChatMessageModel> messages) {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _matchedMessageIndices = [];
+        _currentMatchIndex = -1;
+      });
+      return;
+    }
+    final q = query.trim().toLowerCase();
+    final matches = <int>[];
+    for (int i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.isDeleted) continue;
+      final content = m.content.toLowerCase();
+      final fileName = m.fileName.toLowerCase();
+      final refTitle = m.refTitle.toLowerCase();
+      if (content.contains(q) || fileName.contains(q) || refTitle.contains(q)) {
+        matches.add(i);
+      }
+    }
+    setState(() {
+      _matchedMessageIndices = matches;
+      if (matches.isNotEmpty) {
+        _currentMatchIndex = matches.length - 1;
+        _scrollToMessageIndex(matches[_currentMatchIndex], messages);
+      } else {
+        _currentMatchIndex = -1;
+      }
+    });
+  }
+
+  void _navigateMatch(bool next, List<ChatMessageModel> messages) {
+    if (_matchedMessageIndices.isEmpty) return;
+    int newIdx = _currentMatchIndex;
+    if (next) {
+      newIdx = (_currentMatchIndex + 1) % _matchedMessageIndices.length;
+    } else {
+      newIdx = (_currentMatchIndex - 1 + _matchedMessageIndices.length) % _matchedMessageIndices.length;
+    }
+    setState(() {
+      _currentMatchIndex = newIdx;
+    });
+    _scrollToMessageIndex(_matchedMessageIndices[newIdx], messages);
+  }
+
+  void _scrollToMessageIndex(int listIndex, List<ChatMessageModel> messages) {
+    if (!_scrollController.hasClients || listIndex < 0 || listIndex >= messages.length) return;
+    final targetMsg = messages[listIndex];
+    setState(() {
+      _highlightedMessageId = targetMsg.id;
+    });
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _highlightedMessageId = null);
+    });
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final itemExtentEstimate = maxScroll / (messages.isEmpty ? 1 : messages.length);
+    final targetOffset = (listIndex * itemExtentEstimate).clamp(0.0, maxScroll);
+
+    _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _jumpToTargetMessage(int messageId, List<ChatMessageModel> messages) {
+    final idx = messages.indexWhere((m) => m.id == messageId);
+    if (idx != -1) {
+      _scrollToMessageIndex(idx, messages);
+    }
+  }
+
   @override
   void dispose() {
     _typingTimer?.cancel();
+    _highlightTimer?.cancel();
+    _searchController.dispose();
     _textController.removeListener(_onInputTextChanged);
     _scrollController.removeListener(_onScroll);
     _textController.dispose();
@@ -108,77 +193,171 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: context.colors.bgSurface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              roomTitle,
-              style: AppTextStyles.titleSm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: context.colors.textPrimary,
+      appBar: _isSearching
+          ? AppBar(
+              backgroundColor: context.colors.bgSurface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_rounded, color: context.colors.textPrimary, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _matchedMessageIndices = [];
+                    _currentMatchIndex = -1;
+                    _highlightedMessageId = null;
+                  });
+                },
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (widget.initialRoom?.projectName != null)
-              Text(
-                widget.initialRoom!.projectName!,
-                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              title: TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(fontSize: 14, color: context.colors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: '대화 내용 또는 파일명 검색...',
+                  hintStyle: TextStyle(fontSize: 13, color: context.colors.textMuted),
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  final msgs = messagesAsync.valueOrNull ?? [];
+                  _onSearchQueryChanged(val, msgs);
+                },
               ),
-          ],
-        ),
-        actions: [
-          if (widget.initialRoom?.roomType != ChatRoomType.self)
-            IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.people_alt_outlined, color: context.colors.textPrimary, size: 22),
-                  if ((widget.initialRoom?.members.length ?? 0) > 0)
-                    Positioned(
-                      top: -4,
-                      right: -6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
+              actions: [
+                if (_matchedMessageIndices.isNotEmpty) ...[
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        '${_currentMatchIndex + 1}/${_matchedMessageIndices.length}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                           color: context.colors.accentWork,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.initialRoom!.members.length}',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            height: 1.1,
-                          ),
                         ),
                       ),
                     ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.keyboard_arrow_up_rounded, color: context.colors.textPrimary, size: 22),
+                    tooltip: '이전 일치 항목',
+                    onPressed: () {
+                      final msgs = messagesAsync.valueOrNull ?? [];
+                      _navigateMatch(false, msgs);
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textPrimary, size: 22),
+                    tooltip: '다음 일치 항목',
+                    onPressed: () {
+                      final msgs = messagesAsync.valueOrNull ?? [];
+                      _navigateMatch(true, msgs);
+                    },
+                  ),
+                ],
+                if (_searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: Icon(Icons.clear_rounded, color: context.colors.textMuted, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      final msgs = messagesAsync.valueOrNull ?? [];
+                      _onSearchQueryChanged('', msgs);
+                    },
+                  ),
+              ],
+            )
+          : AppBar(
+              backgroundColor: context.colors.bgSurface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
+                onPressed: () => context.pop(),
+              ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    roomTitle,
+                    style: AppTextStyles.titleSm.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.initialRoom?.projectName != null)
+                    Text(
+                      widget.initialRoom!.projectName!,
+                      style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
-              tooltip: '참여자 목록',
-              onPressed: () => _showMembersSheet(widget.initialRoom, currentUserId),
+              actions: [
+                // 🔍 대화 내용 인앱 검색
+                IconButton(
+                  icon: Icon(Icons.search_rounded, color: context.colors.textPrimary, size: 22),
+                  tooltip: '대화 내용 검색',
+                  onPressed: () => setState(() => _isSearching = true),
+                ),
+                // 📂 영구 보존 파일/미디어 서랍 모아보기
+                IconButton(
+                  icon: Icon(Icons.folder_shared_outlined, color: context.colors.accentWork, size: 22),
+                  tooltip: '대화방 보관함 (영구 보존 파일/미디어)',
+                  onPressed: () {
+                    final msgs = messagesAsync.valueOrNull ?? [];
+                    ChatFilesSheet.show(
+                      context,
+                      roomId: widget.roomId,
+                      roomTitle: roomTitle,
+                      onJumpToMessage: (id) => _jumpToTargetMessage(id, msgs),
+                    );
+                  },
+                ),
+                if (widget.initialRoom?.roomType != ChatRoomType.self)
+                  IconButton(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(Icons.people_alt_outlined, color: context.colors.textPrimary, size: 22),
+                        if ((widget.initialRoom?.members.length ?? 0) > 0)
+                          Positioned(
+                            top: -4,
+                            right: -6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: context.colors.accentWork,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${widget.initialRoom!.members.length}',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    tooltip: '참여자 목록',
+                    onPressed: () => _showMembersSheet(widget.initialRoom, currentUserId),
+                  ),
+                if (widget.initialRoom?.roomType == ChatRoomType.direct || widget.initialRoom?.roomType == ChatRoomType.group)
+                  IconButton(
+                    icon: Icon(Icons.exit_to_app_rounded, color: context.colors.textMuted, size: 22),
+                    tooltip: '대화방 나가기',
+                    onPressed: () => _showLeaveRoomDialog(context, roomTitle),
+                  ),
+                const SizedBox(width: 4),
+              ],
             ),
-          if (widget.initialRoom?.roomType == ChatRoomType.direct || widget.initialRoom?.roomType == ChatRoomType.group)
-            IconButton(
-              icon: Icon(Icons.exit_to_app_rounded, color: context.colors.textMuted, size: 22),
-              tooltip: '대화방 나가기',
-              onPressed: () => _showLeaveRoomDialog(context, roomTitle),
-            ),
-          const SizedBox(width: 4),
-        ],
-      ),
       body: Stack(
         children: [
           Column(
@@ -1029,22 +1208,31 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                         bottomLeft: Radius.circular(isMe ? 14 : 2),
                         bottomRight: Radius.circular(isMe ? 2 : 14),
                       ),
-                      border: msg.isDeleted
-                          ? Border.all(
-                              color: context.isDarkMode ? Colors.white12 : Colors.black12,
-                              width: 0.8,
-                            )
-                          : (isMe
-                              ? (context.isDarkMode
-                                  ? Border.all(color: const Color(0xFF3D4F72), width: 0.8)
-                                  : Border.all(color: const Color(0xFFC7DEFA), width: 0.8))
-                              : Border.all(color: context.colors.border, width: 0.8)),
+                      border: _highlightedMessageId == msg.id
+                          ? Border.all(color: Colors.amber, width: 2)
+                          : (msg.isDeleted
+                              ? Border.all(
+                                  color: context.isDarkMode ? Colors.white12 : Colors.black12,
+                                  width: 0.8,
+                                )
+                              : (isMe
+                                  ? (context.isDarkMode
+                                      ? Border.all(color: const Color(0xFF3D4F72), width: 0.8)
+                                      : Border.all(color: const Color(0xFFC7DEFA), width: 0.8))
+                                  : Border.all(color: context.colors.border, width: 0.8))),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isMe ? 6 : 8),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1),
-                        ),
+                        if (_highlightedMessageId == msg.id)
+                          BoxShadow(
+                            color: Colors.amber.withAlpha(140),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          )
+                        else
+                          BoxShadow(
+                            color: Colors.black.withAlpha(isMe ? 6 : 8),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
                       ],
                     ),
                     child: Column(

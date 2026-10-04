@@ -631,4 +631,215 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         except Exception:
             pass
 
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """
+        메신저 통합/방내 메시지 및 파일 검색
+        - ?q=검색어 (필수)
+        - ?room=방ID (선택, 없으면 전체 방 대상)
+        - ?type=all|text|file|image (선택, 기본 all)
+        - ?page=1 & page_size=30
+        """
+        user = request.user
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response({'results': [], 'count': 0, 'has_more': False})
+
+        room_id = request.query_params.get('room')
+        msg_type = request.query_params.get('type', 'all')
+        try:
+            page = max(1, int(request.query_params.get('page', 1)))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            page_size = min(100, max(1, int(request.query_params.get('page_size', 30))))
+        except (ValueError, TypeError):
+            page_size = 30
+
+        # 접근 가능한 대화방 필터링
+        if user.is_superuser:
+            allowed_rooms = ChatRoom.objects.all()
+        else:
+            my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+            allowed_rooms = ChatRoom.objects.filter(
+                Q(members=user) |
+                Q(room_type='channel', project_id__in=my_project_ids)
+            ).distinct()
+
+        if room_id:
+            allowed_rooms = allowed_rooms.filter(pk=room_id)
+
+        qs = ChatMessage.objects.filter(
+            room__in=allowed_rooms,
+            is_deleted=False,
+        )
+
+        # 타입 필터
+        if msg_type == 'file':
+            qs = qs.filter(message_type='file')
+        elif msg_type == 'image':
+            qs = qs.filter(message_type='image')
+        elif msg_type == 'text':
+            qs = qs.filter(message_type='text')
+
+        # 검색어 매칭 (메시지 내용, 원본 파일명, 리치 링크 제목)
+        qs = qs.filter(
+            Q(content__icontains=query) |
+            Q(file_name__icontains=query) |
+            Q(ref_title__icontains=query)
+        ).select_related(
+            'sender', 'sender__profile', 'room',
+            'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+        ).order_by('-created')
+
+        total_count = qs.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        paged_msgs = qs[start:end]
+        has_more = total_count > end
+
+        serializer = self.get_serializer(paged_msgs, many=True)
+        return Response({
+            'count': total_count,
+            'page': page,
+            'has_more': has_more,
+            'results': serializer.data,
+        })
+
+    @action(detail=False, methods=['get'])
+    def context(self, request):
+        """
+        특정 타깃 메시지 전후 맥락(Context) 메시지 조회
+        - ?message_id=N (필수)
+        - ?limit=15 (앞뒤 각각 N개씩 조회)
+        """
+        user = request.user
+        msg_id = request.query_params.get('message_id')
+        if not msg_id:
+            return Response({'error': 'message_id is required'}, status=400)
+
+        target_msg = ChatMessage.objects.filter(pk=msg_id).select_related('room').first()
+        if not target_msg:
+            return Response({'error': 'Message not found'}, status=404)
+
+        room = target_msg.room
+        # 방 접근 권한 체크
+        if not user.is_superuser:
+            if room.room_type == 'channel':
+                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+                if room.project_id not in my_project_ids:
+                    return Response({'error': 'Permission denied'}, status=403)
+            else:
+                if not room.members.filter(pk=user.pk).exists():
+                    return Response({'error': 'Permission denied'}, status=403)
+
+        try:
+            limit = min(50, max(5, int(request.query_params.get('limit', 15))))
+        except (ValueError, TypeError):
+            limit = 15
+
+        # 이전 메시지 (target_msg 미포함, id < target_msg.id)
+        before_qs = ChatMessage.objects.filter(
+            room=room,
+            id__lt=target_msg.id,
+        ).select_related(
+            'sender', 'sender__profile', 'room',
+            'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+        ).order_by('-id')[:limit]
+
+        # 이후 메시지 (target_msg 미포함, id > target_msg.id)
+        after_qs = ChatMessage.objects.filter(
+            room=room,
+            id__gt=target_msg.id,
+        ).select_related(
+            'sender', 'sender__profile', 'room',
+            'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+        ).order_by('id')[:limit]
+
+        # 시간순으로 합치기
+        all_msgs = list(reversed(before_qs)) + [target_msg] + list(after_qs)
+        serializer = self.get_serializer(all_msgs, many=True)
+        return Response({
+            'room_id': room.id,
+            'target_message_id': target_msg.id,
+            'results': serializer.data,
+        })
+
+    @action(detail=False, methods=['get'])
+    def files(self, request):
+        """
+        대화방 영구 보존 파일/미디어/링크 모아보기 서랍
+        - ?room=방ID (필수)
+        - ?tab=media|doc|link|all (기본 all)
+        - ?page=1 & page_size=30
+        """
+        user = request.user
+        room_id = request.query_params.get('room')
+        if not room_id:
+            return Response({'error': 'room is required'}, status=400)
+
+        room = ChatRoom.objects.filter(pk=room_id).first()
+        if not room:
+            return Response({'error': 'Room not found'}, status=404)
+
+        if not user.is_superuser:
+            if room.room_type == 'channel':
+                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+                if room.project_id not in my_project_ids:
+                    return Response({'error': 'Permission denied'}, status=403)
+            else:
+                if not room.members.filter(pk=user.pk).exists():
+                    return Response({'error': 'Permission denied'}, status=403)
+
+        tab = request.query_params.get('tab', 'all')
+        try:
+            page = max(1, int(request.query_params.get('page', 1)))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            page_size = min(100, max(1, int(request.query_params.get('page_size', 30))))
+        except (ValueError, TypeError):
+            page_size = 30
+
+        qs = ChatMessage.objects.filter(
+            room=room,
+            is_deleted=False,
+        )
+
+        if tab == 'media':
+            # 사진 / 이미지
+            qs = qs.filter(message_type='image')
+        elif tab == 'doc':
+            # 문서/도면 파일
+            qs = qs.filter(message_type='file')
+        elif tab == 'link':
+            # IBS 리치 링크 (Issue, Meeting, Approval) 또는 URL 포함 메시지
+            qs = qs.filter(
+                Q(message_type__in=['issue', 'meeting', 'approval']) |
+                Q(content__icontains='http://') |
+                Q(content__icontains='https://')
+            )
+        else:
+            # 전체 첨부
+            qs = qs.filter(
+                Q(message_type__in=['image', 'file', 'issue', 'meeting', 'approval']) |
+                Q(content__icontains='http://') |
+                Q(content__icontains='https://')
+            )
+
+        qs = qs.select_related('sender', 'sender__profile', 'room').order_by('-created')
+        total_count = qs.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        paged_msgs = qs[start:end]
+        has_more = total_count > end
+
+        serializer = self.get_serializer(paged_msgs, many=True)
+        return Response({
+            'count': total_count,
+            'page': page,
+            'has_more': has_more,
+            'results': serializer.data,
+        })
+
 
