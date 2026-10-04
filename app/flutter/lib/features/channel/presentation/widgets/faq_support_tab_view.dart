@@ -25,11 +25,52 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
   final _contentController = TextEditingController();
   bool _isSubmitting = false;
 
+  final ScrollController _categoryScrollController = ScrollController();
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryScrollController.addListener(_updateScrollIndicators);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollIndicators());
+  }
+
   @override
   void dispose() {
+    _categoryScrollController.removeListener(_updateScrollIndicators);
+    _categoryScrollController.dispose();
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  void _updateScrollIndicators() {
+    if (!_categoryScrollController.hasClients) return;
+    final maxScroll = _categoryScrollController.position.maxScrollExtent;
+    final currentScroll = _categoryScrollController.offset;
+    final canLeft = currentScroll > 4;
+    final canRight = currentScroll < maxScroll - 4 && maxScroll > 0;
+
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      if (mounted) {
+        setState(() {
+          _canScrollLeft = canLeft;
+          _canScrollRight = canRight;
+        });
+      }
+    }
+  }
+
+  void _scrollTo(bool right) {
+    if (!_categoryScrollController.hasClients) return;
+    final current = _categoryScrollController.offset;
+    final target = right ? current + 130.0 : current - 130.0;
+    _categoryScrollController.animateTo(
+      target.clamp(0.0, _categoryScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _submitTechSupport() async {
@@ -118,10 +159,9 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             SliverToBoxAdapter(
               child: Container(
                 color: context.colors.bgCard,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: categoriesAsync.when(
                   loading: () => const SizedBox(
-                    height: 38,
+                    height: 52,
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   error: (_, __) => _buildStaticCategoryBar(),
@@ -133,40 +173,58 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                       {'id': -1, 'name': '🛠️ 기술지원'},
                     ];
 
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: chipList.map((chip) {
-                          final chipId = chip['id'] as int;
-                          final chipName = chip['name'] as String;
-                          final isSelected = _selectedCategoryId == chipId;
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollIndicators());
 
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(chipName),
-                              selected: isSelected,
-                              onSelected: (_) => setState(() => _selectedCategoryId = chipId),
-                              selectedColor: context.colors.accentTech,
-                              backgroundColor: context.colors.bgSurface,
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : context.colors.textSecond,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 13,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                                side: BorderSide(
-                                  color: isSelected ? context.colors.accentTech : context.colors.border,
-                                  width: 0.8,
-                                ),
-                              ),
-                              showCheckmark: false,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    return Stack(
+                      children: [
+                        NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            _updateScrollIndicators();
+                            return false;
+                          },
+                          child: SingleChildScrollView(
+                            controller: _categoryScrollController,
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            child: Row(
+                              children: chipList.map((chip) {
+                                final chipId = chip['id'] as int;
+                                final chipName = chip['name'] as String;
+                                final isSelected = _selectedCategoryId == chipId;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ChoiceChip(
+                                    label: Text(chipName),
+                                    selected: isSelected,
+                                    onSelected: (_) => setState(() => _selectedCategoryId = chipId),
+                                    selectedColor: context.colors.accentTech,
+                                    backgroundColor: context.colors.bgSurface,
+                                    labelStyle: TextStyle(
+                                      color: isSelected ? Colors.white : context.colors.textSecond,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      fontSize: 13,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      side: BorderSide(
+                                        color: isSelected ? context.colors.accentTech : context.colors.border,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    showCheckmark: false,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                          );
-                        }).toList(),
-                      ),
+                          ),
+                        ),
+                        if (_canScrollLeft)
+                          _buildScrollHintButton(isRight: false),
+                        if (_canScrollRight)
+                          _buildScrollHintButton(isRight: true),
+                      ],
                     );
                   },
                 ),
@@ -551,7 +609,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: context.colors.accentTech),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => setState(() => _selectedCategoryId = -1),
             child: Text(
@@ -564,6 +622,73 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 탭 바 좌우 스크롤 힌트 및 이동 버튼 위젯
+  Widget _buildScrollHintButton({required bool isRight}) {
+    final bgColor = context.colors.bgCard;
+    final primaryColor = context.colors.accentTech;
+
+    return Positioned(
+      left: isRight ? null : 0,
+      right: isRight ? 0 : null,
+      top: 0,
+      bottom: 0,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _scrollTo(isRight),
+        child: Container(
+          width: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: isRight ? Alignment.centerRight : Alignment.centerLeft,
+              end: isRight ? Alignment.centerLeft : Alignment.centerRight,
+              colors: [
+                bgColor,
+                bgColor.withAlpha(220),
+                bgColor.withAlpha(0),
+              ],
+              stops: const [0.0, 0.45, 1.0],
+            ),
+          ),
+          child: Align(
+            alignment: isRight ? Alignment.centerRight : Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: isRight ? 6 : 0,
+                left: isRight ? 0 : 6,
+              ),
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: primaryColor.withAlpha(140),
+                    width: 0.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isRight
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded,
+                  size: 16,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

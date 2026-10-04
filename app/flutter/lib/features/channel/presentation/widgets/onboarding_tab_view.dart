@@ -14,6 +14,51 @@ class OnboardingTabView extends ConsumerStatefulWidget {
 class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
   int _selectedFilter = 0;
   final _filters = ['전체 가이드', '신규입사 안내', '시스템 사용법', '업무 프로세스'];
+  final ScrollController _filterScrollController = ScrollController();
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _filterScrollController.addListener(_updateScrollIndicators);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollIndicators());
+  }
+
+  @override
+  void dispose() {
+    _filterScrollController.removeListener(_updateScrollIndicators);
+    _filterScrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateScrollIndicators() {
+    if (!_filterScrollController.hasClients) return;
+    final maxScroll = _filterScrollController.position.maxScrollExtent;
+    final currentScroll = _filterScrollController.offset;
+    final canLeft = currentScroll > 4;
+    final canRight = currentScroll < maxScroll - 4 && maxScroll > 0;
+
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      if (mounted) {
+        setState(() {
+          _canScrollLeft = canLeft;
+          _canScrollRight = canRight;
+        });
+      }
+    }
+  }
+
+  void _scrollTo(bool right) {
+    if (!_filterScrollController.hasClients) return;
+    final current = _filterScrollController.offset;
+    final target = right ? current + 130.0 : current - 130.0;
+    _filterScrollController.animateTo(
+      target.clamp(0.0, _filterScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,45 +70,60 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
           SliverToBoxAdapter(
             child: Container(
               color: context.colors.bgCard,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(_filters.length, (idx) {
-                    final isSelected = _selectedFilter == idx;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(_filters[idx]),
-                        selected: isSelected,
-                        onSelected: (_) => setState(() => _selectedFilter = idx),
-                        selectedColor: context.colors.accentProject,
-                        backgroundColor: context.colors.bgSurface,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : context.colors.textSecond,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 13,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                          side: BorderSide(
-                            color: isSelected
-                                ? context.colors.accentProject
-                                : context.colors.border,
-                            width: 0.8,
-                          ),
-                        ),
-                        showCheckmark: false,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+              child: Stack(
+                children: [
+                  NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      _updateScrollIndicators();
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      controller: _filterScrollController,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: List.generate(_filters.length, (idx) {
+                          final isSelected = _selectedFilter == idx;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(_filters[idx]),
+                              selected: isSelected,
+                              onSelected: (_) => setState(() => _selectedFilter = idx),
+                              selectedColor: context.colors.accentProject,
+                              backgroundColor: context.colors.bgSurface,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : context.colors.textSecond,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 13,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? context.colors.accentProject
+                                      : context.colors.border,
+                                  width: 0.8,
+                                ),
+                              ),
+                              showCheckmark: false,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                            ),
+                          );
+                        }),
                       ),
-                    );
-                  }),
-                ),
+                    ),
+                  ),
+                  if (_canScrollLeft)
+                    _buildScrollHintButton(isRight: false),
+                  if (_canScrollRight)
+                    _buildScrollHintButton(isRight: true),
+                ],
               ),
             ),
           ),
@@ -386,6 +446,73 @@ class _OnboardingTabViewState extends ConsumerState<OnboardingTabView> {
               onTap: () {},
             )),
       ],
+    );
+  }
+
+  /// 탭 바 좌우 스크롤 힌트 및 이동 버튼 위젯
+  Widget _buildScrollHintButton({required bool isRight}) {
+    final bgColor = context.colors.bgCard;
+    final primaryColor = context.colors.accentProject;
+
+    return Positioned(
+      left: isRight ? null : 0,
+      right: isRight ? 0 : null,
+      top: 0,
+      bottom: 0,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _scrollTo(isRight),
+        child: Container(
+          width: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: isRight ? Alignment.centerRight : Alignment.centerLeft,
+              end: isRight ? Alignment.centerLeft : Alignment.centerRight,
+              colors: [
+                bgColor,
+                bgColor.withAlpha(220),
+                bgColor.withAlpha(0),
+              ],
+              stops: const [0.0, 0.45, 1.0],
+            ),
+          ),
+          child: Align(
+            alignment: isRight ? Alignment.centerRight : Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: isRight ? 6 : 0,
+                left: isRight ? 0 : 6,
+              ),
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: primaryColor.withAlpha(140),
+                    width: 0.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isRight
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded,
+                  size: 16,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
