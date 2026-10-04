@@ -26,3 +26,28 @@ final searchResultsProvider = FutureProvider<UnifiedSearchResponse?>((ref) async
         slug: scope == 'project' ? selectedProj?.slug : null,
       );
 });
+
+/// 최근 검색어 목록 Notifier (최대 10개 유지)
+class RecentSearchesNotifier extends StateNotifier<List<String>> {
+  RecentSearchesNotifier() : super(const []);
+
+  void addSearch(String query) {
+    final trimmed = query.trim();
+    if (trimmed.length < 2) return;
+    final updated = [trimmed, ...state.where((q) => q != trimmed)].take(10).toList();
+    state = updated;
+  }
+
+  void removeSearch(String query) {
+    state = state.where((q) => q != query).toList();
+  }
+
+  void clearAll() {
+    state = const [];
+  }
+}
+
+final recentSearchesProvider =
+    StateNotifierProvider<RecentSearchesNotifier, List<String>>((ref) {
+  return RecentSearchesNotifier();
+});
