@@ -375,22 +375,30 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
       if (widget.payload.files.isNotEmpty) {
         for (int i = 0; i < widget.payload.files.length; i++) {
           final pFile = widget.payload.files[i];
-          if (pFile.path == null) continue;
-          final file = File(pFile.path!);
-          if (!file.existsSync()) continue;
-
           final ext = pFile.name.split('.').last.toLowerCase();
           final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext);
-
           // 첫 파일에 코멘트 실어서 전송
           final content = (i == 0 && comment.isNotEmpty) ? comment : null;
 
-          await repo.sendFileMessage(
-            roomId: targetRoom.id,
-            file: file,
-            messageType: isImage ? 'image' : 'file',
-            content: content,
-          );
+          if (pFile.bytes != null) {
+            await repo.sendFileBytesMessage(
+              roomId: targetRoom.id,
+              fileBytes: pFile.bytes!,
+              fileName: pFile.name,
+              messageType: isImage ? 'image' : 'file',
+              content: content,
+              fileSize: pFile.size,
+            );
+          } else if (pFile.path != null) {
+            final file = File(pFile.path!);
+            if (!file.existsSync()) continue;
+            await repo.sendFileMessage(
+              roomId: targetRoom.id,
+              file: file,
+              messageType: isImage ? 'image' : 'file',
+              content: content,
+            );
+          }
         }
       }
 

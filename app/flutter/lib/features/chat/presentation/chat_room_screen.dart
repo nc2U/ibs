@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -38,13 +38,18 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   final _scrollController = ScrollController();
   final _picker = ImagePicker();
 
-  // 답장 대상 메시지 상태
   ChatMessageModel? _replyTarget;
   bool _isUploading = false;
+  int _lastMessageCount = 0;
+  bool _showScrollToBottomBtn = false;
+  Timer? _typingTimer;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+    _textController.addListener(_onInputTextChanged);
+
     // 대화방 진입 즉시 최신 메시지 동기화 & 읽음 처리 & 전역 배지 갱신
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatRoomNotifierProvider(widget.roomId).notifier).refreshMessages();
@@ -57,8 +62,36 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     });
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final isNearBottom = currentScroll >= maxScroll - 150;
+    if (_showScrollToBottomBtn == isNearBottom) {
+      setState(() => _showScrollToBottomBtn = !isNearBottom);
+    }
+  }
+
+  void _onInputTextChanged() {
+    final text = _textController.text;
+    final notifier = ref.read(chatRoomNotifierProvider(widget.roomId).notifier);
+    if (text.isNotEmpty) {
+      notifier.sendTyping(true);
+      _typingTimer?.cancel();
+      _typingTimer = Timer(const Duration(seconds: 2), () {
+        notifier.sendTyping(false);
+      });
+    } else {
+      _typingTimer?.cancel();
+      notifier.sendTyping(false);
+    }
+  }
+
   @override
   void dispose() {
+    _typingTimer?.cancel();
+    _textController.removeListener(_onInputTextChanged);
+    _scrollController.removeListener(_onScroll);
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -146,21 +179,29 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // ── 1. 메시지 목록 ─────────────────────────────────────────
-          Expanded(
-            child: messagesAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: LoadingShimmer(itemHeight: 60, itemCount: 6),
-              ),
-              error: (err, _) => ErrorView(
-                message: '메시지를 불러오지 못했습니다.',
-                onRetry: () => ref.invalidate(chatRoomNotifierProvider(widget.roomId)),
-              ),
-              data: (messages) {
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          Column(
+            children: [
+              // ── 1. 메시지 목록 ─────────────────────────────────────────
+              Expanded(
+                child: messagesAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: LoadingShimmer(itemHeight: 60, itemCount: 6),
+                  ),
+                  error: (err, _) => ErrorView(
+                    message: '메시지를 불러오지 못했습니다.',
+                    onRetry: () => ref.invalidate(chatRoomNotifierProvider(widget.roomId)),
+                  ),
+                  data: (messages) {
+                    if (messages.length != _lastMessageCount) {
+                      final isNew = messages.length > _lastMessageCount;
+                      _lastMessageCount = messages.length;
+                      if (isNew) {
+                        _scrollToBottom(force: false);
+                      }
+                    }
 
                 if (messages.isEmpty) {
                   if (widget.initialRoom?.roomType == ChatRoomType.self) {
@@ -240,25 +281,50 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
             ),
           ),
 
-          // ── 2. 업로드 인디케이터 ─────────────────────────────────────
-          if (_isUploading)
-            LinearProgressIndicator(color: context.colors.accentWork, minHeight: 2),
+              // ── 2. 상대방 타이핑 인디케이터 ─────────────────────────
+              _buildTypingIndicator(context),
 
-          // ── 3. 답장 대상 프리뷰 바 ──────────────────────────────────
-          if (_replyTarget != null) _buildReplyTargetBar(context),
+              // ── 3. 업로드 인디케이터 ─────────────────────────────────
+              if (_isUploading)
+                LinearProgressIndicator(color: context.colors.accentWork, minHeight: 2),
 
-          // ── 4. 메시지 입력창 ────────────────────────────────────────
-          _buildInputBar(context),
+              // ── 4. 답장 대상 프리뷰 바 ──────────────────────────────
+              if (_replyTarget != null) _buildReplyTargetBar(context),
+
+              // ── 5. 메시지 입력창 ────────────────────────────────────
+              _buildInputBar(context),
+            ],
+          ),
+
+          // ── 6. 하단 이동 플로팅 버튼 ───────────────────────────────
+          if (_showScrollToBottomBtn)
+            Positioned(
+              bottom: 80,
+              right: 16,
+              child: FloatingActionButton.small(
+                backgroundColor: context.colors.bgSurface,
+                foregroundColor: context.colors.textPrimary,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                elevation: 3,
+                onPressed: () => _scrollToBottom(force: true),
+                child: const Icon(Icons.arrow_downward_rounded, size: 18),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool force = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final isNearBottom = currentScroll >= maxScroll - 150;
+
+      if (force || isNearBottom) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          maxScroll,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
@@ -270,6 +336,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
+    _typingTimer?.cancel();
+    ref.read(chatRoomNotifierProvider(widget.roomId).notifier).sendTyping(false);
+
     ref.read(chatRoomNotifierProvider(widget.roomId).notifier).sendMessage(
       content: text,
       type: ChatMessageType.text,
@@ -278,32 +347,33 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
     _textController.clear();
     setState(() => _replyTarget = null);
-    _scrollToBottom();
+    _scrollToBottom(force: true);
   }
 
-  // 📷 카메라 / 갤러리 사진 전송
+  // 📷 카메라 / 갤러리 사진 전송 (Web & 모바일 100% 호환)
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picked = await _picker.pickImage(source: source, imageQuality: 85);
       if (picked == null) return;
 
       setState(() => _isUploading = true);
-      final file = File(picked.path);
 
       await ref.read(chatRoomNotifierProvider(widget.roomId).notifier).sendFile(
-        file: file,
+        file: picked,
         messageType: 'image',
         replyToId: _replyTarget?.id,
       );
 
-      setState(() {
-        _replyTarget = null;
-        _isUploading = false;
-      });
-      _scrollToBottom();
-    } catch (e) {
-      setState(() => _isUploading = false);
       if (mounted) {
+        setState(() {
+          _replyTarget = null;
+          _isUploading = false;
+        });
+        _scrollToBottom(force: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('사진 전송 실패: $e'), backgroundColor: Colors.redAccent),
         );
@@ -311,34 +381,74 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     }
   }
 
-  // 📎 일반 문서 / 도면 / PDF 파일 전송
+  // 📎 일반 문서 / 도면 / PDF 파일 전송 (Web & 모바일 100% 호환)
   Future<void> _pickDocument() async {
     try {
-      final result = await FilePicker.platform.pickFiles();
-      if (result == null || result.files.single.path == null) return;
+      final result = await FilePicker.platform.pickFiles(withData: true);
+      if (result == null || result.files.isEmpty) return;
+
+      final pickedFile = result.files.single;
+      XFile xFile;
+      if (pickedFile.bytes != null) {
+        xFile = XFile.fromData(pickedFile.bytes!, name: pickedFile.name);
+      } else if (pickedFile.path != null) {
+        xFile = XFile(pickedFile.path!);
+      } else {
+        return;
+      }
 
       setState(() => _isUploading = true);
-      final file = File(result.files.single.path!);
 
       await ref.read(chatRoomNotifierProvider(widget.roomId).notifier).sendFile(
-        file: file,
+        file: xFile,
         messageType: 'file',
         replyToId: _replyTarget?.id,
       );
 
-      setState(() {
-        _replyTarget = null;
-        _isUploading = false;
-      });
-      _scrollToBottom();
-    } catch (e) {
-      setState(() => _isUploading = false);
       if (mounted) {
+        setState(() {
+          _replyTarget = null;
+          _isUploading = false;
+        });
+        _scrollToBottom(force: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('파일 전송 실패: $e'), backgroundColor: Colors.redAccent),
         );
       }
     }
+  }
+
+  Widget _buildTypingIndicator(BuildContext context) {
+    final typingUser = ref.watch(chatTypingUserProvider(widget.roomId));
+    if (typingUser == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: context.colors.bgSurface,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$typingUser님이 입력 중입니다...',
+            style: AppTextStyles.caption.copyWith(
+              color: context.colors.textMuted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ➕ 하단 첨부 메뉴 바텀시트

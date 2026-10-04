@@ -77,8 +77,8 @@ class ChatRoomModel {
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       createdBy: json['created_by'] as int?,
-      created: DateTime.parse(json['created'] as String),
-      updated: DateTime.parse(json['updated'] as String),
+      created: DateTime.tryParse(json['created']?.toString() ?? '') ?? DateTime.now(),
+      updated: DateTime.tryParse(json['updated']?.toString() ?? '') ?? DateTime.now(),
       memberCount: json['member_count'] as int? ?? 0,
       members: (json['members'] as List<dynamic>?)
               ?.map((m) => SimpleUserModel.fromJson(m as Map<String, dynamic>))
@@ -137,7 +137,7 @@ class ChatLastMessage {
       senderName: json['sender_name'] as String? ?? '',
       messageType: json['message_type'] as String? ?? 'text',
       content: json['content'] as String? ?? '',
-      created: DateTime.parse(json['created'] as String),
+      created: DateTime.tryParse(json['created']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -282,7 +282,7 @@ class ChatMessageModel {
           : null,
       isDeleted: json['is_deleted'] as bool? ?? false,
       unreadCount: json['unread_count'] as int? ?? 0,
-      created: DateTime.parse(json['created'] as String),
+      created: DateTime.tryParse(json['created']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }

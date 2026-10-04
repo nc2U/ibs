@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/providers/dio_provider.dart';
 import 'models/chat_model.dart';
 
@@ -83,37 +83,114 @@ class ChatRepository {
     }
   }
 
-  /// 6. 사진/파일 첨부 전송 (REST API 멀티파트)
-  Future<ChatMessageModel> sendFileMessage({
+  /// 6. 사진/파일 바이트 첨부 전송 (REST API 멀티파트 - Web 및 모바일 100% 호환)
+  Future<ChatMessageModel> sendFileBytesMessage({
     required int roomId,
-    required File file,
+    required List<int> fileBytes,
+    required String fileName,
     required String messageType,
     String? content,
+    int? fileSize,
   }) async {
-    final fileName = file.path.split('/').last;
+    final size = fileSize ?? fileBytes.length;
     final formData = FormData.fromMap({
       'room': roomId,
       'message_type': messageType,
       'content': content ?? '',
-      'file': await MultipartFile.fromFile(file.path, filename: fileName),
+      'file': MultipartFile.fromBytes(fileBytes, filename: fileName),
       'file_name': fileName,
-      'file_size': await file.length(),
+      'file_size': size,
     });
 
     final response = await _dio.post('/api/v1/chat-message/', data: formData);
     return ChatMessageModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// 6-1. 텍스트/링크 메시지 전송 (REST API 백업)
+  /// 6-1. XFile 기반 사진/문서 첨부 전송 헬퍼
+  Future<ChatMessageModel> sendXFileMessage({
+    required int roomId,
+    required XFile file,
+    required String messageType,
+    String? content,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final length = await file.length();
+    return sendFileBytesMessage(
+      roomId: roomId,
+      fileBytes: bytes,
+      fileName: file.name,
+      messageType: messageType,
+      content: content,
+      fileSize: length,
+    );
+  }
+
+  /// 6-3. 기존 호환용 다목적 파일 전송 (File, XFile 등 지원)
+  Future<ChatMessageModel> sendFileMessage({
+    required int roomId,
+    required dynamic file,
+    required String messageType,
+    String? content,
+  }) async {
+    if (file is XFile) {
+      return sendXFileMessage(
+        roomId: roomId,
+        file: file,
+        messageType: messageType,
+        content: content,
+      );
+    }
+    // dart:io File 또는 duck-typed 파일 객체
+    final bytes = await (file.readAsBytes() as Future<List<int>>);
+    String fileName = 'file';
+    try {
+      fileName = file.name as String;
+    } catch (_) {
+      try {
+        fileName = (file.path as String).split(RegExp(r'[/\\]')).last;
+      } catch (_) {}
+    }
+    int? size;
+    try {
+      size = await (file.length() as Future<int>);
+    } catch (_) {
+      size = bytes.length;
+    }
+
+    return sendFileBytesMessage(
+      roomId: roomId,
+      fileBytes: bytes,
+      fileName: fileName,
+      messageType: messageType,
+      content: content,
+      fileSize: size,
+    );
+  }
+
+  /// 6-2. 텍스트/링크 메시지 전송 (REST API 백업)
   Future<ChatMessageModel> sendTextMessage({
     required int roomId,
     required String content,
+    String messageType = 'text',
+    int? refId,
+    String? refTitle,
+    String? refSub,
+    int? replyToId,
   }) async {
-    final response = await _dio.post('/api/v1/chat-message/', data: {
+    final data = <String, dynamic>{
       'room': roomId,
-      'message_type': 'text',
+      'message_type': messageType,
       'content': content,
-    });
+    };
+    if (refId != null) data['ref_id'] = refId;
+    if (refTitle != null && refTitle.isNotEmpty) data['ref_title'] = refTitle;
+    if (refSub != null && refSub.isNotEmpty) data['ref_sub'] = refSub;
+    if (replyToId != null) {
+      data['reply_to'] = replyToId;
+      data['reply_to_id'] = replyToId;
+    }
+
+    final response = await _dio.post('/api/v1/chat-message/', data: data);
     return ChatMessageModel.fromJson(response.data as Map<String, dynamic>);
   }
 
