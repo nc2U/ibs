@@ -55,7 +55,19 @@ class FcmService {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
   static const _pushEnabledKey = 'PUSH_NOTIFICATION_ENABLED';
+  static const _pushPromptShownKey = 'PUSH_NOTIFICATION_PROMPT_SHOWN';
   static bool _isInitialized = false;
+
+  /// 최초 푸시 권한 모달 안내를 표시했는지 여부
+  static Future<bool> hasPromptedPushPermission() async {
+    final value = await _storage.read(key: _pushPromptShownKey);
+    return value == 'true';
+  }
+
+  /// 최초 푸시 권한 모달 안내 완료 기록
+  static Future<void> markPushPromptShown() async {
+    await _storage.write(key: _pushPromptShownKey, value: 'true');
+  }
 
   /// OS 기기 설정 화면으로 바로 이동 (알림 권한 거부 상태 시 사용)
   static Future<void> openNotificationSettings() async {

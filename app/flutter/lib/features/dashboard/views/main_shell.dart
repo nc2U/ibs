@@ -17,6 +17,7 @@ import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../approval/providers/approval_providers.dart';
 import '../../chat/providers/chat_provider.dart';
+import '../widgets/push_permission_prompt_modal.dart';
 
 /// ShellRoute 메인 래퍼
 /// - 하단 탭바를 모든 탭에서 유지 (홈 / 업무 / 프로젝트 / 채널)
@@ -71,11 +72,35 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
   }
 
-  void _initFcmOnce() {
+  Future<void> _initFcmOnce() async {
     if (_fcmInitialized || !mounted) return;
     _fcmInitialized = true;
     final dio = ref.read(dioProvider);
-    FcmService.initialize(dio);
+
+    // 1. 기존 FCM 백그라운드 리스너 등 기본 초기화
+    await FcmService.initialize(dio);
+
+    // 2. 최초 진입 시 푸시 알림 수신 동의 모달 안내 여부 확인
+    final hasPrompted = await FcmService.hasPromptedPushPermission();
+    if (!hasPrompted && mounted) {
+      // 최초 권한 안내 바텀시트 모달 표시
+      final bool? accepted = await PushPermissionPromptModal.show(context);
+      await FcmService.markPushPromptShown();
+
+      if (accepted == true && mounted) {
+        // 사용자가 '알림 받기'를 선택한 경우 권한 요청 및 서버 등록 진행
+        await FcmService.setPushEnabled(dio, true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('푸시 알림이 활성화되었습니다.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _startSyncTimer() {
