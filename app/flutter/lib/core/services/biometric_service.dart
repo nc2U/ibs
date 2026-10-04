@@ -4,7 +4,10 @@ import 'package:local_auth/local_auth.dart';
 
 class BiometricService {
   static final LocalAuthentication _auth = LocalAuthentication();
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
   static const _biometricEnabledKey = 'BIOMETRIC_AUTH_ENABLED';
 
   /// 기기 및 OS에서 생체 인증을 지원하고 등록된 정보가 있는지 여부

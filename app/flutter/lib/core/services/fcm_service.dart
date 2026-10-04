@@ -50,7 +50,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Firebase Cloud Messaging (FCM) 푸시 알림 및 로컬 알림 서비스
 class FcmService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
   static const _pushEnabledKey = 'PUSH_NOTIFICATION_ENABLED';
   static bool _isInitialized = false;
 
