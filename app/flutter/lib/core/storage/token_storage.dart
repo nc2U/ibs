@@ -46,6 +46,9 @@ class TokenStorage {
   Future<void> saveRefreshToken(String token) async {
     _cachedRefreshToken = token;
     await _storage.write(key: _refreshTokenKey, value: token);
+  }
+
+  Future<void> saveBiometricRefreshToken(String token) async {
     await _storage.write(key: _biometricRefreshTokenKey, value: token);
   }
 
@@ -74,13 +77,20 @@ class TokenStorage {
     return await _storage.read(key: _savedEmailKey);
   }
 
-  // 모든 토큰 삭제 (로그아웃 시)
-  Future<void> clearTokens() async {
+  Future<void> clearSavedEmail() async {
+    await _storage.delete(key: _savedEmailKey);
+  }
+
+  // 모든 토큰 삭제 (로그아웃 시 - 보안을 위해 생체 인증 토큰도 함께 삭제)
+  Future<void> clearTokens({bool clearBiometric = true}) async {
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
     _inMemoryUserData = null;
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
     await _storage.delete(key: _cachedUserKey);
+    if (clearBiometric) {
+      await clearBiometricRefreshToken();
+    }
   }
 }
