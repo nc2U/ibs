@@ -1,8 +1,11 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/approval_repository.dart';
 import '../../data/models/approval_model.dart';
@@ -14,6 +17,17 @@ Future<void> exportApprovalPdf(
   ApprovalDocumentModel document,
 ) async {
   try {
+    if (kIsWeb) {
+      final downloadUrl = (document.pdfUrl != null && document.pdfUrl!.isNotEmpty)
+          ? document.pdfUrl!
+          : ApiEndpoints.resolve(ApiEndpoints.approvalPrintPdf, {'id': document.id});
+      final uri = Uri.tryParse(downloadUrl);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(

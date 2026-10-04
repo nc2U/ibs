@@ -168,7 +168,7 @@ final Map<String, ApprovalFormGuide> approvalFormGuides = {
       '출장 일정표 또는 방문 기관 초청장/공문',
       '교통편(항공/KTX) 예약 확인서 (예약 건)',
     ],
-    exampleTitle: '[출장] 신규 분양 사업지 현장 실사 및 인허가 협의 출장의 건',
+    exampleTitle: '[출장] 신규 분양 사업지 실사 및 인허가 협의 출장의 건',
   ),
   'TRIP': const ApprovalFormGuide(
     title: '출장신청서',
@@ -178,7 +178,7 @@ final Map<String, ApprovalFormGuide> approvalFormGuides = {
       '출장 목적과 방문처, 이동 수단을 구체적으로 기재하세요.',
     ],
     requiredAttachments: ['출장 일정표', '방문처 관련 서류'],
-    exampleTitle: '[출장] 현장 사업지 점검 출장 신청의 건',
+    exampleTitle: '[출장] 프로젝트 사업지 점검 출장 신청의 건',
   ),
   'CONTRACT': const ApprovalFormGuide(
     title: '계약체결 품의서',

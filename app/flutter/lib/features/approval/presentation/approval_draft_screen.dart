@@ -2237,7 +2237,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                   DropdownMenuItem(value: 'HIRE', child: Text('신규 채용/입사')),
                   DropdownMenuItem(value: 'LEAVE_RETURN', child: Text('휴직 / 복직')),
                   DropdownMenuItem(value: 'RETIRE', child: Text('퇴직 / 면직')),
-                  DropdownMenuItem(value: 'DISPATCH', child: Text('현장 파견/복귀')),
+                  DropdownMenuItem(value: 'DISPATCH', child: Text('프로젝트 파견/복귀')),
                   DropdownMenuItem(value: 'OTHER', child: Text('기타 발령')),
                 ],
                 onChanged: (v) => setState(() => _appointmentType = v ?? 'PROMOTION'),

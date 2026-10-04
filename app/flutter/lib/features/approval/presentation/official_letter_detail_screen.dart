@@ -1,10 +1,12 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -32,6 +34,17 @@ class _OfficialLetterDetailScreenState
 
   Future<void> _downloadOrSharePdf(OfficialLetterModel letter,
       {bool isShare = false}) async {
+    if (kIsWeb) {
+      final downloadUrl = (letter.pdfFile != null && letter.pdfFile!.isNotEmpty)
+          ? letter.pdfFile!
+          : ApiEndpoints.resolve(ApiEndpoints.officialLetterDownloadPdf, {'id': letter.id});
+      final uri = Uri.tryParse(downloadUrl);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     setState(() => _isDownloadingPdf = true);
     try {
       final repo = ref.read(letterRepositoryProvider);

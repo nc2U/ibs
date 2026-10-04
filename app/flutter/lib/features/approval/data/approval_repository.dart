@@ -140,7 +140,7 @@ class ApprovalRepository {
             'files',
             await MultipartFile.fromFile(
               path,
-              filename: path.split(Platform.pathSeparator).last,
+              filename: path.split(RegExp(r'[/\\]')).last,
             ),
           ),
         );

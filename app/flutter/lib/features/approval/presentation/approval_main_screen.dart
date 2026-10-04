@@ -56,6 +56,19 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
   }
 
   @override
+  void didUpdateWidget(covariant ApprovalMainScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTabIndex != widget.initialTabIndex) {
+      final targetIdx = (widget.initialTabIndex >= 0 && widget.initialTabIndex < 4)
+          ? widget.initialTabIndex
+          : 0;
+      if (_tabController.index != targetIdx) {
+        _tabController.animateTo(targetIdx);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();

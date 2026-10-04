@@ -1,4 +1,4 @@
-import 'package:mobile_ibs/core/services/share_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -39,6 +40,14 @@ class _InboundLetterDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('등록된 원본 스캔본 파일이 없습니다.')),
       );
+      return;
+    }
+
+    if (kIsWeb) {
+      final uri = Uri.tryParse(letter.scanFile!);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
       return;
     }
 
