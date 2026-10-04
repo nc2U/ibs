@@ -29,6 +29,32 @@ class SelectedProject {
 
   /// 계약, 수납, 자금 등 부동산 도메인 API 호출 시 사용할 실제 Project PK
   int get realProjectId => projectId ?? pk;
+
+  SelectedProject copyWith({
+    int? pk,
+    int? projectId,
+    String? name,
+    String? slug,
+    String? description,
+    String? type,
+    String? status,
+    bool? isPublic,
+    List<String>? myPerms,
+    ProjectModuleModel? module,
+  }) {
+    return SelectedProject(
+      pk: pk ?? this.pk,
+      projectId: projectId ?? this.projectId,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      isPublic: isPublic ?? this.isPublic,
+      myPerms: myPerms ?? this.myPerms,
+      module: module ?? this.module,
+    );
+  }
 }
 
 // ── 전역 워크스페이스 / 프로젝트 선택 상태 ──────────────────────────────────────────

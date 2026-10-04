@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../data/models/project_model.dart';
@@ -30,9 +32,17 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _EditProjectBasicInfoSheet(
         project: project,
-        onSuccess: () {
+        onSuccess: (updatedName) {
           ref.invalidate(realEstateProjectDetailProvider);
+          ref.invalidate(myProjectsProvider);
+          ref.invalidate(projectListProvider);
           ref.invalidate(realEstateProjectsProvider);
+
+          final currentSelected = ref.read(selectedRealEstateProjectProvider);
+          if (currentSelected != null && currentSelected.name != updatedName) {
+            ref.read(selectedRealEstateProjectProvider.notifier).state =
+                currentSelected.copyWith(name: updatedName);
+          }
         },
       ),
     );
@@ -42,6 +52,11 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
   Widget build(BuildContext context) {
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final detailAsync = ref.watch(realEstateProjectDetailProvider);
+
+    final canUpdateProject = ref.can(
+      Perm.projectUpdate,
+      projectSlug: selectedProject?.slug,
+    );
 
     return Column(
       children: [
@@ -79,7 +94,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF00796B).withAlpha(20),
                             border: Border.all(color: const Color(0xFF00796B).withAlpha(120), width: 0.8),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.zero,
                           ),
                           child: const Text(
                             'SETTINGS',
@@ -140,18 +155,38 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                     title: '프로젝트 개요 및 기본 정보',
                     icon: Icons.info_outline_rounded,
                     accentColor: const Color(0xFF00796B),
-                    action: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00796B),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      ),
-                      onPressed: () => _showEditBasicInfoModal(detail),
-                      icon: const Icon(Icons.edit, size: 14),
-                      label: const Text('기본정보 수정', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    ),
+                    action: canUpdateProject
+                        ? ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00796B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            onPressed: () => _showEditBasicInfoModal(detail),
+                            icon: const Icon(Icons.edit, size: 14),
+                            label: const Text('기본정보 수정', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                          )
+                        : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.colors.bgSurface,
+                              border: Border.all(color: context.colors.border, width: 0.8),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.lock_outline, size: 12, color: context.colors.textMuted),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '조회 전용',
+                                  style: TextStyle(fontSize: 10.5, color: context.colors.textMuted, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 8),
                   _buildBasicInfoCard(context, detail),
@@ -590,7 +625,7 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
 /// ✏️ 프로젝트 기본 정보 간편 수정 바텀시트
 class _EditProjectBasicInfoSheet extends ConsumerStatefulWidget {
   final RealEstateProjectDetailModel project;
-  final VoidCallback onSuccess;
+  final void Function(String updatedName) onSuccess;
 
   const _EditProjectBasicInfoSheet({
     required this.project,
@@ -608,7 +643,11 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
   late TextEditingController _buildSizeController;
   late TextEditingController _numUnitController;
   late TextEditingController _schemeLandController;
+  late TextEditingController _buildAreaController;
   late TextEditingController _totalFloorController;
+  late TextEditingController _buildToLandRatioController;
+  late TextEditingController _floorAreaRatioController;
+  late TextEditingController _numPlanedParkingController;
   late TextEditingController _constructionPeriodController;
 
   late String _kind;
@@ -630,7 +669,11 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
     _buildSizeController = TextEditingController(text: p.buildSize);
     _numUnitController = TextEditingController(text: p.numUnit?.toString() ?? '');
     _schemeLandController = TextEditingController(text: p.schemeLandExtent?.toString() ?? '');
+    _buildAreaController = TextEditingController(text: p.buildArea?.toString() ?? '');
     _totalFloorController = TextEditingController(text: p.totalFloorArea?.toString() ?? '');
+    _buildToLandRatioController = TextEditingController(text: p.buildToLandRatio?.toString() ?? '');
+    _floorAreaRatioController = TextEditingController(text: p.floorAreaRatio?.toString() ?? '');
+    _numPlanedParkingController = TextEditingController(text: p.numPlanedParking?.toString() ?? '');
     _constructionPeriodController = TextEditingController(text: p.constructionPeriodMonths.toString());
 
     _kind = p.kind;
@@ -649,13 +692,18 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
     _buildSizeController.dispose();
     _numUnitController.dispose();
     _schemeLandController.dispose();
+    _buildAreaController.dispose();
     _totalFloorController.dispose();
+    _buildToLandRatioController.dispose();
+    _floorAreaRatioController.dispose();
+    _numPlanedParkingController.dispose();
     _constructionPeriodController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty) {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('프로젝트명을 입력하세요.'), behavior: SnackBarBehavior.floating),
       );
@@ -665,7 +713,7 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
     setState(() => _isLoading = true);
 
     final payload = <String, dynamic>{
-      'name': _nameController.text.trim(),
+      'name': newName,
       'kind': _kind,
       'location': _locationController.text.trim(),
       'area_usage': _areaUsageController.text.trim(),
@@ -675,20 +723,15 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
       'is_unit_set': _isUnitSet,
       'monthly_aggr_start_date': _monthlyAggrDate,
       'construction_start_date': _constructionStartDate,
+      'num_unit': _numUnitController.text.trim().isEmpty ? null : int.tryParse(_numUnitController.text.trim()),
+      'scheme_land_extent': _schemeLandController.text.trim().isEmpty ? null : double.tryParse(_schemeLandController.text.trim()),
+      'build_area': _buildAreaController.text.trim().isEmpty ? null : double.tryParse(_buildAreaController.text.trim()),
+      'total_floor_area': _totalFloorController.text.trim().isEmpty ? null : double.tryParse(_totalFloorController.text.trim()),
+      'build_to_land_ratio': _buildToLandRatioController.text.trim().isEmpty ? null : double.tryParse(_buildToLandRatioController.text.trim()),
+      'floor_area_ratio': _floorAreaRatioController.text.trim().isEmpty ? null : double.tryParse(_floorAreaRatioController.text.trim()),
+      'num_planed_parking': _numPlanedParkingController.text.trim().isEmpty ? null : int.tryParse(_numPlanedParkingController.text.trim()),
+      'construction_period_months': int.tryParse(_constructionPeriodController.text.trim()) ?? 0,
     };
-
-    if (_numUnitController.text.trim().isNotEmpty) {
-      payload['num_unit'] = int.tryParse(_numUnitController.text.trim());
-    }
-    if (_schemeLandController.text.trim().isNotEmpty) {
-      payload['scheme_land_extent'] = double.tryParse(_schemeLandController.text.trim());
-    }
-    if (_totalFloorController.text.trim().isNotEmpty) {
-      payload['total_floor_area'] = double.tryParse(_totalFloorController.text.trim());
-    }
-    if (_constructionPeriodController.text.trim().isNotEmpty) {
-      payload['construction_period_months'] = int.tryParse(_constructionPeriodController.text.trim()) ?? 0;
-    }
 
     final repo = ref.read(projectRepositoryProvider);
     final errorMsg = await repo.updateRealEstateProject(
@@ -700,7 +743,7 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
 
     if (mounted) {
       if (errorMsg == null) {
-        widget.onSuccess();
+        widget.onSuccess(newName);
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('프로젝트 기본 정보가 수정되었습니다.'), behavior: SnackBarBehavior.floating),
@@ -856,7 +899,7 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                     ),
                     const SizedBox(height: 12),
 
-                    // 세대수, 대지면적, 연면적
+                    // 면적 및 규모 지표 1: 세대수, 대지면적, 건축면적
                     Row(
                       children: [
                         Expanded(
@@ -879,13 +922,32 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             style: const TextStyle(fontSize: 13),
                             decoration: const InputDecoration(
-                              labelText: '계획대지면적(㎡)',
+                              labelText: '대지면적(㎡)',
                               isDense: true,
                               border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _buildAreaController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: '건축면적(㎡)',
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 면적 및 규모 지표 2: 총 연면적, 건폐율, 용적률
+                    Row(
+                      children: [
                         Expanded(
                           child: TextField(
                             controller: _totalFloorController,
@@ -898,11 +960,70 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _buildToLandRatioController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: '건폐율(%)',
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _floorAreaRatioController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: '용적률(%)',
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // 일정 설정 (집계시작일, 착공월, 공사기간)
+                    // 규모 지표 3: 계획주차대수, 공사기간
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _numPlanedParkingController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: '계획 주차대수(대)',
+                              hintText: '예: 620',
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _constructionPeriodController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: '공사기간(개월)',
+                              isDense: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 일정 설정 (월별집계시작일, 착공일)
                     Row(
                       children: [
                         Expanded(
@@ -949,19 +1070,6 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                                 border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                               ),
                               child: Text(_constructionStartDate, style: const TextStyle(fontSize: 12.5)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _constructionPeriodController,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(fontSize: 13),
-                            decoration: const InputDecoration(
-                              labelText: '공사기간(개월)',
-                              isDense: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                             ),
                           ),
                         ),

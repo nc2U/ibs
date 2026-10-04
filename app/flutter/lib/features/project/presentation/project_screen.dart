@@ -163,61 +163,63 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           break;
       }
 
-      return Scaffold(
-        backgroundColor: context.colors.bgPrimary,
-        body: Column(
-          children: [
-            // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 (공용 컴포넌트) ─────────
-            WorkspaceSelectorBar(
-              onlyRealEstate: true,
-              trailing: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _closeSubModule,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: context.colors.accentProject,
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.colors.accentProject.withAlpha(50),
-                          offset: const Offset(0, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.arrow_back_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '메인으로',
-                          style: TextStyle(
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) {
+            _closeSubModule();
+          }
+        },
+        child: Scaffold(
+          backgroundColor: context.colors.bgPrimary,
+          body: Column(
+            children: [
+              // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 (공용 컴포넌트) ─────────
+              WorkspaceSelectorBar(
+                onlyRealEstate: true,
+                trailing: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.zero,
+                  child: InkWell(
+                    onTap: _closeSubModule,
+                    borderRadius: BorderRadius.zero,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: context.colors.accentProject,
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_back_rounded,
+                            size: 14,
                             color: Colors.white,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 4),
+                          Text(
+                            '메인으로',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Divider(color: context.colors.border, height: 1),
+              Divider(color: context.colors.border, height: 1),
 
-            // ── 활성화된 서브모듈 화면 ─────────────────────────────────────
-            Expanded(child: contentWidget),
-          ],
+              // ── 활성화된 서브모듈 화면 ─────────────────────────────────────
+              Expanded(child: contentWidget),
+            ],
+          ),
         ),
       );
     }
