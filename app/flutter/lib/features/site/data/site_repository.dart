@@ -55,15 +55,15 @@ class SiteRepository {
       }
 
       final totalSites = results[3].data is Map && results[3].data.containsKey('count')
-          ? results[3].data['count'] as int
+          ? (results[3].data['count'] as num?)?.toInt() ?? 0
           : 0;
 
       final totalOwners = results[4].data is Map && results[4].data.containsKey('count')
-          ? results[4].data['count'] as int
+          ? (results[4].data['count'] as num?)?.toInt() ?? 0
           : 0;
 
       final totalContracts = results[5].data is Map && results[5].data.containsKey('count')
-          ? results[5].data['count'] as int
+          ? (results[5].data['count'] as num?)?.toInt() ?? 0
           : 0;
 
       return SiteAggregateModel(

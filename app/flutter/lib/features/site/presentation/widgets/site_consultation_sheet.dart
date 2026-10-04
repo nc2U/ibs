@@ -59,7 +59,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
       ),
       child: SafeArea(
@@ -76,7 +76,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                     height: 32,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withAlpha(20),
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(Icons.edit_calendar_outlined, size: 18, color: Color(0xFFF59E0B)),
                   ),
@@ -100,7 +100,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF59E0B).withAlpha(20),
                                 border: Border.all(color: const Color(0xFFF59E0B).withAlpha(100), width: 0.6),
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 widget.owner.owner,
@@ -140,7 +140,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                         backgroundColor: const Color(0xFFF59E0B),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       ),
                       onPressed: _showAddDialog,
@@ -197,7 +197,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                       return Container(
                         decoration: BoxDecoration(
                           color: context.colors.bgSurface,
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: context.colors.border, width: 0.8),
                         ),
                         child: Column(
@@ -214,7 +214,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF59E0B).withAlpha(20),
                                       border: Border.all(color: const Color(0xFFF59E0B).withAlpha(80), width: 0.6),
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       item.channelKorean,
@@ -402,7 +402,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
       scrollable: true,
       backgroundColor: context.colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: context.colors.border, width: 0.8),
       ),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -456,7 +456,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
                       decoration: const InputDecoration(
                         labelText: '상담일자',
                         isDense: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                       ),
                       child: Text(_date, style: const TextStyle(fontSize: 13)),
                     ),
@@ -469,7 +469,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
                     decoration: const InputDecoration(
                       labelText: '상담채널',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'phone', child: Text('전화')),
@@ -494,7 +494,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
                 labelText: '상담 제목 (요약)',
                 hintText: '예: 매매 희망단가 및 양도세 문의 협의',
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
               ),
             ),
             const SizedBox(height: 12),
@@ -508,7 +508,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
                 labelText: '상세 상담 및 협의 내용',
                 hintText: '소유자와의 통화/면담 세부 협의 내용을 입력하세요.',
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
               ),
             ),
             const SizedBox(height: 10),
@@ -532,7 +532,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
                     labelText: '후속조치 메모',
                     hintText: '예: 예상 양도세 산출표 작성 후 다음 주 재통화 예정',
                     isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
                   ),
                 ),
               ),
@@ -548,7 +548,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF59E0B),
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           ),
           onPressed: _isLoading ? null : _submit,

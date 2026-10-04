@@ -331,7 +331,7 @@ class SiteFileHelper {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: context.colors.bgCard,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.colors.border, width: 0.8),
             boxShadow: [
               BoxShadow(
@@ -387,7 +387,10 @@ class SiteFileHelper {
     showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (dialogCtx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

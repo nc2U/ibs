@@ -65,7 +65,7 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
             OutlinedButton(
               onPressed: _refresh,
               style: OutlinedButton.styleFrom(
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: const Text('다시 시도'),
             ),
@@ -113,7 +113,8 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
     return Card(
       margin: EdgeInsets.zero,
       color: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      clipBehavior: Clip.antiAlias,
       elevation: 0,
       child: InkWell(
         onTap: () => showSiteDetailBottomSheet(
@@ -123,6 +124,7 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
         ),
         child: Container(
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Column(
@@ -139,6 +141,7 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF0D9488).withAlpha(20),
                         border: Border.all(color: const Color(0xFF0D9488).withAlpha(80), width: 0.6),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '순번 #${item.order}',
@@ -166,7 +169,7 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
                         color: context.colors.border.withAlpha(50),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         item.sitePurpose,
@@ -191,7 +194,7 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
                               : context.colors.border.withAlpha(80),
                           width: 0.6,
                         ),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

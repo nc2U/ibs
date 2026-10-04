@@ -51,7 +51,7 @@ class SiteSubTabButton extends StatelessWidget {
       child: Material(
         color: isSelected ? activeColor.withAlpha(28) : context.colors.bgCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           side: BorderSide(
             color: isSelected ? activeColor : context.colors.border,
             width: isSelected ? 1.4 : 0.8,
@@ -59,7 +59,7 @@ class SiteSubTabButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 38,
             alignment: Alignment.center,
@@ -159,7 +159,7 @@ class SiteFilterChipBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF0D9488).withAlpha(20) : context.colors.bgSurface,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: isSelected ? const Color(0xFF0D9488) : context.colors.border,
             width: isSelected ? 1 : 0.8,
@@ -278,7 +278,7 @@ class SitePaymentStepRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: isPaid ? const Color(0xFF10B981).withAlpha(25) : context.colors.border.withAlpha(60),
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               isPaid ? '지급완료' : '미지급',
@@ -342,7 +342,7 @@ Future<void> makeSitePhoneCall(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       actionsPadding: const EdgeInsets.all(12),
@@ -371,7 +371,10 @@ Future<void> makeSitePhoneCall(
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
-            color: context.colors.bgSurface,
+            decoration: BoxDecoration(
+              color: context.colors.bgSurface,
+              borderRadius: BorderRadius.circular(6),
+            ),
             child: Row(
               children: [
                 const Icon(Icons.phone, size: 16, color: Color(0xFF10B981)),
@@ -399,7 +402,7 @@ Future<void> makeSitePhoneCall(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF10B981),
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           onPressed: () => Navigator.pop(ctx, true),

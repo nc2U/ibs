@@ -1,3 +1,31 @@
+int _parseInt(dynamic value, [int defaultValue = 0]) {
+  if (value == null) return defaultValue;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString()) ?? defaultValue;
+}
+
+int? _tryParseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
+double _parseDouble(dynamic value, [double defaultValue = 0.0]) {
+  if (value == null) return defaultValue;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString()) ?? defaultValue;
+}
+
+double? _tryParseDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
+}
+
 /// 📊 0. 부지 종합 집계 현황 모델
 class SiteAggregateModel {
   final int totalSitesCount;          // 총 필지 수
@@ -64,10 +92,10 @@ class SiteInfoFileModel {
 
   factory SiteInfoFileModel.fromJson(Map<String, dynamic> json) {
     return SiteInfoFileModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
       file: json['file']?.toString() ?? '',
       fileName: json['file_name']?.toString() ?? '등기부등본.pdf',
-      fileSize: json['file_size'] as int?,
+      fileSize: _tryParseInt(json['file_size']),
       created: json['created']?.toString() ?? '',
     );
   }
@@ -123,15 +151,15 @@ class SiteItemModel {
         .toList();
 
     return SiteItemModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      project: json['project'] ?? 0,
-      order: json['order'] ?? 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
+      project: _parseInt(json['project']),
+      order: _parseInt(json['order']),
       district: json['district']?.toString() ?? '',
       lotNumber: json['lot_number']?.toString() ?? '',
       sitePurpose: json['site_purpose']?.toString() ?? '',
-      officialArea: double.tryParse(json['official_area']?.toString() ?? '') ?? 0.0,
-      returnedArea: double.tryParse(json['returned_area']?.toString() ?? ''),
-      noticePrice: json['notice_price'] as int?,
+      officialArea: _parseDouble(json['official_area']),
+      returnedArea: _tryParseDouble(json['returned_area']),
+      noticePrice: _tryParseInt(json['notice_price']),
       rightsA: json['rights_a']?.toString() ?? '',
       rightsB: json['rights_b']?.toString() ?? '',
       dupIssueDate: json['dup_issue_date']?.toString(),
@@ -169,7 +197,7 @@ class SiteOwnerInSiteModel {
 
   factory SiteOwnerInSiteModel.fromJson(Map<String, dynamic> json) {
     return SiteOwnerInSiteModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
       owner: json['owner']?.toString() ?? '',
       ownSortDesc: json['own_sort_desc']?.toString(),
     );
@@ -228,8 +256,8 @@ class SiteOwnerItemModel {
         .toList();
 
     return SiteOwnerItemModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      project: json['project'] ?? 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
+      project: _parseInt(json['project']),
       owner: json['owner']?.toString() ?? '',
       useConsent: json['use_consent'] == true,
       dateOfBirth: json['date_of_birth']?.toString(),
@@ -299,8 +327,8 @@ class SiteOwnerConsultationLogModel {
     }
 
     return SiteOwnerConsultationLogModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      siteOwner: json['site_owner'] is int ? json['site_owner'] : 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
+      siteOwner: _parseInt(json['site_owner']),
       consultationDate: json['consultation_date']?.toString() ?? '',
       channel: json['channel']?.toString() ?? 'phone',
       channelDisplay: json['channel_display']?.toString(),
@@ -353,11 +381,11 @@ class RelationsInSiteOwnerModel {
 
   factory RelationsInSiteOwnerModel.fromJson(Map<String, dynamic> json) {
     return RelationsInSiteOwnerModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      siteId: json['site'] ?? 0,
+      pk: _parseInt(json['pk'] ?? json['id']),
+      siteId: _parseInt(json['site']),
       siteName: json['__str__']?.toString() ?? '필지',
-      ownershipRatio: double.tryParse(json['ownership_ratio']?.toString() ?? ''),
-      ownedArea: double.tryParse(json['owned_area']?.toString() ?? ''),
+      ownershipRatio: _tryParseDouble(json['ownership_ratio']),
+      ownedArea: _tryParseDouble(json['owned_area']),
       acquisitionDate: json['acquisition_date']?.toString(),
     );
   }
@@ -440,26 +468,26 @@ class SiteContractItemModel {
         .toList();
 
     return SiteContractItemModel(
-      pk: json['pk'] ?? json['id'] ?? 0,
-      project: json['project'] ?? 0,
-      ownerId: json['owner'] is int ? json['owner'] : (json['owner_desc'] is Map ? json['owner_desc']['pk'] ?? 0 : 0),
+      pk: _parseInt(json['pk'] ?? json['id']),
+      project: _parseInt(json['project']),
+      ownerId: _parseInt(json['owner'] ?? (json['owner_desc'] is Map ? json['owner_desc']['pk'] : null)),
       ownerName: parsedOwnerName,
       contractDate: json['contract_date']?.toString() ?? '',
-      totalPrice: (json['total_price'] ?? 0) as int,
-      contractArea: double.tryParse(json['contract_area']?.toString() ?? '') ?? 0.0,
-      downPay1: json['down_pay1'] as int?,
+      totalPrice: _parseInt(json['total_price']),
+      contractArea: _parseDouble(json['contract_area']),
+      downPay1: _tryParseInt(json['down_pay1']),
       downPay1Date: json['down_pay1_date']?.toString(),
       downPay1IsPaid: json['down_pay1_is_paid'] == true,
-      downPay2: json['down_pay2'] as int?,
+      downPay2: _tryParseInt(json['down_pay2']),
       downPay2Date: json['down_pay2_date']?.toString(),
       downPay2IsPaid: json['down_pay2_is_paid'] == true,
-      interPay1: json['inter_pay1'] as int?,
+      interPay1: _tryParseInt(json['inter_pay1']),
       interPay1Date: json['inter_pay1_date']?.toString(),
       interPay1IsPaid: json['inter_pay1_is_paid'] == true,
-      interPay2: json['inter_pay2'] as int?,
+      interPay2: _tryParseInt(json['inter_pay2']),
       interPay2Date: json['inter_pay2_date']?.toString(),
       interPay2IsPaid: json['inter_pay2_is_paid'] == true,
-      remainPay: json['remain_pay'] as int?,
+      remainPay: _tryParseInt(json['remain_pay']),
       remainPayDate: json['remain_pay_date']?.toString(),
       remainPayIsPaid: json['remain_pay_is_paid'] == true,
       ownershipCompletion: json['ownership_completion'] == true,

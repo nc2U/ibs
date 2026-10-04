@@ -23,7 +23,10 @@ void showSiteDetailBottomSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     builder: (ctx) {
       return SafeArea(
@@ -145,7 +148,7 @@ void showSiteDetailBottomSheet({
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                 decoration: BoxDecoration(
                                   color: context.colors.border,
-                                  borderRadius: BorderRadius.zero,
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   o.ownSortDesc!,
@@ -184,7 +187,7 @@ void showSiteDetailBottomSheet({
                               : context.colors.border,
                           width: 0.8,
                         ),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () {
@@ -224,7 +227,7 @@ void showSiteDetailBottomSheet({
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.colors.textPrimary,
                         side: BorderSide(color: context.colors.border),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () {
@@ -262,7 +265,10 @@ void showSiteOwnerDetailBottomSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     builder: (ctx) {
       return SafeArea(
@@ -409,7 +415,7 @@ void showSiteOwnerDetailBottomSheet({
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                         onPressed: () {
@@ -427,7 +433,7 @@ void showSiteOwnerDetailBottomSheet({
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF59E0B),
                         foregroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () {
@@ -446,7 +452,7 @@ void showSiteOwnerDetailBottomSheet({
                   const SizedBox(width: 8),
                   IconButton(
                     style: IconButton.styleFrom(
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       side: BorderSide(color: context.colors.border),
                       padding: const EdgeInsets.all(10),
                     ),
@@ -486,7 +492,10 @@ void showSiteContractDetailBottomSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    clipBehavior: Clip.antiAlias,
     backgroundColor: context.colors.bgCard,
     builder: (ctx) {
       return SafeArea(
@@ -639,7 +648,7 @@ void showSiteContractDetailBottomSheet({
                               : context.colors.border,
                           width: 0.8,
                         ),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () {
@@ -679,7 +688,7 @@ void showSiteContractDetailBottomSheet({
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.colors.textPrimary,
                         side: BorderSide(color: context.colors.border),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () {

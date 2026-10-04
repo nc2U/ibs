@@ -66,7 +66,7 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
             OutlinedButton(
               onPressed: _refresh,
               style: OutlinedButton.styleFrom(
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: const Text('다시 시도'),
             ),
@@ -114,7 +114,8 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
     return Card(
       margin: EdgeInsets.zero,
       color: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      clipBehavior: Clip.antiAlias,
       elevation: 0,
       child: InkWell(
         onTap: () => showSiteContractDetailBottomSheet(
@@ -124,6 +125,7 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
         ),
         child: Container(
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Column(
@@ -140,6 +142,7 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF59E0B).withAlpha(20),
                         border: Border.all(color: const Color(0xFFF59E0B).withAlpha(80), width: 0.6),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '매도: ${item.ownerName}',
@@ -172,6 +175,7 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                               : const Color(0xFF38BDF8).withAlpha(80),
                           width: 0.6,
                         ),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         item.ownershipCompletion ? '소유권확보' : '진행중',
@@ -196,7 +200,7 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                               : context.colors.border.withAlpha(80),
                           width: 0.6,
                         ),
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

@@ -172,16 +172,31 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  tooltip: '뒤로가기',
+                  color: context.colors.textPrimary,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      widget.onBackToMain();
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
                 Container(
-                  width: 34,
-                  height: 34,
-                  decoration: const BoxDecoration(
-                    color: Color(0x1A0D9488),
-                    borderRadius: BorderRadius.zero,
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withAlpha(26),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
                     Icons.map_outlined,
-                    size: 19,
+                    size: 20,
                     color: Color(0xFF0D9488),
                   ),
                 ),
@@ -206,7 +221,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF0D9488).withAlpha(20),
                               border: Border.all(color: const Color(0xFF0D9488).withAlpha(120), width: 0.8),
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
                               'SITE',
@@ -316,7 +331,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
               height: 38,
               decoration: BoxDecoration(
                 color: context.colors.bgSurface,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: TextField(
