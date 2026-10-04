@@ -78,6 +78,7 @@ export default withMermaid(
             { text: 'IBS란?', link: '/' },
             { text: '시작하기', link: '/intro/getting-started' },
             { text: '대시보드', link: '/intro/dashboard' },
+            { text: '사내 메신저', link: '/intro/chat' },
           ],
         },
         {
