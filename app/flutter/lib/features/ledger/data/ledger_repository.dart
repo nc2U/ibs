@@ -30,7 +30,7 @@ class LedgerRepository {
     }
   }
 
-  /// 1-2. 프로젝트 거래 전표 적요 및 비고(현장 메모) 수정 (PATCH)
+  /// 1-2. 프로젝트 거래 전표 적요 및 비고(프로젝트 메모) 수정 (PATCH)
   Future<bool> updateTransactionNoteAndContent({
     required int pk,
     String? content,
@@ -122,22 +122,29 @@ class LedgerRepository {
     try {
       final now = DateTime.now();
       final monthStr = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      final lastDay = DateTime(now.year, now.month + 1, 0).day.toString().padLeft(2, '0');
+      final fromDate = '$monthStr-01';
+      final toDate = '$monthStr-$lastDay';
 
       // 1. 계좌별 잔액 조회 (모든 프로젝트 계좌 실시간 가용 잔액)
       final balancesFuture = fetchBalanceByAccount(projectId);
 
-      // 2. 당월 입금 거래 내역 조회 (sort=1)
+      // 2. 당월 입금 거래 내역 조회 (sort=1, 당월 일자 범위 지정)
       final monthIncomeFuture = fetchProjectTransactions(
         projectId: projectId,
         sort: '1',
-        limit: 100,
+        fromDate: fromDate,
+        toDate: toDate,
+        limit: 1000,
       );
 
-      // 3. 당월 출금 거래 내역 조회 (sort=2)
+      // 3. 당월 출금 거래 내역 조회 (sort=2, 당월 일자 범위 지정)
       final monthExpenseFuture = fetchProjectTransactions(
         projectId: projectId,
         sort: '2',
-        limit: 100,
+        fromDate: fromDate,
+        toDate: toDate,
+        limit: 1000,
       );
 
       final results = await Future.wait([

@@ -203,15 +203,24 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
           // ── 1. 회계 자금 헤더 배너 (고정) ─────────────────────────────────────────
           Container(
             color: context.colors.bgSurface,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
+                IconButton(
+                  onPressed: widget.onBackToMain,
+                  icon: const Icon(Icons.arrow_back, size: 20),
+                  tooltip: '메인으로 돌아가기',
+                  color: context.colors.textPrimary,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF59E0B).withAlpha(30),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.account_balance_wallet_outlined,
                       size: 20, color: Color(0xFFF59E0B)),
@@ -256,7 +265,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        selectedProject?.name ?? '부동산 개발 프로젝트',
+                        selectedProject?.name ?? '선택된 프로젝트 없음',
                         style: AppTextStyles.caption.copyWith(
                           color: context.colors.textMuted,
                         ),
@@ -285,16 +294,47 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
           Divider(color: context.colors.border, height: 1),
 
           // ── 아래부터 스크롤 가능한 본문 영역 (CustomScrollView) ───────────────
-          Expanded(
-            child: RefreshIndicator(
-              color: context.colors.accentProject,
-              onRefresh: () async {
-                ref.invalidate(ledgerOverallAggregateProvider);
-                ref.invalidate(ledgerBalanceByAccountProvider);
-                ref.invalidate(projectBankAccountsProvider);
-                ref.read(projectTransactionsProvider.notifier).fetchInitial();
-              },
-              child: CustomScrollView(
+          if (selectedProject == null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.business_center_outlined,
+                      size: 48,
+                      color: context.colors.textDisabled,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '선택된 프로젝트가 없습니다.',
+                      style: AppTextStyles.titleSm.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '상단에서 부동산 개발 프로젝트를 먼저 선택해 주세요.',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: RefreshIndicator(
+                color: context.colors.accentProject,
+                onRefresh: () async {
+                  ref.invalidate(ledgerOverallAggregateProvider);
+                  ref.invalidate(ledgerBalanceByAccountProvider);
+                  ref.invalidate(projectBankAccountsProvider);
+                  ref.read(projectTransactionsProvider.notifier).fetchInitial();
+                },
+                child: CustomScrollView(
                 controller: _transactionsScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -433,7 +473,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: context.colors.bgSurface,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                     color: context.colors.border, width: 0.8),
                               ),
@@ -539,6 +579,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                                             ? context.colors.accentProject
                                                 .withAlpha(25)
                                             : context.colors.bgSurface,
+                                        borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: datePreset ==
                                                   LedgerDatePreset.custom
@@ -696,6 +737,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                                               ? context.colors.accentProject
                                                   .withAlpha(20)
                                               : context.colors.bgSurface,
+                                          borderRadius: BorderRadius.circular(4),
                                           border: Border.all(
                                             color: selectedBankAcc != null
                                                 ? context.colors.accentProject
@@ -1026,7 +1068,7 @@ class _FilterChipButton extends StatelessWidget {
     return Material(
       color: isSelected ? activeColor.withAlpha(25) : context.colors.bgSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(4),
         side: BorderSide(
           color: isSelected ? activeColor : context.colors.border,
           width: isSelected ? 1 : 0.8,
@@ -1034,6 +1076,7 @@ class _FilterChipButton extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Text(
@@ -1071,7 +1114,7 @@ class _SubTabButton extends StatelessWidget {
             ? context.colors.accentProject.withAlpha(25)
             : context.colors.bgCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           side: BorderSide(
             color: isSelected
                 ? context.colors.accentProject
@@ -1081,7 +1124,7 @@ class _SubTabButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 38,
             alignment: Alignment.center,
@@ -1176,7 +1219,7 @@ class _DatePresetChip extends StatelessWidget {
           ? context.colors.accentProject.withAlpha(25)
           : context.colors.bgSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(4),
         side: BorderSide(
           color: isSelected
               ? context.colors.accentProject
@@ -1186,6 +1229,7 @@ class _DatePresetChip extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
           child: Text(

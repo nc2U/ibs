@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+int _parseInt(dynamic val) {
+  if (val == null) return 0;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val) ?? double.tryParse(val)?.toInt() ?? 0;
+  }
+  return 0;
+}
+
 /// 🏦 1. 프로젝트 은행 계좌 모델 (/api/v1/ledger/project-bank-account/)
 class ProjectBankAccountModel {
   final int pk;
@@ -96,7 +106,7 @@ class ProjectTransactionItemModel {
       trader: firstTrader ?? json['trader']?.toString(),
       bankAccountId: json['bank_account'] is int ? json['bank_account'] : null,
       bankAccountName: json['bank_account_desc'] ?? json['bank_account_name'],
-      amount: (json['amount'] ?? 0) as int,
+      amount: _parseInt(json['amount']),
       dealDate: json['deal_date']?.toString() ?? '',
       note: json['note']?.toString(),
       accountingEntries: entries,
@@ -201,7 +211,7 @@ class ProjectAccountingEntryModel {
       pk: json['pk'] ?? json['id'] ?? 0,
       accountId: json['account'] is int ? json['account'] : (json['account'] is Map ? json['account']['pk'] : null),
       accountName: json['account_name'] ?? json['account_desc'] ?? (json['account'] is Map ? json['account']['name'] : null),
-      amount: (json['amount'] ?? 0) as int,
+      amount: _parseInt(json['amount']),
       trader: json['trader']?.toString(),
       isPayment: json['is_payment'] == true,
       contractId: json['contract'] is int ? json['contract'] : (json['contract'] is Map ? json['contract']['pk'] : null),
@@ -235,11 +245,11 @@ class ProjectBalanceByAccountModel {
     return ProjectBalanceByAccountModel(
       bankAcc: json['bank_acc']?.toString() ?? '',
       bankNum: json['bank_num']?.toString() ?? '',
-      incSum: (json['inc_sum'] ?? 0) as int,
-      outSum: (json['out_sum'] ?? 0) as int,
-      dateInc: (json['date_inc'] ?? 0) as int,
-      dateOut: (json['date_out'] ?? 0) as int,
-      balance: (json['balance'] ?? 0) as int,
+      incSum: _parseInt(json['inc_sum']),
+      outSum: _parseInt(json['out_sum']),
+      dateInc: _parseInt(json['date_inc']),
+      dateOut: _parseInt(json['date_out']),
+      balance: _parseInt(json['balance']),
     );
   }
 }

@@ -22,7 +22,7 @@ class TransactionItemCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: context.colors.textDisabled.withAlpha(180),
           width: 1.2,
@@ -35,10 +35,12 @@ class TransactionItemCard extends StatelessWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -52,6 +54,7 @@ class TransactionItemCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: item.sortColor.withAlpha(20),
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(
                           color: item.sortColor.withAlpha(80),
                           width: 0.6,

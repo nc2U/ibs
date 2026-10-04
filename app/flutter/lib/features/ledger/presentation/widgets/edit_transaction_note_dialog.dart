@@ -93,7 +93,7 @@ class _EditTransactionNoteDialogState
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: context.colors.bgCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Row(
         children: [
           const Icon(Icons.edit_note_rounded,
@@ -136,7 +136,7 @@ class _EditTransactionNoteDialogState
                 hintText: '적요를 입력하세요',
                 hintStyle: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(6),
                   borderSide: BorderSide(color: context.colors.border),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -162,7 +162,7 @@ class _EditTransactionNoteDialogState
                 hintText: '지출 사유나 비고 메모를 입력하세요',
                 hintStyle: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(6),
                   borderSide: BorderSide(color: context.colors.border),
                 ),
                 contentPadding: const EdgeInsets.all(10),
@@ -180,7 +180,7 @@ class _EditTransactionNoteDialogState
           style: ElevatedButton.styleFrom(
             backgroundColor: context.colors.accentProject,
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           onPressed: _isLoading ? null : _save,
           child: _isLoading
