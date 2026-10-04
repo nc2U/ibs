@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/docs_repository.dart';
@@ -11,7 +13,7 @@ import '../../data/models/docs_model.dart';
 import '../../providers/docs_provider.dart';
 import 'document_form_sheet.dart';
 
-/// 문서 상세 보기 바텀 시트 (radius = 0)
+/// 문서 상세 보기 바텀 시트 (radius = 0, 스크롤 오버플로우 방어)
 class DocumentDetailSheet extends ConsumerWidget {
   final DocumentModel doc;
 
@@ -114,10 +116,7 @@ class DocumentDetailSheet extends ConsumerWidget {
     }
     var fullUrl = rawUrl.trim();
     if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-      const envUrl = String.fromEnvironment('BASE_URL');
-      final baseUrl = envUrl.isNotEmpty
-          ? (envUrl.startsWith('http') ? envUrl : 'https://$envUrl')
-          : 'https://dev.dyibs.com';
+      final baseUrl = appBaseUrl;
       final normalizedBase = baseUrl.endsWith('/')
           ? baseUrl.substring(0, baseUrl.length - 1)
           : baseUrl;
@@ -188,162 +187,178 @@ class DocumentDetailSheet extends ConsumerWidget {
     final scopeLabel = doc.project != null
         ? (isRealEstate ? '🏗 ${doc.project!.name}' : '📋 ${doc.project!.name}')
         : '전체 공용';
+    final creatorName = doc.creator?.displayName ?? (doc.creator?.username ?? '');
 
-    return Container(
-      color: context.colors.bgCard,
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).padding.bottom + 20,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── 핸들바 ────────────────────────────────────────────────────────
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              color: context.colors.border,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── 소속 뱃지 & 액션 ──────────────────────────────────────────────
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isRealEstate
-                      ? context.colors.accentProject.withAlpha(30)
-                      : const Color(0xFF1565C0).withAlpha(30),
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(
-                    color: isRealEstate
-                        ? context.colors.accentProject.withAlpha(60)
-                        : const Color(0xFF1565C0).withAlpha(60),
-                  ),
-                ),
-                child: Text(
-                  scopeLabel,
-                  style: AppTextStyles.caption.copyWith(
-                    color: isRealEstate
-                        ? context.colors.accentProject
-                        : const Color(0xFF1565C0),
-                    fontWeight: FontWeight.bold,
+      child: Container(
+        color: context.colors.bgCard,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── 핸들바 ────────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(top: 14, bottom: 8),
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.colors.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              if (doc.securityLevel == '1') ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: context.colors.warning.withAlpha(25),
-                    borderRadius: BorderRadius.zero,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.lock_rounded,
-                          size: 13, color: context.colors.warning),
-                      const SizedBox(width: 4),
-                      Text('비공개',
-                          style: AppTextStyles.caption
-                              .copyWith(color: context.colors.warning)),
-                    ],
-                  ),
+            ),
+
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 8,
+                  bottom: MediaQuery.of(context).padding.bottom + 20,
                 ),
-              ] else if (doc.securityLevel == '2') ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: context.colors.textMuted.withAlpha(25),
-                    borderRadius: BorderRadius.zero,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.group_outlined,
-                          size: 13, color: context.colors.textSecond),
-                      const SizedBox(width: 4),
-                      Text(
-                        doc.creatorDeptName != null && doc.creatorDeptName!.isNotEmpty
-                            ? '팀공개 (${doc.creatorDeptName})'
-                            : '팀공개',
-                        style: AppTextStyles.caption
-                            .copyWith(color: context.colors.textSecond),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── 소속 뱃지 & 액션 ──────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isRealEstate
+                                ? context.colors.accentProject.withAlpha(30)
+                                : const Color(0xFF1565C0).withAlpha(30),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: isRealEstate
+                                  ? context.colors.accentProject.withAlpha(60)
+                                  : const Color(0xFF1565C0).withAlpha(60),
+                            ),
+                          ),
+                          child: Text(
+                            scopeLabel,
+                            style: AppTextStyles.caption.copyWith(
+                              color: isRealEstate
+                                  ? context.colors.accentProject
+                                  : const Color(0xFF1565C0),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (doc.securityLevel == '1') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.colors.warning.withAlpha(25),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.lock_rounded,
+                                    size: 13, color: context.colors.warning),
+                                const SizedBox(width: 4),
+                                Text('비공개',
+                                    style: AppTextStyles.caption
+                                        .copyWith(color: context.colors.warning)),
+                              ],
+                            ),
+                          ),
+                        ] else if (doc.securityLevel == '2') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.colors.textMuted.withAlpha(25),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.group_outlined,
+                                    size: 13, color: context.colors.textSecond),
+                                const SizedBox(width: 4),
+                                Text(
+                                  doc.creatorDeptName != null && doc.creatorDeptName!.isNotEmpty
+                                      ? '팀공개 (${doc.creatorDeptName})'
+                                      : '팀공개',
+                                  style: AppTextStyles.caption
+                                      .copyWith(color: context.colors.textSecond),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        if (ref.can(Perm.docsUpdate))
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            color: context.colors.textSecond,
+                            onPressed: () {
+                              Navigator.pop(context);
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (ctx) => DocumentFormSheet(doc: doc),
+                              );
+                            },
+                          ),
+                        if (ref.can(Perm.docsDelete))
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                            color: context.colors.error,
+                            onPressed: () => _handleDelete(context, ref),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── 문서 제목 ───────────────────────────────────────────────────
+                    Text(doc.title, style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
+                    const SizedBox(height: 8),
+
+                    // ── 정보 목록 ────────────────────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSurface,
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(color: context.colors.border, width: 0.8),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-              const Spacer(),
-              if (ref.can(Perm.docsUpdate))
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: context.colors.textSecond,
-                  onPressed: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (ctx) => DocumentFormSheet(doc: doc),
-                    );
-                  },
-                ),
-              if (ref.can(Perm.docsDelete))
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: context.colors.error,
-                  onPressed: () => _handleDelete(context, ref),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // ── 문서 제목 ───────────────────────────────────────────────────
-          Text(doc.title, style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
-          const SizedBox(height: 8),
-
-          // ── 정보 목록 ────────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.colors.bgSurface,
-              borderRadius: BorderRadius.zero,
-              border: Border.all(color: context.colors.border, width: 0.8),
-            ),
-            child: Column(
-              children: [
-                _InfoRow(label: '카테고리', value: doc.cateName ?? '미지정'),
-                const SizedBox(height: 6),
-                _InfoRow(label: '보안등급', value: _getSecurityLevelLabel(doc)),
-                if (doc.executionDate != null &&
-                    doc.executionDate!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _InfoRow(label: '시행일자', value: doc.executionDate!),
-                ],
-                if (doc.creator != null) ...[
-                  const SizedBox(height: 6),
-                  _InfoRow(label: '등록자', value: doc.creator!.username),
-                ],
-                if (doc.created != null && doc.created!.length >= 10) ...[
-                  const SizedBox(height: 6),
-                  _InfoRow(
-                      label: '등록일시',
-                      value: doc.created!.substring(0, 10)),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+                      child: Column(
+                        children: [
+                          _InfoRow(label: '카테고리', value: doc.cateName ?? '미지정'),
+                          const SizedBox(height: 6),
+                          _InfoRow(label: '보안등급', value: _getSecurityLevelLabel(doc)),
+                          if (doc.executionDate != null &&
+                              doc.executionDate!.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            _InfoRow(label: '시행일자', value: doc.executionDate!),
+                          ],
+                          if (creatorName.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            _InfoRow(label: '등록자', value: creatorName),
+                          ],
+                          if (doc.created != null && doc.created!.length >= 10) ...[
+                            const SizedBox(height: 6),
+                            _InfoRow(
+                                label: '등록일시',
+                                value: doc.created!.substring(0, 10)),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
           // ── 상세 설명 (HTML 파싱 렌더링) ─────────────────────────────────
           Text('설명 / 비고', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
@@ -505,7 +520,12 @@ class DocumentDetailSheet extends ConsumerWidget {
           ],
         ],
       ),
-    );
+    ),
+  ),
+],
+),
+),
+);
   }
 }
 

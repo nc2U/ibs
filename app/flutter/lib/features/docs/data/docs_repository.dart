@@ -55,8 +55,13 @@ class DocsRepository {
         queryParams['doc_type'] = docType;
       }
       final response = await _dio.get('/api/v1/category/', queryParameters: queryParams);
-      final results = response.data['results'] as List<dynamic>? ?? [];
-      return results.map((e) => DocCategoryModel.fromJson(e)).toList();
+      final data = response.data;
+      final List<dynamic> results = (data is List)
+          ? data
+          : (data is Map && data['results'] is List
+              ? data['results'] as List
+              : []);
+      return results.map((e) => DocCategoryModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException {
       return [];
     }

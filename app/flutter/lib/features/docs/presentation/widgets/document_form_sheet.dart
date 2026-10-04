@@ -133,6 +133,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
+        withData: true,
       );
       if (result != null && result.files.isNotEmpty) {
         setState(() {

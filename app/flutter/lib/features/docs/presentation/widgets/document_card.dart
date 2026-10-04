@@ -138,7 +138,9 @@ class DocumentCard extends StatelessWidget {
                           size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        doc.creator!.username,
+                        doc.creator!.name.isNotEmpty
+                            ? doc.creator!.name
+                            : doc.creator!.username,
                         style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                       ),
                       const SizedBox(width: 12),

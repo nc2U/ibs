@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -25,15 +26,46 @@ class DocsScreen extends ConsumerStatefulWidget {
 
 class _DocsScreenState extends ConsumerState<DocsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onSearch(String query) {
-    ref.read(docsSearchProvider.notifier).state = query.trim();
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    if (currentScroll >= maxScroll * 0.85) {
+      ref.read(docsListProvider.notifier).loadNextPage();
+    }
+  }
+
+  void _onSearchChanged(String val) {
+    setState(() {});
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      ref.read(docsSearchProvider.notifier).state = val.trim();
+    });
+  }
+
+  void _onClearSearch() {
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    ref.read(docsSearchProvider.notifier).state = '';
+    setState(() {});
   }
 
   @override
@@ -57,298 +89,341 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
     final docsContext = ref.watch(docsContextProvider);
     final docsListAsync = ref.watch(docsListProvider);
 
+    final isLoadingMore = ref.watch(docsLoadingMoreProvider);
+
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-      body: Column(
-        children: [
-          // ── 1. 선택적 컨텍스트 선택바 (showScopeHeader == true 일 때만 표시) ──
-          if (widget.showScopeHeader) ...[
-            Container(
-              color: context.colors.bgSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  if (Navigator.canPop(context) ||
-                      docsContext.scopeType != DocsScopeType.all) ...[
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                      color: context.colors.textPrimary,
-                      tooltip: '돌아가기',
-                      onPressed: () {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        } else {
+      appBar: widget.showScopeHeader
+          ? null
+          : AppBar(
+              backgroundColor: context.colors.bgPrimary,
+              foregroundColor: context.colors.textPrimary,
+              elevation: 0,
+              title: Text(
+                '공용 문서함',
+                style: AppTextStyles.titleMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
+              ),
+              leading: Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  : null,
+            ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── 1. 선택적 컨텍스트 선택바 (showScopeHeader == true 일 때만 표시) ──
+            if (widget.showScopeHeader) ...[
+              Container(
+                color: context.colors.bgSurface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    if (Navigator.canPop(context) ||
+                        docsContext.scopeType != DocsScopeType.all) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                        color: context.colors.textPrimary,
+                        tooltip: '돌아가기',
+                        onPressed: () {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          } else {
+                            ref.read(docsContextProvider.notifier).state =
+                                DocsContext.all();
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '문서 조회 범위',
+                            style: AppTextStyles.caption
+                                .copyWith(color: context.colors.textMuted),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            docsContext.displayName,
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: docsContext.scopeType == DocsScopeType.all
+                                  ? context.colors.textPrimary
+                                  : (docsContext.scopeType ==
+                                          DocsScopeType.project
+                                      ? context.colors.accentProject
+                                      : const Color(0xFF1565C0)),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => showProjectSelectorBottomSheet(context),
+                      icon: const Icon(Icons.tune_rounded, size: 15),
+                      label: Text(
+                        docsContext.scopeType == DocsScopeType.all
+                            ? '범위 선택'
+                            : '범위 변경',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.colors.accentWork,
+                        side: BorderSide(color: context.colors.accentWork),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    if (docsContext.scopeType != DocsScopeType.all) ...[
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18),
+                        color: context.colors.textMuted,
+                        tooltip: '전체 문서로 리셋',
+                        onPressed: () {
                           ref.read(docsContextProvider.notifier).state =
                               DocsContext.all();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 4),
+                        },
+                      ),
+                    ],
                   ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '문서 조회 범위',
-                          style: AppTextStyles.caption
-                              .copyWith(color: context.colors.textMuted),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          docsContext.displayName,
-                          style: AppTextStyles.titleSm.copyWith(
-                            color: docsContext.scopeType == DocsScopeType.all
-                                ? context.colors.textPrimary
-                                : (docsContext.scopeType ==
-                                        DocsScopeType.project
-                                    ? context.colors.accentProject
-                                    : const Color(0xFF1565C0)),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => showProjectSelectorBottomSheet(context),
-                    icon: const Icon(Icons.tune_rounded, size: 15),
-                    label: Text(
-                      docsContext.scopeType == DocsScopeType.all
-                          ? '범위 선택'
-                          : '범위 변경',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.colors.accentWork,
-                      side: BorderSide(color: context.colors.accentWork),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                  if (docsContext.scopeType != DocsScopeType.all) ...[
-                    const SizedBox(width: 6),
-                    IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
-                      color: context.colors.textMuted,
-                      tooltip: '전체 문서로 리셋',
-                      onPressed: () {
-                        ref.read(docsContextProvider.notifier).state =
-                            DocsContext.all();
-                      },
-                    ),
-                  ],
-                ],
+                ),
+              ),
+              Divider(color: context.colors.border, height: 1),
+            ],
+
+            // ── 2. 실시간 디바운스 검색바 ────────────────────────────────────
+            Container(
+              color: context.colors.bgSurface,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                onSubmitted: (q) {
+                  _debounceTimer?.cancel();
+                  ref.read(docsSearchProvider.notifier).state = q.trim();
+                },
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: '문서 제목 검색...',
+                  hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      size: 18, color: context.colors.textMuted),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: _onClearSearch,
+                        )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
               ),
             ),
             Divider(color: context.colors.border, height: 1),
-          ],
 
-          // ── 2. 검색바 ────────────────────────────────────────────────────
-          Container(
-            color: context.colors.bgSurface,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              onSubmitted: _onSearch,
-              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
-              decoration: InputDecoration(
-                hintText: '문서 제목 검색...',
-                hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
-                prefixIcon: Icon(Icons.search_rounded,
-                    size: 18, color: context.colors.textMuted),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearch('');
-                        },
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              ),
-            ),
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 3. 문서 유형 필터 탭 (일반 문서 | 소송 기록) ──────────────────
-          Builder(
-            builder: (ctx) {
-              final selectedDocType = ref.watch(docTypeFilterProvider);
-              return Container(
-                color: context.colors.bgSurface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _DocTypeFilterChip(
-                        label: '📄 일반 문서',
-                        isSelected: selectedDocType == '1',
-                        onTap: () {
-                          ref.read(docTypeFilterProvider.notifier).state = '1';
-                          ref.read(docCategoryFilterProvider.notifier).state =
-                              null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _DocTypeFilterChip(
-                        label: '⚖️ 소송 기록',
-                        isSelected: selectedDocType == '2',
-                        onTap: () {
-                          ref.read(docTypeFilterProvider.notifier).state = '2';
-                          ref.read(docCategoryFilterProvider.notifier).state =
-                              null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 4. 카테고리 셀렉트(드롭다운) 필터 바 ──────────────────────────────
-          Consumer(
-            builder: (ctx, ref, child) {
-              final selectedDocType = ref.watch(docTypeFilterProvider);
-              final selectedCategory = ref.watch(docCategoryFilterProvider);
-              final categoriesAsync = ref.watch(docCategoriesProvider);
-
-              return categoriesAsync.when(
-                data: (allCategories) {
-                  // 현재 선택된 docType ('1' 일반, '2' 소송)에 해당하는 카테고리만 추출
-                  final categories = allCategories
-                      .where((c) =>
-                          c.docType == null || c.docType == selectedDocType)
-                      .toList();
-
-                  return Container(
-                    color: context.colors.bgSurface,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.filter_list_rounded,
-                            size: 16, color: context.colors.accentWork),
-                        const SizedBox(width: 8),
-                        Text('카테고리:',
-                            style: AppTextStyles.caption
-                                .copyWith(color: context.colors.textMuted)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Container(
-                            height: 34,
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: context.colors.bgCard,
-                              borderRadius: BorderRadius.zero,
-                              border: Border.all(
-                                color: selectedCategory != null
-                                    ? context.colors.accentWork.withAlpha(120)
-                                    : context.colors.border,
-                              ),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<int?>(
-                                value: selectedCategory,
-                                isExpanded: true,
-                                icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 18,
-                                    color: context.colors.textSecond),
-                                style: AppTextStyles.bodySm.copyWith(
-                                  color: selectedCategory != null
-                                      ? context.colors.accentWork
-                                      : context.colors.textPrimary,
-                                  fontWeight: selectedCategory != null
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                dropdownColor: context.colors.bgCard,
-                                items: [
-                                  DropdownMenuItem<int?>(
-                                    value: null,
-                                    child: Text(
-                                        '전체 카테고리 (${categories.length}개)',
-                                        style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
-                                  ),
-                                  ...categories.map(
-                                    (c) => DropdownMenuItem<int?>(
-                                      value: c.pk,
-                                      child: Text(c.name,
-                                          style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
-                                    ),
-                                  ),
-                                ],
-                                onChanged: (val) {
-                                  ref
-                                      .read(docCategoryFilterProvider.notifier)
-                                      .state = val;
-                                },
-                              ),
-                            ),
-                          ),
+            // ── 3. 문서 유형 필터 탭 (일반 문서 | 소송 기록) ──────────────────
+            Builder(
+              builder: (ctx) {
+                final selectedDocType = ref.watch(docTypeFilterProvider);
+                return Container(
+                  color: context.colors.bgSurface,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _DocTypeFilterChip(
+                          label: '📄 일반 문서',
+                          isSelected: selectedDocType == '1',
+                          onTap: () {
+                            ref.read(docTypeFilterProvider.notifier).state = '1';
+                            ref.read(docCategoryFilterProvider.notifier).state =
+                                null;
+                          },
                         ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (e, s) => const SizedBox.shrink(),
-              );
-            },
-          ),
-          Divider(color: context.colors.border, height: 1),
-
-          // ── 5. 문서 목록 ──────────────────────────────────────────────────
-          Expanded(
-            child: docsListAsync.when(
-              data: (data) {
-                if (data.results.isEmpty) {
-                  return const ErrorView(
-                    message: '등록된 문서가 없습니다.',
-                    icon: Icons.folder_open_rounded,
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () =>
-                      ref.read(docsListProvider.notifier).refresh(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: data.results.length,
-                    itemBuilder: (ctx, index) {
-                      final doc = data.results[index];
-                      return DocumentCard(
-                        doc: doc,
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (bCtx) => DocumentDetailSheet(doc: doc),
-                          );
-                        },
-                      );
-                    },
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _DocTypeFilterChip(
+                          label: '⚖️ 소송 기록',
+                          isSelected: selectedDocType == '2',
+                          onTap: () {
+                            ref.read(docTypeFilterProvider.notifier).state = '2';
+                            ref.read(docCategoryFilterProvider.notifier).state =
+                                null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
-              loading: () => const LoadingShimmer(),
-              error: (err, stack) => ErrorView(
-                message: '$err',
-                onRetry: () => ref.read(docsListProvider.notifier).refresh(),
+            ),
+            Divider(color: context.colors.border, height: 1),
+
+            // ── 4. 카테고리 셀렉트(드롭다운) 필터 바 (안전 폴백 검증) ───────────
+            Consumer(
+              builder: (ctx, ref, child) {
+                final selectedDocType = ref.watch(docTypeFilterProvider);
+                final selectedCategory = ref.watch(docCategoryFilterProvider);
+                final categoriesAsync = ref.watch(docCategoriesProvider);
+
+                return categoriesAsync.when(
+                  data: (allCategories) {
+                    // 현재 선택된 docType ('1' 일반, '2' 소송)에 해당하는 카테고리만 추출
+                    final categories = allCategories
+                        .where((c) =>
+                            c.docType == null || c.docType == selectedDocType)
+                        .toList();
+
+                    // DropdownButton Assertion Error 방지: 목록 내 존재하는지 검증
+                    final isValidValue = selectedCategory == null ||
+                        categories.any((c) => c.pk == selectedCategory);
+                    final safeCategoryValue = isValidValue ? selectedCategory : null;
+
+                    return Container(
+                      color: context.colors.bgSurface,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.filter_list_rounded,
+                              size: 16, color: context.colors.accentWork),
+                          const SizedBox(width: 8),
+                          Text('카테고리:',
+                              style: AppTextStyles.caption
+                                  .copyWith(color: context.colors.textMuted)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              height: 34,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: context.colors.bgCard,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(
+                                  color: safeCategoryValue != null
+                                      ? context.colors.accentWork.withAlpha(120)
+                                      : context.colors.border,
+                                ),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<int?>(
+                                  value: safeCategoryValue,
+                                  isExpanded: true,
+                                  icon: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 18,
+                                      color: context.colors.textSecond),
+                                  style: AppTextStyles.bodySm.copyWith(
+                                    color: safeCategoryValue != null
+                                        ? context.colors.accentWork
+                                        : context.colors.textPrimary,
+                                    fontWeight: safeCategoryValue != null
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                  dropdownColor: context.colors.bgCard,
+                                  items: [
+                                    DropdownMenuItem<int?>(
+                                      value: null,
+                                      child: Text(
+                                          '전체 카테고리 (${categories.length}개)',
+                                          style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
+                                    ),
+                                    ...categories.map(
+                                      (c) => DropdownMenuItem<int?>(
+                                        value: c.pk,
+                                        child: Text(c.name,
+                                            style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (val) {
+                                    ref
+                                        .read(docCategoryFilterProvider.notifier)
+                                        .state = val;
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
+                );
+              },
+            ),
+            Divider(color: context.colors.border, height: 1),
+
+            // ── 5. 문서 목록 (ScrollController 기반 무한 스크롤 연동) ────────────
+            Expanded(
+              child: docsListAsync.when(
+                data: (data) {
+                  if (data.results.isEmpty) {
+                    return const ErrorView(
+                      message: '등록된 문서가 없습니다.',
+                      icon: Icons.folder_open_rounded,
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(docsListProvider.notifier).refresh(),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: data.results.length + (isLoadingMore ? 1 : 0),
+                      itemBuilder: (ctx, index) {
+                        if (index >= data.results.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        final doc = data.results[index];
+                        return DocumentCard(
+                          doc: doc,
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (bCtx) => DocumentDetailSheet(doc: doc),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => const LoadingShimmer(),
+                error: (err, stack) => ErrorView(
+                  message: '$err',
+                  onRetry: () => ref.read(docsListProvider.notifier).refresh(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마, docs.create 권한 체크) ───────────
@@ -422,4 +497,3 @@ class _DocTypeFilterChip extends StatelessWidget {
     );
   }
 }
-

@@ -25,6 +25,9 @@ final docTypeFilterProvider = StateProvider<String?>((ref) => '1');
 /// 문서 카테고리 필터 StateProvider (null: 전체)
 final docCategoryFilterProvider = StateProvider<int?>((ref) => null);
 
+/// 문서 추가 페이지 로딩 상태 StateProvider
+final docsLoadingMoreProvider = StateProvider<bool>((ref) => false);
+
 /// 문서 목록 Notifier
 final docsListProvider = AsyncNotifierProvider<DocsListNotifier, DocumentListResponseModel>(
   DocsListNotifier.new,
@@ -32,6 +35,7 @@ final docsListProvider = AsyncNotifierProvider<DocsListNotifier, DocumentListRes
 
 class DocsListNotifier extends AsyncNotifier<DocumentListResponseModel> {
   int _currentPage = 1;
+  bool _isLoadingMore = false;
 
   @override
   Future<DocumentListResponseModel> build() async {
@@ -42,6 +46,7 @@ class DocsListNotifier extends AsyncNotifier<DocumentListResponseModel> {
     final repo = ref.watch(docsRepositoryProvider);
 
     _currentPage = 1;
+    _isLoadingMore = false;
     final issueProjectId = ctx.project?.pk;
 
     return repo.fetchDocuments(
@@ -54,13 +59,18 @@ class DocsListNotifier extends AsyncNotifier<DocumentListResponseModel> {
   }
 
   Future<void> refresh() async {
+    _currentPage = 1;
+    _isLoadingMore = false;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => build());
   }
 
   Future<void> loadNextPage() async {
     final currentData = state.value;
-    if (currentData == null || currentData.next == null) return;
+    if (currentData == null || currentData.next == null || _isLoadingMore) return;
+
+    _isLoadingMore = true;
+    ref.read(docsLoadingMoreProvider.notifier).state = true;
 
     final repo = ref.read(docsRepositoryProvider);
     final ctx = ref.read(docsContextProvider);
@@ -69,21 +79,28 @@ class DocsListNotifier extends AsyncNotifier<DocumentListResponseModel> {
     final category = ref.read(docCategoryFilterProvider);
 
     _currentPage++;
-    final nextPageData = await repo.fetchDocuments(
-      issueProject: ctx.project?.pk,
-      docType: docType,
-      category: category,
-      search: search,
-      page: _currentPage,
-    );
+    try {
+      final nextPageData = await repo.fetchDocuments(
+        issueProject: ctx.project?.pk,
+        docType: docType,
+        category: category,
+        search: search,
+        page: _currentPage,
+      );
 
-    state = AsyncValue.data(
-      DocumentListResponseModel(
-        count: nextPageData.count,
-        next: nextPageData.next,
-        previous: nextPageData.previous,
-        results: [...currentData.results, ...nextPageData.results],
-      ),
-    );
+      state = AsyncValue.data(
+        DocumentListResponseModel(
+          count: nextPageData.count,
+          next: nextPageData.next,
+          previous: nextPageData.previous,
+          results: [...currentData.results, ...nextPageData.results],
+        ),
+      );
+    } catch (_) {
+      _currentPage--;
+    } finally {
+      _isLoadingMore = false;
+      ref.read(docsLoadingMoreProvider.notifier).state = false;
+    }
   }
 }
