@@ -69,9 +69,12 @@ const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed:
   return colors[status.pk] || 'grey-lighten-1'
 }
 
-// 가져온 일정을 요일별로 분배
+// 가져온 일정을 요일별로 분배 (매 렌더링 시 새 배열 생성하여 중복 누적 방지)
 const weekEvents = computed(() => {
-  const map = { ...weekDaysMap.value }
+  const map: Record<string, any[]> = {}
+  weekDays.value.forEach(d => {
+    map[d.dateStr] = []
+  })
 
   calendarStore.events.forEach(event => {
     // 캘린더 일정의 날짜(시작일)에 해당하는 요일에 배치

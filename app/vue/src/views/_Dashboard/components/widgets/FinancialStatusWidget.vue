@@ -95,15 +95,11 @@ const refreshData = () => {
   }
 }
 
-watch(
-  selectedProject,
-  newProj => {
-    if (newProj) {
-      fetchFinancialSummary(newProj)
-    }
-  },
-  { immediate: true },
-)
+watch(selectedProject, newProj => {
+  if (newProj) {
+    fetchFinancialSummary(newProj)
+  }
+})
 
 onMounted(async () => {
   if (projectStore.projectList.length === 0) {

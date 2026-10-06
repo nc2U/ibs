@@ -41,9 +41,20 @@ const colors = ref([
 ])
 
 const currentColor = ref('#9FA8DA')
+let lastColorIndex = -1
+let lastWordIndex = -1
 
 const getColor = () => {
-  const randomIndex = Math.floor(Math.random() * colors.value.length)
+  if (colors.value.length <= 1) {
+    currentColor.value = colors.value[0] || '#9FA8DA'
+    return
+  }
+  let randomIndex = Math.floor(Math.random() * colors.value.length)
+  // 직전 색상과 중복 방지
+  while (randomIndex === lastColorIndex) {
+    randomIndex = Math.floor(Math.random() * colors.value.length)
+  }
+  lastColorIndex = randomIndex
   currentColor.value = colors.value[randomIndex]
 }
 
@@ -51,16 +62,25 @@ watch(isDark, () => getColor())
 
 const ibsStore = useIbs()
 const wiseWordsList = computed(() => ibsStore.wiseWordsList)
-const counts = computed(() => ibsStore.wiseWordsCount)
 
 const fetchWiseWordsList = () => ibsStore.fetchWiseWordsList()
 
-const getIndex = () => Math.floor(Math.random() * counts.value)
+const getNextIndex = () => {
+  const len = wiseWordsList.value.length
+  if (len <= 1) return 0
+  let nextIdx = Math.floor(Math.random() * len)
+  // 직전 명언과 중복 방지
+  while (nextIdx === lastWordIndex) {
+    nextIdx = Math.floor(Math.random() * len)
+  }
+  lastWordIndex = nextIdx
+  return nextIdx
+}
 
-const refreshWiseWord = async () => {
+const refreshWiseWord = () => {
   if (wiseWordsList.value.length > 0) {
     getColor()
-    wiseWord.value = wiseWordsList.value[getIndex()]
+    wiseWord.value = wiseWordsList.value[getNextIndex()]
   }
 }
 
@@ -70,9 +90,11 @@ onBeforeMount(async () => {
   getColor()
   await fetchWiseWordsList()
   if (wiseWordsList.value.length > 0) {
-    wiseWord.value = wiseWordsList.value[getIndex()]
+    wiseWord.value = wiseWordsList.value[getNextIndex()]
   }
   intervalId = setInterval(() => {
+    // 탭이 백그라운드에 숨겨져 있을 때는 불필요한 렌더링 방지
+    if (typeof document !== 'undefined' && document.hidden) return
     refreshWiseWord()
   }, 30000)
 })
