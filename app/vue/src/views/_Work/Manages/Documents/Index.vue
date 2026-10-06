@@ -97,15 +97,27 @@ const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
 const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
 
 const linkHit = async (pk: number) => {
-  const link = (await fetchLink(pk)) as Link
-  link.hit = (link.hit as number) + 1
-  await patchLink(pk, link)
+  try {
+    const link = (await fetchLink(pk)) as Link
+    if (link) {
+      link.hit = ((link.hit as number) || 0) + 1
+      await patchLink(pk, link)
+    }
+  } catch (e) {
+    console.warn('Failed to update link hit count:', e)
+  }
 }
 
 const fileHit = async (pk: number) => {
-  const file = (await fetchFile(pk)) as AFile
-  const hit = (file.hit as number) + 1
-  await patchFile(pk, { hit })
+  try {
+    const file = (await fetchFile(pk)) as AFile
+    if (file) {
+      const hit = ((file.hit as number) || 0) + 1
+      await patchFile(pk, { hit })
+    }
+  } catch (e) {
+    console.warn('Failed to update file hit count:', e)
+  }
 }
 
 const casesRenewal = (page: number) => {

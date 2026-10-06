@@ -87,12 +87,12 @@ const logStore = useLogging()
 const issueLogList = computed(() => logStore.issueLogList)
 
 const doneRatio = computed(() => {
-  if (props.issue?.sub_issues.length) {
-    return (
-      props.issue.sub_issues.map(sub => sub.done_ratio).reduce((a, b) => a + b) /
-      props.issue.sub_issues.length
-    )
-  } else return props.issue?.done_ratio
+  const subs = props.issue?.sub_issues
+  if (subs && subs.length > 0) {
+    const sum = subs.reduce((acc, sub) => acc + (sub.done_ratio || 0), 0)
+    return Math.round(sum / subs.length)
+  }
+  return props.issue?.done_ratio || 0
 })
 
 const onSubmit = (payload: any) => {

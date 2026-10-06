@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
@@ -8,8 +8,6 @@ import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 defineProps({ aside: { type: Boolean, default: true }, navMenu: { type: Array, default: [] } })
 
 const visible = ref(false)
-
-const query = inject('query') as Record<string, any>
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -28,7 +26,12 @@ const logout = () => {
 }
 
 const goToMenu = (menu: string) => {
-  router.push({ name: menu as RouteRecordName, query: { ...query } })
+  const targetName = menu as RouteRecordName
+  if (route.params['projId']) {
+    router.push({ name: targetName, params: { projId: route.params['projId'] } })
+  } else {
+    router.push({ name: targetName })
+  }
   visible.value = false
 }
 const toggle = () => (visible.value = !visible.value)

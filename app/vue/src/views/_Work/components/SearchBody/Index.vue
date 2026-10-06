@@ -105,7 +105,6 @@ watch(
 
 onBeforeRouteLeave((to, from, next) => {
   searchStore.reset()
-  to.query = {}
   next()
 })
 
