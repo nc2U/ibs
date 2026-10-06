@@ -13,9 +13,11 @@ interface SignUser {
 
 const accountStore = useAccount()
 
-const onSubmit = (payload: SignUser) => {
-  accountStore.signup(payload)
-  router.replace({ name: 'Login' })
+const onSubmit = async (payload: SignUser) => {
+  const success = await accountStore.signup(payload)
+  if (success) {
+    router.replace({ name: 'Login' })
+  }
 }
 </script>
 

@@ -12,9 +12,18 @@ const refAlertModal = ref()
 const accStore = useAccount()
 const [route, router] = [useRoute(), useRouter()]
 
-const uid = computed(() => Number(atob(route.query.uidb64 as string)))
+const isLoading = ref(true)
+
+const uid = computed(() => {
+  try {
+    return route.query.uidb64 ? Number(atob(route.query.uidb64 as string)) : 0
+  } catch {
+    return 0
+  }
+})
 const token = computed(() => route.query.token)
 const isExpired = computed(() => {
+  if (isLoading.value) return false
   const resetToken = accStore.resetTokenList.length ? accStore.resetTokenList[0] : null
   if (!!resetToken) {
     if (resetToken.is_expired)
@@ -23,19 +32,22 @@ const isExpired = computed(() => {
   } else return true
 })
 
-const fetchResetTokenList = (user: number) => accStore.fetchResetTokenList(user)
-
 const onSubmit = async (new_password: string) => {
   const payload = {
     user_id: route.query.uidb64,
     token: route.query.token,
     new_password,
   }
-  accStore.passResetConfirm(payload)
+  await accStore.passResetConfirm(payload)
   await refAlertModal.value.callModal('', '', '', 'success')
 }
 
-onBeforeMount(() => fetchResetTokenList(uid.value))
+onBeforeMount(async () => {
+  if (uid.value) {
+    await accStore.fetchResetTokenList(uid.value)
+  }
+  isLoading.value = false
+})
 </script>
 
 <template>
@@ -47,7 +59,11 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
       <CRow class="justify-content-center">
         <CCol md="8" lg="6" xl="4">
           <CCard class="p-4">
-            <CCardBody v-if="isExpired" class="text-center text-danger">
+            <CCardBody v-if="isLoading" class="text-center py-5">
+              <CSpinner color="primary" />
+              <p class="mt-3 text-muted">토큰 유효성을 검증하는 중입니다...</p>
+            </CCardBody>
+            <CCardBody v-else-if="isExpired" class="text-center text-danger">
               <h2>This Token was Expired!</h2>
               <div class="text-left pt-3">
                 <p class="text-muted">

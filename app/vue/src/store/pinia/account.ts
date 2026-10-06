@@ -85,8 +85,14 @@ export const useAccount = defineStore('account', () => {
   const signup = (payload: LoginUser & { username: string }) =>
     api
       .post('/user/', payload)
-      .then(() => message('info', '', '회원가입이 완료되었습니다.'))
-      .catch(err => errorHandle(err.response.data))
+      .then(() => {
+        message('info', '', '회원가입이 완료되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err.response.data)
+        return false
+      })
 
   const setToken = (token: string) => {
     accessToken.value = token

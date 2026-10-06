@@ -11,11 +11,13 @@ const formName = ref('login')
 const accStore = useAccount()
 const router = useRouter()
 
-const onSubmit = (payload: { email: string; password: string; redirect: string }) =>
-  accStore.login(payload).then(() => {
+const onSubmit = async (payload: { email: string; password: string; redirect: string }) => {
+  const user = await accStore.login(payload)
+  if (user && (user.profile || user.is_superuser)) {
     if (payload.redirect) router.push(payload.redirect)
     else router.push({ name: 'Home' })
-  })
+  }
+}
 
 const toLogin = () => (formName.value = 'login')
 const findPass = () => (formName.value = 'pass')
