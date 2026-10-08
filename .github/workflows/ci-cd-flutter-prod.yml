@@ -3,10 +3,18 @@ name: "[Prod] Flutter App Distribution"
 on:
   workflow_dispatch:
     inputs:
+      track:
+        description: 'Google Play 출시 트랙 (internal: 내부테스트, production: 프로덕션)'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - production
       release_note:
         description: '배포 릴리즈 노트 (선택 사항)'
         required: false
-        default: 'Prod 정식 릴리즈 배포'
+        default: 'IBS 웍스 최신 정식 버전 배포'
 
 concurrency:
   group: flutter-prod-deployment
@@ -14,7 +22,7 @@ concurrency:
 
 jobs:
   build-and-deploy-android:
-    name: Build & Deploy Android (Prod)
+    name: Build & Deploy Android (Google Play)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,22 +46,45 @@ jobs:
           echo "${{ secrets.FLUTTER_ENV_PROD }}" > .env
           python3 setup_env.py
 
+      - name: Setup Android Keystore & Signing
+        working-directory: app/flutter/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          KEYSTORE_PATH="$RUNNER_TEMP/upload-keystore.jks"
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          cat <<EOF > key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=$KEYSTORE_PATH
+          EOF
+
       - name: Install Dependencies
         working-directory: app/flutter
         run: flutter pub get
 
-      - name: Build Android APK
+      - name: Build Android App Bundle
         working-directory: app/flutter
-        run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://ibs.dyibs.com
+        run: flutter build appbundle --release --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://ibs.dyibs.com
 
-      - name: Deploy to Firebase App Distribution (Android)
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+      - name: Prepare Release Notes
+        run: |
+          mkdir -p app/flutter/distribution/whatsnew
+          echo "${{ inputs.release_note || 'IBS 웍스 최신 정식 버전 배포' }}" > app/flutter/distribution/whatsnew/whatsnew-ko-KR
+
+      - name: Deploy to Google Play
+        uses: r0adkll/upload-google-play@v1
         with:
-          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
-          groups: testers
-          releaseNotes: "${{ inputs.release_note || format('Prod Release Build #{0} ({1})', github.run_number, github.sha) }}"
-          file: app/flutter/build/app/outputs/flutter-apk/app-release.apk
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          packageName: com.dyibs.mobileibs
+          releaseFiles: app/flutter/build/app/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.track }}
+          status: completed
+          whatsNewDirectory: app/flutter/distribution/whatsnew
 
   build-and-deploy-ios:
     name: Build & Deploy iOS (Prod)

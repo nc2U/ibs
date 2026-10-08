@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 import '../storage/token_storage.dart';
@@ -12,8 +13,9 @@ const _retryableTypes = {
 };
 
 /// 개발/운영 환경별 Base URL
-/// - 빌드 시 `--dart-define=BASE_URL=https://your-prod-api.com` 옵션으로 운영서버 주소 동적 주입 가능
-/// - 미지정 시 기본값: 로컬 개발 환경 (localhost / 10.0.2.2)
+/// - CI/CD 빌드 시 `--dart-define=BASE_URL=https://...` 옵션으로 동적 주입 최우선 적용
+/// - 릴리즈 빌드 미지정 시: 안전장치로 운영 서버(`https://ibs.dyibs.com`) 적용
+/// - 로컬 디버그 모드(`flutter run`): 로컬 백엔드 서버(Android: 10.0.2.2:8000, iOS/Web: localhost:8000)
 String get appBaseUrl {
   const envUrl = String.fromEnvironment('BASE_URL');
   if (envUrl.isNotEmpty) {
@@ -24,8 +26,14 @@ String get appBaseUrl {
     return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
   }
 
-  if (Platform.isAndroid) return 'http://10.0.2.2'; // 에뮬레이터 → localhost
-  return 'http://localhost';
+  // 릴리즈 빌드 시 안전 fallback: 운영 서버 도메인
+  if (kReleaseMode) {
+    return 'https://ibs.dyibs.com';
+  }
+
+  // 로컬 개발 디버그 모드 (flutter run)
+  if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+  return 'http://localhost:8000';
 }
 
 String get _baseUrl => appBaseUrl;

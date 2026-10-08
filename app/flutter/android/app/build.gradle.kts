@@ -22,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "com.dyibs.mobileibs"
         minSdk = flutter.minSdkVersion
-        targetSdk = 34
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
