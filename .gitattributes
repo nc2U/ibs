@@ -1,0 +1,5 @@
+# Set default behavior for all files
+* text=auto
+
+# Enforce Unix line endings (LF) for shell scripts, regardless of OS
+*.sh text eol=lf
