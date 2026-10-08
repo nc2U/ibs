@@ -3,3 +3,9 @@
 
 # Enforce Unix line endings (LF) for shell scripts, regardless of OS
 *.sh text eol=lf
+
+# Enforce LF for Flutter generated files
+*.cc text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
+*.swift text eol=lf
