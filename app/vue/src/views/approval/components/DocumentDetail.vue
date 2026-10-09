@@ -21,7 +21,8 @@ const approvalStore = useApproval()
 const accountStore = useAccount()
 
 const { document } = storeToRefs(approvalStore)
-const { fetchDocument, submitDocument, actDocument, cancelDocument } = approvalStore
+const { fetchDocument, fetchDelegationList, submitDocument, actDocument, cancelDocument } =
+  approvalStore
 const myUser = computed(() => accountStore.userInfo)
 
 const docId = computed(() => Number(route.params.docId))
@@ -183,7 +184,9 @@ const detailComponent = computed(() => {
   return FallbackDetail
 })
 
-onMounted(() => fetchDocument(docId.value))
+onMounted(async () => {
+  await Promise.all([fetchDocument(docId.value), fetchDelegationList()])
+})
 </script>
 
 <template>

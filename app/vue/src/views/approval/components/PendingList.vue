@@ -227,7 +227,9 @@ onMounted(fetchMyPending)
           <v-chip color="primary" variant="elevated" size="x-small">{{ doc.doc_type_name }}</v-chip>
         </CTableDataCell>
         <CTableDataCell class="pl-3 fw-semibold">{{ doc.title }}</CTableDataCell>
-        <CTableDataCell class="text-center">{{ doc.drafter.full_name }}</CTableDataCell>
+        <CTableDataCell class="text-center">
+          {{ doc.drafter?.full_name ?? doc.drafter?.username ?? '-' }}
+        </CTableDataCell>
         <CTableDataCell class="text-center text-medium-emphasis small">
           {{ fmtDate(doc.submitted_at) }}
         </CTableDataCell>
@@ -264,7 +266,9 @@ onMounted(fetchMyPending)
               </v-chip>
             </CTableDataCell>
             <CTableHeaderCell class="light" style="width: 80px">기안자</CTableHeaderCell>
-            <CTableDataCell>{{ selectedDoc.drafter.full_name }}</CTableDataCell>
+            <CTableDataCell>
+              {{ selectedDoc.drafter?.full_name ?? selectedDoc.drafter?.username ?? '-' }}
+            </CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableHeaderCell class="light">제목</CTableHeaderCell>
@@ -341,7 +345,9 @@ onMounted(fetchMyPending)
               </v-chip>
               <span class="small fw-semibold">{{ doc.title }}</span>
             </div>
-            <span class="small text-muted text-nowrap">기안자: {{ doc.drafter.full_name }}</span>
+            <span class="small text-muted text-nowrap">
+              기안자: {{ doc.drafter?.full_name ?? doc.drafter?.username ?? '-' }}
+            </span>
           </div>
         </div>
       </div>
