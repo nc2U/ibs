@@ -56,7 +56,7 @@ const logout = () => {
         <span>{{ profile && profile.name ? profile.name : userInfo.username }}님</span>
         <v-chip
           v-if="userInfo.is_superuser"
-          color="danger"
+          color="deep-purple-lighten-1"
           variant="flat"
           size="x-small"
           class="ml-2"
