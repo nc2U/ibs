@@ -276,6 +276,13 @@ const refreshBalance = async () => {
   }
 }
 
+const projSelect = () => {
+  // 프로젝트 전환 시 기존 수신자 및 폼 관련 상태 초기화
+  recipientInput.value = ''
+  recipientsList.value = []
+  recipientsWithVariables.value = []
+}
+
 // 초기화 (잔액 자동 조회)
 onBeforeMount(async () => {
   loading.value = false
@@ -288,7 +295,12 @@ onBeforeMount(async () => {
   <NoticeAuthGuard>
     <Loading v-model:active="loading" />
 
-    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
     <ContentBody>
       <!-- 메인 탭 (발송 / 히스토리) -->

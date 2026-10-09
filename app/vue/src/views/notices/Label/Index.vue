@@ -103,27 +103,46 @@ const fetchLabels = async () => {
   }
 }
 
+const dataReset = () => {
+  noticeStore.postLabels = []
+  noticeStore.postLabelsCount = 0
+  contractStore.orderGroupList = []
+  pDataStore.buildingList = []
+  selectedIds.value = []
+  curPage.value = 1
+}
+
+const dataSetup = async (projId: number) => {
+  await Promise.all([
+    contractStore.fetchOrderGroupList(projId),
+    pDataStore.fetchBuildingList(projId),
+  ])
+  await fetchLabels()
+}
+
+const projSelect = async (target: number | null) => {
+  dataReset()
+  if (target) {
+    await dataSetup(target)
+  }
+}
+
 // 프로젝트 변경 시 재조회
 watch(
   () => project.value,
   async newProj => {
     if (newProj) {
-      await Promise.all([
-        contractStore.fetchOrderGroupList(newProj),
-        pDataStore.fetchBuildingList(newProj),
-      ])
-      await fetchLabels()
+      await dataSetup(newProj)
+    } else {
+      dataReset()
     }
   },
 )
 
 onBeforeMount(async () => {
-  if (project.value) {
-    await Promise.all([
-      contractStore.fetchOrderGroupList(project.value),
-      pDataStore.fetchBuildingList(project.value),
-    ])
-    await fetchLabels()
+  const projId = project.value || projStore.currentProject
+  if (projId) {
+    await dataSetup(projId)
   }
 })
 
@@ -189,10 +208,15 @@ const displayAddress = (item: PostLabel) => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
-  <ContentBody>
-    <NoticeAuthGuard :is-authorized="canNoticeRead">
+  <NoticeAuthGuard>
+    <Loading v-model:active="loading" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
+    <ContentBody>
       <!-- 1. 상단 컨트롤 패널 (필터 + 라벨 규격 설정) -->
       <CCard class="m-3 shadow-sm">
         <CCardBody>
@@ -548,8 +572,8 @@ const displayAddress = (item: PostLabel) => {
           </v-btn>
         </CModalFooter>
       </CModal>
-    </NoticeAuthGuard>
-  </ContentBody>
+    </ContentBody>
+  </NoticeAuthGuard>
 </template>
 
 <style scoped>

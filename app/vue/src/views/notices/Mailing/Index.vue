@@ -266,25 +266,49 @@ const openDetail = async (noticeItem: EmailNotice) => {
   showDetailModal.value = true
 }
 
+const dataReset = () => {
+  editableRecipients.value = []
+  noticeStore.emailRecipientsData = null
+  noticeStore.emailNotices = []
+  noticeStore.emailNoticesCount = 0
+  contractStore.orderGroupList = []
+  pDataStore.buildingList = []
+  form.value.title = ''
+  form.value.content = ''
+}
+
+const dataSetup = async (projId: number) => {
+  loading.value = true
+  try {
+    await Promise.all([
+      contractStore.fetchOrderGroupList(projId),
+      pDataStore.fetchBuildingList(projId),
+    ])
+    if (activeTab.value === 'write') {
+      await fetchRecipients()
+    } else {
+      await fetchHistory()
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const projSelect = async (target: number | null) => {
+  dataReset()
+  if (target) {
+    await dataSetup(target)
+  }
+}
+
 // 프로젝트 변경 시 재조회
 watch(
   () => project.value,
   async newProj => {
     if (newProj) {
-      loading.value = true
-      try {
-        await Promise.all([
-          contractStore.fetchOrderGroupList(newProj),
-          pDataStore.fetchBuildingList(newProj),
-        ])
-        if (activeTab.value === 'write') {
-          await fetchRecipients()
-        } else {
-          await fetchHistory()
-        }
-      } finally {
-        loading.value = false
-      }
+      await dataSetup(newProj)
+    } else {
+      dataReset()
     }
   },
 )
@@ -301,17 +325,9 @@ watch(
 )
 
 onBeforeMount(async () => {
-  if (project.value) {
-    loading.value = true
-    try {
-      await Promise.all([
-        contractStore.fetchOrderGroupList(project.value),
-        pDataStore.fetchBuildingList(project.value),
-      ])
-      await fetchRecipients()
-    } finally {
-      loading.value = false
-    }
+  const projId = project.value || projStore.currentProject
+  if (projId) {
+    await dataSetup(projId)
   }
 })
 
@@ -331,12 +347,17 @@ const getStatusBadgeColor = (status: string) => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
+  <NoticeAuthGuard>
+    <Loading v-model:active="loading" />
 
-  <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
-    <NoticeAuthGuard :is-authorized="canNoticeRead">
+    <ContentBody>
       <!-- 메인 탭 (새 이메일 작성 및 발송 / 이메일 발송 이력 대장) -->
       <CCol class="mb-3">
         <CCardHeader>
@@ -1089,6 +1110,6 @@ const getStatusBadgeColor = (status: string) => {
           <v-btn color="light" size="small" flat @click="showDetailModal = false">닫기</v-btn>
         </CModalFooter>
       </CModal>
-    </NoticeAuthGuard>
-  </ContentBody>
+    </ContentBody>
+  </NoticeAuthGuard>
 </template>
