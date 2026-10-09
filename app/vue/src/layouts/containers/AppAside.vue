@@ -402,7 +402,7 @@ const openExternal = (url: string) => {
           테마 설정
         </h6>
         <div class="d-flex align-items-center justify-content-between p-2 bg-more-light rounded border">
-          <span class="small">화면 테마</span>
+          <span class="small text-muted">화면 테마</span>
           <div class="d-flex gap-1">
             <v-btn
               size="x-small"
