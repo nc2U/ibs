@@ -17,6 +17,7 @@ import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../approval/providers/approval_providers.dart';
 import '../../chat/providers/chat_provider.dart';
+import '../../todo/presentation/providers/todo_provider.dart';
 import '../widgets/push_permission_prompt_modal.dart';
 
 /// ShellRoute 메인 래퍼
@@ -124,6 +125,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     ref.invalidate(pendingApprovalsProvider);
     ref.invalidate(totalUnreadChatCountProvider);
     ref.invalidate(chatRoomsProvider);
+    ref.read(todoListProvider.notifier).refresh();
   }
 
   @override
@@ -250,6 +252,55 @@ class _MainShellState extends ConsumerState<MainShell> {
                           ),
                           child: Text(
                             unreadChatCount > 99 ? '99+' : '$unreadChatCount',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+
+            // ── 📝 할일 관리 바로가기 및 미완료 할일 배지 ─────────────────────
+            Consumer(
+              builder: (ctx, ref, _) {
+                final pendingTodoCount = ref.watch(pendingTodoCountProvider);
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        pendingTodoCount > 0
+                            ? Icons.checklist_rounded
+                            : Icons.check_box_outlined,
+                        size: 22,
+                        color: pendingTodoCount > 0
+                            ? context.colors.accentWork
+                            : context.colors.textMuted,
+                      ),
+                      tooltip: '할일 관리',
+                      onPressed: () {
+                        ref.read(todoListProvider.notifier).refresh();
+                        context.push(AppRoutes.todo);
+                      },
+                    ),
+                    if (pendingTodoCount > 0)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(3.5),
+                          decoration: BoxDecoration(
+                            color: context.colors.accentWork,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            pendingTodoCount > 99 ? '99+' : '$pendingTodoCount',
                             style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,

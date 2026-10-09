@@ -27,11 +27,13 @@ import '../../features/approval/presentation/inbound_letter_detail_screen.dart';
 import '../../features/chat/data/models/chat_model.dart';
 import '../../features/chat/presentation/chat_room_list_screen.dart';
 import '../../features/chat/presentation/chat_room_screen.dart';
+import '../../features/todo/presentation/todo_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
   static const login        = '/login';
   static const home         = '/home';
+  static const todo         = '/todo';
   static const work         = '/work';
   static const issues       = '/work/issues';
   static const issueDetail  = '/work/issues/:issueId';
@@ -248,6 +250,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.search,
             builder: (ctx, state) => const SearchResultsScreen(),
+          ),
+
+          // 할일 관리 화면
+          GoRoute(
+            path: AppRoutes.todo,
+            builder: (ctx, state) => const TodoScreen(),
           ),
 
           // 메신저 대화방 목록
