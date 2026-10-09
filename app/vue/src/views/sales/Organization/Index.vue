@@ -7,6 +7,7 @@ import type { Project } from '@/store/types/project'
 import type { SalesAgency, SalesTeam, SalesPerson } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import SalesAuthGuard from '@/components/AuthGuard/SalesAuthGuard.vue'
 import AgencyTeamTree from './components/AgencyTeamTree.vue'
 import PersonList from './components/PersonList.vue'
 import AgencyFormModal from './components/AgencyFormModal.vue'
@@ -54,12 +55,6 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  if (project.value) {
-    loadData(project.value)
-  }
-})
-
 // 이벤트 핸들러
 const onSelectAgency = (agencyId: number | null) => {
   selectedAgencyId.value = agencyId
@@ -92,14 +87,15 @@ const onDataChanged = async () => {
 </script>
 
 <template>
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+  <SalesAuthGuard>
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
+    <ContentBody>
     <CCardBody class="p-3 p-md-4 pb-5">
       <div v-if="!project" class="py-5 text-center text-muted">
         <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
@@ -160,4 +156,5 @@ const onDataChanged = async () => {
     />
     <PersonDocumentModal ref="docModalRef" @updated="onDataChanged" />
   </ContentBody>
+</SalesAuthGuard>
 </template>

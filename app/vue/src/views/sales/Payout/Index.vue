@@ -10,6 +10,7 @@ import type { Project } from '@/store/types/project'
 import type { CommissionPayout, AgencyPayout } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import SalesAuthGuard from '@/components/AuthGuard/SalesAuthGuard.vue'
 import PayoutStatusSummary from './components/PayoutStatusSummary.vue'
 import PayoutDetailModal from '@/views/sales/Settlement/components/PayoutDetailModal.vue'
 import PersonPayoutHistoryModal from './components/PersonPayoutHistoryModal.vue'
@@ -99,12 +100,6 @@ watch(selectedPeriodId, async newVal => {
   } else {
     salesStore.payoutList = []
     salesStore.agencyPayoutList = []
-  }
-})
-
-onMounted(() => {
-  if (project.value) {
-    loadData(project.value)
   }
 })
 
@@ -300,14 +295,15 @@ const agencyPayStatusColor = (status: string) => {
 </script>
 
 <template>
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+  <SalesAuthGuard>
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
+    <ContentBody>
     <CCardBody class="p-3 p-md-4 pb-5">
       <div v-if="!project" class="py-5 text-center text-muted">
         <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
@@ -882,4 +878,5 @@ const agencyPayStatusColor = (status: string) => {
     <!-- 개인별 전 회차 누적 이력 모달 -->
     <PersonPayoutHistoryModal ref="historyModalRef" />
   </ContentBody>
+</SalesAuthGuard>
 </template>

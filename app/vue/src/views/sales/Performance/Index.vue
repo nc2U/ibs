@@ -10,6 +10,7 @@ import { TableSecondary } from '@/utils/cssMixins'
 import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import SalesAuthGuard from '@/components/AuthGuard/SalesAuthGuard.vue'
 import PerformanceSummary from './components/PerformanceSummary.vue'
 import ContractAgentModal from './components/ContractAgentModal.vue'
 import SettlementApprovalModal from './components/SettlementApprovalModal.vue'
@@ -62,12 +63,6 @@ watch(
   },
   { immediate: true },
 )
-
-onMounted(() => {
-  if (project.value) {
-    loadData(project.value)
-  }
-})
 
 // 계약 ID -> 매핑 정보 Map 생성
 const mappingByContractId = computed(() => {
@@ -152,14 +147,15 @@ const onSaved = async () => {
 </script>
 
 <template>
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+  <SalesAuthGuard>
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
+    <ContentBody>
     <CCardBody class="p-3 p-md-4 pb-5">
       <div v-if="!project" class="py-5 text-center text-muted">
         <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
@@ -439,4 +435,5 @@ const onSaved = async () => {
     <!-- 정산 승인 / 보류 폼 모달 -->
     <SettlementApprovalModal ref="approvalModalRef" @confirm="onApprovalConfirm" />
   </ContentBody>
+</SalesAuthGuard>
 </template>

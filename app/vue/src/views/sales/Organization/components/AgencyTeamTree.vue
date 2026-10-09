@@ -1,8 +1,8 @@
-<script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesAgency, SalesTeam } from '@/store/types/sales'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { CCard } from '@coreui/vue'
 
 const props = defineProps({
@@ -35,27 +35,36 @@ const selectTeam = (team: SalesTeam) => {
   emit('select-team', team.id)
 }
 
-const deleteAgency = async (agency: SalesAgency) => {
-  if (
-    confirm(
-      `'${agency.name}' 대행사를 삭제하시겠습니까?\n(하위 조직 및 인력이 함께 삭제되거나 오류가 발생할 수 있습니다)`,
-    )
-  ) {
-    await salesStore.deleteAgency(agency.id)
+const confirmModalRef = ref()
+const pendingDelete = ref<{ type: 'agency' | 'team'; id: number; name: string } | null>(null)
+
+const deleteAgency = (agency: SalesAgency) => {
+  pendingDelete.value = { type: 'agency', id: agency.id, name: agency.name }
+  confirmModalRef.value?.callModal()
+}
+
+const deleteTeam = (team: SalesTeam) => {
+  pendingDelete.value = { type: 'team', id: team.id, name: team.name }
+  confirmModalRef.value?.callModal()
+}
+
+const executeDelete = async () => {
+  if (!pendingDelete.value) return
+  confirmModalRef.value?.close()
+
+  if (pendingDelete.value.type === 'agency') {
+    await salesStore.deleteAgency(pendingDelete.value.id)
     if (props.project) {
       await salesStore.fetchAgencyList(props.project)
       await salesStore.fetchTeamList(undefined, props.project)
     }
-  }
-}
-
-const deleteTeam = async (team: SalesTeam) => {
-  if (confirm(`'${team.name}' 조직을 삭제하시겠습니까?`)) {
-    await salesStore.deleteTeam(team.id)
+  } else if (pendingDelete.value.type === 'team') {
+    await salesStore.deleteTeam(pendingDelete.value.id)
     if (props.project) {
       await salesStore.fetchTeamList(undefined, props.project)
     }
   }
+  pendingDelete.value = null
 }
 </script>
 
@@ -194,8 +203,22 @@ const deleteTeam = async (team: SalesTeam) => {
           </div>
         </div>
       </div>
-    </CCardBody>
   </CCard>
+
+  <ConfirmModal ref="confirmModalRef">
+    <template #header>삭제 확인</template>
+    <template #default>
+      <p class="mb-0">
+        <strong>[{{ pendingDelete?.name }}]</strong> {{ pendingDelete?.type === 'agency' ? '대행사를' : '조직을' }} 삭제하시겠습니까?
+      </p>
+      <small v-if="pendingDelete?.type === 'agency'" class="text-danger">
+        (하위 조직 및 인력이 함께 삭제되거나 데이터 무결성 오류가 발생할 수 있습니다)
+      </small>
+    </template>
+    <template #footer>
+      <v-btn size="small" color="danger" @click="executeDelete">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>
 
 <style scoped>

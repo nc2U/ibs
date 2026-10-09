@@ -11,6 +11,7 @@ import type { Project } from '@/store/types/project'
 import type { CommissionPolicy } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
+import SalesAuthGuard from '@/components/AuthGuard/SalesAuthGuard.vue'
 import PolicyFormModal from './components/PolicyFormModal.vue'
 
 const { can, PERM } = usePerms()
@@ -57,12 +58,6 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  if (project.value) {
-    loadData(project.value)
-  }
-})
-
 const filteredPolicies = computed(() => {
   return policyList.value.filter(p => {
     if (filterOrderGroup.value && p.order_group !== filterOrderGroup.value) return false
@@ -106,14 +101,15 @@ const onSaved = async () => {
 </script>
 
 <template>
-  <ContentHeader
-    :page-title="pageTitle"
-    :nav-menu="navMenu"
-    selector="ProjectSelect"
-    @proj-select="projSelect"
-  />
+  <SalesAuthGuard>
+    <ContentHeader
+      :page-title="pageTitle"
+      :nav-menu="navMenu"
+      selector="ProjectSelect"
+      @proj-select="projSelect"
+    />
 
-  <ContentBody>
+    <ContentBody>
     <CCardBody class="p-3 p-md-4 pb-5">
       <div v-if="!project" class="py-5 text-center text-muted">
         <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
@@ -369,4 +365,5 @@ const onSaved = async () => {
       @saved="onSaved"
     />
   </ContentBody>
+</SalesAuthGuard>
 </template>
