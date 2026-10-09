@@ -71,14 +71,16 @@ const isCalculated = computed(
     proLedgerCalculated.value.calculated >= (proLedgerLastDealDate.value?.deal_date ?? ''),
 ) // 최종 정산 일자 이후에 거래 기록이 없음 === true
 
-const checkBalance = () => {
+const checkBalance = async () => {
+  if (!project.value) return
   const payload = {
     project: project.value as number,
     calculated: proLedgerLastDealDate.value?.deal_date as string,
   }
   if (!!proLedgerCalculated.value)
-    patchProLedgerCalculation({ ...{ pk: proLedgerCalculated.value.pk }, ...payload })
-  else createProLedgerCalculation(payload)
+    await patchProLedgerCalculation({ ...{ pk: proLedgerCalculated.value.pk }, ...payload })
+  else await createProLedgerCalculation(payload)
+  await fetchProLedgerCalculation(project.value)
 }
 
 const revised = ref(1)

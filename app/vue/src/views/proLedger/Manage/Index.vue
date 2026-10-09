@@ -194,20 +194,20 @@ const loadHighlightPage = async () => {
 const loading = ref(true)
 onBeforeMount(async () => {
   try {
-    // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+    // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
     let projectId = project.value || proStore.currentProject
-    if (!projectId) {
-      if (urlProjectId.value && urlProjectId.value !== projectId) {
-        console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-        // 회사 전환 (query string 정리 건너뛰기)
-        await projSelect(urlProjectId.value, true)
-        projectId = urlProjectId.value
-      }
+    if (urlProjectId.value && urlProjectId.value !== projectId) {
+      console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+      // 프로젝트 전환 (query string 정리 건너뛰기)
+      await projSelect(urlProjectId.value, true)
+      projectId = urlProjectId.value
+    }
 
-      imprest.value = localStorage.getItem('get-imprest') === 'all' // 기본값 false
+    imprest.value = localStorage.getItem('get-imprest') === 'all' // 기본값 false
 
-      await fetchProjectAccounts()
+    await fetchProjectAccounts()
 
+    if (projectId) {
       // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
       if (highlightId.value) {
         await loadHighlightPage()
