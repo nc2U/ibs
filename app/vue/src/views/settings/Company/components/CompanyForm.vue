@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { type Company } from '@/store/types/settings'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account'
@@ -9,7 +9,7 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const emit = defineEmits(['fetch-company', 'on-submit', 'reset-form'])
+const emit = defineEmits(['fetch-company', 'on-submit', 'on-delete', 'reset-form'])
 
 const account = useAccount()
 
@@ -85,6 +85,13 @@ const deleteCompany = () => {
   else refAlertModal.value.callModal()
 }
 
+const modalActionDelete = () => {
+  if (props.company?.pk) {
+    emit('on-delete', props.company.pk)
+  }
+  refDelModal.value.close()
+}
+
 const confirmText = computed(() => (props.company ? '변경' : '등록'))
 const btnClass = computed(() => (props.company ? 'success' : 'primary'))
 
@@ -127,7 +134,12 @@ const formDataSetup = () => {
   }
 }
 defineExpose({ formDataSetup })
-onBeforeMount(() => formDataSetup())
+
+watch(
+  () => props.company,
+  () => formDataSetup(),
+  { immediate: true, deep: true },
+)
 </script>
 
 <template>
@@ -347,10 +359,15 @@ onBeforeMount(() => formDataSetup())
   <DaumPostcode ref="refPostCode" @address-callback="addressCallback" />
 
   <ConfirmModal ref="refDelModal">
-    <template #header> 회사정보</template>
-    <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
+    <template #header>회사정보 삭제 확인</template>
+    <template #default>
+      <p class="mb-0">
+        정말로 <strong>[{{ company?.name }}]</strong> 회사 정보를 삭제하시겠습니까?
+      </p>
+      <small class="text-danger">(관련된 하위 데이터가 함께 영향을 받을 수 있습니다)</small>
+    </template>
     <template #footer>
-      <v-btn color="warning" size="small" disabled>삭제</v-btn>
+      <v-btn color="danger" size="small" @click="modalActionDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const emit = defineEmits(['on-submit'])
 
@@ -18,8 +19,8 @@ const form = reactive({
 })
 
 const genPass = ref()
-
 const validated = ref()
+const refAlertModal = ref()
 
 const onSubmit = (event: Event) => {
   const el = event.currentTarget as HTMLInputElement
@@ -30,7 +31,7 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     if (form.password !== form.pass_conf) {
-      alert('비밀번호가 일치하지 않습니다.')
+      refAlertModal.value?.callModal('알림', '비밀번호가 일치하지 않습니다.')
       return
     }
     emit('on-submit', { ...form })
@@ -214,4 +215,6 @@ defineExpose({ callModal })
       </CForm>
     </template>
   </FormModal>
+
+  <AlertModal ref="refAlertModal" />
 </template>

@@ -35,9 +35,11 @@ const selectUser = (pk: number | null) => {
   }
 }
 
-const onSubmit = (payload: any) => {
-  console.log(payload)
-  adminCreateUser(payload)
+const onSubmit = async (payload: UserByAdmin) => {
+  const created = await adminCreateUser(payload)
+  if (created?.pk) {
+    selectUser(created.pk)
+  }
 }
 
 watch(comId, async val => (!!val ? await dataSetup(val) : dataReset()))

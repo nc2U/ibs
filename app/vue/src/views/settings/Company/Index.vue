@@ -30,8 +30,17 @@ const onSubmit = (payload: Company) => {
   else onCreate(payload)
 }
 
+const onDelete = async (pk: number) => {
+  await comStore.deleteCompany(pk)
+  resetForm()
+}
+
 const RefCompanyForm = ref()
-const dataSet = () => RefCompanyForm.value.formDataSetup()
+const dataSet = () => {
+  if (RefCompanyForm.value) {
+    RefCompanyForm.value.formDataSetup()
+  }
+}
 
 const loading = ref(true)
 onBeforeMount(() => {
@@ -64,6 +73,7 @@ onBeforeMount(() => {
         v-if="compName === 'UpdateForm'"
         :company="company as Company"
         @on-submit="onSubmit"
+        @on-delete="onDelete"
         @reset-form="resetForm"
       />
 
