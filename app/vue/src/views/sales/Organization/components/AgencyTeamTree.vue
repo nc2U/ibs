@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { computed, ref, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
@@ -203,6 +204,7 @@ const executeDelete = async () => {
           </div>
         </div>
       </div>
+    </CCardBody>
   </CCard>
 
   <ConfirmModal ref="confirmModalRef">
