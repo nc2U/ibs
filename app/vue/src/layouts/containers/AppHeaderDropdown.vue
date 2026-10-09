@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { type User, type Profile } from '@/store/types/accounts'
 import TodoModal from '@/components/Modals/TodoModal.vue'
@@ -17,9 +16,6 @@ const avatarSrc = computed(() => (props.profile?.image ? props.profile?.image : 
 const avatarText = computed(() =>
   props.userInfo ? props.userInfo.username.substring(0, 2).toUpperCase() : 'AB',
 )
-
-const store = useStore()
-const headerClass = computed(() => (store.theme === 'dark' ? 'bg-secondary' : 'bg-light'))
 
 const locationBlank = (url: string) => window.open(url, '_blank')
 
@@ -50,8 +46,7 @@ const logout = () => {
     <CDropdownMenu>
       <CDropdownHeader
         component="h6"
-        class="fw-semibold py-2 d-flex justify-content-between align-items-center"
-        :class="headerClass"
+        class="fw-semibold py-2 bg-more-secondary d-flex justify-content-between align-items-center"
       >
         <span>{{ profile && profile.name ? profile.name : userInfo.username }}님</span>
         <v-chip
@@ -82,7 +77,7 @@ const logout = () => {
         </v-chip>
       </CDropdownItem>
 
-      <CDropdownHeader component="h6" class="fw-semibold py-2" :class="headerClass">
+      <CDropdownHeader component="h6" class="fw-semibold py-2 bg-more-secondary">
         Settings
       </CDropdownHeader>
 
