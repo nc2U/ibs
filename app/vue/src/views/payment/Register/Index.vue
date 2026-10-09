@@ -187,56 +187,60 @@ onBeforeMount(async () => {
   loading.value = false
 })
 
+const loadContractData = async (contractId: number) => {
+  if (isLoadingContract.value) return
+  isLoadingContract.value = true
+  try {
+    await fetchContract(contractId)
+  } finally {
+    isLoadingContract.value = false
+  }
+
+  if (contract.value && project.value && !isLoadingPaymentList.value) {
+    try {
+      isLoadingPaymentList.value = true
+      const order_group = contract.value.order_group
+      const unit_type = contract.value.unit_type
+      await fetchPriceList({ project: project.value, order_group, unit_type })
+      await fetchDownPayList({ project: project.value, order_group, unit_type })
+      await fetchLedgerAllPaymentList({
+        project: project.value,
+        contract: contract.value.pk,
+      })
+    } finally {
+      isLoadingPaymentList.value = false
+    }
+  }
+}
+
+watch(
+  () => route.params.contractId,
+  async newId => {
+    if (newId) {
+      const contId = Number(newId)
+      if (!contract.value || contract.value.pk !== contId) {
+        await loadContractData(contId)
+      }
+    } else {
+      contractStore.contract = null
+      paymentStore.ledgerAllPaymentList = []
+    }
+  },
+)
+
 onMounted(async () => {
   if (route.params.contractId) {
     const cont = Number(route.params.contractId)
-
-    // 새로고침 시 데이터가 남아있을 수 있으므로 초기화
+    // 새로고침 시 데이터가 남아있을 수 있으므로 초기화 후 로드
     contractStore.contract = null
     paymentStore.ledgerAllPaymentList = []
-
-    isLoadingContract.value = true
-    await fetchContract(cont)
-    isLoadingContract.value = false
-
-    // fetchContract 완료 후 명시적으로 데이터 로드
-    // watch가 project 없어서 실행 안 했을 경우를 대비
-    if (contract.value && project.value && !isLoadingPaymentList.value) {
-      try {
-        isLoadingPaymentList.value = true
-        const order_group = contract.value.order_group
-        const unit_type = contract.value.unit_type
-        await fetchPriceList({ project: project.value, order_group, unit_type })
-        await fetchDownPayList({ project: project.value, order_group, unit_type })
-        await fetchLedgerAllPaymentList({
-          project: project.value,
-          contract: contract.value.pk,
-        })
-      } finally {
-        isLoadingPaymentList.value = false
-      }
-    }
+    await loadContractData(cont)
   } else {
     contractStore.contract = null
     paymentStore.ledgerAllPaymentList = []
   }
 
   if (route.query.payment) paymentId.value = route.query.payment as string
-})
-
-onUpdated(async () => {
-  // 이미 로딩 중이면 중복 호출 방지
-  if (isLoadingContract.value) return
-
-  if (route.params.contractId) {
-    const cont = Number(route.params.contractId)
-    // contract가 없거나, 다른 contract로 변경된 경우만 로드
-    if (!contract.value || contract.value.pk !== cont) {
-      isLoadingContract.value = true
-      await fetchContract(cont)
-      isLoadingContract.value = false
-    }
-  }
 })
 
 onBeforeRouteLeave(() => {

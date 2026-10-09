@@ -17,7 +17,7 @@ const emit = defineEmits(['on-update', 'on-delete'])
 
 const { can, PERM } = usePerms()
 const canPaymentManage = computed(
-  () => can(PERM.CONTRACT_CREATE) || can(PERM.CONTRACT_UPDATE) || can(PERM.PAYMENT_DELETE),
+  () => can(PERM.PAYMENT_UPDATE) || can(PERM.PAYMENT_DELETE),
 )
 
 const paymentSum = computed(() => {
