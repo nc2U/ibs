@@ -14,9 +14,9 @@ import AddDuty from './components/AddDuty.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import DutyList from './components/DutyList.vue'
 
-const { can, PERM } = usePerms()
+const { canGlobal, PERM } = usePerms()
 const accStore = useAccount()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && canGlobal(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,

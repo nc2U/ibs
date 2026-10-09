@@ -15,8 +15,8 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import ExecutiveRankList from './components/ExecutiveRankList.vue'
 
 const accStore = useAccount()
-const { can, PERM } = usePerms()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
+const { canGlobal, PERM } = usePerms()
+const canHrWorkCreate = computed(() => accStore.isStaff && canGlobal(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,

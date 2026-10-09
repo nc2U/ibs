@@ -21,7 +21,7 @@ const selectedDeptNode = ref<OrgNode | null>(null)
 const isModalVisible = ref(false)
 
 // 선택된 회사 ID
-const currentCompanyId = computed(() => comStore.initComId || 1)
+const currentCompanyId = computed(() => (comStore.company as any)?.pk || comStore.initComId || 1)
 
 // 데이터 로드
 const loadOrgData = async (comId: number) => {
@@ -105,7 +105,7 @@ const orgTree = computed<OrgNode[]>(() => {
     const node = nodeMap.get(d.pk)
     if (!node) return
 
-    if (d.upper_depart && nodeMap.has(d.upper_depart)) {
+    if (d.upper_depart && d.upper_depart !== d.pk && nodeMap.has(d.upper_depart)) {
       const parent = nodeMap.get(d.upper_depart)
       parent?.children.push(node)
     } else {
