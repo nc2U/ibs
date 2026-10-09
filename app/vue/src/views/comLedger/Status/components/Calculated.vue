@@ -9,8 +9,10 @@ defineProps({
 })
 const emit = defineEmits(['to-calculate'])
 
-const { can, PERM } = usePerms()
-const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
+const { canGlobal, PERM } = usePerms()
+const canComLedgerUpdate = computed(
+  () => canGlobal(PERM.HQ_LEDGER_UPDATE) || canGlobal(PERM.HQ_LEDGER_MANAGE),
+)
 
 const refConfirmModal = ref()
 
@@ -23,7 +25,11 @@ const modalAction = () => {
 </script>
 
 <template>
-  <CAlert v-if="canLedgerUpdate" :color="isCalculated ? 'success' : 'warning'" class="text-right">
+  <CAlert
+    v-if="canComLedgerUpdate"
+    :color="isCalculated ? 'success' : 'warning'"
+    class="text-right"
+  >
     <span v-if="calcDate" class="mr-3">[정산일 : {{ calcDate }}]</span>
     <v-btn v-if="isCalculated" color="success" size="x-large" disabled> 잔고정산 확인완료</v-btn>
     <v-btn v-else color="warning" size="x-large" @click="toCalculated"> 당일잔고 정산확인</v-btn>

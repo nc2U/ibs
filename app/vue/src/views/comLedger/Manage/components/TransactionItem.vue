@@ -35,7 +35,7 @@ const allowedPeriod = computed(
     (superAuth as any).value ||
     canComLedgerManage.value ||
     (canComLedgerUpdate.value &&
-      diffDate(props.transaction?.deal_date as string, new Date(props.calculated)) <= 10),
+      diffDate(props.transaction?.deal_date as string, props.calculated) <= 10),
 )
 
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
@@ -258,27 +258,29 @@ const handlePickerClose = async () => {
     }
   }
 
-  // 2. 변경 사항 저장 (상태가 초기화되기 전에)
-  await handleUpdate()
+  try {
+    // 2. 변경 사항 저장 (상태가 초기화되기 전에)
+    await handleUpdate()
+  } finally {
+    // 3. 스크롤 복원 - 순서 중요!
+    const scrollY = document.body.style.top
+    const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
 
-  // 3. 스크롤 복원 - 순서 중요!
-  const scrollY = document.body.style.top
-  const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
+    // position을 해제하기 전에 스크롤 위치를 먼저 저장
+    document.body.style.position = ''
+    document.body.style.top = ''
 
-  // position을 해제하기 전에 스크롤 위치를 먼저 저장
-  document.body.style.position = ''
-  document.body.style.top = ''
+    // 스크롤 복원
+    window.scrollTo(0, scrollValue)
 
-  // 스크롤 복원
-  window.scrollTo(0, scrollValue)
+    // 나머지 스타일 복원
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
+    document.body.style.width = ''
 
-  // 나머지 스타일 복원
-  document.documentElement.style.overflow = ''
-  document.body.style.overflow = ''
-  document.body.style.width = ''
-
-  // 4. 마지막으로 공유 상태 초기화
-  ledgerStore.clearSharedPickerState()
+    // 4. 마지막으로 공유 상태 초기화
+    ledgerStore.clearSharedPickerState()
+  }
 }
 
 const handleUpdate = async () => {

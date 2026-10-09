@@ -10,9 +10,9 @@ export const cutString = (str: string | null | undefined = '', len = 20, abb = '
   return str.length > len ? `${str.substring(0, len)}${abb}` : str
 }
 
-export const diffDate = (date1: Date | string, date2?: Date) => {
+export const diffDate = (date1: Date | string, date2?: Date | string) => {
   const start = typeof date1 === 'string' ? new Date(date1) : date1
-  const now = !date2 ? new Date() : date2
+  const now = !date2 ? new Date() : typeof date2 === 'string' ? new Date(date2) : date2
   const between = now.getTime() - start.getTime()
   return between / 1000 / 60 / 60 / 24
 }
