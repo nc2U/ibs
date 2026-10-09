@@ -22,7 +22,10 @@ const simpleUnits = computed(() => pDataStore.simpleUnits)
 const getBldg = computed(() =>
   [...new Set(simpleUnits.value.map((u: SimpleUnit) => u.bldg))].sort(),
 )
-const maxFloor = computed(() => Math.max(...simpleUnits.value.map((u: SimpleUnit) => u.floor)))
+const maxFloor = computed(() => {
+  if (!simpleUnits.value.length) return 0
+  return Math.max(...simpleUnits.value.map((u: SimpleUnit) => u.floor))
+})
 
 const getUnits = (bldg: number): SimpleUnit[] =>
   simpleUnits.value.filter((u: SimpleUnit) => u.bldg === bldg)

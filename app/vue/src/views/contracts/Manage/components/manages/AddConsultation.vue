@@ -127,11 +127,7 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  if (contractorId.value) {
-    loadData()
-  }
-})
+
 </script>
 
 <template>
