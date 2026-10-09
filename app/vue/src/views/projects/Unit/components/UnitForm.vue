@@ -45,7 +45,7 @@ const getFloorTypes = computed(() => proDataStore.getFloorTypes)
 const buildingList = computed(() => proDataStore.buildingList)
 
 const onUpdateUnit = () => {
-  if (canProjectUpdate) {
+  if (canProjectUpdate.value) {
     const pk = props.unit?.pk
     emit('on-update', { ...{ pk }, ...form.value })
   } else refAlertModal.value.callModal()
@@ -78,7 +78,7 @@ onMounted(() => dataSetup())
 <template>
   <CTableRow class="text-center">
     <CTableDataCell>
-      <CFormSelect v-model="form.unit_type" reqired>
+      <CFormSelect v-model="form.unit_type" required>
         <option value="">타입</option>
         <option v-for="ut in getTypes" :key="ut.value" :value="ut.value">
           {{ ut.label }}
@@ -86,7 +86,7 @@ onMounted(() => dataSetup())
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.floor_type" reqired>
+      <CFormSelect v-model="form.floor_type" required>
         <option value="">층범위타입</option>
         <option v-for="fl in getFloorTypes" :key="fl.value" :value="fl.value">
           {{ fl.label }}
@@ -94,7 +94,7 @@ onMounted(() => dataSetup())
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model.number="form.building_unit" reqired>
+      <CFormSelect v-model.number="form.building_unit" required>
         <option value="">동</option>
         <option v-for="bd in buildingList" :key="bd.pk" :value="bd.pk">
           {{ bd.name }}
@@ -106,7 +106,7 @@ onMounted(() => dataSetup())
         v-model="form.name"
         maxlength="5"
         placeholder="호수"
-        reqired
+        required
         @keydown.enter="onUpdateUnit"
       />
     </CTableDataCell>
@@ -116,7 +116,7 @@ onMounted(() => dataSetup())
         type="number"
         num="0"
         placeholder="라인"
-        reqired
+        required
         @keydown.enter="onUpdateUnit"
       />
     </CTableDataCell>
@@ -126,7 +126,7 @@ onMounted(() => dataSetup())
         type="number"
         num="0"
         placeholder="층수"
-        reqired
+        required
         @keydown.enter="onUpdateUnit"
       />
     </CTableDataCell>
