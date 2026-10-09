@@ -21,7 +21,7 @@ import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
-import DocsDetail from '../../../components/Documents/DocsDetail.vue'
+import DocsDetail from '@/components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const { can, PERM } = usePerms()
@@ -94,7 +94,7 @@ watch(route, val => {
   else docStore.removeDocs()
 })
 
-const docssRenewal = (page: number) => {
+const docsRenewal = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
 }
@@ -250,7 +250,7 @@ onBeforeMount(async () => {
             @link-hit="linkHit"
             @file-hit="fileHit"
             @docs-scrape="docsScrape"
-            @docss-renewal="docssRenewal"
+            @docs-renewal="docsRenewal"
           />
         </div>
 

@@ -21,7 +21,7 @@ import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
-import DocsDetail from '../../../components/Documents/DocsDetail.vue'
+import DocsDetail from '@/components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const { can, PERM } = usePerms()

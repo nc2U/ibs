@@ -8,6 +8,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs'
 import type { AFile, Link, SuitCase } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
@@ -16,9 +17,11 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ListController from '@/components/LawSuitCase/ListController.vue'
-import CaseDetail from '../../../components/LawSuitCase/CaseDetail.vue'
+import CaseDetail from '@/components/LawSuitCase/CaseDetail.vue'
 import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
+
+const { can, PERM } = usePerms()
 
 const fController = ref()
 const mainViewName = ref('소송 사건 관리')
@@ -103,22 +106,28 @@ const casesRenewal = (page: number) => {
   fetchSuitCaseList(caseFilter.value)
 }
 
-const onSubmit = (payload: SuitCase & { is_real_dev?: boolean }) => {
-  if (payload.pk) {
-    updateSuitCase(payload)
-    router.replace({
-      name: `${mainViewName.value} - 보기`,
-      params: { caseId: payload.pk },
-    })
-  } else {
-    payload.issue_project = projStore.project?.issue_project as number
-    payload.is_real_dev = true
-    createSuitCase(payload)
-    router.replace({ name: `${mainViewName.value}` })
+const onSubmit = async (payload: SuitCase & { is_real_dev?: boolean }) => {
+  if (project.value) {
+    if (payload.pk) {
+      await updateSuitCase(payload)
+      await router.replace({
+        name: `${mainViewName.value} - 보기`,
+        params: { caseId: payload.pk },
+      })
+    } else {
+      payload.issue_project = projStore.project?.issue_project as number
+      payload.is_real_dev = true
+      await createSuitCase(payload)
+      await router.replace({ name: `${mainViewName.value}` })
+    }
   }
 }
 
-const onDelete = (pk: number) => deleteSuitCase(pk)
+const onDelete = async (pk: number) => {
+  await deleteSuitCase(pk)
+  await router.replace({ name: `${mainViewName.value}` })
+  if (project.value) fetchSuitCaseList(caseFilter.value)
+}
 
 const agencyFilter = (court: string) => {
   fController.value.courtChange(court)
@@ -222,20 +231,24 @@ onBeforeMount(async () => {
             @link-hit="linkHit"
             @file-hit="fileHit"
             @cases-renewal="casesRenewal"
+            @post-delete="onDelete"
           />
         </div>
 
         <div v-else-if="route.name.includes('작성')">
           <CaseForm
+            v-if="can(PERM.DOCS_CREATE)"
             :sort-name="projName"
             :get-suit-case="getSuitCase"
             :view-route="mainViewName"
             @on-submit="onSubmit"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
 
         <div v-else-if="route.name.includes('수정')">
           <CaseForm
+            v-if="can(PERM.DOCS_UPDATE)"
             :sort-name="projName"
             :get-suit-case="getSuitCase"
             :suitcase="suitcase"
@@ -243,6 +256,7 @@ onBeforeMount(async () => {
             @on-submit="onSubmit"
             @on-delete="onDelete"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
       </CCardBody>
     </ContentBody>
