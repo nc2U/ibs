@@ -79,7 +79,7 @@ const toggleAside = () => store.toggleAside()
       </CHeaderNav>
 
       <CHeaderToggler class="px-md-0 me-md-3 d-none d-md-block" @click="toggleAside">
-        <v-btn icon size="small" flat :color="theme">
+        <v-btn icon size="small" variant="text">
           <v-icon icon="mdi-apps" size="large" class="text-50" />
         </v-btn>
       </CHeaderToggler>
