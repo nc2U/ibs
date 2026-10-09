@@ -334,7 +334,7 @@ const openExternal = (url: string) => {
           <v-icon icon="mdi-information-outline" size="x-small" class="me-1" />
           현재 접속 정보
         </h6>
-        <div class="p-2 mb-3 bg-more-light rounded small border">
+        <div class="p-2 mb-3 bg-more-light rounded small border text-body">
           <div class="d-flex justify-content-between mb-1">
             <span class="text-muted">소속 회사:</span>
             <strong>{{ company?.name || '회사 미선택' }}</strong>
@@ -385,7 +385,7 @@ const openExternal = (url: string) => {
 
           <CListGroupItem
             class="cursor-pointer p-2 hover-bg d-flex align-items-center justify-content-between"
-            @click="navigateAndClose('/accounts/profile')"
+            @click="navigateAndClose('/manage/user/my/account')"
           >
             <span class="small">
               <v-icon icon="mdi-account-circle-outline" size="small" class="me-2 text-success" />
@@ -401,7 +401,9 @@ const openExternal = (url: string) => {
           <v-icon icon="mdi-palette-outline" size="x-small" class="me-1" />
           테마 설정
         </h6>
-        <div class="d-flex align-items-center justify-content-between p-2 bg-more-light rounded border">
+        <div
+          class="d-flex align-items-center justify-content-between p-2 bg-more-light rounded border"
+        >
           <span class="small text-muted">화면 테마</span>
           <div class="d-flex gap-1">
             <v-btn
