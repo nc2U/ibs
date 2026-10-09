@@ -7,6 +7,7 @@ allowBuilds:
 
 overrides:
   serialize-javascript: '^7.0.3'
+  postcss-selector-parser: '>=7.1.6'
   qs: 6.15.2
   uuid: 14.0.0
   esbuild: 0.28.1
@@ -14,6 +15,6 @@ overrides:
   nanoid: '>=3.3.17'
   fast-uri: 3.1.7
   js-yaml: 4.3.2
-  joi: 18.2.5
+  joi: ">=18.2.9"
 
 minimumReleaseAge: 0
