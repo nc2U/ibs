@@ -3,6 +3,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocs } from '@/store/pinia/docs'
 import type { InboundLetter } from '@/store/types/docs'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -26,6 +28,8 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const docStore = useDocs()
+const accStore = useAccount()
+const { can, PERM } = usePerms()
 
 const form = ref<{
   receipt_number: string
@@ -64,11 +68,15 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const scanFileInput = ref<HTMLInputElement | null>(null)
 
 // 확인 모달
-const showConfirmModal = ref(false)
-const confirmMessage = ref('')
-const confirmCallback = ref<(() => void) | null>(null)
+const refConfirmModal = ref()
+const pendingDeleteAttPk = ref<number | null>(null)
 
 const isEdit = computed(() => !!props.letter?.pk)
+
+const canManage = computed(() => {
+  if (!accStore.isStaff && !accStore.superAuth) return false
+  return isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)
+})
 
 // 다음 접수번호 자동 조회 (신규 등록 시)
 const fetchNextReceiptNumber = async () => {
@@ -150,20 +158,26 @@ const removeNewAttachment = (index: number) => {
   newAttachments.value.splice(index, 1)
 }
 
-const removeExistingAttachment = async (pk: number) => {
-  confirmMessage.value = '이 첨부파일을 삭제하시겠습니까?'
-  confirmCallback.value = async () => {
-    if (props.letter?.pk) {
-      await docStore.deleteInboundAttachment(pk, props.letter.pk)
-      existingAttachments.value = existingAttachments.value.filter(a => a.pk !== pk)
-    }
-  }
-  showConfirmModal.value = true
+const removeExistingAttachment = (pk: number) => {
+  pendingDeleteAttPk.value = pk
+  refConfirmModal.value?.callModal(
+    '첨부파일 삭제 확인',
+    '이 첨부파일을 삭제하시겠습니까?',
+    'mdi-alert-circle-outline',
+    'red-lighten-3',
+    '삭제',
+    'red-lighten-2',
+  )
 }
 
-const handleConfirm = () => {
-  if (confirmCallback.value) confirmCallback.value()
-  showConfirmModal.value = false
+const handleConfirm = async () => {
+  if (pendingDeleteAttPk.value && props.letter?.pk) {
+    const pk = pendingDeleteAttPk.value
+    await docStore.deleteInboundAttachment(pk, props.letter.pk)
+    existingAttachments.value = existingAttachments.value.filter(a => a.pk !== pk)
+    pendingDeleteAttPk.value = null
+  }
+  refConfirmModal.value?.close()
 }
 
 const goBack = () => {
@@ -233,7 +247,7 @@ const handleSubmit = () => {
       </div>
       <div class="d-flex gap-2">
         <CButton color="secondary" variant="ghost" @click="goBack"> 취소 </CButton>
-        <CButton color="primary" :disabled="isSubmitting" @click="handleSubmit">
+        <CButton color="primary" :disabled="isSubmitting || !canManage" @click="handleSubmit">
           <v-icon icon="mdi-content-save" size="small" class="me-1" />
           {{ isEdit ? '수정 저장' : '접수 등록' }}
         </CButton>
@@ -536,12 +550,7 @@ const handleSubmit = () => {
       </CCol>
     </CRow>
 
-    <ConfirmModal
-      v-model="showConfirmModal"
-      title="확인"
-      :message="confirmMessage"
-      @confirm="handleConfirm"
-    />
+    <ConfirmModal ref="refConfirmModal" @confirm-func="handleConfirm" />
   </div>
 </template>
 

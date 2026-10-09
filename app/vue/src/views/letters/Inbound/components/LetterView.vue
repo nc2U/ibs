@@ -24,7 +24,7 @@ const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
 const router = useRouter()
 
-const showDeleteModal = ref(false)
+const refConfirmModal = ref()
 
 const formatDate = (dateStr: string | undefined | null) => {
   if (!dateStr) return '-'
@@ -102,11 +102,22 @@ const goToNext = () => {
   }
 }
 
+const confirmDelete = () => {
+  refConfirmModal.value?.callModal(
+    '수신 공문 삭제 확인',
+    '이 수신 공문 데이터를 삭제하시겠습니까? 첨부된 파일과 원본 스캔본도 함께 삭제됩니다.',
+    'mdi-alert-circle-outline',
+    'red-lighten-3',
+    '삭제',
+    'red-lighten-2',
+  )
+}
+
 const handleDeleteConfirm = () => {
   if (props.letter?.pk) {
     emit('onDelete', props.letter.pk)
   }
-  showDeleteModal.value = false
+  refConfirmModal.value?.close()
 }
 
 // 전자결재 품의 상신 연계
@@ -212,7 +223,7 @@ const updateStatus = (newStatus: string) => {
           color="danger"
           variant="outline"
           size="sm"
-          @click="showDeleteModal = true"
+          @click="confirmDelete"
         >
           <v-icon icon="mdi-delete" size="small" class="me-1" />
           삭제
@@ -640,12 +651,7 @@ const updateStatus = (newStatus: string) => {
     </div>
 
     <!-- Delete Confirm Modal -->
-    <ConfirmModal
-      v-model="showDeleteModal"
-      title="수신 공문 삭제"
-      message="이 수신 공문 데이터를 삭제하시겠습니까? 첨부된 파일과 스캔본도 함께 삭제됩니다."
-      @confirm="handleDeleteConfirm"
-    />
+    <ConfirmModal ref="refConfirmModal" @confirm-func="handleDeleteConfirm" />
   </div>
 </template>
 

@@ -107,7 +107,7 @@ const senderContact = computed(() => {
   return { phone, fax, email }
 })
 
-const showDeleteModal = ref(false)
+const refConfirmModal = ref()
 const pdfLoading = ref(false)
 const scanUploadLoading = ref(false)
 const scanFileInputRef = ref<HTMLInputElement | null>(null)
@@ -218,14 +218,21 @@ const goToNext = () => {
 }
 
 const confirmDelete = () => {
-  showDeleteModal.value = true
+  refConfirmModal.value?.callModal(
+    '공문 삭제 확인',
+    `문서번호: ${props.letter?.document_number || ''}\n제목: ${props.letter?.title || ''}\n\n이 공문을 삭제하시겠습니까?`,
+    'mdi-alert-circle-outline',
+    'red-lighten-3',
+    '삭제',
+    'red-lighten-2',
+  )
 }
 
 const onDelete = () => {
   if (props.letter?.pk) {
     emit('onDelete', props.letter.pk)
   }
-  showDeleteModal.value = false
+  refConfirmModal.value?.close()
 }
 
 const onGeneratePdf = async () => {
@@ -1091,17 +1098,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
     </CRow>
 
     <!-- Delete Confirm Modal -->
-    <ConfirmModal v-model="showDeleteModal" @confirmed="onDelete">
-      <template #header>공문 삭제</template>
-      <template #default>
-        <p>이 공문을 삭제하시겠습니까?</p>
-        <p class="text-muted mb-0">
-          <small>문서번호: {{ letter.document_number }}</small>
-          <br />
-          <small>제목: {{ letter.title }}</small>
-        </p>
-      </template>
-    </ConfirmModal>
+    <ConfirmModal ref="refConfirmModal" @confirm-func="onDelete" />
 
     <!-- 발송 및 대장 관리 메타 정보 수정 모달 -->
     <CModal
