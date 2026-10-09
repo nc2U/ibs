@@ -53,10 +53,12 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
         content: TextField(
           controller: editController,
           autofocus: true,
+          maxLength: 50,
           style: TextStyle(color: context.colors.textPrimary),
           decoration: InputDecoration(
-            hintText: '할일을 입력하세요',
+            hintText: '할일을 입력하세요 (최대 50자)',
             hintStyle: TextStyle(color: context.colors.textMuted),
+            counterStyle: TextStyle(color: context.colors.textMuted, fontSize: 11),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: context.colors.border),
@@ -203,7 +205,6 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
         backgroundColor: context.colors.bgPrimary,
         foregroundColor: context.colors.textPrimary,
         elevation: 0,
-        titleSpacing: 0,
         title: Text(
           '할일 관리',
           style: AppTextStyles.titleLg.copyWith(
@@ -219,10 +220,13 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // ── 상단 신규 할일 입력창 ──────────────────────────────
-          Container(
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            // ── 상단 신규 할일 입력창 ──────────────────────────────
+            Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: context.colors.bgCard,
@@ -247,16 +251,18 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                     child: TextField(
                       controller: _inputController,
                       focusNode: _focusNode,
+                      maxLength: 50,
                       style: AppTextStyles.bodyMd.copyWith(
                         color: context.colors.textPrimary,
                       ),
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submitNewTodo(),
                       decoration: InputDecoration(
-                        hintText: '새로운 할일을 입력하세요 (Enter)',
+                        hintText: '새로운 할일을 입력하세요 (최대 50자)',
                         hintStyle: AppTextStyles.bodyMd.copyWith(
                           color: context.colors.textMuted,
                         ),
+                        counterText: '',
                         prefixIcon: Icon(
                           Icons.add_task_rounded,
                           size: 20,
@@ -401,6 +407,7 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
                 return RefreshIndicator(
                   onRefresh: () => ref.read(todoListProvider.notifier).refresh(),
                   child: ListView.separated(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -418,8 +425,9 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFilterChip({
     required String label,

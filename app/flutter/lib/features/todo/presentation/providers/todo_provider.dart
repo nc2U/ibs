@@ -20,18 +20,22 @@ final todoFilterProvider = StateProvider<TodoFilter>((ref) => TodoFilter.all);
 class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
   @override
   Future<List<TodoItem>> build() async {
-    return _fetchTodos();
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    return _fetchTodos(currentUser?.pk);
   }
 
-  Future<List<TodoItem>> _fetchTodos() async {
+  Future<List<TodoItem>> _fetchTodos(int? userId) async {
     final repo = ref.read(todoRepositoryProvider);
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-    return await repo.getTodos(userId: currentUser?.pk);
+    final list = await repo.getTodos(userId: userId);
+    // 모바일 To-Do 특성에 맞게 최신순(id 내림차순)으로 일관되게 정렬
+    list.sort((a, b) => b.pk.compareTo(a.pk));
+    return list;
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _fetchTodos());
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    state = await AsyncValue.guard(() => _fetchTodos(currentUser?.pk));
   }
 
   /// 할일 추가
@@ -39,9 +43,15 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     final trimmed = title.trim();
     if (trimmed.isEmpty) return;
 
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    if (currentUser == null) return;
+
     final repo = ref.read(todoRepositoryProvider);
     try {
-      final newItem = await repo.createTodo(title: trimmed);
+      final newItem = await repo.createTodo(
+        title: trimmed,
+        userId: currentUser.pk,
+      );
       final currentList = state.valueOrNull ?? [];
       state = AsyncData([newItem, ...currentList]);
     } catch (e, st) {

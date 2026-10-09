@@ -37,10 +37,16 @@ class TodoRepository {
   }
 
   /// 신규 할일 생성
-  Future<TodoItem> createTodo({required String title}) async {
+  Future<TodoItem> createTodo({
+    required String title,
+    required int userId,
+  }) async {
     final response = await _dio.post(
       ApiEndpoints.todos,
-      data: {'title': title},
+      data: {
+        'title': title,
+        'user': userId,
+      },
     );
     return TodoItem.fromJson(response.data as Map<String, dynamic>);
   }
