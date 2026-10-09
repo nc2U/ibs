@@ -23,11 +23,11 @@ onBeforeMount(() => (breadcrumbs.value = getBreadcrumbs()))
     <!--    <TransitionGroup name="breadcrumb">-->
     <CBreadcrumbItem
       v-for="item in breadcrumbs"
-      :key="item"
+      :key="item.path"
       :href="item.active ? '' : item.path"
       :active="item.active"
     >
-      {{ item.name.replace(/^\((.*)\)$/, '$1') }}
+      {{ String(item.name ?? '').replace(/^\((.*)\)$/, '$1') }}
     </CBreadcrumbItem>
     <!--    </TransitionGroup>-->
   </CBreadcrumb>

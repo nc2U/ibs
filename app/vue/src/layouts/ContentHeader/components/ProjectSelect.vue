@@ -48,6 +48,14 @@ onBeforeMount(async () => {
     )
   }
 })
+
+// URL 쿼리의 project 변경 감지 및 동기화
+watch(
+  () => route.query.project,
+  () => {
+    loadProject()
+  },
+)
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
@@ -63,6 +63,13 @@ onMounted(() => {
       chatStore.fetchTotalUnread()
     }
   }, 15000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
 })
 
 watch(

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
@@ -26,9 +26,14 @@ const active = (key: number) => key === activeKey.value
 
 const updateActiveKey = (key: number) => (activeKey.value = key)
 
-onBeforeMount(async () => {
-  if (company) document.title = company.value?.name ?? '' + ' :: IBS'
-})
+watch(
+  company,
+  newCom => {
+    const comName = newCom?.name ? `${newCom.name} :: ` : ''
+    document.title = `${comName}IBS`
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
