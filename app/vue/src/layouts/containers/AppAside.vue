@@ -221,7 +221,7 @@ const openExternal = (url: string) => {
               placeholder="새로운 할 일 입력 후 추가..."
               @keyup.enter="handleAddTodo"
             />
-            <v-btn size="x-small" color="primary" class="mt-1" @click="handleAddTodo"> 추가 </v-btn>
+            <v-btn size="small" color="primary" @click="handleAddTodo"> 추가 </v-btn>
           </div>
 
           <!-- 할 일 목록 -->
