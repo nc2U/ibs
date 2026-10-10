@@ -11,6 +11,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.ibs_perms import IbsModulePermission, HqProjectModulePermission
 from ledger.models import (
     BankCode, CompanyBankAccount, ProjectBankAccount,
@@ -94,8 +95,10 @@ def get_accessible_company_ids(user):
     return list(company_ids)
 
 
-def get_accessible_project_ids(user):
-    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+def get_accessible_project_ids(user, required_perm: str = 'ledger.read'):
+    """[RLS] 사용자가 특정 권한(기본: ledger.read)을 보유한 프로젝트 ID 목록 반환"""
+    return get_project_ids_with_permission(user, required_perm)
+
 
 
 class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
@@ -440,6 +443,18 @@ class AffiliateViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser:
+            return qs
+        company_ids = get_accessible_company_ids(user)
+        project_ids = get_accessible_project_ids(user)
+        return qs.filter(
+            Q(sort='company', company_id__in=company_ids) |
+            Q(sort='project', project_id__in=project_ids)
+        )
+
 
 # ============================================
 # Bank Transaction ViewSets
@@ -510,7 +525,21 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         is_balance = request.query_params.get('is_balance', '')
 
         queryset = CompanyBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
-        if company:
+        user = request.user
+        if not user.is_superuser:
+            accessible = get_accessible_company_ids(user)
+            if company:
+                try:
+                    c_id = int(company)
+                    if c_id not in accessible:
+                        queryset = queryset.none()
+                    else:
+                        queryset = queryset.filter(company_id=c_id)
+                except (ValueError, TypeError):
+                    queryset = queryset.none()
+            else:
+                queryset = queryset.filter(company_id__in=accessible)
+        elif company:
             queryset = queryset.filter(company_id=company)
 
         result = queryset.values(
@@ -579,7 +608,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        last_transaction = CompanyBankTransaction.objects.filter(
+        last_transaction = self.get_queryset().filter(
             company_id=company
         ).order_by('-deal_date', '-created_at').first()
 
@@ -733,7 +762,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        last_transaction = ProjectBankTransaction.objects.filter(
+        last_transaction = self.get_queryset().filter(
             project_id=project
         ).order_by('-deal_date', '-created_at').first()
 

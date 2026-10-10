@@ -15,8 +15,8 @@ def get_project_transactions(params, user=None):
     qs = ProjectBankTransaction.objects.all()
 
     if user and not (user.is_superuser or getattr(user, 'work_manager', False)):
-        from work.models import IssueProject
-        accessible_project_ids = IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+        from apiV1.permissions._utils import get_project_ids_with_permission
+        accessible_project_ids = get_project_ids_with_permission(user, 'ledger.read')
         qs = qs.filter(project_id__in=accessible_project_ids)
 
     project_id = params.get('project')

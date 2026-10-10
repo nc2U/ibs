@@ -17,7 +17,9 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
+    Affiliate,
 )
+from ledger.services.project_transaction import get_project_transactions
 
 User = get_user_model()
 
@@ -875,3 +877,186 @@ class HqLedgerAndGlobalVisibilityTests(LedgerTestBase):
         )
         self.assertEqual(res_del.status_code, http_status.HTTP_204_NO_CONTENT)
         self.assertFalse(CompanyBankTransaction.objects.filter(pk=tx_locked.pk).exists())
+
+
+class LedgerRlsSecurityIsolationTests(LedgerTestBase):
+    """원장 RLS(행 단위 보안) 격리 및 IDOR 방어 정밀 검증 테스트"""
+
+    def setUp(self):
+        super().setUp()
+        # 제2의 회사 생성 (타사 데이터 격리 검증용)
+        self.other_company = Company.objects.create(name='(주)타사건설')
+        self.other_issue_project = IssueProject.objects.create(
+            company=self.other_company,
+            name='타사 본사 워크스페이스',
+            slug='other-hq-workspace',
+            type='1',
+            creator=self.admin_user,
+        )
+
+        # 본사 은행 계좌 (회사 1 vs 회사 2)
+        self.bank_acc_hq1 = CompanyBankAccount.objects.create(
+            company=self.company,
+            bankcode=self.bank_code,
+            alias_name='회사1 본사계좌',
+            number='111-000-111111',
+            holder='(주)테스트건설',
+        )
+        self.bank_acc_hq2 = CompanyBankAccount.objects.create(
+            company=self.other_company,
+            bankcode=self.bank_code,
+            alias_name='회사2 본사계좌',
+            number='222-000-222222',
+            holder='(주)타사건설',
+        )
+
+        # 거래 생성 (회사 1 vs 회사 2)
+        self.tx_hq1 = CompanyBankTransaction.objects.create(
+            company=self.company,
+            bank_account=self.bank_acc_hq1,
+            deal_date=date(2026, 7, 20),
+            amount=15000000,
+            sort=self.sort_deposit,
+            content='회사1 입금',
+            creator=self.admin_user,
+        )
+        self.tx_hq2 = CompanyBankTransaction.objects.create(
+            company=self.other_company,
+            bank_account=self.bank_acc_hq2,
+            deal_date=date(2026, 7, 25),
+            amount=25000000,
+            sort=self.sort_deposit,
+            content='회사2 입금',
+            creator=self.admin_user,
+        )
+
+        # 프로젝트 거래 생성 (프로젝트 A vs 프로젝트 B)
+        self.tx_pr_a = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 7, 10),
+            amount=5000000,
+            sort=self.sort_deposit,
+            content='프로젝트A 거래',
+            creator=self.user_a,
+        )
+        self.tx_pr_b = ProjectBankTransaction.objects.create(
+            project=self.project_b,
+            bank_account=self.bank_acc_b,
+            deal_date=date(2026, 7, 18),
+            amount=8000000,
+            sort=self.sort_deposit,
+            content='프로젝트B 거래',
+            creator=self.user_b,
+        )
+
+        # 회사1 본사 관리자 유저 (회사2에는 소속되지 않음)
+        self.hq1_user = User.objects.create_user(
+            username='hq1_manager', email='hq1@test.com', password='password123'
+        )
+        role_hq1 = Role.objects.create(
+            name='회사1 본사 관리자', creator=self.admin_user, category='ibs_hq_manage'
+        )
+        role_hq1.permissions.add(self.perm_hq_read)
+        member_hq1 = Member.objects.create(project=self.hq_issue_project, user=self.hq1_user)
+        member_hq1.roles.add(role_hq1)
+
+    def test_company_balance_by_account_rls_isolation(self):
+        """본사 balance_by_account: 타 회사 계좌 잔액 노출 차단 RLS 및 권한 격리 검증"""
+        self.client.force_authenticate(user=self.hq1_user)
+
+        # 1. 권한 없는 타 회사 ID로 직접 조회 시 HqProjectModulePermission에 의해 403 Forbidden으로 원천 차단됨
+        res_other = self.client.get(
+            f'/api/v1/ledger/company-transaction/balance_by_account/?company={self.other_company.pk}&date=2026-12-31'
+        )
+        self.assertEqual(res_other.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. company 파라미터 미지정 시에도 본인이 접근 가능한 회사1의 계좌만 포함되고 타사 계좌는 제외되어야 함
+        res_all = self.client.get(
+            '/api/v1/ledger/company-transaction/balance_by_account/?date=2026-12-31'
+        )
+        self.assertEqual(res_all.status_code, http_status.HTTP_200_OK)
+        account_names = [item['bank_acc'] for item in res_all.data]
+        self.assertIn(self.bank_acc_hq1.alias_name, account_names)
+        self.assertNotIn(self.bank_acc_hq2.alias_name, account_names)
+
+    def test_last_deal_idor_isolation(self):
+        """본사 및 프로젝트 last_deal 엔드포인트 IDOR 방어 검증"""
+        # 1. 본사 last_deal: 권한 없는 타사 조회 시 403 Forbidden 차단
+        self.client.force_authenticate(user=self.hq1_user)
+        res_hq_other = self.client.get(
+            f'/api/v1/ledger/company-transaction/last_deal/?company={self.other_company.pk}'
+        )
+        self.assertEqual(res_hq_other.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 자신의 회사 조회 시 정상 날짜 반환
+        res_hq_own = self.client.get(
+            f'/api/v1/ledger/company-transaction/last_deal/?company={self.company.pk}'
+        )
+        self.assertEqual(res_hq_own.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(len(res_hq_own.data['results']), 1)
+        self.assertEqual(res_hq_own.data['results'][0]['deal_date'], date(2026, 7, 20))
+
+        # 2. 프로젝트 last_deal: 프로젝트 A 권한자(user_a)가 타 프로젝트 B 조회 시 403 Forbidden 차단
+        self.client.force_authenticate(user=self.user_a)
+        res_pr_other = self.client.get(
+            f'/api/v1/ledger/project-transaction/last_deal/?project={self.project_b.pk}'
+        )
+        self.assertEqual(res_pr_other.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 자신의 프로젝트 A 조회 시 정상 날짜 반환
+        res_pr_own = self.client.get(
+            f'/api/v1/ledger/project-transaction/last_deal/?project={self.project_a.pk}'
+        )
+        self.assertEqual(res_pr_own.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(len(res_pr_own.data['results']), 1)
+        self.assertEqual(res_pr_own.data['results'][0]['deal_date'], date(2026, 7, 10))
+
+    def test_affiliate_rls_isolation(self):
+        """Affiliate 모델 조회 시 소속 회사 및 소속 프로젝트만 필터링되는 RLS 검증"""
+        # Affiliate 데이터 생성
+        aff_c1 = Affiliate.objects.create(sort='company', company=self.company)
+        aff_c2 = Affiliate.objects.create(sort='company', company=self.other_company)
+        aff_pa = Affiliate.objects.create(sort='project', project=self.project_a)
+        aff_pb = Affiliate.objects.create(sort='project', project=self.project_b)
+
+        # 1. 회사 1 권한만 있는 본사 관리자(hq1_user): 회사 1의 Affiliate만 열람 가능
+        self.client.force_authenticate(user=self.hq1_user)
+        res = self.client.get('/api/v1/ledger/affiliate/')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        pks = [item['pk'] for item in res.data['results']]
+        self.assertIn(aff_c1.pk, pks)
+        self.assertNotIn(aff_c2.pk, pks)
+        self.assertNotIn(aff_pa.pk, pks)
+        self.assertNotIn(aff_pb.pk, pks)
+
+        # 2. 슈퍼유저: 전체 Affiliate 열람 가능
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin = self.client.get('/api/v1/ledger/affiliate/')
+        self.assertEqual(res_admin.status_code, http_status.HTTP_200_OK)
+        admin_pks = [item['pk'] for item in res_admin.data['results']]
+        self.assertIn(aff_c1.pk, admin_pks)
+        self.assertIn(aff_c2.pk, admin_pks)
+        self.assertIn(aff_pa.pk, admin_pks)
+        self.assertIn(aff_pb.pk, admin_pks)
+
+    def test_project_transactions_service_permission_filtering(self):
+        """get_project_transactions 서비스가 사용자의 ledger.read 권한에 따라 프로젝트 거래를 정확히 필터링하는지 검증"""
+        # 1. 프로젝트 A 권한자: 프로젝트 A 거래만 반환
+        qs_a = get_project_transactions({}, user=self.user_a)
+        pks_a = list(qs_a.values_list('pk', flat=True))
+        self.assertIn(self.tx_pr_a.pk, pks_a)
+        self.assertNotIn(self.tx_pr_b.pk, pks_a)
+
+        # 2. 권한 없는 일반 유저: 0건
+        no_perm_user = User.objects.create_user(
+            username='noperm_user', email='noperm@test.com', password='password123'
+        )
+        qs_none = get_project_transactions({}, user=no_perm_user)
+        self.assertEqual(qs_none.count(), 0)
+
+        # 3. 슈퍼유저: 전체 프로젝트 거래 반환
+        qs_admin = get_project_transactions({}, user=self.admin_user)
+        pks_admin = list(qs_admin.values_list('pk', flat=True))
+        self.assertIn(self.tx_pr_a.pk, pks_admin)
+        self.assertIn(self.tx_pr_b.pk, pks_admin)
