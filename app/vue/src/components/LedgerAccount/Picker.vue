@@ -50,11 +50,12 @@ const filteredOptions = computed(() => {
     const neededParents = new Set<number>()
     matchingAccounts.forEach(account => {
       if (account.parent) {
-        // 부모 체인을 따라 올라가며 모든 부모 수집
+        // 부모 체인을 따라 올라가며 모든 부모 수집 (순환 참조 방어)
         let currentParent = account.parent
         let currentOption = filtered.find(opt => opt.value === currentParent)
 
         while (currentOption) {
+          if (neededParents.has(currentOption.value)) break
           neededParents.add(currentOption.value)
           if (currentOption.parent === null) break
           currentParent = currentOption.parent
@@ -87,12 +88,13 @@ const searchFilteredOptions = computed(() => {
     if (option.label.toLowerCase().includes(query)) {
       matchingOptions.add(option.value)
 
-      // 매치된 옵션의 모든 부모들 추가
+      // 매치된 옵션의 모든 부모들 추가 (순환 참조 방어)
       if (option.parent) {
         let currentParent = option.parent
         let parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
 
         while (parentOption) {
+          if (matchingOptions.has(parentOption.value)) break
           matchingOptions.add(parentOption.value)
           if (parentOption.parent === null) break
           currentParent = parentOption.parent
@@ -204,8 +206,10 @@ watch(
             if (listEl) {
               const selectedEl = listEl.querySelector('.selected-item') as HTMLElement
               if (selectedEl) {
-                const targetScrollTop =
-                  selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2
+                const targetScrollTop = Math.max(
+                  0,
+                  selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2,
+                )
                 // 선택된 항목이 중앙에 오도록 scrollTop 직접 조작
                 listEl.scrollTop = targetScrollTop
               }

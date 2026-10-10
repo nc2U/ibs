@@ -33,7 +33,9 @@ const dropdownRef = ref<any>(null)
 const menuRef = ref<HTMLElement | null>(null)
 const toggleRef = ref<any>(null)
 
-const validated = inject<any>('validated', ref(false))
+import type { Ref } from 'vue'
+
+const validated = inject<Ref<boolean>>('validated', ref(false))
 const isInvalid = computed(() => {
   return props.required && validated.value && !props.modelValue
 })
@@ -63,7 +65,7 @@ const filteredOptions = computed(() => {
       option => !option.is_cate_only && option.category === props.cateType,
     )
 
-    // 2. 매칭된 계정들의 부모 계정들 수집
+    // 2. 매칭된 계정들의 부모 계정들 수집 (순환 참조 방어)
     const neededParents = new Set<number>()
     matchingAccounts.forEach(account => {
       if (account.parent) {
@@ -72,6 +74,7 @@ const filteredOptions = computed(() => {
         let currentOption = filtered.find(opt => opt.value === currentParent)
 
         while (currentOption) {
+          if (neededParents.has(currentOption.value)) break
           neededParents.add(currentOption.value)
           if (currentOption.parent === null) break
           currentParent = currentOption.parent
@@ -98,7 +101,7 @@ const filteredOptions = computed(() => {
       option => !option.is_cate_only && option.direction === targetDirection,
     )
 
-    // 2. 매칭된 계정들의 부모 계정들 수집
+    // 2. 매칭된 계정들의 부모 계정들 수집 (순환 참조 방어)
     const neededParents = new Set<number>()
     matchingAccounts.forEach(account => {
       if (account.parent) {
@@ -107,6 +110,7 @@ const filteredOptions = computed(() => {
         let currentOption = filtered.find(opt => opt.value === currentParent)
 
         while (currentOption) {
+          if (neededParents.has(currentOption.value)) break
           neededParents.add(currentOption.value)
           if (currentOption.parent === null) break
           currentParent = currentOption.parent
@@ -139,12 +143,13 @@ const searchFilteredOptions = computed(() => {
     if (option.label.toLowerCase().includes(query)) {
       matchingOptions.add(option.value)
 
-      // 매치된 옵션의 모든 부모들 추가
+      // 매치된 옵션의 모든 부모들 추가 (순환 참조 방어)
       if (option.parent) {
         let currentParent = option.parent
         let parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
 
         while (parentOption) {
+          if (matchingOptions.has(parentOption.value)) break
           matchingOptions.add(parentOption.value)
           if (parentOption.parent === null) break
           currentParent = parentOption.parent
@@ -197,12 +202,11 @@ const selectableOptions = computed(() => {
 
 // 드롭다운 닫기 함수
 const closeDropdown = () => {
-  // v-model, hide()가 모두 동작하지 않는 비정상적인 상황이므로,
-  // 최후의 수단으로 토글 버튼을 직접 찾아 클릭 이벤트를 발생시켜 팝업을 닫습니다.
+  dropdownVisible.value = false
   const dropdownEl = (dropdownRef.value as any)?.$el
   if (dropdownEl) {
     const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
-    if (toggleButton) {
+    if (toggleButton && toggleButton.getAttribute('aria-expanded') === 'true') {
       toggleButton.click()
     }
   }
@@ -291,8 +295,10 @@ const onDropdownShow = () => {
         const selectedEl = menuEl.querySelector('.selected-item') as HTMLElement
         if (selectedEl) {
           // 메뉴 컨테이너 내부에서만 스크롤
-          menuEl.scrollTop =
-            selectedEl.offsetTop - menuEl.clientHeight / 2 + selectedEl.clientHeight / 2
+          menuEl.scrollTop = Math.max(
+            0,
+            selectedEl.offsetTop - menuEl.clientHeight / 2 + selectedEl.clientHeight / 2,
+          )
         }
       }
     }, 100)
