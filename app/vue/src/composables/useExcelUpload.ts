@@ -64,6 +64,58 @@ const EVIDENCE_TYPE_MAP: { [key: string]: string } = {
   '지로용지 및 청구서': '6',
 }
 
+// 코드값('0'~'6')을 한글 라벨로 역변환하는 매핑
+const CODE_TO_EVIDENCE_MAP: { [key: string]: string } = Object.entries(EVIDENCE_TYPE_MAP).reduce(
+  (acc, [label, code]) => {
+    acc[code] = label
+    return acc
+  },
+  {} as { [key: string]: string },
+)
+
+/**
+ * ExcelJS 셀에서 텍스트 값을 안전하게 추출 (RichText, 수식, 하이퍼링크 등 대응)
+ */
+function extractCellValue(cell: ExcelJS.Cell): string {
+  const val = cell.value
+  if (val === null || val === undefined) return ''
+
+  // 1. 단순 원시 타입
+  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+    return String(val).trim()
+  }
+
+  // 2. 수식 셀 ({ formula: '...', result: '...' })
+  if (typeof val === 'object' && 'result' in val) {
+    return val.result !== null && val.result !== undefined ? String(val.result).trim() : ''
+  }
+
+  // 3. RichText 셀 ({ richText: [{ text: '...' }] })
+  if (typeof val === 'object' && 'richText' in val && Array.isArray((val as any).richText)) {
+    return (val as any).richText
+      .map((t: any) => t.text || '')
+      .join('')
+      .trim()
+  }
+
+  // 4. 하이퍼링크 셀 ({ text: '...', hyperlink: '...' })
+  if (typeof val === 'object' && 'text' in val) {
+    return String((val as any).text || '').trim()
+  }
+
+  return String(val).trim()
+}
+
+/**
+ * ExcelJS 셀에서 숫자(금액)를 안전하게 추출 (쉼표, 공백, 통화기호 제거)
+ */
+function extractCellNumber(cell: ExcelJS.Cell): number {
+  const str = extractCellValue(cell).replace(/,/g, '').replace(/\s/g, '')
+  if (!str) return 0
+  const parsed = parseFloat(str)
+  return isNaN(parsed) ? 0 : parsed
+}
+
 export function useExcelUpload() {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
@@ -97,17 +149,21 @@ export function useExcelUpload() {
       for (let i = 2; i <= worksheet.rowCount; i++) {
         const row = worksheet.getRow(i)
 
-        // Skip empty rows
-        if (!row.getCell(1).value && !row.getCell(4).value) continue
+        const accountName = extractCellValue(row.getCell(1))
+        const trader = extractCellValue(row.getCell(2))
+        const amount = extractCellNumber(row.getCell(3))
+        const rawEvidenceType = extractCellValue(row.getCell(4))
+        const contractOrAffiliateName = extractCellValue(row.getCell(5))
 
-        const rawEvidenceType = String(row.getCell(4).value || '').trim()
-        const contractOrAffiliateName = String(row.getCell(5).value || '').trim()
+        // 빈 행 건너뛰기: 모든 주요 컬럼이 비어있으면 건너뜀
+        if (!accountName && !trader && amount === 0 && !rawEvidenceType && !contractOrAffiliateName) {
+          continue
+        }
 
         const entry: ParsedEntry = {
-          account_name: String(row.getCell(1).value || '').trim(),
-          // description: String(row.getCell(2).value || '').trim(),
-          trader: String(row.getCell(2).value || '').trim(),
-          amount: parseFloat(String(row.getCell(3).value || '0')),
+          account_name: accountName,
+          trader: trader,
+          amount: amount,
           evidence_type: '', // Will be replaced by code
           raw_evidence_type: rawEvidenceType, // Keep original string for display
           contract_or_affiliate_name: contractOrAffiliateName,
@@ -118,13 +174,17 @@ export function useExcelUpload() {
           operationType: 'create', // default, will be changed if matched with existing
         }
 
-        // Validate and convert evidence_type
-        const mappedEvidenceType = EVIDENCE_TYPE_MAP[rawEvidenceType]
+        // Validate and convert evidence_type (한글 라벨 또는 이미 코드값인 경우 모두 지원)
+        let mappedEvidenceType = EVIDENCE_TYPE_MAP[rawEvidenceType]
+        if (!mappedEvidenceType && CODE_TO_EVIDENCE_MAP[rawEvidenceType]) {
+          mappedEvidenceType = rawEvidenceType // 이미 '0'~'6' 코드값인 경우
+        }
+
         if (rawEvidenceType && !mappedEvidenceType) {
           entry.isValid = false
           entry.validationErrors.push(`지출증빙 '${rawEvidenceType}'은 유효하지 않습니다.`)
         } else {
-          entry.evidence_type = mappedEvidenceType || '' // 매핑된 값 또는 빈 문자열 (rawEvidenceType이 빈 경우)
+          entry.evidence_type = mappedEvidenceType || ''
         }
 
         // Match with existing entry by order (if exists)
@@ -190,9 +250,9 @@ export function useExcelUpload() {
       const entriesToUpdate = parsedEntries.filter(e => e.operationType === 'update')
       const entriesToCreate = parsedEntries.filter(e => e.operationType === 'create')
 
-      // Validate total amount matches transaction amount (must be exact, 0 difference)
+      // Validate total amount matches transaction amount (부동소수점 오차 방지)
       const amountDiff = Math.abs(totalAmount - transactionAmount)
-      const isAmountValid = amountDiff === 0
+      const isAmountValid = amountDiff < 0.01
 
       return {
         entriesToUpdate,
@@ -260,11 +320,15 @@ export function useExcelUpload() {
     // Add existing entries or empty template row
     if (transactionData.entries.length > 0) {
       transactionData.entries.forEach(entry => {
+        // 코드값인 경우 한글 라벨로 변환하여 엑셀에 표기 (예: '1' -> '세금계산서')
+        const rawCode = entry.evidence_type || ''
+        const displayEvidence = CODE_TO_EVIDENCE_MAP[rawCode] || rawCode
+
         worksheet.addRow({
           account_name: entry.account_name || '',
           trader: entry.trader || '',
           amount: entry.amount || '',
-          evidence_type: entry.evidence_type || '',
+          evidence_type: displayEvidence,
           contract_or_affiliate:
             systemType === 'project' ? entry.contract_name || '' : entry.affiliate_name || '',
         })
