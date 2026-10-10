@@ -15,7 +15,7 @@ from work.models.project import IssueProject, Role, Permission, Member
 from sales.models import (
     SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
-    PayoutContractDetail, CommissionClawback
+    PayoutContractDetail, CommissionClawback, AgencyPayout, AgencyPayoutContractDetail
 )
 
 User = get_user_model()
@@ -1469,5 +1469,47 @@ class SalesImprovementTests(APITestCase):
         self.assertGreater(len(res.data['results']), 0)
         self.assertIn('is_settled', res.data['results'][0])
         self.assertIn('settled_period_title', res.data['results'][0])
+
+    def test_generate_payouts_on_confirmed_period_conflict(self):
+        """이미 확정('2') 또는 완료('3')된 회차에 generate-payouts 호출 시 409 Conflict 차단 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='확정 테스트 회차',
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 31),
+            status='2'  # 확정 상태
+        )
+
+        res = self.client.post(f'/api/v1/sales-settlement-period/{period.id}/generate-payouts/')
+        self.assertEqual(res.status_code, http_status.HTTP_409_CONFLICT)
+        self.assertIn('이미', res.data['detail'])
+
+        # 완료('3') 상태도 409 차단 검증
+        period.status = '3'
+        period.save(update_fields=['status'])
+        res3 = self.client.post(f'/api/v1/sales-settlement-period/{period.id}/generate-payouts/')
+        self.assertEqual(res3.status_code, http_status.HTTP_409_CONFLICT)
+
+    def test_settlement_period_count_annotations(self):
+        """SettlementPeriodViewSet 목록 조회 시 payout_count와 agency_payout_count 정상 반환 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='카운트 테스트 회차',
+            start_date=date(2026, 7, 1),
+            end_date=date(2026, 7, 31),
+            status='1'
+        )
+        CommissionPayout.objects.create(period=period, sales_person=self.person1)
+        AgencyPayout.objects.create(period=period, agency=self.agency1)
+
+        res = self.client.get('/api/v1/sales-settlement-period/')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        target = next((item for item in res.data['results'] if item['id'] == period.id), None)
+        self.assertIsNotNone(target)
+        self.assertEqual(target['payout_count'], 1)
+        self.assertEqual(target['agency_payout_count'], 1)
+
 
 

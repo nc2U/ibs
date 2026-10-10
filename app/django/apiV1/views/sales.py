@@ -233,10 +233,17 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = super().get_queryset()
+        qs = super().get_queryset().annotate(
+            annotate_payout_count=Count('payouts', distinct=True),
+            annotate_agency_payout_count=Count('agency_payouts', distinct=True),
+        ).order_by('-start_date', '-id')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.settle')
+        )
+        return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -258,6 +265,15 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             # [H-5] 동시 정산 생성/수정 방지를 위한 row-level lock
             period = SettlementPeriod.objects.select_for_update().get(pk=self.get_object().pk)
+
+            # 이미 확정('2') 또는 지급 완료('3')된 회차는 데이터 보호를 위해 재계산 차단
+            if period.status in ('2', '3'):
+                status_display = period.get_status_display()
+                return Response(
+                    {'detail': f'[{period.title}] 이미 {status_display} 상태인 회차는 정산을 재계산할 수 없습니다.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
             result = generate_period_payouts(period)
 
         if result['total_contracts'] == 0:
@@ -308,8 +324,10 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            accessible_ids = list(get_accessible_project_ids(user))
-            if project.pk not in accessible_ids:
+            allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+                get_project_ids_with_permission(user, 'sales.settle')
+            )
+            if project.pk not in allowed_ids:
                 return Response({'detail': '해당 프로젝트에 대한 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         result = validate_org_health(project)
@@ -342,7 +360,7 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
     """개인별 수수료 지급 명세 ViewSet"""
     queryset = CommissionPayout.objects.all().select_related(
         'period__project', 'sales_person__team'
-    ).prefetch_related('contract_details__contract')
+    ).prefetch_related('contract_details__contract__contractor')
     serializer_class = CommissionPayoutSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
@@ -354,7 +372,11 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(period__project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.settle')
+        )
+        return qs.filter(period__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -367,7 +389,6 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     @transaction.atomic
     def update_pay_status(self, request, pk=None):
-
         """지급 상태 업데이트 (승인 / 지급완료 / 보류)"""
         # [H-2] self.get_object()를 통해 get_queryset() RLS 및 has_object_permission(sales.payout) 검증 수행
         payout = self.get_object()
@@ -387,7 +408,6 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         return Response({'detail': '올바르지 않은 상태값입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class CommissionClawbackViewSet(viewsets.ModelViewSet):
     """수수료 환수 관리 ViewSet"""
     queryset = CommissionClawback.objects.all().select_related('contract', 'sales_person')
@@ -402,7 +422,11 @@ class CommissionClawbackViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.settle')
+        )
+        return qs.filter(contract__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -430,7 +454,11 @@ class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(sales_person__team__agency__project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 또는 sales.manage 권한을 보유한 프로젝트만 노출
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.manage')
+        )
+        return qs.filter(sales_person__team__agency__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
@@ -471,7 +499,7 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
     """외주 대행사 수수료 지급 명세 ViewSet (시행사 → 대행사 지급)"""
     queryset = AgencyPayout.objects.all().select_related(
         'period__project', 'agency'
-    ).prefetch_related('contract_details__contract')
+    ).prefetch_related('contract_details__contract__contractor')
     serializer_class = AgencyPayoutSerializer
     permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
@@ -483,7 +511,11 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(period__project_id__in=get_accessible_project_ids(user))
+        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.settle')
+        )
+        return qs.filter(period__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):

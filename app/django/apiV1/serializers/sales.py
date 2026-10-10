@@ -228,9 +228,13 @@ class SettlementPeriodSerializer(serializers.ModelSerializer):
         )
 
     def get_payout_count(self, obj):
+        if hasattr(obj, 'annotate_payout_count'):
+            return obj.annotate_payout_count
         return obj.payouts.count()
 
     def get_agency_payout_count(self, obj):
+        if hasattr(obj, 'annotate_agency_payout_count'):
+            return obj.annotate_agency_payout_count
         return obj.agency_payouts.count()
 
 
