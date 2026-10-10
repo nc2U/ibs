@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from rest_framework import status
 
@@ -385,5 +386,149 @@ class ItemsIsolationAndPermissionTests(APITestCase):
         self.assertIsNotNone(ku_other_proj.pk)
         self.assertEqual(ku_other_proj.unit_code, 'KU-001')
         self.assertEqual(ku_other_proj.project, self.project_b)
+
+    def test_member_without_contract_read_blocked_by_rls(self):
+        """[RLS] 워크스페이스 멤버이지만 contract.read 권한이 없는 사용자는 items 데이터 접근 시 빈 목록(은닉) 반환"""
+        # contract.read 권한이 없는 일반 워크스페이스 역할 생성
+        workspace_role = Role.objects.create(
+            name='일반협력업체', category='work_space', creator=self.admin_user
+        )
+        no_perm_user = User.objects.create_user(
+            username='user_no_perm', email='noperm@test.com', password='password123'
+        )
+        mem = Member.objects.create(user=no_perm_user, project=self.ip_a)
+        mem.roles.add(workspace_role)
+
+        self.client.force_authenticate(user=no_perm_user)
+
+        # 1. 타입 목록 조회 -> 0건
+        res_type = self.client.get('/api/v1/type/')
+        self.assertEqual(res_type.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_type.data['count'], 0)
+
+        # 2. 동수 목록 조회 -> 0건
+        res_bldg = self.client.get('/api/v1/bldg/')
+        self.assertEqual(res_bldg.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_bldg.data['count'], 0)
+
+        # 3. 호수 목록 조회 -> 0건
+        res_house = self.client.get('/api/v1/house-unit/')
+        self.assertEqual(res_house.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_house.data['count'], 0)
+
+        # 4. 전체 호수(계약자 및 공급가격 정보 포함) 배치도 조회 -> 0건
+        res_all_house = self.client.get('/api/v1/all-house-unit/')
+        self.assertEqual(res_all_house.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_all_house.data['count'], 0)
+
+        # 5. 옵션 품목 조회 -> 0건
+        res_opt = self.client.get('/api/v1/option-item/')
+        self.assertEqual(res_opt.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_opt.data['count'], 0)
+
+    def test_cross_project_house_unit_validation_error(self):
+        """[데이터 무결성] HouseUnit의 동수, 타입, 층타입, KeyUnit 간 프로젝트 불일치 및 타입 불일치 차단 검증"""
+        # 1. ORM 레벨: 동수(project_a)에 타 프로젝트 타입(unit_type_b) 지정 시 ValidationError 발생
+        with self.assertRaises(ValidationError):
+            HouseUnit.objects.create(
+                building_unit=self.bldg_a,
+                unit_type=self.unit_type_b,
+                bldg_line=1, floor_no=1, name='999'
+            )
+
+        # 2. API 레벨: 동수(bldg_a)에 unit_type_b 전달하여 POST 시 400 Bad Request
+        self.client.force_authenticate(user=self.admin_user)
+        res_api = self.client.post('/api/v1/house-unit/', {
+            'building_unit': self.bldg_a.pk,
+            'unit_type': self.unit_type_b.pk,
+            'bldg_line': 1,
+            'floor_no': 1,
+            'name': '999'
+        })
+        self.assertEqual(res_api.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_type', res_api.data)
+
+        # 3. ORM 레벨: 동수(project_a)에 타 프로젝트 층범위(floor_type_b) 지정 시 ValidationError 발생
+        floor_type_b = UnitFloorType.objects.create(
+            project=self.project_b, sort='1', start_floor=1, end_floor=10, alias_name='B저층'
+        )
+        with self.assertRaises(ValidationError):
+            HouseUnit.objects.create(
+                building_unit=self.bldg_a,
+                unit_type=self.unit_type_a,
+                floor_type=floor_type_b,
+                bldg_line=1, floor_no=1, name='998'
+            )
+
+        # 4. ORM 레벨: 동수(project_a)에 타 프로젝트 KeyUnit(key_unit_b) 지정 시 ValidationError 발생
+        key_unit_b = KeyUnit.objects.create(
+            project=self.project_b, unit_type=self.unit_type_b, unit_code='KU-B01'
+        )
+        with self.assertRaises(ValidationError):
+            HouseUnit.objects.create(
+                building_unit=self.bldg_a,
+                unit_type=self.unit_type_a,
+                key_unit=key_unit_b,
+                bldg_line=1, floor_no=1, name='997'
+            )
+
+        # 5. ORM 레벨: 동일 프로젝트이지만 호수의 타입(unit_type_a)과 KeyUnit의 타입이 불일치할 때 ValidationError 발생
+        unit_type_a2 = UnitType.objects.create(
+            project=self.project_a, name='104A', color='#333333', sort='1', num_unit=30
+        )
+        key_unit_a2 = KeyUnit.objects.create(
+            project=self.project_a, unit_type=unit_type_a2, unit_code='KU-A02'
+        )
+        with self.assertRaises(ValidationError):
+            HouseUnit.objects.create(
+                building_unit=self.bldg_a,
+                unit_type=self.unit_type_a,  # 84A
+                key_unit=key_unit_a2,        # 104A
+                bldg_line=1, floor_no=1, name='996'
+            )
+
+    def test_cross_project_key_unit_validation_error(self):
+        """[데이터 무결성] KeyUnit의 프로젝트와 unit_type의 프로젝트 불일치 차단 검증"""
+        # 1. ORM 레벨: 프로젝트 A의 KeyUnit에 프로젝트 B의 unit_type 지정 시 ValidationError 발생
+        with self.assertRaises(ValidationError):
+            KeyUnit.objects.create(
+                project=self.project_a,
+                unit_type=self.unit_type_b,
+                unit_code='KU-ERR'
+            )
+
+        # 2. API 레벨: 프로젝트 A의 KeyUnit 생성 시 unit_type_b 지정 요청 시 400 Bad Request
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.post('/api/v1/key-unit/', {
+            'project': self.project_a.pk,
+            'unit_type': self.unit_type_b.pk,
+            'unit_code': 'KU-ERR'
+        })
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_type', res.data)
+
+    def test_option_item_clean_price_validation(self):
+        """[데이터 무결성] OptionItem 모델 레벨의 계약금+잔금 합계 정합성 검증 확인"""
+        # 1. 계약금 + 잔금 != 옵션가격 인 경우 ValidationError 발생
+        with self.assertRaises(ValidationError):
+            OptionItem.objects.create(
+                project=self.project_a,
+                opt_name='시스템에어컨 추가',
+                opt_price=2000000,
+                opt_deposit=200000,
+                opt_balance=1500000  # 합계 1,700,000 != 2,000,000
+            )
+
+        # 2. 계약금 + 잔금 == 옵션가격 인 경우 정상 생성
+        valid_opt = OptionItem.objects.create(
+            project=self.project_a,
+            opt_name='시스템에어컨 추가',
+            opt_price=2000000,
+            opt_deposit=200000,
+            opt_balance=1800000
+        )
+        self.assertIsNotNone(valid_opt.pk)
+        self.assertEqual(valid_opt.opt_price, 2000000)
+
 
 

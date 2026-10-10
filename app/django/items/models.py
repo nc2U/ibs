@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 UNIT_SORT_CHOICES = (
@@ -59,6 +60,14 @@ class KeyUnit(models.Model):
     def __str__(self):
         return f'{self.unit_code}'
 
+    def clean(self):
+        if self.project_id and self.unit_type_id and self.project_id != self.unit_type.project_id:
+            raise ValidationError({'unit_type': '계약 유닛의 프로젝트와 타입의 프로젝트가 일치하지 않습니다.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-project', 'id']
         verbose_name = '03. 계약 유닛'
@@ -97,6 +106,26 @@ class HouseUnit(models.Model):
             return f'{self.building_unit}-{self.name}'
         return f'{self.building_unit}'
 
+    def clean(self):
+        errors = {}
+        if self.building_unit_id and self.unit_type_id:
+            if self.building_unit.project_id != self.unit_type.project_id:
+                errors['unit_type'] = '동수와 타입의 프로젝트가 일치하지 않습니다.'
+        if self.floor_type_id and self.building_unit_id:
+            if self.floor_type.project_id != self.building_unit.project_id:
+                errors['floor_type'] = '동수와 층범위 타입의 프로젝트가 일치하지 않습니다.'
+        if self.key_unit_id:
+            if self.building_unit_id and self.key_unit.project_id != self.building_unit.project_id:
+                errors['key_unit'] = '동수와 계약유닛의 프로젝트가 일치하지 않습니다.'
+            if self.unit_type_id and self.key_unit.unit_type_id != self.unit_type_id:
+                errors['key_unit'] = '호수의 타입과 계약유닛의 타입이 일치하지 않습니다.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-building_unit__project', 'building_unit', '-floor_no', 'bldg_line']
         verbose_name = '05. 호수'
@@ -116,6 +145,15 @@ class OptionItem(models.Model):
 
     def __str__(self):
         return self.opt_name
+
+    def clean(self):
+        if self.opt_price is not None and self.opt_deposit is not None and self.opt_balance is not None:
+            if self.opt_deposit + self.opt_balance != self.opt_price:
+                raise ValidationError({'opt_deposit': '계약금 + 잔금의 합계가 옵션가격과 일치해야 합니다.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-project', 'id']

@@ -3,6 +3,7 @@ from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
+from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
@@ -13,8 +14,9 @@ from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, Ke
                                  HouseUnitSummarySerializer, OptionItemSerializer)
 
 
-def get_accessible_project_ids(user):
-    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+def get_accessible_project_ids(user, required_perm: str = 'contract.read'):
+    """[RLS] 사용자가 특정 권한(기본: contract.read)을 보유한 프로젝트 ID 목록 반환"""
+    return get_project_ids_with_permission(user, required_perm)
 
 
 # Items --------------------------------------------------------------------------

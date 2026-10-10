@@ -51,6 +51,15 @@ class KeyUnitSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'unit_type', 'unit_code', 'houseunit', 'contract')
         read_only_fields = ('contract',)
 
+    def validate(self, attrs):
+        project = attrs.get('project') or (self.instance.project if self.instance else None)
+        unit_type = attrs.get('unit_type') or (self.instance.unit_type if self.instance else None)
+        if project and unit_type and project.id != unit_type.project_id:
+            raise serializers.ValidationError(
+                {'unit_type': '계약 유닛의 프로젝트와 타입의 프로젝트가 일치하지 않습니다.'}
+            )
+        return attrs
+
 
 class HouseUnitSerializer(serializers.ModelSerializer):
     unit_code = serializers.CharField(write_only=True, required=False, max_length=8)
@@ -62,6 +71,30 @@ class HouseUnitSerializer(serializers.ModelSerializer):
                   'unit_code')
         read_only_fields = ('__str__',)
 
+    def validate(self, attrs):
+        building_unit = attrs.get('building_unit') or (self.instance.building_unit if self.instance else None)
+        unit_type = attrs.get('unit_type') or (self.instance.unit_type if self.instance else None)
+        floor_type = attrs.get('floor_type') or (self.instance.floor_type if self.instance else None)
+        key_unit = attrs.get('key_unit') or (self.instance.key_unit if self.instance else None)
+
+        if building_unit and unit_type and building_unit.project_id != unit_type.project_id:
+            raise serializers.ValidationError(
+                {'unit_type': '동수와 타입의 프로젝트가 일치하지 않습니다.'}
+            )
+        if building_unit and floor_type and floor_type.project_id != building_unit.project_id:
+            raise serializers.ValidationError(
+                {'floor_type': '동수와 층범위 타입의 프로젝트가 일치하지 않습니다.'}
+            )
+        if building_unit and key_unit and key_unit.project_id != building_unit.project_id:
+            raise serializers.ValidationError(
+                {'key_unit': '동수와 계약유닛의 프로젝트가 일치하지 않습니다.'}
+            )
+        if unit_type and key_unit and key_unit.unit_type_id != unit_type.id:
+            raise serializers.ValidationError(
+                {'key_unit': '호수의 타입과 계약유닛의 타입이 일치하지 않습니다.'}
+            )
+        return attrs
+
     @classmethod
     def _resolve_key_unit(cls, validated_data, instance=None):
         unit_code = validated_data.pop('unit_code', None)
@@ -71,6 +104,10 @@ class HouseUnitSerializer(serializers.ModelSerializer):
             if not building_unit or not unit_type:
                 raise serializers.ValidationError(
                     {'unit_code': '유닛 코드를 배정하려면 동수(building_unit)와 타입(unit_type) 정보가 필요합니다.'}
+                )
+            if building_unit.project_id != unit_type.project_id:
+                raise serializers.ValidationError(
+                    {'unit_type': '동수와 타입의 프로젝트가 일치하지 않습니다.'}
                 )
             # [C-2] transaction.atomic + select_for_update 으로 Race Condition 차단
             # get_or_create 이후 행 락을 즉시 획득하여 동시 요청의 이중 배정을 원천 방지
