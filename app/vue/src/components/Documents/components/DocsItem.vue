@@ -24,8 +24,8 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
       <v-badge :color="sortColor" :content="sortName" offset-x="-20" offset-y="-7" />
     </CTableDataCell>
     <CTableDataCell>{{ docs.execution_date }}</CTableDataCell>
-    <CTableDataCell :style="{ background: `${docs.cate_color}33` || '' }">
-      [{{ docs.cate_name }}]
+    <CTableDataCell :style="{ background: docs.cate_color ? `${docs.cate_color}33` : '' }">
+      <span v-if="docs.cate_name">[{{ docs.cate_name }}]</span>
     </CTableDataCell>
     <CTableDataCell v-if="isLawsuit" class="text-left">
       {{ cutString(docs.lawsuit_name ?? '', 26) }}

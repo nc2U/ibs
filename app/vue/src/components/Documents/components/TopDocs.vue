@@ -14,7 +14,7 @@ const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
 
 const sortName = computed(() => props.docs?.project?.name || '본사 문서')
-const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
+const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'info'))
 </script>
 
 <template>
@@ -26,6 +26,9 @@ const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
       <v-badge :color="sortColor" :content="sortName" offset-x="-5" offset-y="-7" />
     </CTableDataCell>
     <CTableDataCell>{{ docs.execution_date }}</CTableDataCell>
+    <CTableDataCell :style="{ background: docs.cate_color ? `${docs.cate_color}33` : '' }">
+      <span v-if="docs.cate_name">[{{ docs.cate_name }}]</span>
+    </CTableDataCell>
     <CTableDataCell v-if="isLawsuit" class="text-left">
       {{ cutString(docs.lawsuit_name ?? '', 26) }}
     </CTableDataCell>

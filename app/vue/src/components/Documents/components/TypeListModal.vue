@@ -19,7 +19,7 @@ const doc_type = ref<number | null>(null)
 const project = ref<number | null>(null)
 
 const formCheck = computed(() => {
-  return doc_type.value === Number(props.nowType)
+  return !doc_type.value || doc_type.value === Number(props.nowType)
 })
 
 const onSubmit = () => {
@@ -28,13 +28,12 @@ const onSubmit = () => {
   refListModal.value.close()
 }
 
-const callModal = () => refListModal.value.callModal()
+const callModal = () => {
+  doc_type.value = props.nowType ? Number(props.nowType) : null
+  refListModal.value.callModal()
+}
 
 defineExpose({ callModal })
-
-onUpdated(() => {
-  if (props.nowType) doc_type.value = Number(props.nowType)
-})
 </script>
 
 <template>
@@ -59,7 +58,7 @@ onUpdated(() => {
                   style="margin-top: 6px"
                   :disabled="Number(nowType) === obj.value"
                 />
-                <label :for="`doc_type_${obj.value}`" class="form-label form-check-label">
+                <label :for="`type_${obj.value}`" class="form-label form-check-label">
                   {{ obj.label }}
                 </label>
               </div>
