@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
     get_contract_price, get_contract_payment_plan
+from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from contract.models import OrderGroup, DocumentType, RequiredDocument, Contractor, Contract, ContractPrice, \
@@ -36,8 +37,10 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
     SuccessionSerializer, ContractorReleaseSerializer, SimpleContractLogSerializer
 
 
-def get_accessible_project_ids(user):
-    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+def get_accessible_project_ids(user, required_perm: str = 'contract.read'):
+    """[RLS] 사용자가 특정 권한(기본: contract.read)을 보유한 프로젝트 ID 목록 반환"""
+    return get_project_ids_with_permission(user, required_perm)
+
 
 
 # Contract --------------------------------------------------------------------------
@@ -576,6 +579,13 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
                         'contract__unit_type', 'contract__is_active',
                         'contract__contractor__status')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+
 
 class SubsSummaryViewSet(viewsets.ModelViewSet):
     serializer_class = SubsSummarySerializer
@@ -583,9 +593,11 @@ class SubsSummaryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project',)
 
     def get_queryset(self):
-        return Contract.objects.filter(is_active=True, contractor__status=1) \
-            .values('unit_type') \
-            .annotate(num_cont=Count('pk'))
+        user = self.request.user
+        qs = Contract.objects.filter(is_active=True, contractor__status=1)
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        return qs.values('unit_type').annotate(num_cont=Count('pk'))
 
 
 class ContSumFilter(FilterSet):
@@ -603,8 +615,11 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # status '2'(계약) 및 '3'(변경처리중) 모두 유효한 계약자 상태임
-        return Contract.objects.filter(is_active=True, contractor__status__in=['2', '3']) \
-            .values('order_group', 'unit_type') \
+        user = self.request.user
+        qs = Contract.objects.filter(is_active=True, contractor__status__in=['2', '3'])
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        return qs.values('order_group', 'unit_type') \
             .annotate(conts_num=Count('order_group')) \
             .annotate(price_sum=Sum('contractprice__price'))
 
@@ -613,6 +628,11 @@ class ContractAggreateView(APIView):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def get(self, request, project_id):
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if int(project_id) not in get_accessible_project_ids(user):
+                return Response({'detail': '해당 프로젝트에 대한 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             project = Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
@@ -653,15 +673,24 @@ class ContractorViewSet(viewsets.ModelViewSet):
                      'addresses__dm_address2', 'addresses__dm_address3',
                      'contractorcontact__cell_phone', 'contractorcontact__home_phone',
                      'contractorcontact__other_phone', 'contractorcontact__email')
+    ordering = ['-id']
 
     def get_queryset(self):
+        user = self.request.user
         # [H-4] ContractorSerializer 직렬화 시 contract, project, 연락처 접근으로 발생하는 N+1 방지
-        return Contractor.objects.select_related(
+        qs = Contractor.objects.select_related(
             'contract__project',
             'contract__order_group',
             'contract__unit_type',
+            'prev_contract__project',
             'contractorcontact',
+        ).prefetch_related(
+            'addresses',
         )
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        allowed_ids = get_accessible_project_ids(user)
+        return qs.filter(Q(contract__project_id__in=allowed_ids) | Q(prev_contract__project_id__in=allowed_ids))
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -672,7 +701,12 @@ class SimpleContractorViewSet(ContractorViewSet):
     pagination_class = PageNumberPaginationThreeThousand
 
     def get_queryset(self):
-        return Contractor.objects.select_related('contract')
+        user = self.request.user
+        qs = Contractor.objects.select_related('contract', 'prev_contract')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        allowed_ids = get_accessible_project_ids(user)
+        return qs.filter(Q(contract__project_id__in=allowed_ids) | Q(prev_contract__project_id__in=allowed_ids))
 
 
 class ContractFileViewSet(viewsets.ModelViewSet):
@@ -684,7 +718,14 @@ class ContractFileViewSet(viewsets.ModelViewSet):
     filterset_fields = ('contractor',)
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = super().get_queryset().select_related('contractor', 'creator')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contractor__contract__project_id__in=allowed_ids) |
+                Q(contractor__prev_contract__project_id__in=allowed_ids)
+            )
         contractor_id = self.request.query_params.get('contractor', None)
         if contractor_id:
             queryset = queryset.filter(contractor_id=contractor_id)
@@ -723,6 +764,17 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contractor', 'required_document__sort', 'required_document', 'contractor__contract__project')
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset().select_related('contractor', 'required_document')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contractor__contract__project_id__in=allowed_ids) |
+                Q(contractor__prev_contract__project_id__in=allowed_ids)
+            )
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -737,6 +789,17 @@ class ContractDocumentFileViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     parser_classes = [MultiPartParser, FormParser]
     filterset_fields = ('contract_document',)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset().select_related('contract_document', 'uploader')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contract_document__contractor__contract__project_id__in=allowed_ids) |
+                Q(contract_document__contractor__prev_contract__project_id__in=allowed_ids)
+            )
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(uploader=self.request.user)
@@ -765,6 +828,18 @@ class ContAddressViewSet(viewsets.ModelViewSet):
     serializer_class = ContractorAddressSerializer
     filterset_fields = ('contractor', 'is_current')
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    ordering = ['-id']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contractor__contract__project_id__in=allowed_ids) |
+                Q(contractor__prev_contract__project_id__in=allowed_ids)
+            )
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -778,6 +853,18 @@ class ContContactViewSet(viewsets.ModelViewSet):
     queryset = ContractorContact.objects.all()
     serializer_class = ContractorContactSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    ordering = ['-id']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contractor__contract__project_id__in=allowed_ids) |
+                Q(contractor__prev_contract__project_id__in=allowed_ids)
+            )
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -794,6 +881,17 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contractor', 'status', 'category', 'channel')
     ordering = ['-consultation_date', '-created']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(contractor__contract__project_id__in=allowed_ids) |
+                Q(contractor__prev_contract__project_id__in=allowed_ids)
+            )
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, consultant=self.request.user)
@@ -813,6 +911,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.succession'
 
     def get_queryset(self):
+        user = self.request.user
         # [M-2] SuccessionSerializer 직렬화 시 seller/buyer/contract/project 접근으로 발생하는 N+1 방지
         queryset = Succession.objects.select_related(
             'seller',
@@ -821,6 +920,9 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             'contract__order_group',
             'contract__unit_type',
         )
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(contract__project_id__in=allowed_ids)
         return queryset.annotate(
             is_ongoing=Case(
                 When(status__in=['1', '2'], then=Value(1)),
@@ -954,11 +1056,15 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.release'
 
     def get_queryset(self):
+        user = self.request.user
         # [M-3] ContractorReleaseSerializer 직렬화 시 contractor/project 접근으로 발생하는 N+1 방지
         queryset = ContractorRelease.objects.select_related(
             'contractor',
             'project',
         )
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user)
+            queryset = queryset.filter(project_id__in=allowed_ids)
         return queryset.annotate(
             is_ongoing=Case(
                 When(status__in=['1', '2', '3'], then=Value(1)),
@@ -1111,6 +1217,14 @@ def bulk_update_contract_prices(request):
             'message': f'Project with ID {project_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
 
+    # [RLS] 프로젝트 계약 변경 권한 검증
+    if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+        if int(project_id) not in get_accessible_project_ids(request.user, 'contract.update'):
+            return Response({
+                'success': False,
+                'message': '해당 프로젝트에 대한 계약 수정 권한이 없습니다.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
     # 미계약 세대용 차수 검증
     order_group_for_uncontracted = None
     if uncontracted_order_group_id:
@@ -1220,6 +1334,14 @@ def contract_price_update_preview(request):
 
     try:
         project = Project.objects.get(pk=project_id)
+
+        # [RLS] 프로젝트 계약 조회 권한 검증
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            if int(project_id) not in get_accessible_project_ids(request.user, 'contract.read'):
+                return Response({
+                    'success': False,
+                    'message': '해당 프로젝트에 대한 계약 조회 권한이 없습니다.'
+                }, status=status.HTTP_403_FORBIDDEN)
 
         # 미계약 세대용 차수 검증
         order_group_for_uncontracted = None

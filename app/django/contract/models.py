@@ -431,7 +431,12 @@ class Contractor(models.Model):
 
     @property
     def contractoraddress(self):
-        """현주소 반환 (하위 호환성을 위한 프로퍼티)"""
+        """현주소 반환 (하위 호환성을 위한 프로퍼티, N+1 방지 프리페치 캐시 우선 조회)"""
+        if hasattr(self, '_prefetched_objects_cache') and 'addresses' in self._prefetched_objects_cache:
+            for addr in self._prefetched_objects_cache['addresses']:
+                if addr.is_current:
+                    return addr
+            return None
         return self.addresses.filter(is_current=True).first()
 
     def clean(self):

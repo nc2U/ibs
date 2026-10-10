@@ -619,6 +619,26 @@ class ContractAndPaymentSecurityTests(APITestCase):
             payment_amounts={'1': 60000000, '10': 540000000}
         )
 
+        # 주소, 연락처 및 해지 데이터 생성
+        self.addr_a = ContractorAddress.objects.create(
+            contractor=self.contractor_a, id_zipcode='12345', id_address1='서울시 강남구', is_current=True
+        )
+        self.addr_b = ContractorAddress.objects.create(
+            contractor=self.contractor_b, id_zipcode='54321', id_address1='성남시 분당구', is_current=True
+        )
+        self.contact_a = ContractorContact.objects.create(
+            contractor=self.contractor_a, cell_phone='010-1111-2222'
+        )
+        self.contact_b = ContractorContact.objects.create(
+            contractor=self.contractor_b, cell_phone='010-3333-4444'
+        )
+        self.release_a = ContractorRelease.objects.create(
+            project=self.project_a, contractor=self.contractor_a, status='1', request_date=date(2026, 1, 10)
+        )
+        self.release_b = ContractorRelease.objects.create(
+            project=self.project_b, contractor=self.contractor_b, status='1', request_date=date(2026, 1, 10)
+        )
+
         # 7. 회계 및 수납(ContractPayment) 데이터 생성
         bank_code = BankCode.objects.create(code='004', name='국민은행')
         sort_dep = AccountSort.objects.create(name='입금')
@@ -782,3 +802,64 @@ class ContractAndPaymentSecurityTests(APITestCase):
         self.assertIn('1', cp.payment_amounts)
         self.assertEqual(cp.get_payment_amount_by_time(1), 50000000)
         self.assertEqual(cp.get_payment_amount_by_time(10), 450000000)
+
+    def test_row_level_security_contractor_and_sub_models_isolation(self):
+        """프로젝트 A 멤버는 계약자, 주소, 연락처, 해지, 가격 등 하위 데이터에서도 프로젝트 B 데이터에 접근 불가"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. ContractorViewSet (/api/v1/contractor/)
+        res_cont = self.client.get('/api/v1/contractor/')
+        self.assertEqual(res_cont.status_code, http_status.HTTP_200_OK)
+        cont_ids = [item['pk'] for item in res_cont.data['results']]
+        self.assertIn(self.contractor_a.pk, cont_ids)
+        self.assertNotIn(self.contractor_b.pk, cont_ids)
+
+        # 타 프로젝트 계약자 상세 조회 차단 (404)
+        res_cont_b = self.client.get(f'/api/v1/contractor/{self.contractor_b.pk}/')
+        self.assertEqual(res_cont_b.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 2. ContractorAddressViewSet (/api/v1/contractor-address/)
+        res_addr = self.client.get('/api/v1/contractor-address/')
+        self.assertEqual(res_addr.status_code, http_status.HTTP_200_OK)
+        addr_ids = [item['pk'] for item in res_addr.data['results']]
+        self.assertIn(self.addr_a.pk, addr_ids)
+        self.assertNotIn(self.addr_b.pk, addr_ids)
+
+        # 3. ContractorContactViewSet (/api/v1/contractor-contact/)
+        res_contact = self.client.get('/api/v1/contractor-contact/')
+        self.assertEqual(res_contact.status_code, http_status.HTTP_200_OK)
+        contact_ids = [item['pk'] for item in res_contact.data['results']]
+        self.assertIn(self.contact_a.pk, contact_ids)
+        self.assertNotIn(self.contact_b.pk, contact_ids)
+
+        # 4. ContReleaseViewSet (/api/v1/contractor-release/)
+        res_rel = self.client.get('/api/v1/contractor-release/')
+        self.assertEqual(res_rel.status_code, http_status.HTTP_200_OK)
+        rel_ids = [item['pk'] for item in res_rel.data['results']]
+        self.assertIn(self.release_a.pk, rel_ids)
+        self.assertNotIn(self.release_b.pk, rel_ids)
+
+        # 5. ContractPriceViewSet (/api/v1/cont-price/)
+        res_cp = self.client.get('/api/v1/cont-price/')
+        self.assertEqual(res_cp.status_code, http_status.HTTP_200_OK)
+        cp_ids = [item['pk'] for item in res_cp.data['results']]
+        self.assertIn(self.cp_a.pk, cp_ids)
+        self.assertNotIn(self.cp_b.pk, cp_ids)
+
+        # 6. ContractAggreateView (/api/v1/cont-aggregate/<project_id>/)
+        res_agg_a = self.client.get(f'/api/v1/cont-aggregate/{self.project_a.pk}/')
+        self.assertEqual(res_agg_a.status_code, http_status.HTTP_200_OK)
+
+        res_agg_b = self.client.get(f'/api/v1/cont-aggregate/{self.project_b.pk}/')
+        self.assertEqual(res_agg_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_contractoraddress_prefetched_cache(self):
+        """Contractor.contractoraddress 프로퍼티가 prefetch 캐시 활용 시 추가 쿼리를 실행하지 않음"""
+        contractor = Contractor.objects.prefetch_related('addresses').get(pk=self.contractor_a.pk)
+
+        # addresses가 이미 prefetch된 상태이므로 프로퍼티 호출 시 0개의 추가 쿼리만 발생해야 함
+        with self.assertNumQueries(0):
+            current_addr = contractor.contractoraddress
+            self.assertIsNotNone(current_addr)
+            self.assertEqual(current_addr.pk, self.addr_a.pk)
+
