@@ -46,8 +46,9 @@ def health_live(request):
 def health_ready(request):
     """Readiness probe: 데이터베이스 등 핵심 서비스 의존성 연결 상태 검사."""
     try:
-        connections['default'].cursor()
-    except OperationalError:
+        with connections['default'].cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except (OperationalError, Exception):
         return JsonResponse({"status": "db_error"}, status=500)
     return JsonResponse({"status": "ok"})
 
