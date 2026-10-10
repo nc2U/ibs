@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
+import { computed, onMounted, type PropType, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { type SuitCase } from '@/store/types/docs'
 import { courtChoices } from './components/court'
@@ -120,8 +120,13 @@ const dataSetup = () => {
   }
 }
 
+watch(
+  () => props.suitcase,
+  () => dataSetup(),
+  { deep: true },
+)
+
 onMounted(() => dataSetup())
-onUpdated(() => dataSetup())
 </script>
 
 <template>

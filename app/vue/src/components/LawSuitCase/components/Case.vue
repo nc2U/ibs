@@ -53,7 +53,11 @@ const getCourt = (court: string | undefined) =>
     <CTableDataCell>{{ suitCase.sort_desc }}</CTableDataCell>
     <CTableDataCell>{{ suitCase.level_desc }}</CTableDataCell>
     <CTableDataCell class="text-left pl-4">
-      <span v-if="suitCase.court_desc || suitCase.other_agency">
+      <span
+        v-if="suitCase.court_desc || suitCase.other_agency"
+        style="cursor: pointer"
+        @click="agencyFunc"
+      >
         <v-badge :content="agencyName" :color="courtColor" offset-y="-7" />
       </span>
     </CTableDataCell>

@@ -78,7 +78,8 @@ const toPrint = () => {
 
 const toDownload = () => window.open(`excel/suitcase/?pk=${route.params.caseId}`, 'blank')
 
-const [route, router] = [useRoute(), useRouter()]
+const route = useRoute()
+const router = useRouter()
 
 const sendUrl = `${window.location.host}${route.fullPath}`
 
@@ -219,7 +220,7 @@ onBeforeMount(() => {
     </CRow>
 
     <CRow class="justify-content-center" id="print-area">
-      <CCol md="10 py-5">
+      <CCol :md="10" class="py-5">
         <CTable bordered responsive align="middle">
           <colgroup>
             <col style="width: 25%" />
@@ -230,7 +231,7 @@ onBeforeMount(() => {
           <CTableHead>
             <CTableRow class="text-center" :color="TableSecondary">
               <CTableHeaderCell scope="col" class="w-25"> 구 분</CTableHeaderCell>
-              <CTableHeaderCell scope="col" colspan="4">내 용</CTableHeaderCell>
+              <CTableHeaderCell scope="col" colspan="3">내 용</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
@@ -239,31 +240,31 @@ onBeforeMount(() => {
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 사건 번호
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.case_number }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.case_number }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 사건 명
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.case_name }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.case_name }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 유 형
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.sort_desc }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.sort_desc }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 심 급
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.level_desc }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.level_desc }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 관련 사건
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">
+              <CTableDataCell colspan="3">
                 <router-link
                   :to="{
                     name: `${viewRoute} - 보기`,
@@ -278,13 +279,13 @@ onBeforeMount(() => {
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 관할 법원
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.court_desc }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.court_desc }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 기타 처리기관
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.other_agency }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.other_agency }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
@@ -323,7 +324,7 @@ onBeforeMount(() => {
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 제3 채무자
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.related_debtor }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.related_debtor }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
@@ -339,13 +340,13 @@ onBeforeMount(() => {
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 개요 및 경과
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">{{ suitcase.summary }}</CTableDataCell>
+              <CTableDataCell colspan="3">{{ suitcase.summary }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center" :color="TableSecondary">
                 사건 관련 문서
               </CTableHeaderCell>
-              <CTableDataCell colspan="4">
+              <CTableDataCell colspan="3">
                 <h6 v-if="suitcase.links?.length">링크</h6>
                 <table>
                   <tr v-for="(sc, i) in suitcase.links" :key="i" class="mb-1">
