@@ -7,9 +7,7 @@ import Todo from './Todo.vue'
 const todos = ref<T[]>([])
 const visibility = ref('all')
 
-type filterType = {
-  [key: string]: (x: T[]) => ((y: T) => boolean) | T[]
-}
+type filterType = Record<string, (myTodos: T[]) => T[]>
 
 const account = useAccount()
 const userInfo = computed(() => account.userInfo?.pk || 1)
@@ -22,7 +20,7 @@ const filters: filterType = {
   completed: (myTodos: T[]) => myTodos.filter(todo => todo.completed),
 }
 
-const allChecked = computed(() => myTodos.value.every(todo => todo.completed))
+const allChecked = computed(() => todos.value.length > 0 && todos.value.every(todo => todo.completed))
 
 const filteredTodos = computed(() => filters[visibility.value](todos.value))
 
@@ -100,7 +98,7 @@ onBeforeMount(() => account.fetchTodoList())
       <label for="toggle-all" />
       <ul class="todo-list">
         <Todo
-          v-for="todo in filteredTodos as T[]"
+          v-for="todo in filteredTodos"
           :key="todo.pk"
           :todo="todo"
           @toggle-todo="toggleTodo"

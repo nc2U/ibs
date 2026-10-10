@@ -27,14 +27,16 @@ const editTodo = (pk: number, title: string) => {
 const toggleTodo = (todo: Todo) => emit('toggleTodo', todo)
 
 const doneEdit = (e: Event) => {
+  if (!editing.value) return
   const title = (e.target as HTMLInputElement).value.trim()
   if (!title && props.todo?.pk) delTodo(props.todo.pk)
-  else if (editing.value && props.todo?.pk) editTodo(props.todo.pk, title)
+  else if (props.todo?.pk) editTodo(props.todo.pk, title)
   editing.value = false
 }
+
 const cancelEdit = (e: Event) => {
-  ;(e.target as HTMLInputElement).value = props.todo?.title || ''
   editing.value = false
+  ;(e.target as HTMLInputElement).value = props.todo?.title || ''
 }
 </script>
 
