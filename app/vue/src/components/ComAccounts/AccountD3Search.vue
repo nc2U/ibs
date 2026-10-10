@@ -91,32 +91,23 @@ const handleChange = (value: AccountD3Option | null) => {
   }
 }
 
-// modelValue 변경 시 selectedD3 동기화
+// modelValue 또는 옵션 목록 갱신 시 selectedD3 동기화
 watch(
-  () => props.modelValue,
-  newVal => {
+  [() => props.modelValue, d3Options],
+  ([newVal]) => {
     if (newVal) {
       const found = d3Options.value.find(opt => opt.pk === newVal)
-      if (found) {
-        selectedD3.value = found
-      }
+      selectedD3.value = found || null
     } else {
       selectedD3.value = null
     }
   },
+  { immediate: true },
 )
 
 onMounted(async () => {
   // 전체 D3 목록 로드
   await props.getAllD3List()
-
-  // 초기값 설정
-  if (props.modelValue) {
-    const found = d3Options.value.find(opt => opt.pk === props.modelValue)
-    if (found) {
-      selectedD3.value = found
-    }
-  }
 })
 </script>
 

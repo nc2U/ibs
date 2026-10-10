@@ -1,7 +1,7 @@
 <template>
   <CFormSelect v-model="sort" :size="size" :disabled="disabled" @change="handleChange">
-    <option value="1">입금</option>
-    <option value="2">출금</option>
+    <option :value="1">입금</option>
+    <option :value="2">출금</option>
   </CFormSelect>
 </template>
 
@@ -27,7 +27,7 @@ if (!context) {
 const sort = computed({
   get: () => context.sort.value,
   set: val => {
-    context.sort.value = val
+    context.sort.value = (Number(val) === 2 ? 2 : 1) as 1 | 2
   },
 })
 

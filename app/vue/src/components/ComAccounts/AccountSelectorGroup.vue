@@ -87,9 +87,34 @@ watch(
   val => emit('update:accountD3', val),
 )
 
+// 초기값(props.initialValues) 비동기 변경 시 내부 상태 동기화
+watch(
+  () => props.initialValues,
+  newVals => {
+    if (newVals) {
+      if (newVals.sort !== undefined && newVals.sort !== selection.sort.value) {
+        selection.sort.value = newVals.sort
+      }
+      if (newVals.account_d1 !== undefined && newVals.account_d1 !== selection.account_d1.value) {
+        selection.account_d1.value = newVals.account_d1
+      }
+      if (newVals.account_d2 !== undefined && newVals.account_d2 !== selection.account_d2.value) {
+        selection.account_d2.value = newVals.account_d2
+      }
+      if (newVals.account_d3 !== undefined && newVals.account_d3 !== selection.account_d3.value) {
+        selection.account_d3.value = newVals.account_d3
+      }
+      if (props.autoInitialize) {
+        selection.initialize()
+      }
+    }
+  },
+  { deep: true },
+)
+
 // 초기화
 onMounted(() => {
-  if (props.autoInitialize && props.initialValues) {
+  if (props.autoInitialize) {
     selection.initialize()
   }
 })
