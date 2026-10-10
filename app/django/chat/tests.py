@@ -198,4 +198,48 @@ class ChatMessageAPITests(APITestCase):
         self.assertTrue(found[0]['is_deleted'])
         self.assertEqual(found[0]['content'], '삭제된 메시지입니다.')
 
+    def test_post_message_to_unauthorized_room_forbidden(self):
+        """참여하지 않은 비공개 대화방에 메시지 등록 시도 시 403 차단 (IDOR 방어) 검증"""
+        # user3 생성 (어떤 방에도 속하지 않음)
+        user3 = User.objects.create_user(username='user3', email='user3@test.com', password='password123')
+        self.client.force_authenticate(user=user3)
+
+        payload = {
+            'room': self.room.id,
+            'content': '허가되지 않은 접근 시도',
+            'message_type': 'text',
+        }
+        res = self.client.post('/api/v1/chat-message/', payload)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cross_room_reply_to_prevention(self):
+        """다른 대화방의 메시지 ID를 reply_to로 지정 시 타 방 메시지가 노출되지 않도록 방어 검증"""
+        from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+
+        # 별도의 비밀 대화방 및 비밀 메시지 생성
+        secret_room = ChatRoom.objects.create(room_type='group', title='기밀 회의방', created_by=self.user2)
+        ChatRoomMember.objects.create(room=secret_room, user=self.user2, is_admin=True)
+        secret_msg = ChatMessage.objects.create(
+            room=secret_room,
+            sender=self.user2,
+            content='비밀 기밀 메시지 내용'
+        )
+
+        # user1이 자신이 속한 self.room에 메시지를 작성하면서 비밀 메시지를 reply_to로 전송
+        self.client.force_authenticate(user=self.user1)
+        payload = {
+            'room': self.room.id,
+            'content': '일반 메시지',
+            'message_type': 'text',
+            'reply_to': secret_msg.id,
+        }
+        res = self.client.post('/api/v1/chat-message/', payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        # 저장된 메시지는 reply_to가 없어야 함 (또는 serializer에서 reply_to_detail이 None)
+        msg_id = res.data['id']
+        msg_created = ChatMessage.objects.get(id=msg_id)
+        self.assertIsNone(msg_created.reply_to)
+        self.assertIsNone(res.data['reply_to_detail'])
+
 

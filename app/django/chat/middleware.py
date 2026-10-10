@@ -11,7 +11,8 @@ def get_user_from_jwt(token_string):
     try:
         access_token = AccessToken(token_string)
         user_id = access_token['user_id']
-        return User.objects.get(id=user_id)
+        user = User.objects.filter(id=user_id, is_active=True).first()
+        return user or AnonymousUser()
     except Exception:
         return AnonymousUser()
 

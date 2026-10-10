@@ -181,6 +181,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @transaction.atomic
     def save_message(self, room_id, user, content, message_type, ref_id, ref_title, ref_sub, reply_to_id):
         room = ChatRoom.objects.get(pk=room_id)
+        reply_to_detail = None
+        valid_reply_to_id = None
+        if reply_to_id:
+            try:
+                target = ChatMessage.objects.select_related('sender__profile').get(pk=reply_to_id, room_id=room_id)
+                target_sender_name = target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음')
+                reply_to_detail = {
+                    'id': target.id,
+                    'sender_name': target_sender_name,
+                    'content': '삭제된 메시지입니다.' if target.is_deleted else (target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]')),
+                    'message_type': target.message_type,
+                }
+                valid_reply_to_id = target.id
+            except ChatMessage.DoesNotExist:
+                pass
+
         msg = ChatMessage.objects.create(
             room=room,
             sender=user,
@@ -189,7 +205,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             ref_id=ref_id,
             ref_title=ref_title,
             ref_sub=ref_sub,
-            reply_to_id=reply_to_id,
+            reply_to_id=valid_reply_to_id,
         )
         room.save(update_fields=['updated'])
 
@@ -201,20 +217,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # 모든 참여 멤버의 숨김(is_hidden) 상태 자동 해제 (새 메시지 도착 시 목록 복원)
         room.memberships.filter(is_hidden=True).update(is_hidden=False)
-
-        reply_to_detail = None
-        if reply_to_id:
-            try:
-                target = ChatMessage.objects.select_related('sender__profile').get(pk=reply_to_id)
-                target_sender_name = target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음')
-                reply_to_detail = {
-                    'id': target.id,
-                    'sender_name': target_sender_name,
-                    'content': '삭제된 메시지입니다.' if target.is_deleted else (target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]')),
-                    'message_type': target.message_type,
-                }
-            except ChatMessage.DoesNotExist:
-                pass
 
         # sender 프로필 정보 (이름, 이미지)
         sender_avatar = None  # 예외 발생 시 NameError 방지 — try 블록 밖에서 기본값 선언

@@ -33,7 +33,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         read_only_fields = ('created', 'is_deleted')
 
     def get_reply_to_detail(self, obj):
-        if not obj.reply_to:
+        if not obj.reply_to or obj.reply_to.room_id != obj.room_id:
             return None
         target = obj.reply_to
         if target.is_deleted:
@@ -134,12 +134,18 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         return ret
 
     def get_last_message(self, obj):
-        # prefetch_related('messages') → last_messages_prefetch to_attr 활용 시 쿼리 0회
-        prefetched = getattr(obj, 'last_messages_prefetch', None)
-        if prefetched is not None:
-            msg = prefetched[0] if prefetched else None
+        # 1) list()에서 단일 집계로 사전 산출한 latest_messages 맵 활용 (쿼리 0회)
+        latest_messages = self.context.get('latest_messages')
+        if latest_messages is not None:
+            msg = latest_messages.get(obj.id)
         else:
-            msg = obj.messages.order_by('-created').first()
+            # 2) fallback: prefetch 캐시 또는 단건 쿼리
+            prefetched = getattr(obj, 'last_messages_prefetch', None)
+            if prefetched is not None:
+                msg = prefetched[0] if prefetched else None
+            else:
+                msg = obj.messages.order_by('-created').first()
+
         if not msg:
             return None
         return {
@@ -171,7 +177,9 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                 all_mems = obj.project.all_members()
                 obj._cached_all_members = all_mems
             return [m['user'] for m in all_mems]
-        return SimpleUserSerializer(obj.members.all(), many=True).data
+        # prefetch_related('memberships__user__profile') 캐시 활용 (추가 N+1 쿼리 없음)
+        users = [m.user for m in obj.memberships.all()]
+        return SimpleUserSerializer(users, many=True).data
 
     def get_member_count(self, obj):
         if obj.room_type == 'channel' and obj.project:
@@ -180,7 +188,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                 all_mems = obj.project.all_members()
                 obj._cached_all_members = all_mems
             return len(all_mems)
-        return obj.members.count()
+        # prefetch_related('memberships') 캐시 길이 활용 (추가 COUNT 쿼리 없음)
+        return len(obj.memberships.all())
 
     def get_is_pinned(self, obj):
         membership = getattr(obj, '_cached_my_membership', None)

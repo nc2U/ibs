@@ -1,6 +1,7 @@
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Q, Prefetch, Subquery, OuterRef, Count
+from django.db import transaction
+from django.db.models import Q, Prefetch, Subquery, OuterRef, Count, Case, When, IntegerField, Sum
 from django.db.models.functions import Coalesce
 from rest_framework import viewsets, permissions, status, exceptions
 from rest_framework.decorators import action
@@ -35,14 +36,46 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     def _base_queryset_with_prefetch(self, qs):
         """
-        공통 prefetch 적용: memberships, 최근 메시지(last_messages_prefetch)
-        - serializer의 to_representation에서 추가 쿼리 없이 캐시 활용 가능
+        공통 prefetch 적용: memberships
+        - serializer의 to_representation 및 멤버 목록에서 추가 쿼리 없이 캐시 활용
         """
-        last_msg_qs = ChatMessage.objects.order_by('-created')
         return qs.prefetch_related(
             Prefetch('memberships', queryset=ChatRoomMember.objects.select_related('user__profile')),
-            Prefetch('messages', queryset=last_msg_qs, to_attr='last_messages_prefetch'),
         )
+
+    def _ensure_channel_rooms(self, user):
+        """내 활성 워크스페이스 중 메신저 공용 채널이 활성화된 곳의 대화방 자동 생성 보장"""
+        if not user or not user.is_authenticated:
+            return
+        my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+        if not my_project_ids:
+            return
+
+        existing_channel_pjt_ids = set(
+            ChatRoom.objects.filter(
+                project_id__in=my_project_ids,
+                room_type='channel'
+            ).values_list('project_id', flat=True)
+        )
+        missing_projects = IssueProject.objects.filter(
+            pk__in=my_project_ids,
+            status='1',
+            chat_channel_enabled=True
+        ).exclude(pk__in=existing_channel_pjt_ids)
+
+        for pjt in missing_projects:
+            try:
+                ChatRoom.objects.get_or_create(
+                    project=pjt,
+                    room_type='channel',
+                    defaults={
+                        'title': pjt.name,
+                        'description': f'{pjt.name} 공용 대화방',
+                        'created_by': user,
+                    }
+                )
+            except Exception:
+                pass
 
     def get_queryset(self):
         user = self.request.user
@@ -51,35 +84,6 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
         # 내가 실제로 멤버(직접 소속 및 상속 소속)로 참여 중인 워크스페이스 ID 목록
         my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-
-        # 내 활성 워크스페이스 중 메신저 공용 채널이 활성화된(chat_channel_enabled=True) 곳의 대화방 자동 생성
-        # (total_unread와 같은 빈번한 카운트 호출 시에는 자동 생성 스킵)
-        if getattr(self, 'action', None) != 'total_unread' and my_project_ids:
-            existing_channel_pjt_ids = set(
-                ChatRoom.objects.filter(
-                    project_id__in=my_project_ids,
-                    room_type='channel'
-                ).values_list('project_id', flat=True)
-            )
-            missing_projects = IssueProject.objects.filter(
-                pk__in=my_project_ids,
-                status='1',
-                chat_channel_enabled=True
-            ).exclude(pk__in=existing_channel_pjt_ids)
-
-            for pjt in missing_projects:
-                try:
-                    ChatRoom.objects.get_or_create(
-                        project=pjt,
-                        room_type='channel',
-                        defaults={
-                            'title': pjt.name,
-                            'description': f'{pjt.name} 공용 대화방',
-                            'created_by': user,
-                        }
-                    )
-                except Exception:
-                    pass
 
         # 슈퍼유저도 1:1 DM 및 그룹방은 본인이 참여한 방만 조회되어야 하며(사생활 격리), 공용 채널만 전체 열람 가능
         if user.is_superuser:
@@ -97,6 +101,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         ).distinct()
         return self._base_queryset_with_prefetch(qs)
 
+    @transaction.atomic
     def perform_create(self, serializer):
         room = serializer.save(created_by=self.request.user)
         # 생성자 자동 멤버십 및 방장 등록
@@ -108,10 +113,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         """
-        대화방 목록 반환 — 미읽음 카운트를 단일 집계 쿼리로 일괄 산출하여 N+1 방지
-        (default list()는 serializer.get_unread_count()를 방마다 COUNT 쿼리로 호출하는 문제 해결)
+        대화방 목록 반환 — 미읽음 카운트 및 최신 메시지를 일괄 집계 쿼리로 산출하여 N+1 및 대량 Prefetch 방지
         """
-        from django.db.models import Case, When, IntegerField, Sum
+        self._ensure_channel_rooms(request.user)
 
         qs = self.get_queryset()
         room_ids = list(qs.values_list('id', flat=True))
@@ -122,9 +126,11 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             .values_list('room_id', 'last_read_message_id')
         )
 
-        # 방별 미읽음 메시지 수 — CASE/WHEN 패턴으로 단일 집계 (total_unread 와 동일 패턴)
         unread_counts = {}
+        latest_messages = {}
+
         if room_ids:
+            # 방별 미읽음 메시지 수 — 단일 집계
             whens = [
                 When(room_id=rid, id__gt=my_reads.get(rid, 0), then=1)
                 for rid in room_ids
@@ -143,13 +149,33 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             )
             unread_counts = {row['room_id']: row['unread'] for row in rows}
 
+            # 방별 최신 메시지 1개씩 단일 쿼리로 일괄 조회 (전체 메시지 prefetch 대체)
+            latest_msg_subquery = ChatMessage.objects.filter(
+                room_id=OuterRef('pk')
+            ).order_by('-id').values('id')[:1]
+
+            latest_msg_ids = [
+                mid for mid in qs.annotate(latest_id=Subquery(latest_msg_subquery)).values_list('latest_id', flat=True)
+                if mid is not None
+            ]
+            if latest_msg_ids:
+                latest_messages = {
+                    msg.room_id: msg
+                    for msg in ChatMessage.objects.filter(id__in=latest_msg_ids).select_related('sender')
+                }
+
         serializer = self.get_serializer(
             qs, many=True,
-            context={**self.get_serializer_context(), 'unread_counts': unread_counts},
+            context={
+                **self.get_serializer_context(),
+                'unread_counts': unread_counts,
+                'latest_messages': latest_messages,
+            },
         )
         return Response(serializer.data)
 
     @action(detail=False, methods=['get', 'post'], url_path='get-or-create-self')
+    @transaction.atomic
     def get_or_create_self(self, request):
         """
         나와의 채팅 (개인 메모 및 파일 보관함) 대화방 조회 또는 자동 개설
@@ -180,6 +206,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=res_status)
 
     @action(detail=False, methods=['post'], url_path='get-or-create-dm')
+    @transaction.atomic
     def get_or_create_dm(self, request):
         """특정 사용자와의 1:1 DM 대화방 조회 또는 자동 생성"""
         from django.db.models import Count
@@ -454,17 +481,43 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             'has_more': has_more,
         })
 
+    @transaction.atomic
     def perform_create(self, serializer):
         """
         REST API를 통한 메시지 생성 (주로 파일 업로드)
+        - 요청자의 대화방 접근 권한 검증 (수평적 권한 우회/IDOR 차단)
+        - 답장 대상(reply_to)의 동일 대화방 소속 검증
         - 저장 완료 후 WebSocket 채널 그룹으로 브로드캐스팅하여 실시간 전파
         """
-        msg = serializer.save(sender=self.request.user)
+        user = self.request.user
+        room = serializer.validated_data.get('room')
+        if not room:
+            raise exceptions.ValidationError({'room': '대화방 정보가 필요합니다.'})
+
+        # 대화방 접근 권한 검증
+        if not user.is_superuser:
+            if room.room_type == 'channel':
+                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+                if room.project_id not in my_project_ids or not getattr(room.project, 'chat_channel_enabled', True):
+                    raise exceptions.PermissionDenied('해당 워크스페이스 공용 채널에 메시지를 작성할 권한이 없습니다.')
+            elif room.room_type == 'self':
+                if room.created_by_id != user.pk:
+                    raise exceptions.PermissionDenied('본인의 나와의 채팅방에만 메시지를 작성할 수 있습니다.')
+            else:
+                if not room.members.filter(pk=user.pk).exists():
+                    raise exceptions.PermissionDenied('해당 대화방의 참여 멤버만 메시지를 작성할 수 있습니다.')
+
+        # 답장(reply_to)이 전달된 경우 동일 대화방 메시지인지 검증
+        reply_to = serializer.validated_data.get('reply_to')
+        if reply_to and reply_to.room_id != room.id:
+            serializer.validated_data['reply_to'] = None
+
+        msg = serializer.save(sender=user)
         # 방의 최근 활동시간(updated) 갱신
         msg.room.save(update_fields=['updated'])
 
         # 발신자의 last_read_message_id를 본인 메시지 ID로 자동 갱신 및 숨김 해제
-        membership, _ = ChatRoomMember.objects.get_or_create(room=msg.room, user=self.request.user)
+        membership, _ = ChatRoomMember.objects.get_or_create(room=msg.room, user=user)
         membership.last_read_message_id = msg.id
         membership.is_hidden = False
         membership.save(update_fields=['last_read_message_id', 'is_hidden'])
@@ -490,7 +543,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                 sender_avatar = None
 
             reply_to_detail = None
-            if msg.reply_to:
+            if msg.reply_to and msg.reply_to.room_id == msg.room_id:
                 target = msg.reply_to
                 t_profile = getattr(target.sender, 'profile', None) if target.sender else None
                 reply_to_detail = {
@@ -545,6 +598,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             # 채널 레이어 오류 시 메시지 저장 자체는 성공이므로 조용히 무시
             pass
 
+    @transaction.atomic
     def perform_destroy(self, instance):
         """
         스마트 메시지 삭제:
