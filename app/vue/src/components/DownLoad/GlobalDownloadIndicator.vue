@@ -101,13 +101,13 @@
   </Teleport>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useDownload } from '@/utils/useDownload.ts'
 
 const { downloadState, FILE_TYPES } = useDownload()
 
 // 파일 타입별 다운로드 메시지
-const getDownloadMessage = () => {
+const getDownloadMessage = (): string => {
   switch (downloadState.fileType) {
     case FILE_TYPES.PDF:
       return 'PDF 파일 다운로드 중...'

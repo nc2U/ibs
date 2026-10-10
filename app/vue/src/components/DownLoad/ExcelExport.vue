@@ -1,16 +1,25 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import { useDownload } from '@/utils/useDownload.ts'
 
-const props = defineProps({
-  url: { type: String, default: '' },
-  filename: { type: String, default: '' },
-  disabled: Boolean,
+interface Props {
+  url?: string
+  filename?: string
+  disabled?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  url: '',
+  filename: '',
+  disabled: false,
 })
 
 const { downloadExcel } = useDownload()
 
+const isDisabled = computed(() => props.disabled || !props.url)
+
 const handleDownload = () => {
-  if (!props.disabled && props.url) {
+  if (!isDisabled.value && props.url) {
     // URL에서 파일명 추출 또는 기본값 사용
     const fileName = props.filename ? props.filename : `document_${Date.now()}.xlsx`
     downloadExcel(props.url, fileName)
@@ -23,7 +32,7 @@ const handleDownload = () => {
     size="small"
     @click="handleDownload"
     flat
-    :disabled="props.disabled"
+    :disabled="isDisabled"
     variant="tonal"
     class="mt-1 mx-3"
     style="text-decoration: none"
