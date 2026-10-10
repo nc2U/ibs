@@ -48,9 +48,26 @@ def meeting_log_changes(sender, instance, created, **kwargs):
             summary=clean_summary[:150], status_log=status_name,
             creator=user
         )
+    elif old_is_confirmed is not None and old_is_confirmed != instance.is_confirmed:
+        action_name = "확정" if instance.is_confirmed else "확정 취소"
+        title = f"[회의록] #{instance.pk} ({action_name}) {instance.title}"[:250]
+        raw_summary = instance.agenda or instance.content or ''
+        clean_summary = ' '.join(html.unescape(strip_tags(raw_summary)).split())
+        ActivityLogEntry.objects.create(
+            sort='3', project=instance.project, target_id=instance.pk,
+            title=title,
+            summary=clean_summary[:150], status_log=action_name,
+            creator=user
+        )
 
     # 메일 알림 서비스 호출
     MeetingService.notify_meeting_changes(instance, created, user, old_is_confirmed)
+
+    # 임시 추적 속성 정리
+    if hasattr(instance, 'old_status'):
+        delattr(instance, 'old_status')
+    if hasattr(instance, 'old_is_confirmed'):
+        delattr(instance, 'old_is_confirmed')
 
 
 @receiver(pre_delete, sender=Meeting)

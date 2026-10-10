@@ -3,7 +3,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 
 from apiV1.permissions.work_perms import ProjectPermission
-from apiV1.views.work.issue import IssueFilter
+from apiV1.views.work.issue import IssueFilter, build_issue_queryset
 from work.models.issue import Issue
 from work.models.meeting import Meeting
 
@@ -40,10 +40,8 @@ class CalendarViewSet(viewsets.ViewSet):
             if project_slug:
                 issue_qs = issue_qs.filter(project__slug=project_slug)
 
-            if not is_admin:
-                issue_qs = issue_qs.filter(
-                    Q(project__is_public=True) | Q(project__members__user=user)
-                ).distinct()
+            # Row-Level Security: 사용자 권한 및 비공개 이슈 가시성 격리 적용
+            issue_qs = build_issue_queryset(user, issue_qs)
 
             # IssueFilter로 업무 전용 검색조건 적용 (status, tracker, priority, assignee, subject 등)
             issue_qs = IssueFilter(request.GET, queryset=issue_qs, request=request).qs

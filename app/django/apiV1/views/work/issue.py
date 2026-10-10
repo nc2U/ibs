@@ -443,16 +443,7 @@ class IssueFilter(FilterSet):
             if name == 'project__slug' and value:
                 try:
                     project = IssueProject.objects.get(slug=value)
-                    all_projects = list(IssueProject.objects.all())
-                    sub_projects_slugs = []
-
-                    def collect_children(parent_obj):
-                        for p in all_projects:
-                            if p.parent_id == parent_obj.id:
-                                sub_projects_slugs.append(p.slug)
-                                collect_children(p)
-
-                    collect_children(project)
+                    descendants_slugs = list(project.get_descendants().values_list('slug', flat=True))
 
                     sub_project_val = self.form.cleaned_data.get('sub_project')
                     sub_project_exclude_val = self.form.cleaned_data.get('sub_project__exclude')
@@ -463,10 +454,10 @@ class IssueFilter(FilterSet):
                     elif sub_project_val:  # 이다 (Specific sub-project)
                         queryset = queryset.filter(project_id=sub_project_val)
                     elif sub_project_exclude_val:  # 아니다 (Exclude specific sub-project)
-                        queryset = queryset.filter(project__slug__in=[project.slug] + sub_projects_slugs).exclude(
+                        queryset = queryset.filter(project__slug__in=[project.slug] + descendants_slugs).exclude(
                             project_id=sub_project_exclude_val)
                     else:  # 모두 (Default)
-                        slugs = [project.slug] + sub_projects_slugs
+                        slugs = [project.slug] + descendants_slugs
                         queryset = queryset.filter(project__slug__in=slugs)
                 except IssueProject.DoesNotExist:
                     pass
@@ -815,6 +806,26 @@ class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
     serializer_class = IssueCountByTrackerSerializer
     filterset_fields = ('projects',)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        project_param = self.request.query_params.get('projects')
+        filter_kwargs = {}
+        if project_param:
+            try:
+                if str(project_param).isdigit():
+                    project = IssueProject.objects.get(pk=int(project_param))
+                else:
+                    project = IssueProject.objects.get(slug=project_param)
+                slugs = [project.slug] + list(project.get_descendants().values_list('slug', flat=True))
+                filter_kwargs['issues__project__slug__in'] = slugs
+            except IssueProject.DoesNotExist:
+                pass
+
+        return qs.annotate(
+            open_issues_count=Count('issues', filter=Q(issues__closed__isnull=True, **filter_kwargs), distinct=True),
+            closed_issues_count=Count('issues', filter=Q(issues__closed__isnull=False, **filter_kwargs), distinct=True)
+        )
 
     def get_serializer_context(self):
         # Pass the request object as context to the serializer

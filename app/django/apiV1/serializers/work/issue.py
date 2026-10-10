@@ -719,52 +719,43 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
         fields = ['pk', 'name', 'open', 'closed']
 
     def get_open(self, obj):
+        if hasattr(obj, 'open_issues_count'):
+            return obj.open_issues_count
         issues = Issue.objects.filter(tracker=obj, closed__isnull=True)
-        # Access the request object from context
         request = self.context.get('request')
         issues = self.filter_project(request, issues)
         return issues.count()
 
     def get_closed(self, obj):
+        if hasattr(obj, 'closed_issues_count'):
+            return obj.closed_issues_count
         issues = Issue.objects.filter(tracker=obj).exclude(closed__isnull=True)
-        # Access the request object from context
         request = self.context.get('request')
         issues = self.filter_project(request, issues)
         return issues.count()
 
     def filter_project(self, request, issues):
+        if not request:
+            return issues
         project_id = request.query_params.get('projects')
         if not project_id:
-            return issues  # 프로젝트 ID가 제공되지 않은 경우, 필터링 없이 반환
+            return issues
 
-        # 1. 이미 이전 루프에서 모아둔 캐시가 있다면 재사용
         if hasattr(self, '_project_slugs_cache'):
             return issues.filter(project__slug__in=self._project_slugs_cache)
 
         try:
-            project = IssueProject.objects.get(pk=project_id)
+            if str(project_id).isdigit():
+                project = IssueProject.objects.get(pk=int(project_id))
+            else:
+                project = IssueProject.objects.get(slug=project_id)
+            descendants_slugs = list(project.get_descendants().values_list('slug', flat=True))
+            slugs = [project.slug] + descendants_slugs
         except IssueProject.DoesNotExist:
-            return issues  # 유효하지 않은 프로젝트 ID인 경우, 필터링 없이 반환
+            slugs = []
 
-        # 2. 단 한 번의 쿼리로 모든 프로젝트를 메모리에 로드
-        all_projects = list(IssueProject.objects.all())
-
-        # 3. DB 히트 없이 메모리에서 자식 노드 재귀 수집
-        sub_projects_slugs = []
-
-        def collect_children(parent_obj):
-            for p in all_projects:
-                if p.parent_id == parent_obj.id:
-                    sub_projects_slugs.append(p.slug)
-                    collect_children(p)
-
-        collect_children(project)
-        slugs = [project.slug] + sub_projects_slugs
-
-        # 4. 캐싱 처리
         self._project_slugs_cache = slugs
-
-        return issues.filter(project__slug__in=slugs)
+        return issues.filter(project__slug__in=slugs) if slugs else issues
 
 
 class IssueStatusSerializer(serializers.ModelSerializer):

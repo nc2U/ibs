@@ -1304,3 +1304,22 @@ class NotificationProfileSettingsTests(TestCase):
         )
         mock_send.assert_not_called()
 
+    def test_meeting_confirmation_creates_activity_log(self):
+        """회의가 확정(is_confirmed=True)되면 ActivityLogEntry에 '확정' 활동이 정상 기록되어야 한다."""
+        meeting = self._make_meeting(is_confirmed=False)
+        meeting.status = '2'  # 종료 상태로 설정
+        meeting.save()
+
+        # 확정 처리
+        meeting.is_confirmed = True
+        meeting.save()
+
+        confirm_log = ActivityLogEntry.objects.filter(
+            sort='3',
+            target_id=meeting.pk,
+            status_log='확정'
+        ).first()
+        self.assertIsNotNone(confirm_log)
+        self.assertIn('(확정)', confirm_log.title)
+
+
