@@ -2,7 +2,6 @@
 import type { PropType } from 'vue'
 import Multiselect from '@vueform/multiselect'
 
-defineOptions({ inheritAttrs: false })
 
 const props = defineProps({
   mode: { type: String as PropType<'single' | 'tags'>, default: 'tags' },
