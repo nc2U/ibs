@@ -15,7 +15,10 @@ def get_contract(cont_id):
     :param cont_id: 계약자 아이디
     :return object(contract: 계약 건):
     """
-    return Contract.objects.get(pk=cont_id)
+    try:
+        return Contract.objects.get(pk=cont_id)
+    except (ValueError, TypeError):
+        raise Contract.DoesNotExist("Invalid contract id.")
 
 
 def get_simple_orders(payment_orders, contract, amount, is_past=False):
@@ -31,14 +34,15 @@ def get_simple_orders(payment_orders, contract, amount, is_past=False):
 
     amount_total = 0
     try:
-        calc_start = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True)).first().pay_code
-    except AttributeError:
+        first_calc_order = payment_orders.filter(Q(is_prep_discount=True) | Q(is_late_penalty=True)).first()
+        calc_start = first_calc_order.pay_code if first_calc_order else 2
+    except (AttributeError, TypeError):
         calc_start = 2
-    for order in payment_orders:
+    for order in payment_orders or []:
         if is_past:
-            amt = amount['1'] if order.pay_code < 5 else amount['2']
+            amt = amount.get('1', 0) if order.pay_code < 5 else amount.get('2', 0)
         else:
-            amt = amount[order.pay_sort]
+            amt = amount.get(order.pay_sort, 0)
         amount_total += amt  # 회차별 약정금 누계
         ord_info = {
             'name': order.alias_name if order.alias_name else order.pay_name,  # 회차별 별칭
@@ -65,27 +69,30 @@ def get_due_amount(payment_orders, contract, amount):
     # 약정회차 리스트
     due_orders = get_due_orders(contract, payment_orders)
     for order in due_orders:
-        total_amounts += amount[order.pay_sort]
+        total_amounts += amount.get(order.pay_sort, 0)
     return total_amounts
 
 
-def is_due(due_date):
+def is_due(due_date, reference_date=None):
     """
     :: 주어진 날짜가 기도래 납부기한에 해당하는지 여부
-    :param due_date:
+    :param due_date: 납부기한
+    :param reference_date: 기준일자 (기본값: 오늘 날짜)
     :return: bool -> 기도래 기한 여부
     """
-    return due_date and due_date <= TODAY
+    ref_date = reference_date or date.today()
+    return bool(due_date and due_date <= ref_date)
 
 
-def get_due_orders(contract, payment_orders):
+def get_due_orders(contract, payment_orders, reference_date=None):
     """
-    :: 오늘 날짜 기준 기도래 납부 회차 객체 리스트 구하기
+    :: 기준일자(기본값: 오늘) 기준 기도래 납부 회차 객체 리스트 구하기
     :param contract:
     :param payment_orders:
+    :param reference_date:
     :return: list -> 납부회차 객체
     """
-    return [o for o in payment_orders if is_due(get_due_date_per_order(contract, o, payment_orders))]
+    return [o for o in payment_orders if is_due(get_due_date_per_order(contract, o, payment_orders), reference_date)]
 
 
 def get_late_fee(project, late_amt, days, is_past=False):
@@ -165,10 +172,10 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     def get_date(item):
         return item[0].deal_date if isinstance(item, tuple) else item['due_date']
 
-    # 선납/할인 적용 시작 회차부터 현재 납부 의무 회차까지
+    # 선납/할인 적용 시작 회차부터 현재 납부 의무 회차까지 (pub_date 기준)
     calc_orders = [item for item in simple_orders
                    if item.get('pay_code', 0) >= calc_start_pay_code
-                   and is_due(get_due_date_per_order(contract, item, simple_orders))]
+                   and is_due(get_due_date_per_order(contract, item, simple_orders), pub_date)]
 
     calc_orders = calc_orders if kwargs.get('is_calc', None) else []  # 일반용일 경우에만 적용
 
@@ -191,21 +198,23 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
         if i == 0:
             try:
                 first_date = paid[0].deal_date
-            except KeyError:
-                pass
+            except (KeyError, TypeError):
+                first_date = None
 
-        try:  # 이전 / 다음 회차 납부일 or 약정일
-            pre_date = sorted_combined[i - 1][0].deal_date \
-                if isinstance(sorted_combined[i - 1], tuple) \
-                else sorted_combined[i - 1].get('due_date', None)
-            next_date = sorted_combined[i + 1][0].deal_date \
-                if isinstance(sorted_combined[i + 1], tuple) \
-                else sorted_combined[i + 1].get('due_date', None)
-        except IndexError:  # 마지막은 발행일
+        # 이전 / 다음 회차 납부일 or 약정일
+        if i > 0:
+            prev_item = sorted_combined[i - 1]
+            pre_date = prev_item[0].deal_date if isinstance(prev_item, tuple) else prev_item.get('due_date', None)
+        else:
             pre_date = first_date
+
+        if i + 1 < len(sorted_combined):
+            next_item = sorted_combined[i + 1]
+            next_date = next_item[0].deal_date if isinstance(next_item, tuple) else next_item.get('due_date', None)
+        else:
             next_date = pub_date
 
-        if is_past and contract.sup_cont_date:
+        if is_past and contract.sup_cont_date and next_date:
             next_date = next_date if contract.sup_cont_date >= next_date else contract.sup_cont_date
 
         if isinstance(paid, tuple):
@@ -240,9 +249,10 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
 
                 try:
                     code = calc_start_pay_code if curr_pay_code == 0 else curr_pay_code + 1
-                    next_due_date = [o['due_date'] for o in simple_orders if o.get('pay_code', 0) == code][0]
-                except IndexError:
-                    next_due_date = simple_orders[-1]['due_date']
+                    matched_dates = [o['due_date'] for o in simple_orders if o.get('pay_code', 0) == code]
+                    next_due_date = matched_dates[0] if matched_dates else (simple_orders[-1]['due_date'] if simple_orders else None)
+                except (IndexError, KeyError):
+                    next_due_date = simple_orders[-1]['due_date'] if simple_orders else None
 
                 prepay_days = (paid[0].deal_date - next_due_date).days if next_due_date else 0
 
