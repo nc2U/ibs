@@ -211,7 +211,10 @@ class ProjectFilterMixin:
         """요청에서 프로젝트 추출"""
         project_id = request.GET.get('project')
         if project_id:
-            return Project.objects.get(pk=project_id)
+            try:
+                return Project.objects.filter(pk=project_id).first()
+            except (ValueError, TypeError):
+                return None
         return None
 
     @staticmethod
@@ -219,7 +222,10 @@ class ProjectFilterMixin:
         """선택된 컬럼 목록 추출"""
         col_param = request.GET.get('col', '')
         if col_param:
-            return sorted(list(map(int, col_param.split('-'))))
+            try:
+                return sorted([int(c) for c in col_param.split('-') if c.isdigit()])
+            except (ValueError, TypeError):
+                return []
         return []
 
 
