@@ -449,6 +449,70 @@ class PaymentAPITests(PaymentTestCaseBase):
             res = self.client.get(url, {'project': self.project.pk})
             self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_payment_aggregation_viewsets_rls_isolation(self):
+        """수납 집계 ViewSet 6종의 권한 및 타 프로젝트 격리(403 Forbidden) 검증"""
+        aggregation_urls = [
+            reverse('api:payment-summary-list'),
+            reverse('api:payment-status-by-unit-type-list'),
+            reverse('api:overall-summary-list'),
+            reverse('api:ledger-payment-summary-list'),
+            reverse('api:ledger-payment-status-by-unit-type-list'),
+            reverse('api:ledger-overall-summary-list'),
+        ]
+
+        # 1. Project A 권한자(User A)는 200 OK
+        self.client.force_authenticate(user=self.user_a)
+        for url in aggregation_urls:
+            res = self.client.get(url, {'project': self.project.pk})
+            self.assertEqual(res.status_code, status.HTTP_200_OK, f'User A should access {url}')
+
+        # 2. 타 프로젝트 권한자(User B)가 Project A 조회 시 403 Forbidden 차단
+        self.client.force_authenticate(user=self.user_b)
+        for url in aggregation_urls:
+            res = self.client.get(url, {'project': self.project.pk})
+            self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN, f'User B must be forbidden from {url}')
+
+    def test_member_without_payment_perm_blocked_by_rls(self):
+        """워크스페이스 멤버이지만 payment.read 권한이 없는 사용자는 RLS에 의해 프로젝트 데이터 노출 차단"""
+        # payment 권한이 없는 별도 역할 생성
+        perm_other, _ = Permission.objects.get_or_create(
+            module='work', code='issue.read', defaults={'name': '업무 읽기'}
+        )
+        role_no_payment = Role.objects.create(name='일반참여자', creator=self.user)
+        role_no_payment.permissions.add(perm_other)
+
+        user_no_payment = User.objects.create_user(
+            username='user_no_pay', email='nopay@test.com', password='password123'
+        )
+        member = Member.objects.create(project=self.issue_project, user=user_no_payment)
+        member.roles.add(role_no_payment)
+
+        self.client.force_authenticate(user=user_no_payment)
+
+        # 1. 파라미터 없이 전체 조회 시 get_accessible_project_ids()에서 제외되어 빈 결과 반환
+        res_pay = self.client.get(reverse('api:ledger-payment-list'))
+        self.assertEqual(res_pay.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_pay.data['results']), 0)
+
+        res_order = self.client.get(reverse('api:installmentpaymentorder-list'))
+        self.assertEqual(res_order.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_order.data['results']), 0)
+
+    def test_contract_payment_filter_bank_account_invalid_value(self):
+        """ContractPaymentFilterSet의 bank_account 필터에 유효하지 않은 문자열 전달 시 500 에러 없이 빈 결과 반환"""
+        self.client.force_authenticate(user=self.user_a)
+        url = reverse('api:ledger-payment-list')
+
+        # 유효하지 않은 문자열 필터링
+        res_invalid = self.client.get(url, {'project': self.project.pk, 'bank_account': 'invalid_string'})
+        self.assertEqual(res_invalid.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_invalid.data['results']), 0)
+
+        # 정상 계좌 필터링
+        res_valid = self.client.get(url, {'project': self.project.pk, 'bank_account': self.project_bank_account.pk})
+        self.assertEqual(res_valid.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(res_valid.data['results']), 1)
+
 
 class PaymentExportTests(PaymentTestCaseBase):
     @patch('weasyprint.HTML.write_pdf')
