@@ -5,7 +5,6 @@ PDF Export Common Mixins
 """
 from datetime import date, datetime
 
-from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -16,32 +15,27 @@ from payment.models import InstallmentPaymentOrder
 
 from urllib.parse import quote
 
-TODAY = date.today()
-
-
 class PdfExportMixin(View):
     """PDF 내보내기 공통 기능 믹스인"""
 
     @staticmethod
     def create_pdf_response(template_name, context, filename):
-        """PDF 응답 생성"""
+        """PDF 응답 생성 (메모리 버퍼 기반 생성으로 디스크 I/O 및 동시성 충돌 방지)"""
         html_string = render_to_string(template_name, context)
         html = HTML(string=html_string)
-        html.write_pdf(target='/tmp/mypdf.pdf')
+        pdf_bytes = html.write_pdf()
 
         encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
 
-        fs = FileSystemStorage('/tmp')
-        with fs.open('mypdf.pdf') as pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-            return response
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return response
 
     @staticmethod
     def get_base_context(**kwargs):
-        """기본 컨텍스트 생성"""
+        """기본 컨텍스트 생성 (호출 시점의 현재 날짜 적용)"""
         context = {
-            'pub_date': kwargs.get('pub_date', TODAY),
+            'pub_date': kwargs.get('pub_date', date.today()),
         }
         context.update(kwargs)
         return context
@@ -53,12 +47,16 @@ class ContractPdfMixin:
     @staticmethod
     def get_contract(cont_id):
         """계약 가져오기"""
-
-        return Contract.objects.get(pk=cont_id)
+        try:
+            return Contract.objects.filter(pk=cont_id).first()
+        except (ValueError, TypeError):
+            return None
 
     @staticmethod
     def get_contract_unit(contract):
         """계약 동호수 정보 가져오기"""
+        if not contract:
+            return None
         try:
             return contract.key_unit.houseunit
         except AttributeError:
@@ -67,11 +65,15 @@ class ContractPdfMixin:
     @staticmethod
     def get_contract_content(contract, unit):
         """계약 내용 정보 구성"""
+        if not contract:
+            return {}
+
+        contractor = getattr(contract, 'contractor', None)
         return {
-            'contractor': contract.contractor.name,
-            'cont_date': contract.contractor.contract_date,
-            'cont_no': unit if unit else contract.serial_number,
-            'cont_type': contract.unit_type,
+            'contractor': contractor.name if contractor else '',
+            'cont_date': contractor.contract_date if contractor else None,
+            'cont_no': unit if unit else getattr(contract, 'serial_number', ''),
+            'cont_type': getattr(contract, 'unit_type', None),
         }
 
 
@@ -81,7 +83,8 @@ class PaymentPdfMixin:
     @staticmethod
     def get_payment_orders(project):
         """납부 회차 정보 가져오기"""
-
+        if not project:
+            return InstallmentPaymentOrder.objects.none()
         return InstallmentPaymentOrder.objects.filter(project=project)
 
     @staticmethod
@@ -96,14 +99,15 @@ class DateUtilMixin:
 
     @staticmethod
     def parse_date(date_string, default=None):
-        """날짜 문자열 파싱"""
+        """날짜 문자열 파싱 (기본값 미지정 시 호출 시점의 현재 날짜 적용)"""
+        fallback_date = default if default is not None else date.today()
         if not date_string:
-            return default or TODAY
+            return fallback_date
 
         try:
             return datetime.strptime(date_string, '%Y-%m-%d').date()
-        except ValueError:
-            return default or TODAY
+        except (ValueError, TypeError):
+            return fallback_date
 
     @staticmethod
     def format_date(date_obj, format_str='%Y-%m-%d'):
