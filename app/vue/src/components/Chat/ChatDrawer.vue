@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useChat } from '@/store/pinia/chat'
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
@@ -18,6 +18,7 @@ const isLoadingUsers = computed(() => chatStore.isLoadingUsers)
 
 const activeTab = ref<'channel' | 'direct'>('channel')
 const inputMessage = ref('')
+const isComposing = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
 
 // 1:1 대화 상대 선택 모달 상태
@@ -318,9 +319,13 @@ const inputFieldRef = ref<any>(null)
 const setReplyTarget = (msg: ChatMessage) => {
   replyingTo.value = msg
   nextTick(() => {
-    // 입력창에 포커스 이동
-    const inputEl = document.querySelector('.chat-input-area input') as HTMLInputElement
-    if (inputEl) inputEl.focus()
+    // Vuetify ref를 통한 표준 포커스 이동 (fallback으로 네이티브 input 탐색)
+    if (inputFieldRef.value?.focus) {
+      inputFieldRef.value.focus()
+    } else {
+      const inputEl = document.querySelector('.chat-input-area input') as HTMLInputElement
+      if (inputEl) inputEl.focus()
+    }
   })
 }
 
@@ -329,11 +334,11 @@ const cancelReply = () => {
 }
 
 const handleSendMessage = (event?: KeyboardEvent) => {
-  // 한글 입력(IME) 조합 중 엔터 입력 시 중복 발송 방지
-  if (event && event.isComposing) return
+  // 한글 입력(IME) 조합 중 엔터 입력 시 중복 발송 방지 (플래그 및 이벤트 동시 검증)
+  if (isComposing.value || (event && event.isComposing)) return
   if (!inputMessage.value.trim()) return
 
-  const text = inputMessage.value
+  const text = inputMessage.value.trim()
   const replyTarget = replyingTo.value
   inputMessage.value = ''
   replyingTo.value = null
@@ -341,8 +346,22 @@ const handleSendMessage = (event?: KeyboardEvent) => {
   chatStore.sendMessage(text, {
     reply_to: replyTarget ? replyTarget.id : undefined,
   })
-  scrollToBottom()
+  scrollToBottom(true)
 }
+
+// ── 드로어 닫힘 시 검색 및 답장 상태 깔끔하게 초기화 ──────
+watch(
+  () => chatStore.isDrawerOpen,
+  isOpen => {
+    if (!isOpen) {
+      clearGlobalSearch()
+      isRoomSearching.value = false
+      roomSearchQuery.value = ''
+      replyingTo.value = null
+      isDragging.value = false
+    }
+  },
+)
 
 const handleSelectRoom = (room: ChatRoom) => {
   chatStore.enterRoom(room)
@@ -468,8 +487,16 @@ const handleDrop = async (e: DragEvent) => {
 
   const files = e.dataTransfer?.files
   if (files && files.length > 0) {
+    let failCount = 0
     for (let i = 0; i < files.length; i++) {
-      await processFileUpload(files[i])
+      try {
+        await processFileUpload(files[i])
+      } catch (_) {
+        failCount++
+      }
+    }
+    if (failCount > 0) {
+      alert(`${failCount}개 파일 전송에 실패했습니다.`)
     }
   }
 }
@@ -534,16 +561,22 @@ const handleForwardToRoom = async (room: ChatRoom) => {
     // 1. 대상 방으로 전환
     await chatStore.enterRoom(room)
 
-    // 2. 메시지 유형에 따라 전달 전송
+    // 2. 메시지 유형에 따라 전달 전송 (첨부파일인 경우 링크 보존)
     if (msg.message_type === 'image' || msg.message_type === 'file') {
-      // 첨부파일 공유인 경우 파일 링크 및 메시지 전달
-      await chatStore.sendMessage(
-        msg.content || (msg.file_name ? `[공유 파일] ${msg.file_name}` : '[공유 첨부]'),
-        {
-          message_type: msg.message_type,
-          ref_title: msg.file_name ? `공유 파일: ${msg.file_name}` : '전달된 항목',
-        },
-      )
+      const fileUrl = msg.file
+        ? msg.file.startsWith('http')
+          ? msg.file
+          : window.location.origin + msg.file
+        : ''
+      const forwardContent = msg.content
+        ? `${msg.content}\n${fileUrl}`.trim()
+        : fileUrl || (msg.file_name ? `[공유 파일: ${msg.file_name}]` : '[공유 첨부]')
+
+      await chatStore.sendMessage(forwardContent, {
+        message_type: 'text', // 수신 방에서 텍스트 및 링크 카드로 정상 표출
+        ref_title: msg.file_name ? `공유 파일: ${msg.file_name}` : '전달된 파일',
+        ref_sub: fileUrl || undefined,
+      })
     } else {
       await chatStore.sendMessage(msg.content, {
         message_type: msg.message_type,
@@ -612,6 +645,13 @@ const formatTime = (dateStr: string) => {
   const d = new Date(dateStr)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
+
+// ── 컴포넌트 언마운트 시 모든 타이머 정리 (메모리 누수 방지) ───
+onUnmounted(() => {
+  clearTimeout(globalSearchDebounceTimer)
+  clearTimeout(roomSearchDebounceTimer)
+  clearTimeout(highlightTimer)
+})
 </script>
 
 <template>
@@ -1499,6 +1539,7 @@ const formatTime = (dateStr: string) => {
                 @click="triggerFileUpload"
               />
               <v-text-field
+                ref="inputFieldRef"
                 v-model="inputMessage"
                 :placeholder="
                   replyingTo ? '답장 메시지를 입력하세요...' : '메시지를 입력하세요 (Enter)'
@@ -1507,7 +1548,9 @@ const formatTime = (dateStr: string) => {
                 variant="outlined"
                 hide-details
                 class="flex-grow-1 mr-2 text-sm"
-                @keydown.enter.prevent="handleSendMessage($event)"
+                @compositionstart="isComposing = true"
+                @compositionend="isComposing = false"
+                @keydown.enter.exact.prevent="handleSendMessage($event)"
               />
               <v-btn
                 icon="mdi-send"
