@@ -1,36 +1,57 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref } from 'vue'
+import { ref, watch } from 'vue'
 
 export interface RFile {
   pk: null | number
-  file: string
-  file_name: string
+  file?: string
+  file_name?: string
   description?: string
   del?: boolean
   edit?: boolean
 }
 
-const props = defineProps({
-  file: { type: Object as PropType<RFile>, required: true },
+interface Props {
+  file: RFile
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'file-delete', payload: { pk: number; del: boolean }): void
+  (e: 'file-change', payload: { pk: number; file: File }): void
+}>()
+
+const fileData = ref<RFile>({
+  ...props.file,
+  del: props.file.del ?? false,
+  edit: props.file.edit ?? false,
 })
 
-const emit = defineEmits(['file-delete', 'file-change'])
+watch(
+  () => props.file,
+  newFile => {
+    if (newFile) {
+      fileData.value = {
+        ...newFile,
+        del: newFile.del ?? false,
+        edit: newFile.edit ?? false,
+      }
+    }
+  },
+  { deep: true },
+)
 
-const form = ref<{ file: RFile | null }>({
-  file: null,
-})
-
-const handleEdit = (e: Event) => {
-  const edit = (e.target as any).value
-  if (edit) {
-    ;(form.value.file as RFile).del = false
+const handleEditChange = () => {
+  if (fileData.value.edit && props.file.pk !== null && props.file.pk !== undefined) {
+    fileData.value.del = false
+    emit('file-delete', { pk: props.file.pk, del: false })
   }
 }
 
-const handleDelete = () => {
-  if (form.value.file) (form.value.file as RFile).del = !(form.value.file as RFile).del
-  const del = (form.value.file as RFile).del
-  emit('file-delete', { pk: props.file?.pk, del })
+const handleDeleteChange = () => {
+  if (props.file.pk !== null && props.file.pk !== undefined) {
+    emit('file-delete', { pk: props.file.pk, del: fileData.value.del ?? false })
+  }
 }
 
 const fileChange = (event: Event, pk: number) => {
@@ -39,39 +60,35 @@ const fileChange = (event: Event, pk: number) => {
     emit('file-change', { pk, file: el.files[0] })
   }
 }
-
-onBeforeMount(() => {
-  if (props.file) form.value.file = { ...props.file }
-})
 </script>
 
 <template>
   <small>
     현재 :
-    <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">{{ file.file_name }}</s>
+    <s v-if="fileData.del || fileData.edit">{{ file.file_name }}</s>
     <a v-else :href="file.file" target="_blank">{{ file.file_name }}</a>
 
     <span v-if="file?.description" class="pl-2"> ({{ file.description }}) </span>
 
     <span>
       <CFormCheck
-        v-model="(form.file as RFile).del"
+        v-model="fileData.del"
         :id="`del-file-${file.pk}`"
         label="삭제"
         inline
-        @click="handleDelete"
-        :disabled="(form.file as RFile).edit"
+        :disabled="fileData.edit"
         class="ml-4"
+        @change="handleDeleteChange"
       />
       <CFormCheck
-        v-model="(form.file as RFile).edit"
+        v-model="fileData.edit"
         :id="`edit-file-${file.pk}`"
         label="변경"
         inline
-        @click="handleEdit"
+        @change="handleEditChange"
       />
     </span>
-    <CRow v-if="(form.file as RFile).edit">
+    <CRow v-if="fileData.edit">
       <CCol>
         <CInputGroup>
           변경 : &nbsp;

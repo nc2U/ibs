@@ -1,23 +1,38 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import { AlertSecondary } from '@/utils/cssMixins.ts'
 import type { RFile } from './components/RegFile.vue'
 import RegFile from './components/RegFile.vue'
 
-defineProps({ files: { type: Array, default: () => [] } })
-
-const emit = defineEmits(['file-delete', 'file-change'])
-
-const devideUri = (uri: string) => {
-  const devidedUri = decodeURI(uri).split('media/')
-  return [devidedUri[0] + 'media/', devidedUri[1]]
+interface Props {
+  files?: RFile[]
 }
+
+const props = withDefaults(defineProps<Props>(), {
+  files: () => [],
+})
+
+const emit = defineEmits<{
+  (e: 'file-delete', payload: { pk: number; del: boolean }): void
+  (e: 'file-change', payload: { pk: number; file: File }): void
+}>()
+
+const basePath = computed(() => {
+  const first = props.files[0]?.file
+  if (!first) return ''
+  const decoded = decodeURI(first)
+  if (decoded.includes('media/')) {
+    return decoded.split('media/')[0] + 'media/'
+  }
+  return ''
+})
 </script>
 
 <template>
-  <CRow class="px-2">
+  <CRow v-if="files && files.length" class="px-2">
     <CAlert :color="AlertSecondary">
-      <small>{{ devideUri((files as RFile[])[0]?.file ?? ' ')[0] }}</small>
-      <CCol v-for="(file, i) in files as RFile[]" :key="file.pk" xs="12" color="primary">
+      <small v-if="basePath">{{ basePath }}</small>
+      <CCol v-for="file in files" :key="file.pk ?? file.file_name" xs="12" color="primary">
         <RegFile
           :file="file"
           @file-delete="emit('file-delete', $event)"
