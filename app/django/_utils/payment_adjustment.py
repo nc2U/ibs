@@ -42,6 +42,9 @@ def calculate_daily_interest(principal: int, annual_rate: Decimal, days: int) ->
 
 def calculate_all_installments_payment_allocation(contract, as_of_date: Optional[date] = None) -> Dict[int, Dict[str, Any]]:
     """계약의 모든 회차에 대해 Waterfall 충당 방식으로 납부 할당 계산 (조정된 날짜 반영)"""
+    if not contract or not getattr(contract, 'unit_type', None):
+        return {}
+
     if as_of_date is None:
         as_of_date = date.today()
 

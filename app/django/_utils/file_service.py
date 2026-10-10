@@ -71,25 +71,30 @@ class FileService:
         # 3. Single file edit (Meeting/Issue pattern)
         edit_file = initial_data.get('edit_file')
         if edit_file:
-            meeting_file = file_model.objects.get(pk=edit_file, **{related_name: instance})
-            old_file = None
+            try:
+                meeting_file = file_model.objects.get(pk=edit_file, **{related_name: instance})
+                old_file_name = None
 
-            cng_file = initial_data.get('cng_file')
-            if cng_file:
-                old_file = meeting_file.file
-                meeting_file.file = cng_file
+                cng_file = initial_data.get('cng_file')
+                if cng_file:
+                    old_file_name = meeting_file.file.name if meeting_file.file else None
+                    meeting_file.file = cng_file
 
-            edit_file_desc = initial_data.get('edit_file_desc')
-            if edit_file_desc is not None:
-                meeting_file.description = edit_file_desc
+                edit_file_desc = initial_data.get('edit_file_desc')
+                if edit_file_desc is not None:
+                    meeting_file.description = edit_file_desc
 
-            if creator is not None:
-                meeting_file.creator = creator
+                if creator is not None:
+                    meeting_file.creator = creator
 
-            meeting_file.save()
+                meeting_file.save()
 
-            if old_file and old_file.name:
-                transaction.on_commit(lambda f=old_file: f.delete(save=False))
+                if old_file_name:
+                    transaction.on_commit(lambda name=old_file_name: default_storage.delete(name))
+            except file_model.DoesNotExist:
+                pass
+            except Exception as e:
+                print(f"단일 파일 수정 중 오류 발생: {e}")
 
         # 4. Single file deletion (direct)
         del_file = initial_data.get('del_file')

@@ -243,10 +243,18 @@ def populate_file_meta(instance, file_field='file', name_field='file_name', type
     setattr(instance, name_field, filename)
 
     mime = magic.Magic(mime=True)
-    file_pos = file_obj.tell()  # 현재 파일 커서 위치 백업
-    file_type = mime.from_buffer(file_obj.read(2048))  # 2048바이트면 충분
-    file_obj.seek(file_pos)  # 원래 위치로 복구
-    file_size = file_obj.size
+    file_type = 'application/octet-stream'
+    try:
+        if hasattr(file_obj, 'tell') and hasattr(file_obj, 'seek'):
+            file_pos = file_obj.tell()  # 현재 파일 커서 위치 백업
+            file_type = mime.from_buffer(file_obj.read(2048))  # 2048바이트면 충분
+            file_obj.seek(file_pos)  # 원래 위치로 복구
+        elif hasattr(file_obj, 'read'):
+            file_type = mime.from_buffer(file_obj.read(2048))
+    except Exception:
+        pass
+
+    file_size = getattr(file_obj, 'size', 0)
 
     setattr(instance, type_field, file_type)
     setattr(instance, size_field, file_size)

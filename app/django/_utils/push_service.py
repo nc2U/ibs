@@ -91,7 +91,7 @@ def send_push_notification(
     tokens = list(devices.values_list('registration_id', flat=True))
 
     if not tokens:
-        return len(notifications_to_create)
+        return notifications_count
 
     # 3. Firebase Admin SDK를 통한 푸시 발송
     if _get_firebase_app():
