@@ -68,7 +68,10 @@ const canCommentDelete = computed(() => {
 })
 
 const toDelete = () => refDeleteModal.value.callModal()
-const deleteComment = () => emit('on-delete', props.comment?.pk, props.comment?.post.pk)
+const deleteComment = () => {
+  refDeleteModal.value.close()
+  emit('on-delete', props.comment?.pk, props.comment?.post.pk)
+}
 
 const onSubmit = (payload: Cm) => emit('on-submit', payload)
 </script>
@@ -126,11 +129,11 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     </template>
 
     <p v-if="!(formShow && isEditing)" class="mt-1 p-1">
-      <v-chip v-if="comment.secret" color="danger" variant="flat" size="x-small" class="mr-2">
-        비밀글입니다
+      <v-chip v-if="comment.secret" color="error" variant="flat" size="x-small" class="mr-2">
+        비밀글
       </v-chip>
       <span
-        v-show="
+        v-if="
           !comment.secret ||
           userInfo?.is_superuser ||
           userInfo?.pk === comment.creator?.pk ||
@@ -138,6 +141,9 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
         "
       >
         {{ comment?.content }}
+      </span>
+      <span v-else class="text-muted small">
+        비밀댓글은 관리자와 작성자만 볼 수 있습니다.
       </span>
     </p>
     <p v-if="formShow && isEditing">

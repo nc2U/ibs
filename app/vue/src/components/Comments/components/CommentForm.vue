@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, onMounted, onUpdated, type PropType } from 'vue'
+import { reactive, onMounted, watch, type PropType } from 'vue'
 import type { Comment as Cm } from '@/store/types/forum'
 
 const props = defineProps({
@@ -35,11 +35,18 @@ const formSet = () => {
     form.content = props.comment.content
     form.parent = props.comment.parent
     form.secret = props.comment.secret
+  } else {
+    formReset()
   }
 }
 
+watch(
+  () => props.comment,
+  () => formSet(),
+  { deep: true },
+)
+
 onMounted(() => formSet())
-onUpdated(() => formSet())
 </script>
 
 <template>
