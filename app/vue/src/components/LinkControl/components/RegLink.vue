@@ -1,47 +1,67 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Link } from '@/store/types/docs.ts'
 
-const props = defineProps({ link: { type: Object as PropType<Link>, required: true } })
-
-const emit = defineEmits(['enable-store', 'link-change', 'link-delete'])
-
-const form = ref<{ link: Link | null }>({
-  link: null,
-})
-
-const linkChange = (event: Event, pk: number) => {
-  const e = event.target as HTMLInputElement
-  emit('link-change', { pk, link: e.value })
-  emit('enable-store', event)
+interface Props {
+  link: Link
 }
 
-const handleDelete = () => {
-  if (form.value.link) (form.value.link as Link).del = !(form.value.link as Link).del
-  const del = (form.value.link as Link).del
-  emit('link-delete', { pk: (form.value.link as Link)?.pk, del })
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'enable-store', event: Event): void
+  (e: 'link-change', payload: { pk: number; link: string }): void
+  (e: 'link-delete', payload: { pk: number; del: boolean }): void
+}>()
+
+const linkData = ref<Link>({
+  ...props.link,
+  del: props.link.del ?? false,
+})
+
+watch(
+  () => props.link,
+  newLink => {
+    if (newLink) {
+      linkData.value = {
+        ...newLink,
+        del: newLink.del ?? false,
+      }
+    }
+  },
+  { deep: true },
+)
+
+const linkChange = (event: Event, pk?: null | number) => {
+  if (typeof pk === 'number') {
+    const el = event.target as HTMLInputElement
+    emit('link-change', { pk, link: el.value })
+    emit('enable-store', event)
+  }
 }
 
-onBeforeMount(async () => {
-  if (props.link) form.value.link = { ...props.link }
-})
+const handleDeleteChange = () => {
+  if (typeof props.link.pk === 'number') {
+    emit('link-delete', { pk: props.link.pk, del: linkData.value.del ?? false })
+  }
+}
 </script>
 
 <template>
   <CFormInput
-    v-model="(form.link as Link).link"
+    v-model="linkData.link"
     :id="`docs-link-${link.pk}`"
     size="sm"
     placeholder="파일 링크"
-    @input="linkChange($event, link.pk as number)"
+    @input="linkChange($event, link.pk)"
   />
 
   <CInputGroupText id="basic-addon1" class="py-0">
     <CFormCheck
-      v-model="(form.link as Link).del"
+      v-model="linkData.del"
       :id="`del-link-${link.pk}`"
       label="삭제"
-      @click="handleDelete"
+      @change="handleDeleteChange"
     />
   </CInputGroupText>
 </template>

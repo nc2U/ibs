@@ -1,33 +1,40 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { Link } from '@/store/types/docs.ts'
 
-const emit = defineEmits(['enable-store', 'link-upload'])
+interface LinkItem {
+  id: number
+  link: string
+}
 
-const range = (from: number, to: number): number[] =>
-  from < to ? [from, ...range(from + 1, to)] : []
+const emit = defineEmits<{
+  (e: 'enable-store', event: Event): void
+  (e: 'link-upload', links: Link[]): void
+}>()
 
-const newLinkNum = ref(1)
-const newLinkRange = computed(() => range(0, newLinkNum.value))
-const newLinks = ref<Array<Link | null>>([null])
+let nextId = 1
+const newLinks = ref<LinkItem[]>([{ id: nextId++, link: '' }])
 
-const ctlLinkNum = (n: number) => {
-  if (n + 1 >= newLinkNum.value) {
-    // 링크 필드 추가
-    newLinkNum.value++
-    newLinks.value.push(null)
-  } else {
-    // 마지막 전 요소 삭제 시, 마지막 것도 비움
-    if (n === newLinks.value.length - 2) newLinks.value[n + 1] = null
+const addLinkField = () => {
+  newLinks.value.push({ id: nextId++, link: '' })
+}
 
-    newLinks.value.splice(n, 1)
-    newLinkNum.value--
+const removeLinkField = (index: number) => {
+  newLinks.value.splice(index, 1)
+  if (newLinks.value.length === 0) {
+    newLinks.value.push({ id: nextId++, link: '' })
   }
 }
 
 const getNewLinks = () => {
-  const links = newLinks.value.filter(l => l !== null)
-  emit('link-upload', [...links])
+  const links: Link[] = newLinks.value
+    .filter(l => !!l.link.trim())
+    .map(l => ({
+      docs: null,
+      link: l.link.trim(),
+      description: '',
+    }))
+  emit('link-upload', links)
 }
 
 defineExpose({ getNewLinks })
@@ -36,17 +43,22 @@ defineExpose({ getNewLinks })
 <template>
   <CRow class="mb-2">
     <CCol>
-      <CInputGroup v-for="lNum in newLinkRange" :key="`ln-${lNum}`" class="mb-2">
+      <CInputGroup v-for="(item, index) in newLinks" :key="item.id" class="mb-2">
         <CFormInput
-          :id="`link-${lNum}`"
-          v-model="newLinks[lNum]"
+          :id="`link-${item.id}`"
+          v-model="item.link"
           placeholder="파일 링크"
           @input="emit('enable-store', $event)"
         />
-        <CInputGroupText id="basic-addon1" @click="ctlLinkNum(lNum)">
+        <CInputGroupText
+          id="basic-addon1"
+          role="button"
+          style="cursor: pointer"
+          @click="index + 1 === newLinks.length ? addLinkField() : removeLinkField(index)"
+        >
           <v-icon
-            :icon="`mdi-${lNum + 1 < newLinkNum ? 'minus' : 'plus'}-thick`"
-            :color="lNum + 1 < newLinkNum ? 'error' : 'primary'"
+            :icon="`mdi-${index + 1 === newLinks.length ? 'plus' : 'minus'}-thick`"
+            :color="index + 1 === newLinks.length ? 'primary' : 'error'"
           />
         </CInputGroupText>
       </CInputGroup>
