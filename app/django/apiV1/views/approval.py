@@ -1,5 +1,6 @@
 import logging
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Q, Count
 from django.utils import timezone
 from django_filters.rest_framework import FilterSet, CharFilter, NumberFilter, DateFilter
 from rest_framework import viewsets, status
@@ -192,33 +193,39 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             'steps__approvers__profile', 'steps__actions__approver__profile',
             'steps__actions__delegated_from__profile',
         )
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            # 1. 직접 접근 권한: 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서
+            delegator_ids = get_active_delegator_ids(user)
+            approver_q = Q(steps__approvers=user)
+            if delegator_ids:
+                approver_q |= Q(steps__approvers__in=delegator_ids)
 
-        # 1. 직접 접근 권한: 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서
-        delegator_ids = get_active_delegator_ids(user)
-        approver_q = Q(steps__approvers=user)
-        if delegator_ids:
-            approver_q |= Q(steps__approvers__in=delegator_ids)
+            direct_access_q = Q(drafter=user) | approver_q | Q(observers=user)
 
-        direct_access_q = Q(drafter=user) | approver_q | Q(observers=user)
+            # 2. 3등급 (전사공개): 상신/완료된 문서 전사 열람 허용
+            public_q = Q(security_level=ApprovalDocument.SECURITY_PUBLIC) & ~Q(status=ApprovalDocument.STATUS_DRAFT)
 
-        # 2. 3등급 (전사공개): 상신/완료된 문서 전사 열람 허용
-        public_q = Q(security_level=ApprovalDocument.SECURITY_PUBLIC) & ~Q(status=ApprovalDocument.STATUS_DRAFT)
+            # 3. 2등급 (부서공개): 기안자의 소속 부서와 동일한 부서 구성원 열람 허용
+            dept_ids = list(
+                StaffAssignment.objects.filter(staff__user=user, department__isnull=False).values_list('department_id', flat=True)
+            )
+            dept_q = Q()
+            if dept_ids:
+                dept_q = (
+                    Q(security_level=ApprovalDocument.SECURITY_DEPT) &
+                    Q(drafter_assignment__department_id__in=dept_ids) &
+                    ~Q(status=ApprovalDocument.STATUS_DRAFT)
+                )
 
-        # 3. 2등급 (부서공개): 기안자의 소속 부서와 동일한 부서 구성원 열람 허용
-        dept_ids = list(
-            StaffAssignment.objects.filter(staff__user=user, department__isnull=False).values_list('department_id', flat=True)
-        )
-        dept_q = Q()
-        if dept_ids:
-            dept_q = (
-                Q(security_level=ApprovalDocument.SECURITY_DEPT) &
-                Q(drafter_assignment__department_id__in=dept_ids) &
-                ~Q(status=ApprovalDocument.STATUS_DRAFT)
+            qs = qs.filter(direct_access_q | public_q | dept_q).distinct()
+
+        if self.action in ('list', 'my_pending', 'my_drafted', 'my_approved', 'my_observed', 'all_documents'):
+            qs = qs.annotate(
+                attachment_count=Count('attachments', distinct=True),
+                observer_count=Count('observers', distinct=True)
             )
 
-        return qs.filter(direct_access_q | public_q | dept_q).distinct()
+        return qs.order_by('-created_at', '-id')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -491,6 +498,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
     # ── POST /approval-document/{id}/act/ ────────────────────
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def act(self, request, pk=None):
         """현재 결재 단계에서 승인 / 반려 / 의견 처리"""
         document = self.get_object()
@@ -639,6 +647,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
     # ── POST /approval-document/{id}/cancel/ ─────────────────
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def cancel(self, request, pk=None):
         """기안자가 결재를 회수 (임시저장 상태로 복귀하여 수정 및 재상신 가능)"""
         document = self.get_object()

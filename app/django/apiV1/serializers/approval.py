@@ -166,8 +166,18 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     drafter_assignment_desc = serializers.SerializerMethodField()
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
-    attachment_count = serializers.IntegerField(source='attachments.count', read_only=True)
-    observer_count = serializers.IntegerField(source='observers.count', read_only=True)
+    attachment_count = serializers.SerializerMethodField()
+    observer_count = serializers.SerializerMethodField()
+
+    def get_attachment_count(self, obj):
+        if hasattr(obj, 'attachment_count'):
+            return obj.attachment_count
+        return obj.attachments.count()
+
+    def get_observer_count(self, obj):
+        if hasattr(obj, 'observer_count'):
+            return obj.observer_count
+        return obj.observers.count()
 
     def get_drafter_name(self, obj):
         if obj.drafter:
