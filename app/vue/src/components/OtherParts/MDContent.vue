@@ -8,7 +8,7 @@ defineProps({ content: { type: String, default: '' } })
 <template>
   <CRow class="p-3 mb-5">
     <CCol>
-      <div v-html="markdownRender(content)" />
+      <div v-html="DOMPurify.sanitize(markdownRender(content))" />
     </CCol>
   </CRow>
 </template>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { AFile } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
@@ -21,8 +21,9 @@ const newFileNum = ref(1)
 const newFileRange = computed(() => range(0, newFileNum.value))
 
 const devideUri = (uri: string) => {
+  if (!uri || !uri.includes('media/')) return ['', uri || '']
   const devidedUri = decodeURI(uri).split('media/')
-  return [devidedUri[0] + 'media/', devidedUri[1]]
+  return [devidedUri[0] + 'media/', devidedUri[1] || '']
 }
 
 const ctlFileNum = (n: number) => {
@@ -41,8 +42,8 @@ const fileUpload = (event: Event) => {
 const editFile = (event: Event, i: number) => {
   const el = event.target as HTMLInputElement
   const delForm = document.getElementById(`del-file-${i}`) as HTMLInputElement
-  if (el.checked && delForm.checked) delForm.checked = false
-  if (el.value === 'true' && delForm.checked) delForm.checked = false
+  if (el.checked && delForm?.checked) delForm.checked = false
+  if (el.value === 'true' && delForm?.checked) delForm.checked = false
 
   if ((form.value.files as any[]).length) {
     ;(form.value.files as any[])[i].del = false
@@ -67,21 +68,28 @@ const delFile = (i: number) => {
 const checkRelease = () =>
   form.value.files.forEach((f, i) => {
     const editForm = document.getElementById(`edit-file-${i}`) as HTMLInputElement
-    if (editForm.checked) editForm.checked = false
+    if (editForm?.checked) editForm.checked = false
   })
 
 defineExpose({ checkRelease })
 
 const dataSetup = () => {
-  if (props.files) form.value.files = props.files
-  form.value.files.forEach(file => {
-    file.del = false
-    file.edit = false
-  })
+  if (props.files) {
+    form.value.files = props.files.map(file => ({
+      ...file,
+      del: false,
+      edit: false,
+    }))
+  }
   formUpdate()
 }
 
-onBeforeUpdate(() => dataSetup())
+watch(
+  () => props.files,
+  () => dataSetup(),
+  { deep: true },
+)
+
 onBeforeMount(() => dataSetup())
 </script>
 

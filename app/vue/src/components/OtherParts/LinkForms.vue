@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Link } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
@@ -35,12 +35,21 @@ const newLinkPush = () => {
 defineExpose({ newLinkPush })
 
 const dataSetup = () => {
-  if (props.links) form.value.links = props.links
-  form.value.links.forEach(link => (link.del = false))
+  if (props.links) {
+    form.value.links = props.links.map(link => ({
+      ...link,
+      del: false,
+    }))
+  }
   formUpdate()
 }
 
-onBeforeUpdate(() => dataSetup())
+watch(
+  () => props.links,
+  () => dataSetup(),
+  { deep: true },
+)
+
 onBeforeMount(() => dataSetup())
 </script>
 

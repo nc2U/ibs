@@ -7,7 +7,7 @@ defineProps({ content: { type: String, required: true } })
 <template>
   <CRow class="p-4 mb-5">
     <CCol style="font-size: 1.03em; line-height: 1.6">
-      <div v-html="DOMPurify().sanitize(content)" />
+      <div v-html="DOMPurify.sanitize(content)" />
     </CCol>
   </CRow>
 </template>
