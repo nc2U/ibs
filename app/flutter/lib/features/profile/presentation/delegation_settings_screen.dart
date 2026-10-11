@@ -39,7 +39,8 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
         .where((u) => u.pk != myUser?.pk && u.isActive && (u.hasStaff || u.isSuperuser))
         .toList();
 
-    await showModalBottomSheet(
+    try {
+      await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.bgCard,
@@ -420,7 +421,10 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
         );
       },
     );
+  } finally {
+    reasonController.dispose();
   }
+}
 
   @override
   Widget build(BuildContext context) {
