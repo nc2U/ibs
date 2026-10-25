@@ -6,10 +6,30 @@ approval.services.document_service
 View (ApprovalDocumentViewSet)의 submit/act 액션에서 호출되는 핵심 상태 전이 로직을
 이 서비스 모듈로 위임하여, View를 얇게(thin) 유지하고 비즈니스 로직의 단위 테스트를 용이하게 합니다.
 """
+import logging
+from datetime import date, datetime
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
 from approval.models import ApprovalDocument, ApprovalStep
+
+logger = logging.getLogger(__name__)
+
+LEAVE_TYPE_MAPPING = {
+    'ANNUAL': 'annual',
+    'HALF_AM': 'half_am',
+    'HALF_PM': 'half_pm',
+    'QUARTER': 'quarter',
+    'SPECIAL': 'condolence',
+    'CONDOLENCE': 'condolence',
+    'OFFICIAL': 'official',
+    'SICK': 'sick',
+    'REWARD': 'reward',
+    'SUBSTITUTE': 'substitute',
+    'OTHER': 'other',
+}
 
 
 @transaction.atomic
@@ -74,6 +94,8 @@ def finalize_approval(document: ApprovalDocument) -> ApprovalDocument:
     처리 순서:
     1. 문서 상태 → approved, completed_at 기록
     2. DocNumberSequence를 통해 원자적 채번 (레이스컨디션 방지)
+    3. 자료실 자동 아카이빙 (설정된 경우)
+    4. 휴가 신청서인 경우 근태/휴가 사용 내역 자동 생성 및 연차 차감 연동
 
     Args:
         document: 최종 승인 처리할 ApprovalDocument 인스턴스
@@ -86,14 +108,124 @@ def finalize_approval(document: ApprovalDocument) -> ApprovalDocument:
     document.doc_number = document.generate_doc_number()
     document.save(update_fields=['status', 'completed_at', 'doc_number'])
 
-    # 문서 유형에 대상 자료실 카테고리가 지정된 경우 일반 문서로 자동 아카이빙
+    # 1. 문서 유형에 대상 자료실 카테고리가 지정된 경우 일반 문서로 자동 아카이빙
     try:
         archive_to_docs(document)
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning('결재 문서 자동 아카이빙 실패 (doc %s): %s', document.pk, e)
+        logger.warning('결재 문서 자동 아카이빙 실패 (doc %s): %s', document.pk, e)
+
+    # 2. 휴가/연차 신청서인 경우 근태/휴가 사용 내역 자동 등록 및 연차 차감
+    try:
+        sync_leave_approval(document)
+    except Exception as e:
+        logger.warning('휴가 신청서 승인 연동 실패 (doc %s): %s', document.pk, e)
 
     return document
+
+
+def sync_leave_approval(document: ApprovalDocument):
+    """
+    휴가/연차 신청서(LEAVE) 결재가 최종 승인된 경우
+    company.StaffLeaveUsage (직원 휴가/연차 사용 기록)를 자동 생성하여 연차를 차감합니다.
+    """
+    if document.status != ApprovalDocument.STATUS_APPROVED:
+        return None
+
+    form_key = getattr(document.doc_type, 'form_template_key', '')
+    if form_key not in ('LEAVE', 'LEAVE_APPLICATION'):
+        return None
+
+    # 기안자의 Staff 객체 탐색
+    drafter = document.drafter
+    staff = getattr(drafter, 'staff', None)
+    if not staff:
+        from company.models import Staff
+        staff = Staff.objects.filter(user=drafter).first()
+
+    if not staff:
+        logger.warning('휴가 신청서 승인 연동 실패: 기안자(%s)에 연결된 Staff가 없습니다.', drafter)
+        return None
+
+    content = document.content or {}
+
+    # 1. 휴가 구분 매핑
+    from company.models import StaffLeaveUsage
+    raw_type = str(content.get('leave_type') or 'ANNUAL').upper()
+    leave_type = LEAVE_TYPE_MAPPING.get(raw_type, raw_type.lower())
+    valid_leave_types = dict(StaffLeaveUsage.LEAVE_TYPE_CHOICES)
+    if leave_type not in valid_leave_types:
+        leave_type = 'annual'
+
+    # 2. 휴가 기간 파싱
+    today = (document.completed_at or timezone.now()).date()
+
+    def parse_date(val, default):
+        if not val:
+            return default
+        if isinstance(val, (date, datetime)):
+            return val if isinstance(val, date) else val.date()
+        try:
+            return datetime.strptime(str(val)[:10], '%Y-%m-%d').date()
+        except Exception:
+            return default
+
+    start_date = parse_date(content.get('start_date'), today)
+    end_date = parse_date(content.get('end_date'), start_date)
+    if end_date < start_date:
+        end_date = start_date
+
+    # 3. 차감 일수 계산
+    raw_days = content.get('days_count')
+    if raw_days is not None and str(raw_days).strip() != '':
+        try:
+            deduction_days = Decimal(str(raw_days))
+        except Exception:
+            deduction_days = Decimal('1.00')
+    else:
+        if leave_type in ('half_am', 'half_pm'):
+            deduction_days = Decimal('0.50')
+        elif leave_type == 'quarter':
+            deduction_days = Decimal('0.25')
+        elif leave_type in ('condolence', 'official'):
+            deduction_days = Decimal('0.00')
+        else:
+            diff_days = (end_date - start_date).days + 1
+            deduction_days = Decimal(str(max(1, diff_days)))
+
+    # 사규상 공가나 경조휴가는 명시적으로 0일 차감 보장 (일수 미지정 시)
+    if leave_type in ('condolence', 'official') and (raw_days is None or str(raw_days).strip() == ''):
+        deduction_days = Decimal('0.00')
+
+    company = document.company or staff.company
+    reason = content.get('reason') or document.title
+
+    usage, created = StaffLeaveUsage.objects.update_or_create(
+        approval_doc=document,
+        defaults={
+            'company': company,
+            'staff': staff,
+            'leave_type': leave_type,
+            'start_date': start_date,
+            'end_date': end_date,
+            'deduction_days': deduction_days,
+            'reason': str(reason)[:255],
+            'is_cancelled': False,
+        }
+    )
+    return usage
+
+
+def cancel_leave_approval(document: ApprovalDocument) -> int:
+    """
+    결재 취소/반려 시 연관된 StaffLeaveUsage를 취소 처리(is_cancelled=True)하여
+    연차 차감을 복구합니다.
+    """
+    from company.models import StaffLeaveUsage
+    updated_count = StaffLeaveUsage.objects.filter(
+        approval_doc=document,
+        is_cancelled=False,
+    ).update(is_cancelled=True)
+    return updated_count
 
 
 def archive_to_docs(document: ApprovalDocument):

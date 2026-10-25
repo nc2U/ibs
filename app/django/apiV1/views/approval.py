@@ -19,7 +19,7 @@ from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
-from approval.services import build_dynamic_approval_route, submit_document, finalize_approval
+from approval.services import build_dynamic_approval_route, submit_document, finalize_approval, cancel_leave_approval
 from approval.services.route_builder import _get_company_ceos, _get_department_manager
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
@@ -585,6 +585,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 document.related_inbound_letter.status = 'received'
                 document.related_inbound_letter.save(update_fields=['status'])
 
+            # 연동된 휴가/근태 사용 내역 취소 동기화
+            try:
+                cancel_leave_approval(document)
+            except Exception:
+                pass
+
             try:
                 notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
             except Exception:
@@ -692,6 +698,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             inbound.approval_document = None
             inbound.status = 'received'
             inbound.save(update_fields=['approval_document', 'status'])
+
+        # 연동된 휴가/근태 사용 내역 취소 동기화
+        try:
+            cancel_leave_approval(document)
+        except Exception:
+            pass
 
         # 결재자들에게 회수 알림 비동기 발송
         if approver_ids:
