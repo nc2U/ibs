@@ -34,7 +34,7 @@ onBeforeMount(() => {
       <v-table v-else density="compact" hover>
         <thead>
           <tr class="bg-more-light border-top border-bottom">
-            <th class="text-left" style="width: 190px">프로젝트</th>
+            <th class="text-left" style="width: 190px">워크스페이스</th>
             <th class="text-left">제목</th>
             <th class="text-center" style="width: 100px">날짜</th>
           </tr>

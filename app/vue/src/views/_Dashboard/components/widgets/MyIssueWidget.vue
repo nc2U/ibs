@@ -104,7 +104,7 @@ onMounted(() => {
         <v-table density="compact" hover>
           <thead class="bg-more-light border-top border-bottom">
             <tr>
-              <th class="text-left">프로젝트</th>
+              <th class="text-left">워크스페이스</th>
               <th class="text-left">제목</th>
               <th class="text-center" style="width: 120px">상태</th>
               <th class="text-center" style="width: 120px">우선순위</th>

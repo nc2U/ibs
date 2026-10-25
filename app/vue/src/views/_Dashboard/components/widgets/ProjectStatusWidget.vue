@@ -63,7 +63,7 @@ onMounted(fetchWidgetData)
               {{ totalProjects }}
             </div>
             <div class="text-caption text-medium-emphasis" style="font-size: 10px !important">
-              전체 프로젝트
+              전체 워크스페이스
             </div>
           </div>
         </v-col>
