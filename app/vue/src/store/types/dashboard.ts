@@ -14,6 +14,7 @@ export type WidgetType =
   | 'meeting-minutes'
   | 'document-list'
   | 'approval-status'
+  | 'sales-status'
 
 export interface WidgetConfig {
   id: string

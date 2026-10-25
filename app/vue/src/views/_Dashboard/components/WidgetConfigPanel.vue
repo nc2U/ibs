@@ -30,9 +30,9 @@ const handleReset = () => {
 
 <template>
   <div class="widget-config-panel">
-    <v-navigation-drawer v-model="drawer" location="right" temporary width="320">
-      <v-card flat>
-        <v-card-title class="d-flex align-center">
+    <v-navigation-drawer v-model="drawer" location="right" temporary width="340">
+      <v-card flat class="d-flex flex-column h-100">
+        <v-card-title class="d-flex align-center flex-shrink-0">
           <v-icon icon="mdi-view-dashboard-edit" class="mr-2" />
           <span>위젯 설정</span>
           <v-spacer />
@@ -43,9 +43,9 @@ const handleReset = () => {
 
         <v-divider />
 
-        <v-card-text class="pa-0">
+        <v-card-text class="pa-0 flex-grow-1 overflow-y-auto">
           <v-list density="compact">
-            <v-list-subheader>표시할 위젯 선택</v-list-subheader>
+            <v-list-subheader>표시할 위젯 선택 (총 {{ widgets.length }}개)</v-list-subheader>
 
             <v-list-item
               v-for="widget in widgets"
@@ -73,17 +73,19 @@ const handleReset = () => {
 
         <v-divider />
 
-        <v-card-actions class="pa-4">
-          <v-btn variant="outlined" color="warning" block @click="handleReset">
-            <v-icon icon="mdi-restore" class="mr-2" />
-            기본값으로 초기화
-          </v-btn>
-        </v-card-actions>
+        <div class="flex-shrink-0">
+          <v-card-actions class="pa-3">
+            <v-btn variant="outlined" color="warning" block size="small" @click="handleReset">
+              <v-icon icon="mdi-restore" class="mr-2" />
+              기본값으로 초기화
+            </v-btn>
+          </v-card-actions>
 
-        <v-card-text class="text-caption text-medium-emphasis">
-          <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
-          위젯을 드래그하여 위치를 변경하고, 모서리를 드래그하여 크기를 조절할 수 있습니다.
-        </v-card-text>
+          <v-card-text class="text-caption text-medium-emphasis pt-0 pb-3 px-3">
+            <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+            위젯을 드래그하여 위치를 변경하고, 모서리를 드래그하여 크기를 조절할 수 있습니다.
+          </v-card-text>
+        </div>
       </v-card>
     </v-navigation-drawer>
   </div>
