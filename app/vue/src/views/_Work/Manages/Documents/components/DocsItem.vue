@@ -61,7 +61,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             [{{ docs.cate_name }}]
           </span>
           <span class="d-flex align-center text-primary font-weight-semibold">
-            {{ cutString(docs.title, 50) }}
+            {{ cutString(docs.title, 38) }}
           </span>
           <v-chip
             v-if="docs.is_pinned"
@@ -90,7 +90,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
       </CRow>
       <CRow v-if="docs.description" class="mt-2">
         <CCol class="text-body-2 text-muted">
-          <div v-html="DOMPurify.sanitize(cutString(docs.description, 120))" />
+          <div v-html="DOMPurify.sanitize(cutString(docs.description, 60))" />
         </CCol>
       </CRow>
     </v-card-text>
