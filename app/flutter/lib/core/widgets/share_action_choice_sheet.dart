@@ -4,13 +4,14 @@ import '../constants/app_text_styles.dart';
 import '../constants/permissions.dart';
 import '../providers/permission_provider.dart';
 import '../providers/share_payload_provider.dart';
+import '../router/app_router.dart';
 import '../theme/app_colors_extension.dart';
 import '../../features/chat/presentation/widgets/chat_share_target_sheet.dart';
 import '../../features/docs/presentation/widgets/document_form_sheet.dart';
 
 /// 외부 앱(갤러리, 파일, 브라우저 등)에서 공유된 파일/링크를 감지했을 때
 /// [💬 메신저로 전송] 또는 [📁 문서에 등록] 중 원하는 동작을 선택하는 바텀시트
-class ShareActionChoiceSheet extends ConsumerWidget {
+class ShareActionChoiceSheet extends ConsumerStatefulWidget {
   final SharePayload payload;
 
   const ShareActionChoiceSheet({
@@ -34,6 +35,19 @@ class ShareActionChoiceSheet extends ConsumerWidget {
     } finally {
       _isShowing = false;
     }
+  }
+
+  @override
+  ConsumerState<ShareActionChoiceSheet> createState() => _ShareActionChoiceSheetState();
+}
+
+class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet> {
+  late final DateTime _mountedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _mountedTime = DateTime.now();
   }
 
   String _formatFileSize(int bytes) {
@@ -61,14 +75,21 @@ class ShareActionChoiceSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final payload = widget.payload;
     final totalSize = payload.files.fold<int>(0, (sum, f) => sum + f.size);
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop && result != 'handover') {
-          // 명시적인 메신저/문서 핸드오버가 아닌 뒤로가기/외부 터치 닫기인 경우 payload 초기화
-          ref.read(pendingSharePayloadProvider.notifier).clear();
+          final elapsed = DateTime.now().difference(_mountedTime).inMilliseconds;
+          // 사용자의 자발적 닫기([X]버튼)이거나 시트가 정상 노출된 후(400ms 이상) 닫힌 경우만 clear()
+          // 라우트 전환 등 비정상적인 즉시 닫힘(400ms 미만)일 때는 페이로드를 보존하여 재표출 보장
+          if (result == 'user_cancel' || elapsed >= 400) {
+            ref.read(pendingSharePayloadProvider.notifier).clear();
+          } else {
+            debugPrint('🛡️ [ShareActionChoiceSheet] Premature pop detected ($elapsed ms). Preserving payload for retry.');
+          }
         }
       },
       child: Container(
@@ -111,7 +132,7 @@ class ShareActionChoiceSheet extends ConsumerWidget {
                   icon: Icon(Icons.close_rounded, color: context.colors.textMuted, size: 20),
                   onPressed: () {
                     ref.read(pendingSharePayloadProvider.notifier).clear();
-                    Navigator.pop(context);
+                    Navigator.pop(context, 'user_cancel');
                   },
                 ),
               ],
@@ -221,8 +242,9 @@ class ShareActionChoiceSheet extends ConsumerWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () {
+                  final navContext = rootNavigatorKey.currentContext ?? context;
                   Navigator.pop(context, 'handover');
-                  ChatShareTargetSheet.show(context, payload);
+                  ChatShareTargetSheet.show(navContext, payload);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -309,11 +331,12 @@ class ShareActionChoiceSheet extends ConsumerWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () {
+                  final navContext = rootNavigatorKey.currentContext ?? context;
                   Navigator.pop(context, 'handover');
 
                   // 문서 등록 권한 검증
                   if (!ref.can(Perm.docsCreate)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(navContext).showSnackBar(
                       const SnackBar(
                         content: Text('문서 등록 권한(docs.create)이 없어 공유된 문서를 등록할 수 없습니다.'),
                         backgroundColor: Colors.redAccent,
@@ -323,9 +346,9 @@ class ShareActionChoiceSheet extends ConsumerWidget {
                     return;
                   }
 
-                  // DocumentFormSheet 팝업
+                  // DocumentFormSheet 팝업 (안정적인 최상단 navContext 사용)
                   showModalBottomSheet(
-                    context: context,
+                    context: navContext,
                     isScrollControlled: true,
                     useRootNavigator: true,
                     backgroundColor: Colors.transparent,

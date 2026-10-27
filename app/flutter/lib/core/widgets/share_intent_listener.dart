@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import '../providers/auth_provider.dart';
 import '../providers/share_payload_provider.dart';
 import '../router/app_router.dart';
 import 'share_action_choice_sheet.dart';
@@ -21,6 +22,7 @@ class ShareIntentListener extends ConsumerStatefulWidget {
 
 class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -102,32 +104,66 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
     }
   }
 
+  /// GoRouter의 초기 리다이렉트 및 라우트 페이지 마운트가 완전히 완료된 후
+  /// 안정된 상태에서 안전하게 바텀시트를 호출하는 타이머 가드
+  void _scheduleShowSheet(SharePayload? payload) {
+    if (payload == null || payload.isEmpty) {
+      _debounceTimer?.cancel();
+      return;
+    }
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+
+      // 인증 검증: 비인가 상태이거나 토큰 로딩 중이면 라우터가 /login으로 가거나 리다이렉트 중이므로 대기
+      final isAuth = ref.read(isAuthenticatedProvider);
+      if (!isAuth) {
+        debugPrint('⏳ [ShareIntentListener] Waiting for authentication before displaying share sheet...');
+        return;
+      }
+
+      final navContext = rootNavigatorKey.currentContext;
+      if (navContext != null && navContext.mounted) {
+        debugPrint('🚀 [ShareIntentListener] Presenting ShareActionChoiceSheet on stable Navigator');
+        ShareActionChoiceSheet.show(navContext, payload);
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _intentSub?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 외부 앱에서 공유된 파일/링크가 등록되었을 때 최상단 네비게이터에 액션 선택 시트 표출
+    // 1. 공유 페이로드 변경 감지 시 안정화 후 표출 예약
     ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
       if (next != null && next.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final navContext = rootNavigatorKey.currentContext;
-          if (navContext != null && navContext.mounted) {
-            ShareActionChoiceSheet.show(navContext, next);
-          }
-        });
+        _scheduleShowSheet(next);
       }
     });
 
-    // 앱 실행(콜드 스타트) 시 이미 유입되어 대기 중인 공유 파일/링크가 있는 경우 자동 팝업
+    // 2. 인증 완료 시점 감지 (토큰 비동기 로딩 완료 후 라우트가 /home으로 안착되면 대기 중인 페이로드 표출)
+    ref.listen<bool>(isAuthenticatedProvider, (prev, isAuth) {
+      if (isAuth) {
+        final pending = ref.read(pendingSharePayloadProvider);
+        if (pending != null && pending.isNotEmpty) {
+          _scheduleShowSheet(pending);
+        }
+      }
+    });
+
+    // 3. 빌드 직후 미처리 대기 페이로드가 있고 인증된 상태라면 1회 예약 (콜드 스타트 복원)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final navContext = rootNavigatorKey.currentContext;
+      if (!mounted) return;
       final pending = ref.read(pendingSharePayloadProvider);
-      if (pending != null && pending.isNotEmpty && navContext != null && navContext.mounted) {
-        ShareActionChoiceSheet.show(navContext, pending);
+      final isAuth = ref.read(isAuthenticatedProvider);
+      if (pending != null && pending.isNotEmpty && isAuth) {
+        _scheduleShowSheet(pending);
       }
     });
 
