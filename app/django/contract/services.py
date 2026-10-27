@@ -861,15 +861,29 @@ class ContractCreationService:
         # Handle case where unit_type might be empty string from FormData
         unit_type_id = clean_id_value(data.get('unit_type'))
 
-        return Contract.objects.create(
-            project_id=clean_id_value(data.get('project')),
-            serial_number=serial_number,
-            order_group_id=clean_id_value(data.get('order_group')),
-            unit_type_id=unit_type_id,
-            is_active=is_active_value,
-            is_sup_cont=is_sup_cont_value,
-            sup_cont_date=sup_cont_date_value
-        )
+        from django.db import IntegrityError
+        if serial_number and not serial_number.startswith('TEMP-'):
+            if Contract.objects.filter(serial_number=serial_number).exists():
+                raise serializers.ValidationError({
+                    'serial_number': f'이미 등록된 계약 일련번호({serial_number})입니다. 유닛 또는 차수 정보를 확인해 주세요.'
+                })
+
+        try:
+            return Contract.objects.create(
+                project_id=clean_id_value(data.get('project')),
+                serial_number=serial_number,
+                order_group_id=clean_id_value(data.get('order_group')),
+                unit_type_id=unit_type_id,
+                is_active=is_active_value,
+                is_sup_cont=is_sup_cont_value,
+                sup_cont_date=sup_cont_date_value
+            )
+        except IntegrityError as e:
+            if 'serial_number' in str(e):
+                raise serializers.ValidationError({
+                    'serial_number': f'이미 등록된 계약 일련번호({serial_number})입니다. 유닛 또는 차수 정보를 확인해 주세요.'
+                })
+            raise
 
 
 class ContractUpdateService:
@@ -898,6 +912,12 @@ class ContractUpdateService:
         # 1. 기본 계약 정보 업데이트
         instance.order_group_id = clean_id_value(data.get('order_group')) or instance.order_group_id
         instance.unit_type_id = clean_id_value(data.get('unit_type'))
+
+        # serial_number 동기화 (유닛 변경 등에 따른 일련번호 갱신)
+        new_serial_number = data.get('serial_number')
+        if new_serial_number and new_serial_number != instance.serial_number and not new_serial_number.startswith('TEMP-'):
+            if not Contract.objects.filter(serial_number=new_serial_number).exclude(pk=instance.pk).exists():
+                instance.serial_number = new_serial_number
 
         # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
         new_unit_pk = clean_id_value(data.get('key_unit'))

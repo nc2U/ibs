@@ -338,6 +338,16 @@ class ContractSetSerializer(serializers.ModelSerializer):
             return SimpleInstallmentOrderSerializer(last_paid_installment).data
         return None
 
+    def validate(self, attrs):
+        # 신규 계약 등록 시 serial_number 중복 검증
+        serial_number = self.initial_data.get('serial_number')
+        if not self.instance and serial_number and not str(serial_number).startswith('TEMP-'):
+            if Contract.objects.filter(serial_number=serial_number).exists():
+                raise serializers.ValidationError({
+                    'serial_number': f'이미 등록된 계약 일련번호({serial_number})입니다. 유닛 또는 차수 정보를 확인해 주세요.'
+                })
+        return super().validate(attrs)
+
     def create(self, validated_data):
         """간소화된 계약 생성 - 서비스 레이어 위임
 
