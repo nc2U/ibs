@@ -250,6 +250,7 @@ export default withMermaid(
             { text: '회사 정보 관리', link: '/authority/' },
             { text: '권한 설정 관리', link: '/authority/manage' },
             { text: '관리자 페이지', link: '/authority/admin-page' },
+            { text: '회사 인장 관리', link: '/authority/company-seal' },
           ],
         },
       ],
