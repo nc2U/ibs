@@ -143,6 +143,35 @@ class IssueRepository {
     );
   }
 
+  /// 업무 파일 첨부 (파일 경로 또는 바이트 기반)
+  Future<void> uploadIssueFile(
+    int issueId, {
+    String? filePath,
+    Uint8List? bytes,
+    required String fileName,
+    String? description,
+  }) async {
+    final MultipartFile multipartFile;
+    if (filePath != null && filePath.isNotEmpty) {
+      multipartFile = await MultipartFile.fromFile(filePath, filename: fileName);
+    } else if (bytes != null) {
+      multipartFile = MultipartFile.fromBytes(bytes, filename: fileName);
+    } else {
+      throw ArgumentError('filePath 또는 bytes 중 하나는 필수입니다.');
+    }
+
+    final formData = FormData.fromMap({
+      'issue': issueId,
+      'file': multipartFile,
+      if (description != null && description.isNotEmpty) 'description': description,
+    });
+    await _dio.post(
+      ApiEndpoints.issueFiles,
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+  }
+
   /// 상태 목록 조회 (전체 공용, GET /api/v1/issue-status/)
   Future<List<IssueStatusModel>> fetchStatuses() async {
     final response = await _dio.get(ApiEndpoints.issueStatuses);
