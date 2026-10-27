@@ -113,32 +113,57 @@ export default withMermaid(
           ],
         },
         {
-          text: '전자결재 시스템',
+          text: '본사 관리 시스템',
           items: [
-            { text: '전자결재 개요', link: '/approval/' },
             {
-              text: '문서 기안 및 작성',
+              text: '인사 조직 관리',
               collapsed: true,
               items: [
-                { text: '기안서 작성 및 상신', link: '/approval/draft' },
-                { text: '기안 양식 안내 (18종)', link: '/approval/forms' },
+                { text: '조직 체계 관리', link: '/hr-manage/organization' },
+                { text: '직원 인사 관리', link: '/hr-manage/staff' },
+                { text: '근태 및 휴가 관리', link: '/hr-manage/attendance' },
+                { text: '인사 평가 및 승진', link: '/hr-manage/evaluation' },
               ],
             },
             {
-              text: '결재 진행 및 처리',
+              text: '전자결재 시스템',
               collapsed: true,
               items: [
-                { text: '자동 결재선 및 전결 규칙', link: '/approval/route' },
-                { text: '승인 / 반려 / 상신 회수', link: '/approval/action' },
-                { text: '결재 위임 (대결 관리)', link: '/approval/delegation' },
+                { text: '전자결재 개요', link: '/approval/' },
+                {
+                  text: '문서 기안 및 작성',
+                  collapsed: true,
+                  items: [
+                    { text: '기안서 작성 및 상신', link: '/approval/draft' },
+                    { text: '기안 양식 안내 (18종)', link: '/approval/forms' },
+                  ],
+                },
+                {
+                  text: '결재 진행 및 처리',
+                  collapsed: true,
+                  items: [
+                    { text: '자동 결재선 및 전결 규칙', link: '/approval/route' },
+                    { text: '승인 / 반려 / 상신 회수', link: '/approval/action' },
+                    { text: '결재 위임 (대결 관리)', link: '/approval/delegation' },
+                  ],
+                },
+                {
+                  text: '문서함 및 출력',
+                  collapsed: true,
+                  items: [
+                    { text: '문서함 구분 및 검색', link: '/approval/boxes' },
+                    { text: '공람 및 PDF 출력', link: '/approval/pdf-print' },
+                  ],
+                },
               ],
             },
             {
-              text: '문서함 및 출력',
+              text: '대외 공문 관리',
               collapsed: true,
               items: [
-                { text: '문서함 구분 및 검색', link: '/approval/boxes' },
-                { text: '공람 및 PDF 출력', link: '/approval/pdf-print' },
+                { text: '대외 공문 개요', link: '/official-letter/' },
+                { text: '발송 공문 관리', link: '/official-letter/outbound' },
+                { text: '수신 공문 관리', link: '/official-letter/inbound' },
               ],
             },
           ],
