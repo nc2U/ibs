@@ -20,12 +20,24 @@ const meetingDate = computed(() =>
 
 const createdDate = computed(() => props.meeting.created.substring(0, 10))
 
-const totalAttendees = computed(() => {
-  const usersCount = props.meeting.attendees.length
-  const otherCount = props.meeting.other_attendees
-    ? props.meeting.other_attendees.split(',').filter(v => v.trim()).length
+const attendeesCount = computed(
+  () => props.meeting.attendees_count ?? props.meeting.attendees.length,
+)
+
+const otherAttendeesCount = computed(() => {
+  if (props.meeting.other_attendees_count !== undefined) {
+    return props.meeting.other_attendees_count
+  }
+  return props.meeting.other_attendees
+    ? props.meeting.other_attendees.split(/[,;\n\r]+/).filter(v => v.trim()).length
     : 0
-  return usersCount + otherCount
+})
+
+const totalAttendees = computed(() => {
+  if (props.meeting.total_attendees_count !== undefined) {
+    return props.meeting.total_attendees_count
+  }
+  return attendeesCount.value + otherAttendeesCount.value
 })
 
 const statusColor = computed(() => getMeetingStatusColor(props.meeting.status))
@@ -133,8 +145,15 @@ const downloadPdf = (event: Event) => {
     </CTableDataCell>
 
     <!-- 참석 -->
-    <CTableDataCell v-else-if="colKey === 'attendees'">
-      {{ totalAttendees }}
+    <CTableDataCell v-else-if="colKey === 'attendees'" class="text-center">
+      <span class="fw-bold">{{ totalAttendees }}명</span>
+      <div
+        v-if="otherAttendeesCount > 0"
+        class="text-muted"
+        style="font-size: 11px; line-height: 1.2"
+      >
+        (내부 {{ attendeesCount }} / 외부 {{ otherAttendeesCount }})
+      </div>
     </CTableDataCell>
 
     <!-- 등록일 -->

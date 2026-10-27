@@ -1,3 +1,4 @@
+import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.indexes import GinIndex
@@ -6,6 +7,20 @@ from django.db import models
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_meeting_file_path, populate_file_meta
 from work.models.project import IssueProject
+
+
+def parse_other_attendees(text: str) -> list[str]:
+    """
+    외부 참석자 텍스트를 개별 참석자 명단 리스트로 정규화 파싱합니다.
+    - 쉼표(,), 세미콜론(;), 줄바꿈(\n)을 구분자로 처리하되,
+      괄호 ( ) 또는 [ ] 내부의 쉼표는 구분자로 처리하지 않고 보존합니다.
+    - 각 항목의 양끝 공백을 제거하고 빈 항목은 제외합니다.
+    """
+    if not text or not text.strip():
+        return []
+    pattern = r'[,;\n\r]+(?![^(\[]*[)\]])'
+    tokens = re.split(pattern, text)
+    return [t.strip() for t in tokens if t.strip()]
 
 
 class MeetingCategory(models.Model):
@@ -69,6 +84,26 @@ class Meeting(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def attendees_count(self) -> int:
+        """시스템 사용자 참석자 수 (메모리 캐시를 활용하여 N+1 쿼리 방지)"""
+        return len(self.attendees.all())
+
+    @property
+    def other_attendees_list(self) -> list[str]:
+        """외부 참석자 명단 리스트"""
+        return parse_other_attendees(self.other_attendees)
+
+    @property
+    def other_attendees_count(self) -> int:
+        """외부 참석자 수"""
+        return len(self.other_attendees_list)
+
+    @property
+    def total_attendees_count(self) -> int:
+        """총 참석자 수 (시스템 사용자 참석자 + 외부 참석자)"""
+        return self.attendees_count + self.other_attendees_count
 
     def clean(self):
         super().clean()

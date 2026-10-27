@@ -40,6 +40,32 @@ const isAttendee = computed(() =>
   meeting.value?.attendees_desc.some(user => user.pk === accountStore.userInfo?.pk),
 )
 
+const attendeesCount = computed(
+  () => meeting.value?.attendees_count ?? meeting.value?.attendees.length ?? 0,
+)
+
+const otherAttendeesList = computed(() => {
+  if (meeting.value?.other_attendees_list) {
+    return meeting.value.other_attendees_list
+  }
+  if (!meeting.value?.other_attendees) return []
+  return meeting.value.other_attendees
+    .split(/[,;\n\r]+/)
+    .map(v => v.trim())
+    .filter(v => v.length > 0)
+})
+
+const otherAttendeesCount = computed(
+  () => meeting.value?.other_attendees_count ?? otherAttendeesList.value.length,
+)
+
+const totalAttendeesCount = computed(() => {
+  if (meeting.value?.total_attendees_count !== undefined) {
+    return meeting.value.total_attendees_count
+  }
+  return attendeesCount.value + otherAttendeesCount.value
+})
+
 const isProjectActive = computed(() => {
   const status = meeting.value?.project_desc?.status || workStore.currentProject?.status
   return status === '1'
@@ -430,23 +456,40 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
             <CRow class="mb-2">
               <CCol class="title" sm="4">참 석 자 :</CCol>
               <CCol sm="8">
-                <v-chip
-                  v-for="user in meeting.attendees_desc"
-                  :key="user.pk"
-                  size="x-small"
-                  color="primary"
-                  class="mr-1 mb-1"
-                  :to="
-                    canViewUser(user.pk)
-                      ? { name: '사용자 - 보기', params: { userId: user.pk } }
-                      : undefined
-                  "
-                  :link="canViewUser(user.pk)"
-                >
-                  {{ user.username }}
-                </v-chip>
-                <div v-if="meeting.other_attendees" class="text-muted small mt-1">
-                  (외부: {{ meeting.other_attendees }})
+                <div class="mb-1 d-flex align-items-center">
+                  <span class="fw-bold">총 {{ totalAttendeesCount }}명</span>
+                  <span v-if="otherAttendeesCount > 0" class="text-muted ms-2 small">
+                    (시스템 사용자 {{ attendeesCount }}명, 외부 참석자 {{ otherAttendeesCount }}명)
+                  </span>
+                </div>
+                <div class="d-flex flex-wrap align-items-center">
+                  <v-chip
+                    v-for="user in meeting.attendees_desc"
+                    :key="user.pk"
+                    size="x-small"
+                    color="primary"
+                    class="me-1 mb-1"
+                    :to="
+                      canViewUser(user.pk)
+                        ? { name: '사용자 - 보기', params: { userId: user.pk } }
+                        : undefined
+                    "
+                    :link="canViewUser(user.pk)"
+                  >
+                    <v-icon start icon="mdi-account" size="12" />
+                    {{ user.username }}
+                  </v-chip>
+                  <v-chip
+                    v-for="(other, idx) in otherAttendeesList"
+                    :key="'other-' + idx"
+                    size="x-small"
+                    color="blue-grey-lighten-4"
+                    class="me-1 mb-1 text-dark"
+                  >
+                    <v-icon start icon="mdi-account-outline" size="12" />
+                    {{ other }}
+                    <span class="text-muted ms-1" style="font-size: 10px">(외부)</span>
+                  </v-chip>
                 </div>
               </CCol>
             </CRow>

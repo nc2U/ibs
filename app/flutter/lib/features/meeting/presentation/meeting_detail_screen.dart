@@ -575,11 +575,58 @@ class _InfoCard extends StatelessWidget {
                 label: '카테고리',
                 value: meeting.categoryDesc!.name,
                 icon: Icons.category_outlined),
-          if (attendeesText.isNotEmpty)
-            _Row(
-                label: '참석자',
-                value: attendeesText,
-                icon: Icons.people_outline_rounded),
+          if (meeting.totalAttendeesCount > 0 || attendeesText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.people_outline_rounded, size: 16, color: context.colors.textMuted),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 110,
+                    child: Text(
+                      '참석자 (총 ${meeting.totalAttendeesCount > 0 ? meeting.totalAttendeesCount : (meeting.attendeesDesc.length + (meeting.otherAttendees.isNotEmpty ? 1 : 0))}명)',
+                      style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (meeting.attendeesDesc.isNotEmpty)
+                          Text(
+                            meeting.attendeesDesc.map((u) => u.username).join(', '),
+                            style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                          ),
+                        if (meeting.otherAttendeesList.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '(외부: ${meeting.otherAttendeesList.join(', ')})',
+                              style: AppTextStyles.bodyMuted.copyWith(
+                                color: context.colors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                        else if (meeting.otherAttendees.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '(외부: ${meeting.otherAttendees})',
+                              style: AppTextStyles.bodyMuted.copyWith(
+                                color: context.colors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 10),
           Divider(height: 1, color: context.colors.border),
           const SizedBox(height: 10),

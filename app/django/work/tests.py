@@ -458,6 +458,18 @@ class WorkMeetingAndSecurityAPITests(APITestCase):
         self.assertEqual(res_get.status_code, status.HTTP_200_OK)
         self.assertEqual(res_get.data['location'], payload['location'])
         self.assertEqual(res_get.data['other_attendees'], payload['other_attendees'])
+        self.assertEqual(res_get.data['other_attendees_count'], 2)
+        self.assertEqual(res_get.data['other_attendees_list'], [
+            '홍길동 수석감리원 (○○엔지니어링)',
+            '이순신 소장 (△△건설)'
+        ])
+        self.assertEqual(res_get.data['attendees_count'], 0)
+        self.assertEqual(res_get.data['total_attendees_count'], 2)
+
+        # 내부 참석자 추가 후 모델 프로퍼티 재검증
+        meeting.attendees.add(self.manager_user)
+        self.assertEqual(meeting.attendees_count, 1)
+        self.assertEqual(meeting.total_attendees_count, 3)
 
     def test_issue_and_meeting_activity_logging(self):
         """5. 회의 및 업무 등록 시 ActivityLogEntry 생성 및 업무 수정 시 IssueLogEntry diff 기록 검증"""

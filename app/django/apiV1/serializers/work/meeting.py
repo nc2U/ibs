@@ -54,6 +54,10 @@ class MeetingListSerializer(serializers.ModelSerializer):
     category_desc = MeetingCategorySerializer(source='category', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     attendees_desc = SimpleUserSerializer(source='attendees', many=True, read_only=True)
+    attendees_count = serializers.IntegerField(read_only=True)
+    other_attendees_count = serializers.IntegerField(read_only=True)
+    total_attendees_count = serializers.IntegerField(read_only=True)
+    other_attendees_list = serializers.ListField(child=serializers.CharField(), read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updater = SimpleUserSerializer(read_only=True)
 
@@ -61,8 +65,9 @@ class MeetingListSerializer(serializers.ModelSerializer):
         model = Meeting
         fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
                   'status', 'status_display', 'is_confirmed', 'meeting_date', 'location',
-                  'attendees', 'attendees_desc', 'other_attendees', 'created', 'updated',
-                  'creator', 'updater')
+                  'attendees', 'attendees_desc', 'attendees_count',
+                  'other_attendees', 'other_attendees_list', 'other_attendees_count', 'total_attendees_count',
+                  'created', 'updated', 'creator', 'updater')
 
 
 class MeetingSerializer(serializers.ModelSerializer):
@@ -70,6 +75,10 @@ class MeetingSerializer(serializers.ModelSerializer):
     category_desc = MeetingCategorySerializer(source='category', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     attendees_desc = SimpleUserSerializer(source='attendees', many=True, read_only=True)
+    attendees_count = serializers.IntegerField(read_only=True)
+    other_attendees_count = serializers.IntegerField(read_only=True)
+    total_attendees_count = serializers.IntegerField(read_only=True)
+    other_attendees_list = serializers.ListField(child=serializers.CharField(), read_only=True)
     files = MeetingFileSerializer(many=True, read_only=True)
     links = MeetingLinkSerializer(many=True, read_only=True)
     issues = IssueInMeetingSerializer(many=True, read_only=True)
@@ -80,7 +89,9 @@ class MeetingSerializer(serializers.ModelSerializer):
         model = Meeting
         fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
                   'status', 'status_display', 'is_confirmed', 'agenda', 'content', 'decisions',
-                  'action_items', 'meeting_date', 'location', 'attendees', 'attendees_desc', 'other_attendees',
+                  'action_items', 'meeting_date', 'location',
+                  'attendees', 'attendees_desc', 'attendees_count',
+                  'other_attendees', 'other_attendees_list', 'other_attendees_count', 'total_attendees_count',
                   'files', 'links', 'issues', 'created', 'updated', 'creator', 'updater')
 
     def validate(self, attrs):

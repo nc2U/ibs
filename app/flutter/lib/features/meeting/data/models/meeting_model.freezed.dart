@@ -1187,7 +1187,11 @@ mixin _$MeetingModel {
   String get location => throw _privateConstructorUsedError;
   List<int> get attendees => throw _privateConstructorUsedError;
   List<SimpleUserModel> get attendeesDesc => throw _privateConstructorUsedError;
+  int get attendeesCount => throw _privateConstructorUsedError;
   String get otherAttendees => throw _privateConstructorUsedError;
+  List<String> get otherAttendeesList => throw _privateConstructorUsedError;
+  int get otherAttendeesCount => throw _privateConstructorUsedError;
+  int get totalAttendeesCount => throw _privateConstructorUsedError;
   List<MeetingFileModel> get files => throw _privateConstructorUsedError;
   List<MeetingLinkModel> get links => throw _privateConstructorUsedError;
   List<IssueInMeetingModel> get issues => throw _privateConstructorUsedError;
@@ -1231,7 +1235,11 @@ abstract class $MeetingModelCopyWith<$Res> {
     String location,
     List<int> attendees,
     List<SimpleUserModel> attendeesDesc,
+    int attendeesCount,
     String otherAttendees,
+    List<String> otherAttendeesList,
+    int otherAttendeesCount,
+    int totalAttendeesCount,
     List<MeetingFileModel> files,
     List<MeetingLinkModel> links,
     List<IssueInMeetingModel> issues,
@@ -1279,7 +1287,11 @@ class _$MeetingModelCopyWithImpl<$Res, $Val extends MeetingModel>
     Object? location = null,
     Object? attendees = null,
     Object? attendeesDesc = null,
+    Object? attendeesCount = null,
     Object? otherAttendees = null,
+    Object? otherAttendeesList = null,
+    Object? otherAttendeesCount = null,
+    Object? totalAttendeesCount = null,
     Object? files = null,
     Object? links = null,
     Object? issues = null,
@@ -1358,10 +1370,26 @@ class _$MeetingModelCopyWithImpl<$Res, $Val extends MeetingModel>
                 ? _value.attendeesDesc
                 : attendeesDesc // ignore: cast_nullable_to_non_nullable
                       as List<SimpleUserModel>,
+            attendeesCount: null == attendeesCount
+                ? _value.attendeesCount
+                : attendeesCount // ignore: cast_nullable_to_non_nullable
+                      as int,
             otherAttendees: null == otherAttendees
                 ? _value.otherAttendees
                 : otherAttendees // ignore: cast_nullable_to_non_nullable
                       as String,
+            otherAttendeesList: null == otherAttendeesList
+                ? _value.otherAttendeesList
+                : otherAttendeesList // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            otherAttendeesCount: null == otherAttendeesCount
+                ? _value.otherAttendeesCount
+                : otherAttendeesCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            totalAttendeesCount: null == totalAttendeesCount
+                ? _value.totalAttendeesCount
+                : totalAttendeesCount // ignore: cast_nullable_to_non_nullable
+                      as int,
             files: null == files
                 ? _value.files
                 : files // ignore: cast_nullable_to_non_nullable
@@ -1475,7 +1503,11 @@ abstract class _$$MeetingModelImplCopyWith<$Res>
     String location,
     List<int> attendees,
     List<SimpleUserModel> attendeesDesc,
+    int attendeesCount,
     String otherAttendees,
+    List<String> otherAttendeesList,
+    int otherAttendeesCount,
+    int totalAttendeesCount,
     List<MeetingFileModel> files,
     List<MeetingLinkModel> links,
     List<IssueInMeetingModel> issues,
@@ -1526,7 +1558,11 @@ class __$$MeetingModelImplCopyWithImpl<$Res>
     Object? location = null,
     Object? attendees = null,
     Object? attendeesDesc = null,
+    Object? attendeesCount = null,
     Object? otherAttendees = null,
+    Object? otherAttendeesList = null,
+    Object? otherAttendeesCount = null,
+    Object? totalAttendeesCount = null,
     Object? files = null,
     Object? links = null,
     Object? issues = null,
@@ -1605,10 +1641,26 @@ class __$$MeetingModelImplCopyWithImpl<$Res>
             ? _value._attendeesDesc
             : attendeesDesc // ignore: cast_nullable_to_non_nullable
                   as List<SimpleUserModel>,
+        attendeesCount: null == attendeesCount
+            ? _value.attendeesCount
+            : attendeesCount // ignore: cast_nullable_to_non_nullable
+                  as int,
         otherAttendees: null == otherAttendees
             ? _value.otherAttendees
             : otherAttendees // ignore: cast_nullable_to_non_nullable
                   as String,
+        otherAttendeesList: null == otherAttendeesList
+            ? _value._otherAttendeesList
+            : otherAttendeesList // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        otherAttendeesCount: null == otherAttendeesCount
+            ? _value.otherAttendeesCount
+            : otherAttendeesCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        totalAttendeesCount: null == totalAttendeesCount
+            ? _value.totalAttendeesCount
+            : totalAttendeesCount // ignore: cast_nullable_to_non_nullable
+                  as int,
         files: null == files
             ? _value._files
             : files // ignore: cast_nullable_to_non_nullable
@@ -1664,7 +1716,11 @@ class _$MeetingModelImpl implements _MeetingModel {
     this.location = '',
     final List<int> attendees = const [],
     final List<SimpleUserModel> attendeesDesc = const [],
+    this.attendeesCount = 0,
     this.otherAttendees = '',
+    final List<String> otherAttendeesList = const [],
+    this.otherAttendeesCount = 0,
+    this.totalAttendeesCount = 0,
     final List<MeetingFileModel> files = const [],
     final List<MeetingLinkModel> links = const [],
     final List<IssueInMeetingModel> issues = const [],
@@ -1674,6 +1730,7 @@ class _$MeetingModelImpl implements _MeetingModel {
     required this.updated,
   }) : _attendees = attendees,
        _attendeesDesc = attendeesDesc,
+       _otherAttendeesList = otherAttendeesList,
        _files = files,
        _links = links,
        _issues = issues;
@@ -1739,7 +1796,26 @@ class _$MeetingModelImpl implements _MeetingModel {
 
   @override
   @JsonKey()
+  final int attendeesCount;
+  @override
+  @JsonKey()
   final String otherAttendees;
+  final List<String> _otherAttendeesList;
+  @override
+  @JsonKey()
+  List<String> get otherAttendeesList {
+    if (_otherAttendeesList is EqualUnmodifiableListView)
+      return _otherAttendeesList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_otherAttendeesList);
+  }
+
+  @override
+  @JsonKey()
+  final int otherAttendeesCount;
+  @override
+  @JsonKey()
+  final int totalAttendeesCount;
   final List<MeetingFileModel> _files;
   @override
   @JsonKey()
@@ -1778,7 +1854,7 @@ class _$MeetingModelImpl implements _MeetingModel {
 
   @override
   String toString() {
-    return 'MeetingModel(pk: $pk, project: $project, projectDesc: $projectDesc, title: $title, category: $category, categoryDesc: $categoryDesc, status: $status, statusDisplay: $statusDisplay, isConfirmed: $isConfirmed, agenda: $agenda, content: $content, decisions: $decisions, actionItems: $actionItems, meetingDate: $meetingDate, location: $location, attendees: $attendees, attendeesDesc: $attendeesDesc, otherAttendees: $otherAttendees, files: $files, links: $links, issues: $issues, creator: $creator, updater: $updater, created: $created, updated: $updated)';
+    return 'MeetingModel(pk: $pk, project: $project, projectDesc: $projectDesc, title: $title, category: $category, categoryDesc: $categoryDesc, status: $status, statusDisplay: $statusDisplay, isConfirmed: $isConfirmed, agenda: $agenda, content: $content, decisions: $decisions, actionItems: $actionItems, meetingDate: $meetingDate, location: $location, attendees: $attendees, attendeesDesc: $attendeesDesc, attendeesCount: $attendeesCount, otherAttendees: $otherAttendees, otherAttendeesList: $otherAttendeesList, otherAttendeesCount: $otherAttendeesCount, totalAttendeesCount: $totalAttendeesCount, files: $files, links: $links, issues: $issues, creator: $creator, updater: $updater, created: $created, updated: $updated)';
   }
 
   @override
@@ -1818,8 +1894,18 @@ class _$MeetingModelImpl implements _MeetingModel {
               other._attendeesDesc,
               _attendeesDesc,
             ) &&
+            (identical(other.attendeesCount, attendeesCount) ||
+                other.attendeesCount == attendeesCount) &&
             (identical(other.otherAttendees, otherAttendees) ||
                 other.otherAttendees == otherAttendees) &&
+            const DeepCollectionEquality().equals(
+              other._otherAttendeesList,
+              _otherAttendeesList,
+            ) &&
+            (identical(other.otherAttendeesCount, otherAttendeesCount) ||
+                other.otherAttendeesCount == otherAttendeesCount) &&
+            (identical(other.totalAttendeesCount, totalAttendeesCount) ||
+                other.totalAttendeesCount == totalAttendeesCount) &&
             const DeepCollectionEquality().equals(other._files, _files) &&
             const DeepCollectionEquality().equals(other._links, _links) &&
             const DeepCollectionEquality().equals(other._issues, _issues) &&
@@ -1850,7 +1936,11 @@ class _$MeetingModelImpl implements _MeetingModel {
     location,
     const DeepCollectionEquality().hash(_attendees),
     const DeepCollectionEquality().hash(_attendeesDesc),
+    attendeesCount,
     otherAttendees,
+    const DeepCollectionEquality().hash(_otherAttendeesList),
+    otherAttendeesCount,
+    totalAttendeesCount,
     const DeepCollectionEquality().hash(_files),
     const DeepCollectionEquality().hash(_links),
     const DeepCollectionEquality().hash(_issues),
@@ -1893,7 +1983,11 @@ abstract class _MeetingModel implements MeetingModel {
     final String location,
     final List<int> attendees,
     final List<SimpleUserModel> attendeesDesc,
+    final int attendeesCount,
     final String otherAttendees,
+    final List<String> otherAttendeesList,
+    final int otherAttendeesCount,
+    final int totalAttendeesCount,
     final List<MeetingFileModel> files,
     final List<MeetingLinkModel> links,
     final List<IssueInMeetingModel> issues,
@@ -1941,7 +2035,15 @@ abstract class _MeetingModel implements MeetingModel {
   @override
   List<SimpleUserModel> get attendeesDesc;
   @override
+  int get attendeesCount;
+  @override
   String get otherAttendees;
+  @override
+  List<String> get otherAttendeesList;
+  @override
+  int get otherAttendeesCount;
+  @override
+  int get totalAttendeesCount;
   @override
   List<MeetingFileModel> get files;
   @override

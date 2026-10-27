@@ -146,13 +146,15 @@
                 <td>{{ meeting.category.name|default:"-" }}</td>
             </tr>
             <tr>
-                <td class="label">참석자</td>
+                <td class="label">참석자 (총 {{ meeting.total_attendees_count }}명)</td>
                 <td colspan="3">
                     {% for attendee in meeting.attendees.all %}
                         <span class="attendee-chip">{{ attendee.username }}</span>
                     {% endfor %}
-                    {% if meeting.other_attendees %}
-                        <span class="header-info">(외부: {{ meeting.other_attendees }})</span>
+                    {% if meeting.other_attendees_list %}
+                        {% for other in meeting.other_attendees_list %}
+                            <span class="attendee-chip" style="background: #f1f5f9; border-color: #cbd5e1; color: #475569;">{{ other }} (외부)</span>
+                        {% endfor %}
                     {% endif %}
                 </td>
             </tr>

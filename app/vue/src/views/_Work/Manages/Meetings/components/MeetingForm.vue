@@ -56,6 +56,16 @@ const form = ref({
   links: [] as any[],
 })
 
+const parsedOtherAttendees = computed(() => {
+  const text = form.value.other_attendees
+  if (!text || !text.trim()) return []
+  const pattern = /[,;\n\r]+(?![^(\[]*[)\]])/
+  return text
+    .split(pattern)
+    .map(t => t.trim())
+    .filter(t => t.length > 0)
+})
+
 export interface InlineActionItem {
   id: string
   subject: string
@@ -1443,14 +1453,35 @@ onBeforeMount(async () => {
 
             <CRow class="mb-3">
               <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right">
-                기타참석
+                외부 참석자
               </CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model="form.other_attendees"
                   id="other_attendees"
-                  placeholder="외부 참석자"
+                  placeholder="외부 참석자를 쉼표(,)로 구분하여 입력 (예: 홍길동 수석, 이순신 소장)"
                 />
+                <div
+                  v-if="parsedOtherAttendees.length"
+                  class="mt-2 d-flex flex-wrap align-items-center"
+                >
+                  <span class="text-muted small me-1">
+                    인식된 외부 참석자 ({{ parsedOtherAttendees.length }}명):
+                  </span>
+                  <v-chip
+                    v-for="(name, idx) in parsedOtherAttendees"
+                    :key="idx"
+                    size="x-small"
+                    color="blue-grey-lighten-4"
+                    class="text-dark me-1 mb-1"
+                  >
+                    <v-icon start icon="mdi-account-outline" size="12" />
+                    {{ name }}
+                  </v-chip>
+                </div>
+                <div v-else class="form-text text-muted small mt-1">
+                  * 회의에 참석한 외부 인원을 쉼표(,), 세미콜론(;) 또는 줄바꿈으로 구분해 입력해 주세요.
+                </div>
               </CCol>
             </CRow>
 

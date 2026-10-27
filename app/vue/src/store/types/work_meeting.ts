@@ -35,7 +35,11 @@ export interface Meeting {
   location: string
   attendees: number[]
   attendees_desc: SimpleUser[]
+  attendees_count: number
   other_attendees: string
+  other_attendees_list: string[]
+  other_attendees_count: number
+  total_attendees_count: number
   files: MeetingFile[]
   links: MeetingLink[]
   issues: SimpleIssueInMeeting[]
