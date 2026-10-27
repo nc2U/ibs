@@ -861,10 +861,6 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         raise serializers.ValidationError({
                             'accounting_entries': f'"{account_obj.name}"는 비활성 계정이므로 사용할 수 없습니다.'
                         })
-                    if getattr(account_obj, 'requires_contract', False) and not entry_data.get('contract'):
-                        raise serializers.ValidationError({
-                            'accounting_entries': f'"{account_obj.name}" 계정은 계약 선택이 필수입니다.'
-                        })
                 except ProjectAccount.DoesNotExist:
                     raise serializers.ValidationError({
                         'accounting_entries': f'존재하지 않는 계정 과목(#{account_id})입니다.'

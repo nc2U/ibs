@@ -1526,7 +1526,7 @@ class LedgerAuditEnhancementsTests(LedgerTestBase):
             entry_mismatch_contractor.clean()
         self.assertIn('contractor', cm.exception.message_dict)
 
-        # 3. requires_contract=True 계정인데 contract 누락 시 검증
+        # 3. requires_contract=True 계정이라도 회계 거래 입력 시 contract=None 허용 (미매칭 수납건 지원)
         entry_missing_contract = ProjectAccountingEntry(
             project=self.project_a,
             account=self.account_sales,  # requires_contract=True
@@ -1534,9 +1534,10 @@ class LedgerAuditEnhancementsTests(LedgerTestBase):
             contract=None,
             transaction_id=uuid.uuid4(),
         )
-        with self.assertRaises(ValidationError) as cm:
+        try:
             entry_missing_contract.clean()
-        self.assertIn('contract', cm.exception.message_dict)
+        except ValidationError:
+            self.fail("ProjectAccountingEntry with contract=None should not raise ValidationError")
 
     def test_bank_api_credential_save_full_clean(self):
         """BankApiCredential.save() 호출 시 clean() 유효성 검사 강제 동작 검증"""

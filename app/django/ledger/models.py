@@ -871,11 +871,8 @@ class ProjectAccountingEntry(AccountingEntry):
                     'contractor': '계약자와 계약 정보가 일치하지 않습니다.'
                 })
 
-        # requires_contract 검증
-        if self.account and getattr(self.account, 'requires_contract', False) and not self.contract_id:
-            raise ValidationError({
-                'contract': f'"{self.account.name}" 계정은 계약 선택이 필수입니다.'
-            })
+        # requires_contract 여부와 무관하게 회계 거래에서는 contract 없이도 '미매칭 수납건'으로 입력을 허용함
+        # (현장/분양 수납 관리 부서에서 사후에 계약자를 매칭할 수 있도록 지원)
 
     @transaction.atomic
     def save(self, *args, **kwargs):
