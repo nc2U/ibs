@@ -592,6 +592,16 @@ const validateForm = () => {
   if (anyMissingAccount) {
     throw new Error('분류 금액이 입력된 모든 항목에 회계 계정을 선택해야 합니다.')
   }
+
+  // 계약 필수 계정 검증
+  for (const entry of validEntries) {
+    if (entry.account) {
+      const acc = proLedgerStore.proAccounts.find(a => a.value === entry.account)
+      if (acc?.requires_contract && !entry.contract) {
+        throw new Error(`"${acc.label}" 계정은 계약 선택이 필수입니다.`)
+      }
+    }
+  }
 }
 
 // 수정 거래 데이터 생성
@@ -652,6 +662,16 @@ const saveMultipleTransactions = async () => {
     const validEntries = trans.entries.filter(e => (e.amount || 0) > 0)
     if (validEntries.length === 0) {
       throw new Error(`거래건 ${i + 1}: 최소 하나 이상의 분류 항목이 필요합니다.`)
+    }
+
+    // 계약 필수 계정 검증
+    for (const entry of validEntries) {
+      if (entry.account) {
+        const acc = proLedgerStore.proAccounts.find(a => a.value === entry.account)
+        if (acc?.requires_contract && !entry.contract) {
+          throw new Error(`거래건 ${i + 1}: "${acc.label}" 계정은 계약 선택이 필수입니다.`)
+        }
+      }
     }
   }
 
@@ -752,7 +772,12 @@ const isFormValid = computed(() => {
         trans.entries.every(e => {
           const hasAmount = (e.amount || 0) > 0
           const hasAccount = !!e.account
-          return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
+          if (hasAmount && hasAccount) {
+            const acc = proLedgerStore.proAccounts.find(a => a.value === e.account)
+            if (acc?.requires_contract && !e.contract) return false
+            return true
+          }
+          return !hasAmount && !hasAccount
         }) &&
         trans.entries.some(e => (e.amount || 0) > 0)
       const isBalanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
@@ -767,7 +792,12 @@ const isFormValid = computed(() => {
       editableEntries.value.every(e => {
         const hasAmount = (e.amount || 0) > 0
         const hasAccount = !!e.account
-        return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
+        if (hasAmount && hasAccount) {
+          const acc = proLedgerStore.proAccounts.find(a => a.value === e.account)
+          if (acc?.requires_contract && !e.contract) return false
+          return true
+        }
+        return !hasAmount && !hasAccount
       }) &&
       editableEntries.value.some(e => (e.amount || 0) > 0)
     return hasRequiredFields && hasValidEntries && isBalanced.value

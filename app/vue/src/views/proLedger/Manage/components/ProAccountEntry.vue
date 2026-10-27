@@ -173,13 +173,16 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           required
         />
         <!-- contract 필드가 필요한 경우 추가 드롭다운 표시 -->
-        <div v-if="row.account && getAccountById(row.account)?.requires_contract" class="pt-0 px-2">
+        <div v-if="row.account && getAccountById(row.account)?.requires_contract" class="pt-1 px-2">
           <MultiSelect
             v-model.number="row.contract"
             mode="single"
             :options="getContracts"
-            placeholder="계약 정보 선택"
+            placeholder="계약 정보 선택 (필수)"
           />
+          <div v-if="!row.contract" class="text-danger small mt-1">
+            * 계약 선택 필수
+          </div>
         </div>
         <div
           v-if="row.account && getAccountById(row.account)?.is_related_contractor"

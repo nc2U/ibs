@@ -501,6 +501,30 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
             })
 
+        # 계정 필수 조건 (requires_affiliate 등) 검증
+        for entry_data in incoming_entries:
+            account_id = entry_data.get('account')
+            if account_id:
+                try:
+                    from ledger.models import CompanyAccount
+                    account_obj = CompanyAccount.objects.get(pk=account_id)
+                    if account_obj.is_category_only:
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}"는 분류 전용 계정이므로 거래에 사용할 수 없습니다.'
+                        })
+                    if not account_obj.is_active:
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}"는 비활성 계정이므로 사용할 수 없습니다.'
+                        })
+                    if getattr(account_obj, 'requires_affiliate', False) and not entry_data.get('affiliate'):
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
+                        })
+                except CompanyAccount.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'accounting_entries': f'존재하지 않는 계정 과목(#{account_id})입니다.'
+                    })
+
         return attrs
 
     @transaction.atomic
@@ -820,10 +844,32 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
             })
 
-        # 계약-프로젝트 일치 및 수납 초과 납부 검증
+        # 계정 필수 조건 (requires_contract 등) 및 계약-프로젝트 일치, 수납 초과 납부 검증
         project_id = attrs.get('project', instance.project_id if is_update else None)
         incoming_entries = attrs.get('accounting_entries', [])
         for entry_data in incoming_entries:
+            account_id = entry_data.get('account')
+            if account_id:
+                try:
+                    from ledger.models import ProjectAccount
+                    account_obj = ProjectAccount.objects.get(pk=account_id)
+                    if account_obj.is_category_only:
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}"는 분류 전용 계정이므로 거래에 사용할 수 없습니다.'
+                        })
+                    if not account_obj.is_active:
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}"는 비활성 계정이므로 사용할 수 없습니다.'
+                        })
+                    if getattr(account_obj, 'requires_contract', False) and not entry_data.get('contract'):
+                        raise serializers.ValidationError({
+                            'accounting_entries': f'"{account_obj.name}" 계정은 계약 선택이 필수입니다.'
+                        })
+                except ProjectAccount.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'accounting_entries': f'존재하지 않는 계정 과목(#{account_id})입니다.'
+                    })
+
             contract_id = entry_data.get('contract')
             if contract_id:
                 try:
