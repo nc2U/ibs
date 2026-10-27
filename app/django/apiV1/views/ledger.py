@@ -15,6 +15,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
+from rest_framework.serializers import as_serializer_error
 
 from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.ibs_perms import IbsModulePermission, HqProjectModulePermission
@@ -957,10 +958,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save(creator=request.user)  # creator를 serializer.save()로 전달
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -984,10 +982,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save()
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -1012,10 +1007,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save()
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             return Response({
                 'bank_transaction': CompanyBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': CompanyAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -1105,10 +1097,7 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save(creator=request.user)  # creator를 serializer.save()로 전달
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             response_data = {
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -1142,10 +1131,7 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save()
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             response_data = {
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
@@ -1180,10 +1166,7 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             try:
                 result = serializer.save()
             except DjangoValidationError as e:
-                return Response(
-                    e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response(as_serializer_error(e), status=status.HTTP_400_BAD_REQUEST)
             response_data = {
                 'bank_transaction': ProjectBankTransactionSerializer(result['bank_transaction']).data,
                 'accounting_entries': ProjectAccountingEntrySerializer(result['accounting_entries'], many=True).data,
