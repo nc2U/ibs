@@ -146,14 +146,14 @@ const downloadPdf = (event: Event) => {
 
     <!-- 참석 -->
     <CTableDataCell v-else-if="colKey === 'attendees'" class="text-center">
-      <span class="fw-bold">{{ totalAttendees }}명</span>
-      <div
+      <span class="fw-bold me-1">{{ totalAttendees }}명</span>
+      <span
         v-if="otherAttendeesCount > 0"
         class="text-muted"
         style="font-size: 11px; line-height: 1.2"
       >
         (내부 {{ attendeesCount }} / 외부 {{ otherAttendeesCount }})
-      </div>
+      </span>
     </CTableDataCell>
 
     <!-- 등록일 -->
