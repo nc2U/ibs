@@ -98,6 +98,7 @@ export default withMermaid(
                 { text: '문서', link: '/work-manage/docs' },
                 { text: '게시판', link: '/work-manage/forum' },
                 { text: '설정', link: '/work-manage/settings' },
+                { text: '통합 검색', link: '/work-manage/search' },
               ],
             },
             {
