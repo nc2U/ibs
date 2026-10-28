@@ -78,7 +78,6 @@ export default withMermaid(
             { text: 'IBS란?', link: '/' },
             { text: '시작하기', link: '/intro/getting-started' },
             { text: '대시보드', link: '/intro/dashboard' },
-            { text: '사내 메신저', link: '/intro/chat' },
           ],
         },
         {
@@ -98,6 +97,14 @@ export default withMermaid(
                 { text: '문서', link: '/work-manage/docs' },
                 { text: '게시판', link: '/work-manage/forum' },
                 { text: '설정', link: '/work-manage/settings' },
+              ],
+            },
+            {
+              text: '공통 협업 도구',
+              collapsed: true,
+              items: [
+                { text: '사내 메신저', link: '/work-manage/chat' },
+                { text: '나의 할일 관리', link: '/work-manage/todo' },
                 { text: '통합 검색', link: '/work-manage/search' },
               ],
             },
