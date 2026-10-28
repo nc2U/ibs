@@ -34,8 +34,8 @@ String get appBaseUrl {
   }
 
   // 로컬 개발 디버그 모드 (flutter run)
-  if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-  return 'http://localhost:8000';
+  if (Platform.isAndroid) return 'http://10.0.2.2';
+  return 'http://localhost';
 }
 
 String get _baseUrl => appBaseUrl;
