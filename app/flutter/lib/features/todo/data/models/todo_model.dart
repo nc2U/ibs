@@ -65,12 +65,13 @@ class TodoIssueInfo {
           subject == other.subject;
 
   @override
-  int get hashCode =>
-      pk.hashCode ^
-      projectId.hashCode ^
-      projectSlug.hashCode ^
-      projectName.hashCode ^
-      subject.hashCode;
+  int get hashCode => Object.hash(
+        pk,
+        projectId,
+        projectSlug,
+        projectName,
+        subject,
+      );
 }
 
 @immutable
@@ -135,6 +136,7 @@ class TodoItem {
     bool? softDeleted,
     int? issue,
     TodoIssueInfo? issueInfo,
+    bool clearIssue = false,
   }) {
     return TodoItem(
       pk: pk ?? this.pk,
@@ -142,8 +144,8 @@ class TodoItem {
       title: title ?? this.title,
       completed: completed ?? this.completed,
       softDeleted: softDeleted ?? this.softDeleted,
-      issue: issue ?? this.issue,
-      issueInfo: issueInfo ?? this.issueInfo,
+      issue: clearIssue ? null : (issue ?? this.issue),
+      issueInfo: clearIssue ? null : (issueInfo ?? this.issueInfo),
     );
   }
 
@@ -153,6 +155,7 @@ class TodoItem {
       other is TodoItem &&
           runtimeType == other.runtimeType &&
           pk == other.pk &&
+          user == other.user &&
           title == other.title &&
           completed == other.completed &&
           softDeleted == other.softDeleted &&
@@ -160,13 +163,15 @@ class TodoItem {
           issueInfo == other.issueInfo;
 
   @override
-  int get hashCode =>
-      pk.hashCode ^
-      title.hashCode ^
-      completed.hashCode ^
-      softDeleted.hashCode ^
-      issue.hashCode ^
-      issueInfo.hashCode;
+  int get hashCode => Object.hash(
+        pk,
+        user,
+        title,
+        completed,
+        softDeleted,
+        issue,
+        issueInfo,
+      );
 }
 
 /// 할일 → 업무 전환 API(`convert_to_issue`) 응답

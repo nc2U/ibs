@@ -42,6 +42,7 @@ class _ConvertTodoSheetState extends ConsumerState<ConvertTodoSheet> {
   final TextEditingController _descController = TextEditingController();
 
   int? _selectedProjectId;
+  bool _didInitDefaultProject = false;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -185,14 +186,16 @@ class _ConvertTodoSheetState extends ConsumerState<ConvertTodoSheet> {
         }
 
         // 최초 진입 시 활성 워크스페이스 또는 첫 번째 워크스페이스를 기본 선택
-        final selected = projects.any((p) => p.pk == _selectedProjectId)
+        int? selected = projects.any((p) => p.pk == _selectedProjectId)
             ? _selectedProjectId
             : null;
-        if (selected == null && _selectedProjectId == null) {
+        if (selected == null && !_didInitDefaultProject) {
+          _didInitDefaultProject = true;
           final currentProj = ref.read(selectedProjectProvider);
           final defaultId = projects.any((p) => p.slug == currentProj?.slug)
               ? projects.firstWhere((p) => p.slug == currentProj?.slug).pk
               : projects.first.pk;
+          selected = defaultId;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _selectedProjectId == null) {
               setState(() => _selectedProjectId = defaultId);
@@ -223,7 +226,10 @@ class _ConvertTodoSheetState extends ConsumerState<ConvertTodoSheet> {
                 for (final p in projects)
                   DropdownMenuItem<int>(
                     value: p.pk,
-                    child: Text(p.name, overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      p.indentedLabel,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
               ],
               onChanged: _submitting

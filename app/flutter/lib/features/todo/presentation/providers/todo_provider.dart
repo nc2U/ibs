@@ -32,19 +32,29 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     return list;
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
+  Future<void> refresh({bool showLoading = false}) async {
+    final hasExistingData = state.hasValue;
+    if (showLoading || !hasExistingData) {
+      state = const AsyncLoading();
+    }
     final currentUser = ref.read(currentUserProvider).valueOrNull;
-    state = await AsyncValue.guard(() => _fetchTodos(currentUser?.pk));
+    try {
+      final list = await _fetchTodos(currentUser?.pk);
+      state = AsyncData(list);
+    } catch (e, st) {
+      if (!hasExistingData || showLoading) {
+        state = AsyncError(e, st);
+      }
+    }
   }
 
-  /// 할일 추가
-  Future<void> addTodo(String title) async {
+  /// 할일 추가 (성공 시 true, 실패 시 기존 목록을 유지하고 false 반환)
+  Future<bool> addTodo(String title) async {
     final trimmed = title.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return false;
 
     final currentUser = ref.read(currentUserProvider).valueOrNull;
-    if (currentUser == null) return;
+    if (currentUser == null) return false;
 
     final repo = ref.read(todoRepositoryProvider);
     try {
@@ -54,15 +64,14 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
       );
       final currentList = state.valueOrNull ?? [];
       state = AsyncData([newItem, ...currentList]);
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      // 실패 시 재조회로 정합성 보장
-      refresh();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
   /// 완료/미완료 토글 (낙관적 업데이트)
-  Future<void> toggleCompleted(TodoItem item) async {
+  Future<bool> toggleCompleted(TodoItem item) async {
     final previousList = state.valueOrNull ?? [];
     final updatedList = previousList.map((t) {
       if (t.pk == item.pk) {
@@ -77,16 +86,18 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     try {
       final repo = ref.read(todoRepositoryProvider);
       await repo.updateTodo(id: item.pk, completed: !item.completed);
-    } catch (e) {
+      return true;
+    } catch (_) {
       // 실패 시 롤백
       state = AsyncData(previousList);
+      return false;
     }
   }
 
   /// 제목 수정
-  Future<void> updateTitle(int id, String newTitle) async {
+  Future<bool> updateTitle(int id, String newTitle) async {
     final trimmed = newTitle.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return false;
 
     final previousList = state.valueOrNull ?? [];
     final updatedList = previousList.map((t) {
@@ -101,13 +112,15 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     try {
       final repo = ref.read(todoRepositoryProvider);
       await repo.updateTodo(id: id, title: trimmed);
-    } catch (e) {
+      return true;
+    } catch (_) {
       state = AsyncData(previousList);
+      return false;
     }
   }
 
   /// 할일 삭제 (소프트 삭제)
-  Future<void> deleteTodo(int id) async {
+  Future<bool> deleteTodo(int id) async {
     final previousList = state.valueOrNull ?? [];
     final updatedList = previousList.where((t) => t.pk != id).toList();
 
@@ -117,8 +130,10 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     try {
       final repo = ref.read(todoRepositoryProvider);
       await repo.softDeleteTodo(id);
-    } catch (e) {
+      return true;
+    } catch (_) {
       state = AsyncData(previousList);
+      return false;
     }
   }
 
@@ -147,10 +162,10 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
   }
 
   /// 완료된 할일 전체 일괄 삭제
-  Future<void> clearCompletedTodos() async {
+  Future<bool> clearCompletedTodos() async {
     final previousList = state.valueOrNull ?? [];
     final completedItems = previousList.where((t) => t.completed).toList();
-    if (completedItems.isEmpty) return;
+    if (completedItems.isEmpty) return true;
 
     // 완료된 항목을 제외한 미완료 항목만 남김
     final activeList = previousList.where((t) => !t.completed).toList();
@@ -162,8 +177,10 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
       await Future.wait(
         completedItems.map((item) => repo.softDeleteTodo(item.pk)),
       );
-    } catch (e) {
+      return true;
+    } catch (_) {
       state = AsyncData(previousList);
+      return false;
     }
   }
 }

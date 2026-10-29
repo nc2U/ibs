@@ -22,7 +22,18 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
   bool _isAdding = false;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
     _inputController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -30,13 +41,25 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
 
   Future<void> _submitNewTodo() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isAdding) return;
 
     setState(() => _isAdding = true);
-    await ref.read(todoListProvider.notifier).addTodo(text);
+    final success = await ref.read(todoListProvider.notifier).addTodo(text);
     if (mounted) {
-      _inputController.clear();
       setState(() => _isAdding = false);
+      if (success) {
+        _inputController.clear();
+      } else {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('할일 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+      }
     }
   }
 
@@ -74,68 +97,30 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
       );
   }
 
-  void _showEditDialog(TodoItem item) {
-    final editController = TextEditingController(text: item.title);
-    showDialog(
+  Future<void> _showEditDialog(TodoItem item) async {
+    final newTitle = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.bgPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          '할일 수정',
-          style: AppTextStyles.titleMd.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        content: TextField(
-          controller: editController,
-          autofocus: true,
-          maxLength: 50,
-          style: TextStyle(color: context.colors.textPrimary),
-          decoration: InputDecoration(
-            hintText: '할일을 입력하세요 (최대 50자)',
-            hintStyle: TextStyle(color: context.colors.textMuted),
-            counterStyle: TextStyle(color: context.colors.textMuted, fontSize: 11),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: context.colors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: context.colors.accentWork, width: 2),
-            ),
-          ),
-          onSubmitted: (val) {
-            final newTitle = val.trim();
-            if (newTitle.isNotEmpty && newTitle != item.title) {
-              ref.read(todoListProvider.notifier).updateTitle(item.pk, newTitle);
-            }
-            Navigator.of(ctx).pop();
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colors.accentWork,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              final newTitle = editController.text.trim();
-              if (newTitle.isNotEmpty && newTitle != item.title) {
-                ref.read(todoListProvider.notifier).updateTitle(item.pk, newTitle);
-              }
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('저장'),
-          ),
-        ],
-      ),
+      builder: (_) => _EditTodoDialog(initialTitle: item.title),
     );
+    if (newTitle == null ||
+        newTitle.isEmpty ||
+        newTitle == item.title ||
+        !mounted) {
+      return;
+    }
+    final success =
+        await ref.read(todoListProvider.notifier).updateTitle(item.pk, newTitle);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('할일 수정에 실패했습니다. 잠시 후 다시 시도해 주세요.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+    }
   }
 
   Future<bool?> _showDeleteConfirmDialog(BuildContext context, String title) {
@@ -178,7 +163,19 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
   Future<void> _confirmDeleteItem(TodoItem item) async {
     final confirmed = await _showDeleteConfirmDialog(context, item.title);
     if (confirmed == true && mounted) {
-      ref.read(todoListProvider.notifier).deleteTodo(item.pk);
+      final success =
+          await ref.read(todoListProvider.notifier).deleteTodo(item.pk);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('할일 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+      }
     }
   }
 
@@ -220,15 +217,22 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await ref.read(todoListProvider.notifier).clearCompletedTodos();
+      final success =
+          await ref.read(todoListProvider.notifier).clearCompletedTodos();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('완료된 할일이 모두 삭제되었습니다.'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? '완료된 할일이 모두 삭제되었습니다.'
+                    : '일부 항목 삭제에 실패했습니다. 다시 시도해 주세요.',
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
       }
     }
   }
@@ -591,8 +595,20 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
         child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
       ),
       confirmDismiss: (dir) => _showDeleteConfirmDialog(context, item.title),
-      onDismissed: (_) {
-        ref.read(todoListProvider.notifier).deleteTodo(item.pk);
+      onDismissed: (_) async {
+        final success =
+            await ref.read(todoListProvider.notifier).deleteTodo(item.pk);
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('할일 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.'),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 3),
+              ),
+            );
+        }
       },
       child: Material(
         color: context.colors.bgCard,
@@ -698,6 +714,84 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EditTodoDialog extends StatefulWidget {
+  final String initialTitle;
+
+  const _EditTodoDialog({required this.initialTitle});
+
+  @override
+  State<_EditTodoDialog> createState() => _EditTodoDialogState();
+}
+
+class _EditTodoDialogState extends State<_EditTodoDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: context.colors.bgPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        '할일 수정',
+        style: AppTextStyles.titleMd.copyWith(
+          fontWeight: FontWeight.bold,
+          color: context.colors.textPrimary,
+        ),
+      ),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 50,
+        style: TextStyle(color: context.colors.textPrimary),
+        decoration: InputDecoration(
+          hintText: '할일을 입력하세요 (최대 50자)',
+          hintStyle: TextStyle(color: context.colors.textMuted),
+          counterStyle: TextStyle(color: context.colors.textMuted, fontSize: 11),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: context.colors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: context.colors.accentWork, width: 2),
+          ),
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: context.colors.accentWork,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          onPressed: _submit,
+          child: const Text('저장'),
+        ),
+      ],
     );
   }
 }

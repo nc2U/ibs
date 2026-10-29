@@ -197,19 +197,28 @@ class TodoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def convert_to_issue(self, request, pk=None):
         todo = self.get_object()
+        if todo.issue_id is not None:
+            return Response({'error': '이미 업무로 전환된 할일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         project_id = request.data.get('project')
         if not project_id:
             return Response({'error': '업무를 등록할 워크스페이스를 선택해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            issue_project = IssueProject.objects.get(pk=project_id)
+            issue_project = IssueProject.objects.select_related('module').get(pk=project_id)
         except IssueProject.DoesNotExist:
             return Response({'error': '유효하지 않은 워크스페이스입니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # 권한 확인: 사용자가 해당 워크스페이스의 멤버이거나 슈퍼유저/work_manager인지 확인
+        if issue_project.status != '1':
+            return Response({'error': '활성 상태인 워크스페이스에만 업무를 등록할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if hasattr(issue_project, 'module') and not issue_project.module.issue:
+            return Response({'error': '해당 워크스페이스는 업무 모듈이 비활성화되어 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 권한 확인: 사용자가 해당 워크스페이스의 멤버(상속 포함)이거나 슈퍼유저/work_manager인지 확인
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            is_member = issue_project.members.filter(user=user).exists()
+            is_member = any(m['user']['pk'] == user.pk for m in issue_project.all_members())
             if not is_member and not issue_project.is_public:
                 return Response({'error': '해당 워크스페이스에 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 

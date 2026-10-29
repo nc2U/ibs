@@ -265,7 +265,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                       onPressed: () {
                         ref.invalidate(chatRoomsProvider);
                         ref.invalidate(totalUnreadChatCountProvider);
-                        context.push(AppRoutes.chat);
+                        final location =
+                            GoRouterState.of(context).matchedLocation;
+                        if (!location.startsWith(AppRoutes.chat)) {
+                          context.push(AppRoutes.chat);
+                        }
                       },
                     ),
                     if (unreadChatCount > 0)
@@ -314,7 +318,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                       tooltip: '할일 관리',
                       onPressed: () {
                         ref.read(todoListProvider.notifier).refresh();
-                        context.push(AppRoutes.todo);
+                        final location =
+                            GoRouterState.of(context).matchedLocation;
+                        if (location != AppRoutes.todo) {
+                          context.push(AppRoutes.todo);
+                        }
                       },
                     ),
                     if (pendingTodoCount > 0)
