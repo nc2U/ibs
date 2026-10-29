@@ -20,6 +20,9 @@ final siteSearchQueryProvider = StateProvider<String>((ref) => '');
 /// 소유구분 필터 상태 프로바이더 ('': 전체, '1': 개인, '2': 법인, '3': 국공유지)
 final siteOwnSortFilterProvider = StateProvider<String>((ref) => '');
 
+/// 사용동의 필터 상태 프로바이더 (null: 전체, true: 동의완료, false: 미동의)
+final siteUseConsentFilterProvider = StateProvider<bool?>((ref) => null);
+
 /// 📊 부지 종합 집계 프로바이더
 final siteOverallAggregateProvider =
     FutureProvider<SiteAggregateModel>((ref) async {
@@ -38,19 +41,28 @@ final siteOverallAggregateProvider =
   }
 
   final repository = ref.watch(siteRepositoryProvider);
-  
-  // 프로젝트 단건 조회로 is_returned_area(환지방식 여부) 확인
-  bool isReturned = false;
-  try {
-    final response = await repository.dio.get('/api/v1/project/${selectedProject.realProjectId}/');
-    if (response.data is Map && response.data['is_returned_area'] == true) {
-      isReturned = true;
-    }
-  } catch (_) {}
 
-  return repository.fetchSiteAggregate(
-    selectedProject.realProjectId,
+  // 프로젝트 환지방식 여부 확인 및 종합 집계 병렬 조회
+  final results = await Future.wait<dynamic>([
+    repository.dio
+        .get('/api/v1/project/${selectedProject.realProjectId}/')
+        .then<bool>((res) => res.data is Map && res.data['is_returned_area'] == true)
+        .catchError((_) => false),
+    repository.fetchSiteAggregate(selectedProject.realProjectId),
+  ]);
+
+  final isReturned = results[0] as bool;
+  final aggregate = results[1] as SiteAggregateModel;
+
+  return SiteAggregateModel(
+    totalSitesCount: aggregate.totalSitesCount,
+    totalOfficialArea: aggregate.totalOfficialArea,
+    totalReturnedArea: aggregate.totalReturnedArea,
     isReturnedArea: isReturned,
+    totalOwnersCount: aggregate.totalOwnersCount,
+    totalContractsCount: aggregate.totalContractsCount,
+    totalContractedArea: aggregate.totalContractedArea,
+    totalPrice: aggregate.totalPrice,
   );
 });
 
@@ -94,29 +106,34 @@ class SitePaginationState<T> {
 /// 📌 1. 지번별 토지 목록 Notifier
 class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>> {
   final Ref ref;
+  final int? projectId;
+  final String searchQuery;
 
-  SiteListNotifier(this.ref) : super(const SitePaginationState()) {
+  SiteListNotifier(
+    this.ref, {
+    required this.projectId,
+    required this.searchQuery,
+  }) : super(const SitePaginationState()) {
     fetchInitial();
   }
 
   Future<void> fetchInitial() async {
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) {
+    if (projectId == null) {
       state = const SitePaginationState();
       return;
     }
 
     state = state.copyWith(isLoading: true, page: 1, error: null);
-    final query = ref.read(siteSearchQueryProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final items = await repository.fetchSites(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         page: 1,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: items,
         page: 1,
@@ -124,28 +141,27 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
         hasMore: items.length >= 15,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> fetchNextPage() async {
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
-
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) return;
+    if (projectId == null) return;
 
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
-    final query = ref.read(siteSearchQueryProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final nextItems = await repository.fetchSites(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         page: nextPage,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: [...state.items, ...nextItems],
         page: nextPage,
@@ -153,44 +169,60 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
         hasMore: nextItems.length >= 15,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      if (!mounted) return;
+      state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
 }
 
 final siteListProvider =
     StateNotifierProvider.autoDispose<SiteListNotifier, SitePaginationState<SiteItemModel>>((ref) {
-  return SiteListNotifier(ref);
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  final searchQuery = ref.watch(siteSearchQueryProvider);
+  return SiteListNotifier(
+    ref,
+    projectId: selectedProject?.realProjectId,
+    searchQuery: searchQuery,
+  );
 });
 
 /// 👤 2. 소유자별 토지 목록 Notifier
 class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerItemModel>> {
   final Ref ref;
+  final int? projectId;
+  final String searchQuery;
+  final String ownSort;
+  final bool? useConsent;
 
-  SiteOwnerListNotifier(this.ref) : super(const SitePaginationState()) {
+  SiteOwnerListNotifier(
+    this.ref, {
+    required this.projectId,
+    required this.searchQuery,
+    required this.ownSort,
+    required this.useConsent,
+  }) : super(const SitePaginationState()) {
     fetchInitial();
   }
 
   Future<void> fetchInitial() async {
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) {
+    if (projectId == null) {
       state = const SitePaginationState();
       return;
     }
 
     state = state.copyWith(isLoading: true, page: 1, error: null);
-    final query = ref.read(siteSearchQueryProvider);
-    final ownSort = ref.read(siteOwnSortFilterProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final items = await repository.fetchSiteOwners(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         ownSort: ownSort,
+        useConsent: useConsent,
         page: 1,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: items,
         page: 1,
@@ -198,30 +230,29 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
         hasMore: items.length >= 15,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> fetchNextPage() async {
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
-
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) return;
+    if (projectId == null) return;
 
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
-    final query = ref.read(siteSearchQueryProvider);
-    final ownSort = ref.read(siteOwnSortFilterProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final nextItems = await repository.fetchSiteOwners(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         ownSort: ownSort,
+        useConsent: useConsent,
         page: nextPage,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: [...state.items, ...nextItems],
         page: nextPage,
@@ -229,44 +260,61 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
         hasMore: nextItems.length >= 15,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      if (!mounted) return;
+      state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
 }
 
 final siteOwnerListProvider =
     StateNotifierProvider.autoDispose<SiteOwnerListNotifier, SitePaginationState<SiteOwnerItemModel>>((ref) {
-  return SiteOwnerListNotifier(ref);
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  final searchQuery = ref.watch(siteSearchQueryProvider);
+  final ownSort = ref.watch(siteOwnSortFilterProvider);
+  final useConsent = ref.watch(siteUseConsentFilterProvider);
+  return SiteOwnerListNotifier(
+    ref,
+    projectId: selectedProject?.realProjectId,
+    searchQuery: searchQuery,
+    ownSort: ownSort,
+    useConsent: useConsent,
+  );
 });
 
 /// 📑 3. 사업부지 매입계약 목록 Notifier
 class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteContractItemModel>> {
   final Ref ref;
+  final int? projectId;
+  final String searchQuery;
+  final String ownSort;
 
-  SiteContractListNotifier(this.ref) : super(const SitePaginationState()) {
+  SiteContractListNotifier(
+    this.ref, {
+    required this.projectId,
+    required this.searchQuery,
+    required this.ownSort,
+  }) : super(const SitePaginationState()) {
     fetchInitial();
   }
 
   Future<void> fetchInitial() async {
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) {
+    if (projectId == null) {
       state = const SitePaginationState();
       return;
     }
 
     state = state.copyWith(isLoading: true, page: 1, error: null);
-    final query = ref.read(siteSearchQueryProvider);
-    final ownSort = ref.read(siteOwnSortFilterProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final items = await repository.fetchSiteContracts(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         ownSort: ownSort,
         page: 1,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: items,
         page: 1,
@@ -274,30 +322,28 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
         hasMore: items.length >= 15,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> fetchNextPage() async {
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
-
-    final selectedProject = ref.read(selectedRealEstateProjectProvider);
-    if (selectedProject == null) return;
+    if (projectId == null) return;
 
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
-    final query = ref.read(siteSearchQueryProvider);
-    final ownSort = ref.read(siteOwnSortFilterProvider);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
       final nextItems = await repository.fetchSiteContracts(
-        projectId: selectedProject.realProjectId,
-        search: query,
+        projectId: projectId!,
+        search: searchQuery,
         ownSort: ownSort,
         page: nextPage,
       );
 
+      if (!mounted) return;
       state = state.copyWith(
         items: [...state.items, ...nextItems],
         page: nextPage,
@@ -305,12 +351,21 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
         hasMore: nextItems.length >= 15,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      if (!mounted) return;
+      state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
 }
 
 final siteContractListProvider =
     StateNotifierProvider.autoDispose<SiteContractListNotifier, SitePaginationState<SiteContractItemModel>>((ref) {
-  return SiteContractListNotifier(ref);
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  final searchQuery = ref.watch(siteSearchQueryProvider);
+  final ownSort = ref.watch(siteOwnSortFilterProvider);
+  return SiteContractListNotifier(
+    ref,
+    projectId: selectedProject?.realProjectId,
+    searchQuery: searchQuery,
+    ownSort: ownSort,
+  );
 });

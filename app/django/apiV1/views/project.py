@@ -403,7 +403,10 @@ class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(project_id__in=get_accessible_project_ids(user, 'site.read'))
         return qs.values('project') \
-            .annotate(contracted_area=Sum('contract_area')) \
+            .annotate(
+                contracted_area=Sum('contract_area'),
+                total_price=Sum('total_price'),
+            ) \
             .order_by('project')
 
 

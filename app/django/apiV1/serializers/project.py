@@ -582,10 +582,11 @@ class SiteOwnshipRelationshipSerializer(serializers.ModelSerializer):
 class TotalContractedAreaSerializer(serializers.ModelSerializer):
     project = serializers.IntegerField()
     contracted_area = serializers.DecimalField(max_digits=12, decimal_places=7, allow_null=True)
+    total_price = serializers.IntegerField(allow_null=True, required=False)
 
     class Meta:
         model = SiteOwner
-        fields = ('project', 'contracted_area')
+        fields = ('project', 'contracted_area', 'total_price')
 
 
 class SiteContractSerializer(serializers.ModelSerializer):

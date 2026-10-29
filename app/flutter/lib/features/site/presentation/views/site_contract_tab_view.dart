@@ -70,7 +70,6 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                 isSelected: ownSortFilter == '',
                 onTap: () {
                   ref.read(siteOwnSortFilterProvider.notifier).state = '';
-                  ref.invalidate(siteContractListProvider);
                 },
               ),
               const SizedBox(width: 4),
@@ -79,7 +78,6 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                 isSelected: ownSortFilter == '1',
                 onTap: () {
                   ref.read(siteOwnSortFilterProvider.notifier).state = '1';
-                  ref.invalidate(siteContractListProvider);
                 },
               ),
               const SizedBox(width: 4),
@@ -88,7 +86,6 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                 isSelected: ownSortFilter == '2',
                 onTap: () {
                   ref.read(siteOwnSortFilterProvider.notifier).state = '2';
-                  ref.invalidate(siteContractListProvider);
                 },
               ),
               const SizedBox(width: 4),
@@ -97,7 +94,6 @@ class _SiteContractTabViewState extends ConsumerState<SiteContractTabView> {
                 isSelected: ownSortFilter == '3',
                 onTap: () {
                   ref.read(siteOwnSortFilterProvider.notifier).state = '3';
-                  ref.invalidate(siteContractListProvider);
                 },
               ),
             ],

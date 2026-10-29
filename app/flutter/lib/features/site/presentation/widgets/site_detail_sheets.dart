@@ -164,6 +164,55 @@ void showSiteDetailBottomSheet({
                 ),
               ],
 
+              if (item.siteInfoFiles.length > 1) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '📄 첨부 등기부등본 (${item.siteInfoFiles.length}건)',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  color: context.colors.bgSurface,
+                  child: Column(
+                    children: item.siteInfoFiles.map((f) {
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          SiteFileHelper.downloadAndShareRegisterPdf(
+                            context: context,
+                            ref: ref,
+                            item: item,
+                            targetFile: f,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.picture_as_pdf_outlined, size: 15, color: Color(0xFF0D9488)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  f.fileName.isNotEmpty ? f.fileName : '등기부등본 파일',
+                                  style: AppTextStyles.caption.copyWith(color: context.colors.textPrimary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(Icons.open_in_new_rounded, size: 14, color: Color(0xFF0D9488)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 14),
               Divider(color: context.colors.border, height: 1),
               const SizedBox(height: 10),
@@ -180,6 +229,8 @@ void showSiteDetailBottomSheet({
                         foregroundColor: item.hasRegisterFile
                             ? Colors.white
                             : context.colors.textMuted,
+                        disabledBackgroundColor: context.colors.bgSurface,
+                        disabledForegroundColor: context.colors.textMuted,
                         elevation: item.hasRegisterFile ? 1 : 0,
                         side: BorderSide(
                           color: item.hasRegisterFile
@@ -190,19 +241,16 @@ void showSiteDetailBottomSheet({
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      onPressed: () {
-                        if (item.hasRegisterFile) {
-                          Navigator.pop(ctx);
-                          SiteFileHelper.downloadAndShareRegisterPdf(context: context, ref: ref, item: item);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('해당 필지의 등기부등본 파일이 아직 등록되지 않았습니다.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: item.hasRegisterFile
+                          ? () {
+                              Navigator.pop(ctx);
+                              SiteFileHelper.downloadAndShareRegisterPdf(
+                                context: context,
+                                ref: ref,
+                                item: item,
+                              );
+                            }
+                          : null,
                       icon: Icon(
                         item.hasRegisterFile
                             ? Icons.picture_as_pdf
@@ -387,7 +435,7 @@ void showSiteOwnerDetailBottomSheet({
                             if (s.ownershipRatio != null) ...[
                               const SizedBox(width: 6),
                               Text(
-                                '(${(s.ownershipRatio! * 100).toStringAsFixed(1)}%)',
+                                '(${s.ownershipRatio!.toStringAsFixed(1)}%)',
                                 style: AppTextStyles.caption.copyWith(
                                   color: const Color(0xFF0D9488),
                                   fontWeight: FontWeight.bold,
@@ -446,7 +494,12 @@ void showSiteOwnerDetailBottomSheet({
                         );
                       },
                       icon: const Icon(Icons.edit_calendar_outlined, size: 16),
-                      label: const Text('상담/협의 기록', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: Text(
+                        item.consultationLogs.isNotEmpty
+                            ? '상담/협의 기록 (${item.consultationLogs.length})'
+                            : '상담/협의 기록',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -625,6 +678,55 @@ void showSiteContractDetailBottomSheet({
               if (item.note.isNotEmpty)
                 SiteDetailRow(label: '특이사항', value: item.note),
 
+              if (item.siteContFiles.length > 1) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '📄 첨부 매매계약서 (${item.siteContFiles.length}건)',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  color: context.colors.bgSurface,
+                  child: Column(
+                    children: item.siteContFiles.map((f) {
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          SiteFileHelper.downloadAndShareContractPdf(
+                            context: context,
+                            ref: ref,
+                            item: item,
+                            targetFile: f,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.description_outlined, size: 15, color: Color(0xFFF59E0B)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  f.fileName.isNotEmpty ? f.fileName : '매매계약서 파일',
+                                  style: AppTextStyles.caption.copyWith(color: context.colors.textPrimary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(Icons.open_in_new_rounded, size: 14, color: Color(0xFFF59E0B)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 14),
               Divider(color: context.colors.border, height: 1),
               const SizedBox(height: 10),
@@ -641,6 +743,8 @@ void showSiteContractDetailBottomSheet({
                         foregroundColor: item.hasContractFile
                             ? Colors.white
                             : context.colors.textMuted,
+                        disabledBackgroundColor: context.colors.bgSurface,
+                        disabledForegroundColor: context.colors.textMuted,
                         elevation: item.hasContractFile ? 1 : 0,
                         side: BorderSide(
                           color: item.hasContractFile
@@ -651,19 +755,16 @@ void showSiteContractDetailBottomSheet({
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      onPressed: () {
-                        if (item.hasContractFile) {
-                          Navigator.pop(ctx);
-                          SiteFileHelper.downloadAndShareContractPdf(context: context, ref: ref, item: item);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('해당 계약건의 매매계약서 파일이 아직 등록되지 않았습니다.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: item.hasContractFile
+                          ? () {
+                              Navigator.pop(ctx);
+                              SiteFileHelper.downloadAndShareContractPdf(
+                                context: context,
+                                ref: ref,
+                                item: item,
+                              );
+                            }
+                          : null,
                       icon: Icon(
                         item.hasContractFile
                             ? Icons.description

@@ -34,8 +34,16 @@ class SiteScreen extends ConsumerStatefulWidget {
 }
 
 class _SiteScreenState extends ConsumerState<SiteScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  late final TextEditingController _searchController;
   Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(
+      text: ref.read(siteSearchQueryProvider),
+    );
+  }
 
   @override
   void dispose() {
@@ -49,35 +57,22 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
     _searchController.clear();
     ref.read(siteSearchQueryProvider.notifier).state = '';
     ref.read(siteOwnSortFilterProvider.notifier).state = '';
-    ref.invalidate(siteOverallAggregateProvider);
-    ref.invalidate(siteListProvider);
-    ref.invalidate(siteOwnerListProvider);
-    ref.invalidate(siteContractListProvider);
+    ref.read(siteUseConsentFilterProvider.notifier).state = null;
   }
 
   /// 검색어 변경 (300ms 디바운스)
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
       ref.read(siteSearchQueryProvider.notifier).state = query.trim();
-      final currentTab = ref.read(siteCurrentSubTabProvider);
-      switch (currentTab) {
-        case SiteSubTab.sites:
-          ref.invalidate(siteListProvider);
-          break;
-        case SiteSubTab.owners:
-          ref.invalidate(siteOwnerListProvider);
-          break;
-        case SiteSubTab.contracts:
-          ref.invalidate(siteContractListProvider);
-          break;
-      }
     });
   }
 
   void _onClearSearch() {
+    _debounceTimer?.cancel();
     _searchController.clear();
-    _onSearchChanged('');
+    ref.read(siteSearchQueryProvider.notifier).state = '';
   }
 
   void _refreshAll() {
@@ -416,7 +411,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
               ),
               const Spacer(),
               Text(
-                '총 ${aggregate.totalSitesCount}필지 / ${aggregate.totalOwnersCount}명',
+                '총 ${aggregate.totalSitesCount}필지 / ${aggregate.totalOwnersCount}명 / 계약 ${aggregate.totalContractsCount}건',
                 style: AppTextStyles.caption.copyWith(
                   color: const Color(0xFF0D9488),
                   fontWeight: FontWeight.bold,
@@ -429,7 +424,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           Divider(color: context.colors.border, height: 1),
           const SizedBox(height: 7),
 
-          // 하단 KPI 3종: 계약면적 | 미계약면적 | 확보율(계약율)
+          // 하단 KPI: 계약면적 | 미계약면적 | 확보율(계약율) | 총 매입대금 (존재 시)
           Row(
             children: [
               SiteKpiItem(
@@ -451,6 +446,14 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                     ? const Color(0xFF10B981)
                     : const Color(0xFF0D9488),
               ),
+              if (aggregate.totalPrice > 0) ...[
+                _divider(),
+                SiteKpiItem(
+                  label: '총 매입대금',
+                  value: '${NumberFormat('#,###').format((aggregate.totalPrice / 100000000).round())}억원',
+                  color: const Color(0xFFF59E0B),
+                ),
+              ],
             ],
           ),
         ],

@@ -30,6 +30,7 @@ class SiteFileHelper {
     final currentTab = ref.read(siteCurrentSubTabProvider);
     final searchQuery = ref.read(siteSearchQueryProvider);
     final ownSortFilter = ref.read(siteOwnSortFilterProvider);
+    final useConsentFilter = ref.read(siteUseConsentFilterProvider);
 
     String docTitle = '토지조서';
     String filePrefix = '토지조서';
@@ -72,6 +73,7 @@ class SiteFileHelper {
           projectId: selectedProject.realProjectId,
           search: searchQuery,
           ownSort: ownSortFilter,
+          useConsent: useConsentFilter,
         );
       } else if (currentTab == SiteSubTab.contracts) {
         rawBytes = await repository.downloadContractsExcel(
@@ -142,8 +144,9 @@ class SiteFileHelper {
     required BuildContext context,
     required WidgetRef ref,
     required SiteItemModel item,
+    SiteInfoFileModel? targetFile,
   }) async {
-    if (!item.hasRegisterFile) {
+    if (!item.hasRegisterFile && targetFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('등록된 등기부등본 파일이 없습니다.'),
@@ -153,7 +156,7 @@ class SiteFileHelper {
       return;
     }
 
-    final regFile = item.siteInfoFiles.first;
+    final regFile = targetFile ?? item.siteInfoFiles.first;
     final lotName = '${item.district}_${item.lotNumber}';
     const themeColor = Color(0xFF0D9488);
 
@@ -235,8 +238,9 @@ class SiteFileHelper {
     required BuildContext context,
     required WidgetRef ref,
     required SiteContractItemModel item,
+    SiteInfoFileModel? targetFile,
   }) async {
-    if (!item.hasContractFile) {
+    if (!item.hasContractFile && targetFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('등록된 매매계약서 파일이 없습니다.'),
@@ -246,7 +250,7 @@ class SiteFileHelper {
       return;
     }
 
-    final contFile = item.siteContFiles.first;
+    final contFile = targetFile ?? item.siteContFiles.first;
     const themeColor = Color(0xFFF59E0B);
 
     BuildContext? progressDialogContext;

@@ -23,8 +23,26 @@ _base_fetcher = URLFetcher()
 
 
 class PdfExportMixin(LoginRequiredMixin, View):
-    """PDF 내보내기 공통 기능 믹스인 (로그인 인증 필수 및 SSRF 방어)"""
+    """PDF 내보내기 공통 기능 믹스인 (세션 및 JWT 로그인 인증 지원, SSRF 방어)"""
     raise_exception = False
+
+    def dispatch(self, request, *args, **kwargs):
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        if not request.user.is_authenticated and auth_header:
+            from rest_framework_simplejwt.authentication import JWTAuthentication
+            try:
+                auth_result = JWTAuthentication().authenticate(request)
+                if auth_result is not None:
+                    request.user, request.auth = auth_result
+            except Exception:
+                pass
+            if not request.user.is_authenticated:
+                return HttpResponse(
+                    '유효하지 않거나 만료된 인증 토큰입니다.',
+                    status=401,
+                    content_type='text/plain; charset=utf-8',
+                )
+        return super().dispatch(request, *args, **kwargs)
 
     @staticmethod
     def safe_url_fetcher(url, *args, **kwargs):

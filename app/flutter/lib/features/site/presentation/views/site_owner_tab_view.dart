@@ -47,59 +47,96 @@ class _SiteOwnerTabViewState extends ConsumerState<SiteOwnerTabView> {
   Widget build(BuildContext context) {
     final state = ref.watch(siteOwnerListProvider);
     final ownSortFilter = ref.watch(siteOwnSortFilterProvider);
+    final useConsentFilter = ref.watch(siteUseConsentFilterProvider);
 
     return Column(
       children: [
-        // 상단 소유구분 필터 바
+        // 상단 소유구분 및 사용동의 필터 바
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: context.colors.bgSurface,
-          child: Row(
-            children: [
-              Text(
-                '소유구분:',
-                style: AppTextStyles.caption.copyWith(
-                  color: context.colors.textMuted,
-                  fontWeight: FontWeight.bold,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Text(
+                  '소유구분:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              SiteFilterChipBtn(
-                label: '전체',
-                isSelected: ownSortFilter == '',
-                onTap: () {
-                  ref.read(siteOwnSortFilterProvider.notifier).state = '';
-                  ref.invalidate(siteOwnerListProvider);
-                },
-              ),
-              const SizedBox(width: 4),
-              SiteFilterChipBtn(
-                label: '개인',
-                isSelected: ownSortFilter == '1',
-                onTap: () {
-                  ref.read(siteOwnSortFilterProvider.notifier).state = '1';
-                  ref.invalidate(siteOwnerListProvider);
-                },
-              ),
-              const SizedBox(width: 4),
-              SiteFilterChipBtn(
-                label: '법인',
-                isSelected: ownSortFilter == '2',
-                onTap: () {
-                  ref.read(siteOwnSortFilterProvider.notifier).state = '2';
-                  ref.invalidate(siteOwnerListProvider);
-                },
-              ),
-              const SizedBox(width: 4),
-              SiteFilterChipBtn(
-                label: '국공유지',
-                isSelected: ownSortFilter == '3',
-                onTap: () {
-                  ref.read(siteOwnSortFilterProvider.notifier).state = '3';
-                  ref.invalidate(siteOwnerListProvider);
-                },
-              ),
-            ],
+                const SizedBox(width: 6),
+                SiteFilterChipBtn(
+                  label: '전체',
+                  isSelected: ownSortFilter == '',
+                  onTap: () {
+                    ref.read(siteOwnSortFilterProvider.notifier).state = '';
+                  },
+                ),
+                const SizedBox(width: 4),
+                SiteFilterChipBtn(
+                  label: '개인',
+                  isSelected: ownSortFilter == '1',
+                  onTap: () {
+                    ref.read(siteOwnSortFilterProvider.notifier).state = '1';
+                  },
+                ),
+                const SizedBox(width: 4),
+                SiteFilterChipBtn(
+                  label: '법인',
+                  isSelected: ownSortFilter == '2',
+                  onTap: () {
+                    ref.read(siteOwnSortFilterProvider.notifier).state = '2';
+                  },
+                ),
+                const SizedBox(width: 4),
+                SiteFilterChipBtn(
+                  label: '국공유지',
+                  isSelected: ownSortFilter == '3',
+                  onTap: () {
+                    ref.read(siteOwnSortFilterProvider.notifier).state = '3';
+                  },
+                ),
+                Container(
+                  width: 1,
+                  height: 14,
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  color: context.colors.border,
+                ),
+                Text(
+                  '동의여부:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SiteFilterChipBtn(
+                  label: '전체',
+                  isSelected: useConsentFilter == null,
+                  onTap: () {
+                    ref.read(siteUseConsentFilterProvider.notifier).state = null;
+                  },
+                ),
+                const SizedBox(width: 4),
+                SiteFilterChipBtn(
+                  label: '동의',
+                  isSelected: useConsentFilter == true,
+                  onTap: () {
+                    ref.read(siteUseConsentFilterProvider.notifier).state = true;
+                  },
+                ),
+                const SizedBox(width: 4),
+                SiteFilterChipBtn(
+                  label: '미동의',
+                  isSelected: useConsentFilter == false,
+                  onTap: () {
+                    ref.read(siteUseConsentFilterProvider.notifier).state = false;
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         Divider(color: context.colors.border, height: 1),
@@ -219,6 +256,39 @@ class _SiteOwnerTabViewState extends ConsumerState<SiteOwnerTabView> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (item.consultationLogs.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withAlpha(20),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withAlpha(90),
+                            width: 0.6,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 10.5,
+                              color: Color(0xFFF59E0B),
+                            ),
+                            const SizedBox(width: 2.5),
+                            Text(
+                              '상담 ${item.consultationLogs.length}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF59E0B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                    ],
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(

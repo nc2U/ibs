@@ -55,7 +55,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
             Q(lot_number__icontains=search) |
             Q(site_purpose__icontains=search) |
             Q(owners__owner__icontains=search)
-        ) if search else obj_list
+        ).distinct() if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
         rows_cnt = 9 if project.is_returned_area else 7
@@ -252,16 +252,21 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
 
         # -------------------- get_queryset start -------------------- #
         own_sort = request.GET.get('own_sort')
+        use_consent = request.GET.get('use_consent')
         search = request.GET.get('search')
         obj_list = SiteOwner.objects.prefetch_related('sites', 'relations__site').filter(project=project).order_by('id')
         obj_list = obj_list.filter(own_sort=own_sort) if own_sort else obj_list
+        if use_consent in ('true', 'True', '1'):
+            obj_list = obj_list.filter(use_consent=True)
+        elif use_consent in ('false', 'False', '0'):
+            obj_list = obj_list.filter(use_consent=False)
         obj_list = obj_list.filter(
             Q(owner__icontains=search) |
             Q(phone1__icontains=search) |
             Q(phone2__icontains=search) |
             Q(sites__lot_number__icontains=search) |
             Q(note__icontains=search)
-        ) if search else obj_list
+        ).distinct() if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
         rows_cnt = 9

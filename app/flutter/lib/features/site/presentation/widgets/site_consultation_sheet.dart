@@ -8,6 +8,7 @@ import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/site_models.dart';
 import '../../data/site_repository.dart';
+import '../../providers/site_provider.dart';
 
 /// 💬 토지 소유자 상담 및 협의 기록 관리 바텀시트
 class SiteOwnerConsultationBottomSheet extends ConsumerStatefulWidget {
@@ -32,28 +33,91 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
     _logsFuture = ref.read(siteRepositoryProvider).fetchOwnerConsultationLogs(siteOwnerId: widget.owner.pk);
   }
 
-  void _showAddDialog() {
+  void _reloadAndInvalidate() {
+    ref.invalidate(siteOwnerListProvider);
+    if (mounted) {
+      setState(() {
+        _loadLogs();
+      });
+    }
+  }
+
+  void _showAddOrEditDialog({SiteOwnerConsultationLogModel? initialLog}) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _NewSiteOwnerConsultationDialog(
+      builder: (ctx) => _SiteOwnerConsultationDialog(
         ownerId: widget.owner.pk,
         ownerName: widget.owner.owner,
-        onSuccess: () {
-          if (mounted) {
-            setState(() {
-              _loadLogs();
-            });
-          }
-        },
+        initialLog: initialLog,
+        onSuccess: _reloadAndInvalidate,
       ),
     );
+  }
+
+  Future<void> _confirmDeleteLog(SiteOwnerConsultationLogModel logItem) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          '상담일지 삭제',
+          style: AppTextStyles.titleSm.copyWith(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '선택한 상담 기록(${logItem.title.isNotEmpty ? logItem.title : logItem.consultationDate})을 삭제하시겠습니까?',
+          style: AppTextStyles.bodySm.copyWith(color: context.colors.textSecond),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final errorMsg = await ref.read(siteRepositoryProvider).deleteOwnerConsultationLog(logId: logItem.pk);
+    if (!mounted) return;
+
+    if (errorMsg == null) {
+      _reloadAndInvalidate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('상담일지가 삭제되었습니다.'), behavior: SnackBarBehavior.floating),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('삭제 실패: $errorMsg'),
+          backgroundColor: context.colors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
-    final canCreate = ref.can(Perm.siteCreate, projectSlug: selectedProject?.slug);
+    final projectSlug = selectedProject?.slug;
+    final canCreate = ref.can(Perm.siteCreate, projectSlug: projectSlug);
+    final canUpdate = ref.can(Perm.siteUpdate, projectSlug: projectSlug);
+    final canDelete = ref.can(Perm.siteDelete, projectSlug: projectSlug);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -143,7 +207,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       ),
-                      onPressed: _showAddDialog,
+                      onPressed: () => _showAddOrEditDialog(),
                       icon: const Icon(Icons.add, size: 15),
                       label: const Text('상담일지 작성', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                     ),
@@ -162,7 +226,18 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
 
                   if (snapshot.hasError) {
                     return Center(
-                      child: Text('상담 기록 로드 실패: ${snapshot.error}', style: TextStyle(color: context.colors.error, fontSize: 12)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('상담 기록 로드 실패: ${snapshot.error}', style: TextStyle(color: context.colors.error, fontSize: 12)),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () => setState(_loadLogs),
+                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                            label: const Text('다시 시도'),
+                          ),
+                        ],
+                      ),
                     );
                   }
 
@@ -178,7 +253,7 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                           if (canCreate) ...[
                             const SizedBox(height: 8),
                             TextButton.icon(
-                              onPressed: _showAddDialog,
+                              onPressed: () => _showAddOrEditDialog(),
                               icon: const Icon(Icons.add, size: 16, color: Color(0xFFF59E0B)),
                               label: const Text('첫 상담일지 작성하기', style: TextStyle(color: Color(0xFFF59E0B))),
                             ),
@@ -241,6 +316,26 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
                                     item.consultationDate,
                                     style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11),
                                   ),
+                                  if (canUpdate) ...[
+                                    const SizedBox(width: 6),
+                                    InkWell(
+                                      onTap: () => _showAddOrEditDialog(initialLog: item),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2),
+                                        child: Icon(Icons.edit_outlined, size: 15, color: context.colors.textSecond),
+                                      ),
+                                    ),
+                                  ],
+                                  if (canDelete) ...[
+                                    const SizedBox(width: 6),
+                                    InkWell(
+                                      onTap: () => _confirmDeleteLog(item),
+                                      child: const Padding(
+                                        padding: EdgeInsets.all(2),
+                                        child: Icon(Icons.delete_outline_rounded, size: 15, color: Color(0xFFEF4444)),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -314,31 +409,50 @@ class _SiteOwnerConsultationBottomSheetState extends ConsumerState<SiteOwnerCons
   }
 }
 
-/// ➕ 신규 소유자 상담 기록 등록 다이얼로그
-class _NewSiteOwnerConsultationDialog extends ConsumerStatefulWidget {
+/// ➕ 소유자 상담 기록 등록 / 수정 다이얼로그
+class _SiteOwnerConsultationDialog extends ConsumerStatefulWidget {
   final int ownerId;
   final String ownerName;
+  final SiteOwnerConsultationLogModel? initialLog;
   final VoidCallback onSuccess;
 
-  const _NewSiteOwnerConsultationDialog({
+  const _SiteOwnerConsultationDialog({
     required this.ownerId,
     required this.ownerName,
+    this.initialLog,
     required this.onSuccess,
   });
 
   @override
-  ConsumerState<_NewSiteOwnerConsultationDialog> createState() => _NewSiteOwnerConsultationDialogState();
+  ConsumerState<_SiteOwnerConsultationDialog> createState() => _SiteOwnerConsultationDialogState();
 }
 
-class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerConsultationDialog> {
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
-  final _followUpController = TextEditingController();
+class _SiteOwnerConsultationDialogState extends ConsumerState<_SiteOwnerConsultationDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
+  late final TextEditingController _followUpController;
 
-  String _channel = 'phone';
-  String _date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  bool _followUpRequired = false;
+  late String _channel;
+  late String _date;
+  late bool _followUpRequired;
   bool _isLoading = false;
+
+  bool get _isEditing => widget.initialLog != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final log = widget.initialLog;
+    _titleController = TextEditingController(text: log?.title ?? '');
+    _contentController = TextEditingController(text: log?.content ?? '');
+    _followUpController = TextEditingController(text: log?.followUpNote ?? '');
+    const validChannels = {'phone', 'visit', 'kakao', 'sms', 'email', 'other'};
+    _channel = (log != null && validChannels.contains(log.channel)) ? log.channel : 'phone';
+    _date = (log != null && log.consultationDate.isNotEmpty)
+        ? log.consultationDate
+        : DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _followUpRequired = log?.followUpRequired ?? false;
+  }
 
   @override
   void dispose() {
@@ -365,15 +479,30 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
     setState(() => _isLoading = true);
 
     final repository = ref.read(siteRepositoryProvider);
-    final errorMsg = await repository.createOwnerConsultationLog(
-      siteOwnerId: widget.ownerId,
-      consultationDate: _date,
-      channel: _channel,
-      title: _titleController.text.trim(),
-      content: _contentController.text.trim(),
-      followUpRequired: _followUpRequired,
-      followUpNote: _followUpController.text.trim(),
-    );
+    final String? errorMsg;
+
+    if (_isEditing) {
+      errorMsg = await repository.updateOwnerConsultationLog(
+        logId: widget.initialLog!.pk,
+        siteOwnerId: widget.ownerId,
+        consultationDate: _date,
+        channel: _channel,
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        followUpRequired: _followUpRequired,
+        followUpNote: _followUpRequired ? _followUpController.text.trim() : '',
+      );
+    } else {
+      errorMsg = await repository.createOwnerConsultationLog(
+        siteOwnerId: widget.ownerId,
+        consultationDate: _date,
+        channel: _channel,
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        followUpRequired: _followUpRequired,
+        followUpNote: _followUpRequired ? _followUpController.text.trim() : null,
+      );
+    }
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -382,12 +511,15 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
       widget.onSuccess();
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('상담일지가 등록되었습니다.'), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(_isEditing ? '상담일지가 수정되었습니다.' : '상담일지가 등록되었습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('상담일지 등록 실패: $errorMsg'),
+          content: Text('상담일지 ${_isEditing ? "수정" : "등록"} 실패: $errorMsg'),
           backgroundColor: context.colors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -412,7 +544,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
           const Icon(Icons.edit_note, size: 22, color: Color(0xFFF59E0B)),
           const SizedBox(width: 8),
           Text(
-            '소유자 상담일지 작성',
+            _isEditing ? '소유자 상담일지 수정' : '소유자 상담일지 작성',
             style: AppTextStyles.titleSm.copyWith(
               color: context.colors.textPrimary,
               fontWeight: FontWeight.bold,
@@ -553,7 +685,7 @@ class _NewSiteOwnerConsultationDialogState extends ConsumerState<_NewSiteOwnerCo
           onPressed: _isLoading ? null : _submit,
           child: _isLoading
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('등록 완료', style: TextStyle(fontWeight: FontWeight.bold)),
+              : Text(_isEditing ? '수정 완료' : '등록 완료', style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );

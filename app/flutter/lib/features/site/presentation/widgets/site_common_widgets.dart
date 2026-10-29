@@ -4,30 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 
-/// 🗺️ 부지 관리 상단 고정 헤더 델리게이트 (SliverPersistentHeader용)
-class SitePinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  final double height;
-
-  SitePinnedHeaderDelegate({required this.child, required this.height});
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox.expand(child: child);
-  }
-
-  @override
-  bool shouldRebuild(covariant SitePinnedHeaderDelegate oldDelegate) {
-    return height != oldDelegate.height || child != oldDelegate.child;
-  }
-}
-
 /// 🗺️ 서브 탭 버튼 위젯 (선택 시 명확한 테두리 및 액센트 배경 대비 적용)
 class SiteSubTabButton extends StatelessWidget {
   final String title;
