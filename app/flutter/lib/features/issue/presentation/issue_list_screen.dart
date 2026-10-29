@@ -8,6 +8,7 @@ import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../project/providers/project_provider.dart';
 import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
 import 'widgets/done_ratio_bottom_sheet.dart';
@@ -30,10 +31,14 @@ class IssueListScreen extends ConsumerStatefulWidget {
   ConsumerState<IssueListScreen> createState() => _IssueListScreenState();
 }
 
-class _IssueListScreenState extends ConsumerState<IssueListScreen> {
+class _IssueListScreenState extends ConsumerState<IssueListScreen>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
   _FilterMode _filterMode = _FilterMode.mine;
   _ViewMode _viewMode = _ViewMode.list;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -123,11 +128,35 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     ref.listen(selectedProjectProvider, (previous, next) {
       _applyFilter();
     });
 
-    final canRead = ref.can(Perm.issueRead);
+    final selectedProject = ref.watch(selectedProjectProvider);
+    if (selectedProject != null) {
+      final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+      final currentProj = allProjects
+          .where((p) => p.slug == selectedProject.slug)
+          .firstOrNull;
+      final isIssueModuleEnabled =
+          (selectedProject.module ?? currentProj?.module)?.issue ?? true;
+
+      if (!isIssueModuleEnabled) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: ErrorView.empty(
+              message: '업무 모듈이 비활성화되어 있습니다.',
+              subMessage:
+                  '${selectedProject.name} 워크스페이스는 업무 기능을 사용하지 않습니다.',
+            ),
+          ),
+        );
+      }
+    }
+
+    final canRead = ref.can(Perm.issueRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
       return const Center(
         child: Padding(

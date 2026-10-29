@@ -140,12 +140,14 @@ class _ProjectSelectorContent extends ConsumerWidget {
     ref.read(issueFilterProvider.notifier).state = issueFilter.copyWith(
       projectSlug: ws?.slug,
       clearProjectSlug: ws == null,
+      page: 1,
     );
 
     final meetingFilter = ref.read(meetingFilterProvider);
     ref.read(meetingFilterProvider.notifier).state = meetingFilter.copyWith(
       projectSlug: ws?.slug,
       clearProjectSlug: ws == null,
+      page: 1,
     );
   }
 }

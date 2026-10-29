@@ -23,12 +23,16 @@ class MeetingListScreen extends ConsumerStatefulWidget {
   ConsumerState<MeetingListScreen> createState() => _MeetingListScreenState();
 }
 
-class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
+class _MeetingListScreenState extends ConsumerState<MeetingListScreen>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
   _MeetingFilterMode _filterMode = _MeetingFilterMode.all;
   bool _onlyConfirmed = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -109,6 +113,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     ref.listen(selectedProjectProvider, (previous, next) {
       _applyFilter();
     });
@@ -119,7 +124,8 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
       final currentProj = allProjects
           .where((p) => p.slug == selectedProject.slug)
           .firstOrNull;
-      final isMeetingModuleEnabled = currentProj?.module?.meeting ?? true;
+      final isMeetingModuleEnabled =
+          (selectedProject.module ?? currentProj?.module)?.meeting ?? true;
 
       if (!isMeetingModuleEnabled) {
         return Center(
@@ -135,7 +141,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
       }
     }
 
-    final canRead = ref.can(Perm.meetingRead);
+    final canRead = ref.can(Perm.meetingRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
       return const Center(
         child: Padding(

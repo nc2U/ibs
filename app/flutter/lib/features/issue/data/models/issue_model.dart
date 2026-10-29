@@ -412,4 +412,36 @@ class IssueFilterModel {
       pageSize: clearPageSize ? null : pageSize ?? this.pageSize,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is IssueFilterModel &&
+        other.assignedTo == assignedTo &&
+        other.myIssue == myIssue &&
+        other.projectSlug == projectSlug &&
+        other.projectStatus == projectStatus &&
+        other.statusExclude == statusExclude &&
+        other.statusClosed == statusClosed &&
+        other.search == search &&
+        other.subject == subject &&
+        other.ordering == ordering &&
+        other.page == page &&
+        other.pageSize == pageSize;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        assignedTo,
+        myIssue,
+        projectSlug,
+        projectStatus,
+        statusExclude,
+        statusClosed,
+        search,
+        subject,
+        ordering,
+        page,
+        pageSize,
+      );
 }

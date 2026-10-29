@@ -124,76 +124,77 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // 업무 관리 탭
           GoRoute(
             path: AppRoutes.work,
-            builder: (ctx, state) => const WorkScreen(initialIndex: 0),
+            builder: (ctx, state) {
+              final tab = state.uri.queryParameters['tab'];
+              final initialIndex = (tab == '1' || tab == 'issues') ? 1 : 0;
+              return WorkScreen(initialIndex: initialIndex);
+            },
             routes: [
               GoRoute(
                 path: 'issues',
-                builder: (ctx, state) => const WorkScreen(initialIndex: 1),
+                redirect: (ctx, state) => '${AppRoutes.work}?tab=1',
+              ),
+              GoRoute(
+                path: 'issues/new',
+                builder: (ctx, state) {
+                  final meetingIdStr = state.uri.queryParameters['meeting_id'];
+                  final meetingId =
+                      meetingIdStr != null ? int.tryParse(meetingIdStr) : null;
+                  final projectSlug = state.uri.queryParameters['project_slug'];
+                  final subject = state.uri.queryParameters['subject'];
+                  final description = state.uri.queryParameters['description'];
+
+                  return IssueFormScreen(
+                    initialMeetingId: meetingId,
+                    initialProjectSlug: projectSlug,
+                    initialSubject: subject,
+                    initialDescription: description,
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'issues/:issueId',
+                builder: (ctx, state) {
+                  final id = int.tryParse(
+                          state.pathParameters['issueId'] ?? '') ??
+                      0;
+                  return IssueDetailScreen(issueId: id);
+                },
                 routes: [
                   GoRoute(
-                    path: 'new',
+                    path: 'edit',
                     builder: (ctx, state) {
-                      final meetingIdStr = state.uri.queryParameters['meeting_id'];
-                      final meetingId = meetingIdStr != null ? int.tryParse(meetingIdStr) : null;
-                      final projectSlug = state.uri.queryParameters['project_slug'];
-                      final subject = state.uri.queryParameters['subject'];
-                      final description = state.uri.queryParameters['description'];
-
-                      return IssueFormScreen(
-                        initialMeetingId: meetingId,
-                        initialProjectSlug: projectSlug,
-                        initialSubject: subject,
-                        initialDescription: description,
-                      );
+                      final initialIssue = state.extra as IssueModel?;
+                      return IssueFormScreen(initialIssue: initialIssue);
                     },
-                  ),
-                  GoRoute(
-                    path: ':issueId',
-                    builder: (ctx, state) {
-                      final id = int.tryParse(
-                              state.pathParameters['issueId'] ?? '') ??
-                          0;
-                      return IssueDetailScreen(issueId: id);
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        builder: (ctx, state) {
-                          final initialIssue = state.extra as IssueModel?;
-                          return IssueFormScreen(initialIssue: initialIssue);
-                        },
-                      ),
-                    ],
                   ),
                 ],
               ),
               GoRoute(
                 path: 'meetings',
-                builder: (ctx, state) => const WorkScreen(initialIndex: 0),
+                redirect: (ctx, state) => '${AppRoutes.work}?tab=0',
+              ),
+              GoRoute(
+                path: 'meetings/new',
+                builder: (ctx, state) => const MeetingFormScreen(),
+              ),
+              GoRoute(
+                path: 'meetings/:meetingId',
+                builder: (ctx, state) {
+                  final id = int.tryParse(
+                          state.pathParameters['meetingId'] ?? '') ??
+                      0;
+                  return MeetingDetailScreen(meetingId: id);
+                },
                 routes: [
                   GoRoute(
-                    path: 'new',
-                    builder: (ctx, state) => const MeetingFormScreen(),
-                  ),
-                  GoRoute(
-                    path: ':meetingId',
+                    path: 'edit',
                     builder: (ctx, state) {
-                      final id = int.tryParse(
-                              state.pathParameters['meetingId'] ?? '') ??
-                          0;
-                      return MeetingDetailScreen(meetingId: id);
+                      final initialMeeting = state.extra as MeetingModel?;
+                      return MeetingFormScreen(
+                        initialMeeting: initialMeeting,
+                      );
                     },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        builder: (ctx, state) {
-                          final initialMeeting = state.extra as MeetingModel?;
-                          return MeetingFormScreen(
-                            initialMeeting: initialMeeting,
-                          );
-                        },
-                      ),
-                    ],
                   ),
                 ],
               ),

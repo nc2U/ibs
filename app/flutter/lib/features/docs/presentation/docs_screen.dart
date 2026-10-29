@@ -18,7 +18,13 @@ import 'widgets/document_form_sheet.dart';
 /// 공용 문서함 메인 화면 (/docs)
 class DocsScreen extends ConsumerStatefulWidget {
   final bool showScopeHeader;
-  const DocsScreen({super.key, this.showScopeHeader = false});
+  final bool isEmbedded;
+
+  const DocsScreen({
+    super.key,
+    this.showScopeHeader = false,
+    this.isEmbedded = false,
+  });
 
   @override
   ConsumerState<DocsScreen> createState() => _DocsScreenState();
@@ -70,7 +76,10 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canRead = ref.can(Perm.docsRead);
+    final docsContext = ref.watch(docsContextProvider);
+    final contextSlug = docsContext.project?.slug;
+
+    final canRead = ref.can(Perm.docsRead, projectSlug: contextSlug);
     if (!canRead) {
       return Scaffold(
         backgroundColor: context.colors.bgPrimary,
@@ -86,14 +95,12 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
       );
     }
 
-    final docsContext = ref.watch(docsContextProvider);
     final docsListAsync = ref.watch(docsListProvider);
-
     final isLoadingMore = ref.watch(docsLoadingMoreProvider);
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-      appBar: widget.showScopeHeader
+      appBar: (widget.showScopeHeader || widget.isEmbedded)
           ? null
           : AppBar(
               backgroundColor: context.colors.bgPrimary,
@@ -114,6 +121,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                   : null,
             ),
       body: SafeArea(
+        top: !widget.isEmbedded,
         child: Column(
           children: [
             // ── 1. 선택적 컨텍스트 선택바 (showScopeHeader == true 일 때만 표시) ──
@@ -427,7 +435,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
       ),
 
       // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마, docs.create 권한 체크) ───────────
-      floatingActionButton: ref.can(Perm.docsCreate)
+      floatingActionButton: ref.can(Perm.docsCreate, projectSlug: contextSlug)
           ? FloatingActionButton.extended(
               onPressed: () {
                 showModalBottomSheet(

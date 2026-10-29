@@ -32,71 +32,77 @@ class WorkspaceSelectorBar extends ConsumerWidget {
 
     final displayName = projectName;
 
-    return InkWell(
-      onTap: () {
-        showProjectSelectorBottomSheet(
-          context,
-          onlyRealEstate: onlyRealEstate,
-        );
-        onProjectChanged?.call();
-      },
-      child: Container(
-        color: context.colors.bgSurface,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            Icon(
-              Icons.business_center_rounded,
-              size: 18,
-              color: context.colors.accentProject,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                displayName,
-                style: AppTextStyles.titleSm.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.colors.accentProject.withAlpha(20),
-                borderRadius: BorderRadius.zero,
-                border: Border.all(
-                  color: context.colors.accentProject.withAlpha(60),
-                  width: 0.8,
-                ),
-              ),
+    return Container(
+      color: context.colors.bgSurface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                showProjectSelectorBottomSheet(
+                  context,
+                  onlyRealEstate: onlyRealEstate,
+                );
+                onProjectChanged?.call();
+              },
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '변경',
-                    style: AppTextStyles.label.copyWith(
-                      color: context.colors.accentProject,
-                      fontSize: 11,
+                  Icon(
+                    Icons.business_center_rounded,
+                    size: 18,
+                    color: context.colors.accentProject,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      style: AppTextStyles.titleSm.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 15,
-                    color: context.colors.accentProject,
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.colors.accentProject.withAlpha(20),
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(
+                        color: context.colors.accentProject.withAlpha(60),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '변경',
+                          style: AppTextStyles.label.copyWith(
+                            color: context.colors.accentProject,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 15,
+                          color: context.colors.accentProject,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: 8),
-              trailing!,
-            ],
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
           ],
-        ),
+        ],
       ),
     );
   }

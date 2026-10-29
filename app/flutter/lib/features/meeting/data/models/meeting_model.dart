@@ -201,4 +201,34 @@ class MeetingFilterModel {
       page: page ?? this.page,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is MeetingFilterModel &&
+        other.projectSlug == projectSlug &&
+        other.projectStatus == projectStatus &&
+        other.status == status &&
+        other.search == search &&
+        other.isConfirmed == isConfirmed &&
+        other.attendees == attendees &&
+        other.creator == creator &&
+        other.category == category &&
+        other.ordering == ordering &&
+        other.page == page;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        projectSlug,
+        projectStatus,
+        status,
+        search,
+        isConfirmed,
+        attendees,
+        creator,
+        category,
+        ordering,
+        page,
+      );
 }

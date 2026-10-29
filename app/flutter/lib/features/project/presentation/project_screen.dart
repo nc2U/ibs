@@ -143,7 +143,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       Widget contentWidget;
       switch (activeModule) {
         case ProjectActiveModule.docs:
-          contentWidget = const DocsScreen();
+          contentWidget = const DocsScreen(isEmbedded: true);
           break;
         case ProjectActiveModule.contract:
           contentWidget = ContractListScreen(onBackToMain: _closeSubModule);
