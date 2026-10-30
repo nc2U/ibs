@@ -19,14 +19,17 @@ import '../data/models/search_model.dart';
 import '../providers/search_provider.dart';
 
 /// 🔍 통합 검색 결과 화면 (/search)
-/// - SafeArea 적용 및 뒤로가기 버튼 지원
-/// - 350ms 입력 디바운스 및 2자 미만 시 즉시 상태 초기화
-/// - 최근 검색어(Recent Searches) 저장, 삭제, 원터치 재검색
+/// - SafeArea 적용 및 뒤로가기 버튼, URL 쿼리(?q=) 연동 지원
+/// - 350ms 입력 디바운스 (실시간 검색) 및 확정 검색 시에만 최근 검색어 저장
+/// - 사용자별 최근 검색어(Recent Searches) 로컬 영속화, 삭제, 원터치 재검색
+/// - 검색 범위 ('all': 전체, 'my': 내 워크스페이스, 'project': 선택된 워크스페이스) 및 상세 필터 지원
 /// - 검색 결과 카테고리 탭 및 0건 시 'all' 자동 폴백
-/// - 검색어 하이라이팅(Highlighting) 지원
-/// - 문서/공지/게시글 상세 조회 시 로딩 인디케이터 제공
+/// - 제목 및 본문 요약 검색어 하이라이팅(Highlighting) 지원
+/// - 상세 조회/복귀 시 자동 갱신 및 당겨서 새로고침(Pull-to-Refresh) 지원
 class SearchResultsScreen extends ConsumerStatefulWidget {
-  const SearchResultsScreen({super.key});
+  final String? initialQuery;
+
+  const SearchResultsScreen({super.key, this.initialQuery});
 
   @override
   ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -34,13 +37,28 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
 
 class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   late final TextEditingController _controller;
+  late final bool _shouldAutofocus;
   Timer? _debounceTimer;
   bool _isLoadingDetail = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: ref.read(searchQueryProvider));
+    final incomingQuery = widget.initialQuery?.trim();
+    final currentQuery = ref.read(searchQueryProvider);
+    final effectiveInitial =
+        (incomingQuery != null && incomingQuery.isNotEmpty) ? incomingQuery : currentQuery;
+
+    _controller = TextEditingController(text: effectiveInitial);
+    _shouldAutofocus = effectiveInitial.trim().isEmpty;
+
+    if (incomingQuery != null && incomingQuery.length >= 2 && incomingQuery != currentQuery) {
+      Future.microtask(() {
+        if (!mounted) return;
+        ref.read(searchQueryProvider.notifier).state = incomingQuery;
+        ref.read(recentSearchesProvider.notifier).addSearch(incomingQuery);
+      });
+    }
   }
 
   @override
@@ -50,28 +68,34 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     super.dispose();
   }
 
+  /// 명시적 검색 실행 (키보드 완료 버튼, 검색 버튼 클릭, 최근 검색어 탭)
   void _onSearchSubmit(String text) {
     _debounceTimer?.cancel();
+    FocusScope.of(context).unfocus();
     final query = text.trim();
     if (query.length >= 2) {
       ref.read(recentSearchesProvider.notifier).addSearch(query);
       ref.read(searchQueryProvider.notifier).state = query;
     } else {
       ref.read(searchQueryProvider.notifier).state = '';
+      ref.read(searchTargetTabProvider.notifier).state = 'all';
     }
   }
 
+  /// 실시간 타이핑 디바운스 (미완성 검색어가 최근 검색어에 오염되지 않도록 쿼리 상태만 갱신)
   void _onSearchChanged(String val) {
     _debounceTimer?.cancel();
     final trimmed = val.trim();
     if (trimmed.length < 2) {
-      // 2자 미만이면 즉시 검색 결과 초기화하여 이전 결과 잔존 방지
+      // 2자 미만이면 즉시 검색 결과 및 탭 초기화하여 이전 결과 잔존 방지
       ref.read(searchQueryProvider.notifier).state = '';
+      ref.read(searchTargetTabProvider.notifier).state = 'all';
       return;
     }
 
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
-      _onSearchSubmit(trimmed);
+      if (!mounted) return;
+      ref.read(searchQueryProvider.notifier).state = trimmed;
     });
   }
 
@@ -79,9 +103,18 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     _debounceTimer?.cancel();
     _controller.clear();
     ref.read(searchQueryProvider.notifier).state = '';
+    ref.read(searchTargetTabProvider.notifier).state = 'all';
   }
 
-  String _getErrorMessage(Object err) {
+  /// 검색 결과 항목을 탭할 때 현재 검색어를 최근 검색어에 기록
+  void _recordCurrentQueryToRecent() {
+    final q = ref.read(searchQueryProvider).trim();
+    if (q.length >= 2) {
+      ref.read(recentSearchesProvider.notifier).addSearch(q);
+    }
+  }
+
+  String _getErrorMessage(Object err, {String fallback = '검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}) {
     if (err is DioException) {
       if (err.type == DioExceptionType.connectionTimeout ||
           err.type == DioExceptionType.receiveTimeout ||
@@ -95,81 +128,124 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (data['error'] != null) return data['error'].toString();
       }
       if (err.response?.statusCode != null) {
-        return '검색 중 오류가 발생했습니다. (오류 코드: ${err.response!.statusCode})';
+        return '$fallback (오류 코드: ${err.response!.statusCode})';
       }
     }
-    return '검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    return fallback;
+  }
+
+  Future<void> _openIssueDetail(int pk) async {
+    _recordCurrentQueryToRecent();
+    await context.push('/work/issues/$pk');
+    if (mounted) {
+      ref.invalidate(searchResultsProvider);
+    }
+  }
+
+  Future<void> _openMeetingDetail(int pk) async {
+    _recordCurrentQueryToRecent();
+    await context.push('/work/meetings/$pk');
+    if (mounted) {
+      ref.invalidate(searchResultsProvider);
+    }
   }
 
   Future<void> _openDocumentDetail(int pk) async {
     if (_isLoadingDetail) return;
+    _recordCurrentQueryToRecent();
     setState(() => _isLoadingDetail = true);
     try {
       final doc = await ref.read(docsRepositoryProvider).fetchDocumentDetail(pk);
       if (mounted) {
-        showModalBottomSheet(
+        setState(() => _isLoadingDetail = false);
+        await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (ctx) => DocumentDetailSheet(doc: doc),
         );
+        if (mounted) {
+          ref.invalidate(searchResultsProvider);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('문서 정보를 불러오지 못했습니다: $e')),
+          SnackBar(
+            content: Text(_getErrorMessage(e, fallback: '문서 정보를 불러오지 못했습니다.')),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoadingDetail = false);
+      if (mounted && _isLoadingDetail) {
+        setState(() => _isLoadingDetail = false);
+      }
     }
   }
 
   Future<void> _openNoticeDetail(int pk) async {
     if (_isLoadingDetail) return;
+    _recordCurrentQueryToRecent();
     setState(() => _isLoadingDetail = true);
     try {
       final notice = await ref.read(noticeRepositoryProvider).fetchNoticeDetail(pk);
       if (mounted) {
-        showModalBottomSheet(
+        setState(() => _isLoadingDetail = false);
+        await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (ctx) => NoticeDetailSheet(notice: notice),
         );
+        if (mounted) {
+          ref.invalidate(searchResultsProvider);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('공지사항 정보를 불러오지 못했습니다: $e')),
+          SnackBar(
+            content: Text(_getErrorMessage(e, fallback: '공지사항 정보를 불러오지 못했습니다.')),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoadingDetail = false);
+      if (mounted && _isLoadingDetail) {
+        setState(() => _isLoadingDetail = false);
+      }
     }
   }
 
   Future<void> _openPostDetail(int pk) async {
     if (_isLoadingDetail) return;
+    _recordCurrentQueryToRecent();
     setState(() => _isLoadingDetail = true);
     try {
       final post = await ref.read(forumRepositoryProvider).fetchPostDetail(pk);
       if (mounted) {
-        showModalBottomSheet(
+        setState(() => _isLoadingDetail = false);
+        await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (ctx) => PostDetailSheet(post: post),
         );
+        if (mounted) {
+          ref.invalidate(searchResultsProvider);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('게시글 정보를 불러오지 못했습니다: $e')),
+          SnackBar(
+            content: Text(_getErrorMessage(e, fallback: '게시글 정보를 불러오지 못했습니다.')),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoadingDetail = false);
+      if (mounted && _isLoadingDetail) {
+        setState(() => _isLoadingDetail = false);
+      }
     }
   }
 
@@ -197,9 +273,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     });
 
     final query = ref.watch(searchQueryProvider);
-    final scope = ref.watch(searchScopeProvider);
+    final effectiveScope = ref.watch(effectiveSearchScopeProvider);
     final selectedTab = ref.watch(searchTargetTabProvider);
     final selectedProj = ref.watch(selectedProjectProvider);
+    final titleOnly = ref.watch(searchTitleOnlyProvider);
+    final openedOnly = ref.watch(searchOpenedOnlyProvider);
+    final attachMode = ref.watch(searchAttachModeProvider);
     final searchResultsAsync = ref.watch(searchResultsProvider);
     final canPop = context.canPop();
 
@@ -208,11 +287,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── A. 상단 검색 입력창 및 범위 필터 바 ─────────────────────────
+            // ── A. 상단 검색 입력창 및 범위·상세 필터 바 ─────────────────────────
             Container(
               color: context.colors.bgSurface,
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 10),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -235,6 +315,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           ),
                           child: TextField(
                             controller: _controller,
+                            autofocus: _shouldAutofocus,
                             textInputAction: TextInputAction.search,
                             style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                             decoration: InputDecoration(
@@ -280,29 +361,64 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // ── 범위 필터: 전체 워크스페이스 vs 현재 워크스페이스 ─────────
+                  // ── 범위 및 상세 옵션 필터 (가로 스크롤 지원) ─────────
                   Padding(
                     padding: EdgeInsets.only(left: canPop ? 8 : 4),
-                    child: Row(
-                      children: [
-                        Text(
-                          '검색 범위:',
-                          style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
-                        ),
-                        const SizedBox(width: 8),
-                        _ScopeChip(
-                          label: '🌐 전체 워크스페이스',
-                          selected: scope == 'all',
-                          onTap: () => ref.read(searchScopeProvider.notifier).state = 'all',
-                        ),
-                        const SizedBox(width: 6),
-                        if (selectedProj != null)
-                          _ScopeChip(
-                            label: '📁 ${selectedProj.name}',
-                            selected: scope == 'project',
-                            onTap: () => ref.read(searchScopeProvider.notifier).state = 'project',
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          Text(
+                            '범위:',
+                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                           ),
-                      ],
+                          const SizedBox(width: 6),
+                          _ScopeChip(
+                            label: '🌐 전체 워크스페이스',
+                            selected: effectiveScope == 'all',
+                            onTap: () => ref.read(searchScopeProvider.notifier).state = 'all',
+                          ),
+                          const SizedBox(width: 6),
+                          _ScopeChip(
+                            label: '👤 내 워크스페이스',
+                            selected: effectiveScope == 'my',
+                            onTap: () => ref.read(searchScopeProvider.notifier).state = 'my',
+                          ),
+                          if (selectedProj != null) ...[
+                            const SizedBox(width: 6),
+                            _ScopeChip(
+                              label: '📁 ${selectedProj.name}',
+                              selected: effectiveScope == 'project',
+                              onTap: () => ref.read(searchScopeProvider.notifier).state = 'project',
+                            ),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: SizedBox(
+                              height: 14,
+                              child: VerticalDivider(color: context.colors.border, width: 1),
+                            ),
+                          ),
+                          _ScopeChip(
+                            label: '제목만',
+                            selected: titleOnly,
+                            onTap: () => ref.read(searchTitleOnlyProvider.notifier).state = !titleOnly,
+                          ),
+                          const SizedBox(width: 6),
+                          _ScopeChip(
+                            label: '열린 업무만',
+                            selected: openedOnly,
+                            onTap: () => ref.read(searchOpenedOnlyProvider.notifier).state = !openedOnly,
+                          ),
+                          const SizedBox(width: 6),
+                          _ScopeChip(
+                            label: '📎 첨부파일 포함',
+                            selected: attachMode == '2',
+                            onTap: () => ref.read(searchAttachModeProvider.notifier).state =
+                                attachMode == '2' ? '1' : '2',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -510,6 +626,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             return InkWell(
               onTap: () {
                 _controller.text = keyword;
+                _controller.selection = TextSelection.fromPosition(
+                  TextPosition(offset: keyword.length),
+                );
                 _onSearchSubmit(keyword);
               },
               child: Container(
@@ -561,14 +680,20 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         ));
       }
       for (final item in response.issues) {
+        final prefix = item.isPrivate ? '🔒 ' : '';
+        final statusText = item.statusClosed ? '${item.statusName}(완료)' : item.statusName;
         list.add(_ResultCard(
-          badgeText: item.trackerName,
-          badgeColor: const Color(0xFF2563EB),
-          title: '#${item.pk} ${item.subject}',
+          badgeText: item.trackerName.isNotEmpty ? item.trackerName : '업무',
+          badgeColor: item.statusClosed ? const Color(0xFF64748B) : const Color(0xFF2563EB),
+          title: '$prefix#${item.pk} ${item.subject}',
           query: query,
           project: item.project.name,
-          subInfo: '${item.statusName} · ${item.creator?.username ?? "작성자 미상"} · ${_safeFormatDate(item.created)}',
-          onTap: () => context.push('/work/issues/${item.pk}'),
+          subInfo: _joinSubInfo([
+            statusText,
+            item.creator?.username ?? '작성자 미상',
+            _safeFormatDate(item.created),
+          ]),
+          onTap: () => _openIssueDetail(item.pk),
         ));
       }
     }
@@ -583,13 +708,16 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       }
       for (final item in response.meetings) {
         list.add(_ResultCard(
-          badgeText: '회의록',
+          badgeText: item.statusLabel,
           badgeColor: const Color(0xFF0D9488),
           title: item.title,
           query: query,
           project: item.project.name,
-          subInfo: '${item.meetingDate} · ${item.creator?.username ?? "작성자 미상"}',
-          onTap: () => context.push('/work/meetings/${item.pk}'),
+          subInfo: _joinSubInfo([
+            _safeFormatDate(item.meetingDate),
+            item.creator?.username ?? '작성자 미상',
+          ]),
+          onTap: () => _openMeetingDetail(item.pk),
         ));
       }
     }
@@ -609,7 +737,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           query: query,
           project: item.project.name,
-          subInfo: '${item.description.isNotEmpty ? item.description : "설명 없음"} · ${_safeFormatDate(item.created)}',
+          subInfo: _joinSubInfo([
+            item.description.isNotEmpty ? _sanitizeSnippet(item.description) : null,
+            item.creator?.username,
+            _safeFormatDate(item.created),
+          ]),
           onTap: () => _openDocumentDetail(item.pk),
         ));
       }
@@ -630,7 +762,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           query: query,
           project: item.project.name,
-          subInfo: '${item.summary} · ${item.author?.username ?? ""} · ${_safeFormatDate(item.created)}',
+          subInfo: _joinSubInfo([
+            item.summary.isNotEmpty ? _sanitizeSnippet(item.summary) : null,
+            item.author?.username,
+            _safeFormatDate(item.created),
+          ]),
           onTap: () => _openNoticeDetail(item.pk),
         ));
       }
@@ -651,7 +787,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           query: query,
           project: item.project.name,
-          subInfo: '${item.creator?.username ?? ""} · ${_safeFormatDate(item.created)}',
+          subInfo: _joinSubInfo([
+            item.creator?.username ?? '작성자 미상',
+            _safeFormatDate(item.created),
+          ]),
           onTap: () => _openPostDetail(item.pk),
         ));
       }
@@ -669,24 +808,56 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         list.add(_ResultCard(
           badgeText: '업무댓글',
           badgeColor: Colors.amber.shade800,
-          title: item.content,
+          title: _sanitizeSnippet(item.content),
           query: query,
-          project: '${item.project.name} · #${item.issuePk} ${item.issueSubject}',
-          subInfo: '${item.creator?.username ?? ""} · ${_safeFormatDate(item.created)}',
-          onTap: () => context.push('/work/issues/${item.issuePk}'),
+          project: _joinSubInfo([
+            item.project.name,
+            '#${item.issuePk} ${item.issueSubject}',
+          ]),
+          subInfo: _joinSubInfo([
+            item.creator?.username ?? '작성자 미상',
+            _safeFormatDate(item.created),
+          ]),
+          onTap: () => _openIssueDetail(item.issuePk),
         ));
       }
     }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      children: list,
+    return RefreshIndicator(
+      color: context.colors.accentWork,
+      onRefresh: () async {
+        ref.invalidate(searchResultsProvider);
+        await ref.read(searchResultsProvider.future);
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: list,
+      ),
     );
   }
 
+  /// 빈 문자열을 제외하고 ' · ' 구분자로 안전하게 결합
+  static String _joinSubInfo(List<String?> parts) {
+    return parts
+        .where((p) => p != null && p.trim().isNotEmpty)
+        .map((p) => p!.trim())
+        .join(' · ');
+  }
+
+  /// 마크다운 기호 및 다중 개행을 카드 스니펫용 단일 라인 텍스트로 정제
+  static String _sanitizeSnippet(String raw) {
+    if (raw.isEmpty) return '';
+    return raw
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll(RegExp(r'[#*`>~]+'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   static String _safeFormatDate(String? raw) {
-    if (raw == null || raw.isEmpty) return '';
-    final parsed = DateTime.tryParse(raw);
+    if (raw == null || raw.trim().isEmpty) return '';
+    final parsed = DateTime.tryParse(raw.trim());
     if (parsed != null) {
       return DateFormat('yyyy-MM-dd').format(parsed);
     }
@@ -715,16 +886,21 @@ class _HighlightText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmedQuery = query.trim();
-    if (trimmedQuery.length < 2 || !text.toLowerCase().contains(trimmedQuery.toLowerCase())) {
+    if (trimmedQuery.length < 2 || text.isEmpty) {
+      return Text(text, style: style, maxLines: maxLines, overflow: overflow);
+    }
+
+    final textLower = text.toLowerCase();
+    final qLower = trimmedQuery.toLowerCase();
+    if (!textLower.contains(qLower)) {
       return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
     final spans = <TextSpan>[];
-    final qLower = trimmedQuery.toLowerCase();
     int start = 0;
 
     while (start < text.length) {
-      final index = text.toLowerCase().indexOf(qLower, start);
+      final index = textLower.indexOf(qLower, start);
       if (index == -1) {
         spans.add(TextSpan(text: text.substring(start)));
         break;
@@ -753,7 +929,7 @@ class _HighlightText extends StatelessWidget {
   }
 }
 
-// ── 범위 필터 칩 ─────────────────────────────────────────────────────────────
+// ── 범위 및 상세 필터 칩 ──────────────────────────────────────────────────────
 class _ScopeChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -959,13 +1135,17 @@ class _ResultCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              Text(
-                subInfo,
-                style: AppTextStyles.caption.copyWith(color: context.colors.textDisabled),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (subInfo.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _HighlightText(
+                  text: subInfo,
+                  query: query,
+                  highlightColor: badgeColor,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textDisabled),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

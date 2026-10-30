@@ -276,7 +276,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // 통합 검색 화면 (하단 탭바 유지)
           GoRoute(
             path: AppRoutes.search,
-            builder: (ctx, state) => const SearchResultsScreen(),
+            builder: (ctx, state) {
+              final q = state.uri.queryParameters['q'];
+              return SearchResultsScreen(initialQuery: q);
+            },
           ),
 
           // 할일 관리 화면
