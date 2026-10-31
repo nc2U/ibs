@@ -99,7 +99,7 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: colors.bgInput,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: colors.borderSubtle, width: 0.8),
                 ),
                 child: TextField(
@@ -300,12 +300,12 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
     final colors = context.colors;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? colors.accentApproval : colors.bgCard,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? colors.accentApproval : colors.border,
             width: 0.8,

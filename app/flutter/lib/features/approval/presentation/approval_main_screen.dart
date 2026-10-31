@@ -429,7 +429,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: context.colors.error,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 '$pendingCount',
@@ -618,7 +618,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                           value: allSelected,
                           activeColor: context.colors.accentApproval,
                           checkColor: Colors.white,
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                           side: BorderSide(color: context.colors.border, width: 1.2),
                           onChanged: (checked) {
                             setState(() {

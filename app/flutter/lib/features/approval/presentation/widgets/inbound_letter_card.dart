@@ -76,7 +76,7 @@ class InboundLetterCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: dDayBg,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(color: dDayColor.withAlpha(80), width: 0.8),
         ),
         child: Text(
@@ -95,12 +95,12 @@ class InboundLetterCard extends StatelessWidget {
       elevation: 0,
       color: colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: colors.border, width: 0.8),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -113,7 +113,7 @@ class InboundLetterCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: colors.bgSurface,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: colors.borderSubtle, width: 0.8),
                     ),
                     child: Text(
@@ -133,7 +133,7 @@ class InboundLetterCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: badgeBg,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
                     ),
                     child: Text(
@@ -154,12 +154,12 @@ class InboundLetterCard extends StatelessWidget {
                   if (letter.hasScan && onPdfTap != null)
                     InkWell(
                       onTap: onPdfTap,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: colors.accentApproval.withAlpha(20),
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: colors.accentApproval.withAlpha(80),
                             width: 0.8,
@@ -258,7 +258,7 @@ class InboundLetterCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
                         color: colors.bgSurface,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(3),
                         border: Border.all(color: colors.borderSubtle, width: 0.6),
                       ),
                       child: Text(

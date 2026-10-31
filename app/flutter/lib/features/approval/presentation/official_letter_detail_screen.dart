@@ -273,7 +273,7 @@ class _OfficialLetterDetailScreenState
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: colors.bgCard,
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: colors.border, width: 0.8),
                         ),
                         child: Column(
@@ -323,7 +323,7 @@ class _OfficialLetterDetailScreenState
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: colors.bgCard,
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: colors.border, width: 0.8),
                         ),
                         child: Column(
@@ -375,7 +375,7 @@ class _OfficialLetterDetailScreenState
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: colors.bgCard,
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(8),
                             border:
                                 Border.all(color: colors.border, width: 0.8),
                           ),
@@ -449,7 +449,7 @@ class _OfficialLetterDetailScreenState
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: colors.bgCard,
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: colors.border, width: 0.8),
                         ),
                         child: Column(
@@ -546,7 +546,7 @@ class _OfficialLetterDetailScreenState
                             foregroundColor: colors.textPrimary,
                             side: BorderSide(color: colors.border),
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                           ),
                         ),
                       ),
@@ -569,7 +569,7 @@ class _OfficialLetterDetailScreenState
                               backgroundColor: colors.accentApproval,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                             ),
                           ),
                         ),
@@ -647,7 +647,7 @@ class _OfficialLetterDetailScreenState
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: badgeBg,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
       ),
       child: Text(

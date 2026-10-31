@@ -256,7 +256,7 @@ class _InboundLetterDetailScreenState
                       backgroundColor: colors.accentApproval,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -302,7 +302,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -323,7 +323,7 @@ class _InboundLetterDetailScreenState
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: badgeBg,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
                 ),
                 child: Text(
@@ -343,7 +343,7 @@ class _InboundLetterDetailScreenState
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: colors.error.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: colors.error.withAlpha(80), width: 0.8),
                   ),
                   child: Text(
@@ -417,7 +417,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -456,7 +456,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(14),
@@ -468,7 +468,7 @@ class _InboundLetterDetailScreenState
               color: hasScan
                   ? colors.accentApproval.withAlpha(20)
                   : colors.bgSurface,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.picture_as_pdf_rounded,
@@ -506,7 +506,7 @@ class _InboundLetterDetailScreenState
                 backgroundColor: colors.accentApproval,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: _isDownloadingPdf
                   ? const SizedBox(
@@ -526,7 +526,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -553,7 +553,7 @@ class _InboundLetterDetailScreenState
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: colors.bgSurface,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: colors.borderSubtle, width: 0.6),
               ),
               child: Row(
@@ -631,7 +631,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -658,7 +658,7 @@ class _InboundLetterDetailScreenState
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: colors.bgSurface,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: colors.borderSubtle, width: 0.6),
                 ),
                 child: Row(
@@ -707,7 +707,7 @@ class _InboundLetterDetailScreenState
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: colors.bgSurface,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: colors.borderSubtle, width: 0.6),
                   ),
                   child: Row(

@@ -4094,14 +4094,14 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 });
                 _updateRoutePreview();
               },
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? context.colors.accentApproval.withAlpha(35)
                       : context.colors.bgPrimary,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
                         ? context.colors.accentApproval
@@ -4136,7 +4136,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.bgPrimary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: context.colors.accentApproval.withAlpha(70), width: 0.8),
       ),
       child: Column(
@@ -4156,7 +4156,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: context.colors.accentApproval.withAlpha(25),
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: Text(
                   guide.category,

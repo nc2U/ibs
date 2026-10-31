@@ -41,7 +41,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
             height: 38,
             decoration: BoxDecoration(
               color: colors.bgInput,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: colors.borderSubtle, width: 0.8),
             ),
             padding: const EdgeInsets.all(2),
@@ -52,12 +52,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     onTap: () {
                       if (_subMode != 0) setState(() => _subMode = 0);
                     },
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _subMode == 0 ? colors.accentApproval : Colors.transparent,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -86,12 +86,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     onTap: () {
                       if (_subMode != 1) setState(() => _subMode = 1);
                     },
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _subMode == 1 ? colors.accentApproval : Colors.transparent,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -148,7 +148,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: colors.bgInput,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: colors.borderSubtle, width: 0.8),
                 ),
                 child: TextField(
@@ -339,12 +339,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
     final colors = context.colors;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? colors.accentApproval : colors.bgCard,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? colors.accentApproval : colors.border,
             width: 0.8,
