@@ -221,15 +221,19 @@ def aggregate_installment_adjustments(contract, payment_orders, now_due_order, p
         penalty = status.get('total_late_penalty', 0)
         # 최적화: get_installment_adjustment_summary 재호출 제거하고 이미 계산된 값 직접 사용
         discount = status.get('total_discount', 0)
+        eff_amount, eff_days = calculate_effective_late_metrics(status.get('late_payment_details', []))
 
         details.append({
             'installment': inst,
             'order_name': inst.pay_name,
             'is_fully_paid': status['is_fully_paid'],
-            'late_days': status['late_days'],
+            'late_days': status.get('late_days', 0),
+            'prepay_days': status.get('discount_days', 0),
             'penalty_amount': penalty,
             'discount_amount': discount,
-            'late_amount': status['late_payment_amount'] if penalty > 0 else 0,
+            'late_amount': status.get('late_payment_amount', 0) if penalty > 0 else 0,
+            'effective_late_amount': eff_amount,
+            'effective_late_days': eff_days,
         })
         total_late_fee += penalty
         total_discount += discount

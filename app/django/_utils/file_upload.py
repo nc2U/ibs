@@ -238,7 +238,8 @@ def populate_file_meta(instance, file_field='file', name_field='file_name', type
     if original_name:
         filename = os.path.basename(original_name)
     else:
-        filename = file_obj.name.split('/')[-1]
+        name_prop = getattr(file_obj, 'name', None)
+        filename = name_prop.split('/')[-1] if name_prop else ''
 
     setattr(instance, name_field, filename)
 

@@ -73,7 +73,9 @@ def file_cleanup_signals(model, file_field_names=None):
             if isinstance(f, (FileField, ImageField))
         ]
         for field_name in fields_to_check:
-            delete_file_field(instance, field_name)
+            field = getattr(instance, field_name, None)
+            if field and field.name:
+                transaction.on_commit(lambda f=field: f.delete(save=False))
 
 
 def related_file_cleanup(parent_model, related_name: str, file_field_name: str):
@@ -87,4 +89,6 @@ def related_file_cleanup(parent_model, related_name: str, file_field_name: str):
         related_manager = getattr(instance, related_name, None)
         if related_manager:
             for related_instance in related_manager.all():
-                delete_file_field(related_instance, file_field_name)
+                field = getattr(related_instance, file_field_name, None)
+                if field and field.name:
+                    transaction.on_commit(lambda f=field: f.delete(save=False))

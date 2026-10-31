@@ -4,8 +4,13 @@ from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
 
+from _utils.contract_price import (
+    get_project_payment_summary,
+    get_due_date_per_order,
+    get_down_payment_settlement,
+)
 from _utils.file_cleanup import delete_file_field
-from _utils.file_upload import generate_safe_filename, get_upload_path
+from _utils.file_upload import generate_safe_filename, get_upload_path, populate_file_meta
 from _utils.file_service import FileService
 from _utils.payment_adjustment import (
     calculate_daily_interest,
@@ -44,6 +49,17 @@ class FileUploadUtilsTestCase(TestCase):
         normalized_path = path.replace("\\", "/")
         self.assertTrue(normalized_path.startswith("company/documents/"))
         self.assertTrue(normalized_path.endswith(".xlsx"))
+
+    def test_populate_file_meta_fallback_none(self):
+        mock_instance = MagicMock()
+        mock_file = MagicMock()
+        mock_file.name = None
+        mock_file._name = None
+        mock_file.read.side_effect = Exception("error")
+        setattr(mock_instance, "file", mock_file)
+
+        populate_file_meta(mock_instance, file_field="file")
+        self.assertEqual(getattr(mock_instance, "file_name"), "")
 
 
 class PaymentAdjustmentUtilsTestCase(TestCase):
@@ -108,7 +124,9 @@ class PaymentAdjustmentUtilsTestCase(TestCase):
                 "late_days": 0,
                 "total_late_penalty": 0,
                 "total_discount": 50000,
+                "discount_days": 10,
                 "late_payment_amount": 0,
+                "late_payment_details": [],
             },
             2: {
                 "due_date": date(2025, 4, 1),
@@ -116,7 +134,16 @@ class PaymentAdjustmentUtilsTestCase(TestCase):
                 "late_days": 15,
                 "total_late_penalty": 30000,
                 "total_discount": 0,
+                "discount_days": 0,
                 "late_payment_amount": 10000000,
+                "late_payment_details": [
+                    {
+                        "type": "paid_late",
+                        "payment_amount": 10000000,
+                        "late_days": 15,
+                        "late_penalty": 30000,
+                    }
+                ],
             },
         }
 
@@ -130,6 +157,10 @@ class PaymentAdjustmentUtilsTestCase(TestCase):
         self.assertEqual(result["penalty_count"], 1)
         self.assertEqual(result["discount_count"], 1)
         self.assertEqual(len(result["installment_details"]), 2)
+        # 고지서(PDF) 연동용 필드 검증
+        self.assertEqual(result["installment_details"][0]["prepay_days"], 10)
+        self.assertEqual(result["installment_details"][1]["effective_late_amount"], 10000000)
+        self.assertEqual(result["installment_details"][1]["effective_late_days"], 15)
 
 
 class PushServiceTestCase(TestCase):
@@ -165,6 +196,33 @@ class PushServiceTestCase(TestCase):
         )
 
         self.assertEqual(result, 2)
+
+    @patch("_utils.push_service.Notification")
+    @patch("_utils.push_service.FCMDevice")
+    @patch("redis.Redis.from_url")
+    def test_send_push_notification_with_decimal_extra_data(self, mock_redis_from_url, mock_fcm, mock_notification):
+        mock_fcm.objects.filter.return_value.values_list.return_value = []
+        mock_redis_instance = MagicMock()
+        mock_redis_from_url.return_value = mock_redis_instance
+
+        # extra_data에 Decimal 및 date 포함 시 JSON 직렬화 오류 없이 Redis 발행 검증
+        result = send_push_notification(
+            user_ids=[10],
+            title="수납 완료",
+            body="계약금 수납 완료",
+            category="payment",
+            extra_data={"paid_amount": Decimal("15000000.00"), "paid_date": date(2025, 3, 1)},
+            create_notification_record=False,
+        )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(mock_redis_instance.publish.call_count, 1)
+        # Redis 발행 채널과 JSON 문자열 검증
+        channel = mock_redis_instance.publish.call_args[0][0]
+        payload = mock_redis_instance.publish.call_args[0][1]
+        self.assertEqual(channel, "user_notify_10")
+        self.assertIn("15000000.00", payload)
+        self.assertIn("2025-03-01", payload)
 
 
 class SlackNotificationsTestCase(TestCase):
@@ -222,6 +280,27 @@ class FileServiceTestCase(TestCase):
             description="설명 텍스트",
         )
 
+    def test_manage_files_with_dict_old_files(self):
+        mock_instance = MagicMock()
+        mock_file_model = MagicMock()
+
+        # old_files가 JSON 문자열이 아닌 딕셔너리 리스트로 전달되는 경우 테스트
+        initial_data = {
+            "files": [{"pk": 15, "del": True}, {"pk": 20, "del": False}],
+            "cngPks": [],
+            "cngFiles": [],
+        }
+
+        FileService.manage_files(
+            instance=mock_instance,
+            initial_data=initial_data,
+            file_model=mock_file_model,
+            related_name="meeting",
+        )
+
+        mock_file_model.objects.filter.assert_called_once_with(pk="15", meeting=mock_instance)
+        mock_file_model.objects.filter().delete.assert_called_once()
+
     def test_delete_file_field(self):
         mock_instance = MagicMock()
         mock_field = MagicMock()
@@ -230,3 +309,82 @@ class FileServiceTestCase(TestCase):
 
         delete_file_field(mock_instance, "file")
         mock_field.delete.assert_called_once_with(save=False)
+
+
+class ContractPriceUtilsTestCase(TestCase):
+    """분양가 및 분할 납부 계산 유틸리티 테스트"""
+
+    def test_get_due_date_per_order_guards(self):
+        # 1. contract가 None인 경우
+        self.assertIsNone(get_due_date_per_order(None, {}))
+
+        # 2. unit_type이 없는 경우
+        mock_contract = MagicMock(unit_type=None, contractor=MagicMock(contract_date=date(2025, 1, 1)))
+        mock_contract.sup_cont_date = None
+        self.assertIsNone(get_due_date_per_order(mock_contract, {}))
+
+    @patch("_utils.contract_price.InstallmentPaymentOrder")
+    def test_get_due_date_per_order_sup_cont_date(self, mock_order_cls):
+        # contractor_date 없이 sup_cont_date만 있는 경우
+        d = date(2025, 3, 1)
+        mock_contract = MagicMock(unit_type=MagicMock(sort="01"), contractor=None, sup_cont_date=d)
+        mock_contract._first_future_date = None
+        mock_order_cls.objects.filter.return_value.order_by.return_value.first.return_value = None
+
+        order_dict = {"pay_code": 1, "pay_sort": "1"}
+        result = get_due_date_per_order(mock_contract, order_dict)
+        self.assertEqual(result, d)
+
+    @patch("_utils.contract_price.get_total_paid_down_payments")
+    @patch("_utils.contract_price.get_contract_price")
+    def test_get_down_payment_settlement_never_negative(self, mock_price, mock_paid):
+        mock_contract = MagicMock()
+        mock_order = MagicMock(pay_ratio=Decimal("10.0"))
+        mock_price.return_value = (100000000, 90000000, 10000000)
+        # 기납부 계약금이 15,000,000원으로 10% 기준(10,000,000원)을 초과한 경우
+        mock_paid.return_value = 15000000
+
+        result = get_down_payment_settlement(mock_contract, mock_order)
+        self.assertEqual(result, 0)
+
+    @patch("_utils.contract_price.get_contract_payment_plan")
+    @patch("_utils.contract_price.InstallmentPaymentOrder")
+    def test_get_project_payment_summary_all_installments_counted(self, mock_inst_cls, mock_get_plan):
+        mock_project = MagicMock()
+        mock_c1 = MagicMock()
+        mock_c2 = MagicMock()
+        mock_project.contract_set.filter.return_value.select_related.return_value = [mock_c1, mock_c2]
+
+        inst1 = MagicMock(id=101, pay_code=1, pay_time=1)
+        inst2 = MagicMock(id=102, pay_code=2, pay_time=1)
+        mock_inst_cls.objects.filter.return_value.order_by.return_value = [inst1, inst2]
+
+        # 각 계약에 2개의 회차 계획이 있는 경우
+        mock_get_plan.side_effect = [
+            [
+                {"installment_order": inst1, "amount": 10000000, "source": "calculated"},
+                {"installment_order": inst2, "amount": 20000000, "source": "calculated"},
+            ],
+            [
+                {"installment_order": inst1, "amount": 10000000, "source": "calculated"},
+                {"installment_order": inst2, "amount": 20000000, "source": "calculated"},
+            ],
+        ]
+
+        summary = get_project_payment_summary(mock_project)
+
+        self.assertEqual(summary["total_contracts"], 2)
+        self.assertEqual(summary["grand_total"], 60000000)
+        summaries = summary["installment_summaries"]
+        self.assertEqual(len(summaries), 2)
+
+        # break 버그 수정 검증: 두 번째 회차도 contract_count가 2이고 평균 금액이 정상 계산되어야 함
+        self.assertEqual(summaries[0]["installment_order"].id, 101)
+        self.assertEqual(summaries[0]["contract_count"], 2)
+        self.assertEqual(summaries[0]["total_amount"], 20000000)
+        self.assertEqual(summaries[0]["average_amount"], 10000000)
+
+        self.assertEqual(summaries[1]["installment_order"].id, 102)
+        self.assertEqual(summaries[1]["contract_count"], 2)
+        self.assertEqual(summaries[1]["total_amount"], 40000000)
+        self.assertEqual(summaries[1]["average_amount"], 20000000)

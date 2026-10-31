@@ -48,9 +48,19 @@ class FileService:
         cng_maps = dict(zip([str(pk) for pk in cng_pks], cng_files))
 
         for json_file in old_files:
-            if not json_file or not json_file.strip():
+            if not json_file:
                 continue
-            file_data = json.loads(json_file)
+            if isinstance(json_file, dict):
+                file_data = json_file
+            elif isinstance(json_file, str):
+                if not json_file.strip():
+                    continue
+                try:
+                    file_data = json.loads(json_file)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+            else:
+                continue
             pk = str(file_data.get('pk'))
 
             if file_data.get('del'):

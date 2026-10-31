@@ -15,10 +15,18 @@ def get_due_date_per_order(contract, order, payment_orders=None):
     :: 회차 별 납부 일자 구하기 (계약일 기준 조정 로직 적용)
     """
     # 1. 기초 데이터 설정
+    if not contract:
+        return None
     cont_date = None
-    if hasattr(contract, 'contractor') and contract.contractor:
+    if hasattr(contract, 'contractor') and contract.contractor and contract.contractor.contract_date:
         cont_date = contract.contractor.contract_date
-    if not cont_date:
+    sup_date = getattr(contract, 'sup_cont_date', None)
+    if sup_date and cont_date:
+        cont_date = max(sup_date, cont_date)
+    elif sup_date:
+        cont_date = sup_date
+
+    if not cont_date or not getattr(contract, 'unit_type', None):
         return None
 
     # 2. 미래 기준점(ff_date) 찾기
@@ -198,7 +206,8 @@ def get_down_payment_settlement(contract, installment_order):
     if not contract or not installment_order or not installment_order.pay_ratio: return 0
     price = get_contract_price(contract)[0]
     if not price: return 0
-    return int(price * (installment_order.pay_ratio / 100)) - get_total_paid_down_payments(contract)
+    calculated = int(price * (installment_order.pay_ratio / 100)) - get_total_paid_down_payments(contract)
+    return max(0, calculated)
 
 
 def calculate_remain_payment(contract, remain_installment_order):
@@ -297,8 +306,9 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
                 if has_pay:
                     processed += 1
                     for p in plan:
-                        if p['installment_order'].id in summaries: summaries[p['installment_order'].id][
-                            'contract_count'] += 1; break
+                        iid = p['installment_order'].id
+                        if iid in summaries and p['amount'] > 0:
+                            summaries[iid]['contract_count'] += 1
             except Exception:
                 continue
         res = []

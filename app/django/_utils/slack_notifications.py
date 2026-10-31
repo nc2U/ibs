@@ -358,7 +358,7 @@ def get_authorized_members(issue_project, action_type='view'):
     """해당 IssueProject의 알림 권한이 있는 멤버 조회"""
 
     # 모든 멤버를 대상으로 하거나, 특정 권한을 가진 멤버만 선택
-    members = issue_project.members.all()
+    members = issue_project.members.select_related('user').all()
 
     # TODO: 추후 더 세밀한 권한 제어 필요 시 Role의 Permission 체크
     # members = issue_project.members.filter(

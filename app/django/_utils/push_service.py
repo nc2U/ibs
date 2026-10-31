@@ -3,6 +3,7 @@ import json
 import os
 import logging
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from accounts.models import Notification, FCMDevice
 
 logger = logging.getLogger(__name__)
@@ -90,66 +91,64 @@ def send_push_notification(
     devices = FCMDevice.objects.filter(user_id__in=user_ids, is_active=True)
     tokens = list(devices.values_list('registration_id', flat=True))
 
-    if not tokens:
-        return notifications_count
-
     # 3. Firebase Admin SDK를 통한 푸시 발송
-    if _get_firebase_app():
-        try:
-            from firebase_admin import messaging
+    if tokens:
+        if _get_firebase_app():
+            try:
+                from firebase_admin import messaging
 
-            # 문자열 데이터 페이로드 구성 (FCM data는 문자열만 허용)
-            fcm_data = {
-                'category': str(category),
-                'target_type': str(target_type),
-                'target_id': str(target_id),
-                'title': str(title),
-                'body': str(body),
-            }
-            for k, v in extra_data.items():
-                fcm_data[str(k)] = str(v)
+                # 문자열 데이터 페이로드 구성 (FCM data는 문자열만 허용)
+                fcm_data = {
+                    'category': str(category),
+                    'target_type': str(target_type),
+                    'target_id': str(target_id),
+                    'title': str(title),
+                    'body': str(body),
+                }
+                for k, v in extra_data.items():
+                    fcm_data[str(k)] = str(v)
 
-            multicast_msg = messaging.MulticastMessage(
-                tokens=tokens,
-                notification=messaging.Notification(
-                    title=title,
-                    body=body,
-                ),
-                data=fcm_data,
-                apns=messaging.APNSConfig(
-                    payload=messaging.APNSPayload(
-                        aps=messaging.Aps(
-                            sound='default',
-                            badge=1,
-                        )
-                    )
-                ),
-                android=messaging.AndroidConfig(
-                    priority='high',
-                    notification=messaging.AndroidNotification(
-                        sound='default',
-                        channel_id='ibs_high_importance_channel',
+                multicast_msg = messaging.MulticastMessage(
+                    tokens=tokens,
+                    notification=messaging.Notification(
+                        title=title,
+                        body=body,
                     ),
-                ),
-            )
+                    data=fcm_data,
+                    apns=messaging.APNSConfig(
+                        payload=messaging.APNSPayload(
+                            aps=messaging.Aps(
+                                sound='default',
+                                badge=1,
+                            )
+                        )
+                    ),
+                    android=messaging.AndroidConfig(
+                        priority='high',
+                        notification=messaging.AndroidNotification(
+                            sound='default',
+                            channel_id='ibs_high_importance_channel',
+                        ),
+                    ),
+                )
 
-            response = messaging.send_each_for_multicast(multicast_msg)
-            logger.info(
-                f"FCM Push sent: {response.success_count} success, {response.failure_count} failure out of {len(tokens)} tokens"
-            )
+                response = messaging.send_each_for_multicast(multicast_msg)
+                logger.info(
+                    f"FCM Push sent: {response.success_count} success, {response.failure_count} failure out of {len(tokens)} tokens"
+                )
 
-            # 만료/실패한 토큰 비활성화 처리
-            if response.failure_count > 0:
-                for idx, resp in enumerate(response.responses):
-                    if not resp.success:
-                        err_code = getattr(resp.exception, 'code', '')
-                        if err_code in ('NOT_FOUND', 'UNREGISTERED', 'INVALID_ARGUMENT'):
-                            FCMDevice.objects.filter(registration_id=tokens[idx]).update(is_active=False)
+                # 만료/실패한 토큰 비활성화 처리
+                if response.failure_count > 0:
+                    for idx, resp in enumerate(response.responses):
+                        if not resp.success:
+                            err_code = getattr(resp.exception, 'code', '')
+                            if err_code in ('NOT_FOUND', 'UNREGISTERED', 'INVALID_ARGUMENT'):
+                                FCMDevice.objects.filter(registration_id=tokens[idx]).update(is_active=False)
 
-        except Exception as e:
-            logger.error(f"FCM Push dispatch error: {e}")
-    else:
-        logger.debug(f"FCM simulation: Push would be sent to {len(tokens)} tokens -> {title}: {body}")
+            except Exception as e:
+                logger.error(f"FCM Push dispatch error: {e}")
+        else:
+            logger.debug(f"FCM simulation: Push would be sent to {len(tokens)} tokens -> {title}: {body}")
 
     # 4. Redis Pub/Sub을 통한 웹 브라우저 실시간 스트림(SSE) 브로드캐스팅 (채팅 알림은 SSE 제외)
     if category != 'chat':
@@ -164,7 +163,7 @@ def send_push_notification(
                 'target_type': str(target_type),
                 'target_id': str(target_id),
                 'extra': extra_data,
-            })
+            }, cls=DjangoJSONEncoder)
             for uid in user_ids:
                 r.publish(f'user_notify_{uid}', sse_payload)
         except Exception as e:
