@@ -101,11 +101,16 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         initialDate = DateTime.parse(_dateController.text);
       } catch (_) {}
     }
+    final firstDate = DateTime(1990);
+    final lastDate = DateTime(2100);
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2050),
+      firstDate: firstDate,
+      lastDate: lastDate,
       builder: (context, child) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
@@ -361,8 +366,22 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     }
 
     final isEdit = widget.doc != null;
-    final canPerform =
-        isEdit ? ref.can(Perm.docsUpdate) : ref.can(Perm.docsCreate);
+    String? targetSlug = widget.doc?.project?.slug;
+    if (targetSlug == null && issueProjectId != null) {
+      final docsCtx = ref.read(docsContextProvider);
+      if (docsCtx.project?.pk == issueProjectId) {
+        targetSlug = docsCtx.project?.slug;
+      } else {
+        final projects = ref.read(docFormProjectsProvider).valueOrNull;
+        targetSlug = projects
+            ?.where((p) => p.pk == issueProjectId)
+            .firstOrNull
+            ?.slug;
+      }
+    }
+    final canPerform = isEdit
+        ? ref.can(Perm.docsUpdate, projectSlug: targetSlug)
+        : ref.can(Perm.docsCreate, projectSlug: targetSlug);
     if (!canPerform) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
