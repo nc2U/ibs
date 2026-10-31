@@ -220,11 +220,14 @@ class UnitMatrixView extends ConsumerWidget {
                   title: const Text('모바일 전송 / 공유 (카카오톡, 문자, 메일)'),
                   subtitle: const Text('본사 보고 또는 관계자에게 파일 전송', style: TextStyle(fontSize: 11.5)),
                   onTap: () async {
+                    final box = context.findRenderObject() as RenderBox?;
+                    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
                     Navigator.pop(dialogCtx);
                     await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
                       text: '${selectedProject.name} 동호수 현황표 ($typeLabel) 파일입니다.',
                       subject: '${selectedProject.name} 동호수 현황표 ($typeLabel)',
+                      sharePositionOrigin: origin,
                     );
                   },
                 ),

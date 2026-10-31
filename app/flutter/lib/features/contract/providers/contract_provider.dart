@@ -42,6 +42,7 @@ class ContractPaginationState<T> {
   final bool isFetchingNextPage;
   final bool hasMore;
   final String? error;
+  final bool isNextPageError;
 
   const ContractPaginationState({
     this.items = const [],
@@ -50,6 +51,7 @@ class ContractPaginationState<T> {
     this.isFetchingNextPage = false,
     this.hasMore = true,
     this.error,
+    this.isNextPageError = false,
   });
 
   ContractPaginationState<T> copyWith({
@@ -59,6 +61,7 @@ class ContractPaginationState<T> {
     bool? isFetchingNextPage,
     bool? hasMore,
     String? error,
+    bool? isNextPageError,
   }) {
     return ContractPaginationState<T>(
       items: items ?? this.items,
@@ -67,6 +70,7 @@ class ContractPaginationState<T> {
       isFetchingNextPage: isFetchingNextPage ?? this.isFetchingNextPage,
       hasMore: hasMore ?? this.hasMore,
       error: error,
+      isNextPageError: isNextPageError ?? this.isNextPageError,
     );
   }
 }
@@ -86,7 +90,14 @@ class ValidContractListNotifier extends StateNotifier<ContractPaginationState<Co
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      page: 1,
+      items: [],
+      hasMore: true,
+      error: null,
+      isNextPageError: false,
+    );
 
     final search = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
@@ -104,11 +115,13 @@ class ValidContractListNotifier extends StateNotifier<ContractPaginationState<Co
         items: items,
         page: 1,
         hasMore: items.length >= 10,
+        isNextPageError: false,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: ContractRepository.extractErrorMessage(e, '계약 목록을 불러오지 못했습니다.'),
+        isNextPageError: false,
       );
     }
   }
@@ -119,28 +132,42 @@ class ValidContractListNotifier extends StateNotifier<ContractPaginationState<Co
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
-    state = state.copyWith(isFetchingNextPage: true);
+    state = state.copyWith(isFetchingNextPage: true, isNextPageError: false);
 
-    final nextPage = state.page + 1;
-    final search = ref.read(contractSearchQueryProvider);
+    final initialProjectId = selectedProject.realProjectId;
+    final targetPage = state.page + 1;
+    final initialSearch = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
 
     try {
       final newItems = await repository.fetchContracts(
-        projectId: selectedProject.realProjectId,
-        search: search,
-        page: nextPage,
+        projectId: initialProjectId,
+        search: initialSearch,
+        page: targetPage,
         limit: 10,
       );
 
+      // 경쟁 상태 방지: 비동기 대기 중 프로젝트 또는 검색어가 변경되었거나 페이지가 리셋되었으면 결과 폐기
+      final currentProject = ref.read(selectedRealEstateProjectProvider);
+      final currentSearch = ref.read(contractSearchQueryProvider);
+      if (currentProject?.realProjectId != initialProjectId ||
+          currentSearch != initialSearch ||
+          state.page + 1 != targetPage) {
+        return;
+      }
+
       state = state.copyWith(
         isFetchingNextPage: false,
+        isNextPageError: false,
         items: [...state.items, ...newItems],
-        page: nextPage,
+        page: targetPage,
         hasMore: newItems.length >= 10,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        isNextPageError: true,
+      );
     }
   }
 }
@@ -160,7 +187,14 @@ class SuccessionListNotifier extends StateNotifier<ContractPaginationState<Succe
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      page: 1,
+      items: [],
+      hasMore: true,
+      error: null,
+      isNextPageError: false,
+    );
 
     final search = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
@@ -178,11 +212,13 @@ class SuccessionListNotifier extends StateNotifier<ContractPaginationState<Succe
         items: items,
         page: 1,
         hasMore: items.length >= 10,
+        isNextPageError: false,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: ContractRepository.extractErrorMessage(e, '계약 목록을 불러오지 못했습니다.'),
+        error: ContractRepository.extractErrorMessage(e, '권리의무 승계 목록을 불러오지 못했습니다.'),
+        isNextPageError: false,
       );
     }
   }
@@ -193,28 +229,42 @@ class SuccessionListNotifier extends StateNotifier<ContractPaginationState<Succe
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
-    state = state.copyWith(isFetchingNextPage: true);
+    state = state.copyWith(isFetchingNextPage: true, isNextPageError: false);
 
-    final nextPage = state.page + 1;
-    final search = ref.read(contractSearchQueryProvider);
+    final initialProjectId = selectedProject.realProjectId;
+    final targetPage = state.page + 1;
+    final initialSearch = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
 
     try {
       final newItems = await repository.fetchSuccessions(
-        projectId: selectedProject.realProjectId,
-        search: search,
-        page: nextPage,
+        projectId: initialProjectId,
+        search: initialSearch,
+        page: targetPage,
         limit: 10,
       );
 
+      // 경쟁 상태 방지
+      final currentProject = ref.read(selectedRealEstateProjectProvider);
+      final currentSearch = ref.read(contractSearchQueryProvider);
+      if (currentProject?.realProjectId != initialProjectId ||
+          currentSearch != initialSearch ||
+          state.page + 1 != targetPage) {
+        return;
+      }
+
       state = state.copyWith(
         isFetchingNextPage: false,
+        isNextPageError: false,
         items: [...state.items, ...newItems],
-        page: nextPage,
+        page: targetPage,
         hasMore: newItems.length >= 10,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        isNextPageError: true,
+      );
     }
   }
 }
@@ -234,7 +284,14 @@ class ContractorReleaseListNotifier extends StateNotifier<ContractPaginationStat
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      page: 1,
+      items: [],
+      hasMore: true,
+      error: null,
+      isNextPageError: false,
+    );
 
     final search = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
@@ -252,11 +309,13 @@ class ContractorReleaseListNotifier extends StateNotifier<ContractPaginationStat
         items: items,
         page: 1,
         hasMore: items.length >= 10,
+        isNextPageError: false,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: ContractRepository.extractErrorMessage(e, '계약 목록을 불러오지 못했습니다.'),
+        error: ContractRepository.extractErrorMessage(e, '계약 해약 목록을 불러오지 못했습니다.'),
+        isNextPageError: false,
       );
     }
   }
@@ -267,28 +326,42 @@ class ContractorReleaseListNotifier extends StateNotifier<ContractPaginationStat
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
-    state = state.copyWith(isFetchingNextPage: true);
+    state = state.copyWith(isFetchingNextPage: true, isNextPageError: false);
 
-    final nextPage = state.page + 1;
-    final search = ref.read(contractSearchQueryProvider);
+    final initialProjectId = selectedProject.realProjectId;
+    final targetPage = state.page + 1;
+    final initialSearch = ref.read(contractSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
 
     try {
       final newItems = await repository.fetchReleases(
-        projectId: selectedProject.realProjectId,
-        search: search,
-        page: nextPage,
+        projectId: initialProjectId,
+        search: initialSearch,
+        page: targetPage,
         limit: 10,
       );
 
+      // 경쟁 상태 방지
+      final currentProject = ref.read(selectedRealEstateProjectProvider);
+      final currentSearch = ref.read(contractSearchQueryProvider);
+      if (currentProject?.realProjectId != initialProjectId ||
+          currentSearch != initialSearch ||
+          state.page + 1 != targetPage) {
+        return;
+      }
+
       state = state.copyWith(
         isFetchingNextPage: false,
+        isNextPageError: false,
         items: [...state.items, ...newItems],
-        page: nextPage,
+        page: targetPage,
         hasMore: newItems.length >= 10,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        isNextPageError: true,
+      );
     }
   }
 }

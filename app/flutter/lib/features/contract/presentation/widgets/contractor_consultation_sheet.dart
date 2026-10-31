@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../data/contract_repository.dart';
 import '../../data/models/contract_models.dart';
 import '../../providers/contract_provider.dart';
@@ -34,6 +37,17 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
     final contractor = contract.contractor;
     if (contractor == null) return;
 
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (!ref.can(Perm.contractUpdate, projectSlug: selectedProject?.slug)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('상담을 등록할 권한(contract.update)이 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (ctx) => _NewConsultationDialog(
@@ -58,6 +72,8 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
       );
     }
 
+    final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+    final canUpdate = ref.can(Perm.contractUpdate, projectSlug: selectedProject?.slug);
     final logsAsync = ref.watch(contractorConsultationLogsProvider(contractor.pk));
 
     return SafeArea(
@@ -96,18 +112,19 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF59E0B),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  if (canUpdate)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      ),
+                      onPressed: () => _showAddConsultationDialog(context, ref),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('상담 등록', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: () => _showAddConsultationDialog(context, ref),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('상담 등록', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
                 ],
               ),
             ),
@@ -134,12 +151,14 @@ class ContractorConsultationBottomSheet extends ConsumerWidget {
                             '등록된 상담/민원 이력이 없습니다.',
                             style: AppTextStyles.bodySecond.copyWith(color: context.colors.textMuted),
                           ),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: () => _showAddConsultationDialog(context, ref),
-                            icon: const Icon(Icons.add, size: 16, color: Color(0xFFF59E0B)),
-                            label: const Text('첫 상담 기록 작성하기', style: TextStyle(color: Color(0xFFF59E0B))),
-                          ),
+                          if (canUpdate) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: () => _showAddConsultationDialog(context, ref),
+                              icon: const Icon(Icons.add, size: 16, color: Color(0xFFF59E0B)),
+                              label: const Text('첫 상담 기록 작성하기', style: TextStyle(color: Color(0xFFF59E0B))),
+                            ),
+                          ],
                         ],
                       ),
                     );

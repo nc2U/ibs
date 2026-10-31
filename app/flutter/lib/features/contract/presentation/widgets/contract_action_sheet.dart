@@ -350,11 +350,14 @@ class ContractActionSheet extends ConsumerWidget {
                   title: const Text('모바일 전송 / 공유 (카카오톡, 문자, 메일)'),
                   subtitle: const Text('계약자 또는 대출기관에 파일 직접 전송', style: TextStyle(fontSize: 11.5)),
                   onTap: () async {
+                    final box = context.findRenderObject() as RenderBox?;
+                    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
                     Navigator.pop(dialogCtx);
                     await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/pdf')],
                       text: '$contractorName님 ($unitStr) 분양대금 납부확인서입니다.',
                       subject: '분양대금 납부확인서 - $contractorName',
+                      sharePositionOrigin: origin,
                     );
                   },
                 ),
