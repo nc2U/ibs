@@ -19,5 +19,6 @@ overrides:
   vite: '>=7.3.7 <8.0.0'
   katex: '>=0.18.2'
   follow-redirects: '>=1.16.2'
+  minimatch: '>=11.0.3'
 
 minimumReleaseAge: 0
