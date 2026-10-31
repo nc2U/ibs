@@ -99,7 +99,7 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: colors.bgInput,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: colors.borderSubtle, width: 0.8),
                 ),
                 child: TextField(
@@ -109,16 +109,21 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
                     hintText: '공문 제목, 발신처, 접수번호 검색',
                     hintStyle: TextStyle(fontSize: 12.5, color: colors.textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 16),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(inboundLetterPageProvider.notifier).state = 1;
-                              ref.read(inboundLetterSearchQueryProvider.notifier).state = '';
-                            },
-                          )
-                        : null,
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _searchController,
+                      builder: (context, value, _) {
+                        return value.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  ref.read(inboundLetterPageProvider.notifier).state = 1;
+                                  ref.read(inboundLetterSearchQueryProvider.notifier).state = '';
+                                },
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -295,12 +300,12 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
     final colors = context.colors;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? colors.accentApproval : colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: isSelected ? colors.accentApproval : colors.border,
             width: 0.8,

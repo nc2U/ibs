@@ -50,12 +50,12 @@ class LetterCard extends StatelessWidget {
       elevation: 0,
       color: colors.bgCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         side: BorderSide(color: colors.border, width: 0.8),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -68,7 +68,7 @@ class LetterCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: colors.bgSurface,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(color: colors.borderSubtle, width: 0.8),
                     ),
                     child: Text(
@@ -88,7 +88,7 @@ class LetterCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: badgeBg,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
                     ),
                     child: Text(

@@ -102,7 +102,7 @@ class _InboundReportSubmitBottomSheetState
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: colors.accentApproval.withAlpha(25),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: Icon(
                       Icons.assignment_turned_in_outlined,
@@ -155,7 +155,7 @@ class _InboundReportSubmitBottomSheetState
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: colors.bgSurface,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: colors.borderSubtle, width: 0.8),
                       ),
                       child: Column(
@@ -187,7 +187,7 @@ class _InboundReportSubmitBottomSheetState
                     Container(
                       decoration: BoxDecoration(
                         color: colors.bgSurface,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: colors.borderSubtle, width: 0.8),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -230,13 +230,13 @@ class _InboundReportSubmitBottomSheetState
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: _pickReplyPlannedDate,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 12),
                           decoration: BoxDecoration(
                             color: colors.bgSurface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                             border: Border.all(
                                 color: colors.borderSubtle, width: 0.8),
                           ),
@@ -283,15 +283,15 @@ class _InboundReportSubmitBottomSheetState
                         fillColor: colors.bgSurface,
                         contentPadding: const EdgeInsets.all(12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.borderSubtle, width: 0.8),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.borderSubtle, width: 0.8),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.accentApproval, width: 1.2),
                         ),
                       ),
@@ -319,15 +319,15 @@ class _InboundReportSubmitBottomSheetState
                         suffixText: '원',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.borderSubtle, width: 0.8),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.borderSubtle, width: 0.8),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: colors.accentApproval, width: 1.2),
                         ),
                       ),
@@ -352,7 +352,7 @@ class _InboundReportSubmitBottomSheetState
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         side: BorderSide(color: colors.border),
                       ),
                       child: Text('취소', style: TextStyle(color: colors.textSecond)),
@@ -379,7 +379,7 @@ class _InboundReportSubmitBottomSheetState
                         backgroundColor: colors.accentApproval,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       ),
                       child: const Text('상신 진행', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),

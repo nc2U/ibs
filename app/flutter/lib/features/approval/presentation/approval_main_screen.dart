@@ -36,6 +36,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
   bool _isSelectionMode = false;
   final Set<int> _selectedDocIds = {};
   bool _isBatchProcessing = false;
+  final TextEditingController _allSearchController = TextEditingController();
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
     final initialIdx = widget.initialTabIndex < 4 ? widget.initialTabIndex : 0;
     _tabController = TabController(length: 4, vsync: this, initialIndex: initialIdx);
     _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
       if (mounted) {
         if (_tabController.index != 0 && _isSelectionMode) {
           setState(() {
@@ -72,6 +74,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _allSearchController.dispose();
     super.dispose();
   }
 
@@ -426,7 +429,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: context.colors.error,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.zero,
                               ),
                               child: Text(
                                 '$pendingCount',
@@ -615,7 +618,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                           value: allSelected,
                           activeColor: context.colors.accentApproval,
                           checkColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                           side: BorderSide(color: context.colors.border, width: 1.2),
                           onChanged: (checked) {
                             setState(() {
@@ -834,11 +837,28 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                 child: SizedBox(
                   height: 36,
                   child: TextField(
+                    controller: _allSearchController,
+                    style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
                     decoration: InputDecoration(
                       hintText: '문서번호, 제목, 기안자 검색...',
                       hintStyle: TextStyle(fontSize: 12, color: context.colors.textMuted),
                       prefixIcon: Icon(Icons.search, size: 18, color: context.colors.textMuted),
-                      contentPadding: EdgeInsets.zero,
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _allSearchController,
+                        builder: (context, value, _) {
+                          return value.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 16),
+                                  onPressed: () {
+                                    _allSearchController.clear();
+                                    ref.read(allApprovalsFilterProvider.notifier).state =
+                                        filter.copyWith(search: null, page: 1);
+                                  },
+                                )
+                              : const SizedBox.shrink();
+                        },
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
                       filled: true,
                       fillColor: context.colors.bgSurface,
                       border: OutlineInputBorder(

@@ -67,7 +67,7 @@ class ApprovalDocCard extends StatelessWidget {
                         value: isSelected,
                         activeColor: context.colors.accentApproval,
                         checkColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         side: BorderSide(color: context.colors.border, width: 1.2),
                         onChanged: onSelectChanged,
                       ),

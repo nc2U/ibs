@@ -41,7 +41,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
             height: 38,
             decoration: BoxDecoration(
               color: colors.bgInput,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: colors.borderSubtle, width: 0.8),
             ),
             padding: const EdgeInsets.all(2),
@@ -52,12 +52,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     onTap: () {
                       if (_subMode != 0) setState(() => _subMode = 0);
                     },
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _subMode == 0 ? colors.accentApproval : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -86,12 +86,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     onTap: () {
                       if (_subMode != 1) setState(() => _subMode = 1);
                     },
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _subMode == 1 ? colors.accentApproval : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -148,7 +148,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: colors.bgInput,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: colors.borderSubtle, width: 0.8),
                 ),
                 child: TextField(
@@ -158,16 +158,21 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     hintText: '공문 제목, 수신처, 문서번호 검색',
                     hintStyle: TextStyle(fontSize: 12.5, color: colors.textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
-                    suffixIcon: _outboundSearchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 16),
-                            onPressed: () {
-                              _outboundSearchController.clear();
-                              ref.read(officialLetterPageProvider.notifier).state = 1;
-                              ref.read(letterSearchQueryProvider.notifier).state = '';
-                            },
-                          )
-                        : null,
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _outboundSearchController,
+                      builder: (context, value, _) {
+                        return value.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _outboundSearchController.clear();
+                                  ref.read(officialLetterPageProvider.notifier).state = 1;
+                                  ref.read(letterSearchQueryProvider.notifier).state = '';
+                                },
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -334,12 +339,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
     final colors = context.colors;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? colors.accentApproval : colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: isSelected ? colors.accentApproval : colors.border,
             width: 0.8,

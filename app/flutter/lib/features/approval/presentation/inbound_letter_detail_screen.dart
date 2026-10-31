@@ -256,7 +256,7 @@ class _InboundLetterDetailScreenState
                       backgroundColor: colors.accentApproval,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -302,7 +302,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -323,7 +323,7 @@ class _InboundLetterDetailScreenState
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: badgeBg,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
                 ),
                 child: Text(
@@ -343,7 +343,7 @@ class _InboundLetterDetailScreenState
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: colors.error.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: colors.error.withAlpha(80), width: 0.8),
                   ),
                   child: Text(
@@ -417,7 +417,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -456,7 +456,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(14),
@@ -468,7 +468,7 @@ class _InboundLetterDetailScreenState
               color: hasScan
                   ? colors.accentApproval.withAlpha(20)
                   : colors.bgSurface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
             ),
             child: Icon(
               Icons.picture_as_pdf_rounded,
@@ -506,7 +506,7 @@ class _InboundLetterDetailScreenState
                 backgroundColor: colors.accentApproval,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
               ),
               child: _isDownloadingPdf
                   ? const SizedBox(
@@ -526,7 +526,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -553,7 +553,7 @@ class _InboundLetterDetailScreenState
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: colors.bgSurface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: colors.borderSubtle, width: 0.6),
               ),
               child: Row(
@@ -582,13 +582,31 @@ class _InboundLetterDetailScreenState
                     IconButton(
                       icon: Icon(Icons.download_rounded, size: 18, color: colors.accentApproval),
                       onPressed: () async {
-                        final rawUrl = att.file!;
-                        final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
-                            ? rawUrl
-                            : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
-                        final uri = Uri.tryParse(fullUrl);
-                        if (uri != null && await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        try {
+                          final rawUrl = att.file!;
+                          final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+                              ? rawUrl
+                              : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
+                          final uri = Uri.tryParse(fullUrl);
+                          if (uri != null && await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } else {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('파일을 열 수 없습니다.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (_) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('파일 열기 중 오류가 발생했습니다.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
                         }
                       },
                     ),
@@ -613,7 +631,7 @@ class _InboundLetterDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: colors.border, width: 0.8),
       ),
       padding: const EdgeInsets.all(16),
@@ -640,7 +658,7 @@ class _InboundLetterDetailScreenState
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: colors.bgSurface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: colors.borderSubtle, width: 0.6),
                 ),
                 child: Row(
@@ -689,7 +707,7 @@ class _InboundLetterDetailScreenState
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: colors.bgSurface,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: colors.borderSubtle, width: 0.6),
                   ),
                   child: Row(

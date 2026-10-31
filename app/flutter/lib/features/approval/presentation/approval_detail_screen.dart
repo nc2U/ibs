@@ -1545,12 +1545,30 @@ class ApprovalDetailScreen extends ConsumerWidget {
               onTap: () async {
                 final rawUrl = f.fileUrl ?? f.file;
                 if (rawUrl == null || rawUrl.isEmpty) return;
-                final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
-                    ? rawUrl
-                    : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
-                final uri = Uri.tryParse(fullUrl);
-                if (uri != null && await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                try {
+                  final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+                      ? rawUrl
+                      : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
+                  final uri = Uri.tryParse(fullUrl);
+                  if (uri != null && await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('파일을 열 수 없습니다.'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('파일 열기 중 오류가 발생했습니다.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 }
               },
               child: Container(
