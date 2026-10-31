@@ -64,12 +64,15 @@ class MeetingListNotifier extends AsyncNotifier<MeetingListState> {
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
 
+    final filter = ref.read(meetingFilterProvider);
     try {
-      final filter = ref.read(meetingFilterProvider);
       final nextPage = current.currentPage + 1;
       final resp = await ref
           .read(meetingRepositoryProvider)
           .fetchMeetings(filter.copyWith(page: nextPage));
+
+      // 응답 대기 중 필터가 바뀌어 목록이 재구성되었다면 오래된 응답은 폐기
+      if (ref.read(meetingFilterProvider) != filter) return;
 
       state = AsyncData(current.copyWith(
         items: [...current.items, ...resp.results],
@@ -77,16 +80,17 @@ class MeetingListNotifier extends AsyncNotifier<MeetingListState> {
         hasMore: resp.next != null,
         isLoadingMore: false,
       ));
-    } catch (e, st) {
+    } catch (_) {
+      if (ref.read(meetingFilterProvider) != filter) return;
+      // 스크롤 리스너에서 await 없이 호출되므로 예외를 전파하지 않고 로딩 상태만 해제
       state = AsyncData(current.copyWith(isLoadingMore: false));
-      Error.throwWithStackTrace(e, st);
     }
   }
 
+  /// 기존 목록을 유지한 채 새로 조회 (RefreshIndicator/shimmer 깜빡임 방지)
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final filter = ref.read(meetingFilterProvider);
+    final filter = ref.read(meetingFilterProvider);
+    final result = await AsyncValue.guard(() async {
       final resp = await ref
           .read(meetingRepositoryProvider)
           .fetchMeetings(filter.copyWith(page: 1));
@@ -97,6 +101,10 @@ class MeetingListNotifier extends AsyncNotifier<MeetingListState> {
         hasMore: resp.next != null,
       );
     });
+    if (ref.read(meetingFilterProvider) != filter) return;
+    // 갱신 실패 시 기존 데이터를 유지
+    if (result.hasError && state.hasValue) return;
+    state = result;
   }
 }
 
@@ -108,7 +116,7 @@ final meetingListProvider =
 // ── 회의 상세 ──────────────────────────────────────────────────────────────────
 
 class MeetingDetailNotifier
-    extends FamilyAsyncNotifier<MeetingModel, int> {
+    extends AutoDisposeFamilyAsyncNotifier<MeetingModel, int> {
   @override
   Future<MeetingModel> build(int id) async {
     return ref.read(meetingRepositoryProvider).fetchMeetingDetail(id);
@@ -128,13 +136,13 @@ class MeetingDetailNotifier
       state = AsyncData(current.copyWith(isConfirmed: isConfirmed));
     }
     // 회의 목록도 갱신
-    ref.read(meetingListProvider.notifier).refresh();
+    ref.invalidate(meetingListProvider);
     return isConfirmed;
   }
 }
 
-final meetingDetailProvider =
-    AsyncNotifierProviderFamily<MeetingDetailNotifier, MeetingModel, int>(
+final meetingDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<MeetingDetailNotifier, MeetingModel, int>(
   MeetingDetailNotifier.new,
 );
 

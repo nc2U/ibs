@@ -9,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
 import '../../../core/models/common_models.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../data/meeting_repository.dart';
@@ -180,6 +182,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     try {
       final path = await _audioRecorder.stop();
       _recordingTimer?.cancel();
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
       });
@@ -363,11 +366,16 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       }
     } catch (_) {}
 
+    final firstDate = DateTime(2020);
+    final lastDate = DateTime(2100);
+    if (initialDateTime.isBefore(firstDate)) initialDateTime = firstDate;
+    if (initialDateTime.isAfter(lastDate)) initialDateTime = lastDate;
+
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDateTime,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (pickedDate == null || !mounted) return;
 
@@ -853,39 +861,46 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('카테고리 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
-                  InkWell(
-                    onTap: _showAddCategoryDialog,
-                    borderRadius: BorderRadius.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_circle_outline_rounded, size: 14, color: context.colors.accentWork),
-                          const SizedBox(width: 4),
-                          Text(
-                            '카테고리 추가',
-                            style: AppTextStyles.caption.copyWith(
-                              color: context.colors.accentWork,
-                              fontWeight: FontWeight.bold,
+                  if (ref.can(Perm.projectUpdate,
+                      projectSlug: ref.watch(selectedProjectProvider)?.slug))
+                    InkWell(
+                      onTap: _showAddCategoryDialog,
+                      borderRadius: BorderRadius.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_circle_outline_rounded, size: 14, color: context.colors.accentWork),
+                            const SizedBox(width: 4),
+                            Text(
+                              '카테고리 추가',
+                              style: AppTextStyles.caption.copyWith(
+                                color: context.colors.accentWork,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 6),
               ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
                     data: (categories) {
+                      // 수정 모드에서 기존 카테고리가 없던 회의는 임의로 첫 카테고리를 지정하지 않음
                       final validCategoryPk = (_selectedCategoryPk != null &&
                               categories.any((c) => c.pk == _selectedCategoryPk))
                           ? _selectedCategoryPk
-                          : (categories.isNotEmpty ? categories.first.pk : null);
+                          : (!isEdit && categories.isNotEmpty
+                              ? categories.first.pk
+                              : null);
 
-                      // 만약 _selectedCategoryPk가 비어있고 카테고리가 존재하면 첫 번째 카테고리로 자동 지정
-                      if (_selectedCategoryPk == null && validCategoryPk != null) {
+                      // 신규 작성 시에만 첫 번째 카테고리로 자동 지정
+                      if (!isEdit &&
+                          _selectedCategoryPk == null &&
+                          validCategoryPk != null) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (mounted && _selectedCategoryPk == null) {
                             setState(() => _selectedCategoryPk = validCategoryPk);
@@ -900,7 +915,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         dropdownColor: context.colors.bgCard,
                         decoration: _inputDecoration('카테고리 선택'),
-                        validator: (v) => v == null ? '카테고리를 선택해 주세요.' : null,
+                        validator: (v) => (v == null &&
+                                !(isEdit && widget.initialMeeting!.category == null))
+                            ? '카테고리를 선택해 주세요.'
+                            : null,
                         items: categories
                             .map((c) => DropdownMenuItem<int?>(
                                   value: c.pk,

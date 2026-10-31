@@ -94,7 +94,7 @@ class MeetingCard extends StatelessWidget {
                     size: 14, color: context.colors.textMuted),
                 const SizedBox(width: 4),
                 Text(
-                  '${meeting.attendeesDesc.length}명 참석',
+                  '${meeting.totalAttendeesCount > 0 ? meeting.totalAttendeesCount : meeting.attendeesDesc.length}명 참석',
                   style: AppTextStyles.caption.copyWith(color: context.colors.textSecond),
                 ),
                 if (meeting.issues.isNotEmpty) ...[

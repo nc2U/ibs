@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/share_payload_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -40,6 +42,9 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
 
   List<MeetingModel> _meetings = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+  int _page = 1;
   bool _isUploading = false;
   String? _uploadProgressText;
 
@@ -69,17 +74,23 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
   }
 
   Future<void> _fetchMeetings() async {
-    setState(() => _isLoading = true);
+    final requestQuery = _searchQuery;
+    setState(() {
+      _isLoading = true;
+      _page = 1;
+      _hasMore = false;
+    });
     try {
       final repo = ref.read(meetingRepositoryProvider);
       final resp = await repo.fetchMeetings(MeetingFilterModel(
-        search: _searchQuery.isEmpty ? null : _searchQuery,
+        search: requestQuery.isEmpty ? null : requestQuery,
         page: 1,
         ordering: '-meeting_date',
       ));
-      if (mounted) {
+      if (mounted && requestQuery == _searchQuery) {
         setState(() {
           _meetings = resp.results;
+          _hasMore = resp.next != null;
           _isLoading = false;
         });
       }
@@ -88,6 +99,44 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _fetchMore() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    final requestQuery = _searchQuery;
+    setState(() => _isLoadingMore = true);
+    try {
+      final resp = await ref.read(meetingRepositoryProvider).fetchMeetings(
+            MeetingFilterModel(
+              search: requestQuery.isEmpty ? null : requestQuery,
+              page: _page + 1,
+              ordering: '-meeting_date',
+            ),
+          );
+      if (mounted && requestQuery == _searchQuery) {
+        setState(() {
+          _meetings = [..._meetings, ...resp.results];
+          _page += 1;
+          _hasMore = resp.next != null;
+          _isLoadingMore = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  /// 파일 첨부 가능 여부: 수정 권한 + (확정된 회의는 확정 후 수정 권한 필요)
+  bool _canAttach(MeetingModel meeting) {
+    final slug = meeting.projectDesc.slug;
+    if (!ref.can(Perm.meetingUpdate, projectSlug: slug)) return false;
+    if (meeting.isConfirmed &&
+        !ref.can(Perm.meetingEditConfirmed, projectSlug: slug)) {
+      return false;
+    }
+    return true;
   }
 
   String _formatFileSize(int bytes) {
@@ -145,10 +194,6 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
         successCount++;
       }
 
-      // 회의 상세 및 목록 프로바이더 갱신
-      ref.invalidate(meetingDetailProvider(meeting.pk));
-      ref.invalidate(meetingListProvider);
-
       if (!mounted) return;
 
       Navigator.pop(context); // 시트 닫기
@@ -174,6 +219,11 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
     } catch (e) {
       errorMessage = e.toString();
     } finally {
+      // 일부만 업로드되고 실패한 경우에도 상세/목록을 갱신
+      if (successCount > 0) {
+        ref.invalidate(meetingDetailProvider(meeting.pk));
+        ref.invalidate(meetingListProvider);
+      }
       if (mounted) {
         setState(() {
           _isUploading = false;
@@ -355,17 +405,47 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
                               ],
                             ),
                           )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                            itemCount: _meetings.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (ctx, index) {
-                              final meeting = _meetings[index];
-                              return _MeetingPickTile(
-                                meeting: meeting,
-                                onTap: () => _attachFilesToMeeting(meeting),
-                              );
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: (n) {
+                              if (n.metrics.pixels >=
+                                  n.metrics.maxScrollExtent - 200) {
+                                _fetchMore();
+                              }
+                              return false;
                             },
+                            child: ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                              itemCount: _meetings.length + (_isLoadingMore ? 1 : 0),
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (ctx, index) {
+                                if (index >= _meetings.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    child: Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  );
+                                }
+                                final meeting = _meetings[index];
+                                final canAttach = _canAttach(meeting);
+                                return Opacity(
+                                  opacity: canAttach ? 1.0 : 0.45,
+                                  child: _MeetingPickTile(
+                                    meeting: meeting,
+                                    onTap: canAttach
+                                        ? () => _attachFilesToMeeting(meeting)
+                                        : () => ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(meeting.isConfirmed
+                                                    ? '확정된 회의록은 수정 권한이 있어야 파일을 첨부할 수 있습니다.'
+                                                    : '이 회의록에 파일을 첨부할 권한이 없습니다.'),
+                                              ),
+                                            ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
               ),
             ],

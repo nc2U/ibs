@@ -247,9 +247,23 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen>
             ),
             data: (state) {
               if (state.items.isEmpty) {
-                return const ErrorView.empty(
-                  message: '등록된 회의가 없습니다.',
-                  subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                return RefreshIndicator(
+                  color: context.colors.accentWork,
+                  backgroundColor: context.colors.bgCard,
+                  onRefresh: () =>
+                      ref.read(meetingListProvider.notifier).refresh(),
+                  child: LayoutBuilder(
+                    builder: (ctx, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: constraints.maxHeight,
+                        child: const ErrorView.empty(
+                          message: '등록된 회의가 없습니다.',
+                          subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }
 

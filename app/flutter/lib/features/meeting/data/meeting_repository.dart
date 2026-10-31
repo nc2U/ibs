@@ -127,7 +127,10 @@ class MeetingRepository {
 
   /// 시스템 전체 사용자 목록 조회 (중복 제거)
   Future<List<SimpleUserModel>> fetchMembers({int? projectPk}) async {
-    final response = await _dio.get(ApiEndpoints.users);
+    final response = await _dio.get(
+      ApiEndpoints.users,
+      queryParameters: {'is_active': true},
+    );
     final data = response.data;
     final list = data is List
         ? data
