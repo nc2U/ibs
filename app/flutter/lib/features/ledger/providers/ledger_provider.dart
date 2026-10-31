@@ -111,6 +111,7 @@ class ProjectTransactionsState {
   final bool isLoading;
   final bool isFetchingNextPage;
   final bool hasMore;
+  final bool loadMoreFailed;
   final String? error;
 
   const ProjectTransactionsState({
@@ -119,6 +120,7 @@ class ProjectTransactionsState {
     this.isLoading = false,
     this.isFetchingNextPage = false,
     this.hasMore = true,
+    this.loadMoreFailed = false,
     this.error,
   });
 
@@ -128,6 +130,7 @@ class ProjectTransactionsState {
     bool? isLoading,
     bool? isFetchingNextPage,
     bool? hasMore,
+    bool? loadMoreFailed,
     String? error,
   }) {
     return ProjectTransactionsState(
@@ -136,6 +139,7 @@ class ProjectTransactionsState {
       isLoading: isLoading ?? this.isLoading,
       isFetchingNextPage: isFetchingNextPage ?? this.isFetchingNextPage,
       hasMore: hasMore ?? this.hasMore,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
       error: error,
     );
   }
@@ -145,6 +149,9 @@ class ProjectTransactionsNotifier
     extends StateNotifier<ProjectTransactionsState> {
   final Ref ref;
 
+  /// 필터/프로젝트 변경으로 이전 요청이 무효화되었는지 판별하는 세대 토큰
+  int _generation = 0;
+
   ProjectTransactionsNotifier(this.ref)
       : super(const ProjectTransactionsState()) {
     fetchInitial();
@@ -153,12 +160,20 @@ class ProjectTransactionsNotifier
   Future<void> fetchInitial() async {
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) {
+      _generation++;
       state = const ProjectTransactionsState(items: [], hasMore: false);
       return;
     }
 
+    final gen = ++_generation;
     state = state.copyWith(
-        isLoading: true, page: 1, items: [], hasMore: true, error: null);
+        isLoading: true,
+        isFetchingNextPage: false,
+        page: 1,
+        items: [],
+        hasMore: true,
+        loadMoreFailed: false,
+        error: null);
 
     final search = ref.read(ledgerSearchQueryProvider);
     final sort = ref.read(ledgerSortFilterProvider);
@@ -178,6 +193,7 @@ class ProjectTransactionsNotifier
         page: 1,
         limit: 10,
       );
+      if (gen != _generation) return;
 
       state = state.copyWith(
         isLoading: false,
@@ -186,6 +202,7 @@ class ProjectTransactionsNotifier
         hasMore: pageResult.hasMore,
       );
     } catch (e) {
+      if (gen != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -196,7 +213,8 @@ class ProjectTransactionsNotifier
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
-    state = state.copyWith(isFetchingNextPage: true);
+    final gen = _generation;
+    state = state.copyWith(isFetchingNextPage: true, loadMoreFailed: false);
 
     final nextPage = state.page + 1;
     final search = ref.read(ledgerSearchQueryProvider);
@@ -217,6 +235,7 @@ class ProjectTransactionsNotifier
         page: nextPage,
         limit: 10,
       );
+      if (gen != _generation) return;
 
       state = state.copyWith(
         isFetchingNextPage: false,
@@ -225,7 +244,47 @@ class ProjectTransactionsNotifier
         hasMore: pageResult.hasMore,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      if (gen != _generation) return;
+      state = state.copyWith(isFetchingNextPage: false, loadMoreFailed: true);
+    }
+  }
+
+  /// 현재까지 불러온 페이지를 목록 초기화 없이(스크롤 위치 유지) 다시 조회
+  Future<void> reloadLoaded() async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null || state.isLoading) return;
+    final gen = ++_generation;
+    final loadedPages = state.page;
+    final search = ref.read(ledgerSearchQueryProvider);
+    final sort = ref.read(ledgerSortFilterProvider);
+    final bankAcc = ref.read(ledgerSelectedBankAccFilterProvider);
+    final fromDate = ref.read(ledgerFromDateFilterProvider);
+    final toDate = ref.read(ledgerToDateFilterProvider);
+    final repository = ref.read(ledgerRepositoryProvider);
+
+    try {
+      final items = <ProjectTransactionItemModel>[];
+      var hasMore = true;
+      for (var p = 1; p <= loadedPages; p++) {
+        final r = await repository.fetchProjectTransactionsPage(
+          projectId: selectedProject.realProjectId,
+          search: search,
+          sort: sort,
+          bankAccount: bankAcc,
+          fromDate: fromDate,
+          toDate: toDate,
+          page: p,
+          limit: 10,
+        );
+        items.addAll(r.items);
+        hasMore = r.hasMore;
+        if (!hasMore) break;
+      }
+      if (gen != _generation) return;
+      state = state.copyWith(
+          items: items, isFetchingNextPage: false, hasMore: hasMore);
+    } catch (_) {
+      // 실패 시 기존 목록 유지
     }
   }
 }
@@ -250,12 +309,11 @@ final monthlyCashflowChartProvider =
   final lastDayOfThisMonth = DateTime(now.year, now.month + 1, 0).day;
   final toDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${lastDayOfThisMonth.toString().padLeft(2, '0')}';
 
-  // 최근 6개월 전체 거래 조회 (최대 500건)
-  final transactions = await repository.fetchProjectTransactions(
+  // 최근 6개월 전체 거래 조회 (전 페이지 순회)
+  final transactions = await repository.fetchAllProjectTransactions(
     projectId: selectedProject.realProjectId,
     fromDate: fromDate,
     toDate: toDate,
-    limit: 500,
   );
 
   // 6개월 월별 버킷 초기화

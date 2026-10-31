@@ -79,7 +79,7 @@ class _EditTransactionNoteDialogState
       if (widget.onSaved != null) {
         widget.onSaved!.call();
       } else {
-        ref.read(projectTransactionsProvider.notifier).fetchInitial();
+        ref.read(projectTransactionsProvider.notifier).reloadLoaded();
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
