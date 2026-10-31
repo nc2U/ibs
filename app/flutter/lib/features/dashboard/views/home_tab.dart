@@ -17,10 +17,10 @@ class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
   Future<void> _handleRefresh(WidgetRef ref) async {
-    ref.invalidate(pendingApprovalsProvider);
     ref.invalidate(totalUnreadChatCountProvider);
     ref.invalidate(chatRoomsProvider);
     await Future.wait([
+      ref.refresh(pendingApprovalsProvider.future),
       ref.read(notificationListProvider.notifier).fetchNotifications(),
       ref.read(todoListProvider.notifier).refresh(),
     ]);
@@ -664,6 +664,8 @@ class _ChannelQuickCard extends StatelessWidget {
                     style: AppTextStyles.bodySm.copyWith(
                       color: context.colors.textMuted,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

@@ -34,9 +34,16 @@ class PushPermissionPromptModal extends StatelessWidget {
     final isDark = context.isDarkMode;
     final bgColor = context.colors.bgCard;
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ConstrainedBox(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          onDecline();
+        }
+      },
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520),
         child: Container(
           decoration: BoxDecoration(
@@ -183,8 +190,9 @@ class PushPermissionPromptModal extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFeatureRow(BuildContext context, IconData icon, String text) {
     return Row(
