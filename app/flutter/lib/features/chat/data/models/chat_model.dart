@@ -112,6 +112,12 @@ class ChatRoomModel {
     if (roomType == ChatRoomType.channel) {
       return '#${projectName ?? "공용 채널"}';
     }
+    if (roomType == ChatRoomType.group) {
+      final otherMembers = members.where((m) => m.pk != currentUserId).toList();
+      if (otherMembers.isNotEmpty) {
+        return otherMembers.map((m) => m.name.isNotEmpty ? m.name : m.username).join(', ');
+      }
+    }
     return '그룹 대화방';
   }
 }
@@ -294,7 +300,9 @@ class ChatMessageModel {
   /// 파일 URL (상대경로일 경우 appBaseUrl 결합)
   String get fileUrl {
     if (file == null || file!.isEmpty) return '';
-    return file!.startsWith('http') ? file! : '$appBaseUrl$file';
+    if (file!.startsWith('http')) return file!;
+    final path = file!.startsWith('/') ? file! : '/$file';
+    return '$appBaseUrl$path';
   }
 
   /// 파일 첨부 여부

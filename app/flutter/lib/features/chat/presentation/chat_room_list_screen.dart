@@ -131,7 +131,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
               elevation: 0,
               leading: IconButton(
                 icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
-                onPressed: () => context.pop(),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/'),
               ),
               title: Text(
                 '실시간 메신저',

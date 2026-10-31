@@ -429,14 +429,17 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
       ref.invalidate(totalUnreadChatCountProvider);
 
       if (mounted) {
-        Navigator.pop(context); // ChatShareTargetSheet 닫기
-        ScaffoldMessenger.of(context).showSnackBar(
+        final nav = Navigator.of(context);
+        final messenger = ScaffoldMessenger.of(context);
+        nav.pop(); // ChatShareTargetSheet 닫기
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('메신저로 공유되었습니다.'),
             duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
         );
-        context.push('/chat/${targetRoom.id}', extra: targetRoom);
+        nav.context.push('/chat/${targetRoom.id}', extra: targetRoom);
       }
     } catch (e) {
       if (mounted) {
