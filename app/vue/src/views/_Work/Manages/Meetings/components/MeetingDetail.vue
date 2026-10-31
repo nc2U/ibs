@@ -14,6 +14,7 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import { CCard } from '@coreui/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -484,7 +485,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                     :key="'other-' + idx"
                     size="x-small"
                     color="blue-grey-lighten-4"
-                    class="me-1 mb-1 text-dark"
+                    class="me-1 mb-1 text-muted"
                   >
                     <v-icon start icon="mdi-account-outline" size="12" />
                     {{ other }}
