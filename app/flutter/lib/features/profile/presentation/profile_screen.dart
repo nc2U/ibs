@@ -352,8 +352,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: nameController,
+                      maxLength: 20,
                       style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
-                      decoration: _flatInputDecoration('이름을 입력하세요'),
+                      decoration: _flatInputDecoration('이름을 입력하세요').copyWith(counterText: ''),
                     ),
                     const SizedBox(height: 12),
 
@@ -362,9 +363,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: phoneController,
+                      maxLength: 13,
                       keyboardType: TextInputType.phone,
                       style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
-                      decoration: _flatInputDecoration('010-0000-0000'),
+                      decoration: _flatInputDecoration('010-0000-0000').copyWith(counterText: ''),
                     ),
                     const SizedBox(height: 12),
 
@@ -428,29 +430,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 try {
                                   final dio = ref.read(dioProvider);
                                   final profilePk = user.profile?.pk;
+                                  final birthDateText = birthDateController.text.trim();
 
                                   final mapData = <String, dynamic>{
                                     'name': nameController.text.trim(),
                                     'cell_phone': phoneController.text.trim(),
-                                    'birth_date': birthDateController.text.trim().isEmpty
-                                        ? null
-                                        : birthDateController.text.trim(),
+                                    'birth_date': birthDateText.isEmpty ? null : birthDateText,
                                     'email': emailController.text.trim(),
                                   };
 
+                                  final Object requestData;
                                   if (newAvatarBytes != null) {
                                     mapData['image'] = MultipartFile.fromBytes(
                                       newAvatarBytes!,
                                       filename: newAvatarFileName ?? 'avatar.jpg',
                                     );
+                                    if (birthDateText.isEmpty) {
+                                      mapData.remove('birth_date');
+                                    }
+                                    requestData = FormData.fromMap(mapData);
+                                  } else {
+                                    requestData = mapData;
                                   }
 
-                                  final formData = FormData.fromMap(mapData);
-
                                   if (profilePk != null) {
-                                    await dio.patch('/api/v1/profile/$profilePk/', data: formData);
+                                    await dio.patch('/api/v1/profile/$profilePk/', data: requestData);
                                   } else {
-                                    await dio.post('/api/v1/profile/', data: formData);
+                                    await dio.post('/api/v1/profile/', data: requestData);
                                   }
 
                                   ref.invalidate(currentUserProvider);
@@ -468,17 +474,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     );
                                   }
                                 } catch (e) {
+                                  if (modalCtx.mounted) {
+                                    setModalState(() => isSaving = false);
+                                  }
                                   if (mounted) {
+                                    String errMsg = '$e';
+                                    if (e is DioException && e.response?.data != null) {
+                                      final data = e.response!.data;
+                                      if (data is Map) {
+                                        errMsg = data.values
+                                            .map((v) => v is List ? v.join(', ') : v.toString())
+                                            .join('\n');
+                                      } else {
+                                        errMsg = data.toString();
+                                      }
+                                    }
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('프로필 수정 실패: $e'),
+                                        content: Text('프로필 수정 실패: $errMsg'),
                                         backgroundColor: context.colors.error,
                                         behavior: SnackBarBehavior.floating,
                                       ),
                                     );
                                   }
-                                } finally {
-                                  if (mounted) setModalState(() => isSaving = false);
                                 }
                               },
                         child: isSaving

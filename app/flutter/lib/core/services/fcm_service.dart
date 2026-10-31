@@ -106,30 +106,37 @@ class FcmService {
 
   /// 푸시 알림 활성화 여부 확인 (기본값: false - 최초 권한 유도 전까지 꺼짐 상태 유지)
   static Future<bool> isPushEnabled() async {
-    final value = await _storage.read(key: _pushEnabledKey);
-    if (value == null) {
-      // 최초 사용 시 OS 권한 상태 확인
+    try {
       final settings = await _messaging.getNotificationSettings();
-      final hasOsPermission = settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional;
-      return hasOsPermission;
+      final hasOsPermission =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      final value = await _storage.read(key: _pushEnabledKey);
+      if (value == null) {
+        return hasOsPermission;
+      }
+      // 로컬 설정이 켜져 있더라도 OS 알림 권한이 거부된 상태면 false 반환
+      if (value == 'true' && !hasOsPermission) {
+        return false;
+      }
+      return value == 'true';
+    } catch (_) {
+      final value = await _storage.read(key: _pushEnabledKey);
+      return value == 'true';
     }
-    return value == 'true';
   }
 
   /// 푸시 알림 설정 변경 및 서버 동기화
   static Future<bool> setPushEnabled(Dio dio, bool enabled) async {
     try {
-      // 1. 사용자 선택 상태 로컬 저장소에 즉시 기록
-      await _storage.write(key: _pushEnabledKey, value: enabled.toString());
-
       if (enabled) {
-        // 2. Firebase 앱 초기화 확인
+        // 1. Firebase 앱 초기화 확인
         if (Firebase.apps.isEmpty) {
           await Firebase.initializeApp();
         }
 
-        // 3. iOS/Android 시스템 알림 권한 요청 (팝업 허용 유도)
+        // 2. iOS/Android 시스템 알림 권한 요청 (팝업 허용 유도)
         try {
           if (Platform.isIOS) {
             final iosPlugin = kLocalNotificationsPlugin
@@ -139,14 +146,21 @@ class FcmService {
               await iosPlugin.requestPermissions(alert: true, badge: true, sound: true);
             }
           }
-          await _messaging.requestPermission(
+          final settings = await _messaging.requestPermission(
             alert: true,
             badge: true,
             sound: true,
           );
+          if (settings.authorizationStatus == AuthorizationStatus.denied) {
+            await _storage.write(key: _pushEnabledKey, value: 'false');
+            return false;
+          }
         } catch (e) {
           debugPrint('⚠️ [FCM setPushEnabled] 권한 요청 예외 무시: $e');
         }
+
+        // 3. 권한 허용 확인 후 로컬 저장소에 활성 상태 기록
+        await _storage.write(key: _pushEnabledKey, value: 'true');
 
         // 4. 백엔드 토큰 등록 시도 (실패하더라도 로컬 켜짐 상태 유지)
         try {
@@ -169,6 +183,7 @@ class FcmService {
 
         return true;
       } else {
+        await _storage.write(key: _pushEnabledKey, value: 'false');
         // 끌 때는 백엔드 기기 토큰을 is_active = false 로 업데이트
         try {
           String? fcmToken = await _messaging.getToken();
