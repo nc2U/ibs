@@ -20,23 +20,60 @@ from project.models import Project
 class _TodayProxy(str):
     """서버 가동 중 날짜가 바뀌어도 항상 현재 날짜를 동적으로 반환하는 프록시 문자열"""
 
-    def __str__(self):
+    @property
+    def _val(self):
         return datetime.date.today().strftime('%Y-%m-%d')
 
+    def __str__(self):
+        return self._val
+
     def __repr__(self):
-        return repr(str(self))
+        return repr(self._val)
+
+    def __len__(self):
+        return len(self._val)
+
+    def __bool__(self):
+        return bool(self._val)
 
     def __add__(self, other):
-        return str(self) + str(other)
+        return self._val + str(other)
 
     def __radd__(self, other):
-        return str(other) + str(self)
+        return str(other) + self._val
 
     def __eq__(self, other):
-        return str(self) == other
+        return self._val == other
+
+    def __ne__(self, other):
+        return self._val != other
+
+    def __lt__(self, other):
+        return self._val < other
+
+    def __le__(self, other):
+        return self._val <= other
+
+    def __gt__(self, other):
+        return self._val > other
+
+    def __ge__(self, other):
+        return self._val >= other
 
     def __hash__(self):
-        return hash(str(self))
+        return hash(self._val)
+
+    def startswith(self, prefix, *args):
+        return self._val.startswith(prefix, *args)
+
+    def endswith(self, suffix, *args):
+        return self._val.endswith(suffix, *args)
+
+    def split(self, sep=None, maxsplit=-1):
+        return self._val.split(sep, maxsplit)
+
+    def replace(self, old, new, count=-1):
+        return self._val.replace(old, new, count)
 
 
 # 하위 호환성을 위해 TODAY 심볼 유지 (동적 프록시 적용)
@@ -211,13 +248,22 @@ class ExcelExportMixin(LoginRequiredMixin, View):
             'num_format': '#,##0'
         })
 
+        decimal_format = workbook.add_format({
+            'border': True,
+            'align': 'right',
+            'valign': 'vcenter',
+            'num_format': '#,##0.##'
+        })
+
         for item in data_list:
             for col_num, (header_name, field_name, width) in enumerate(headers):
                 if header_name and field_name:  # 빈 헤더와 필드 제외
                     value = self.get_field_value(item, field_name)
 
                     # 값의 타입 및 컬럼 헤더명에 따른 적절한 서식 매칭
-                    if isinstance(value, (int, float)):
+                    if isinstance(value, float) and (value % 1):
+                        cell_format = decimal_format
+                    elif isinstance(value, (int, float)):
                         cell_format = number_format
                     elif isinstance(value, str) and ('일자' in header_name or '날짜' in header_name):
                         cell_format = date_format
@@ -250,6 +296,13 @@ class ExcelExportMixin(LoginRequiredMixin, View):
                     value = value.get(field, '')
                 else:
                     return ''
+
+                # choice 필드의 get_status_display 등 인자 없는 callable 속성 자동 평가
+                if callable(value):
+                    try:
+                        value = value()
+                    except TypeError:
+                        pass
 
             if value is None:
                 return ''
@@ -341,11 +394,11 @@ class ExcelUtilsMixin:
 
     @staticmethod
     def format_phone(phone):
-        """전화번호 형식으로 포맷 (서울 02 국번 9/10자리 및 일반 10/11자리 대응)"""
+        """전화번호 형식으로 포맷 (서울 02 국번 9/10자리 및 일반 10/11자리 대응, 숫자형 안전 변환)"""
         if not phone:
             return ''
-        # 하이픈 제거 후 재포맷
-        clean_phone = phone.replace('-', '').replace(' ', '')
+        # 하이픈 및 공백 제거 후 재포맷 (정수형 입력 방어)
+        clean_phone = str(phone).replace('-', '').replace(' ', '')
         if len(clean_phone) == 11:
             return f"{clean_phone[:3]}-{clean_phone[3:7]}-{clean_phone[7:]}"
         elif len(clean_phone) == 10:
@@ -354,11 +407,11 @@ class ExcelUtilsMixin:
             return f"{clean_phone[:3]}-{clean_phone[3:6]}-{clean_phone[6:]}"
         elif len(clean_phone) == 9 and clean_phone.startswith('02'):
             return f"{clean_phone[:2]}-{clean_phone[2:5]}-{clean_phone[5:]}"
-        return phone
+        return str(phone)
 
     @staticmethod
     def safe_get_attr(obj, attr_path, default=''):
-        """안전한 속성/키 접근 (객체 및 딕셔너리 동시 지원)"""
+        """안전한 속성/키 접근 (객체 및 딕셔너리 동시 지원, callable 평가)"""
         try:
             attrs = attr_path.split('__')
             result = obj
@@ -371,6 +424,13 @@ class ExcelUtilsMixin:
                     result = result.get(attr, default)
                 else:
                     return default
+
+                if callable(result):
+                    try:
+                        result = result()
+                    except TypeError:
+                        pass
+
             return result if result is not None else default
         except (AttributeError, TypeError):
             return default

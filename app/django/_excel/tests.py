@@ -53,6 +53,16 @@ class ExcelExportMixinTests(TestCase):
         self.assertEqual(TODAY, current_today)
         self.assertEqual(ExcelExportMixin.get_today_str(), current_today)
 
+    def test_today_proxy_truthiness_and_string_methods(self):
+        """TODAY 프록시의 참/거짓 평가(truthiness), 길이 및 문자열 메서드 지원 검증"""
+        current_today = datetime.date.today().strftime('%Y-%m-%d')
+        self.assertTrue(bool(TODAY))
+        self.assertEqual(len(TODAY), 10)
+        self.assertTrue(TODAY.startswith(current_today[:4]))
+        self.assertEqual(TODAY.split('-'), current_today.split('-'))
+        self.assertEqual(TODAY.replace('-', '.'), current_today.replace('-', '.'))
+        self.assertEqual(f"{TODAY}", current_today)
+
     def test_sanitize_sheet_name(self):
         """엑셀 시트 이름의 31자 제한 및 금지문자 제거 검증"""
         # 금지문자 제거
@@ -112,6 +122,44 @@ class ExcelExportMixinTests(TestCase):
         val_nested = ExcelExportMixin.get_field_value(data, 'nested__deep_val')
         self.assertEqual(val_nested, 5500)
 
+    def test_get_field_value_supports_callable(self):
+        """get_field_value가 인자 없는 메서드(get_status_display 등)를 자동 실행하여 값을 반환하는지 검증"""
+        class DummyModel:
+            status = '1'
+
+            def get_status_display(self):
+                return '승인완료'
+
+            def calculate_score(self):
+                return 95.5
+
+        instance = DummyModel()
+        self.assertEqual(ExcelExportMixin.get_field_value(instance, 'get_status_display'), '승인완료')
+        self.assertEqual(ExcelExportMixin.get_field_value(instance, 'calculate_score'), 95.5)
+
+    def test_write_data_rows_decimal_and_callable(self):
+        """write_data_rows가 실수 소수점 보존 서식 및 callable 값을 올바르게 작성하는지 검증"""
+        output, workbook, worksheet = ExcelExportMixin.create_workbook("데이터행_테스트")
+        headers = [
+            ('단지', 'complex_name', 15),
+            ('면적', 'area', 10),
+            ('금액', 'amount', 15),
+            ('상태', 'get_status_display', 12),
+        ]
+
+        class DummyRow:
+            complex_name = '1단지'
+            area = 84.95
+            amount = 500000000
+
+            def get_status_display(self):
+                return '계약완료'
+
+        rows = [DummyRow()]
+        end_row = ExcelExportMixin().write_data_rows(worksheet, workbook, 0, headers, rows)
+        workbook.close()
+        self.assertEqual(end_row, 1)
+
     def test_create_workbook_and_response(self):
         """워크북 생성 및 응답 객체 생성 정상 동작 검증 (중복 close 가드 포함)"""
         output, workbook, worksheet = ExcelExportMixin.create_workbook("테스트_시트")
@@ -142,17 +190,24 @@ class ExcelUtilsMixinTests(TestCase):
         self.assertEqual(ExcelUtilsMixin.format_currency("invalid_number"), "invalid_number")
 
     def test_format_phone(self):
-        """전화번호 포맷팅 검증 (일반 및 서울 02 국번 지원)"""
+        """전화번호 포맷팅 검증 (일반 및 서울 02 국번 지원 및 숫자형 입력 대응)"""
         self.assertEqual(ExcelUtilsMixin.format_phone("01012345678"), "010-1234-5678")
         self.assertEqual(ExcelUtilsMixin.format_phone("0212345678"), "02-1234-5678")
         self.assertEqual(ExcelUtilsMixin.format_phone("021235678"), "02-123-5678")
         self.assertEqual(ExcelUtilsMixin.format_phone("0311234567"), "031-123-4567")
+        self.assertEqual(ExcelUtilsMixin.format_phone(1012345678), "101-234-5678")
         self.assertEqual(ExcelUtilsMixin.format_phone(None), "")
 
     def test_safe_get_attr(self):
-        """safe_get_attr의 딕셔너리 및 객체 탐색 지원 검증"""
-        obj_dict = {'user': {'profile': {'age': 30}}}
+        """safe_get_attr의 딕셔너리 및 객체 탐색 지원 검증 (callable 지원 포함)"""
+        class Profile:
+            age = 30
+            def get_title(self):
+                return '매니저'
+
+        obj_dict = {'user': {'profile': Profile()}}
         self.assertEqual(ExcelUtilsMixin.safe_get_attr(obj_dict, 'user__profile__age'), 30)
+        self.assertEqual(ExcelUtilsMixin.safe_get_attr(obj_dict, 'user__profile__get_title'), '매니저')
         self.assertEqual(ExcelUtilsMixin.safe_get_attr(obj_dict, 'user__unknown__key', default='기본값'), '기본값')
 
 
