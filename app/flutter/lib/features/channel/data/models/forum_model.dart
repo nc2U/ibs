@@ -1,3 +1,4 @@
+import '../../../../core/api/api_client.dart';
 import '../../../../core/models/common_models.dart';
 
 /// 게시판 (Forum) 모델
@@ -118,6 +119,14 @@ class PostFileModel {
       fileType: json['file_type'] as String? ?? '',
       hit: json['hit'] as int? ?? 0,
     );
+  }
+
+  /// 파일 전체 URL (상대경로일 경우 appBaseUrl 결합)
+  String get fileUrl {
+    if (file.isEmpty) return '';
+    if (file.startsWith('http')) return file;
+    final path = file.startsWith('/') ? file : '/$file';
+    return '$appBaseUrl$path';
   }
 }
 

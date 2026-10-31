@@ -52,6 +52,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
       initialIndex: initIdx,
     );
     _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
       if (mounted) setState(() {});
     });
   }

@@ -161,10 +161,33 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
   }
 
   Future<void> _downloadAndOpenFile(NoticeFileModel file) async {
+    final url = file.fileUrl;
+    if (url.isEmpty) return;
+
     if (kIsWeb) {
-      final uri = Uri.tryParse(file.file);
+      final uri = Uri.tryParse(url);
       if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        try {
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('파일 URL을 열 수 없습니다.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('파일 열기 중 오류가 발생했습니다.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
       }
       return;
     }
@@ -175,11 +198,14 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
       final dir = await getTemporaryDirectory();
       final savePath = '${dir.path}/${file.fileName}';
 
-      await dio.download(file.file, savePath);
+      await dio.download(url, savePath);
       final result = await OpenFilex.open(savePath);
       if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('파일 열기 상태: ${result.message}')),
+          SnackBar(
+            content: Text('파일 열기 상태: ${result.message}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -188,6 +214,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
           SnackBar(
             content: Text('파일 열기 실패: $e'),
             backgroundColor: context.colors.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -371,6 +398,13 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     child: notice.content.isNotEmpty
                         ? HtmlWidget(
                             notice.content,
+                            onTapUrl: (url) async {
+                              final uri = Uri.tryParse(url);
+                              if (uri != null && await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                              return true;
+                            },
                             textStyle: AppTextStyles.bodyMd.copyWith(
                               color: context.colors.textPrimary,
                               height: 1.5,
@@ -428,7 +462,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           child: Row(
                             children: [
                               Icon(Icons.attach_file_rounded,
-                                  size: 16, color: context.colors.accentWork),
+                                  size: 16, color: context.colors.accentChannel),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -439,7 +473,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.download_rounded,
-                                    size: 18, color: context.colors.accentWork),
+                                    size: 18, color: context.colors.accentChannel),
                                 onPressed: _isDownloadingFile
                                     ? null
                                     : () => _downloadAndOpenFile(file),
@@ -454,7 +488,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                   Row(
                     children: [
                       Icon(Icons.chat_bubble_outline_rounded,
-                          size: 16, color: context.colors.accentWork),
+                          size: 16, color: context.colors.accentChannel),
                       const SizedBox(width: 6),
                       Text(
                         '댓글 (${notice.comments.length})',
@@ -576,7 +610,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
                             borderSide:
-                                BorderSide(color: context.colors.accentWork),
+                                BorderSide(color: context.colors.accentChannel),
                           ),
                         ),
                       ),
@@ -586,7 +620,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                       onPressed:
                           _isSubmittingComment ? null : _handleAddComment,
                       style: FilledButton.styleFrom(
-                        backgroundColor: context.colors.accentWork,
+                        backgroundColor: context.colors.accentChannel,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(

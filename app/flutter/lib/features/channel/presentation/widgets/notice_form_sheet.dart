@@ -77,7 +77,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final currentWs = ref.read(selectedProjectProvider);
+    final currentWs = ref.read(selectedWorkspaceProvider);
     final projects = ref.read(newsFormProjectsProvider).valueOrNull ?? [];
     final targetProjectPk = _selectedProjectPk ??
         currentWs?.pk ??
@@ -167,7 +167,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
   Widget build(BuildContext context) {
     final isEdit = widget.notice != null;
     final projectsAsync = ref.watch(newsFormProjectsProvider);
-    final currentWs = ref.watch(selectedProjectProvider);
+    final currentWs = ref.watch(selectedWorkspaceProvider);
 
     return Container(
       constraints: BoxConstraints(
@@ -191,7 +191,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
               child: Row(
                 children: [
                   Icon(Icons.campaign_rounded,
-                      size: 20, color: context.colors.accentWork),
+                      size: 20, color: context.colors.accentChannel),
                   const SizedBox(width: 8),
                   Text(
                     isEdit ? '공지사항 수정' : '새 공지사항 등록',
@@ -284,7 +284,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: context.colors.accentWork),
+                          borderSide: BorderSide(color: context.colors.accentChannel),
                         ),
                       ),
                     ),
@@ -358,7 +358,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: context.colors.accentWork),
+                          borderSide: BorderSide(color: context.colors.accentChannel),
                         ),
                       ),
                     ),
@@ -392,7 +392,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: context.colors.accentWork),
+                          borderSide: BorderSide(color: context.colors.accentChannel),
                         ),
                       ),
                     ),
@@ -410,8 +410,8 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                           icon: const Icon(Icons.attach_file_rounded, size: 14),
                           label: const Text('파일 추가'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: context.colors.accentWork,
-                            side: BorderSide(color: context.colors.accentWork),
+                            foregroundColor: context.colors.accentChannel,
+                            side: BorderSide(color: context.colors.accentChannel),
                             shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.zero),
                             padding: const EdgeInsets.symmetric(
@@ -466,7 +466,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                                       : Icons.close_rounded,
                                   size: 16,
                                   color: isDeleted
-                                      ? context.colors.accentWork
+                                      ? context.colors.accentChannel
                                       : context.colors.error,
                                 ),
                                 onPressed: () {
@@ -497,12 +497,12 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                           decoration: BoxDecoration(
                             color: context.colors.bgSurface,
                             border:
-                                Border.all(color: context.colors.accentWork.withAlpha(80)),
+                                Border.all(color: context.colors.accentChannel.withAlpha(80)),
                           ),
                           child: Row(
                             children: [
                               Icon(Icons.upload_file_rounded,
-                                  size: 14, color: context.colors.accentWork),
+                                  size: 14, color: context.colors.accentChannel),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -543,7 +543,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: context.colors.accentWork,
+                    backgroundColor: context.colors.accentChannel,
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero),
                   ),

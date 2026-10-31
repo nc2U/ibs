@@ -115,6 +115,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
       ref.invalidate(postListProvider);
 
       if (mounted) {
+        setState(() => _selectedCategoryId = 0);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('기술지원 문의가 등록되었습니다 (전산팀 접수 완료).'),

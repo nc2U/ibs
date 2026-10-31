@@ -120,7 +120,6 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: TextField(
                 controller: _searchController,
-                onChanged: (_) => setState(() {}),
                 onSubmitted: _onSearch,
                 textInputAction: TextInputAction.search,
                 style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
@@ -129,16 +128,20 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                   hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                   prefixIcon: Icon(Icons.search_rounded,
                       size: 18, color: context.colors.textMuted),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.clear_rounded,
-                              size: 16, color: context.colors.textMuted),
-                          onPressed: () {
-                            setState(() => _searchController.clear());
-                            _onSearch('');
-                          },
-                        )
-                      : null,
+                  suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _searchController,
+                    builder: (context, value, _) {
+                      if (value.text.isEmpty) return const SizedBox.shrink();
+                      return IconButton(
+                        icon: Icon(Icons.clear_rounded,
+                            size: 16, color: context.colors.textMuted),
+                        onPressed: () {
+                          _searchController.clear();
+                          _onSearch('');
+                        },
+                      );
+                    },
+                  ),
                   filled: true,
                   fillColor: context.colors.bgCard,
                   isDense: true,

@@ -17,14 +17,14 @@ class NoticeListNotifier extends AsyncNotifier<NoticeListResponse> {
 
   @override
   Future<NoticeListResponse> build() async {
-    final selectedProject = ref.watch(selectedProjectProvider);
+    final selectedWorkspace = ref.watch(selectedWorkspaceProvider);
     final search = ref.watch(noticeSearchProvider);
     final repo = ref.watch(noticeRepositoryProvider);
 
     _currentPage = 1;
 
     return repo.fetchNotices(
-      project: selectedProject?.pk,
+      project: selectedWorkspace?.pk,
       search: search,
       page: _currentPage,
     );
@@ -39,14 +39,14 @@ class NoticeListNotifier extends AsyncNotifier<NoticeListResponse> {
     final current = state.value;
     if (current == null || current.next == null || state.isLoading) return;
 
-    final selectedProject = ref.read(selectedProjectProvider);
+    final selectedWorkspace = ref.read(selectedWorkspaceProvider);
     final search = ref.read(noticeSearchProvider);
     final repo = ref.read(noticeRepositoryProvider);
 
     try {
       final nextPage = _currentPage + 1;
       final response = await repo.fetchNotices(
-        project: selectedProject?.pk,
+        project: selectedWorkspace?.pk,
         search: search,
         page: nextPage,
       );
@@ -60,7 +60,7 @@ class NoticeListNotifier extends AsyncNotifier<NoticeListResponse> {
         ),
       );
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      state = AsyncValue<NoticeListResponse>.error(e, st).copyWithPrevious(state);
     }
   }
 }

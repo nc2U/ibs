@@ -5,11 +5,11 @@ import '../data/forum_repository.dart';
 
 /// 현재 워크스페이스의 게시판 목록 프로바이더
 final forumListProvider = FutureProvider<List<ForumModel>>((ref) async {
-  final selectedProject = ref.watch(selectedProjectProvider);
+  final selectedWorkspace = ref.watch(selectedWorkspaceProvider);
   final repo = ref.watch(forumRepositoryProvider);
   return repo.fetchForums(
-    projectId: selectedProject?.pk,
-    projectSlug: selectedProject?.slug,
+    projectId: selectedWorkspace?.pk,
+    projectSlug: selectedWorkspace?.slug,
   );
 });
 
@@ -41,7 +41,7 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
 
   @override
   Future<PostListResponse> build() async {
-    final selectedProject = ref.watch(selectedProjectProvider);
+    final selectedWorkspace = ref.watch(selectedWorkspaceProvider);
     final selectedForumId = ref.watch(selectedForumIdProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
     final search = ref.watch(postSearchProvider);
@@ -52,8 +52,8 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
     return repo.fetchPosts(
       forumId: selectedForumId,
       categoryId: selectedCategoryId,
-      projectId: selectedProject?.pk,
-      projectSlug: selectedProject?.slug,
+      projectId: selectedWorkspace?.pk,
+      projectSlug: selectedWorkspace?.slug,
       isFaq: false,
       search: search,
       page: _currentPage,
@@ -69,7 +69,7 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
     final current = state.value;
     if (current == null || current.next == null || state.isLoading) return;
 
-    final selectedProject = ref.read(selectedProjectProvider);
+    final selectedWorkspace = ref.read(selectedWorkspaceProvider);
     final selectedForumId = ref.read(selectedForumIdProvider);
     final selectedCategoryId = ref.read(selectedCategoryIdProvider);
     final search = ref.read(postSearchProvider);
@@ -80,8 +80,8 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
       final response = await repo.fetchPosts(
         forumId: selectedForumId,
         categoryId: selectedCategoryId,
-        projectId: selectedProject?.pk,
-        projectSlug: selectedProject?.slug,
+        projectId: selectedWorkspace?.pk,
+        projectSlug: selectedWorkspace?.slug,
         isFaq: false,
         search: search,
         page: nextPage,
@@ -96,7 +96,7 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
         ),
       );
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      state = AsyncValue<PostListResponse>.error(e, st).copyWithPrevious(state);
     }
   }
 }
