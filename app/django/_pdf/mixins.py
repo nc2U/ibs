@@ -6,6 +6,7 @@ PDF Export Common Mixins
 import re
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from urllib.parse import quote, urlparse
 
 from django.conf import settings
@@ -46,12 +47,31 @@ class PdfExportMixin(LoginRequiredMixin, View):
 
     @staticmethod
     def safe_url_fetcher(url, *args, **kwargs):
-        """SSRF 방어를 위한 WeasyPrint URL Fetcher (내부 사설망 및 메타데이터 차단)"""
+        """SSRF 및 LFI 방어를 위한 WeasyPrint URL Fetcher (내부 사설망, 메타데이터 및 비인가 로컬 파일 차단)"""
         parsed = urlparse(url)
         scheme = parsed.scheme.lower()
 
-        # data: 또는 file: URI 등 로컬 자원은 기본 처리 허용
-        if scheme in ('data', 'file', ''):
+        # data: URI 및 상대경로는 인라인 리소스/폰트용으로 허용
+        if scheme in ('data', ''):
+            return _base_fetcher(url, *args, **kwargs)
+
+        # file: URI는 BASE_DIR 또는 시스템 임시 디렉토리 내부 경로만 허용 (LFI 차단)
+        if scheme == 'file':
+            file_path = parsed.path
+            try:
+                resolved = Path(file_path).resolve()
+                base_dir = Path(settings.BASE_DIR).resolve()
+                is_safe = (
+                    str(resolved).startswith(str(base_dir)) or
+                    str(resolved).startswith('/tmp') or
+                    str(resolved).startswith('/var/tmp')
+                )
+                if not is_safe:
+                    raise ValueError(f"Access to file path {url} outside BASE_DIR is forbidden.")
+            except (ValueError, OSError) as e:
+                if isinstance(e, ValueError) and "forbidden" in str(e):
+                    raise
+                raise ValueError(f"Invalid file URL: {url}")
             return _base_fetcher(url, *args, **kwargs)
 
         if scheme in ('http', 'https'):

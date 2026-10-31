@@ -56,6 +56,9 @@ class _TodayProxy:
     def __radd__(self, other):
         return other + self._current
 
+    def __hash__(self):
+        return hash(self._current)
+
 
 # 하위 호환성을 위해 TODAY 심볼 유지 (동적 프록시 적용)
 TODAY = _TodayProxy()
@@ -195,7 +198,7 @@ def get_late_fee(project, late_amt, days, is_past=False):
 
         elif start is not None and end is None:  # 특정 기간 이상 연체인 경우
             return int(calc_fee + (late_amt * (days - calc_days) * rate / 365))
-    return None
+    return 0
 
 
 def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
@@ -291,7 +294,8 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
                     # 약정 총액 - 납부 총액 (선납금 추출)
                     diff = curr_amt_total - curr_paid_total \
                         if paid_pay_code and paid_pay_code >= calc_start_pay_code else 0
-                    diff = diff if paid[0].deal_date > contract.contractor.contract_date else 0
+                    contractor_date = getattr(getattr(contract, 'contractor', None), 'contract_date', None)
+                    diff = diff if (contractor_date and paid[0].deal_date > contractor_date) else 0
                     if paid_pay_code >= calc_start_pay_code:
                         is_first_pre = False  # 최초 선납의 경우에만 계산하기 위해 이후 False로 변경
                 else:
@@ -327,8 +331,8 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
 
             calc = get_late_fee(contract.project, diff, days, is_past)
 
-            penalty = calc if diff > 0 else 0
-            discount = calc if diff < 0 else 0
+            penalty = (calc or 0) if diff > 0 else 0
+            discount = (calc or 0) if diff < 0 else 0
 
             penalty_sum += penalty
             discount_sum += discount
@@ -350,8 +354,8 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
 
             calc = get_late_fee(contract.project, diff, days, is_past)
 
-            penalty = calc if diff > 0 else 0
-            discount = calc if diff < 0 else 0
+            penalty = (calc or 0) if diff > 0 else 0
+            discount = (calc or 0) if diff < 0 else 0
 
             penalty_sum += penalty
             discount_sum += discount
