@@ -4,6 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/user_model.dart';
 import '../services/fcm_service.dart';
 import 'dio_provider.dart';
+import 'project_provider.dart';
 
 part 'auth_provider.freezed.dart';
 
@@ -33,6 +34,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await FcmService.deactivateTokenOnLogout(dio);
     await tokenStorage.clearTokens();
     ref.invalidate(currentUserProvider);
+    ref.read(selectedWorkspaceProvider.notifier).state = null;
+    ref.read(selectedRealEstateProjectProvider.notifier).state = null;
     state = const AsyncData(AuthState.unauthenticated());
   }
 
