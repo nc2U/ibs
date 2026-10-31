@@ -32,25 +32,32 @@ class IssueListNotifier extends AsyncNotifier<IssueListState> {
     final current = state.valueOrNull;
     if (current == null || !current.hasMore || current.isLoadingMore) return;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    final filter = ref.read(issueFilterProvider);
+    state = AsyncData(current.copyWith(isLoadingMore: true, loadMoreFailed: false));
 
     try {
-      final filter = ref.read(issueFilterProvider);
       final nextPage = current.currentPage + 1;
       final resp = await ref
           .read(issueRepositoryProvider)
           .fetchIssues(filter.copyWith(page: nextPage));
 
-      state = AsyncData(current.copyWith(
-        items: [...current.items, ...resp.results],
+      if (ref.read(issueFilterProvider) != filter) return;
+
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(latest.copyWith(
+        items: [...latest.items, ...resp.results],
         currentPage: nextPage,
         hasMore: resp.next != null,
         isLoadingMore: false,
+        loadMoreFailed: false,
       ));
-    } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
-      // 오류 로깅 (필요 시 Sentry 연동)
-      Error.throwWithStackTrace(e, st);
+    } catch (_) {
+      if (ref.read(issueFilterProvider) != filter) return;
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(latest.copyWith(
+        isLoadingMore: false,
+        loadMoreFailed: true,
+      ));
     }
   }
 
@@ -66,21 +73,28 @@ class IssueListNotifier extends AsyncNotifier<IssueListState> {
     state = AsyncData(current.copyWith(items: updatedItems));
   }
 
-  /// 새로고침 (pull-to-refresh)
+  /// 새로고침 (pull-to-refresh) - 화면 깜빡임 없이 기존 데이터 유지
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final filter = ref.read(issueFilterProvider);
+    final filter = ref.read(issueFilterProvider);
+    try {
       final resp = await ref
           .read(issueRepositoryProvider)
           .fetchIssues(filter.copyWith(page: 1));
-      return IssueListState(
+
+      if (ref.read(issueFilterProvider) != filter) return;
+
+      state = AsyncData(IssueListState(
         items: resp.results,
         totalCount: resp.count,
         currentPage: 1,
         hasMore: resp.next != null,
-      );
-    });
+        loadMoreFailed: false,
+      ));
+    } catch (e, st) {
+      if (state.valueOrNull == null) {
+        state = AsyncError(e, st);
+      }
+    }
   }
 }
 
@@ -97,6 +111,7 @@ class IssueListState {
   final int currentPage;
   final bool hasMore;
   final bool isLoadingMore;
+  final bool loadMoreFailed;
 
   const IssueListState({
     required this.items,
@@ -104,6 +119,7 @@ class IssueListState {
     required this.currentPage,
     required this.hasMore,
     this.isLoadingMore = false,
+    this.loadMoreFailed = false,
   });
 
   IssueListState copyWith({
@@ -112,6 +128,7 @@ class IssueListState {
     int? currentPage,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? loadMoreFailed,
   }) {
     return IssueListState(
       items: items ?? this.items,
@@ -119,6 +136,7 @@ class IssueListState {
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
     );
   }
 }
@@ -126,7 +144,7 @@ class IssueListState {
 // ── 업무 상세 ──────────────────────────────────────────────────────────────────
 
 class IssueDetailNotifier
-    extends FamilyAsyncNotifier<IssueModel, int> {
+    extends AutoDisposeFamilyAsyncNotifier<IssueModel, int> {
   @override
   Future<IssueModel> build(int id) async {
     return ref.read(issueRepositoryProvider).fetchIssueDetail(id);
@@ -218,21 +236,27 @@ class IssueDetailNotifier
 
   /// 상세 새로고침
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() =>
-        ref.read(issueRepositoryProvider).fetchIssueDetail(arg));
+    try {
+      final updated =
+          await ref.read(issueRepositoryProvider).fetchIssueDetail(arg);
+      state = AsyncData(updated);
+    } catch (e, st) {
+      if (state.valueOrNull == null) {
+        state = AsyncError(e, st);
+      }
+    }
   }
 }
 
-final issueDetailProvider =
-    AsyncNotifierProviderFamily<IssueDetailNotifier, IssueModel, int>(
+final issueDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<IssueDetailNotifier, IssueModel, int>(
   IssueDetailNotifier.new,
 );
 
 // ── 댓글 ───────────────────────────────────────────────────────────────────────
 
 class IssueCommentNotifier
-    extends FamilyAsyncNotifier<List<IssueCommentModel>, int> {
+    extends AutoDisposeFamilyAsyncNotifier<List<IssueCommentModel>, int> {
   @override
   Future<List<IssueCommentModel>> build(int issueId) async {
     return ref.read(issueRepositoryProvider).fetchComments(issueId);
@@ -249,29 +273,35 @@ class IssueCommentNotifier
   }
 }
 
-final issueCommentProvider =
-    AsyncNotifierProviderFamily<IssueCommentNotifier, List<IssueCommentModel>, int>(
+final issueCommentProvider = AsyncNotifierProvider.autoDispose
+    .family<IssueCommentNotifier, List<IssueCommentModel>, int>(
   IssueCommentNotifier.new,
 );
 
 // ── 변경 로그 (IssueLog) ───────────────────────────────────────────────────────
 
 class IssueLogNotifier
-    extends FamilyAsyncNotifier<List<IssueLogEntryModel>, int> {
+    extends AutoDisposeFamilyAsyncNotifier<List<IssueLogEntryModel>, int> {
   @override
   Future<List<IssueLogEntryModel>> build(int issueId) async {
     return ref.read(issueRepositoryProvider).fetchIssueLogs(issueId);
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-        () => ref.read(issueRepositoryProvider).fetchIssueLogs(arg));
+    try {
+      final logs =
+          await ref.read(issueRepositoryProvider).fetchIssueLogs(arg);
+      state = AsyncData(logs);
+    } catch (e, st) {
+      if (state.valueOrNull == null) {
+        state = AsyncError(e, st);
+      }
+    }
   }
 }
 
-final issueLogProvider =
-    AsyncNotifierProviderFamily<IssueLogNotifier, List<IssueLogEntryModel>, int>(
+final issueLogProvider = AsyncNotifierProvider.autoDispose
+    .family<IssueLogNotifier, List<IssueLogEntryModel>, int>(
   IssueLogNotifier.new,
 );
 

@@ -168,17 +168,22 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
   Future<void> _selectDate(TextEditingController controller) async {
     final now = DateTime.now();
+    final firstDate = DateTime(2020);
+    final lastDate = DateTime(2100);
+
     DateTime initial = now;
     if (controller.text.trim().isNotEmpty) {
       final parsed = DateTime.tryParse(controller.text.trim());
       if (parsed != null) initial = parsed;
     }
+    if (initial.isBefore(firstDate)) initial = firstDate;
+    if (initial.isAfter(lastDate)) initial = lastDate;
 
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (picked != null) {
@@ -201,8 +206,25 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       return;
     }
 
+    final startStr = _startDateController.text.trim();
+    final dueStr = _dueDateController.text.trim();
+    if (startStr.isNotEmpty && dueStr.isNotEmpty) {
+      final sDate = DateTime.tryParse(startStr);
+      final dDate = DateTime.tryParse(dueStr);
+      if (sDate != null && dDate != null && sDate.isAfter(dDate)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('시작일은 완료기한(마감일)보다 늦을 수 없습니다.'),
+            backgroundColor: context.colors.error,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
+    final isEdit = widget.initialIssue != null;
     final payload = <String, dynamic>{
       'subject': _subjectController.text.trim(),
       'description': _descriptionController.text.trim(),
@@ -216,19 +238,34 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
           : null,
     };
 
-    if (_assignedToId != null) payload['assigned_to'] = _assignedToId;
-    if (_parentIssueId != null) payload['parent'] = _parentIssueId;
-    if (_fixedVersionId != null) payload['fixed_version'] = _fixedVersionId;
-    if (_categoryId != null) payload['category'] = _categoryId;
-    if (_expectedDuration != null && _expectedDuration!.isNotEmpty) {
-      payload['expected_duration'] = _expectedDuration;
-    }
-    if (_dueDateController.text.trim().isNotEmpty) {
-      payload['due_date'] = _dueDateController.text.trim();
-    }
-    if (_meetingId != null) payload['meeting'] = _meetingId;
-    if (widget.initialIssue == null && _selectedProjectSlug != null) {
-      payload['project'] = _selectedProjectSlug;
+    if (isEdit) {
+      payload['assigned_to'] = _assignedToId;
+      payload['parent'] = _parentIssueId;
+      payload['fixed_version'] = _fixedVersionId;
+      payload['category'] = _categoryId;
+      payload['expected_duration'] =
+          (_expectedDuration != null && _expectedDuration!.isNotEmpty)
+              ? _expectedDuration
+              : null;
+      payload['due_date'] = _dueDateController.text.trim().isNotEmpty
+          ? _dueDateController.text.trim()
+          : null;
+      payload['meeting'] = _meetingId;
+    } else {
+      if (_assignedToId != null) payload['assigned_to'] = _assignedToId;
+      if (_parentIssueId != null) payload['parent'] = _parentIssueId;
+      if (_fixedVersionId != null) payload['fixed_version'] = _fixedVersionId;
+      if (_categoryId != null) payload['category'] = _categoryId;
+      if (_expectedDuration != null && _expectedDuration!.isNotEmpty) {
+        payload['expected_duration'] = _expectedDuration;
+      }
+      if (_dueDateController.text.trim().isNotEmpty) {
+        payload['due_date'] = _dueDateController.text.trim();
+      }
+      if (_meetingId != null) payload['meeting'] = _meetingId;
+      if (_selectedProjectSlug != null) {
+        payload['project'] = _selectedProjectSlug;
+      }
     }
 
     try {
