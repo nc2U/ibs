@@ -119,7 +119,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-sheet max-width="100%" class="my-1" :class="{ dark }">
+  <v-sheet max-width="100%" class="my-1 text-muted" :class="{ dark }">
     <v-slide-group show-arrows>
       <v-slide-group-item
         v-for="view in visitedViews"
