@@ -4,25 +4,30 @@ import '../../../../core/providers/project_provider.dart';
 import '../data/models/project_model.dart';
 import '../data/project_repository.dart';
 
-// ── 트리 재구성 헬퍼 (Vue buildProjectTree와 100% 동일) ──────────────────────────
+// ── 트리 재구성 헬퍼 (Vue buildProjectTree와 100% 동일, 불변 구조 조립) ──────────────
 List<ProjectModel> buildProjectTree(List<ProjectModel> projects) {
-  final map = <int, ProjectModel>{};
+  // 1. 부모 PK별 자식 프로젝트 목록 그룹화
+  final childrenMap = <int, List<ProjectModel>>{};
+  final allPks = <int>{};
   for (final p in projects) {
-    map[p.pk] = p.copyWith(subProjects: []);
+    allPks.add(p.pk);
+    if (p.parent != null) {
+      childrenMap.putIfAbsent(p.parent!, () => []).add(p);
+    }
   }
 
+  // 2. 재귀적으로 자식 트리를 조립하여 불변 객체 생성
+  ProjectModel buildNode(ProjectModel node) {
+    final children = childrenMap[node.pk] ?? const [];
+    final resolvedChildren = children.map(buildNode).toList(growable: false);
+    return node.copyWith(subProjects: resolvedChildren);
+  }
+
+  // 3. 최상위 루트 노드 추출 (parent가 없거나 부모 노드가 목록에 없는 경우)
   final roots = <ProjectModel>[];
   for (final p in projects) {
-    final current = map[p.pk]!;
-    if (p.parent != null) {
-      final parentNode = map[p.parent!];
-      if (parentNode != null) {
-        parentNode.subProjects.add(current);
-      } else {
-        roots.add(current);
-      }
-    } else {
-      roots.add(current);
+    if (p.parent == null || !allPks.contains(p.parent)) {
+      roots.add(buildNode(p));
     }
   }
   return roots;

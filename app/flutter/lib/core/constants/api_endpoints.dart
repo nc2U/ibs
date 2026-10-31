@@ -14,10 +14,12 @@ abstract class ApiEndpoints {
   static const String todoDetail     = '/api/v1/todo/{id}/';
   static const String todoConvertToIssue = '/api/v1/todo/{id}/convert_to_issue/';
 
-  // ── Project ──────────────────────────────────────
-  static const String projects           = '/api/v1/issue-project/';
-  static const String projectDetail      = '/api/v1/issue-project/{slug}/';
-  static const String projectMyProjects  = '/api/v1/issue-project/my_projects/';
+  // ── Project & Workspace ──────────────────────────
+  static const String projects               = '/api/v1/issue-project/';
+  static const String projectDetail          = '/api/v1/issue-project/{slug}/';
+  static const String projectMyProjects      = '/api/v1/issue-project/my_projects/';
+  static const String realEstateProjects     = '/api/v1/project/';
+  static const String realEstateProjectDetail = '/api/v1/project/{id}/';
 
   // ── Issue ────────────────────────────────────────────────────────────────
   static const String issues         = '/api/v1/issue/';

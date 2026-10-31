@@ -1077,10 +1077,14 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                           child: InkWell(
                             borderRadius: BorderRadius.zero,
                             onTap: () async {
+                              final parsed = DateTime.tryParse(_monthlyAggrDate) ?? DateTime.now();
+                              final initial = parsed.isBefore(DateTime(1980))
+                                  ? DateTime(1980)
+                                  : (parsed.isAfter(DateTime(2100)) ? DateTime(2100) : parsed);
                               final picked = await showDatePicker(
                                 context: context,
-                                initialDate: DateTime.tryParse(_monthlyAggrDate) ?? DateTime.now(),
-                                firstDate: DateTime(2000),
+                                initialDate: initial,
+                                firstDate: DateTime(1980),
                                 lastDate: DateTime(2100),
                               );
                               if (picked != null) {
@@ -1098,10 +1102,14 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                           child: InkWell(
                             borderRadius: BorderRadius.zero,
                             onTap: () async {
+                              final parsed = DateTime.tryParse(_constructionStartDate) ?? DateTime.now();
+                              final initial = parsed.isBefore(DateTime(1980))
+                                  ? DateTime(1980)
+                                  : (parsed.isAfter(DateTime(2100)) ? DateTime(2100) : parsed);
                               final picked = await showDatePicker(
                                 context: context,
-                                initialDate: DateTime.tryParse(_constructionStartDate) ?? DateTime.now(),
-                                firstDate: DateTime(2000),
+                                initialDate: initial,
+                                firstDate: DateTime(1980),
                                 lastDate: DateTime(2100),
                               );
                               if (picked != null) {

@@ -50,13 +50,18 @@ class ProjectRepository {
   /// 🏢 부동산 개발 프로젝트 상세 정보 조회 (/api/v1/project/{id}/)
   Future<RealEstateProjectDetailModel?> fetchRealEstateProjectDetail(int projectId) async {
     try {
-      final response = await _dio.get('/api/v1/project/$projectId/');
+      final url = ApiEndpoints.resolve(
+        ApiEndpoints.realEstateProjectDetail,
+        {'id': projectId},
+      );
+      final response = await _dio.get(url);
       if (response.data is Map<String, dynamic>) {
         return RealEstateProjectDetailModel.fromJson(response.data as Map<String, dynamic>);
       }
       return null;
-    } catch (e) {
-      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
     }
   }
 
@@ -66,18 +71,29 @@ class ProjectRepository {
     required Map<String, dynamic> payload,
   }) async {
     try {
-      final response = await _dio.patch('/api/v1/project/$projectId/', data: payload);
+      final url = ApiEndpoints.resolve(
+        ApiEndpoints.realEstateProjectDetail,
+        {'id': projectId},
+      );
+      final response = await _dio.patch(url, data: payload);
       if (response.statusCode == 200 || response.statusCode == 204) {
         return null; // 성공
       }
       return '서버 응답 오류: ${response.statusCode}';
     } on DioException catch (e) {
-      if (e.response?.data is Map) {
-        final map = e.response!.data as Map;
-        return map.entries.map((entry) {
-          final val = entry.value is List ? (entry.value as List).join(', ') : entry.value.toString();
-          return '${entry.key}: $val';
-        }).join('\n');
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map) {
+          if (data.containsKey('detail')) {
+            return data['detail'].toString();
+          }
+          return data.entries.map((entry) {
+            final val = entry.value is List ? (entry.value as List).join(', ') : entry.value.toString();
+            return '${entry.key}: $val';
+          }).join('\n');
+        } else if (data is String && data.isNotEmpty) {
+          return data;
+        }
       }
       return e.message ?? '프로젝트 정보 수정에 실패했습니다.';
     } catch (e) {
