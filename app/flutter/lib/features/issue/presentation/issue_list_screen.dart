@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
@@ -118,6 +119,22 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
   }
 
   void _openDoneRatioSheet(IssueModel issue) {
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final isCreator = currentUser != null && currentUser.pk == issue.creator?.pk;
+    final isAssignee = currentUser != null && currentUser.pk == issue.assignedTo?.pk;
+    final canUpdate = ref.can(Perm.issueUpdate, projectSlug: issue.project.slug) ||
+        (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) && (isCreator || isAssignee));
+
+    if (!canUpdate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('업무 진척률을 수정할 권한이 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     showDoneRatioBottomSheet(
       context: context,
       ref: ref,
@@ -259,9 +276,27 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
                     : (_filterMode == _FilterMode.inProgress
                         ? '진행 중인 전체 업무가 없습니다.'
                         : '완료된 전체 업무가 없습니다.');
-                return ErrorView.empty(
-                  message: emptyMsg,
-                  subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                return RefreshIndicator(
+                  color: context.colors.accentWork,
+                  backgroundColor: context.colors.bgCard,
+                  onRefresh: () =>
+                      ref.read(issueListProvider.notifier).refresh(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Center(
+                          child: ErrorView.empty(
+                            message: emptyMsg,
+                            subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }
 
@@ -352,6 +387,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
               }
 
               // 3) 기본 목록 뷰 (List View)
+              final hasBottomIndicator = state.hasMore || state.loadMoreFailed;
               return RefreshIndicator(
                 color: context.colors.accentWork,
                 backgroundColor: context.colors.bgCard,
@@ -362,10 +398,24 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   itemCount:
-                      state.items.length + (state.hasMore ? 1 : 0),
+                      state.items.length + (hasBottomIndicator ? 1 : 0),
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (ctx, index) {
                     if (index >= state.items.length) {
+                      if (state.loadMoreFailed) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: TextButton.icon(
+                              onPressed: () => ref
+                                  .read(issueListProvider.notifier)
+                                  .loadMore(),
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: const Text('불러오기 실패 - 다시 시도'),
+                            ),
+                          ),
+                        );
+                      }
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Center(

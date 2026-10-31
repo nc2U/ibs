@@ -1,3 +1,4 @@
+import '../../../../core/api/api_client.dart';
 import '../../../../core/models/common_models.dart';
 
 class NoticeFileModel {
@@ -37,6 +38,14 @@ class NoticeFileModel {
           : null,
       created: json['created'] as String?,
     );
+  }
+
+  /// 파일 전체 URL (상대경로일 경우 appBaseUrl 결합)
+  String get fileUrl {
+    if (file.isEmpty) return '';
+    if (file.startsWith('http')) return file;
+    final path = file.startsWith('/') ? file : '/$file';
+    return '$appBaseUrl$path';
   }
 }
 

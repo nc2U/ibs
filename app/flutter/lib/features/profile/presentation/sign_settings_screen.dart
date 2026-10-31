@@ -24,6 +24,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
   String? _serverSignImageUrl;
   Uint8List? _newSignBytes;
   String? _newSignFileName;
+  bool _isSignDeleted = false;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -66,6 +67,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
         setState(() {
           _newSignBytes = bytes;
           _newSignFileName = picked.name;
+          _isSignDeleted = false;
         });
       }
     } catch (e) {
@@ -95,11 +97,22 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
         _newSignBytes = resultBytes;
         _newSignFileName = 'drawn_sign_${DateTime.now().millisecondsSinceEpoch}.png';
         _signType = 'SIGN'; // 직접 서명한 경우 기본 타입을 서명으로 맞춤
+        _isSignDeleted = false;
       });
     }
   }
 
-  /// 서버로 저장 (multipart/form-data, Web/Mobile 공통 바이트 전송)
+  /// 등록된 인장/서명 이미지 삭제(초기화)
+  void _clearSignImage() {
+    setState(() {
+      _newSignBytes = null;
+      _newSignFileName = null;
+      _serverSignImageUrl = null;
+      _isSignDeleted = true;
+    });
+  }
+
+  /// 서버로 저장 (새 이미지 업로드 시 multipart/form-data, 이미지 삭제 시 JSON null 전송으로 file_cleanup_signals 트리거)
   Future<void> _saveSign() async {
     var user = ref.read(currentUserProvider).valueOrNull;
     if (user == null) {
@@ -125,28 +138,36 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
     final dio = ref.read(dioProvider);
 
     try {
-      final mapData = <String, dynamic>{
-        'sign_type': _signType,
-      };
-
+      final Object requestData;
       if (_newSignBytes != null) {
-        mapData['sign_image'] = MultipartFile.fromBytes(
-          _newSignBytes!,
-          filename: _newSignFileName ?? 'sign.png',
-        );
+        requestData = FormData.fromMap({
+          'sign_type': _signType,
+          'sign_image': MultipartFile.fromBytes(
+            _newSignBytes!,
+            filename: _newSignFileName ?? 'sign.png',
+          ),
+        });
+      } else if (_isSignDeleted) {
+        // 서버 ProfileSerializer(allow_null=True)를 통해 sign_image를 None으로 갱신 ➔ file_cleanup_signals로 기존 파일 삭제
+        requestData = <String, dynamic>{
+          'sign_type': _signType,
+          'sign_image': null,
+        };
+      } else {
+        requestData = <String, dynamic>{
+          'sign_type': _signType,
+        };
       }
-
-      final formData = FormData.fromMap(mapData);
 
       if (profilePk != null) {
         await dio.patch(
           '/api/v1/profile/$profilePk/',
-          data: formData,
+          data: requestData,
         );
       } else {
         await dio.post(
           '/api/v1/profile/',
-          data: formData,
+          data: requestData,
         );
       }
 
@@ -193,7 +214,17 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: context.colors.bgPrimary,
-        appBar: AppBar(title: const Text('결재 인장 / 서명 관리')),
+        appBar: AppBar(
+          backgroundColor: context.colors.bgPrimary,
+          elevation: 0,
+          title: Text(
+            '결재 인장 / 서명 관리',
+            style: AppTextStyles.titleLg.copyWith(
+              fontWeight: FontWeight.bold,
+              color: context.colors.textPrimary,
+            ),
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -390,12 +421,29 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
             const SizedBox(height: 24),
 
             // ── 인장/서명 미리보기 박스 ──────────────────────────────────
-            Text(
-              '인장 / 서명 미리보기',
-              style: AppTextStyles.titleSm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: context.colors.textPrimary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '인장 / 서명 미리보기',
+                  style: AppTextStyles.titleSm.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
+                if (hasImage)
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.colors.error,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: _clearSignImage,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 15),
+                    label: const Text('이미지 삭제', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Center(

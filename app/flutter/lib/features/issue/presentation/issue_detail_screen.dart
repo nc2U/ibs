@@ -918,7 +918,9 @@ class _FileRow extends StatelessWidget {
       child: InkWell(
         onTap: () async {
           final uri = Uri.parse(file.file);
-          if (await canLaunchUrl(uri)) launchUrl(uri);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

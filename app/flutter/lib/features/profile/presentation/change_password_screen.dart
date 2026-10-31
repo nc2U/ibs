@@ -44,8 +44,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       final response = await dio.post(
         ApiEndpoints.changePassword,
         data: {
-          'old_password': _oldPasswordController.text.trim(),
-          'new_password': _newPasswordController.text.trim(),
+          'old_password': _oldPasswordController.text,
+          'new_password': _newPasswordController.text,
         },
       );
 
@@ -157,6 +157,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     TextField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 13.5),
                       decoration: InputDecoration(
                         hintText: '이메일 주소 입력',
                         hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
@@ -222,7 +223,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                 );
                               }
                             } on DioException catch (e) {
-                              setDialogState(() => isSending = false);
+                              if (dialogCtx.mounted) setDialogState(() => isSending = false);
                               String errorMsg = '이메일 발송에 실패했습니다.';
                               if (e.response?.data is Map && e.response!.data['detail'] != null) {
                                 errorMsg = e.response!.data['detail'].toString();
@@ -237,7 +238,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                 );
                               }
                             } catch (e) {
-                              setDialogState(() => isSending = false);
+                              if (dialogCtx.mounted) setDialogState(() => isSending = false);
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -370,6 +371,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               TextFormField(
                 controller: _oldPasswordController,
                 obscureText: _obscureOldPassword,
+                style: TextStyle(color: context.colors.textPrimary, fontSize: 13.5),
                 decoration: InputDecoration(
                   hintText: '현재 사용 중인 비밀번호를 입력하세요',
                   hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
@@ -394,7 +396,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   ),
                 ),
                 validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
+                  if (val == null || val.isEmpty) {
                     return '현재 비밀번호를 입력해주세요.';
                   }
                   return null;
@@ -415,6 +417,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               TextFormField(
                 controller: _newPasswordController,
                 obscureText: _obscureNewPassword,
+                style: TextStyle(color: context.colors.textPrimary, fontSize: 13.5),
                 decoration: InputDecoration(
                   hintText: '새로 사용할 비밀번호를 입력하세요 (8자 이상 권장)',
                   hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
@@ -439,13 +442,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   ),
                 ),
                 validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
+                  if (val == null || val.isEmpty) {
                     return '새 비밀번호를 입력해주세요.';
                   }
-                  if (val.trim().length < 6) {
+                  if (val.length < 6) {
                     return '비밀번호는 최소 6자 이상이어야 합니다.';
                   }
-                  if (val.trim() == _oldPasswordController.text.trim()) {
+                  if (val == _oldPasswordController.text) {
                     return '현재 비밀번호와 다른 비밀번호를 설정해주세요.';
                   }
                   return null;
@@ -466,6 +469,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
+                style: TextStyle(color: context.colors.textPrimary, fontSize: 13.5),
                 decoration: InputDecoration(
                   hintText: '새 비밀번호를 한 번 더 입력하세요',
                   hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
@@ -490,10 +494,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   ),
                 ),
                 validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
+                  if (val == null || val.isEmpty) {
                     return '새 비밀번호를 다시 입력해주세요.';
                   }
-                  if (val.trim() != _newPasswordController.text.trim()) {
+                  if (val != _newPasswordController.text) {
                     return '새 비밀번호가 일치하지 않습니다.';
                   }
                   return null;

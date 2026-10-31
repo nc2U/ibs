@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/share_payload_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -40,6 +43,9 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
 
   List<IssueModel> _issues = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+  int _page = 1;
   bool _isUploading = false;
   String? _uploadProgressText;
 
@@ -69,17 +75,23 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
   }
 
   Future<void> _fetchIssues() async {
-    setState(() => _isLoading = true);
+    final requestQuery = _searchQuery;
+    setState(() {
+      _isLoading = true;
+      _page = 1;
+      _hasMore = false;
+    });
     try {
       final repo = ref.read(issueRepositoryProvider);
       final resp = await repo.fetchIssues(IssueFilterModel(
-        search: _searchQuery.isEmpty ? null : _searchQuery,
+        search: requestQuery.isEmpty ? null : requestQuery,
         page: 1,
         ordering: '-id',
       ));
-      if (mounted) {
+      if (mounted && requestQuery == _searchQuery) {
         setState(() {
           _issues = resp.results;
+          _hasMore = resp.next != null;
           _isLoading = false;
         });
       }
@@ -88,6 +100,57 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _fetchMore() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    final requestQuery = _searchQuery;
+    setState(() => _isLoadingMore = true);
+    try {
+      final resp = await ref.read(issueRepositoryProvider).fetchIssues(
+            IssueFilterModel(
+              search: requestQuery.isEmpty ? null : requestQuery,
+              page: _page + 1,
+              ordering: '-id',
+            ),
+          );
+      if (mounted && requestQuery == _searchQuery) {
+        setState(() {
+          _issues = [..._issues, ...resp.results];
+          _page += 1;
+          _hasMore = resp.next != null;
+          _isLoadingMore = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  bool _canAttach(IssueModel issue) {
+    if (issue.status.closed) return false;
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final isCreator = currentUser != null && currentUser.pk == issue.creator?.pk;
+    final isAssignee = currentUser != null && currentUser.pk == issue.assignedTo?.pk;
+    return ref.can(Perm.issueUpdate, projectSlug: issue.project.slug) ||
+        (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) && (isCreator || isAssignee));
+  }
+
+  Future<void> _handleIssueTap(IssueModel issue) async {
+    if (!_canAttach(issue)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(issue.status.closed
+              ? '완료(종결)된 업무에는 파일을 첨부할 수 없습니다.'
+              : '해당 업무에 파일을 첨부할 권한이 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    await _attachFilesToIssue(issue);
   }
 
   String _formatFileSize(int bytes) {
@@ -145,11 +208,6 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
         successCount++;
       }
 
-      // 업무 상세 및 목록, 로그 프로바이더 갱신
-      ref.invalidate(issueDetailProvider(issue.pk));
-      ref.invalidate(issueLogProvider(issue.pk));
-      ref.invalidate(issueListProvider);
-
       if (!mounted) return;
 
       Navigator.pop(context); // 시트 닫기
@@ -175,6 +233,11 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
     } catch (e) {
       errorMessage = e.toString();
     } finally {
+      if (successCount > 0) {
+        ref.invalidate(issueDetailProvider(issue.pk));
+        ref.invalidate(issueLogProvider(issue.pk));
+        ref.invalidate(issueListProvider);
+      }
       if (mounted) {
         setState(() {
           _isUploading = false;
@@ -356,17 +419,39 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
                               ],
                             ),
                           )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                            itemCount: _issues.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (ctx, index) {
-                              final issue = _issues[index];
-                              return _IssuePickTile(
-                                issue: issue,
-                                onTap: () => _attachFilesToIssue(issue),
-                              );
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              if (notification.metrics.pixels >=
+                                  notification.metrics.maxScrollExtent - 200) {
+                                _fetchMore();
+                              }
+                              return false;
                             },
+                            child: ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                              itemCount: _issues.length + (_isLoadingMore ? 1 : 0),
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (ctx, index) {
+                                if (index >= _issues.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final issue = _issues[index];
+                                return _IssuePickTile(
+                                  issue: issue,
+                                  canAttach: _canAttach(issue),
+                                  onTap: () => _handleIssueTap(issue),
+                                );
+                              },
+                            ),
                           ),
               ),
             ],
@@ -408,20 +493,24 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
 
 class _IssuePickTile extends StatelessWidget {
   final IssueModel issue;
+  final bool canAttach;
   final VoidCallback onTap;
 
   const _IssuePickTile({
     required this.issue,
+    required this.canAttach,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+    return Opacity(
+      opacity: canAttach ? 1.0 : 0.45,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -512,6 +601,7 @@ class _IssuePickTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

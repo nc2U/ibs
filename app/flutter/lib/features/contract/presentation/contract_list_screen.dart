@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
+import '../../../core/widgets/error_view.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../providers/contract_provider.dart';
 import 'widgets/contract_action_sheet.dart';
 import 'widgets/contract_card.dart';
@@ -76,6 +79,10 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   }
 
   void _refreshAllData() {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    final canRead = ref.can(Perm.contractRead, projectSlug: selectedProject?.slug);
+    if (!canRead) return;
+
     ref.invalidate(contractAggregateProvider);
     ref.invalidate(buildingUnitsProvider);
     ref.invalidate(unitTypesProvider);
@@ -116,6 +123,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
     });
 
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+    final canRead = ref.can(Perm.contractRead, projectSlug: selectedProject?.slug);
     final aggregateAsync = ref.watch(contractAggregateProvider);
     final currentTab = ref.watch(contractCurrentSubTabProvider);
 
@@ -241,6 +249,18 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            )
+          else if (!canRead)
+            const Expanded(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: ErrorView.empty(
+                    message: '계약 정보를 조회할 권한이 없습니다.',
+                    subMessage: '관리자에게 [계약 열람] 권한(contract.read)을 요청해 주세요.',
+                  ),
                 ),
               ),
             )
@@ -526,7 +546,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
       );
     }
 
-    final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
+    final itemCount = state.items.length + (state.isFetchingNextPage || state.isNextPageError ? 1 : 0);
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -534,6 +554,31 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
         delegate: SliverChildBuilderDelegate(
           (ctx, index) {
             if (index == state.items.length) {
+              if (state.isNextPageError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: InkWell(
+                      onTap: () => ref.read(validContractListProvider.notifier).fetchNextPage(),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh_rounded, size: 16, color: context.colors.error),
+                            const SizedBox(width: 6),
+                            Text(
+                              '다음 페이지 로드 실패 (탭하여 재시도)',
+                              style: AppTextStyles.caption.copyWith(color: context.colors.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
                 child: Center(
@@ -580,7 +625,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
       );
     }
 
-    final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
+    final itemCount = state.items.length + (state.isFetchingNextPage || state.isNextPageError ? 1 : 0);
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -588,6 +633,31 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
         delegate: SliverChildBuilderDelegate(
           (ctx, index) {
             if (index == state.items.length) {
+              if (state.isNextPageError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: InkWell(
+                      onTap: () => ref.read(successionListProvider.notifier).fetchNextPage(),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh_rounded, size: 16, color: context.colors.error),
+                            const SizedBox(width: 6),
+                            Text(
+                              '다음 페이지 로드 실패 (탭하여 재시도)',
+                              style: AppTextStyles.caption.copyWith(color: context.colors.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
                 child: Center(
@@ -638,7 +708,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
       );
     }
 
-    final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
+    final itemCount = state.items.length + (state.isFetchingNextPage || state.isNextPageError ? 1 : 0);
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -646,6 +716,31 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
         delegate: SliverChildBuilderDelegate(
           (ctx, index) {
             if (index == state.items.length) {
+              if (state.isNextPageError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: InkWell(
+                      onTap: () => ref.read(contractorReleaseListProvider.notifier).fetchNextPage(),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh_rounded, size: 16, color: context.colors.error),
+                            const SizedBox(width: 6),
+                            Text(
+                              '다음 페이지 로드 실패 (탭하여 재시도)',
+                              style: AppTextStyles.caption.copyWith(color: context.colors.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
                 child: Center(

@@ -70,7 +70,16 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
         final repo = ref.read(docsRepositoryProvider);
         await repo.deleteDocument(doc.pk);
         ref.read(docsListProvider.notifier).refresh();
-        if (context.mounted) Navigator.pop(context);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('\'${doc.title}\' 문서가 삭제되었습니다.'),
+              backgroundColor: context.colors.accentWork,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -315,7 +324,7 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
                           ),
                         ],
                         const Spacer(),
-                        if (ref.can(Perm.docsUpdate))
+                        if (ref.can(Perm.docsUpdate, projectSlug: doc.project?.slug))
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 20),
                             color: context.colors.textSecond,
@@ -329,7 +338,7 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
                               );
                             },
                           ),
-                        if (ref.can(Perm.docsDelete))
+                        if (ref.can(Perm.docsDelete, projectSlug: doc.project?.slug))
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, size: 20),
                             color: context.colors.error,

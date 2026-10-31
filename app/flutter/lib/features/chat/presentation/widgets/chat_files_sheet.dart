@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -73,6 +74,7 @@ class _ChatFilesSheetState extends ConsumerState<ChatFilesSheet>
     _tabController = TabController(length: 3, vsync: this);
     _loadTabItems('media');
     _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
       final currentTab = _tabs[_tabController.index];
       if (_items[currentTab]!.isEmpty && !_isLoading[currentTab]!) {
         _loadTabItems(currentTab);
@@ -321,10 +323,20 @@ class _ChatFilesSheetState extends ConsumerState<ChatFilesSheet>
               border: Border.all(color: context.colors.border, width: 0.8),
             ),
             child: url.isNotEmpty
-                ? Image.network(
-                    url,
+                ? CachedNetworkImage(
+                    imageUrl: url,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_rounded, size: 28),
+                    placeholder: (_, __) => Container(
+                      color: context.colors.bgCard,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => const Icon(Icons.broken_image_rounded, size: 28),
                   )
                 : const Icon(Icons.image_rounded, size: 28),
           ),
@@ -412,15 +424,35 @@ class _ChatFilesSheetState extends ConsumerState<ChatFilesSheet>
                   ),
                   if (msg.fileUrl.isNotEmpty)
                     IconButton(
-                      icon: Icon(Icons.download_rounded, color: context.colors.accentWork, size: 20),
-                      tooltip: '다운로드',
-                      onPressed: () async {
-                        final uri = Uri.tryParse(msg.fileUrl);
-                        if (uri != null) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        }
-                      },
-                    ),
+                       icon: Icon(Icons.download_rounded, color: context.colors.accentWork, size: 20),
+                       tooltip: '다운로드',
+                       onPressed: () async {
+                         final uri = Uri.tryParse(msg.fileUrl);
+                         if (uri != null) {
+                           try {
+                             if (await canLaunchUrl(uri)) {
+                               await launchUrl(uri, mode: LaunchMode.externalApplication);
+                             } else if (context.mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(
+                                   content: Text('파일 URL을 열 수 없습니다.'),
+                                   behavior: SnackBarBehavior.floating,
+                                 ),
+                               );
+                             }
+                           } catch (_) {
+                             if (context.mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(
+                                   content: Text('다운로드 실행 중 오류가 발생했습니다.'),
+                                   behavior: SnackBarBehavior.floating,
+                                 ),
+                               );
+                             }
+                           }
+                         }
+                       },
+                     ),
                 ],
               ),
             ),

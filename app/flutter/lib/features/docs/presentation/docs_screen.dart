@@ -97,6 +97,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
 
     final docsListAsync = ref.watch(docsListProvider);
     final isLoadingMore = ref.watch(docsLoadingMoreProvider);
+    final isLoadMoreFailed = ref.watch(docsLoadMoreFailedProvider);
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -382,9 +383,23 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
               child: docsListAsync.when(
                 data: (data) {
                   if (data.results.isEmpty) {
-                    return const ErrorView(
-                      message: '등록된 문서가 없습니다.',
-                      icon: Icons.folder_open_rounded,
+                    return RefreshIndicator(
+                      onRefresh: () =>
+                          ref.read(docsListProvider.notifier).refresh(),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                            child: const Center(
+                              child: ErrorView(
+                                message: '등록된 문서가 없습니다.',
+                                icon: Icons.folder_open_rounded,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   }
                   return RefreshIndicator(
@@ -393,9 +408,38 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                     child: ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: data.results.length + (isLoadingMore ? 1 : 0),
+                      itemCount: data.results.length + (isLoadingMore || isLoadMoreFailed ? 1 : 0),
                       itemBuilder: (ctx, index) {
                         if (index >= data.results.length) {
+                          if (isLoadMoreFailed) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: InkWell(
+                                  onTap: () => ref
+                                      .read(docsListProvider.notifier)
+                                      .loadNextPage(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.refresh_rounded,
+                                            size: 16, color: context.colors.error),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '목록을 불러오지 못했습니다. 탭하여 재시도',
+                                          style: AppTextStyles.caption
+                                              .copyWith(color: context.colors.error),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Center(

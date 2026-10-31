@@ -46,10 +46,11 @@ class _UserSelectSheetState extends ConsumerState<UserSelectSheet> {
       final room = await repo.getOrCreateDm(targetUser.pk);
 
       if (mounted) {
-        Navigator.pop(context); // 시트 닫기
+        final nav = Navigator.of(context);
+        nav.pop(); // 시트 닫기
         ref.invalidate(chatRoomsProvider);
         ref.invalidate(totalUnreadChatCountProvider);
-        context.push('/chat/${room.id}', extra: room);
+        nav.context.push('/chat/${room.id}', extra: room);
       }
     } catch (e) {
       if (mounted) {
@@ -72,10 +73,11 @@ class _UserSelectSheetState extends ConsumerState<UserSelectSheet> {
       final room = await repo.getOrCreateSelf();
 
       if (mounted) {
-        Navigator.pop(context); // 시트 닫기
+        final nav = Navigator.of(context);
+        nav.pop(); // 시트 닫기
         ref.invalidate(chatRoomsProvider);
         ref.invalidate(totalUnreadChatCountProvider);
-        context.push('/chat/${room.id}', extra: room);
+        nav.context.push('/chat/${room.id}', extra: room);
       }
     } catch (e) {
       if (mounted) {

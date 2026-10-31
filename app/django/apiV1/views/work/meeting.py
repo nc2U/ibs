@@ -157,7 +157,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
         # 3. 성능 최적화: 목록 조회 시 필수 관계만, 상세 조회 시 파일/링크/연계업무까지 prefetch
         base_qs = base_qs.select_related('project', 'category', 'creator', 'updater')
         if self.action == 'list':
-            return base_qs.prefetch_related('attendees')
+            return base_qs.prefetch_related(
+                'attendees', 'issues__assigned_to', 'issues__project', 'issues__status'
+            )
         return base_qs.prefetch_related(
             'attendees', 'files', 'links', 'issues__assigned_to', 'issues__project'
         )

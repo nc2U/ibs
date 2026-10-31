@@ -156,7 +156,7 @@ class _EmailNotificationSettingsScreenState
     }
   }
 
-  void _openProjectSelectBottomSheet(List<ProjectModel> allProjects) {
+  void _openProjectSelectBottomSheet(List<ProjectModel> activeWorkspaces) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -164,13 +164,13 @@ class _EmailNotificationSettingsScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
       ),
-      builder: (ctx) {
+      builder: (sheetCtx) {
         return StatefulBuilder(
-          builder: (ctx, setModalState) {
+          builder: (modalCtx, setModalState) {
             return SafeArea(
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+                  maxHeight: MediaQuery.of(modalCtx).size.height * 0.75,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
@@ -180,7 +180,7 @@ class _EmailNotificationSettingsScreenState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '알림 구독 프로젝트 선택',
+                          '알림 구독 워크스페이스 선택',
                           style: AppTextStyles.titleSm.copyWith(
                             fontWeight: FontWeight.bold,
                             color: context.colors.textPrimary,
@@ -188,7 +188,7 @@ class _EmailNotificationSettingsScreenState
                         ),
                         IconButton(
                           icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.pop(ctx),
+                          onPressed: () => Navigator.pop(sheetCtx),
                           color: context.colors.textMuted,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -197,16 +197,16 @@ class _EmailNotificationSettingsScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '선택한 프로젝트의 모든 업무 등록/변경 알림 메일을 수신합니다.',
+                      '선택한 워크스페이스의 모든 업무 등록/변경 알림 메일을 수신합니다.',
                       style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                     ),
                     const SizedBox(height: 12),
                     Divider(color: context.colors.border, height: 1),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: allProjects.length,
-                        itemBuilder: (context, index) {
-                          final project = allProjects[index];
+                        itemCount: activeWorkspaces.length,
+                        itemBuilder: (itemCtx, index) {
+                          final project = activeWorkspaces[index];
                           final isSelected = _subscribedProjectIds.contains(project.pk);
 
                           return CheckboxListTile(
@@ -252,7 +252,7 @@ class _EmailNotificationSettingsScreenState
                           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        onPressed: () => Navigator.pop(ctx),
+                        onPressed: () => Navigator.pop(sheetCtx),
                         child: Text(
                           '선택 완료 (${_subscribedProjectIds.length}개 선택됨)',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -272,6 +272,7 @@ class _EmailNotificationSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+    final activeWorkspaces = ref.watch(activeWorkspaceListProvider).valueOrNull ?? [];
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -369,8 +370,8 @@ class _EmailNotificationSettingsScreenState
                   ),
                   const SizedBox(height: 20),
 
-                  // ── 3. 알림 구독 프로젝트 섹션 ────────────────────────────────
-                  const _SectionHeader(title: '알림 구독 프로젝트', icon: Icons.bookmark_added_outlined),
+                  // ── 3. 알림 구독 워크스페이스 섹션 ────────────────────────────
+                  const _SectionHeader(title: '알림 구독 워크스페이스', icon: Icons.bookmark_added_outlined),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -385,7 +386,7 @@ class _EmailNotificationSettingsScreenState
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '구독 중인 프로젝트 (${_subscribedProjectIds.length}개)',
+                              '구독 중인 워크스페이스 (${_subscribedProjectIds.length}개)',
                               style: AppTextStyles.titleSm.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: context.colors.textPrimary,
@@ -401,15 +402,15 @@ class _EmailNotificationSettingsScreenState
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              onPressed: () => _openProjectSelectBottomSheet(allProjects),
+                              onPressed: () => _openProjectSelectBottomSheet(activeWorkspaces),
                               icon: const Icon(Icons.edit_outlined, size: 13),
-                              label: const Text('프로젝트 선택', style: TextStyle(fontSize: 11.5)),
+                              label: const Text('워크스페이스 선택', style: TextStyle(fontSize: 11.5)),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '선택한 프로젝트의 모든 업무 생성 및 수정 이메일 알림을 수신합니다.',
+                          '선택한 워크스페이스의 모든 업무 생성 및 수정 이메일 알림을 수신합니다.',
                           style: AppTextStyles.caption.copyWith(color: context.colors.textMuted, fontSize: 11.5),
                         ),
                         const SizedBox(height: 10),
@@ -420,7 +421,7 @@ class _EmailNotificationSettingsScreenState
                             color: context.colors.bgSurface,
                             child: Center(
                               child: Text(
-                                '구독 중인 프로젝트가 없습니다.\n담당 업무 및 모니터링 업무에 대한 알림만 수신합니다.',
+                                '구독 중인 워크스페이스가 없습니다.\n담당 업무 및 모니터링 업무에 대한 알림만 수신합니다.',
                                 textAlign: TextAlign.center,
                                 style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                               ),
@@ -432,7 +433,7 @@ class _EmailNotificationSettingsScreenState
                             runSpacing: 6,
                             children: _subscribedProjectIds.map((pid) {
                               final matched = allProjects.where((p) => p.pk == pid).toList();
-                              final name = matched.isNotEmpty ? matched.first.name : '프로젝트 #$pid';
+                              final name = matched.isNotEmpty ? matched.first.name : '워크스페이스 #$pid';
                               return Chip(
                                 label: Text(name, style: const TextStyle(fontSize: 11.5)),
                                 backgroundColor: context.colors.accentWork.withAlpha(25),

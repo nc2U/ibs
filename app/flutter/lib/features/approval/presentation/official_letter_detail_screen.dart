@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/services/share_helper.dart';
@@ -32,15 +33,64 @@ class _OfficialLetterDetailScreenState
   bool _isDownloadingPdf = false;
   bool _isSubmittingApproval = false;
 
+  Future<void> _openAttachment(String rawUrl) async {
+    try {
+      final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+          ? rawUrl
+          : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
+      final uri = Uri.tryParse(fullUrl);
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('파일을 열 수 없습니다.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('파일 열기 중 오류가 발생했습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   Future<void> _downloadOrSharePdf(OfficialLetterModel letter,
       {bool isShare = false}) async {
     if (kIsWeb) {
-      final downloadUrl = (letter.pdfFile != null && letter.pdfFile!.isNotEmpty)
-          ? letter.pdfFile!
-          : ApiEndpoints.resolve(ApiEndpoints.officialLetterDownloadPdf, {'id': letter.id});
-      final uri = Uri.tryParse(downloadUrl);
-      if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      try {
+        final rawUrl = (letter.pdfFile != null && letter.pdfFile!.isNotEmpty)
+            ? letter.pdfFile!
+            : ApiEndpoints.resolve(ApiEndpoints.officialLetterDownloadPdf, {'id': letter.id});
+        final fullUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+            ? rawUrl
+            : '$appBaseUrl${rawUrl.startsWith('/') ? '' : '/'}$rawUrl';
+        final uri = Uri.tryParse(fullUrl);
+        if (uri != null && await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF를 열 수 없습니다.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF 열기 중 오류가 발생했습니다.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
       return;
     }
@@ -351,6 +401,7 @@ class _OfficialLetterDetailScreenState
                                 ...letter.attachments.asMap().entries.map((e) {
                                   final idx = e.key + 1;
                                   final att = e.value;
+                                  final hasFile = att.file != null && att.file!.isNotEmpty;
                                   return Padding(
                                     padding:
                                         const EdgeInsets.symmetric(vertical: 4),
@@ -369,6 +420,18 @@ class _OfficialLetterDetailScreenState
                                                 color: colors.textSecond),
                                           ),
                                         ),
+                                        if (hasFile)
+                                          IconButton(
+                                            icon: Icon(Icons.download_rounded,
+                                                size: 18,
+                                                color: colors.accentApproval),
+                                            tooltip: '다운로드',
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                                minWidth: 28, minHeight: 28),
+                                            onPressed: () =>
+                                                _openAttachment(att.file!),
+                                          ),
                                       ],
                                     ),
                                   );

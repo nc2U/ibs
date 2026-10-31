@@ -131,6 +131,11 @@ class PaymentRepository {
       return results
           .map((json) => PaymentTransactionItemModel.fromJson(json))
           .toList();
+    } on DioException catch (e) {
+      if (page > 1 && e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
     } catch (e) {
       rethrow;
     }
@@ -158,7 +163,7 @@ class PaymentRepository {
     }
   }
 
-  /// 3-1. 특정 계약건의 전체 수납 내역 조회 (/api/v1/ledger/payment/?project={projectId}&contract={contractId}&ordering=deal_date&limit=100)
+  /// 3-1. 특정 계약건의 전체 수납 내역 조회 (/api/v1/ledger/all-payment/?project={projectId}&contract={contractId}&limit=100)
   Future<List<PaymentTransactionItemModel>> fetchPaymentsByContract({
     required int projectId,
     required int contractId,
@@ -170,7 +175,7 @@ class PaymentRepository {
           'project': projectId,
           'contract': contractId,
           'is_payment_mismatch': 'false',
-          'ordering': 'installment_order',
+          'ordering': 'installment_order,deal_date,created_at',
           'limit': 100,
         },
       );
@@ -226,39 +231,36 @@ class PaymentRepository {
     int? accountingEntryId,
   }) async {
     try {
-      // 1순위: 복합 거래 수정이 필요한 경우 (bankTransactionId + accountingEntryId가 있을 때 웹 방식과 완벽 호환)
+      // 1순위: 복합 거래 수정이 필요한 경우 (bankTransactionId + accountingEntryId가 있을 때 웹 방식과 호환)
       if (bankTransactionId != null && accountingEntryId != null) {
-        final patchData = <String, dynamic>{
-          'accounting_entries': [
-            {
-              'pk': accountingEntryId,
-              if (contractId != null) 'contract': contractId,
-              if (installmentOrderId != null)
+        try {
+          final patchData = <String, dynamic>{
+            'accounting_entries': [
+              {
+                'pk': accountingEntryId,
+                if (contractId != null) 'contract': contractId,
                 'installment_order': installmentOrderId,
-            },
-          ],
-        };
-        await dio.patch(
-          '/api/v1/ledger/project-composite-transaction/$bankTransactionId/',
-          data: patchData,
-        );
-        return true;
+              },
+            ],
+          };
+          await dio.patch(
+            '/api/v1/ledger/project-composite-transaction/$bankTransactionId/',
+            data: patchData,
+          );
+          return true;
+        } catch (_) {
+          // ledger.update 권한이 없고 payment.update 권한만 있는 경우 2순위로 폴백
+        }
       }
 
-      // 2순위: ContractPayment 직접 PATCH
-      final data = <String, dynamic>{};
-      if (contractId != null) {
-        data['contract'] = contractId;
-      }
-      if (installmentOrderId != null) {
-        data['installment_order'] = installmentOrderId;
-      }
+      // 2순위: ContractPayment 직접 PATCH (payment.update 권한 사용, null 회차 해제 지원)
+      final data = <String, dynamic>{
+        if (contractId != null) 'contract': contractId,
+        'installment_order': installmentOrderId,
+      };
 
-      if (data.isNotEmpty) {
-        await dio.patch('/api/v1/ledger/payment/$paymentPk/', data: data);
-        return true;
-      }
-      return false;
+      await dio.patch('/api/v1/ledger/payment/$paymentPk/', data: data);
+      return true;
     } catch (e) {
       return false;
     }

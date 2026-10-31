@@ -9,7 +9,7 @@ import vuetify from 'vite-plugin-vuetify'
 export default defineConfig({
   base: process.env.NODE_ENV === 'production' ? '/static/dist' : '/',
   build: {
-    target: 'ESNext',
+    target: 'esnext',
     outDir: process.env.BUILD_DIR || '../django/static/dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 2500,
@@ -45,12 +45,12 @@ export default defineConfig({
     include: ['vue', 'vue-router', 'pinia', 'vuetify', 'md-editor-v3', 'highlight.js'],
     exclude: [],
     esbuildOptions: {
-      target: 'ESNext',
+      target: 'esnext',
     },
   },
   esbuild: {
     drop: process.env.VITE_DROP_CONSOLE === 'false' ? ['console', 'debugger'] : [],
-    target: 'ESNext',
+    target: 'esnext',
   },
   server: {
     proxy: {

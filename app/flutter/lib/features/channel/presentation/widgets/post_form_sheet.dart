@@ -104,14 +104,14 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   }
 
   Color _parseCategoryColor(String? colorStr) {
-    if (colorStr == null || colorStr.isEmpty) return context.colors.accentWork;
+    if (colorStr == null || colorStr.isEmpty) return context.colors.accentChannel;
     try {
       final hex = colorStr.replaceAll('#', '');
       if (hex.length == 6) {
         return Color(int.parse('FF$hex', radix: 16));
       }
     } catch (_) {}
-    return context.colors.accentWork;
+    return context.colors.accentChannel;
   }
 
   Future<void> _pickFiles() async {
@@ -252,7 +252,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                 Icon(
                   isEdit ? Icons.edit_note_rounded : Icons.post_add_rounded,
                   size: 20,
-                  color: context.colors.accentWork,
+                  color: context.colors.accentChannel,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -323,7 +323,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
-                              borderSide: BorderSide(color: context.colors.accentWork),
+                              borderSide: BorderSide(color: context.colors.accentChannel),
                             ),
                           ),
                           hint: Text('게시판을 선택해 주세요', style: TextStyle(color: context.colors.textMuted)),
@@ -390,7 +390,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
-                            borderSide: BorderSide(color: context.colors.accentWork),
+                            borderSide: BorderSide(color: context.colors.accentChannel),
                           ),
                         ),
                         hint: Text('카테고리 선택 (선택 사항)', style: TextStyle(color: context.colors.textMuted)),
@@ -453,7 +453,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: context.colors.accentWork),
+                          borderSide: BorderSide(color: context.colors.accentChannel),
                         ),
                       ),
                       validator: (val) {
@@ -545,7 +545,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: context.colors.accentWork),
+                          borderSide: BorderSide(color: context.colors.accentChannel),
                         ),
                       ),
                     ),
@@ -561,7 +561,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                           icon: const Icon(Icons.attach_file_rounded, size: 16),
                           label: const Text('파일 추가'),
                           style: TextButton.styleFrom(
-                            foregroundColor: context.colors.accentWork,
+                            foregroundColor: context.colors.accentChannel,
                             padding: EdgeInsets.zero,
                           ),
                         ),
@@ -619,7 +619,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                                       : Icons.delete_outline_rounded,
                                   size: 16,
                                   color: isDeleted
-                                      ? context.colors.accentWork
+                                      ? context.colors.accentChannel
                                       : context.colors.error,
                                 ),
                                 onPressed: () {
@@ -648,17 +648,17 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: context.colors.accentWork.withAlpha(15),
+                            color: context.colors.accentChannel.withAlpha(15),
                             borderRadius: BorderRadius.zero,
                             border: Border.all(
-                              color: context.colors.accentWork.withAlpha(50),
+                              color: context.colors.accentChannel.withAlpha(50),
                               width: 0.8,
                             ),
                           ),
                           child: Row(
                             children: [
                               Icon(Icons.add_circle_outline_rounded,
-                                  size: 16, color: context.colors.accentWork),
+                                  size: 16, color: context.colors.accentChannel),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -688,7 +688,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                       child: FilledButton(
                         onPressed: _isSubmitting ? null : _submit,
                         style: FilledButton.styleFrom(
-                          backgroundColor: context.colors.accentWork,
+                          backgroundColor: context.colors.accentChannel,
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
                         ),

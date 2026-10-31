@@ -213,10 +213,33 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
   }
 
   Future<void> _downloadAndOpenFile(PostFileModel file) async {
+    final url = file.fileUrl;
+    if (url.isEmpty) return;
+
     if (kIsWeb) {
-      final uri = Uri.tryParse(file.file);
+      final uri = Uri.tryParse(url);
       if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        try {
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('파일 URL을 열 수 없습니다.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('파일 열기 중 오류가 발생했습니다.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
       }
       return;
     }
@@ -227,12 +250,15 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
       final tempDir = await getTemporaryDirectory();
       final savePath = '${tempDir.path}/${file.fileName}';
 
-      await dio.download(file.file, savePath);
+      await dio.download(url, savePath);
 
       final result = await OpenFilex.open(savePath);
       if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('파일 열기 상태: ${result.message}')),
+          SnackBar(
+            content: Text('파일 열기 상태: ${result.message}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -241,6 +267,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
           SnackBar(
             content: Text('파일 다운로드 실패: $e'),
             backgroundColor: context.colors.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -332,17 +359,17 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: context.colors.accentWork.withAlpha(20),
+                      color: context.colors.accentChannel.withAlpha(20),
                       borderRadius: BorderRadius.zero,
                       border: Border.all(
-                        color: context.colors.accentWork.withAlpha(60),
+                        color: context.colors.accentChannel.withAlpha(60),
                         width: 0.8,
                       ),
                     ),
                     child: Text(
                       post.cateName!,
                       style: AppTextStyles.caption.copyWith(
-                        color: context.colors.accentWork,
+                        color: context.colors.accentChannel,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -444,6 +471,13 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     child: post.content.isNotEmpty
                         ? HtmlWidget(
                             post.content,
+                            onTapUrl: (url) async {
+                              final uri = Uri.tryParse(url);
+                              if (uri != null && await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                              return true;
+                            },
                             textStyle: AppTextStyles.bodyMd.copyWith(
                               color: context.colors.textPrimary,
                               height: 1.5,
@@ -574,7 +608,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           child: Row(
                             children: [
                               Icon(Icons.attach_file_rounded,
-                                  size: 16, color: context.colors.accentWork),
+                                  size: 16, color: context.colors.accentChannel),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -585,7 +619,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.download_rounded,
-                                    size: 18, color: context.colors.accentWork),
+                                    size: 18, color: context.colors.accentChannel),
                                 onPressed: _isDownloadingFile
                                     ? null
                                     : () => _downloadAndOpenFile(file),
@@ -609,7 +643,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           Row(
                             children: [
                               Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 16, color: context.colors.accentWork),
+                                  size: 16, color: context.colors.accentChannel),
                               const SizedBox(width: 6),
                               Text(
                                 '댓글 ($totalCount)',
@@ -694,16 +728,16 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 6),
-                        color: context.colors.accentWork.withAlpha(25),
+                        color: context.colors.accentChannel.withAlpha(25),
                         child: Row(
                           children: [
                             Icon(Icons.reply_rounded,
-                                size: 14, color: context.colors.accentWork),
+                                size: 14, color: context.colors.accentChannel),
                             const SizedBox(width: 6),
                             Text(
                               '답글 작성 중...',
                               style: AppTextStyles.caption.copyWith(
-                                color: context.colors.accentWork,
+                                color: context.colors.accentChannel,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -747,7 +781,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.zero,
                                   borderSide:
-                                      BorderSide(color: context.colors.accentWork),
+                                      BorderSide(color: context.colors.accentChannel),
                                 ),
                               ),
                             ),
@@ -758,7 +792,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                                 ? null
                                 : _handleAddComment,
                             style: FilledButton.styleFrom(
-                              backgroundColor: context.colors.accentWork,
+                              backgroundColor: context.colors.accentChannel,
                               shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.zero),
                               padding: const EdgeInsets.symmetric(
@@ -853,7 +887,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         style: AppTextStyles.caption.copyWith(
                           color: _replyParentId == c.pk
                               ? context.colors.error
-                              : context.colors.accentWork,
+                              : context.colors.accentChannel,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

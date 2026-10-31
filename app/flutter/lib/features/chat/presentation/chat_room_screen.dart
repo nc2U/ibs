@@ -355,7 +355,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               elevation: 0,
               leading: IconButton(
                 icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
-                onPressed: () => context.pop(),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/chat'),
               ),
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -836,11 +836,19 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               title: const Text('텍스트 복사'),
               onTap: () {
                 Navigator.pop(ctx);
-                final text = msg.content.isNotEmpty ? msg.content : (msg.file ?? '');
-                Clipboard.setData(ClipboardData(text: text));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('클립보드에 복사되었습니다.'), duration: Duration(seconds: 1)),
-                );
+                final text = msg.content.isNotEmpty
+                    ? msg.content
+                    : (msg.fileName.isNotEmpty ? msg.fileName : msg.fileUrl);
+                if (text.isNotEmpty) {
+                  Clipboard.setData(ClipboardData(text: text));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('클립보드에 복사되었습니다.'),
+                      duration: Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               },
             ),
             ListTile(
@@ -1660,6 +1668,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: TextField(
                   controller: _textController,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _onSend(),
                   style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                   decoration: InputDecoration(

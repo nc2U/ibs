@@ -158,16 +158,21 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                     hintText: '공문 제목, 수신처, 문서번호 검색',
                     hintStyle: TextStyle(fontSize: 12.5, color: colors.textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
-                    suffixIcon: _outboundSearchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 16),
-                            onPressed: () {
-                              _outboundSearchController.clear();
-                              ref.read(officialLetterPageProvider.notifier).state = 1;
-                              ref.read(letterSearchQueryProvider.notifier).state = '';
-                            },
-                          )
-                        : null,
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _outboundSearchController,
+                      builder: (context, value, _) {
+                        return value.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  _outboundSearchController.clear();
+                                  ref.read(officialLetterPageProvider.notifier).state = 1;
+                                  ref.read(letterSearchQueryProvider.notifier).state = '';
+                                },
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),

@@ -58,6 +58,7 @@ class MeetingListSerializer(serializers.ModelSerializer):
     other_attendees_count = serializers.IntegerField(read_only=True)
     total_attendees_count = serializers.IntegerField(read_only=True)
     other_attendees_list = serializers.ListField(child=serializers.CharField(), read_only=True)
+    issues = IssueInMeetingSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updater = SimpleUserSerializer(read_only=True)
 
@@ -67,7 +68,7 @@ class MeetingListSerializer(serializers.ModelSerializer):
                   'status', 'status_display', 'is_confirmed', 'meeting_date', 'location',
                   'attendees', 'attendees_desc', 'attendees_count',
                   'other_attendees', 'other_attendees_list', 'other_attendees_count', 'total_attendees_count',
-                  'created', 'updated', 'creator', 'updater')
+                  'issues', 'created', 'updated', 'creator', 'updater')
 
 
 class MeetingSerializer(serializers.ModelSerializer):

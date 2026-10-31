@@ -1461,6 +1461,9 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
         'contract__unit_type',
         'contract__order_group',
         'contract__contractor',
+        'contract__key_unit',
+        'contract__key_unit__houseunit',
+        'contract__key_unit__houseunit__building_unit',
         'installment_order',
         'project'
     ).all()

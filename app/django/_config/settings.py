@@ -202,12 +202,12 @@ DATABASES = {
         'NAME': DATABASE_NAME,
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
-        "DEFAULT-CHARACTER-SET": 'utf8',
         'HOST': MASTER_HOST,
         'PORT': config('POSTGRES_PRIMARY_SERVICE_PORT', default='5432') \
             if DATABASE_TYPE == 'postgres' \
             else config('MARIADB_PRIMARY_SERVICE_PORT_MYSQL', default='3306'),
         'CONN_MAX_AGE': DATABASE_CONN_MAX_AGE,
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': DEFAULT_OPTIONS,
     },
     'replica': {
@@ -215,13 +215,13 @@ DATABASES = {
         'NAME': DATABASE_NAME,
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
-        "DEFAULT-CHARACTER-SET": 'utf8',
         # CloudNativePG uses -ro suffix for read-only service, Bitnami uses -read
         'HOST': f'{DATABASE_TYPE}-ro.{NAMESPACE}.svc.cluster.local',
         'PORT': config('POSTGRES_READ_SERVICE_PORT', default='5432') \
             if DATABASE_TYPE == 'postgres' \
             else config('MARIADB_READ_SERVICE_PORT_MYSQL', default='3306'),
         'CONN_MAX_AGE': DATABASE_CONN_MAX_AGE,
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': REPLICA_OPTIONS,
     }
 }
@@ -506,7 +506,7 @@ LOGGING = {
         "django": {
             "handlers": ["console"],
             "level": "INFO",
-            "propagate": True,
+            "propagate": False,
         },
         # 🔍 범인인 weasyprint의 로그 레벨을 WARNING(경고) 이상으로 높여서 INFO/DEBUG 로그를 차단합니다.
         "weasyprint": {

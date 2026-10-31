@@ -70,8 +70,9 @@ class _MainShellState extends ConsumerState<MainShell> {
     // 2. 스마트 주기적 자동 동기화 시작 (SSE/WebSocket이 메인이므로 60초 간격)
     _startSyncTimer();
 
-    // 3. FCM 푸시 알림 서비스 세션 1회 안전 초기화
+    // 3. 앱 콜드 스타트 즉시 동기화 및 FCM 푸시 알림 세션 1회 안전 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncData();
       _initFcmOnce();
     });
   }
@@ -89,9 +90,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (!hasPrompted && mounted) {
       // 최초 권한 안내 바텀시트 모달 표시
       final bool? accepted = await PushPermissionPromptModal.show(context);
-      if (accepted != null) {
-        await FcmService.markPushPromptShown();
-      }
+      await FcmService.markPushPromptShown();
 
       if (accepted == true && mounted) {
         // 사용자가 '알림 받기'를 선택한 경우 권한 요청 및 서버 등록 진행
@@ -192,6 +191,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (_lastBackPressTime == null ||
         now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
       _lastBackPressTime = now;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('뒤로가기 버튼을 한 번 더 누르면 앱이 종료됩니다.'),
@@ -403,13 +403,17 @@ class _MainShellState extends ConsumerState<MainShell> {
             Consumer(
               builder: (ctx, ref, _) {
                 final currentUser = ref.watch(currentUserProvider).valueOrNull;
-                return GestureDetector(
-                  onTap: () => context.push(AppRoutes.profile),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4, right: 16),
-                    child: UserAvatar(
-                      user: currentUser,
-                      radius: 15,
+                return Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 12),
+                  child: InkResponse(
+                    onTap: () => context.push(AppRoutes.profile),
+                    radius: 20,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: UserAvatar(
+                        user: currentUser,
+                        radius: 15,
+                      ),
                     ),
                   ),
                 );
@@ -436,8 +440,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           items: _tabs.map((t) {
             Widget iconWidget = Icon(t.icon);
             if (t.route == AppRoutes.approval && pendingCount > 0) {
+              final badgeLabel = pendingCount > 99 ? '99+' : '$pendingCount';
               iconWidget = Badge(
-                label: Text('$pendingCount', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                label: Text(badgeLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                 backgroundColor: context.colors.error,
                 child: Icon(t.icon),
               );

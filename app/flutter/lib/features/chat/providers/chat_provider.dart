@@ -257,7 +257,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   }
 
   Future<void> _connectWebSocket() async {
-    if (_isDisposed) return;
+    if (_isDisposed || _isConnected) return;
 
     final tokenStorage = _ref.read(tokenStorageProvider);
     final token = await tokenStorage.getAccessToken();
@@ -369,6 +369,9 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
               }));
             } catch (_) {}
           }
+        } else {
+          // 내가 보낸 메시지가 WebSocket 브로드캐스트로 수신된 경우 대화방 목록 갱신
+          _ref.invalidate(chatRoomsProvider);
         }
       } else if (type == 'delete_message') {
         final deletedId = json['message_id'] as int?;
@@ -392,6 +395,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
               return msgs.where((m) => m.id != deletedId).toList();
             }
           });
+          _ref.invalidate(chatRoomsProvider);
         }
       } else if (type == 'read') {
         final readUserId = json['user_id'] as int?;
@@ -540,6 +544,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
     try {
       await _repo.deleteMessage(messageId, roomId: roomId);
       _ref.invalidate(chatRoomsProvider);
+      _ref.invalidate(totalUnreadChatCountProvider);
       // WebSocket 이 끊겨 있으면 delete_message 이벤트를 받지 못하므로
       // 서버 기준(완전/소프트 삭제)으로 최신 구간을 다시 동기화한다.
       if (!_isConnected) {

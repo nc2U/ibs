@@ -35,6 +35,8 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   @override
   void initState() {
     super.initState();
+    // 화면 재진입 시 유지된 검색어 필터와 입력창 표시를 일치시킴
+    _searchController.text = ref.read(ledgerSearchQueryProvider);
     _transactionsScrollController.addListener(_onTransactionsScroll);
 
     // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
@@ -134,6 +136,10 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
     final currentFrom = ref.read(ledgerFromDateFilterProvider);
     final currentTo = ref.read(ledgerToDateFilterProvider);
 
+    final firstDate = DateTime(2010);
+    final lastDate = DateTime(2035);
+    DateTime clampDate(DateTime d) =>
+        d.isBefore(firstDate) ? firstDate : (d.isAfter(lastDate) ? lastDate : d);
     DateTime initialStart = now;
     DateTime initialEnd = now;
     if (currentFrom != null) {
@@ -149,9 +155,12 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
 
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2010),
-      lastDate: DateTime(2035),
-      initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: DateTimeRange(
+        start: clampDate(initialStart),
+        end: clampDate(initialEnd.isBefore(initialStart) ? initialStart : initialEnd),
+      ),
       builder: (context, child) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
@@ -860,13 +869,25 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
       );
     }
 
-    final itemCount = state.items.length + (state.isFetchingNextPage ? 1 : 0);
+    final itemCount = state.items.length +
+        ((state.isFetchingNextPage || state.loadMoreFailed) ? 1 : 0);
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (ctx, index) {
+            if (index == state.items.length && state.loadMoreFailed) {
+              return Center(
+                child: TextButton.icon(
+                  onPressed: () => ref
+                      .read(projectTransactionsProvider.notifier)
+                      .fetchNextPage(),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('불러오기 실패 - 다시 시도'),
+                ),
+              );
+            }
             if (index == state.items.length) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
@@ -890,7 +911,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                   item: item,
                   onNoteEdited: () => ref
                       .read(projectTransactionsProvider.notifier)
-                      .fetchInitial(),
+                      .reloadLoaded(),
                 ),
               ),
             );

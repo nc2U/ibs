@@ -341,12 +341,24 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     const SizedBox(height: 8),
                     TextField(
                       controller: reasonController,
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 13.5),
                       decoration: InputDecoration(
                         hintText: '예: 하기 휴가, 해외 출장 등으로 인한 대결',
                         hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
+                        filled: true,
+                        fillColor: context.colors.bgInput,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: context.colors.accentApproval, width: 1.5),
                         ),
                       ),
                     ),
@@ -414,7 +426,9 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                                     );
                                   }
                                 } catch (e) {
-                                  setModalState(() => isSaving = false);
+                                  if (ctx.mounted) {
+                                    setModalState(() => isSaving = false);
+                                  }
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -610,17 +624,56 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                                     final confirmed = await showDialog<bool>(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('위임 삭제'),
-                                        content: const Text('해당 결재 위임 설정을 삭제하시겠습니까?'),
+                                        backgroundColor: context.colors.bgCard,
+                                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                        title: Text(
+                                          '위임 삭제',
+                                          style: TextStyle(
+                                            color: context.colors.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        content: Text(
+                                          '해당 결재 위임 설정을 삭제하시겠습니까?',
+                                          style: TextStyle(color: context.colors.textSecond, fontSize: 13.5),
+                                        ),
                                         actions: [
-                                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-                                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: Text('삭제', style: TextStyle(color: context.colors.error, fontWeight: FontWeight.w700)),
+                                          ),
                                         ],
                                       ),
                                     );
                                     if (confirmed == true) {
-                                      await ref.read(approvalRepositoryProvider).deleteDelegation(item.id);
-                                      ref.invalidate(delegationsProvider);
+                                      try {
+                                        await ref.read(approvalRepositoryProvider).deleteDelegation(item.id);
+                                        ref.invalidate(delegationsProvider);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: const Text('결재 위임 설정이 삭제되었습니다.'),
+                                              backgroundColor: context.colors.success,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('삭제 실패: $e'),
+                                              backgroundColor: context.colors.error,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
                                     }
                                   },
                                   padding: EdgeInsets.zero,

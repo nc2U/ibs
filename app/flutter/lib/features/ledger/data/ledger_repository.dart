@@ -19,7 +19,7 @@ class LedgerRepository {
     try {
       final response = await dio.get(
         '/api/v1/ledger/project-bank-account/',
-        queryParameters: {'project': projectId, 'is_hide': false, 'inactive': false},
+        queryParameters: {'project': projectId, 'is_hide': false, 'inactive': false, 'limit': 500},
       );
       final List<dynamic> results = response.data is Map && response.data.containsKey('results')
           ? response.data['results']
@@ -132,6 +132,31 @@ class LedgerRepository {
     }
   }
 
+  /// 2-2. 조건에 맞는 거래 전체 조회 (집계/차트용, 전 페이지 순회로 누락 방지)
+  Future<List<ProjectTransactionItemModel>> fetchAllProjectTransactions({
+    required int projectId,
+    String? sort,
+    String? fromDate,
+    String? toDate,
+    int pageSize = 1000,
+    int maxPages = 20,
+  }) async {
+    final all = <ProjectTransactionItemModel>[];
+    for (var page = 1; page <= maxPages; page++) {
+      final res = await fetchProjectTransactionsPage(
+        projectId: projectId,
+        sort: sort,
+        fromDate: fromDate,
+        toDate: toDate,
+        page: page,
+        limit: pageSize,
+      );
+      all.addAll(res.items);
+      if (!res.hasMore) break;
+    }
+    return all;
+  }
+
   /// 3. 계좌별 잔액 현황 조회 (/api/v1/ledger/project-transaction/balance_by_account/?project={projectId})
   Future<List<ProjectBalanceByAccountModel>> fetchBalanceByAccount(int projectId) async {
     try {
@@ -163,21 +188,19 @@ class LedgerRepository {
       final balancesFuture = fetchBalanceByAccount(projectId).catchError((_) => <ProjectBalanceByAccountModel>[]);
 
       // 2. 당월 입금 거래 내역 조회 (sort=1, 당월 일자 범위 지정)
-      final monthIncomeFuture = fetchProjectTransactions(
+      final monthIncomeFuture = fetchAllProjectTransactions(
         projectId: projectId,
         sort: '1',
         fromDate: fromDate,
         toDate: toDate,
-        limit: 1000,
       );
 
       // 3. 당월 출금 거래 내역 조회 (sort=2, 당월 일자 범위 지정)
-      final monthExpenseFuture = fetchProjectTransactions(
+      final monthExpenseFuture = fetchAllProjectTransactions(
         projectId: projectId,
         sort: '2',
         fromDate: fromDate,
         toDate: toDate,
-        limit: 1000,
       );
 
       final results = await Future.wait([

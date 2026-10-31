@@ -41,12 +41,10 @@ class AuthService {
       await _tokenStorage.saveAccessToken(accessToken);
       await _tokenStorage.saveRefreshToken(refreshToken);
 
-      // 생체 인증 사용 설정이 켜져 있는 경우 새 토큰으로 갱신하고,
+      // 생체 인증 사용 설정이 켜져 있고 계정이 동일한 경우 새 토큰으로 갱신하고,
       // 꺼져 있거나 계정이 변경된 경우 이전 계정의 생체 토큰 잔존을 방지
       final isBioEnabled = await BiometricService.isBiometricEnabled();
       if (isBioEnabled && !isAccountChanged) {
-        await _tokenStorage.saveBiometricRefreshToken(refreshToken);
-      } else if (isBioEnabled && isAccountChanged) {
         await _tokenStorage.saveBiometricRefreshToken(refreshToken);
       } else {
         await _tokenStorage.clearBiometricRefreshToken();

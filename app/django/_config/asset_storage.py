@@ -36,8 +36,9 @@ class MediaStorage(S3Boto3Storage):
         else:
             new_path = path
 
+        scheme = parsed.scheme or 'https'
         return urllib.parse.urlunsplit((
-            'https',
+            scheme,
             target_host,
             new_path,
             parsed.query,

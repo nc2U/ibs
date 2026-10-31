@@ -12,7 +12,7 @@ from _pdf.mixins import (
     PaymentPdfMixin,
     ContractPdfMixin,
 )
-from _pdf.utils import TODAY, get_today
+from _pdf.utils import TODAY, get_today, get_late_fee
 
 User = get_user_model()
 
@@ -47,7 +47,7 @@ class PdfExportMixinTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_safe_url_fetcher_blocks_ssrf(self):
-        """WeasyPrint safe_url_fetcher가 내부망 및 메타데이터 IP를 차단하는지 검증 (SSRF 방어)"""
+        """WeasyPrint safe_url_fetcher가 내부망, 메타데이터 IP 및 비인가 로컬 파일을 차단하는지 검증 (SSRF/LFI 방어)"""
         # 1. AWS/클라우드 메타데이터 차단
         with self.assertRaises(ValueError):
             PdfExportMixin.safe_url_fetcher('http://169.254.169.254/latest/meta-data/')
@@ -72,14 +72,30 @@ class PdfExportMixinTests(TestCase):
         result = PdfExportMixin.safe_url_fetcher('data:text/plain;base64,SGVsbG8=')
         self.assertIsNotNone(result)
 
+        # 5. 비인가 시스템 파일 경로 차단 (LFI 방어)
+        with self.assertRaises(ValueError):
+            PdfExportMixin.safe_url_fetcher('file:///etc/passwd')
+        with self.assertRaises(ValueError):
+            PdfExportMixin.safe_url_fetcher('file:///etc/shadow')
+
     def test_today_proxy_is_dynamic(self):
-        """TODAY 심볼 및 get_today()가 현재 날짜를 동적으로 반환하는지 검증"""
+        """TODAY 심볼 및 get_today()가 현재 날짜를 동적으로 반환하고 해시를 지원하는지 검증"""
         current_today = datetime.date.today()
         self.assertEqual(get_today(), current_today)
         self.assertEqual(str(TODAY), str(current_today))
         self.assertEqual(TODAY.year, current_today.year)
         self.assertEqual(TODAY.month, current_today.month)
         self.assertEqual(TODAY.day, current_today.day)
+        # 해시 지원 및 딕셔너리/Set 키 사용성 검증
+        self.assertEqual(hash(TODAY), hash(current_today))
+        self.assertEqual({TODAY: 'val'}[TODAY], 'val')
+        self.assertIn(TODAY, {TODAY})
+
+    def test_get_late_fee_returns_zero_when_no_rules(self):
+        """연체 규정 미등록 프로젝트에 대한 get_late_fee 호출 시 None이 아닌 0 반환 검증"""
+        fee = get_late_fee(None, 5000000, 15)
+        self.assertEqual(fee, 0)
+        self.assertIsInstance(fee, int)
 
     def test_create_pdf_response(self):
         """create_pdf_response가 유효한 PDF 응답을 생성하고 표준 Content-Disposition을 설정하는지 검증"""
