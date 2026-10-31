@@ -55,7 +55,7 @@ class SalesAgencyModel {
     required this.id,
     required this.project,
     required this.name,
-    this.isDirectManaged = false,
+    this.isDirectManaged = true,
     this.businessNumber,
     this.ceoName,
     this.phone,
@@ -68,7 +68,7 @@ class SalesAgencyModel {
       id: _parseInt(json['id']),
       project: _parseInt(json['project']),
       name: json['name'] as String? ?? '',
-      isDirectManaged: json['is_direct_managed'] as bool? ?? false,
+      isDirectManaged: json['is_direct_managed'] as bool? ?? true,
       businessNumber: json['business_number'] as String?,
       ceoName: json['ceo_name'] as String?,
       phone: json['phone'] as String?,
@@ -125,9 +125,9 @@ class SalesPersonModel {
   final String? agencyName;
   final int? user;
   final String name;
-  final String duty; // 1: 상담사, 2: 팀장, 3: 본부장, 4: 총괄본부장
+  final String duty; // 1: 상담사, 2: 팀장, 3: 본부장, 4: 총괄본부장, 5: 지원/기타
   final String? dutyDisplay;
-  final String status; // 1: 위촉(재직), 2: 해촉(퇴사)
+  final String status; // 1: 위촉(재직), 2: 휴직, 3: 해촉(퇴사)
   final String? statusDisplay;
   final String? phone;
   final String? idNumber;
@@ -321,6 +321,7 @@ class CommissionPolicyModel {
       payConditionDisplay: json['pay_condition_display'] as String?,
       startDate: json['start_date'] as String? ?? '',
       endDate: json['end_date'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 
@@ -507,15 +508,19 @@ class PayoutContractDetailModel {
     this.unitFee = 0,
   });
 
-  factory PayoutContractDetailModel.fromJson(Map<String, dynamic> json) {
+  factory PayoutContractDetailModel.fromJson(
+    Map<String, dynamic> json, {
+    String defaultRoleType = 'agent',
+    String? defaultRoleTypeDisplay,
+  }) {
     return PayoutContractDetailModel(
       id: _parseInt(json['id']),
       payout: _parseInt(json['payout']),
       contract: _parseInt(json['contract']),
       contractSerial: json['contract_serial'] as String?,
       contractorName: json['contractor_name'] as String?,
-      roleType: json['role_type'] as String? ?? 'agent',
-      roleTypeDisplay: json['role_type_display'] as String?,
+      roleType: json['role_type'] as String? ?? defaultRoleType,
+      roleTypeDisplay: json['role_type_display'] as String? ?? defaultRoleTypeDisplay,
       unitFee: _parseInt(json['unit_fee']),
     );
   }
@@ -661,6 +666,12 @@ class SettlementPeriodModel {
   bool get isDraft => status == '1';
   bool get isConfirmed => status == '2';
   bool get isCompleted => status == '3';
+  bool get hasCalculatedData =>
+      payoutCount > 0 ||
+      agencyPayoutCount > 0 ||
+      totalContracts > 0 ||
+      totalGrossAmount > 0 ||
+      agencyFeeTotal > 0;
 
   factory SettlementPeriodModel.fromJson(Map<String, dynamic> json) {
     final gross = _parseInt(json['total_gross_amount']);
@@ -747,7 +758,11 @@ class AgencyPayoutModel {
 
   factory AgencyPayoutModel.fromJson(Map<String, dynamic> json) {
     final detailsList = (json['contract_details'] as List<dynamic>?)
-            ?.map((d) => PayoutContractDetailModel.fromJson(d as Map<String, dynamic>))
+            ?.map((d) => PayoutContractDetailModel.fromJson(
+                  d as Map<String, dynamic>,
+                  defaultRoleType: 'agency',
+                  defaultRoleTypeDisplay: '대행사 수수료',
+                ))
             .toList() ??
         [];
 

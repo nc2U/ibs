@@ -22,109 +22,93 @@ class SalesRepository {
     int? salesPersonId,
     int limit = 500,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'contract__project': projectId,
-        'limit': limit,
-      };
-      if (search != null && search.trim().isNotEmpty) {
-        queryParams['search'] = search.trim();
-      }
-      if (teamId != null) {
-        queryParams['team'] = teamId;
-      }
-      if (salesPersonId != null) {
-        queryParams['sales_person'] = salesPersonId;
-      }
-
-      final response = await dio.get(
-        '/api/v1/sales-contract-agent/',
-        queryParameters: queryParams,
-      );
-
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-
-      return results
-          .map((item) => ContractSalesAgentModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'contract__project': projectId,
+      'limit': limit,
+    };
+    if (search != null && search.trim().isNotEmpty) {
+      queryParams['search'] = search.trim();
     }
+    if (teamId != null) {
+      queryParams['team'] = teamId;
+    }
+    if (salesPersonId != null) {
+      queryParams['sales_person'] = salesPersonId;
+    }
+
+    final response = await dio.get(
+      '/api/v1/sales-contract-agent/',
+      queryParameters: queryParams,
+    );
+
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+
+    return results
+        .map((item) => ContractSalesAgentModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 2. 프로젝트 전체 간단 계약 목록 조회 (/api/v1/simple-contract/)
   Future<List<SimpleContractOption>> fetchSimpleContracts(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/simple-contract/',
-        queryParameters: {
-          'project': projectId,
-          'limit': 1000,
-        },
-      );
+    final response = await dio.get(
+      '/api/v1/simple-contract/',
+      queryParameters: {
+        'project': projectId,
+        'limit': 1000,
+      },
+    );
 
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
 
-      return results
-          .map((item) => SimpleContractOption.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    return results
+        .map((item) => SimpleContractOption.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 3. 분양 대행사 목록 조회 (/api/v1/sales-agency/)
   Future<List<SalesAgencyModel>> fetchSalesAgencies(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/sales-agency/',
-        queryParameters: {
-          'project': projectId,
-          'limit': 100,
-        },
-      );
+    final response = await dio.get(
+      '/api/v1/sales-agency/',
+      queryParameters: {
+        'project': projectId,
+        'limit': 100,
+      },
+    );
 
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
 
-      return results
-          .map((item) => SalesAgencyModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    return results
+        .map((item) => SalesAgencyModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 4. 영업 조직 (팀/본부) 목록 조회 (/api/v1/sales-team/)
   Future<List<SalesTeamModel>> fetchSalesTeams(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/sales-team/',
-        queryParameters: {
-          'agency__project': projectId,
-          'limit': 100,
-        },
-      );
+    final response = await dio.get(
+      '/api/v1/sales-team/',
+      queryParameters: {
+        'agency__project': projectId,
+        'limit': 100,
+      },
+    );
 
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
 
-      return results
-          .map((item) => SalesTeamModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    return results
+        .map((item) => SalesTeamModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 5. 영업 인력 (상담사/팀장/본부장) 목록 조회 (/api/v1/sales-person/)
@@ -133,34 +117,30 @@ class SalesRepository {
     int? teamId,
     String? status,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'team__agency__project': projectId,
-        'limit': 300,
-      };
-      if (teamId != null) {
-        queryParams['team'] = teamId;
-      }
-      if (status != null && status.isNotEmpty) {
-        queryParams['status'] = status;
-      }
-
-      final response = await dio.get(
-        '/api/v1/sales-person/',
-        queryParameters: queryParams,
-      );
-
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-
-      return results
-          .map((item) => SalesPersonModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'team__agency__project': projectId,
+      'limit': 300,
+    };
+    if (teamId != null) {
+      queryParams['team'] = teamId;
     }
+    if (status != null && status.isNotEmpty) {
+      queryParams['status'] = status;
+    }
+
+    final response = await dio.get(
+      '/api/v1/sales-person/',
+      queryParameters: queryParams,
+    );
+
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+
+    return results
+        .map((item) => SalesPersonModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 6. 수수료 정책 목록 조회 (/api/v1/sales-policy/)
@@ -168,68 +148,56 @@ class SalesRepository {
     int projectId, {
     bool? isActive,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'project': projectId,
-        'limit': 150,
-      };
-      if (isActive != null) {
-        queryParams['is_active'] = isActive;
-      }
-      final response = await dio.get(
-        '/api/v1/sales-policy/',
-        queryParameters: queryParams,
-      );
-
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-
-      return results
-          .map((item) => CommissionPolicyModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'project': projectId,
+      'limit': 150,
+    };
+    if (isActive != null) {
+      queryParams['is_active'] = isActive;
     }
+    final response = await dio.get(
+      '/api/v1/sales-policy/',
+      queryParameters: queryParams,
+    );
+
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+
+    return results
+        .map((item) => CommissionPolicyModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 6-1. 프로젝트 공급 차수 목록 조회 (/api/v1/order-group/)
   Future<List<OrderGroupOption>> fetchOrderGroups(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/order-group/',
-        queryParameters: {'project': projectId, 'limit': 100},
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => OrderGroupOption.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    final response = await dio.get(
+      '/api/v1/order-group/',
+      queryParameters: {'project': projectId, 'limit': 100},
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => OrderGroupOption.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 6-2. 프로젝트 유니트 타입 목록 조회 (/api/v1/type/)
   Future<List<UnitTypeOption>> fetchUnitTypes(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/type/',
-        queryParameters: {'project': projectId, 'limit': 100},
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => UnitTypeOption.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    final response = await dio.get(
+      '/api/v1/type/',
+      queryParameters: {'project': projectId, 'limit': 100},
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => UnitTypeOption.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 6. 계약 영업 담당자 배정 등록 (POST /api/v1/sales-contract-agent/)
@@ -339,21 +307,17 @@ class SalesRepository {
 
   // ── 수수료 정산 회차 CRUD & 액션 ────────────────────────
   Future<List<SettlementPeriodModel>> fetchSettlementPeriods(int projectId) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/sales-settlement-period/',
-        queryParameters: {'project': projectId, 'limit': 100},
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => SettlementPeriodModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    final response = await dio.get(
+      '/api/v1/sales-settlement-period/',
+      queryParameters: {'project': projectId, 'limit': 100},
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => SettlementPeriodModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Future<SettlementPeriodModel> createSettlementPeriod(Map<String, dynamic> payload) async {
@@ -390,36 +354,36 @@ class SalesRepository {
     required int periodId,
     String? payStatus,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'period': periodId,
-        'limit': 200,
-      };
-      if (payStatus != null && payStatus.isNotEmpty) {
-        queryParams['pay_status'] = payStatus;
-      }
-      final response = await dio.get(
-        '/api/v1/sales-payout/',
-        queryParameters: queryParams,
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'period': periodId,
+      'limit': 200,
+    };
+    if (payStatus != null && payStatus.isNotEmpty) {
+      queryParams['pay_status'] = payStatus;
     }
+    final response = await dio.get(
+      '/api/v1/sales-payout/',
+      queryParameters: queryParams,
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 지급 상태 변경 (승인 / 완료 / 보류)
-  Future<void> updatePayStatus(int payoutId, String payStatus) async {
-    await dio.post(
+  Future<CommissionPayoutModel> updatePayStatus(int payoutId, String payStatus) async {
+    final response = await dio.post(
       '/api/v1/sales-payout/$payoutId/update-pay-status/',
       data: {'pay_status': payStatus},
     );
+    if (response.data is Map<String, dynamic>) {
+      return CommissionPayoutModel.fromJson(response.data as Map<String, dynamic>);
+    }
+    throw Exception('Invalid payout response');
   }
 
   /// 다중 선택 대상 일괄 지급 상태 변경
@@ -435,28 +399,24 @@ class SalesRepository {
     required int periodId,
     int? agencyId,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'period': periodId,
-        'limit': 100,
-      };
-      if (agencyId != null) {
-        queryParams['agency'] = agencyId;
-      }
-      final response = await dio.get(
-        '/api/v1/sales-agency-payout/',
-        queryParameters: queryParams,
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => AgencyPayoutModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'period': periodId,
+      'limit': 100,
+    };
+    if (agencyId != null) {
+      queryParams['agency'] = agencyId;
     }
+    final response = await dio.get(
+      '/api/v1/sales-agency-payout/',
+      queryParameters: queryParams,
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => AgencyPayoutModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 대행사 지급 상태 변경 (/api/v1/sales-agency-payout/{id}/update-pay-status/)
@@ -472,24 +432,20 @@ class SalesRepository {
     required int salesPersonId,
     int limit = 500,
   }) async {
-    try {
-      final response = await dio.get(
-        '/api/v1/sales-payout/',
-        queryParameters: {
-          'sales_person': salesPersonId,
-          'limit': limit,
-        },
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    final response = await dio.get(
+      '/api/v1/sales-payout/',
+      queryParameters: {
+        'sales_person': salesPersonId,
+        'limit': limit,
+      },
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 수수료 환수 이력 목록 조회 (/api/v1/sales-clawback/)
@@ -498,30 +454,26 @@ class SalesRepository {
     int? salesPersonId,
     int limit = 500,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'limit': limit,
-      };
-      if (projectId != null) {
-        queryParams['contract__project'] = projectId;
-      }
-      if (salesPersonId != null) {
-        queryParams['sales_person'] = salesPersonId;
-      }
-      final response = await dio.get(
-        '/api/v1/sales-clawback/',
-        queryParameters: queryParams,
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => CommissionClawbackModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'limit': limit,
+    };
+    if (projectId != null) {
+      queryParams['contract__project'] = projectId;
     }
+    if (salesPersonId != null) {
+      queryParams['sales_person'] = salesPersonId;
+    }
+    final response = await dio.get(
+      '/api/v1/sales-clawback/',
+      queryParameters: queryParams,
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => CommissionClawbackModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
 
@@ -553,31 +505,27 @@ class SalesRepository {
     bool? isVerified,
     int limit = 100,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'sales_person': salesPersonId,
-        'limit': limit,
-      };
-      if (docType != null && docType.isNotEmpty) {
-        queryParams['doc_type'] = docType;
-      }
-      if (isVerified != null) {
-        queryParams['is_verified'] = isVerified;
-      }
-      final response = await dio.get(
-        '/api/v1/sales-person-document/',
-        queryParameters: queryParams,
-      );
-      final data = response.data;
-      final results = data is Map && data.containsKey('results')
-          ? data['results'] as List<dynamic>
-          : (data is List ? data : []);
-      return results
-          .map((item) => SalesPersonDocumentModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      return [];
+    final queryParams = <String, dynamic>{
+      'sales_person': salesPersonId,
+      'limit': limit,
+    };
+    if (docType != null && docType.isNotEmpty) {
+      queryParams['doc_type'] = docType;
     }
+    if (isVerified != null) {
+      queryParams['is_verified'] = isVerified;
+    }
+    final response = await dio.get(
+      '/api/v1/sales-person-document/',
+      queryParameters: queryParams,
+    );
+    final data = response.data;
+    final results = data is Map && data.containsKey('results')
+        ? data['results'] as List<dynamic>
+        : (data is List ? data : []);
+    return results
+        .map((item) => SalesPersonDocumentModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// 18. 영업 인력 서류 등록 (FormData 업로드)

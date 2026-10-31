@@ -229,22 +229,33 @@ class _AgencyTeamManageSheetState
               ),
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
-                final repository = ref.read(salesRepositoryProvider);
-                final payload = {
-                  'project': widget.projectId,
-                  'name': nameController.text.trim(),
-                  'is_direct_managed': isDirect,
-                  'ceo_name': isDirect ? '' : ceoController.text.trim(),
-                  'phone': isDirect ? '' : phoneController.text.trim(),
-                  'business_number': isDirect ? '' : bizController.text.trim(),
-                };
-                if (agency != null) {
-                  await repository.updateSalesAgency(agency.id, payload);
-                } else {
-                  await repository.createSalesAgency(payload);
-                }
-                if (ctx.mounted) {
-                  Navigator.of(ctx).pop(true);
+                try {
+                  final repository = ref.read(salesRepositoryProvider);
+                  final payload = {
+                    'project': widget.projectId,
+                    'name': nameController.text.trim(),
+                    'is_direct_managed': isDirect,
+                    'ceo_name': isDirect ? '' : ceoController.text.trim(),
+                    'phone': isDirect ? '' : phoneController.text.trim(),
+                    'business_number': isDirect ? '' : bizController.text.trim(),
+                  };
+                  if (agency != null) {
+                    await repository.updateSalesAgency(agency.id, payload);
+                  } else {
+                    await repository.createSalesAgency(payload);
+                  }
+                  if (ctx.mounted) {
+                    Navigator.of(ctx).pop(true);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('대행사 저장 실패: $e'),
+                        backgroundColor: context.colors.error,
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text('저장'),
@@ -308,18 +319,29 @@ class _AgencyTeamManageSheetState
             ),
             onPressed: () async {
               if (nameController.text.trim().isEmpty) return;
-              final repository = ref.read(salesRepositoryProvider);
-              final payload = {
-                'agency': agencyId,
-                'name': nameController.text.trim(),
-              };
-              if (team != null) {
-                await repository.updateSalesTeam(team.id, payload);
-              } else {
-                await repository.createSalesTeam(payload);
-              }
-              if (ctx.mounted) {
-                Navigator.of(ctx).pop(true);
+              try {
+                final repository = ref.read(salesRepositoryProvider);
+                final payload = {
+                  'agency': agencyId,
+                  'name': nameController.text.trim(),
+                };
+                if (team != null) {
+                  await repository.updateSalesTeam(team.id, payload);
+                } else {
+                  await repository.createSalesTeam(payload);
+                }
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop(true);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('영업 팀 저장 실패: $e'),
+                      backgroundColor: context.colors.error,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('저장'),
@@ -330,6 +352,7 @@ class _AgencyTeamManageSheetState
 
     if (saved == true) {
       ref.invalidate(salesTeamsProvider);
+      ref.invalidate(salesAgenciesProvider);
     }
     } finally {
       nameController.dispose();
@@ -358,10 +381,21 @@ class _AgencyTeamManageSheetState
       ),
     );
     if (confirm == true) {
-      final repository = ref.read(salesRepositoryProvider);
-      await repository.deleteSalesAgency(agency.id);
-      ref.invalidate(salesAgenciesProvider);
-      ref.invalidate(salesTeamsProvider);
+      try {
+        final repository = ref.read(salesRepositoryProvider);
+        await repository.deleteSalesAgency(agency.id);
+        ref.invalidate(salesAgenciesProvider);
+        ref.invalidate(salesTeamsProvider);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('대행사 삭제 실패: $e'),
+              backgroundColor: context.colors.error,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -387,9 +421,21 @@ class _AgencyTeamManageSheetState
       ),
     );
     if (confirm == true) {
-      final repository = ref.read(salesRepositoryProvider);
-      await repository.deleteSalesTeam(team.id);
-      ref.invalidate(salesTeamsProvider);
+      try {
+        final repository = ref.read(salesRepositoryProvider);
+        await repository.deleteSalesTeam(team.id);
+        ref.invalidate(salesTeamsProvider);
+        ref.invalidate(salesAgenciesProvider);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('영업 팀 삭제 실패: $e'),
+              backgroundColor: context.colors.error,
+            ),
+          );
+        }
+      }
     }
   }
 

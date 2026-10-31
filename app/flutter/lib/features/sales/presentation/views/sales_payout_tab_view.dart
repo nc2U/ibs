@@ -31,13 +31,17 @@ class SalesPayoutTabView extends ConsumerStatefulWidget {
 
 class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
   final TextEditingController _payoutSearchController = TextEditingController();
+  final TextEditingController _payoutAgencySearchController = TextEditingController();
   Timer? _payoutDebounceTimer;
+  Timer? _payoutAgencyDebounceTimer;
   bool _isBatchProcessing = false;
 
   @override
   void dispose() {
     _payoutSearchController.dispose();
+    _payoutAgencySearchController.dispose();
     _payoutDebounceTimer?.cancel();
+    _payoutAgencyDebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -46,6 +50,14 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
     _payoutDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       ref.read(payoutTabSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _onPayoutAgencySearchChanged(String value) {
+    _payoutAgencyDebounceTimer?.cancel();
+    _payoutAgencyDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      ref.read(payoutTabAgencySearchQueryProvider.notifier).state = value.trim();
     });
   }
 
@@ -185,6 +197,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
       final repo = ref.read(salesRepositoryProvider);
       await repo.batchUpdatePayStatus(ids, targetStatus);
       ref.invalidate(payoutTabPayoutsProvider);
+      ref.invalidate(commissionPayoutsProvider);
       ref.invalidate(settlementPeriodsProvider);
       ref.read(payoutTabSelectedIdsProvider.notifier).state = {};
 
@@ -220,6 +233,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
       final repo = ref.read(salesRepositoryProvider);
       await repo.updatePayStatus(payout.id, newStatus);
       ref.invalidate(payoutTabPayoutsProvider);
+      ref.invalidate(commissionPayoutsProvider);
       ref.invalidate(settlementPeriodsProvider);
 
       if (!mounted) return;
@@ -328,7 +342,13 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
               message: '회차 데이터를 불러오지 못했습니다: $err',
               onRetry: () => ref.invalidate(settlementPeriodsProvider),
             ),
-            data: (periods) => _buildPayoutPeriodSection(widget.project, periods, currentPeriod, summary),
+            data: (periods) => _buildPayoutPeriodSection(
+              widget.project,
+              periods,
+              currentPeriod,
+              summary,
+              agencySummary,
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -375,6 +395,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
     List<SettlementPeriodModel> periods,
     SettlementPeriodModel? currentPeriod,
     PayoutStatusSummaryModel summary,
+    AgencyPayoutSummaryModel agencySummary,
   ) {
     final canPayout = ref.can(Perm.salesPayout, projectSlug: project.slug);
 
@@ -410,10 +431,14 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
 
     final period = currentPeriod ?? periods.first;
 
-    // 모든 인원이 지급 완료되었고, 회차가 확정 상태인 경우 종결 가능
+    // 모든 인원 및 대행사가 지급 완료되었고, 회차가 확정 상태인 경우 종결 가능
+    final hasAnyPayoutTargets = summary.totalCount > 0 || agencySummary.totalCount > 0;
+    final allPersonPaid = summary.totalCount == 0 || summary.paidCount == summary.totalCount;
+    final allAgencyPaid = agencySummary.totalCount == 0 || agencySummary.paidCount == agencySummary.totalCount;
     final canCompletePeriod = period.isConfirmed &&
-        summary.totalCount > 0 &&
-        summary.paidCount == summary.totalCount;
+        hasAnyPayoutTargets &&
+        allPersonPaid &&
+        allAgencyPaid;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -446,6 +471,7 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
                       ref.read(payoutTabPeriodIdProvider.notifier).state = id;
                       ref.read(payoutTabSelectedIdsProvider.notifier).state = {};
                       ref.invalidate(payoutTabPayoutsProvider);
+                      ref.invalidate(payoutTabAgencyPayoutsProvider);
                     },
                     itemBuilder: (ctx) => periods.map((p) {
                       final isSelected = p.id == period.id;
@@ -1570,16 +1596,29 @@ class _SalesPayoutTabViewState extends ConsumerState<SalesPayoutTabView> {
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.colors.border, width: 0.8),
           ),
-          child: TextField(
-            onChanged: (val) => ref.read(payoutTabAgencySearchQueryProvider.notifier).state = val.trim(),
-            style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: '대행사명, 사업자번호, 예금주 검색...',
-              hintStyle: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
-              prefixIcon: Icon(Icons.search, size: 18, color: context.colors.textMuted),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _payoutAgencySearchController,
+            builder: (context, value, _) => TextField(
+              controller: _payoutAgencySearchController,
+              onChanged: _onPayoutAgencySearchChanged,
+              style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: '대행사명, 사업자번호, 예금주 검색...',
+                hintStyle: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                prefixIcon: Icon(Icons.search, size: 18, color: context.colors.textMuted),
+                suffixIcon: value.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: () {
+                          _payoutAgencySearchController.clear();
+                          ref.read(payoutTabAgencySearchQueryProvider.notifier).state = '';
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
             ),
           ),
         ),

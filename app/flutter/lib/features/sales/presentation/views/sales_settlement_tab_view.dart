@@ -201,11 +201,12 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
       ref.invalidate(projectClawbacksProvider);
 
       if (!mounted) return;
-      final msg = res['message'] as String? ?? '수수료 정산 계산이 완료되었습니다.';
+      final msg = (res['detail'] ?? res['message']) as String? ?? '수수료 정산 계산이 완료되었습니다.';
+      final hasContracts = (res['total_contracts'] as num? ?? res['count'] as num? ?? 1) > 0;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: hasContracts ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
         ),
       );
     } catch (e) {
@@ -663,7 +664,7 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
                 ],
 
                 // [✓ 정산 확정] 버튼 (작성 중이고 집계된 내역이 있을 때)
-                if (canSettle && period.isDraft && (period.payoutCount > 0 || period.totalGrossAmount > 0)) ...[
+                if (canSettle && period.isDraft && period.hasCalculatedData) ...[
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
@@ -1043,6 +1044,11 @@ class _SalesSettlementTabViewState extends ConsumerState<SalesSettlementTabView>
       ),
       data: (allPayouts) {
         if (allPayouts.isEmpty) {
+          final hasAgencyPayouts = currentPeriod.agencyPayoutCount > 0 ||
+              (ref.read(agencyPayoutsProvider).valueOrNull?.isNotEmpty ?? false);
+          if (hasAgencyPayouts) {
+            return const SizedBox.shrink();
+          }
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(

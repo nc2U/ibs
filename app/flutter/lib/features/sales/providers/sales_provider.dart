@@ -9,9 +9,15 @@ enum SalesMappingStatusFilter { all, mapped, unmapped, approved, pending }
 final salesMappingStatusFilterProvider =
     StateProvider<SalesMappingStatusFilter>((ref) => SalesMappingStatusFilter.all);
 
-final salesTeamFilterProvider = StateProvider<int?>((ref) => null);
+final salesTeamFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
-final salesPersonFilterProvider = StateProvider<int?>((ref) => null);
+final salesPersonFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 final salesSearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -111,7 +117,8 @@ final salesPerformanceSummaryProvider = Provider<SalesPerformanceSummary>((ref) 
   if (mappings.isNotEmpty) {
     final counts = <String, Map<String, dynamic>>{};
     for (final m in mappings) {
-      final name = m.salesPersonName ?? '미정';
+      final name = m.salesPersonName?.trim();
+      if (name == null || name.isEmpty) continue;
       if (!counts.containsKey(name)) {
         counts[name] = {'name': name, 'team': m.teamName ?? '', 'count': 0};
       }
@@ -217,8 +224,9 @@ final filteredContractPerformanceProvider =
     if (query.isNotEmpty) {
       final labelMatch = item.contractLabel.toLowerCase().contains(query);
       final personMatch = item.salesPersonName?.toLowerCase().contains(query) ?? false;
+      final agencyMatch = item.agencyName?.toLowerCase().contains(query) ?? false;
       final mgmMatch = item.mgmName?.toLowerCase().contains(query) ?? false;
-      if (!labelMatch && !personMatch && !mgmMatch) return false;
+      if (!labelMatch && !personMatch && !agencyMatch && !mgmMatch) return false;
     }
 
     return true;
@@ -239,8 +247,14 @@ final salesAgenciesProvider = FutureProvider<List<SalesAgencyModel>>((ref) async
 });
 
 /// ── 영업 조직(인력 명부) 필터 프로바이더 ────────────────────────
-final orgAgencyFilterProvider = StateProvider<int?>((ref) => null);
-final orgTeamFilterProvider = StateProvider<int?>((ref) => null);
+final orgAgencyFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
+final orgTeamFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 final orgDutyFilterProvider = StateProvider<String>((ref) => ''); // '': 전체
 final orgStatusFilterProvider = StateProvider<String>((ref) => '1'); // '1': 재직 우선
 final orgSearchQueryProvider = StateProvider<String>((ref) => '');
@@ -349,8 +363,14 @@ final unitTypesProvider = FutureProvider<List<UnitTypeOption>>((ref) async {
 });
 
 /// ── 수수료 정책 필터 프로바이더 ──────────────────────────────────
-final policyOrderGroupFilterProvider = StateProvider<int?>((ref) => null);
-final policyUnitTypeFilterProvider = StateProvider<int?>((ref) => null);
+final policyOrderGroupFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
+final policyUnitTypeFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 final policyActiveFilterProvider = StateProvider<String>((ref) => 'true'); // 'true': 활성, '': 전체, 'false': 비활성
 final policySearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -444,7 +464,10 @@ final settlementPeriodsProvider =
 });
 
 /// 현재 선택된 정산 회차 ID 프로바이더 (null이면 최신 회차 자동 선택)
-final selectedPeriodIdProvider = StateProvider<int?>((ref) => null);
+final selectedPeriodIdProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 현재 선택된 정산 회차 객체 프로바이더
 final currentSettlementPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
@@ -519,7 +542,10 @@ final filteredCommissionPayoutsProvider =
 // ═════════════════════════════════════════════════════════════════
 
 /// 지급 관리 전용 선택 회차 ID 프로바이더 (null이면 정산확정/지급완료 회차 우선 선택)
-final payoutTabPeriodIdProvider = StateProvider<int?>((ref) => null);
+final payoutTabPeriodIdProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 지급 관리 전용 현재 선택 회차 프로바이더
 final currentPayoutPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
@@ -550,7 +576,11 @@ final payoutTabSearchQueryProvider = StateProvider<String>((ref) => '');
 final payoutTabStatusFilterProvider = StateProvider<String>((ref) => '');
 
 /// ── 다중 선택된 지급 명세 ID 세트 프로바이더 ───────────────────────
-final payoutTabSelectedIdsProvider = StateProvider<Set<int>>((ref) => {});
+final payoutTabSelectedIdsProvider = StateProvider<Set<int>>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  ref.watch(payoutTabPeriodIdProvider);
+  return {};
+});
 
 /// ── 지급 진행 요약 모델 및 프로바이더 ───────────────────────────
 class PayoutStatusSummaryModel {

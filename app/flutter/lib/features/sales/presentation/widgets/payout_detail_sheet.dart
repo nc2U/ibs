@@ -67,7 +67,7 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
     setState(() => _isUpdatingStatus = true);
     try {
       final repository = ref.read(salesRepositoryProvider);
-      await repository.updatePayStatus(_payout.id, newStatus);
+      final updated = await repository.updatePayStatus(_payout.id, newStatus);
       ref.invalidate(commissionPayoutsProvider);
       ref.invalidate(payoutTabPayoutsProvider);
       ref.invalidate(settlementPeriodsProvider);
@@ -75,30 +75,32 @@ class _PayoutDetailSheetState extends ConsumerState<PayoutDetailSheet> {
       if (mounted) {
         setState(() {
           _payout = CommissionPayoutModel(
-            id: _payout.id,
-            period: _payout.period,
-            salesPerson: _payout.salesPerson,
-            salesPersonName: _payout.salesPersonName,
-            dutyDisplay: _payout.dutyDisplay,
-            teamName: _payout.teamName,
-            basePay: _payout.basePay,
-            contractCount: _payout.contractCount,
-            commissionAmount: _payout.commissionAmount,
-            bonusAmount: _payout.bonusAmount,
-            deductionAmount: _payout.deductionAmount,
-            grossAmount: _payout.grossAmount,
-            incomeTax: _payout.incomeTax,
-            localIncomeTax: _payout.localIncomeTax,
-            totalTax: _payout.totalTax,
-            netAmount: _payout.netAmount,
-            payStatus: newStatus,
-            payStatusDisplay: _getStatusLabel(newStatus),
-            paidDate: _payout.paidDate,
-            bankName: _payout.bankName,
-            accountNumber: _payout.accountNumber,
-            accountHolder: _payout.accountHolder,
-            note: _payout.note,
-            contractDetails: _payout.contractDetails,
+            id: updated.id,
+            period: updated.period,
+            salesPerson: updated.salesPerson,
+            salesPersonName: updated.salesPersonName ?? _payout.salesPersonName,
+            dutyDisplay: updated.dutyDisplay ?? _payout.dutyDisplay,
+            teamName: updated.teamName ?? _payout.teamName,
+            basePay: updated.basePay,
+            contractCount: updated.contractCount,
+            commissionAmount: updated.commissionAmount,
+            bonusAmount: updated.bonusAmount,
+            deductionAmount: updated.deductionAmount,
+            grossAmount: updated.grossAmount,
+            incomeTax: updated.incomeTax,
+            localIncomeTax: updated.localIncomeTax,
+            totalTax: updated.totalTax,
+            netAmount: updated.netAmount,
+            payStatus: updated.payStatus,
+            payStatusDisplay: updated.payStatusDisplay ?? _getStatusLabel(newStatus),
+            paidDate: updated.paidDate,
+            bankName: updated.bankName ?? _payout.bankName,
+            accountNumber: updated.accountNumber ?? _payout.accountNumber,
+            accountHolder: updated.accountHolder ?? _payout.accountHolder,
+            note: updated.note ?? _payout.note,
+            contractDetails: updated.contractDetails.isNotEmpty
+                ? updated.contractDetails
+                : _payout.contractDetails,
           );
         });
 

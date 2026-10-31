@@ -283,22 +283,37 @@ class _ContractAgentFormSheetState
   Widget build(BuildContext context) {
     final isEditing = widget.existingMapping != null;
     final contractsAsync = ref.watch(simpleContractsProvider);
+    final mappingsAsync = ref.watch(rawContractSalesAgentsProvider);
     final personsAsync = ref.watch(salesPersonsProvider);
     final policiesAsync = ref.watch(salesPoliciesProvider);
     final agenciesAsync = ref.watch(salesAgenciesProvider);
 
-    final contracts = contractsAsync.valueOrNull ?? [];
-    final persons = personsAsync.valueOrNull ?? [];
-    final policies = policiesAsync.valueOrNull ?? [];
+    final allContracts = contractsAsync.valueOrNull ?? [];
+    final mappedContractIds = (mappingsAsync.valueOrNull ?? [])
+        .map((m) => m.contract)
+        .toSet();
+    final contracts = allContracts
+        .where((c) => c.value == _selectedContractId || !mappedContractIds.contains(c.value))
+        .toList();
+    final allPersons = personsAsync.valueOrNull ?? [];
+    final persons = allPersons
+        .where((p) => p.status == '1' || p.id == _selectedSalesPersonId)
+        .toList();
+    final allPolicies = policiesAsync.valueOrNull ?? [];
+    final policies = allPolicies
+        .where((pol) => pol.isActive || pol.id == _selectedPolicyId)
+        .toList();
     final agencies = agenciesAsync.valueOrNull ?? [];
-    final outsourcedAgencies = agencies.where((a) => !a.isDirectManaged && a.isActive).toList();
+    final outsourcedAgencies = agencies
+        .where((a) => (!a.isDirectManaged && a.isActive) || a.id == _selectedAgencyId)
+        .toList();
 
     // 선택된 상담사의 팀에 재직 중인 팀장(duty='2') 부재 여부 체크
-    final selectedPerson = persons.where((p) => p.id == _selectedSalesPersonId).firstOrNull;
+    final selectedPerson = allPersons.where((p) => p.id == _selectedSalesPersonId).firstOrNull;
     final bool hasNoLeaderWarning = _assignmentType == 'direct' &&
         selectedPerson != null &&
         (selectedPerson.duty == '1' || selectedPerson.duty == '5') &&
-        !persons.any((p) => p.team == selectedPerson.team && p.duty == '2' && p.status == '1');
+        !allPersons.any((p) => p.team == selectedPerson.team && p.duty == '2' && p.status == '1');
 
     return Container(
       constraints: BoxConstraints(

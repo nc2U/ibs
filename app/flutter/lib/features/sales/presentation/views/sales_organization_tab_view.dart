@@ -396,9 +396,17 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
                     const SizedBox(width: 6),
                     buildFilterChip(
                       context: context,
-                      label: '해촉',
+                      label: '휴직',
                       isSelected: statusFilter == '2',
                       onTap: () => ref.read(orgStatusFilterProvider.notifier).state = '2',
+                      activeColor: const Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(width: 6),
+                    buildFilterChip(
+                      context: context,
+                      label: '해촉',
+                      isSelected: statusFilter == '3',
+                      onTap: () => ref.read(orgStatusFilterProvider.notifier).state = '3',
                       activeColor: const Color(0xFFEF4444),
                     ),
                     const SizedBox(width: 8),
@@ -672,11 +680,15 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF10B981).withAlpha(20)
-                        : context.colors.borderSubtle,
+                        : person.status == '2'
+                            ? const Color(0xFFF59E0B).withAlpha(20)
+                            : context.colors.borderSubtle,
                     border: Border.all(
                       color: isActive
                           ? const Color(0xFF10B981).withAlpha(80)
-                          : context.colors.textMuted.withAlpha(60),
+                          : person.status == '2'
+                              ? const Color(0xFFF59E0B).withAlpha(80)
+                              : context.colors.textMuted.withAlpha(60),
                       width: 0.8,
                     ),
                   ),
@@ -687,7 +699,9 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
                       fontWeight: FontWeight.bold,
                       color: isActive
                           ? const Color(0xFF10B981)
-                          : context.colors.textMuted,
+                          : person.status == '2'
+                              ? const Color(0xFFF59E0B)
+                              : context.colors.textMuted,
                     ),
                   ),
                 ),
@@ -1048,6 +1062,8 @@ class _SalesOrganizationTabViewState extends ConsumerState<SalesOrganizationTabV
       case '1':
         return '재직';
       case '2':
+        return '휴직';
+      case '3':
         return '해촉';
       default:
         return '재직';
