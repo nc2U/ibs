@@ -1,5 +1,6 @@
 import os
 import time
+from django.conf import settings
 from django.db import connection, connections
 from django.db.utils import OperationalError
 
@@ -10,7 +11,7 @@ class MasterSlaveRouter:
     def __init__(self):
         self._replica_enabled = False
         self._last_checked = 0
-        self._is_k8s = 'KUBERNETES_SERVICE_HOST' in os.environ
+        self._is_k8s = bool('KUBERNETES_SERVICE_HOST' in os.environ or getattr(settings, 'KUBERNETES_SERVICE_HOST', None))
 
     def _check_replica_available(self):
         """replica 데이터베이스 연결 가능 여부 주기적 확인 (TTL 60초)"""
