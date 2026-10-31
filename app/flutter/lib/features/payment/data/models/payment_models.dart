@@ -134,8 +134,23 @@ class PaymentTransactionItemModel {
     if (houseunit != null) {
       final name = houseunit['name']?.toString() ?? '';
       final bldg = houseunit['building_unit']?.toString() ?? '';
-      parsedUnit = bldg.isNotEmpty ? '$bldg동 $name호' : name;
-    } else if (contract != null && contract['serial_number'] != null) {
+      if (bldg.isNotEmpty) {
+        parsedUnit = name.isNotEmpty ? '$bldg동 $name호' : '$bldg동';
+      } else if (name.isNotEmpty) {
+        parsedUnit = name;
+      } else {
+        final str = houseunit['__str__']?.toString() ?? '';
+        if (str.contains('-')) {
+          final parts = str.split('-');
+          parsedUnit = '${parts[0]}동 ${parts[1]}호';
+        } else if (str.isNotEmpty) {
+          parsedUnit = str;
+        }
+      }
+    }
+    if ((parsedUnit == null || parsedUnit.isEmpty) &&
+        contract != null &&
+        contract['serial_number'] != null) {
       parsedUnit = contract['serial_number']?.toString();
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../contract/data/contract_repository.dart';
 import '../../contract/data/models/contract_models.dart';
 import '../../contract/providers/contract_provider.dart';
 import '../../../../core/providers/project_provider.dart';
@@ -190,7 +191,7 @@ class PaymentTransactionsNotifier
         hasMore: newItems.length >= 10,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false);
+      state = state.copyWith(isFetchingNextPage: false, hasMore: false);
     }
   }
 
@@ -214,10 +215,23 @@ class PaymentTransactionsNotifier
     if (success) {
       // 목록 및 집계 갱신
       fetchInitial();
+      ref.read(paymentContractListProvider.notifier).fetchInitial();
       ref.invalidate(paymentOverallAggregateProvider);
       ref.invalidate(installmentStatusListProvider);
       ref.invalidate(paymentsByContractProvider);
       ref.invalidate(validContractListProvider);
+
+      // 현재 계약건별 납부 상세 화면이 열려 있으면 상단 요약 카드(기수납 누계/미납액/수납률)도 최신화
+      final selectedContract = ref.read(selectedContractForPaymentProvider);
+      if (selectedContract != null) {
+        final updatedContract = await ref
+            .read(contractRepositoryProvider)
+            .fetchContractDetail(selectedContract.pk);
+        if (updatedContract != null) {
+          ref.read(selectedContractForPaymentProvider.notifier).state =
+              updatedContract;
+        }
+      }
     }
     return success;
   }
@@ -228,6 +242,94 @@ final paymentTransactionsProvider =
       PaymentTransactionsNotifier,
       PaymentTransactionsState
     >((ref) => PaymentTransactionsNotifier(ref));
+
+/// ── 1-2. 수납 관리 전용 유효 계약 검색 목록 Notifier (계약 관리 화면과 검색 상태 격리) ──
+class PaymentContractListNotifier
+    extends StateNotifier<ContractPaginationState<ContractItemModel>> {
+  final Ref ref;
+
+  PaymentContractListNotifier(this.ref)
+    : super(const ContractPaginationState()) {
+    fetchInitial();
+  }
+
+  Future<void> fetchInitial() async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) {
+      state = const ContractPaginationState(items: [], hasMore: false);
+      return;
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      page: 1,
+      items: [],
+      hasMore: true,
+      error: null,
+    );
+
+    final search = ref.read(paymentSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final items = await repository.fetchContracts(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: 1,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        items: items,
+        page: 1,
+        hasMore: items.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: ContractRepository.extractErrorMessage(e, '계약 목록을 불러오지 못했습니다.'),
+      );
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
+
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) return;
+
+    state = state.copyWith(isFetchingNextPage: true);
+
+    final nextPage = state.page + 1;
+    final search = ref.read(paymentSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final newItems = await repository.fetchContracts(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: nextPage,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        items: [...state.items, ...newItems],
+        page: nextPage,
+        hasMore: newItems.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isFetchingNextPage: false, hasMore: false);
+    }
+  }
+}
+
+final paymentContractListProvider =
+    StateNotifierProvider<
+      PaymentContractListNotifier,
+      ContractPaginationState<ContractItemModel>
+    >((ref) => PaymentContractListNotifier(ref));
 
 /// ── 2. 회차별 수납 현황 목록 프로바이더 ─────────────────────────────────────
 final installmentStatusListProvider =

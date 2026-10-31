@@ -18,7 +18,6 @@ import '../../../core/services/share_helper.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../contract/data/contract_repository.dart';
 import '../../contract/data/models/contract_models.dart';
-import '../../contract/providers/contract_provider.dart';
 import '../data/models/payment_models.dart';
 import '../data/payment_repository.dart';
 import '../providers/payment_provider.dart';
@@ -47,9 +46,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     super.initState();
     _transactionsScrollController.addListener(_onTransactionsScroll);
 
-    // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
+    // ── 화면 진입 시 검색/필터 초기화 및 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        _resetFiltersAndSearch();
         _refreshAll(resetSelection: true);
       }
     });
@@ -73,7 +73,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       } else if (currentTab == PaymentSubTab.byContract) {
         final selectedContract = ref.read(selectedContractForPaymentProvider);
         if (selectedContract == null) {
-          ref.read(validContractListProvider.notifier).fetchNextPage();
+          ref.read(paymentContractListProvider.notifier).fetchNextPage();
         }
       }
     }
@@ -84,13 +84,12 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       ref.read(paymentSearchQueryProvider.notifier).state = value;
-      ref.read(contractSearchQueryProvider.notifier).state = value;
       // 검색어를 새로 입력하면 계약자 상세 뷰에서 검색 결과 모드로 전환
       if (value.trim().isNotEmpty) {
         ref.read(selectedContractForPaymentProvider.notifier).state = null;
       }
       ref.read(paymentTransactionsProvider.notifier).fetchInitial();
-      ref.read(validContractListProvider.notifier).fetchInitial();
+      ref.read(paymentContractListProvider.notifier).fetchInitial();
     });
   }
 
@@ -98,18 +97,16 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     _debounceTimer?.cancel();
     _searchController.clear();
     ref.read(paymentSearchQueryProvider.notifier).state = '';
-    ref.read(contractSearchQueryProvider.notifier).state = '';
     ref.read(selectedContractForPaymentProvider.notifier).state = null;
     ref.read(paymentTransactionsProvider.notifier).fetchInitial();
-    ref.read(validContractListProvider.notifier).fetchInitial();
+    ref.read(paymentContractListProvider.notifier).fetchInitial();
   }
 
-  /// 프로젝트 변경 시 이전 프로젝트의 검색어/매칭 필터가 남지 않도록 초기화
+  /// 프로젝트 변경 및 화면 진입 시 이전 검색어/매칭 필터가 남지 않도록 초기화
   void _resetFiltersAndSearch() {
     _debounceTimer?.cancel();
     _searchController.clear();
     ref.read(paymentSearchQueryProvider.notifier).state = '';
-    ref.read(contractSearchQueryProvider.notifier).state = '';
     ref.read(paymentMatchFilterProvider.notifier).state =
         PaymentMatchFilter.all;
   }
@@ -120,10 +117,21 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     ref.invalidate(installmentStatusListProvider);
     if (resetSelection) {
       ref.read(selectedContractForPaymentProvider.notifier).state = null;
+    } else {
+      final selectedContract = ref.read(selectedContractForPaymentProvider);
+      if (selectedContract != null) {
+        ref.invalidate(paymentsByContractProvider);
+        final updated = await ref
+            .read(contractRepositoryProvider)
+            .fetchContractDetail(selectedContract.pk);
+        if (updated != null && mounted) {
+          ref.read(selectedContractForPaymentProvider.notifier).state = updated;
+        }
+      }
     }
     await Future.wait([
       ref.read(paymentTransactionsProvider.notifier).fetchInitial(),
-      ref.read(validContractListProvider.notifier).fetchInitial(),
+      ref.read(paymentContractListProvider.notifier).fetchInitial(),
     ]);
   }
 
@@ -478,14 +486,18 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                     ),
                     title: Text(
                       openTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     subtitle: Text(
                       openSubtitle,
-                      style: const TextStyle(fontSize: 11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.colors.textMuted,
+                      ),
                     ),
                     onTap: () async {
                       Navigator.pop(dialogCtx);
@@ -505,16 +517,20 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       Icons.download_rounded,
                       color: Color(0xFF0D9488),
                     ),
-                    title: const Text(
+                    title: Text(
                       'PDF 파일 다운로드',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
+                        color: context.colors.textPrimary,
                       ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       '브라우저를 통해 PDF 파일을 기기에 다운로드합니다.',
-                      style: TextStyle(fontSize: 11),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.colors.textMuted,
+                      ),
                     ),
                     onTap: () async {
                       Navigator.pop(dialogCtx);
@@ -528,14 +544,18 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   ),
                   title: Text(
                     shareTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13.5,
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   subtitle: Text(
                     shareSubtitle,
-                    style: const TextStyle(fontSize: 11),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.colors.textMuted,
+                    ),
                   ),
                   onTap: () async {
                     final box = dialogCtx.findRenderObject() as RenderBox?;
@@ -668,16 +688,27 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       child: DropdownButton<int?>(
                         value: selectedOrder,
                         isExpanded: true,
-                        hint: const Text(
+                        dropdownColor: context.colors.bgCard,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: context.colors.textPrimary,
+                        ),
+                        hint: Text(
                           '발행 회차를 선택하세요',
-                          style: TextStyle(fontSize: 13),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.colors.textMuted,
+                          ),
                         ),
                         items: [
-                          const DropdownMenuItem<int?>(
+                          DropdownMenuItem<int?>(
                             value: null,
                             child: Text(
                               '회차 미지정 (기본값)',
-                              style: TextStyle(fontSize: 12.5),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: context.colors.textPrimary,
+                              ),
                             ),
                           ),
                           ...installmentOrders.map(
@@ -685,7 +716,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                               value: ord.orderId,
                               child: Text(
                                 '[${ord.payName}] ${ord.displayDueDate}',
-                                style: const TextStyle(fontSize: 12.5),
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: context.colors.textPrimary,
+                                ),
                               ),
                             ),
                           ),
@@ -991,7 +1025,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                             // 1. 해당 계약 정보 찾기 (목록 → 없으면 단건 조회)
                             final contractId = item.contractId!;
                             final contractsState = ref.read(
-                              validContractListProvider,
+                              paymentContractListProvider,
                             );
                             ContractItemModel? targetContract;
                             for (final c in contractsState.items) {
@@ -2083,8 +2117,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
   }
 
   List<Widget> _buildContractSelectionListSlivers() {
-    final searchQuery = ref.watch(contractSearchQueryProvider);
-    final state = ref.watch(validContractListProvider);
+    final searchQuery = ref.watch(paymentSearchQueryProvider);
+    final state = ref.watch(paymentContractListProvider);
 
     if (searchQuery.trim().isEmpty) {
       return [
@@ -2153,7 +2187,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       return [
         _errorSliver(
           '검색 실패: ${state.error}',
-          () => ref.read(validContractListProvider.notifier).fetchInitial(),
+          () => ref.read(paymentContractListProvider.notifier).fetchInitial(),
         ),
       ];
     }

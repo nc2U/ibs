@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from contract.models import OrderGroup, Contract, Contractor
+from items.models import HouseUnit, KeyUnit
 from ledger.models import ProjectBankTransaction, ProjectAccountingEntry
 from payment.models import (InstallmentPaymentOrder, SalesPriceByGT, DownPayment,
                             ContractPayment, OverDueRule, PaymentPerInstallment)
@@ -132,14 +133,31 @@ class SimpleOrderGroupSerializer(serializers.ModelSerializer):
         fields = ('pk', 'sort', 'name')
 
 
+class SimpleHouseUnitSerializer(serializers.ModelSerializer):
+    building_unit = serializers.CharField(source='building_unit.name', read_only=True)
+
+    class Meta:
+        model = HouseUnit
+        fields = ('pk', '__str__', 'building_unit', 'name')
+
+
+class SimpleKeyUnitSerializer(serializers.ModelSerializer):
+    houseunit = SimpleHouseUnitSerializer(read_only=True)
+
+    class Meta:
+        model = KeyUnit
+        fields = ('pk', 'unit_code', 'houseunit')
+
+
 class SimpleContractSerializer(serializers.ModelSerializer):
     order_group = SimpleOrderGroupSerializer()
     unit_type = SimpleUnitTypeSerializer()
     contractor = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    key_unit = SimpleKeyUnitSerializer(read_only=True)
 
     class Meta:
         model = Contract
-        fields = ('pk', 'order_group', 'unit_type', 'serial_number', 'contractor')
+        fields = ('pk', 'order_group', 'unit_type', 'serial_number', 'contractor', 'key_unit')
 
 
 class SimpleInstallmentOrderSerializer(serializers.ModelSerializer):
