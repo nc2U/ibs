@@ -35,6 +35,8 @@ tablib[xlsx]
 WeasyPrint
 XlsxWriter
 xlwt
+pypdfium2
+numpy
 firebase-admin
 channels
 channels-redis
