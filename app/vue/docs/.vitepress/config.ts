@@ -124,7 +124,7 @@ export default withMermaid(
               items: [
                 { text: '워크스페이스 관리', link: '/work-setting/ws-manage' },
                 { text: '사용자', link: '/work-setting/user' },
-                { text: '역할 및 권한', link: '/work-setting/roll-perm' },
+                { text: '역할 및 권한', link: '/work-setting/role-perm' },
                 { text: '권한 및 공개 정책', link: '/work-setting/security-policy' },
               ],
             },
