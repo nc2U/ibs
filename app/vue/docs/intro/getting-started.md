@@ -79,6 +79,7 @@ flowchart LR
 
 ::: tip 📱 모바일 앱 (iOS / Android) 화면 구성 및 외근/현장 팁
 
+<img src="./mobile.png" style="width: 420px" alt="모바일 앱 구성 (레이아웃)" />
 <img src="./mobile-dark.png" style="width: 420px" alt="모바일 앱 구성 (레이아웃)" />
 
 * **상단 헤더 바 (Header Bar)**:
