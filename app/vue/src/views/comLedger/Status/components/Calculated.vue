@@ -29,11 +29,7 @@ const modalAction = () => {
 </script>
 
 <template>
-  <CAlert
-    v-if="canComLedgerUpdate"
-    :color="isCalculated ? 'success' : 'warning'"
-    class="text-end"
-  >
+  <CAlert v-if="canComLedgerUpdate" :color="isCalculated ? 'success' : 'warning'" class="text-end">
     <span v-if="calcDate" class="me-3">[정산일 : {{ calcDate }}]</span>
     <v-btn v-if="isCalculated" color="success" size="x-large" disabled> 잔고정산 확인완료</v-btn>
     <v-btn v-else color="warning" size="x-large" @click="toCalculated"> 당일잔고 정산확인</v-btn>
@@ -46,7 +42,7 @@ const modalAction = () => {
       등록된 최종 거래 일자로부터 10일이 경과한 거래 건은 수정 및 삭제할 수 없습니다.
     </template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">확인</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">확인</v-btn>
     </template>
   </ConfirmModal>
 </template>
