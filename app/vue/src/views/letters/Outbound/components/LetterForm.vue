@@ -486,7 +486,7 @@ const goBack = () => {
       <CCol>
         <h4 class="mb-0">
           <v-icon icon="mdi-email-outline" size="small" class="me-2" />
-          {{ isEdit ? '공문 수정' : '공문 작성' }}
+          {{ isEdit ? '발송 공문 수정' : '발송 공문 작성' }}
         </h4>
         <small v-if="!isEdit && nextDocNumber" class="text-muted">
           예상 문서번호: {{ nextDocNumber }}

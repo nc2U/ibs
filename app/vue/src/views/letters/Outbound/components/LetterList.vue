@@ -130,7 +130,7 @@ const formatDate = (dateStr: string | undefined) => {
         <span class="text-muted">총 {{ letterCount }}건</span>
         <v-btn v-if="canDocsCreate" color="primary" variant="flat" @click="goToCreate">
           <v-icon icon="mdi-plus" size="small" class="me-1" />
-          공문 작성
+          발송 공문 작성
         </v-btn>
       </CCol>
     </CRow>

@@ -23,12 +23,7 @@ export interface LocalAttachmentItem {
 }
 
 const emit = defineEmits<{
-  (
-    e: 'onSubmit',
-    payload: FormData,
-    attachmentsToUpload?: LocalAttachmentItem[],
-    pk?: number,
-  ): void
+  (e: 'onSubmit', payload: FormData, attachmentsToUpload?: LocalAttachmentItem[], pk?: number): void
 }>()
 
 const router = useRouter()
@@ -244,7 +239,7 @@ const handleSubmit = () => {
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
         <h4 class="mb-1 font-weight-bold">
-          {{ isEdit ? '수신 공문 수정' : '수신 공문 접수 등록' }}
+          {{ isEdit ? '접수 공문 수정' : '수신 공문 접수' }}
         </h4>
         <span class="text-muted small">
           대외 기관 및 거래처로부터 접수된 공문서의 대장 정보와 원본 스캔본을 등록합니다.
