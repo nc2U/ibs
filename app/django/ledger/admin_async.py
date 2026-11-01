@@ -64,6 +64,7 @@ class AsyncImportExportMixin(ImportExportMixin):
             raise PermissionDenied
 
         context = {
+            **self.admin_site.each_context(request),
             'title': f'{self.model._meta.verbose_name} 비동기 가져오기',
             'app_label': self.model._meta.app_label,
             'opts': self.model._meta,
@@ -137,6 +138,7 @@ class AsyncImportExportMixin(ImportExportMixin):
         job = get_object_or_404(ImportJob, id=job_id, creator=request.user)
 
         context = {
+            **self.admin_site.each_context(request),
             'title': f'작업 상태: {job}',
             'job': job,
             'app_label': self.model._meta.app_label,
