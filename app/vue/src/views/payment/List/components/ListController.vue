@@ -109,7 +109,7 @@ const resetForm = () => {
 defineExpose({ listFiltering })
 </script>
 
-<template>1
+<template>
   <CCallout color="warning" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol xl="8">
@@ -213,9 +213,7 @@ defineExpose({ listFiltering })
         <strong>납부 건수 조회 결과 : {{ numFormat(paymentsCount, 0, 0) }} 건</strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
-        <v-btn color="info" variant="flat" size="small" @click="resetForm">
-          검색조건 초기화
-        </v-btn>
+        <v-btn color="info" variant="flat" size="small" @click="resetForm"> 검색조건 초기화 </v-btn>
       </CCol>
     </CRow>
   </CCallout>
