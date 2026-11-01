@@ -87,7 +87,8 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
                     'pk': file.id,
                     'category': {'name': category_data.get('name'),
                                  'color': category_data.get('color')},
-                    'file': file.file.url if file.file else ''})
+                    'file': file.file.url if file.file else '',
+                    'file_name': file.file_name or (file.file.name.split('/')[-1] if file.file else '')})
         return files
 
     def get_prev_pk(self, obj):

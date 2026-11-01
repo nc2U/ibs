@@ -376,7 +376,7 @@ onBeforeMount(() => {
                     </td>
                     <td>
                       <a :href="sc.file" target="_blank" @click="fileHitUp(sc.pk)">
-                        {{ sc.file.split('/').pop() }}
+                        {{ sc.file_name || sc.file.split('/').pop() }}
                       </a>
                     </td>
                   </tr>

@@ -50,7 +50,7 @@ export interface SuitCase {
   summary: string
   creator?: SimpleUser
   links?: Array<{ pk: number; category: { name: string; color?: string }; link: string }>
-  files?: Array<{ pk: number; category: { name: string; color?: string }; file: string }>
+  files?: Array<{ pk: number; category: { name: string; color?: string }; file: string; file_name?: string }>
   created?: string
   prev_pk?: number | null
   next_pk?: number | null
