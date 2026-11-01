@@ -6,7 +6,7 @@
 
 ::: tip 📸 실제 화면 안내
 ![관리자 페이지 화면](./images/admin-page.png)
-*▲ DJANGO ADMINISTRATION PAGE*
+*▲ 관리자 페이지*
 :::
 
 ## 개요
