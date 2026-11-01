@@ -30,6 +30,16 @@ export default withMermaid(
           href: 'https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css',
         },
       ],
+      [
+        'style',
+        {},
+        `
+        html:not(.dark) .dark-only,
+        html.dark .light-only {
+          display: none !important;
+        }
+        `,
+      ],
     ],
     vite: {
       build: {

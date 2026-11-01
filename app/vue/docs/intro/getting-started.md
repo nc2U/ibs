@@ -79,8 +79,8 @@ flowchart LR
 
 ::: tip 📱 모바일 앱 (iOS / Android) 화면 구성 및 외근/현장 팁
 
-<img src="./mobile.png" style="width: 420px" alt="모바일 앱 구성 (레이아웃)" />
-<img src="./mobile-dark.png" style="width: 420px" alt="모바일 앱 구성 (레이아웃)" />
+<img src="./mobile.png" class="light-only" style="width: 420px" alt="모바일 앱 구성 (라이트 모드)" />
+<img src="./mobile-dark.png" class="dark-only" style="width: 420px" alt="모바일 앱 구성 (다크 모드)" />
 
 * **상단 헤더 바 (Header Bar)**:
     * **전역 메신저 아이콘**: 실시간 [사내 메신저](/work-manage/chat) 목록으로 원터치 이동
