@@ -219,8 +219,8 @@ export default withMermaid(
                 { text: '계약 실적 관리', link: '/sales/' },
                 { text: '수수료 정산 관리', link: '/sales/settlement' },
                 { text: '수수료 지급 관리', link: '/sales/payout' },
-                { text: '영업 조직 관리', link: '/sales/organization' },
                 { text: '수수료 정책 관리', link: '/sales/policy' },
+                { text: '영업 조직 관리', link: '/sales/organization' },
               ],
             },
             {
