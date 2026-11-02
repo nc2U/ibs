@@ -74,10 +74,19 @@ class CompanyDataFilterMixin:
                     return
         serializer.save()
 
+    def perform_update(self, serializer):
+        user = self.request.user
+        if not user.is_superuser:
+            # 비슈퍼유저는 객체의 소속 회사를 임의로 변경할 수 없음
+            instance = serializer.instance
+            if hasattr(instance, 'company') and 'company' in serializer.validated_data:
+                serializer.validated_data['company'] = instance.company
+        serializer.save()
+
 
 # Company --------------------------------------------------------------------------
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.all()
+    queryset = Company.objects.all().prefetch_related('departments', 'grades')
     serializer_class = CompanySerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperUserOrReadOnly)
 
@@ -89,12 +98,18 @@ class LogoViewSet(viewsets.ModelViewSet):
 
 
 class CompanySealViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = CompanySeal.objects.all()
+    queryset = CompanySeal.objects.all().select_related(
+        'company', 'final_approval_duty', 'route_template',
+        'internal_manager__position'
+    ).prefetch_related(
+        'internal_manager__assignments__duty',
+        'internal_manager__assignments__department',
+    )
     serializer_class = CompanySealSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company', 'seal_type', 'is_active')
-    search_fields = ('name', 'manager')
+    search_fields = ('name', 'custodian')
 
     @property
     def required_permission(self):
@@ -107,7 +122,7 @@ class CompanySealViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class DepartmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = Department.objects.all()
+    queryset = Department.objects.all().select_related('company', 'manager', 'upper_depart')
     serializer_class = DepartmentSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -187,7 +202,7 @@ class ExecutiveRankViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class ExecutiveViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = Executive.objects.all()
+    queryset = Executive.objects.all().select_related('company', 'staff', 'rank')
     serializer_class = ExecutiveSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -234,7 +249,7 @@ class StaffViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 class StaffAssignmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
     queryset = StaffAssignment.objects.all().select_related(
-        'company', 'staff', 'department', 'duty'
+        'company', 'staff__position', 'department', 'duty'
     )
     serializer_class = StaffAssignmentSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)

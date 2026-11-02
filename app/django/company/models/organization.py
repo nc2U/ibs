@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from .company import Company
 
 
@@ -27,6 +27,8 @@ class Department(models.Model):
     def clean(self):
         super().clean()
         if self.upper_depart_id:
+            if self.company_id and self.upper_depart.company_id != self.company_id:
+                raise ValidationError({'upper_depart': '상위 부서의 소속 회사가 일치하지 않습니다.'})
             if self.pk and self.upper_depart_id == self.pk:
                 raise ValidationError({'upper_depart': '자기 자신을 상위 부서로 지정할 수 없습니다.'})
             parent = self.upper_depart
@@ -36,26 +38,29 @@ class Department(models.Model):
                     raise ValidationError({'upper_depart': '상위 부서 지정 시 순환 참조가 발생합니다.'})
                 visited.add(parent.pk)
                 parent = parent.upper_depart
+        if self.manager_id and self.company_id and self.manager.company_id != self.company_id:
+            raise ValidationError({'manager': '부서 책임자의 소속 회사가 일치하지 않습니다.'})
 
     def save(self, *args, **kwargs):
-        visited = kwargs.pop('_visited_departs', None)
-        if visited is None:
-            visited = set()
-        if self.pk:
-            visited.add(self.pk)
+        with transaction.atomic():
+            visited = kwargs.pop('_visited_departs', None)
+            if visited is None:
+                visited = set()
+            if self.pk:
+                visited.add(self.pk)
 
-        # 1. 상위 부서 유무에 따른 level 자동 계산
-        if not self.upper_depart:
-            self.level = 1
-        else:
-            self.level = self.upper_depart.level + 1
+            # 1. 상위 부서 유무에 따른 level 자동 계산
+            if not self.upper_depart:
+                self.level = 1
+            else:
+                self.level = self.upper_depart.level + 1
 
-        super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
 
-        # 2. 부서의 레벨이 변경된 경우 하위 부서들도 연쇄 재계산 (순환 방어 포함)
-        for sub in self.sub_departs.all():
-            if sub.pk not in visited and sub.level != self.level + 1:
-                sub.save(_visited_departs=visited)
+            # 2. 부서의 레벨이 변경된 경우 하위 부서들도 연쇄 재계산 (순환 방어 포함)
+            for sub in self.sub_departs.all():
+                if sub.pk not in visited and sub.level != self.level + 1:
+                    sub.save(_visited_departs=visited)
 
 
 # 직급 모델 - 조직에서의 성장 단계(조직 내에서 사람의 역할·책임·성장단계·보상 수준을 일관된 기준으로 관리하기 위한 체계)

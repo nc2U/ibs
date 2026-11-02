@@ -8,6 +8,7 @@ import json
 
 from django.core import serializers
 from django.db.models import Q
+from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
 from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
@@ -16,8 +17,44 @@ from company.models import (Company, Staff, Department, JobGrade, Position, Duty
                             PromotionPolicy, PromotionCandidate)
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
+class CompanyExportMixin(ExcelExportMixin):
+    """
+    회사 관련 Excel 내보내기 공통 믹스인
+    - 회사 ID 파라미터 유효성 검증 (누락 시 400, 존재하지 않거나 잘못된 형식 시 404)
+    - 멀티테넌트 데이터 접근 권한 검증 (슈퍼유저가 아닌 경우 본인 소속 회사 또는 본사 워크스페이스 소속 여부 확인, 불일치 시 403)
+    """
 
-class ExportStaffs(ExcelExportMixin):
+    def get_company_or_error(self, request):
+        company_id = request.GET.get('company')
+        if not company_id:
+            return None, HttpResponse("회사 ID('company') 파라미터가 필요합니다.", status=400, content_type='text/plain; charset=utf-8')
+        try:
+            company = Company.objects.get(pk=company_id)
+        except (Company.DoesNotExist, ValueError):
+            return None, HttpResponse("존재하지 않거나 유효하지 않은 회사 ID입니다.", status=404, content_type='text/plain; charset=utf-8')
+
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and not user.is_superuser:
+            user_company_ids = set()
+            staff = getattr(user, 'staff', None)
+            if staff and staff.company_id:
+                user_company_ids.add(staff.company_id)
+
+            from work.models.project import IssueProject
+            member_companies = IssueProject.objects.filter(
+                type='1',
+                members__user=user
+            ).values_list('company_id', flat=True)
+            user_company_ids.update(member_companies)
+
+            if company.pk not in user_company_ids:
+                return None, HttpResponse("해당 회사의 데이터를 내보낼 권한이 없습니다.", status=403, content_type='text/plain; charset=utf-8')
+
+        return company, None
+
+
+
+class ExportStaffs(CompanyExportMixin):
     """직원 목록 정보"""
 
     def get(self, request):
@@ -25,7 +62,9 @@ class ExportStaffs(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('직원_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -126,13 +165,24 @@ class ExportStaffs(ExcelExportMixin):
         # Write body
         sort_map = dict(Staff.SORT_CHOICES)
         status_map = dict(Staff.STATUS_CHOICES)
+        user = getattr(request, 'user', None)
+        is_admin = user and (user.is_superuser or getattr(user, 'work_manager', False))
+
         for i, s in enumerate(obj_list):
             row_num += 1
+            id_num = s.id_number
+            if not is_admin and id_num:
+                cleaned = str(id_num).replace('-', '').strip()
+                if len(cleaned) >= 7:
+                    id_num = f"{cleaned[:6]}-{'*' * (len(cleaned) - 6)}"
+                else:
+                    id_num = '*******'
+
             row_data = [
                 i + 1,
                 sort_map.get(s.sort, s.sort),
                 s.name,
-                s.id_number,
+                id_num,
                 s.personal_phone,
                 s.email or '',
                 s.department.name if s.department else '',
@@ -155,7 +205,7 @@ class ExportStaffs(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportDeparts(ExcelExportMixin):
+class ExportDeparts(CompanyExportMixin):
     """부서 목록 정보"""
 
     def get(self, request):
@@ -163,7 +213,9 @@ class ExportDeparts(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('부서_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -256,7 +308,7 @@ class ExportDeparts(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportPositions(ExcelExportMixin):
+class ExportPositions(CompanyExportMixin):
     """직위 목록 정보"""
 
     def get(self, request):
@@ -264,7 +316,9 @@ class ExportPositions(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('직위_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -362,7 +416,7 @@ class ExportPositions(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportDuties(ExcelExportMixin):
+class ExportDuties(CompanyExportMixin):
     """직책 정보 목록"""
 
     def get(self, request):
@@ -370,7 +424,9 @@ class ExportDuties(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('직책_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -456,7 +512,7 @@ class ExportDuties(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportGrades(ExcelExportMixin):
+class ExportGrades(CompanyExportMixin):
     """직급 정보 목록"""
 
     def get(self, request):
@@ -464,7 +520,9 @@ class ExportGrades(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('직급_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -582,7 +640,7 @@ class ExportGrades(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportExecutiveRanks(ExcelExportMixin):
+class ExportExecutiveRanks(CompanyExportMixin):
     """임원 직위 목록"""
 
     def get(self, request):
@@ -590,7 +648,9 @@ class ExportExecutiveRanks(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('임원_직위_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -674,7 +734,7 @@ class ExportExecutiveRanks(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportExecutives(ExcelExportMixin):
+class ExportExecutives(CompanyExportMixin):
     """임원 재임/등기 정보 목록"""
 
     def get(self, request):
@@ -682,7 +742,9 @@ class ExportExecutives(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('임원_재임_정보')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -801,7 +863,7 @@ class ExportExecutives(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportAppointments(ExcelExportMixin):
+class ExportAppointments(CompanyExportMixin):
     """인사 발령 이력 목록"""
 
     def get(self, request):
@@ -809,7 +871,9 @@ class ExportAppointments(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('인사_발령_이력')
 
         # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         # 포맷 생성
@@ -921,12 +985,14 @@ class ExportAppointments(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffCareers(ExcelExportMixin):
+class ExportStaffCareers(CompanyExportMixin):
     """직원 이전 경력 이력 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('직원_경력_이력')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1011,12 +1077,14 @@ class ExportStaffCareers(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffCertificates(ExcelExportMixin):
+class ExportStaffCertificates(CompanyExportMixin):
     """직원 자격 및 면허 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('직원_자격면허')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1101,12 +1169,14 @@ class ExportStaffCertificates(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffRewards(ExcelExportMixin):
+class ExportStaffRewards(CompanyExportMixin):
     """직원 상벌 이력 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('직원_상벌이력')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1192,12 +1262,14 @@ class ExportStaffRewards(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffLeaveQuotas(ExcelExportMixin):
+class ExportStaffLeaveQuotas(CompanyExportMixin):
     """직원 연차 부여 및 잔여 현황 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('연차_부여_잔여')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1291,12 +1363,14 @@ class ExportStaffLeaveQuotas(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffLeaveUsages(ExcelExportMixin):
+class ExportStaffLeaveUsages(CompanyExportMixin):
     """직원 휴가/연차 사용 내역 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('휴가_사용_내역')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1392,12 +1466,14 @@ class ExportStaffLeaveUsages(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffAttendanceStatus(ExcelExportMixin):
+class ExportStaffAttendanceStatus(CompanyExportMixin):
     """직원 연차 및 근태 현황 종합 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('근태_현황_종합')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
         year = int(request.GET.get('year') or datetime.date.today().year)
 
@@ -1496,12 +1572,14 @@ class ExportStaffAttendanceStatus(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportStaffEvaluations(ExcelExportMixin):
+class ExportStaffEvaluations(CompanyExportMixin):
     """직원 인사/업적 평가 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('인사_평가_목록')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1604,12 +1682,14 @@ class ExportStaffEvaluations(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportPromotionCandidates(ExcelExportMixin):
+class ExportPromotionCandidates(CompanyExportMixin):
     """승급 심사 대상 및 발령 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('승급_심사_목록')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)
@@ -1710,12 +1790,14 @@ class ExportPromotionCandidates(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportPromotionPolicies(ExcelExportMixin):
+class ExportPromotionPolicies(CompanyExportMixin):
     """직급별 승급 기준 및 정책 목록"""
 
     def get(self, request):
         output, workbook, worksheet = self.create_workbook('승급_정책_목록')
-        company = Company.objects.get(pk=request.GET.get('company'))
+        company, err_res = self.get_company_or_error(request)
+        if err_res:
+            return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
 
         title_format = self.create_title_format(workbook)

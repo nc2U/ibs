@@ -1,5 +1,6 @@
 from decimal import Decimal
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
@@ -90,18 +91,32 @@ class StaffAssignment(models.Model):
         verbose_name = '10. 직원 보직/겸직 정보'
         verbose_name_plural = '10. 직원 보직/겸직 목록'
         unique_together = ('staff', 'department', 'duty')
+        indexes = [
+            models.Index(fields=['staff', 'is_primary'], name='staff_assign_primary_idx'),
+        ]
 
     def __str__(self):
         role = self.duty.name if self.duty else '팀원'
         primary_str = '[주]' if self.is_primary else '[겸]'
         return f'{primary_str} {self.staff.name} - {self.department.name} ({role})'
 
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.staff_id and self.staff.company_id != self.company_id:
+                raise ValidationError({'staff': '직원의 소속 회사와 보직 정보의 소속 회사가 일치하지 않습니다.'})
+            if self.department_id and self.department.company_id != self.company_id:
+                raise ValidationError({'department': '소속 부서의 회사와 보직 정보의 소속 회사가 일치하지 않습니다.'})
+            if self.duty_id and self.duty.company_id != self.company_id:
+                raise ValidationError({'duty': '직책의 소속 회사와 보직 정보의 소속 회사가 일치하지 않습니다.'})
+
     def save(self, *args, **kwargs):
         # 주 보직(is_primary=True)으로 저장 시 동일 직원의 다른 보직은 is_primary=False로 변경
-        if self.is_primary and self.staff_id:
-            StaffAssignment.objects.filter(staff_id=self.staff_id, is_primary=True).exclude(pk=self.pk).update(
-                is_primary=False)
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            if self.is_primary and self.staff_id:
+                StaffAssignment.objects.filter(staff_id=self.staff_id, is_primary=True).exclude(pk=self.pk).update(
+                    is_primary=False)
+            super().save(*args, **kwargs)
 
 
 # 인사 발령 및 신분 변동 이력
@@ -158,45 +173,60 @@ class PersonnelOrder(models.Model):
     def __str__(self):
         return f'[{self.get_order_type_display()}] {self.staff.name} ({self.order_date})'
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.is_processed and self.staff:
-            # 발령에 따른 Staff/StaffAssignment 상태 자동 동기화
-            staff = self.staff
-            if self.new_grade:
-                staff.grade = self.new_grade
-            if self.new_position:
-                staff.position = self.new_position
-            if self.order_type == '50':  # 휴직
-                staff.status = '2'
-            elif self.order_type == '51':  # 복직
-                staff.status = '1'
-            elif self.order_type == '90':  # 퇴사
-                staff.status = '4'
-                if not staff.date_leave:
-                    staff.date_leave = self.order_date
-            elif self.order_type in ('10', '20', '30', '40'):  # 일반 상태
-                if staff.status in ('2', '3'):
-                    staff.status = '1'
-            staff.save()
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.staff_id and self.staff.company_id != self.company_id:
+                raise ValidationError({'staff': '발령 대상 직원의 소속 회사와 발령 정보의 소속 회사가 일치하지 않습니다.'})
+            if self.new_department_id and self.new_department.company_id != self.company_id:
+                raise ValidationError({'new_department': '발령 부서의 소속 회사가 일치하지 않습니다.'})
+            if self.new_grade_id and self.new_grade.company_id != self.company_id:
+                raise ValidationError({'new_grade': '발령 직급의 소속 회사가 일치하지 않습니다.'})
+            if self.new_position_id and self.new_position.company_id != self.company_id:
+                raise ValidationError({'new_position': '발령 직위의 소속 회사가 일치하지 않습니다.'})
+            if self.new_duty_id and self.new_duty.company_id != self.company_id:
+                raise ValidationError({'new_duty': '발령 직책의 소속 회사가 일치하지 않습니다.'})
 
-            if self.new_department or self.new_duty:
-                primary_assign = staff.assignments.filter(is_primary=True).first()
-                if primary_assign:
-                    if self.new_department:
-                        primary_assign.department = self.new_department
-                    if self.new_duty:
-                        primary_assign.duty = self.new_duty
-                    primary_assign.save()
-                elif self.new_department:
-                    StaffAssignment.objects.create(
-                        company=self.company,
-                        staff=staff,
-                        department=self.new_department,
-                        duty=self.new_duty,
-                        is_primary=True,
-                        assigned_tasks=self.description or '발령 보직'
-                    )
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if self.is_processed and self.staff:
+                # 발령에 따른 Staff/StaffAssignment 상태 자동 동기화
+                staff = self.staff
+                if self.new_grade:
+                    staff.grade = self.new_grade
+                if self.new_position:
+                    staff.position = self.new_position
+                if self.order_type == '50':  # 휴직
+                    staff.status = '2'
+                elif self.order_type == '51':  # 복직
+                    staff.status = '1'
+                elif self.order_type == '90':  # 퇴사
+                    staff.status = '4'
+                    if not staff.date_leave:
+                        staff.date_leave = self.order_date
+                elif self.order_type in ('10', '20', '30', '40'):  # 일반 상태
+                    if staff.status in ('2', '3'):
+                        staff.status = '1'
+                staff.save()
+
+                if self.new_department or self.new_duty:
+                    primary_assign = staff.assignments.filter(is_primary=True).first()
+                    if primary_assign:
+                        if self.new_department:
+                            primary_assign.department = self.new_department
+                        if self.new_duty:
+                            primary_assign.duty = self.new_duty
+                        primary_assign.save()
+                    elif self.new_department:
+                        StaffAssignment.objects.create(
+                            company=self.company,
+                            staff=staff,
+                            department=self.new_department,
+                            duty=self.new_duty,
+                            is_primary=True,
+                            assigned_tasks=self.description or '발령 보직'
+                        )
 
 
 # 직원 경력 사항 (입사 전 및 사외 주요 경력)
@@ -305,7 +335,10 @@ class StaffLeaveQuota(models.Model):
 
     @property
     def used_days(self):
-        """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계"""
+        """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계 (인스턴스 캐싱 적용)"""
+        if hasattr(self, '_cached_used_days') and self._cached_used_days is not None:
+            return self._cached_used_days
+
         qs = self.staff.leave_usages.filter(
             is_cancelled=False,
             deduction_days__gt=0,
@@ -318,7 +351,8 @@ class StaffLeaveQuota(models.Model):
         res = qs.aggregate(
             total=Coalesce(Sum('deduction_days'), Decimal('0.00'))
         )
-        return res['total']
+        self._cached_used_days = res['total']
+        return self._cached_used_days
 
     @property
     def remaining_days(self):
@@ -361,6 +395,9 @@ class StaffLeaveUsage(models.Model):
         ordering = ['-start_date', '-id']
         verbose_name = '16. 직원 휴가/연차 사용 기록'
         verbose_name_plural = '16. 직원 휴가/연차 사용 기록'
+        indexes = [
+            models.Index(fields=['staff', 'is_cancelled', 'start_date'], name='staff_leave_usage_idx'),
+        ]
 
     def __str__(self):
         cancel_str = ' [취소됨]' if self.is_cancelled else ''

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from .company import Company
 from .organization import JobGrade
@@ -36,6 +37,16 @@ class StaffEvaluation(models.Model):
 
     def __str__(self):
         return f'{self.staff.name} - {self.eval_year}년 {self.get_eval_period_display()} ({self.grade})'
+
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.staff_id and self.staff.company_id != self.company_id:
+                raise ValidationError({'staff': '피평가자의 소속 회사가 일치하지 않습니다.'})
+            if self.evaluator_id and self.evaluator.company_id != self.company_id:
+                raise ValidationError({'evaluator': '1차 평가자의 소속 회사가 일치하지 않습니다.'})
+            if self.reviewer_id and self.reviewer.company_id != self.company_id:
+                raise ValidationError({'reviewer': '2차 평가자의 소속 회사가 일치하지 않습니다.'})
 
     class Meta:
         ordering = ['-eval_year', 'eval_period', 'staff__name']
@@ -104,6 +115,14 @@ class PromotionCandidate(models.Model):
 
     def __str__(self):
         return f'[{self.eval_year}] {self.staff.name} ({self.policy.current_grade.code} → {self.policy.target_grade.code}) - {self.get_status_display()}'
+
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.staff_id and self.staff.company_id != self.company_id:
+                raise ValidationError({'staff': '승급 대상자의 소속 회사가 일치하지 않습니다.'})
+            if self.policy_id and self.policy.company_id != self.company_id:
+                raise ValidationError({'policy': '승급 정책의 소속 회사가 일치하지 않습니다.'})
 
     class Meta:
         ordering = ['-eval_year', 'policy__current_grade__id', 'staff__name']

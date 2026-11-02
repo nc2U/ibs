@@ -146,6 +146,10 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
                     messages.error(request, '회사와 스캔 파일(PDF 또는 이미지)을 모두 선택해주세요.')
                     return redirect('admin:company_companyseal_extract_scan')
 
+                if scan_file.size > 25 * 1024 * 1024:
+                    messages.error(request, '스캔 파일의 크기는 25MB를 초과할 수 없습니다.')
+                    return redirect('admin:company_companyseal_extract_scan')
+
                 try:
                     target_company = Company.objects.get(pk=company_id)
                 except Company.DoesNotExist:

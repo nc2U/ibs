@@ -433,3 +433,136 @@ class CompanyBugFixRegressionTests(APITestCase):
         res = ExportGrades().get(req)
         self.assertEqual(res.status_code, 200)
 
+
+class CompanySecurityAndOptimizationTests(APITestCase):
+    def setUp(self):
+        from decimal import Decimal
+        self.admin = User.objects.create_superuser(username='super_admin', email='super_admin@test.com', password='password123')
+
+        self.company_1 = Company.objects.create(name='(주)테스트건설', tax_number='123-11-11111', ceo='홍대표')
+        self.company_2 = Company.objects.create(name='(주)타사개발', tax_number='456-22-22222', ceo='홍대표')
+
+        self.user_1 = User.objects.create_user(username='staff_user1', email='su1@test.com', password='password123')
+        self.staff_1 = Staff.objects.create(
+            company=self.company_1, user=self.user_1, name='김사원', sort='2',
+            id_number='950505-1234567', personal_phone='010-1234-5678', date_join='2022-01-01'
+        )
+
+        self.user_2 = User.objects.create_user(username='staff_user2', email='su2@test.com', password='password123')
+        self.staff_2 = Staff.objects.create(
+            company=self.company_2, user=self.user_2, name='이대리', sort='2',
+            id_number='920202-2345678', personal_phone='010-8765-4321', date_join='2021-01-01'
+        )
+
+        self.dept_1 = Department.objects.create(company=self.company_1, name='본사영업팀')
+        self.dept_2 = Department.objects.create(company=self.company_2, name='타사기획팀')
+
+    def test_cross_company_staff_assignment_rejected(self):
+        """A사 직원을 B사 부서에 발령 등록 시도 시 ValidationError(400) 차단 검증"""
+        from company.models import StaffAssignment
+        from django.core.exceptions import ValidationError
+
+        assign = StaffAssignment(
+            company=self.company_1,
+            staff=self.staff_1,
+            department=self.dept_2,  # 타사 부서!
+        )
+        with self.assertRaises(ValidationError):
+            assign.full_clean()
+
+    def test_department_api_circular_reference_rejected(self):
+        """API를 통해 Department의 upper_depart를 자기 자신으로 지정 시 400 Bad Request 검증"""
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.patch(f'/api/v1/department/{self.dept_1.pk}/', {
+            'upper_depart': self.dept_1.pk
+        })
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('upper_depart', res.data)
+
+    def test_department_api_cross_company_upper_depart_rejected(self):
+        """API를 통해 Department의 upper_depart를 타사 부서로 지정 시 400 Bad Request 검증"""
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.patch(f'/api/v1/department/{self.dept_1.pk}/', {
+            'upper_depart': self.dept_2.pk
+        })
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('upper_depart', res.data)
+
+    def test_excel_export_missing_company_param_returns_400(self):
+        """company 쿼리 파라미터가 누락된 엑셀 내보내기 요청은 400 Bad Request 반환"""
+        from django.test import RequestFactory
+        from company.exports.excel import ExportStaffs
+        factory = RequestFactory()
+        req = factory.get('/company/export/staffs/')
+        req.user = self.admin
+        res = ExportStaffs().get(req)
+        self.assertEqual(res.status_code, 400)
+
+    def test_excel_export_cross_tenant_denied_returns_403(self):
+        """Company 1 소속 일반 직원이 Company 2의 엑셀 내보내기 시도 시 403 Forbidden 반환"""
+        from django.test import RequestFactory
+        from company.exports.excel import ExportStaffs
+        factory = RequestFactory()
+        req = factory.get(f'/company/export/staffs/?company={self.company_2.pk}')
+        req.user = self.user_1
+        res = ExportStaffs().get(req)
+        self.assertEqual(res.status_code, 403)
+
+    def test_excel_export_staffs_id_number_masked_for_ordinary_user(self):
+        """일반 직원이 본인 회사의 엑셀 다운로드 시 주민등록번호가 950505-*******로 마스킹되는지 검증"""
+        from django.test import RequestFactory
+        from company.exports.excel import ExportStaffs
+        import openpyxl
+        import io
+
+        factory = RequestFactory()
+        req = factory.get(f'/company/export/staffs/?company={self.company_1.pk}')
+        req.user = self.user_1
+        res = ExportStaffs().get(req)
+        self.assertEqual(res.status_code, 200)
+
+        # 엑셀 파일 파싱하여 주민번호 열 마스킹 확인
+        wb = openpyxl.load_workbook(io.BytesIO(res.content))
+        ws = wb.active
+        # 행 4(인덱스 4)의 4번째 열(D열: 주민등록번호)
+        id_cell = ws.cell(row=4, column=4).value
+        self.assertEqual(id_cell, '950505-*******')
+
+    def test_staff_leave_quota_property_instance_caching(self):
+        """StaffLeaveQuota.used_days 호출 시 인스턴스 캐시를 활용하여 쿼리 재실행 방지 검증"""
+        from decimal import Decimal
+        from company.models import StaffLeaveQuota, StaffLeaveUsage
+        quota = StaffLeaveQuota.objects.create(
+            company=self.company_1, staff=self.staff_1, year=2026,
+            granted_days=Decimal('15.00'), valid_start='2026-01-01', valid_end='2026-12-31'
+        )
+        StaffLeaveUsage.objects.create(
+            company=self.company_1, staff=self.staff_1, start_date='2026-06-01', end_date='2026-06-01',
+            deduction_days=Decimal('2.00'), is_cancelled=False
+        )
+
+        with self.assertNumQueries(1):
+            used = quota.used_days
+            self.assertEqual(used, Decimal('2.00'))
+
+        # 인스턴스 캐시가 적용되어 subsequent 호출 및 remaining_days 호출 시 추가 쿼리 0건
+        with self.assertNumQueries(0):
+            used_cached = quota.used_days
+            rem_cached = quota.remaining_days
+            self.assertEqual(used_cached, Decimal('2.00'))
+            self.assertEqual(rem_cached, Decimal('13.00'))
+
+    def test_company_representative_staff_company_isolation(self):
+        """다른 회사에 동일한 이름의 직원이 있더라도 자사 직원만 대표자로 매핑되는지 검증"""
+        # company_2의 직원을 홍대표로 생성
+        Staff.objects.create(company=self.company_2, name='홍대표', date_join='2020-01-01')
+
+        # company_1에는 '홍대표'라는 직원이 없음 -> 사업자등록증상 ceo 텍스트 자체 반환
+        rep_1 = self.company_1.get_representative_staff_name()
+        self.assertEqual(rep_1, '홍대표')
+
+        # company_1에 진짜 자사 직원 '홍대표' 생성
+        Staff.objects.create(company=self.company_1, name='홍대표', date_join='2019-01-01')
+        rep_1_after = self.company_1.get_representative_staff_name()
+        self.assertEqual(rep_1_after, '홍대표')
+

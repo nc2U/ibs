@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_company_image_path
@@ -60,7 +60,7 @@ class Company(models.Model):
         if self.ceo:
             ceo_parts = [p.strip() for p in self.ceo.replace(';', ',').split(',') if p.strip()]
             for part in ceo_parts:
-                matched_staff = Staff.objects.filter(name=part).first()
+                matched_staff = Staff.objects.filter(company=self, name=part).first()
                 if matched_staff:
                     return matched_staff.name.strip()
             if ceo_parts:
@@ -103,7 +103,7 @@ class Company(models.Model):
                     rank_title = matched_exec.rank.name if matched_exec.rank and '대표' in matched_exec.rank.name else default_title
                     rep_type = matched_exec.represent_type
                 else:
-                    matched_staff = Staff.objects.filter(name=p).first()
+                    matched_staff = Staff.objects.filter(company=self, name=p).first()
                     p_name = matched_staff.name if matched_staff else p
                     rank_title = '공동대표이사' if is_joint else '대표이사'
                     rep_type = 'joint' if is_joint else 'sole'
@@ -129,9 +129,10 @@ class Company(models.Model):
         return reps
 
     def save(self, *args, **kwargs):
-        if self.is_default:
-            Company.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            if self.is_default:
+                Company.objects.select_for_update().filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+            super().save(*args, **kwargs)
 
 
 class Logo(models.Model):
