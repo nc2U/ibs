@@ -92,6 +92,9 @@ class ChatRoomMember(models.Model):
         verbose_name = '대화방 멤버'
         verbose_name_plural = '02. 대화방 멤버 관리'
         unique_together = ('room', 'user')
+        indexes = [
+            models.Index(fields=['user', 'is_hidden'], name='idx_chat_mem_user_hidden'),
+        ]
 
     def __str__(self):
         return f"{self.room.title} - {self.user.username}"
@@ -153,6 +156,11 @@ class ChatMessage(models.Model):
         verbose_name = '채팅 메시지'
         verbose_name_plural = '03. 채팅 메시지 내역'
         ordering = ['created']
+        indexes = [
+            models.Index(fields=['room', '-id'], name='idx_chat_msg_room_id'),
+            models.Index(fields=['room', '-created'], name='idx_chat_msg_room_created'),
+            models.Index(fields=['room', 'is_deleted', '-created'], name='idx_chat_msg_room_del_created'),
+        ]
 
     def __str__(self):
         sender_name = self.sender.username if self.sender else '시스템'

@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APITransactionTestCase
 
 from company.models import Company
 from chat.models import ChatRoom
@@ -263,8 +263,9 @@ class ChatMessageAPITests(APITestCase):
         file_path = msg.file.name
         self.assertTrue(default_storage.exists(file_path))
 
-        # 메시지 삭제
-        msg.delete()
+        # 메시지 삭제 (on_commit 콜백 실행 트리거)
+        with self.captureOnCommitCallbacks(execute=True):
+            msg.delete()
 
         # 스토리지 파일 삭제 검증
         self.assertFalse(default_storage.exists(file_path))
@@ -288,8 +289,9 @@ class ChatMessageAPITests(APITestCase):
         file_path = msg.file.name
         self.assertTrue(default_storage.exists(file_path))
 
-        # 방 삭제 시 CASCADE로 메시지 및 파일 자동 정리
-        self.room.delete()
+        # 방 삭제 시 CASCADE로 메시지 및 파일 자동 정리 (on_commit 콜백 실행 트리거)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.room.delete()
 
         self.assertFalse(default_storage.exists(file_path))
 
@@ -304,3 +306,81 @@ class ChatMessageAPITests(APITestCase):
         # 2. after_id가 숫자가 아닌 경우
         res2 = self.client.get(f'/api/v1/chat-message/?room={self.room.id}&after_id=xyz')
         self.assertEqual(res2.status_code, status.HTTP_200_OK)
+
+    def test_message_update_blocked_method_not_allowed(self):
+        """[T-MSG-NO-EDIT] 메신저 메시지는 PUT / PATCH 임의 수정 불가(405 차단) 검증"""
+        self.client.force_authenticate(user=self.user1)
+        res_put = self.client.put(f'/api/v1/chat-message/{self.msg1.id}/', {'content': '변조된 내용'})
+        self.assertEqual(res_put.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res_patch = self.client.patch(f'/api/v1/chat-message/{self.msg1.id}/', {'content': '변조된 내용'})
+        self.assertEqual(res_patch.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_file_upload_size_limit(self):
+        """[T-FILE-LIMIT] 50MB 초과 첨부파일 업로드 시 400 ValidationError 차단 검증"""
+        from unittest.mock import patch, PropertyMock
+        from django.core.files.uploadedfile import UploadedFile, SimpleUploadedFile
+        self.client.force_authenticate(user=self.user1)
+        big_file = SimpleUploadedFile('huge.bin', b'mock content')
+
+        with patch.object(UploadedFile, 'size', new_callable=PropertyMock) as mock_size:
+            mock_size.return_value = 51 * 1024 * 1024
+            res = self.client.post('/api/v1/chat-message/', {
+                'room': self.room.id,
+                'message_type': 'file',
+                'file': big_file,
+                'file_name': 'huge.bin',
+            }, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('file', res.data)
+
+
+class ChatWebSocketAPITests(APITransactionTestCase):
+    """WebSocket Consumer 및 Middleware 비동기 스레드 통합 테스트"""
+
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='ws_user1', email='ws_user1@example.com', password='password123')
+        self.user2 = User.objects.create_user(username='ws_user2', email='ws_user2@example.com', password='password123')
+
+    def test_superuser_cannot_access_private_dm_websocket(self):
+        """[T-WS-PRIVACY] 최고관리자라도 비참여 1:1 비밀 대화방(direct) 웹소켓 접속 불가 검증"""
+        from asgiref.sync import async_to_sync
+        from chat.models import ChatRoom, ChatRoomMember
+        from chat.consumers import ChatConsumer
+        admin_user = User.objects.create_superuser(username='super_admin', email='super@example.com', password='password123')
+        direct_room = ChatRoom.objects.create(room_type='direct', created_by=self.user1)
+        ChatRoomMember.objects.create(room=direct_room, user=self.user1)
+        ChatRoomMember.objects.create(room=direct_room, user=self.user2)
+
+        consumer = ChatConsumer()
+        can_access = async_to_sync(consumer.check_room_access)(direct_room.id, admin_user)
+        self.assertFalse(can_access)
+
+        # 본인이 참여한 멤버(user1)는 정상 접근 가능
+        can_access_member = async_to_sync(consumer.check_room_access)(direct_room.id, self.user1)
+        self.assertTrue(can_access_member)
+
+    def test_websocket_header_jwt_auth(self):
+        """[T-WS-HEADER-AUTH] Authorization: Bearer <token> 헤더 기반 WebSocket 인증 지원 검증"""
+        from asgiref.sync import async_to_sync
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from chat.middleware import JWTAuthMiddleware
+
+        refresh = RefreshToken.for_user(self.user1)
+        access_token = str(refresh.access_token)
+
+        scope = {
+            'type': 'websocket',
+            'query_string': b'',
+            'headers': [
+                (b'authorization', f'Bearer {access_token}'.encode('utf-8'))
+            ],
+        }
+
+        async def dummy_app(scope, receive, send):
+            return scope.get('user')
+
+        middleware = JWTAuthMiddleware(dummy_app)
+        user = async_to_sync(middleware)(scope, None, None)
+        self.assertEqual(user, self.user1)

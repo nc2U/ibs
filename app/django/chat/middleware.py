@@ -22,9 +22,24 @@ class JWTAuthMiddleware(BaseMiddleware):
     WebSocket 연결 시 Query Parameter(?token=<JWT>) 또는 Header로 전달된 JWT 인증
     """
     async def __call__(self, scope, receive, send):
+        token = None
+
+        # 1. Query parameter 파싱
         query_string = scope.get('query_string', b'').decode('utf-8')
-        query_params = parse_qs(query_string)
-        token = query_params.get('token', [None])[0]
+        if query_string:
+            query_params = parse_qs(query_string)
+            token = query_params.get('token', [None])[0]
+
+        # 2. Header 파싱 (Authorization: Bearer <token> 또는 Sec-WebSocket-Protocol)
+        if not token:
+            headers = dict(scope.get('headers', []))
+            auth_header = headers.get(b'authorization', b'').decode('utf-8')
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split('Bearer ', 1)[1].strip()
+            elif b'sec-websocket-protocol' in headers:
+                protocols = [p.strip() for p in headers[b'sec-websocket-protocol'].decode('utf-8').split(',')]
+                if protocols:
+                    token = protocols[0]
 
         if token:
             scope['user'] = await get_user_from_jwt(token)

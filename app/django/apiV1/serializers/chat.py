@@ -32,6 +32,12 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('created', 'is_deleted')
 
+    def validate(self, attrs):
+        file = attrs.get('file')
+        if file and getattr(file, 'size', 0) > 50 * 1024 * 1024:
+            raise serializers.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
+        return attrs
+
     def get_reply_to_detail(self, obj):
         if not obj.reply_to or obj.reply_to.room_id != obj.room_id:
             return None
@@ -58,14 +64,18 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         # 방별 (전체 멤버 user_id 집합, 멤버별 last_read_message_id 딕셔너리) 캐싱
         cached_info = getattr(room, '_cached_room_read_info', None)
         if cached_info is None:
-            if room.room_type == 'channel' and room.project:
-                pjt_members = room.project.all_members()
-                all_member_ids = {m['user']['pk'] for m in pjt_members}
+            context_read_info = self.context.get('room_read_info', {}).get(room.id) if self.context else None
+            if context_read_info is not None:
+                cached_info = context_read_info
             else:
-                all_member_ids = set(room.members.values_list('pk', flat=True))
+                if room.room_type == 'channel' and room.project:
+                    pjt_members = room.project.all_members()
+                    all_member_ids = {m['user']['pk'] for m in pjt_members}
+                else:
+                    all_member_ids = set(room.members.values_list('pk', flat=True))
 
-            last_reads = dict(room.memberships.values_list('user_id', 'last_read_message_id'))
-            cached_info = (all_member_ids, last_reads)
+                last_reads = dict(room.memberships.values_list('user_id', 'last_read_message_id'))
+                cached_info = (all_member_ids, last_reads)
             room._cached_room_read_info = cached_info
 
         all_member_ids, last_reads = cached_info

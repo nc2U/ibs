@@ -161,20 +161,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_room_access(self, room_id, user):
-        if user.is_superuser:
-            return True
         room = ChatRoom.objects.filter(pk=room_id).first()
         if not room:
             return False
+
         if room.room_type == 'channel':
-            if not room.project:
+            # 워크스페이스 공용 채널: 슈퍼유저이거나 소속 워크스페이스 활성 채널인 경우 허용
+            if user.is_superuser:
+                return True
+            if not room.project or not room.project.chat_channel_enabled:
                 return False
-            # 공용 채널이 꺼져있으면 접속 불가
-            if not room.project.chat_channel_enabled:
-                return False
-            # 사용자가 소속된 워크스페이스(상속 포함)인지 검증
             my_pjt_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
             return room.project_id in my_pjt_ids
+
+        # 사생활 격리 원칙: direct(1:1 DM), self(나와의 채팅), group(비공개 그룹방)은
+        # 슈퍼유저라도 실제 참여 멤버(members)가 아니면 웹소켓 접속 불가
         return room.members.filter(pk=user.pk).exists()
 
     @database_sync_to_async

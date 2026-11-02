@@ -229,6 +229,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if not target_user:
             return Response({'error': '대화할 수 없는 사용자이거나 시스템 계정입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 동시 1:1 대화방 개설 레이스 컨디션 방지: ID 순 정렬 행 락킹
+        user_ids = sorted([request.user.pk, target_user.pk])
+        list(User.objects.select_for_update().filter(pk__in=user_ids).order_by('id'))
+
         # 정확히 나와 대상자 2명만 존재하는 1:1 DM 검색
         existing_rooms = ChatRoom.objects.annotate(member_cnt=Count('members')).filter(
             room_type='direct',
@@ -483,11 +487,42 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         if before_id or (not before_id and not after_id):
             messages = list(reversed(messages))
 
-        serializer = self.get_serializer(messages, many=True)
+        # 방 내 모든 메시지의 get_unread_count에 재사용할 읽음 정보 사전 산출
+        room_id = request.query_params.get('room')
+        context_read_info = {}
+        if room_id:
+            try:
+                target_room = ChatRoom.objects.filter(pk=int(room_id)).first()
+                if target_room:
+                    if target_room.room_type == 'channel' and target_room.project:
+                        pjt_members = target_room.project.all_members()
+                        all_member_ids = {m['user']['pk'] for m in pjt_members}
+                    else:
+                        all_member_ids = set(target_room.members.values_list('pk', flat=True))
+                    last_reads = dict(target_room.memberships.values_list('user_id', 'last_read_message_id'))
+                    context_read_info[target_room.id] = (all_member_ids, last_reads)
+            except (ValueError, TypeError):
+                pass
+
+        serializer = self.get_serializer(
+            messages, many=True,
+            context={
+                **self.get_serializer_context(),
+                'room_read_info': context_read_info,
+            }
+        )
         return Response({
             'results': serializer.data,
             'has_more': has_more,
         })
+
+    def update(self, request, *args, **kwargs):
+        """메신저 메시지는 임의 수정을 허용하지 않음 (대화 무결성 및 변조 방지)"""
+        return Response({'detail': '채팅 메시지는 임의로 수정할 수 없습니다.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def partial_update(self, request, *args, **kwargs):
+        """메신저 메시지는 임의 수정을 허용하지 않음 (대화 무결성 및 변조 방지)"""
+        return Response({'detail': '채팅 메시지는 임의로 수정할 수 없습니다.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -501,6 +536,11 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         room = serializer.validated_data.get('room')
         if not room:
             raise exceptions.ValidationError({'room': '대화방 정보가 필요합니다.'})
+
+        # 첨부파일 용량 제한 검증 (최대 50MB)
+        file_obj = self.request.FILES.get('file')
+        if file_obj and file_obj.size > 50 * 1024 * 1024:
+            raise exceptions.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
 
         # 대화방 접근 권한 검증
         if not user.is_superuser:
