@@ -5,6 +5,8 @@ from allauth.account.forms import default_token_generator
 from django.conf import settings
 from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
@@ -53,6 +55,13 @@ class UserViewSet(viewsets.ModelViewSet):
                         message='다른 사용자의 계정 정보를 수정하거나 삭제할 권한이 없습니다.',
                         code=status.HTTP_403_FORBIDDEN
                     )
+            elif getattr(request.user, 'work_manager', False) and not request.user.is_superuser:
+                if obj.is_superuser and obj.pk != request.user.pk:
+                    self.permission_denied(
+                        request,
+                        message='최고관리자 계정을 수정하거나 삭제할 권한이 없습니다.',
+                        code=status.HTTP_403_FORBIDDEN
+                    )
 
     def get_queryset(self):
         user = self.request.user
@@ -94,7 +103,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        if UserSerializer().get_is_hq_staff(user):
+        if UserSerializer.get_is_hq_staff(user):
             return queryset
 
         # 1. 사용자의 프로젝트별 user_visible 권한 수준 판별
@@ -108,15 +117,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
                     best_user_visible = role.user_visible
 
-        # 비회원 역할 pk=2 참고
-        try:
-            non_member_role = Role.objects.get(pk=2)
-            non_member_user_visible = non_member_role.user_visible
-        except Role.DoesNotExist:
-            non_member_user_visible = 'NOP'
-
+        # 소속 프로젝트가 없는 경우에만 비회원 역할(pk=2) 조회 (불필요한 DB 쿼리 방지)
         if not user_members.exists():
-            best_user_visible = non_member_user_visible
+            try:
+                non_member_role = Role.objects.get(pk=2)
+                best_user_visible = non_member_role.user_visible
+            except Role.DoesNotExist:
+                best_user_visible = 'NOP'
 
         # 2. 수준별 필터링 적용
         if best_user_visible == 'ALL':
@@ -267,6 +274,12 @@ class TodoViewSet(viewsets.ModelViewSet):
                 creator=user,
                 updater=user,
             )
+            # 작성자 프로필의 auto_watch_created 설정에 따라 모니터링(워처) 등록
+            creator_profile = getattr(user, 'profile', None)
+            auto_watch_created = getattr(creator_profile, 'auto_watch_created', True) if creator_profile else True
+            if auto_watch_created:
+                issue.watchers.add(user)
+
             todo.completed = True
             todo.issue = issue
             todo.save(update_fields=['completed', 'issue', 'updated'])
@@ -294,13 +307,14 @@ class CheckPasswordView(APIView):
         if not password:
             return Response({'detail': 'Password not provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(email=request.data.get('email'), password=password)
+        # 타인 계정 패스워드 무차별 대입(Oracle) 방어: 요청자의 이메일과 일치하는지 검증
+        email = request.data.get('email')
+        if email and email.lower() != request.user.email.lower():
+            return Response({'detail': '본인 계정의 비밀번호만 확인할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if user is not None:
-            # Password is correct
+        if request.user.check_password(password):
             return Response({'detail': 'Password correct.'}, status=status.HTTP_200_OK)
         else:
-            # Password is incorrect
             return Response({'detail': 'Password incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -315,10 +329,15 @@ class ChangePasswordView(APIView):
             # Check if the old password is correct
             old_password = serializer.validated_data.get('old_password')
             if not check_password(old_password, request.user.password):
-                return Response({'detail': '패스워드를 맞지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': '패스워드가 맞지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Update the password
             new_password = serializer.validated_data.get('new_password')
+            try:
+                validate_password(new_password, request.user)
+            except ValidationError as e:
+                return Response({'detail': list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
             request.user.set_password(new_password)
             request.user.save()
 
@@ -530,6 +549,10 @@ IBS 워크스페이스'''
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({'detail': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 최고관리자 계정은 최고관리자만 변경 가능 (권한 역전 방지)
+        if user.is_superuser and not request.user.is_superuser:
+            return Response({'detail': '최고관리자 계정은 최고관리자만 변경할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         # 1. 권한 관련 필드 업데이트 (명시적 존재 확인)
         # 요청 데이터에 해당 필드가 있을 때만 업데이트합니다.

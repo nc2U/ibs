@@ -80,6 +80,40 @@ class AccountsSecurityAndIsolationTests(APITestCase):
         self.assertFalse(self.user_a.is_staff)
         self.assertFalse(self.user_a.work_manager)
 
+    def test_user_cannot_escalate_is_system_on_self_update(self):
+        """일반 사용자가 is_system=True로 시스템 계정 위장 시도 시 차단"""
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.patch(f'/api/v1/user/{self.user_a.pk}/', {
+            'is_system': True
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.user_a.refresh_from_db()
+        self.assertFalse(self.user_a.is_system)
+
+    def test_work_manager_cannot_modify_or_delete_superuser(self):
+        """work_manager는 일반 사용자는 관리할 수 있으나, 최고관리자(superuser) 계정은 수정/삭제 불가"""
+        wm_user = User.objects.create_user(
+            username='workmgr', email='wm@test.com', password='password123', work_manager=True
+        )
+        self.client.force_authenticate(user=wm_user)
+
+        # 1. UserViewSet을 통한 슈퍼유저 수정 차단 (403)
+        res_patch = self.client.patch(f'/api/v1/user/{self.admin.pk}/', {
+            'username': 'admin_hacked'
+        })
+        self.assertEqual(res_patch.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. UserViewSet을 통한 슈퍼유저 삭제 차단 (403)
+        res_del = self.client.delete(f'/api/v1/user/{self.admin.pk}/')
+        self.assertEqual(res_del.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. AdminManageUserView.put을 통한 슈퍼유저 비밀번호/활성화 수정 차단 (403)
+        res_put = self.client.put('/api/v1/admin-create-user/', {
+            'email': self.admin.email,
+            'is_active': False
+        })
+        self.assertEqual(res_put.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_admin_can_modify_other_user(self):
         """관리자(슈퍼유저)는 타 사용자 권한 필드 수정 가능"""
         self.client.force_authenticate(user=self.admin)
@@ -268,3 +302,62 @@ class InstallViewsRegressionTests(APITestCase):
         )
         self.assertIsNotNone(issue_project.pk)
         self.assertEqual(issue_project.type, '2')
+
+    def test_create_superuser_post_blocked_when_superuser_already_exists(self):
+        """슈퍼유저가 이미 존재하는 경우 POST /install/create/superuser/ 접근 시 redirect 차단"""
+        User.objects.create_superuser(username='existingadmin', email='exist@test.com', password='password123')
+
+        res = self.client.post('/install/create/superuser/', {
+            'username': 'attacker',
+            'email': 'attacker@test.com',
+            'password': 'password123',
+            'password_confirm': 'password123'
+        })
+        # 이미 슈퍼유저가 존재하므로 리다이렉트되어 새 유저 생성 안 됨
+        self.assertEqual(res.status_code, status.HTTP_302_FOUND)
+        self.assertFalse(User.objects.filter(email='attacker@test.com').exists())
+
+
+class PasswordAndAuthSecurityTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='authuser', email='authuser@test.com', password='securePassword123!')
+        self.target_user = User.objects.create_user(username='victim', email='victim@test.com', password='victimPassword123!')
+
+    def test_check_password_oracle_defense(self):
+        """타인 계정 비밀번호 대리 확인 시도(오라클 공격) 시 403 Forbidden 차단"""
+        self.client.force_authenticate(user=self.user)
+
+        # 본인 계정 비밀번호 정상 확인
+        res_self = self.client.post('/api/v1/check-password/', {
+            'email': self.user.email,
+            'password': 'securePassword123!'
+        })
+        self.assertEqual(res_self.status_code, status.HTTP_200_OK)
+
+        # 타인 이메일로 비밀번호 일치 확인 시도 시 차단
+        res_victim = self.client.post('/api/v1/check-password/', {
+            'email': self.target_user.email,
+            'password': 'victimPassword123!'
+        })
+        self.assertEqual(res_victim.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_change_password_validation(self):
+        """비밀번호 변경 시 기존 비밀번호 일치 및 신규 비밀번호 유효성 검증"""
+        self.client.force_authenticate(user=self.user)
+
+        # 종전 비밀번호 불일치 시 400
+        res_wrong_old = self.client.post('/api/v1/change-password/', {
+            'old_password': 'wrongPassword!',
+            'new_password': 'NewPassword12345!'
+        })
+        self.assertEqual(res_wrong_old.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('패스워드가 맞지 않습니다.', res_wrong_old.data['detail'])
+
+        # 정상 비밀번호 변경 성공
+        res_ok = self.client.post('/api/v1/change-password/', {
+            'old_password': 'securePassword123!',
+            'new_password': 'BrandNewSecurePassword1234!'
+        })
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('BrandNewSecurePassword1234!'))

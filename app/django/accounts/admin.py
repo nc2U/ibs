@@ -9,6 +9,15 @@ from .forms import UserCreationForm, UserChangeForm
 from .models import User, Profile, DocScrape, PostScrape, Todo, PasswordResetToken, FCMDevice, Notification
 
 
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name = '사용자 프로필'
+    verbose_name_plural = '사용자 프로필'
+    fk_name = 'user'
+    extra = 0
+
+
 @admin.register(Profile)
 class ProfileAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'name', 'cell_phone', 'birth_date', 'sign_type', 'sign_image')
@@ -54,11 +63,14 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
     filter_horizontal = ('groups', 'user_permissions',)
-    inlines = ()  # ProfileInline, TodosInline)
+    inlines = (ProfileInline,)
 
     def send_test_email(self, request, queryset):
         # 예시: 선택된 첫 번째 객체를 기준으로 메일 전송
         obj = queryset.first()
+        if not obj:
+            self.message_user(request, "선택된 사용자가 없습니다.", level=messages.WARNING)
+            return
         try:
             send_mail(
                 subject='테스트 메일',
@@ -77,6 +89,9 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
 class DocScrapeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'docs', 'title', 'created')
     list_display_links = ('pk', 'user', 'docs')
+    list_filter = ('created',)
+    search_fields = ('title', 'user__username', 'docs__title')
+
 
 @admin.register(PostScrape)
 class PostScrapeAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -86,10 +101,9 @@ class PostScrapeAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('title', 'user__username', 'post__title')
 
 
-
 @admin.register(Todo)
 class TodoAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'user', 'title', 'completed', 'soft_deleted', 'created', 'updated')
+    list_display = ('pk', 'user', 'title', 'completed', 'issue', 'soft_deleted', 'created', 'updated')
     list_display_links = ('pk', 'user', 'title')
     list_filter = ('completed', 'soft_deleted')
     search_fields = ('title', 'user__username')
@@ -116,3 +130,4 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display_links = ('pk', 'user', 'title')
     list_filter = ('category', 'is_read')
     search_fields = ('title', 'body', 'user__username')
+    date_hierarchy = 'created_at'

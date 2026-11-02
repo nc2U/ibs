@@ -104,7 +104,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_is_hq_staff(obj):
         if obj.is_superuser:
             return True
-        return obj.member_set.filter(project__type='1').exists()
+        return any(m.project and m.project.type == '1' for m in obj.member_set.all())
 
     @staticmethod
     def get_has_staff(obj):
@@ -151,7 +151,7 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         is_admin = request and (request.user.is_superuser or getattr(request.user, 'work_manager', False))
         if not is_admin:
-            for restricted in ('is_superuser', 'is_staff', 'work_manager', 'is_active'):
+            for restricted in ('is_superuser', 'is_staff', 'work_manager', 'is_active', 'is_system'):
                 validated_data.pop(restricted, None)
 
         password = validated_data.pop('password', None)

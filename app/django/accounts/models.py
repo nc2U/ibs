@@ -45,7 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = _('01. 사용자')
         verbose_name_plural = _('01. 사용자')
-        ordering = ('-date_joined',)
+        ordering = ('-date_joined', '-id')
 
     def __str__(self):
         return self.username
@@ -237,3 +237,7 @@ class Notification(models.Model):
         ordering = ('-created_at',)
         verbose_name = '08. 사용자 알림'
         verbose_name_plural = '08. 사용자 알림 목록'
+        indexes = [
+            models.Index(fields=['user', 'is_read'], name='idx_notif_user_is_read'),
+            models.Index(fields=['user', 'target_type', 'target_id'], name='idx_notif_user_target'),
+        ]

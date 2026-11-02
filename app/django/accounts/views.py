@@ -33,31 +33,41 @@ def install_check_step(request):
 
 
 def create_superuser(request):
+    is_d3 = ProjectAccountD3.objects.exists()
+    if is_d3:
+        return redirect('/')
+    is_superuser = User.objects.filter(is_superuser=True).exists()
+    if is_superuser:
+        return redirect('/install/create/company/')
+
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
-        if password and password_confirm and password != password_confirm:
-            raise forms.ValidationError("Passwords don't match!")
-        else:
-            User.objects.create_superuser(username=username,
-                                          email=email,
-                                          password=password)
+        if not username or not email or not password:
+            return render(request, 'install/create_superuser.html', {'error': '모든 필수 항목을 입력해 주세요.'})
+        if password != password_confirm:
+            return render(request, 'install/create_superuser.html', {'error': '비밀번호가 일치하지 않습니다.'})
+        User.objects.create_superuser(username=username,
+                                      email=email,
+                                      password=password)
         return redirect('/install/create/company/')
     else:
-
-        is_d3 = ProjectAccountD3.objects.exists()
-        if is_d3:
-            return redirect('/')
-        is_superuser = User.objects.filter(is_superuser=True).exists()
-        if is_superuser:
-            return redirect('/install/create/company/')
-        else:
-            return render(request, 'install/create_superuser.html')
+        return render(request, 'install/create_superuser.html')
 
 
 def create_company(request):
+    is_d3 = ProjectAccountD3.objects.exists()
+    if is_d3:
+        return redirect('/')
+    is_superuser = User.objects.filter(is_superuser=True).exists()
+    if not is_superuser:
+        return redirect('/install/create/superuser/')
+    is_company = Company.objects.exists()
+    if is_company:
+        return redirect('/install/create/project/')
+
     if request.method == 'POST':
         name = request.POST.get('name')
         tax_number = request.POST.get('tax_number')
@@ -70,17 +80,7 @@ def create_company(request):
         company.save()
         return redirect('/install/create/project/')
     else:
-        is_d3 = ProjectAccountD3.objects.exists()
-        if is_d3:
-            return redirect('/')
-        is_superuser = User.objects.filter(is_superuser=True).exists()
-        is_company = Company.objects.all().exists()
-        if not is_superuser:
-            return redirect('/install/create/superuser/')
-        elif not is_company:
-            return render(request, 'install/create_company.html')
-        else:
-            return redirect('/install/create/project/')
+        return render(request, 'install/create_company.html')
 
 
 def load_seed_data():
@@ -119,12 +119,15 @@ def create_project(request):
                      '7': '지식산업센터',
                      '8': '기타'}[kind]
 
+        creator = User.objects.filter(is_superuser=True).first()
+        creator_id = creator.id if creator else 1
+
         issue_project = IssueProject.objects.create(company_id=company,
                                                     type='2',
                                                     name=name,
                                                     slug='proj1',
                                                     description=f'{name} {kind_name} 신축사업',
-                                                    creator_id=1)
+                                                    creator_id=creator_id)
         # Add roles if they exist
 
         existing_roles = list(Role.objects.filter(pk__in=[6, 7, 8]).values_list('pk', flat=True))
