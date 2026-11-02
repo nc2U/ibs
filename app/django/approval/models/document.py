@@ -89,7 +89,7 @@ class ApprovalDocument(models.Model):
     )
     status = models.CharField(
         '결재 상태', max_length=15,
-        choices=STATUS_CHOICES, default=STATUS_DRAFT
+        choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True
     )
     current_step = models.PositiveSmallIntegerField('현재 결재 단계', default=0)
     content_hash = models.CharField(
@@ -121,7 +121,8 @@ class ApprovalDocument(models.Model):
         트랜잭션 안전한 시퀀스 채번을 수행합니다.
         """
         from .document_number import DocNumberSequence
-        year = (self.completed_at or self.created_at).year
+        from django.utils import timezone
+        year = (self.completed_at or self.created_at or timezone.now()).year
         seq = DocNumberSequence.next_number(self.doc_type, year)
         return f'{self.doc_type.code}-{year}-{seq:04d}'
 
@@ -208,9 +209,13 @@ class ApprovalDocument(models.Model):
         return f'[{self.get_status_display()}] {self.title} ({self.drafter})'
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-created_at', '-id']
         verbose_name = '03. 결재 문서'
         verbose_name_plural = '03. 결재 문서 목록'
+        indexes = [
+            models.Index(fields=['-created_at', '-id'], name='idx_appr_doc_created'),
+            models.Index(fields=['status', '-created_at'], name='idx_appr_doc_status_created'),
+        ]
         constraints = [
             # doc_number는 null이 아닌 경우에만 unique 보장
             # (PostgreSQL: null 복수 허용 / SQLite 등 이식성 문제 방어)
@@ -260,7 +265,7 @@ class ApprovalStep(models.Model):
     )
     status = models.CharField(
         '단계 상태', max_length=10,
-        choices=STATUS_CHOICES, default=STATUS_PENDING
+        choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True
     )
 
     def is_completed(self):
@@ -268,18 +273,22 @@ class ApprovalStep(models.Model):
         # 한 번의 쿼리로 승인/반려 액션을 모두 가져와 Python에서 처리 (기존 3회 → 2회 쿼리)
         all_actions = list(self.actions.filter(action__in=[
             ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED
-        ]).values('action', 'approver_id'))
+        ]).values('action', 'approver_id', 'delegated_from_id'))
 
         if any(a['action'] == ApprovalAction.ACTION_REJECTED for a in all_actions):
             return True, False  # (완료여부, 승인여부)
 
-        approved_ids = {a['approver_id'] for a in all_actions if a['action'] == ApprovalAction.ACTION_APPROVED}
+        # 대결인 경우 원 결재권자(delegated_from_id), 직접 결재인 경우 결재자(approver_id)를 승인자로 산정
+        approved_ids = {
+            a['delegated_from_id'] or a['approver_id']
+            for a in all_actions if a['action'] == ApprovalAction.ACTION_APPROVED
+        }
         approver_ids = set(self.approvers.values_list('id', flat=True))
 
         if self.condition == self.CONDITION_OR:
             completed = bool(approved_ids)
         else:  # AND
-            completed = approver_ids == approved_ids
+            completed = approver_ids <= approved_ids
 
         return completed, completed
 
@@ -372,6 +381,9 @@ class ApprovalDelegation(models.Model):
         ordering = ['-created_at']
         verbose_name = '07. 결재 권한 위임 (대결)'
         verbose_name_plural = '07. 결재 권한 위임 (대결) 목록'
+        indexes = [
+            models.Index(fields=['delegatee', 'is_active', 'start_date', 'end_date'], name='idx_appr_del_active'),
+        ]
 
 
 class ApprovalAttachment(models.Model):

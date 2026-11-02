@@ -63,6 +63,13 @@ class ApprovalDelegationSerializer(serializers.ModelSerializer):
         end_date = attrs.get('end_date')
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError({'end_date': '위임 종료일은 시작일 이후여야 합니다.'})
+
+        request = self.context.get('request')
+        delegator = attrs.get('delegator') or (self.instance.delegator if self.instance else (request.user if request else None))
+        delegatee = attrs.get('delegatee') or (self.instance.delegatee if self.instance else None)
+        if delegator and delegatee and delegator == delegatee:
+            raise serializers.ValidationError({'delegatee': '본인에게 결재 권한을 위임할 수 없습니다.'})
+
         return attrs
 
     class Meta:

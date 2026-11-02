@@ -59,6 +59,21 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        user = self.request.user
+        if not user.is_superuser and instance.delegator != user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('위임자 본인만 결재 위임 설정을 수정할 수 있습니다.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if not user.is_superuser and instance.delegator != user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('위임자 본인만 결재 위임을 취소할 수 있습니다.')
+        instance.delete()
+
 
 class DocCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """결재 문서 카테고리 조회"""
@@ -530,12 +545,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 return Response({'detail': '이 단계의 결재 권한(또는 대결 권한)이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         # 이미 승인/반려 처리를 완료한 경우 재처리 불가 (단, 단순 의견 작성자는 추후 승인/반려 가능)
-        existing_action_filter = Q(approver=request.user)
-        if is_delegated and delegated_from:
-            existing_action_filter |= Q(delegated_from=delegated_from)
-
+        # 대결 승인 및 원 결재권자 승인 간의 상호 중복 승인을 완벽히 차단하기 위해 대상 결재자 기준으로 검증
+        target_approver = delegated_from if (is_delegated and delegated_from) else request.user
         if current_step.actions.filter(
-            existing_action_filter,
+            Q(approver=target_approver) | Q(delegated_from=target_approver),
             action__in=[ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED]
         ).exists():
             return Response({'detail': '이미 승인 또는 반려 처리하셨습니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -767,11 +780,11 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if delegator_ids:
             approver_q |= Q(steps__approvers__in=delegator_ids)
 
-        qs = ApprovalDocument.objects.filter(
+        qs = self.get_queryset().filter(
             status=ApprovalDocument.STATUS_PENDING,
             steps__status=ApprovalStep.STATUS_PENDING,
             steps__step_order=F('current_step'),
-        ).filter(approver_q).select_related('doc_type', 'drafter', 'drafter__profile').distinct()
+        ).filter(approver_q).distinct()
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -780,9 +793,9 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_drafted(self, request):
         """내가 기안한 문서 목록"""
-        qs = ApprovalDocument.objects.filter(
+        qs = self.get_queryset().filter(
             drafter=request.user
-        ).select_related('doc_type', 'drafter', 'drafter__profile').order_by('-created_at')
+        ).order_by('-created_at', '-id')
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -790,12 +803,11 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── GET /approval-document/my_approved/ ──────────────────
     @action(detail=False, methods=['get'])
     def my_approved(self, request):
-        """내가 결재에 참여하여 최종 승인된 문서 목록"""
-        qs = ApprovalDocument.objects.filter(
+        """내가 결재에 참여하여 최종 승인된 문서 목록 (대결 참여 승인 건 포함)"""
+        qs = self.get_queryset().filter(
             status=ApprovalDocument.STATUS_APPROVED,
-            steps__approvers=request.user,
-        ).select_related(
-            'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
+        ).filter(
+            Q(steps__approvers=request.user) | Q(steps__actions__approver=request.user)
         ).distinct().order_by('-completed_at', '-id')
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
@@ -805,10 +817,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_observed(self, request):
         """내가 참조자로 지정된 문서 목록"""
-        qs = ApprovalDocument.objects.filter(
+        qs = self.get_queryset().filter(
             observers=request.user
-        ).select_related(
-            'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
         ).distinct().order_by('-created_at', '-id')
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
@@ -836,17 +846,33 @@ class ApprovalAttachmentViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     filterset_fields = ('document',)
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return ApprovalAttachment.objects.all().select_related('document', 'creator')
+        # 열람 권한이 있는 결재 문서의 첨부파일만 반환 (BOLA 취약점 차단)
+        doc_view = ApprovalDocumentViewSet(request=self.request, action='list')
+        accessible_docs = doc_view.get_queryset()
+        return ApprovalAttachment.objects.filter(document__in=accessible_docs).select_related('document', 'creator')
+
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        document = serializer.validated_data.get('document')
+        user = self.request.user
+        if not user.is_superuser and document.drafter != user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('기안자 본인만 결재 문서에 첨부파일을 등록할 수 있습니다.')
+        if document.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('임시저장 또는 반려 상태의 문서에만 첨부파일을 등록할 수 있습니다.')
+        serializer.save(creator=user)
 
     def perform_destroy(self, instance):
-        # 기안자 또는 슈퍼유저만 삭제 가능 (결재 완료 전)
         doc = instance.document
         user = self.request.user
         if not user.is_superuser and doc.drafter != user:
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied('기안자만 첨부파일을 삭제할 수 있습니다.')
-        if doc.status == ApprovalDocument.STATUS_APPROVED:
+            raise PermissionDenied('기안자 본인만 첨부파일을 삭제할 수 있습니다.')
+        if doc.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
             from rest_framework.exceptions import ValidationError
-            raise ValidationError('최종 승인된 문서의 첨부파일은 삭제할 수 없습니다.')
+            raise ValidationError('임시저장 또는 반려 상태의 문서에서만 첨부파일을 삭제할 수 있습니다.')
         instance.delete()

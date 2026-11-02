@@ -611,7 +611,8 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.assertTrue(default_storage.exists(pdf_path))
 
         # 문서 삭제 시 파일도 함께 삭제되는지 검증
-        doc.delete()
+        with self.captureOnCommitCallbacks(execute=True):
+            doc.delete()
 
         self.assertFalse(default_storage.exists(att_path))
         self.assertFalse(default_storage.exists(pdf_path))
@@ -638,3 +639,243 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.assertTrue(len(doc.doc_number) > 0)
         self.assertEqual(doc.steps.count(), 1)
         self.assertEqual(doc.steps.first().status, ApprovalStep.STATUS_APPROVED)
+
+    def test_and_condition_delegation_approval_completes(self):
+        """[T-AND] AND(전원 합의) 조건 결재 단계에서 대결자가 원결재자를 대신해 승인 시, 모든 필수 결재자의 승인이 완료되면 단계 및 문서가 정상 승인되는지 검증"""
+        doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            title='AND 조건 결재 대결 테스트',
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step = ApprovalStep.objects.create(
+            document=doc,
+            step_order=1,
+            role_label='팀장 및 대표이사 합의',
+            condition=ApprovalStep.CONDITION_AND,
+            status=ApprovalStep.STATUS_PENDING,
+        )
+        step.approvers.set([self.user_leader, self.user_ceo])
+
+        # leader -> delegate 위임 등록
+        today = timezone.localdate()
+        ApprovalDelegation.objects.create(
+            delegator=self.user_leader,
+            delegatee=self.user_delegate,
+            start_date=today,
+            end_date=today,
+            is_active=True,
+            reason='출장 대결',
+        )
+
+        # 1. 대결자(user_delegate)가 leader 대신 승인
+        self.client.force_authenticate(user=self.user_delegate)
+        res1 = self.client.post(f'/api/v1/approval-document/{doc.id}/act/', {
+            'action': 'approved',
+            'comment': '팀장 대결 승인',
+        })
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+
+        # 아직 ceo 승인이 남았으므로 step 및 doc는 pending 상태 유지
+        step.refresh_from_db()
+        doc.refresh_from_db()
+        self.assertEqual(step.status, ApprovalStep.STATUS_PENDING)
+        self.assertEqual(doc.status, ApprovalDocument.STATUS_PENDING)
+
+        # 2. 대표이사(user_ceo) 승인
+        self.client.force_authenticate(user=self.user_ceo)
+        with patch('approval.tasks.generate_approval_pdf_task.delay'):
+            res2 = self.client.post(f'/api/v1/approval-document/{doc.id}/act/', {
+                'action': 'approved',
+                'comment': '대표이사 최종 승인',
+            })
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+
+        # AND 조건이 모두 충족되어 step과 doc가 STATUS_APPROVED로 완료되었는지 검증
+        step.refresh_from_db()
+        doc.refresh_from_db()
+        self.assertEqual(step.status, ApprovalStep.STATUS_APPROVED)
+        self.assertEqual(doc.status, ApprovalDocument.STATUS_APPROVED)
+        self.assertIsNotNone(doc.completed_at)
+        self.assertIsNotNone(doc.doc_number)
+
+    def test_double_action_prevention_with_delegation(self):
+        """[T-DOUBLE] 원결재자와 대결자 간의 상호 중복 결재(Double Approval) 완벽 차단 검증"""
+        today = timezone.localdate()
+        ApprovalDelegation.objects.create(
+            delegator=self.user_leader,
+            delegatee=self.user_delegate,
+            start_date=today,
+            end_date=today,
+            is_active=True,
+            reason='대결',
+        )
+
+        # 케이스 1: 대결자 승인 후 원결재자 또는 대결자 재승인 차단
+        doc1 = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            title='중복 결재 차단 1',
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step1 = ApprovalStep.objects.create(
+            document=doc1,
+            step_order=1,
+            role_label='팀장 승인',
+            condition=ApprovalStep.CONDITION_OR,
+            status=ApprovalStep.STATUS_PENDING,
+        )
+        step1.approvers.set([self.user_leader])
+
+        # 대결자 승인
+        self.client.force_authenticate(user=self.user_delegate)
+        res = self.client.post(f'/api/v1/approval-document/{doc1.id}/act/', {'action': 'approved'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # 대결자가 다시 승인 시도 -> 차단 (문서 상태를 pending으로 유지한 다단계 상황 가정하여 검증하기 위해 강제 pending)
+        doc1.status = ApprovalDocument.STATUS_PENDING
+        doc1.save(update_fields=['status'])
+        res_dup_delegate = self.client.post(f'/api/v1/approval-document/{doc1.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_dup_delegate.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('이미 승인 또는 반려 처리하셨습니다', res_dup_delegate.data['detail'])
+
+        # 원결재자(user_leader)가 직접 승인 시도 -> 차단
+        self.client.force_authenticate(user=self.user_leader)
+        res_dup_leader = self.client.post(f'/api/v1/approval-document/{doc1.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_dup_leader.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('이미 승인 또는 반려 처리하셨습니다', res_dup_leader.data['detail'])
+
+        # 케이스 2: 원결재자가 먼저 승인한 후 대결자가 대리 승인 시도 -> 차단
+        doc2 = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            title='중복 결재 차단 2',
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step2 = ApprovalStep.objects.create(
+            document=doc2,
+            step_order=1,
+            role_label='팀장 승인',
+            condition=ApprovalStep.CONDITION_OR,
+            status=ApprovalStep.STATUS_PENDING,
+        )
+        step2.approvers.set([self.user_leader])
+
+        # 원결재자 직접 승인
+        self.client.force_authenticate(user=self.user_leader)
+        res_leader_ok = self.client.post(f'/api/v1/approval-document/{doc2.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_leader_ok.status_code, status.HTTP_200_OK)
+
+        # 대결자가 대리 승인 시도 -> 차단
+        doc2.status = ApprovalDocument.STATUS_PENDING
+        doc2.save(update_fields=['status'])
+        self.client.force_authenticate(user=self.user_delegate)
+        res_delegate_blocked = self.client.post(f'/api/v1/approval-document/{doc2.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_delegate_blocked.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('이미 승인 또는 반려 처리하셨습니다', res_delegate_blocked.data['detail'])
+
+    def test_attachment_access_and_modification_guards(self):
+        """[T-ATT] 결재 첨부파일 접근 제어(BOLA 방지) 및 기안자/문서상태 기반 추가·삭제 방어 검증"""
+        # 1. 1등급(비공개) 문서 생성
+        conf_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            title='비공개 특수 품의서',
+            security_level=ApprovalDocument.SECURITY_SECRET,
+            status=ApprovalDocument.STATUS_DRAFT,
+        )
+
+        # 2. 기안자가 첨부파일 업로드 성공
+        self.client.force_authenticate(user=self.user_drafter)
+        upload_file = SimpleUploadedFile('secret_plan.pdf', b'Confidential Plan Content', content_type='application/pdf')
+        res_upload = self.client.post(
+            '/api/v1/approval-attachment/',
+            {'document': conf_doc.id, 'file': upload_file},
+            format='multipart'
+        )
+        self.assertEqual(res_upload.status_code, status.HTTP_201_CREATED)
+        attachment_id = res_upload.data['id']
+
+        # 3. 비인가자(user_outsider)의 BOLA 공격 차단: 목록 및 상세 조회 차단
+        self.client.force_authenticate(user=self.user_outsider)
+        res_list = self.client.get('/api/v1/approval-attachment/')
+        att_ids = [att['id'] for att in res_list.data.get('results', res_list.data)]
+        self.assertNotIn(attachment_id, att_ids)
+
+        res_detail = self.client.get(f'/api/v1/approval-attachment/{attachment_id}/')
+        self.assertEqual(res_detail.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 4. 타인이 첨부파일 업로드 시도 시 403 차단
+        other_file = SimpleUploadedFile('hack.pdf', b'hack content', content_type='application/pdf')
+        res_unauth_upload = self.client.post(
+            '/api/v1/approval-attachment/',
+            {'document': conf_doc.id, 'file': other_file},
+            format='multipart'
+        )
+        self.assertEqual(res_unauth_upload.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5. 문서가 PENDING(진행 중) 상태일 때 첨부파일 삭제 및 추가 차단 검증
+        conf_doc.status = ApprovalDocument.STATUS_PENDING
+        conf_doc.save(update_fields=['status'])
+
+        self.client.force_authenticate(user=self.user_drafter)
+        # 삭제 시도 -> 400 차단
+        res_del = self.client.delete(f'/api/v1/approval-attachment/{attachment_id}/')
+        self.assertEqual(res_del.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 추가 시도 -> 400 차단
+        new_file = SimpleUploadedFile('new.pdf', b'new content', content_type='application/pdf')
+        res_add = self.client.post(
+            '/api/v1/approval-attachment/',
+            {'document': conf_doc.id, 'file': new_file},
+            format='multipart'
+        )
+        self.assertEqual(res_add.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delegation_self_delegation_and_delegatee_modification_blocked(self):
+        """[T-DEL] 자기 자신에게 위임 불가 검증 및 수임자(대결자)의 임의 수정/삭제 403 차단 검증"""
+        # 1. 자기 자신에게 위임 시도 (400 차단)
+        self.client.force_authenticate(user=self.user_leader)
+        today = timezone.localdate()
+        res_self = self.client.post('/api/v1/approval-delegation/', {
+            'delegatee_id': self.user_leader.id,
+            'start_date': str(today),
+            'end_date': str(today),
+            'reason': '셀프 위임 시도',
+        })
+        self.assertEqual(res_self.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('delegatee', res_self.data)
+
+        # 2. 정상 위임 등록 (user_leader -> user_delegate)
+        res_create = self.client.post('/api/v1/approval-delegation/', {
+            'delegatee_id': self.user_delegate.id,
+            'start_date': str(today),
+            'end_date': str(today),
+            'reason': '정상 위임',
+            'is_active': True,
+        })
+        self.assertEqual(res_create.status_code, status.HTTP_201_CREATED)
+        del_id = res_create.data['id']
+
+        # 3. 수임자(user_delegate)가 해당 위임 건을 수정(PATCH)하려 할 때 403 차단
+        self.client.force_authenticate(user=self.user_delegate)
+        res_patch = self.client.patch(f'/api/v1/approval-delegation/{del_id}/', {
+            'reason': '수임자가 위임 사유 임의 변경',
+        })
+        self.assertEqual(res_patch.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 4. 수임자(user_delegate)가 해당 위임 건을 삭제(DELETE)하려 할 때 403 차단
+        res_delete = self.client.delete(f'/api/v1/approval-delegation/{del_id}/')
+        self.assertEqual(res_delete.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5. 위임자 본인(user_leader)은 정상적으로 삭제 가능 (204 No Content)
+        self.client.force_authenticate(user=self.user_leader)
+        res_del_ok = self.client.delete(f'/api/v1/approval-delegation/{del_id}/')
+        self.assertEqual(res_del_ok.status_code, status.HTTP_204_NO_CONTENT)
