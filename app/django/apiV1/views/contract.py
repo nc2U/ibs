@@ -93,7 +93,7 @@ class RequiredDocumentFilter(FilterSet):
 class RequiredDocumentViewSet(viewsets.ModelViewSet):
     queryset = RequiredDocument.objects.all()
     serializer_class = RequiredDocumentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifty
     filterset_class = RequiredDocumentFilter
 
@@ -103,6 +103,18 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -207,8 +219,8 @@ class ContractViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='recent-logs')
     def recent_logs(self, request):
-        """대시보드 위젯용 최근 5개 계약 로그 조회 (가벼운 직렬화 적용)"""
-        queryset = Contract.objects.filter(is_active=True).select_related(
+        """대시보드 위젯용 최근 10개 계약 로그 조회 (RLS 권한 적용 및 가벼운 직렬화)"""
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=True).select_related(
             'project',
             'contractor',
             'unit_type',
@@ -271,6 +283,15 @@ class ContractViewSet(viewsets.ModelViewSet):
                 {'error': 'project parameter is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            try:
+                pid_int = int(project_id)
+            except (ValueError, TypeError):
+                return Response({'error': 'Invalid project parameter'}, status=status.HTTP_400_BAD_REQUEST)
+            if pid_int not in get_accessible_project_ids(user):
+                return Response({'detail': '해당 프로젝트에 대한 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             project = Project.objects.get(id=project_id)
@@ -413,6 +434,12 @@ class ContractViewSet(viewsets.ModelViewSet):
                     {'error': 'projects parameter must contain valid project IDs'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            user = request.user
+            if not (user.is_superuser or getattr(user, 'work_manager', False)):
+                allowed_ids = set(get_accessible_project_ids(user))
+                if not set(project_ids).issubset(allowed_ids):
+                    return Response({'detail': '접근 권한이 없는 프로젝트가 포함되어 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
             projects = list(Project.objects.filter(id__in=project_ids))
             order_group = OrderGroup.objects.get(id=order_group_id) if order_group_id else None
@@ -581,7 +608,13 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related(
+            'contract__project',
+            'contract__order_group',
+            'contract__unit_type',
+            'house_unit__unit_type',
+            'order_group'
+        )
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
@@ -878,7 +911,9 @@ class ContContactViewSet(viewsets.ModelViewSet):
 
 class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
     """계약자 상담 내역 관리"""
-    queryset = ContractorConsultationLogs.objects.select_related('consultant').all()
+    queryset = ContractorConsultationLogs.objects.select_related(
+        'contractor', 'consultant', 'creator', 'updator'
+    ).all()
     serializer_class = ContractorConsultationLogsSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contractor', 'status', 'category', 'channel')
@@ -886,7 +921,12 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().select_related(
+            'contractor__contract__project',
+            'consultant',
+            'creator',
+            'updator'
+        )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             allowed_ids = get_accessible_project_ids(user)
             queryset = queryset.filter(

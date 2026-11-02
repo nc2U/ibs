@@ -214,6 +214,20 @@ class Contract(models.Model):
 
     def clean(self):
         super().clean()
+        if self.project_id:
+            if self.order_group_id and self.order_group.project_id != self.project_id:
+                raise ValidationError({
+                    'order_group': '차수의 프로젝트가 계약의 프로젝트와 일치하지 않습니다.'
+                })
+            if self.unit_type_id and self.unit_type.project_id != self.project_id:
+                raise ValidationError({
+                    'unit_type': '유닛 타입의 프로젝트가 계약의 프로젝트와 일치하지 않습니다.'
+                })
+            if self.key_unit_id:
+                if self.key_unit.unit_type and self.key_unit.unit_type.project_id != self.project_id:
+                    raise ValidationError({
+                        'key_unit': '유닛의 프로젝트가 계약의 프로젝트와 일치하지 않습니다.'
+                    })
         if self.key_unit_id and self.unit_type_id:
             if self.key_unit.unit_type_id != self.unit_type_id:
                 raise ValidationError({
@@ -683,6 +697,14 @@ class Succession(models.Model):
     def __str__(self):
         return f'{self.seller}'
 
+    def clean(self):
+        super().clean()
+        if self.contract_id and self.seller_id:
+            if self.seller.contract_id and self.seller.contract_id != self.contract_id:
+                raise ValidationError({
+                    'seller': '양도계약자의 계약 정보가 승계 대상 계약과 일치하지 않습니다.'
+                })
+
     class Meta:
         ordering = ['-apply_date', '-trading_date', '-id']
         verbose_name = '09. 권리 의무 승계'
@@ -713,6 +735,15 @@ class ContractorRelease(models.Model):
 
     def __str__(self):
         return f'{self.contractor}'
+
+    def clean(self):
+        super().clean()
+        if self.project_id and self.contractor_id:
+            cont = getattr(self.contractor, 'contract', None) or getattr(self.contractor, 'prev_contract', None)
+            if cont and cont.project_id != self.project_id:
+                raise ValidationError({
+                    'project': '해지 대상 계약자의 프로젝트와 일치하지 않습니다.'
+                })
 
     class Meta:
         verbose_name = '10. 계약 해지 정보'

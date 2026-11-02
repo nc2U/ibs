@@ -924,3 +924,145 @@ class ContractAndPaymentSecurityTests(APITestCase):
         self.assertEqual(res_pdf['Content-Type'], 'application/pdf')
         self.assertTrue(len(res_pdf.content) > 0)
 
+    def test_recent_logs_isolation(self):
+        """[CRITICAL-1] 대시보드 recent-logs API의 테넌트/프로젝트 격리 검증"""
+        # 1. user_a (프로젝트 A 전용 사용자)로 조회
+        self.client.force_authenticate(user=self.user_a)
+        res_a = self.client.get('/api/v1/contract/recent-logs/')
+        self.assertEqual(res_a.status_code, http_status.HTTP_200_OK)
+        project_names_a = [item['project_name'] for item in res_a.data]
+        self.assertTrue(all(name == self.project_a.name for name in project_names_a))
+        contract_ids_a = [item['pk'] for item in res_a.data]
+        self.assertIn(self.contract_a.pk, contract_ids_a)
+        self.assertNotIn(self.contract_b.pk, contract_ids_a)
+
+        # 2. user_b (프로젝트 B 전용 사용자)로 조회
+        self.client.force_authenticate(user=self.user_b)
+        res_b = self.client.get('/api/v1/contract/recent-logs/')
+        self.assertEqual(res_b.status_code, http_status.HTTP_200_OK)
+        project_names_b = [item['project_name'] for item in res_b.data]
+        self.assertTrue(all(name == self.project_b.name for name in project_names_b))
+        contract_ids_b = [item['pk'] for item in res_b.data]
+        self.assertIn(self.contract_b.pk, contract_ids_b)
+        self.assertNotIn(self.contract_a.pk, contract_ids_b)
+
+        # 3. superadmin으로 조회 -> 두 프로젝트 계약 모두 반환 가능
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin = self.client.get('/api/v1/contract/recent-logs/')
+        self.assertEqual(res_admin.status_code, http_status.HTTP_200_OK)
+        contract_ids_admin = [item['pk'] for item in res_admin.data]
+        self.assertIn(self.contract_a.pk, contract_ids_admin)
+        self.assertIn(self.contract_b.pk, contract_ids_admin)
+
+    def test_payment_summary_and_multi_project_security(self):
+        """[CRITICAL-2] payment_summary 및 multi-project-payment-summary 권한 격리 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. payment_summary: 본인 프로젝트는 200 OK
+        res_own = self.client.get(f'/api/v1/contract/payment-summary/?project={self.project_a.pk}&use_cache=false')
+        self.assertEqual(res_own.status_code, http_status.HTTP_200_OK)
+
+        # 2. payment_summary: 타 프로젝트는 403 Forbidden
+        res_other = self.client.get(f'/api/v1/contract/payment-summary/?project={self.project_b.pk}&use_cache=false')
+        self.assertEqual(res_other.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 3. multi-project-payment-summary: 본인 프로젝트만 요청 시 200 OK
+        res_multi_own = self.client.get(f'/api/v1/contract/multi-project-payment-summary/?projects={self.project_a.pk}')
+        self.assertEqual(res_multi_own.status_code, http_status.HTTP_200_OK)
+
+        # 4. multi-project-payment-summary: 타 프로젝트가 하나라도 포함되면 403 Forbidden
+        res_multi_mixed = self.client.get(f'/api/v1/contract/multi-project-payment-summary/?projects={self.project_a.pk},{self.project_b.pk}')
+        self.assertEqual(res_multi_mixed.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_excel_and_pdf_export_security(self):
+        """[HIGH-1, HIGH-2, MEDIUM-1] 엑셀 및 PDF 내보내기 권한 검증 및 파라미터 방어 테스트"""
+        from django.contrib.auth.models import AnonymousUser
+        from django.test import RequestFactory
+        from contract.exports.excel import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
+        from contract.exports.pdf import PdfExportCertOccupancy
+        factory = RequestFactory()
+
+        # 1. 비로그인(AnonymousUser) 접근 시 401 차단
+        for view_cls, url in [
+            (ExportContracts, f'/contract/export/contracts/?project={self.project_a.pk}&col=1-2'),
+            (ExportSuccessions, f'/contract/export/successions/?project={self.project_a.pk}'),
+            (ExportReleases, f'/contract/export/releases/?project={self.project_a.pk}'),
+            (ExportUnitStatus, f'/contract/export/unit-status/?project={self.project_a.pk}'),
+        ]:
+            req = factory.get(url)
+            req.user = AnonymousUser()
+            res = view_cls().get(req)
+            self.assertEqual(res.status_code, 401)
+
+        req_pdf = factory.get(f'/contract/export/cert-occupancy/?contract={self.contract_a.pk}')
+        req_pdf.user = AnonymousUser()
+        res_pdf = PdfExportCertOccupancy().get(req_pdf)
+        self.assertEqual(res_pdf.status_code, 401)
+
+        # 2. 타 프로젝트 권한 없는 사용자(user_b -> project_a) 403 차단
+        for view_cls, url in [
+            (ExportContracts, f'/contract/export/contracts/?project={self.project_a.pk}&col=1-2'),
+            (ExportSuccessions, f'/contract/export/successions/?project={self.project_a.pk}'),
+            (ExportReleases, f'/contract/export/releases/?project={self.project_a.pk}'),
+            (ExportUnitStatus, f'/contract/export/unit-status/?project={self.project_a.pk}'),
+        ]:
+            req = factory.get(url)
+            req.user = self.user_b
+            res = view_cls().get(req)
+            self.assertEqual(res.status_code, 403)
+
+        req_pdf = factory.get(f'/contract/export/cert-occupancy/?contract={self.contract_a.pk}')
+        req_pdf.user = self.user_b
+        res_pdf = PdfExportCertOccupancy().get(req_pdf)
+        self.assertEqual(res_pdf.status_code, 403)
+
+        # 3. ExportContracts col 파라미터 누락 시 500 에러 없이 정상 처리(200 OK)
+        req_no_col = factory.get(f'/contract/export/contracts/?project={self.project_a.pk}&status=2')
+        req_no_col.user = self.user_a
+        res_no_col = ExportContracts().get(req_no_col)
+        self.assertEqual(res_no_col.status_code, 200)
+
+        # 4. 필수 파라미터 누락 및 유효하지 않은 ID 처리 (400 / 404)
+        req_no_prj = factory.get('/contract/export/contracts/')
+        req_no_prj.user = self.user_a
+        self.assertEqual(ExportContracts().get(req_no_prj).status_code, 400)
+
+        req_invalid_pdf = factory.get('/contract/export/cert-occupancy/?contract=999999')
+        req_invalid_pdf.user = self.admin_user
+        self.assertEqual(PdfExportCertOccupancy().get(req_invalid_pdf).status_code, 404)
+
+    def test_cross_project_model_validation(self):
+        """[MEDIUM-2] Contract, Succession, ContractorRelease 크로스 프로젝트 외래키 무결성 검증"""
+        from django.core.exceptions import ValidationError
+
+        # 1. Contract: 타 프로젝트 차수(order_group) 또는 유닛타입(unit_type) 설정 시 차단
+        og_b = OrderGroup.objects.get(project=self.project_b)
+        invalid_contract = Contract(
+            project=self.project_a,
+            order_group=og_b,
+            unit_type=self.contract_a.unit_type,
+            serial_number='INVALID-001'
+        )
+        with self.assertRaises(ValidationError):
+            invalid_contract.clean()
+
+        # 2. Succession: 승계 대상 계약과 양도계약자의 계약 정보 불일치 시 차단
+        invalid_succ = Succession(
+            contract=self.contract_a,
+            seller=self.contractor_b,  # contractor_b belongs to contract_b
+            buyer=Contractor(name='새양수인', status='1'),
+            apply_date=date(2026, 2, 1),
+            trading_date=date(2026, 2, 1)
+        )
+        with self.assertRaises(ValidationError):
+            invalid_succ.clean()
+
+        # 3. ContractorRelease: 해지 프로젝트와 계약자의 계약 프로젝트 불일치 시 차단
+        invalid_rel = ContractorRelease(
+            project=self.project_a,
+            contractor=self.contractor_b,  # contractor_b belongs to project_b
+            request_date=date(2026, 2, 1)
+        )
+        with self.assertRaises(ValidationError):
+            invalid_rel.clean()
+

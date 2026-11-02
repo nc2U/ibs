@@ -7,8 +7,10 @@ import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Max, OuterRef, Subquery
+from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
+from apiV1.permissions._utils import get_project_ids_with_permission
 from contract.models import Contract, Succession, ContractorRelease
 from contract.models import ContractorAddress
 from items.models import HouseUnit, BuildingUnit
@@ -17,17 +19,58 @@ from project.models import Project
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-class ExportContracts(ExcelExportMixin):
+class ContractExportMixin(ExcelExportMixin):
+    """
+    계약 관련 Excel 내보내기 공통 믹스인
+    - 프로젝트 ID 파라미터 유효성 검증 (누락 시 400, 존재하지 않거나 잘못된 형식 시 404)
+    - 멀티테넌트 데이터 접근 권한 검증 (슈퍼유저 또는 work_manager가 아닌 경우 contract.read 권한 확인, 불일치 시 403)
+    """
+
+    def get_project_or_error(self, request, required_perm: str = 'contract.read'):
+        user = getattr(request, 'user', None)
+        if user is not None:
+            if not user.is_authenticated:
+                return None, HttpResponse("로그인이 필요합니다.", status=401, content_type='text/plain; charset=utf-8')
+
+        project_id = request.GET.get('project')
+        if not project_id:
+            return None, HttpResponse("프로젝트 ID('project') 파라미터가 필요합니다.", status=400, content_type='text/plain; charset=utf-8')
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except (Project.DoesNotExist, ValueError):
+            return None, HttpResponse("존재하지 않거나 유효하지 않은 프로젝트 ID입니다.", status=404, content_type='text/plain; charset=utf-8')
+
+        if user is not None and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_project_ids = get_project_ids_with_permission(user, required_perm)
+            if project.pk not in allowed_project_ids:
+                return None, HttpResponse("해당 프로젝트의 데이터를 내보낼 권한이 없습니다.", status=403, content_type='text/plain; charset=utf-8')
+
+        return project, None
+
+
+class ExportContracts(ContractExportMixin):
     """계약자 리스트"""
 
     def get(self, request):
+        project, err_response = self.get_project_or_error(request)
+        if err_response:
+            return err_response
+
+        # 컬럼 파라미터 처리 (누락되거나 형식 오류 시 기본 컬럼 1~14 적용하여 500 방지)
+        col_param = request.GET.get('col')
+        if col_param:
+            try:
+                cols = sorted(list(map(int, col_param.split('-'))))
+            except (ValueError, TypeError):
+                cols = list(range(1, 15))
+        else:
+            cols = list(range(1, 15))
+
         # 워크북 생성
         status = request.GET.get('status')
         t_name = '계약' if status == '2' else '청약'
         output, workbook, worksheet = self.create_workbook(f'{t_name}목록_정보')
-
-        project = Project.objects.get(pk=request.GET.get('project'))
-        cols = sorted(list(map(int, request.GET.get('col').split('-'))))
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -280,14 +323,16 @@ class ExportContracts(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportSuccessions(ExcelExportMixin):
+class ExportSuccessions(ContractExportMixin):
     """권리의무승계 리스트"""
 
     def get(self, request):
+        project, err_response = self.get_project_or_error(request)
+        if err_response:
+            return err_response
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('권리의무승계_목록')
-
-        project = Project.objects.get(pk=request.GET.get('project'))
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -393,14 +438,16 @@ class ExportSuccessions(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportReleases(ExcelExportMixin):
+class ExportReleases(ContractExportMixin):
     """해지자 리스트"""
 
     def get(self, request):
+        project, err_response = self.get_project_or_error(request)
+        if err_response:
+            return err_response
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('해지자목록_정보')
-
-        project = Project.objects.get(pk=request.GET.get('project'))
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -519,15 +566,18 @@ class ExportReleases(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
-class ExportUnitStatus(ExcelExportMixin):
+class ExportUnitStatus(ContractExportMixin):
     """동호수 현황표"""
 
     def get(self, request):
+        project, err_response = self.get_project_or_error(request)
+        if err_response:
+            return err_response
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('동호수현황표', False, 15)
 
         # data start --------------------------------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
         max_floor = HouseUnit.objects.filter(building_unit__project=project).aggregate(Max('floor_no'))
         floor_no__max = max_floor['floor_no__max'] if max_floor['floor_no__max'] else 1
         max_floor_range = range(0, floor_no__max)

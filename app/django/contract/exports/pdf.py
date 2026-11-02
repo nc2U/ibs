@@ -11,18 +11,37 @@ from django.views.generic import View
 from weasyprint import HTML
 
 from _pdf.utils import get_contract
+from apiV1.permissions._utils import get_project_ids_with_permission
 
 
 class PdfExportCertOccupancy(View):
 
     def get(self, request):
+        user = getattr(request, 'user', None)
+        if user is not None:
+            if not user.is_authenticated:
+                return HttpResponse("로그인이 필요합니다.", status=401, content_type='text/plain; charset=utf-8')
+
+        contract_id = request.GET.get('contract')
+        if not contract_id:
+            return HttpResponse("계약 ID('contract') 파라미터가 필요합니다.", status=400, content_type='text/plain; charset=utf-8')
+
+        try:
+            contract = get_contract(contract_id)
+        except (Exception,):
+            return HttpResponse("존재하지 않거나 유효하지 않은 계약 ID입니다.", status=404, content_type='text/plain; charset=utf-8')
+
+        if user is not None and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_project_ids_with_permission(user, 'contract.read')
+            if contract.project_id not in allowed_ids:
+                return HttpResponse("해당 계약의 증명서를 발급받을 권한이 없습니다.", status=403, content_type='text/plain; charset=utf-8')
 
         # context
         context = dict()
-        context['contract'] = get_contract(request.GET.get('contract'))  # 계약 건 객체
+        context['contract'] = contract  # 계약 건 객체
         context['is_calc'] = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
         context['pub_date'] = date.today()  # 발행일자
-        context['user'] = request.user.username  # 사용자정보
+        context['user'] = user.username if user and user.is_authenticated else 'Administrator'  # 사용자정보
 
         # ----------------------------------------------------------------
         template_name = 'pdf/certification-occupancy.html'
