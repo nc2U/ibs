@@ -9,7 +9,7 @@ from _utils.file_upload import get_book_image_path
 
 class Book(models.Model):
     title = models.CharField('제목', max_length=100, db_index=True)
-    disclosure = models.BooleanField('공개 허용 여부', default=False)
+    disclosure = models.BooleanField('공개 허용 여부', default=False, db_index=True)
     author = models.CharField('저자', max_length=50)
     translator = models.CharField('번역자', max_length=50, blank=True)
     publisher = models.CharField('출판사', max_length=50)
@@ -24,6 +24,9 @@ class Book(models.Model):
         ordering = ('-id',)
         verbose_name = '1. 도서'
         verbose_name_plural = '1. 도서'
+        indexes = [
+            models.Index(fields=['disclosure', '-id'], name='idx_book_disclosure_id'),
+        ]
 
     def __str__(self):
         return self.title
@@ -31,7 +34,7 @@ class Book(models.Model):
 
 class Subject(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='subjects')
-    seq = models.PositiveSmallIntegerField('순서')
+    seq = models.PositiveSmallIntegerField('순서', db_index=True)
     title = models.CharField('단원 명칭', max_length=100, db_index=True)
 
     class SubLevel(models.IntegerChoices):
@@ -51,6 +54,9 @@ class Subject(models.Model):
         ordering = ('book', 'seq')
         verbose_name = '2. 단원'
         verbose_name_plural = '2. 단원'
+        indexes = [
+            models.Index(fields=['book', 'seq'], name='idx_book_subject_seq'),
+        ]
 
     def __str__(self):
         return self.title
@@ -58,13 +64,21 @@ class Subject(models.Model):
     def get_absolute_url(self):
         return reverse_lazy('book:subject_detail', args=(self.book_id, self.pk))
 
-    # seq 기준으로 이전 포스트 반환
+    # seq 기준으로 이전 포스트 반환 (인스턴스 캐싱 및 결정론적 정렬 보장)
     def get_previous_post(self):
-        return Subject.objects.filter(book=self.book_id, seq__lt=self.seq).order_by('-seq').first()
+        if not hasattr(self, '_cached_prev_post'):
+            self._cached_prev_post = Subject.objects.filter(
+                book_id=self.book_id, seq__lt=self.seq
+            ).order_by('-seq', '-id').first()
+        return self._cached_prev_post
 
-    # seq 기준으로 다음 포스트 반환
+    # seq 기준으로 다음 포스트 반환 (인스턴스 캐싱 및 결정론적 정렬 보장)
     def get_next_post(self):
-        return Subject.objects.filter(book=self.book_id, seq__gt=self.seq).order_by('seq').first()
+        if not hasattr(self, '_cached_next_post'):
+            self._cached_next_post = Subject.objects.filter(
+                book_id=self.book_id, seq__gt=self.seq
+            ).order_by('seq', 'id').first()
+        return self._cached_next_post
 
 
 class Image(models.Model):

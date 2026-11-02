@@ -143,6 +143,62 @@ class BooksViewTestCase(TestCase):
         self.assertRedirects(res, reverse('book:index'))
         self.assertFalse(Book.objects.filter(id=self.book.id).exists())
 
+    def test_unauthorized_user_cannot_update_or_delete_book(self):
+        """[T-BOOK-BOLA] 비작성자/비관리자가 타인의 도서 수정 및 삭제 시도 시 403 차단 검증"""
+        other_user = User.objects.create_user(username='other', email='other@example.com', password='password123')
+        self.client.force_login(other_user)
+
+        # 1. 수정 시도 -> 403
+        edit_url = reverse('book:edit', args=[self.book.id])
+        res_edit = self.client.post(edit_url, {
+            'title': '해킹된 도서',
+            'disclosure': True,
+            'author': '해커',
+            'publisher': '출판사',
+        })
+        self.assertEqual(res_edit.status_code, 403)
+
+        # 2. 삭제 시도 -> 403
+        del_url = reverse('book:delete', args=[self.book.id])
+        res_del = self.client.post(del_url)
+        self.assertEqual(res_del.status_code, 403)
+        self.assertTrue(Book.objects.filter(id=self.book.id).exists())
+
+    def test_private_book_visibility_control(self):
+        """[T-BOOK-PRIV] 비공개(disclosure=False) 도서는 작성자 및 관리자만 조회 가능하고 일반 유저에게는 은닉 검증"""
+        private_book = Book.objects.create(
+            title='비공개 대외비 도서',
+            disclosure=False,
+            author='보안팀',
+            publisher='사내',
+            creator=self.user,
+        )
+        other_user = User.objects.create_user(username='guest', email='guest@example.com', password='password123')
+
+        # 1. 타 사용자로 목록 조회 시 비공개 도서 미노출
+        self.client.force_login(other_user)
+        res_list = self.client.get(reverse('book:index'))
+        self.assertEqual(res_list.status_code, 200)
+        book_ids = [b.id for b in res_list.context['object_list']]
+        self.assertNotIn(private_book.id, book_ids)
+
+        # 2. 타 사용자로 상세 페이지 직접 접근 시 404 차단
+        res_detail = self.client.get(reverse('book:detail', args=[private_book.id]))
+        self.assertEqual(res_detail.status_code, 404)
+
+        # 3. 타 사용자로 단원 인덱스 직접 접근 시 403 차단
+        res_sub = self.client.get(reverse('book:subject_index', args=[private_book.id]))
+        self.assertEqual(res_sub.status_code, 403)
+
+        # 4. 작성자 본인은 목록 및 상세 모두 열람 가능
+        self.client.force_login(self.user)
+        res_my_list = self.client.get(reverse('book:index'))
+        my_book_ids = [b.id for b in res_my_list.context['object_list']]
+        self.assertIn(private_book.id, my_book_ids)
+
+        res_my_detail = self.client.get(reverse('book:detail', args=[private_book.id]))
+        self.assertEqual(res_my_detail.status_code, 200)
+
 
 class SubjectsViewTestCase(TestCase):
     """단원(Subject) CRUD, 이미지 폼셋 및 템플릿 연동 테스트"""
@@ -243,7 +299,7 @@ class SubjectsViewTestCase(TestCase):
 
     def test_subjects_update_preserves_creator_and_saves_image(self):
         """단원 수정 시 기존 creator가 보존되고 이미지 폼셋이 정상 저장되는지 검증"""
-        editor = User.objects.create_user(username='editor', email='editor@example.com', password='password123')
+        editor = User.objects.create_user(username='editor', email='editor@example.com', password='password123', is_staff=True)
         self.client.force_login(editor)
 
         payload = {
@@ -279,3 +335,64 @@ class SubjectsViewTestCase(TestCase):
         self.assertEqual(res_post.status_code, 302)
         self.assertRedirects(res_post, reverse('book:subject_index', args=[self.book.id]))
         self.assertFalse(Subject.objects.filter(id=self.subject2.id).exists())
+
+    def test_unauthorized_user_cannot_update_or_delete_subject(self):
+        """[T-SUB-BOLA] 비작성자/비관리자가 타인의 단원 수정 및 삭제 시도 시 403 차단 검증"""
+        outsider = User.objects.create_user(username='outsider', email='outsider@example.com', password='password123')
+        self.client.force_login(outsider)
+
+        # 1. 단원 수정 시도 -> 403
+        edit_url = reverse('book:subject_edit', args=[self.book.id, self.subject1.id])
+        res_edit = self.client.post(edit_url, {
+            'title': '해킹된 단원',
+            'level': 1,
+            'content': '해킹 내용',
+            'image_set-TOTAL_FORMS': '0',
+            'image_set-INITIAL_FORMS': '0',
+            'image_set-MIN_NUM_FORMS': '0',
+            'image_set-MAX_NUM_FORMS': '1000',
+        })
+        self.assertEqual(res_edit.status_code, 403)
+
+        # 2. 단원 삭제 시도 -> 403
+        del_url = reverse('book:subject_delete', args=[self.book.id, self.subject1.id])
+        res_del = self.client.post(del_url)
+        self.assertEqual(res_del.status_code, 403)
+        self.assertTrue(Subject.objects.filter(id=self.subject1.id).exists())
+
+    def test_cross_book_subject_mismatch_returns_404(self):
+        """[T-CROSS] 다른 도서에 속한 단원 ID로 URL 접근 시 404 차단(Cross-Resource Mismatch 방어) 검증"""
+        other_book = Book.objects.create(
+            title='다른 도서',
+            disclosure=True,
+            author='타저자',
+            publisher='출판사',
+            creator=self.user,
+        )
+        self.client.force_login(self.user)
+
+        # other_book의 ID(other_book.id)로 self.subject1(self.book 소속) 상세 접근 -> 404
+        res_detail = self.client.get(reverse('book:subject_detail', args=[other_book.id, self.subject1.id]))
+        self.assertEqual(res_detail.status_code, 404)
+
+        # other_book의 ID로 self.subject1 수정 접근 -> 404
+        res_edit = self.client.get(reverse('book:subject_edit', args=[other_book.id, self.subject1.id]))
+        self.assertEqual(res_edit.status_code, 404)
+
+        # other_book의 ID로 self.subject1 삭제 접근 -> 404
+        res_del = self.client.get(reverse('book:subject_delete', args=[other_book.id, self.subject1.id]))
+        self.assertEqual(res_del.status_code, 404)
+
+    def test_search_in_empty_book_renders_cleanly(self):
+        """[T-EMPTY-SEARCH] 단원이 없는 빈 도서에서 검색 시 NoReverseMatch 없이 정상 렌더링 검증"""
+        empty_book = Book.objects.create(
+            title='빈 도서',
+            disclosure=True,
+            author='저자',
+            publisher='출판사',
+            creator=self.user,
+        )
+        self.client.force_login(self.user)
+        res = self.client.get(reverse('book:subject_index', args=[empty_book.id]), {'q': '키워드'})
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, '해당 키워드의 검색 항목이 존재하지 않습니다.')
