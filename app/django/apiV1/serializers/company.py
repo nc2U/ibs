@@ -25,7 +25,7 @@ class GradesInCompanySerializer(serializers.ModelSerializer):
 
 class CompanySerializer(serializers.ModelSerializer):
     departments = DepartsInCompanySerializer(many=True, read_only=True)
-    grades = GradesInCompanySerializer(many=True, read_only=True)
+    grades = GradesInCompanySerializer(source='ranks', many=True, read_only=True)
     com_issue_project = serializers.SerializerMethodField(read_only=True)
 
     representative_name = serializers.CharField(source='get_representative_staff_name', read_only=True)

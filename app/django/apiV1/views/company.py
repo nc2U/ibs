@@ -86,9 +86,10 @@ class CompanyDataFilterMixin:
 
 # Company --------------------------------------------------------------------------
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.all().prefetch_related('departments', 'grades')
+    queryset = Company.objects.all().prefetch_related('departments', 'ranks')
     serializer_class = CompanySerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperUserOrReadOnly)
+    ordering = ['id']
 
 
 class LogoViewSet(viewsets.ModelViewSet):
