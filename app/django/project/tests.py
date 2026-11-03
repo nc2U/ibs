@@ -703,3 +703,41 @@ class ProjectSignalTestCase(ProjectTestCaseBase):
         self.site_a.save()
 
         mock_notify.assert_called_with(self.site_a, '편집', self.user_a)
+
+
+class ProjectPermissionTestCase(ProjectTestCaseBase):
+    """일반 사용자(비슈퍼유저)의 Project API 권한 및 IbsModulePermission 검증"""
+
+    def test_user_with_permission_can_retrieve_project(self):
+        """소속 프로젝트 권한(project.public)을 가진 비슈퍼유저는 자신의 프로젝트를 조회할 수 있어야 함"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 권한 있는 자신의 프로젝트(Project A) 조회 -> 200 OK
+        res_a = self.client.get(f'/api/v1/project/{self.project_a.pk}/')
+        self.assertEqual(res_a.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_a.data.get('name'), '프로젝트 A')
+
+        # 2. 권한 없는 타 프로젝트(Project B) 조회 -> 403 Forbidden
+        res_b = self.client.get(f'/api/v1/project/{self.project_b.pk}/')
+        self.assertEqual(res_b.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_list_projects_filtered_by_permission(self):
+        """목록 조회 시 소속/권한이 있는 프로젝트만 필터링되어 반환됨"""
+        self.client.force_authenticate(user=self.user_a)
+
+        res = self.client.get('/api/v1/project/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        results = res.data.get('results', res.data)
+        returned_ids = [p['pk'] for p in results]
+        self.assertIn(self.project_a.pk, returned_ids)
+        self.assertNotIn(self.project_b.pk, returned_ids)
+
+    def test_locked_project_denies_access(self):
+        """잠금보관(status='9') 상태의 워크스페이스는 데이터 조회가 차단됨"""
+        self.issue_project_a.status = '9'
+        self.issue_project_a.save()
+
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get(f'/api/v1/project/{self.project_a.pk}/')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+

@@ -11,6 +11,9 @@ def get_project_pk_from_request(request, view):
             or (data.get('project') if isinstance(data, dict) else None)
             or query_params.get('project')
     )
+    if pk is None and (getattr(view, 'basename', None) == 'project' or view.__class__.__name__ == 'ProjectViewSet'):
+        pk = getattr(view, 'kwargs', {}).get('pk')
+
     if pk is not None:
         try:
             return int(pk)

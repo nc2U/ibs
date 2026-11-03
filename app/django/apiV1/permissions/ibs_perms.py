@@ -276,68 +276,89 @@ class IbsModulePermission(ProjectPermission):
         return required_perm in user_perms
 
     def has_object_permission(self, request, view, obj):
-        # obj 에서 project.Project PK를 추출합니다.
-        project_pk = getattr(obj, 'project_id', None)
-        if project_pk is None:
-            project_rel = getattr(obj, 'project', None)
-            if project_rel is not None:
-                project_pk = getattr(project_rel, 'pk', None)
+        issue_project = None
+        project_pk = None
 
-        # contract 관계를 경유하는 모델 (예: Succession 등) 역추적
-        if project_pk is None and hasattr(obj, 'contract'):
-            contract = getattr(obj, 'contract', None)
-            if contract is not None:
-                project_pk = getattr(contract, 'project_id', None)
-                if project_pk is None and hasattr(contract, 'project'):
-                    project_rel = getattr(contract, 'project', None)
-                    if project_rel is not None:
-                        project_pk = getattr(project_rel, 'pk', None)
+        # 0. obj 가 Project 모델 인스턴스이거나 IssueProject 인스턴스인 경우
+        from project.models import Project
+        from work.models.project import IssueProject
+        if isinstance(obj, Project):
+            project_pk = obj.pk
+            try:
+                issue_project = obj.issue_project
+            except (Project.issue_project.RelatedObjectDoesNotExist, AttributeError):
+                issue_project = None
+        elif isinstance(obj, IssueProject):
+            issue_project = obj
+            project_pk = getattr(obj, 'project_id', None) or (
+                obj.project.pk if hasattr(obj, 'project') and obj.project else None
+            )
+        elif hasattr(obj, 'issue_project') and obj.issue_project is not None:
+            issue_project = obj.issue_project
+            project_pk = getattr(issue_project, 'project_id', None) or getattr(obj, 'pk', None)
+        else:
+            # obj 에서 project.Project PK를 추출합니다.
+            project_pk = getattr(obj, 'project_id', None)
+            if project_pk is None:
+                project_rel = getattr(obj, 'project', None)
+                if project_rel is not None:
+                    project_pk = getattr(project_rel, 'pk', None)
 
-        # building_unit 관계를 경유하는 모델 (예: HouseUnit 등) 역추적
-        if project_pk is None and hasattr(obj, 'building_unit'):
-            bldg = getattr(obj, 'building_unit', None)
-            if bldg is not None:
-                project_pk = getattr(bldg, 'project_id', None)
+            # contract 관계를 경유하는 모델 (예: Succession 등) 역추적
+            if project_pk is None and hasattr(obj, 'contract'):
+                contract = getattr(obj, 'contract', None)
+                if contract is not None:
+                    project_pk = getattr(contract, 'project_id', None)
+                    if project_pk is None and hasattr(contract, 'project'):
+                        project_rel = getattr(contract, 'project', None)
+                        if project_rel is not None:
+                            project_pk = getattr(project_rel, 'pk', None)
 
-        # unit_type 관계를 경유하는 모델 역추적
-        if project_pk is None and hasattr(obj, 'unit_type'):
-            ut = getattr(obj, 'unit_type', None)
-            if ut is not None:
-                project_pk = getattr(ut, 'project_id', None)
+            # building_unit 관계를 경유하는 모델 (예: HouseUnit 등) 역추적
+            if project_pk is None and hasattr(obj, 'building_unit'):
+                bldg = getattr(obj, 'building_unit', None)
+                if bldg is not None:
+                    project_pk = getattr(bldg, 'project_id', None)
 
-        # sales 모델 역추적 (agency, team, sales_person, period, payout)
-        if project_pk is None and hasattr(obj, 'agency'):
-            agency = getattr(obj, 'agency', None)
-            if agency is not None:
-                project_pk = getattr(agency, 'project_id', None)
+            # unit_type 관계를 경유하는 모델 역추적
+            if project_pk is None and hasattr(obj, 'unit_type'):
+                ut = getattr(obj, 'unit_type', None)
+                if ut is not None:
+                    project_pk = getattr(ut, 'project_id', None)
 
-        if project_pk is None and hasattr(obj, 'team'):
-            team = getattr(obj, 'team', None)
-            if team is not None:
-                agency = getattr(team, 'agency', None)
+            # sales 모델 역추적 (agency, team, sales_person, period, payout)
+            if project_pk is None and hasattr(obj, 'agency'):
+                agency = getattr(obj, 'agency', None)
                 if agency is not None:
                     project_pk = getattr(agency, 'project_id', None)
 
-        if project_pk is None and hasattr(obj, 'sales_person'):
-            sp = getattr(obj, 'sales_person', None)
-            if sp is not None:
-                team = getattr(sp, 'team', None)
+            if project_pk is None and hasattr(obj, 'team'):
+                team = getattr(obj, 'team', None)
                 if team is not None:
                     agency = getattr(team, 'agency', None)
                     if agency is not None:
                         project_pk = getattr(agency, 'project_id', None)
 
-        if project_pk is None and hasattr(obj, 'period'):
-            period = getattr(obj, 'period', None)
-            if period is not None:
-                project_pk = getattr(period, 'project_id', None)
+            if project_pk is None and hasattr(obj, 'sales_person'):
+                sp = getattr(obj, 'sales_person', None)
+                if sp is not None:
+                    team = getattr(sp, 'team', None)
+                    if team is not None:
+                        agency = getattr(team, 'agency', None)
+                        if agency is not None:
+                            project_pk = getattr(agency, 'project_id', None)
 
-        if project_pk is None and hasattr(obj, 'payout'):
-            payout = getattr(obj, 'payout', None)
-            if payout is not None:
-                period = getattr(payout, 'period', None)
+            if project_pk is None and hasattr(obj, 'period'):
+                period = getattr(obj, 'period', None)
                 if period is not None:
                     project_pk = getattr(period, 'project_id', None)
+
+            if project_pk is None and hasattr(obj, 'payout'):
+                payout = getattr(obj, 'payout', None)
+                if payout is not None:
+                    period = getattr(payout, 'period', None)
+                    if period is not None:
+                        project_pk = getattr(period, 'project_id', None)
 
         if project_pk is not None:
             try:
@@ -345,7 +366,8 @@ class IbsModulePermission(ProjectPermission):
             except (ValueError, TypeError):
                 project_pk = None
 
-        issue_project = self._resolve_project_issue_project(project_pk, request)
+        if issue_project is None and project_pk is not None:
+            issue_project = self._resolve_project_issue_project(project_pk, request)
 
         # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
         if is_project_locked(issue_project):
