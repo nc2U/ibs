@@ -525,7 +525,7 @@ class MessageViewSet(viewsets.ViewSet):
         """전송 내역 조회"""
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
             accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
-            if not accessible_projects.exists():
+            if not accessible_projects:
                 return Response({'error': '조회 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = SMSHistoryQuerySerializer(data=request.query_params)
@@ -594,7 +594,7 @@ class MessageViewSet(viewsets.ViewSet):
         """잔액 조회"""
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
             accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
-            if not accessible_projects.exists():
+            if not accessible_projects:
                 return Response({'error': '조회 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
