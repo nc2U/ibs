@@ -531,6 +531,7 @@ class DocsAppSecurityTests(TestCase):
 
         # 1. ExportSuitCases (목록 엑셀)
         req_list = factory.get(f'/docs/export/suit-cases/?company={self.company_a.pk}')
+        req_list.user = self.admin_user
         res_list = ExportSuitCases().get(req_list)
         self.assertEqual(res_list.status_code, 200)
         self.assertEqual(res_list['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -538,10 +539,220 @@ class DocsAppSecurityTests(TestCase):
 
         # 2. ExportSuitCase (단건 디테일 엑셀)
         req_detail = factory.get(f'/docs/export/suit-case/?pk={child_case.pk}')
+        req_detail.user = self.admin_user
         res_detail = ExportSuitCase().get(req_detail)
         self.assertEqual(res_detail.status_code, 200)
         self.assertEqual(res_detail['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         self.assertGreater(len(res_detail.content), 1000)
+
+    def test_excel_export_security_and_rls(self):
+        """소송 사건 엑셀 내보내기 권한 및 RLS 차단 검증"""
+        from django.test import RequestFactory
+        from docs.models import LawsuitCase
+        from docs.exports.excel import ExportSuitCases, ExportSuitCase
+
+        case_a = LawsuitCase.objects.create(
+            issue_project=self.workspace,
+            sort='1',
+            level='1',
+            case_number='2026가합9999',
+            case_name='기밀 소송 사건',
+            plaintiff='원고A',
+            defendant='피고A',
+            case_start_date=date(2026, 1, 1),
+            creator=self.author_user,
+        )
+
+        factory = RequestFactory()
+
+        # 1. 미인증 사용자 접근 시 401
+        req_anon = factory.get(f'/docs/export/suit-case/?pk={case_a.pk}')
+        res_anon = ExportSuitCase().get(req_anon)
+        self.assertEqual(res_anon.status_code, 401)
+
+        # 2. 타사/미인가 사용자(other_user)가 타 프로젝트 소송 단건 엑셀 접근 시 403 차단
+        req_forbidden = factory.get(f'/docs/export/suit-case/?pk={case_a.pk}')
+        req_forbidden.user = self.other_user
+        res_forbidden = ExportSuitCase().get(req_forbidden)
+        self.assertEqual(res_forbidden.status_code, 403)
+
+        # 3. 잘못된 회사/프로젝트 ID 전달 시 500 크래시 없이 404 반환
+        req_invalid_com = factory.get('/docs/export/suit-cases/?company=999999')
+        req_invalid_com.user = self.admin_user
+        res_invalid_com = ExportSuitCases().get(req_invalid_com)
+        self.assertEqual(res_invalid_com.status_code, 404)
+
+    def test_trash_document_permanent_delete_restrictions(self):
+        """휴지통 문서 영구 삭제 시 작성자 및 관리자만 허용 검증"""
+        doc_to_delete = Document.objects.create(
+            issue_project=self.workspace,
+            category=self.category,
+            title='휴지통 삭제 대상 문서',
+            security_level=Document.SECURITY_COMPANY,
+            creator=self.author_user
+        )
+        doc_to_delete.soft_delete()
+
+        # 1. 작성자가 아닌 일반 직원(sales_user)이 영구 삭제 시도 -> 403 Forbidden
+        self.client.force_authenticate(user=self.sales_user)
+        res_denied = self.client.delete(f'/api/v1/docs-trash-can/{doc_to_delete.pk}/')
+        self.assertEqual(res_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 작성자 본인(author_user)이 영구 삭제 시도 -> 204 No Content
+        self.client.force_authenticate(user=self.author_user)
+        res_ok = self.client.delete(f'/api/v1/docs-trash-can/{doc_to_delete.pk}/')
+        self.assertEqual(res_ok.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Document.all_objects.filter(pk=doc_to_delete.pk).exists())
+
+    def test_official_and_inbound_letter_attachment_security(self):
+        """공문 및 수신공문 첨부파일 뷰셋의 회사별 RLS 및 발송/종결 후 수정/삭제 제한 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.utils import timezone
+        from docs.models import OfficialLetterAttachment, InboundLetter, InboundLetterAttachment
+
+        # 1. Company A 공문 첨부파일
+        dummy_file = SimpleUploadedFile("sample.txt", b"test attachment content")
+        att_a = OfficialLetterAttachment.objects.create(
+            letter=self.letter_a,
+            file=dummy_file,
+            name='설계도면_초안'
+        )
+
+        # Company B 워크스페이스 생성 및 other_user에게 docs.read 권한 부여
+        workspace_b = IssueProject.objects.create(
+            company=self.company_b, name='B사 워크스페이스', slug='ws-b-test', type='1', creator=self.admin_user
+        )
+        mb = Member.objects.create(project=workspace_b, user=self.other_user)
+        mb.roles.add(self.role_staff)
+
+        # 타사 사용자(other_user)는 조회 시 본인 회사 첨부파일만 조회되며 타사 파일은 격리됨
+        self.client.force_authenticate(user=self.other_user)
+        res_list = self.client.get('/api/v1/official-letter-attachment/')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        ids = [item['id'] for item in res_list.data.get('results', res_list.data)]
+        self.assertNotIn(att_a.id, ids)
+
+        # 타사 공문(letter_a)에 첨부파일 업로드 시도 시 403 차단
+        dummy_upload = SimpleUploadedFile("malicious.txt", b"hack")
+        res_cross_upload = self.client.post(
+            '/api/v1/official-letter-attachment/',
+            {'letter': self.letter_a.pk, 'file': dummy_upload, 'name': '악성첨부'}
+        )
+        self.assertEqual(res_cross_upload.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 이미 발송 완료된 공문(dispatched_at)의 첨부파일은 추가/삭제 금지
+        self.letter_a.dispatched_at = timezone.now()
+        self.letter_a.save(update_fields=['dispatched_at'])
+
+        self.client.force_authenticate(user=self.author_user)
+        res_del = self.client.delete(f'/api/v1/official-letter-attachment/{att_a.id}/')
+        self.assertEqual(res_del.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 3. 종결 처리된 수신공문(status='closed')의 첨부파일 삭제 금지
+        inbound = InboundLetter.objects.create(
+            company=self.company_a,
+            document_number='IN-CLOSED-1',
+            sender_name='시청',
+            title='종결 공문',
+            status='closed',
+            creator=self.author_user,
+        )
+        dummy_file2 = SimpleUploadedFile("inbound.txt", b"inbound attachment")
+        att_inbound = InboundLetterAttachment.objects.create(
+            letter=inbound,
+            file=dummy_file2,
+            name='접수증'
+        )
+        res_inbound_del = self.client.delete(f'/api/v1/inbound-letter-attachment/{att_inbound.id}/')
+        self.assertEqual(res_inbound_del.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_model_cross_tenant_and_integrity_validations(self):
+        """모델 clean() 수준의 크로스 테넌트 및 정합성 검증"""
+        from django.core.exceptions import ValidationError
+        from company.models import CompanySeal
+        from docs.models import LawsuitCase
+
+        # 1. 인감과 공문의 회사가 다른 경우 ValidationError
+        seal_b = CompanySeal.objects.create(
+            company=self.company_b,
+            name='회사B 법인인감',
+            seal_type='1'
+        )
+        with self.assertRaises(ValidationError):
+            letter_invalid_seal = OfficialLetter(
+                company=self.company_a,
+                title='잘못된 인감 공문',
+                recipient_name='수신처',
+                drafter_name='담당자',
+                content='내용',
+                issue_date=date(2026, 3, 1),
+                seal=seal_b
+            )
+            letter_invalid_seal.full_clean()
+
+        # 2. 소송 사건 자기참조 불가 ValidationError
+        case = LawsuitCase.objects.create(
+            issue_project=self.workspace,
+            sort='1',
+            level='1',
+            case_number='2026가합1111',
+            case_name='원심 사건',
+            plaintiff='원고',
+            defendant='피고',
+            case_start_date=date(2026, 1, 1),
+            creator=self.author_user,
+        )
+        case.related_case = case
+        with self.assertRaises(ValidationError):
+            case.clean()
+
+        # 3. 문서와 소송 사건의 프로젝트 불일치 시 ValidationError
+        workspace_b = IssueProject.objects.create(
+            company=self.company_b, name='B프로젝트', slug='ws-b', type='1', creator=self.admin_user
+        )
+        with self.assertRaises(ValidationError):
+            doc_mismatched = Document(
+                issue_project=workspace_b,
+                category=self.category,
+                title='프로젝트 불일치 문서',
+                lawsuit=case,
+                creator=self.author_user
+            )
+            doc_mismatched.clean()
+
+    def test_document_copy_to_unauthorized_workspace_blocked(self):
+        """권한 없는 대상 워크스페이스로 문서 복사 시도 시 403 Forbidden 차단 검증"""
+        workspace_other = IssueProject.objects.create(
+            company=self.company_b, name='타사 비공개 워크스페이스', slug='ws-other-locked', type='1', is_public=False, creator=self.admin_user
+        )
+
+        self.client.force_authenticate(user=self.author_user)
+        payload = {
+            'issue_project': workspace_other.pk,
+            'doc_type': '1',
+        }
+        res_copy = self.client.post(f'/api/v1/docs/{self.doc_company.pk}/copy/', payload, format='json')
+        self.assertEqual(res_copy.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_document_json_links_creation(self):
+        """JSON 요청으로 새 문서 등록 시 newLinks 목록이 정상 생성되는지 검증"""
+        self.client.force_authenticate(user=self.author_user)
+        payload = {
+            'issue_project': self.workspace.pk,
+            'doc_type': '1',
+            'category': self.category.pk,
+            'title': 'JSON 링크 등록 테스트',
+            'description': '링크 포함 문서',
+            'newLinks': ['https://google.com', 'naver.com']
+        }
+        res = self.client.post('/api/v1/docs/', payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        new_doc_id = res.data['pk']
+        doc = Document.objects.get(pk=new_doc_id)
+        self.assertEqual(doc.links.count(), 2)
+        urls = [link.link for link in doc.links.all()]
+        self.assertIn('https://google.com', urls)
+        self.assertIn('https://naver.com', urls)
 
     def test_inbound_letter_d_day_and_workflow(self):
         """수신 공문 D-Day 산출, API 조회 및 전자결재 연동 워크플로우 검증"""

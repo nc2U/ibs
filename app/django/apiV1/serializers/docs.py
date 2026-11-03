@@ -308,10 +308,16 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         docs = super().create(validated_data)
 
-        # multipart/form-data 요청(QueryDict)인 경우에만 링크 처리
+        # multipart/form-data 또는 JSON 요청 링크 처리
+        new_links = []
         if hasattr(self.initial_data, 'getlist'):
             new_links = self.initial_data.getlist('newLinks', [])
-            for link in new_links:
+        elif isinstance(self.initial_data, dict):
+            raw_links = self.initial_data.get('newLinks', [])
+            new_links = raw_links if isinstance(raw_links, list) else ([raw_links] if raw_links else [])
+
+        for link in new_links:
+            if link:
                 Link.objects.create(
                     docs=docs,
                     link=validate_link(link),
@@ -338,31 +344,41 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         instance = super().update(instance, validated_data)
 
-        # multipart/form-data 요청(QueryDict)인 경우에만 링크/파일 처리
+        # multipart/form-data 또는 JSON 요청 링크/파일 처리
+        old_links = []
+        new_links = []
         if hasattr(self.initial_data, 'getlist'):
-            # --- Links 처리 ---
             old_links = self.initial_data.getlist('links', [])
-            for json_link in old_links:
-                try:
-                    link = json.loads(json_link)
+            new_links = self.initial_data.getlist('newLinks', [])
+        elif isinstance(self.initial_data, dict):
+            raw_old = self.initial_data.get('links', [])
+            old_links = raw_old if isinstance(raw_old, list) else ([raw_old] if raw_old else [])
+            raw_new = self.initial_data.get('newLinks', [])
+            new_links = raw_new if isinstance(raw_new, list) else ([raw_new] if raw_new else [])
+
+        # --- Links 처리 ---
+        for json_link in old_links:
+            try:
+                link = json.loads(json_link) if isinstance(json_link, str) else json_link
+                if isinstance(link, dict):
                     link_object = Link.objects.get(pk=link.get('pk'))
                     if link.get('del'):
                         link_object.delete()
                     else:
                         link_object.link = validate_link(link.get('link'))
                         link_object.save()
-                except (json.JSONDecodeError, Link.DoesNotExist):
-                    continue
+            except (json.JSONDecodeError, Link.DoesNotExist):
+                continue
 
-            new_links = self.initial_data.getlist('newLinks', [])
-            for link in new_links:
+        for link in new_links:
+            if link:
                 Link.objects.create(
                     docs=instance,
                     link=validate_link(link),
                     creator=user if (user and user.is_authenticated) else None
                 )
 
-            FileService.manage_files(instance, request.data, user, File, related_name='docs')
+        FileService.manage_files(instance, request.data, user, File, related_name='docs')
 
         return instance
 

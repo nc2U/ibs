@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.postgres.indexes import GinIndex
@@ -105,6 +106,18 @@ class Document(BaseModel):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        if self.lawsuit and self.issue_project_id:
+            if self.lawsuit.issue_project_id != self.issue_project_id:
+                raise ValidationError({
+                    'lawsuit': '연결된 소송 사건의 프로젝트가 문서의 프로젝트와 일치하지 않습니다.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     @property
     def is_new(self):
@@ -253,6 +266,22 @@ class LawsuitCase(models.Model):
     def __str__(self):
         agency = self.get_court_display() if self.get_court_display() else self.other_agency
         return f'{agency} {self.case_number} {self.case_name}'
+
+    def clean(self):
+        super().clean()
+        if self.related_case_id:
+            if self.pk and self.related_case_id == self.pk:
+                raise ValidationError({
+                    'related_case': '자기 자신을 관련 사건으로 지정할 수 없습니다.'
+                })
+            if self.issue_project_id and self.related_case.issue_project_id != self.issue_project_id:
+                raise ValidationError({
+                    'related_case': '관련 사건의 프로젝트가 현재 소송 사건의 프로젝트와 일치하지 않습니다.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-case_start_date', '-id']
@@ -446,7 +475,28 @@ class OfficialLetter(models.Model):
     def __str__(self):
         return f'{self.document_number} - {self.title}'
 
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.seal and self.seal.company_id != self.company_id:
+                raise ValidationError({
+                    'seal': '날인 인감의 소속 회사가 공문 발행 회사와 일치하지 않습니다.'
+                })
+            if self.co_seal and self.co_seal.company_id != self.company_id:
+                raise ValidationError({
+                    'co_seal': '공동대표 인감의 소속 회사가 공문 발행 회사와 일치하지 않습니다.'
+                })
+            if self.seal_id and self.co_seal_id and self.seal_id == self.co_seal_id:
+                raise ValidationError({
+                    'co_seal': '대표 인감과 공동대표 인감은 서로 달라야 합니다.'
+                })
+            if self.parent_inbound_letter and self.parent_inbound_letter.company_id != self.company_id:
+                raise ValidationError({
+                    'parent_inbound_letter': '회신 대상 수신 공문의 회사가 공문 발행 회사와 일치하지 않습니다.'
+                })
+
     def save(self, *args, **kwargs):
+        self.clean()
         # 문서번호 자동 생성
         if not self.document_number:
             self.document_number = LetterSequence.get_next_document_number(self.company)
@@ -654,7 +704,20 @@ class InboundLetter(models.Model):
     def __str__(self):
         return f'[{self.receipt_number}] {self.title} ({self.sender_name})'
 
+    def clean(self):
+        super().clean()
+        if self.company_id:
+            if self.recipient_dept and self.recipient_dept.company_id != self.company_id:
+                raise ValidationError({
+                    'recipient_dept': '배부 부서의 소속 회사가 수신 공문 회사와 일치하지 않습니다.'
+                })
+            if self.recipient_manager and self.recipient_manager.company_id != self.company_id:
+                raise ValidationError({
+                    'recipient_manager': '처리 담당자의 소속 회사가 수신 공문 회사와 일치하지 않습니다.'
+                })
+
     def save(self, *args, **kwargs):
+        self.clean()
         if not self.receipt_number:
             self.receipt_number = InboundSequence.get_next_receipt_number(self.company)
         super().save(*args, **kwargs)

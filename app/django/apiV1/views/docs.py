@@ -113,7 +113,7 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
 
 class AllLawSuitCaseViewSet(viewsets.ReadOnlyModelViewSet):
     """문서 등록/수정 시 소송 선택 드롭다운 전용 ReadOnly 뷰셋"""
-    queryset = LawsuitCase.objects.all()
+    queryset = LawsuitCase.objects.select_related('issue_project').all()
     serializer_class = SimpleLawSuitCaseSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, ProjectPermission)
     pagination_class = PageNumberPaginationThreeThousand
@@ -228,6 +228,34 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 {'detail': 'issue_project는 필수입니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        from work.models.project import IssueProject
+        target_project = IssueProject.objects.filter(pk=issue_project).first()
+        if not target_project:
+            return Response(
+                {'detail': '대상 프로젝트를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if target_project.status in ['2', '9']:
+            return Response(
+                {'detail': '닫힘 또는 잠금 상태의 프로젝트에는 문서를 복사할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if not target_project.members.filter(user=user).exists():
+                return Response(
+                    {'detail': '대상 프로젝트에 문서를 생성할 권한이 없습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            perms = target_project.get_user_permissions(user)
+            if 'docs.create' not in perms:
+                return Response(
+                    {'detail': '대상 프로젝트에 문서 등록 권한(docs.create)이 없습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         try:
             # [H-1] self.get_object()를 호출하여 RLS 및 보안등급(비공개 등) 필터를 거치도록 수정 (IDOR 차단)
@@ -440,10 +468,11 @@ class DocsInTrashViewSet(DocumentViewSet):
         instance = self.get_object()
         user = request.user
         is_admin = user.is_superuser or getattr(user, 'work_manager', False)
+        is_creator = instance.creator == user
 
-        if not is_admin and not instance.is_visible_to(user):
+        if not (is_admin or is_creator):
             return Response(
-                {'detail': '이 문서를 삭제할 권한이 없습니다.'},
+                {'detail': '휴지통의 문서를 영구 삭제할 권한이 없습니다. 관리자 또는 작성자 본인만 가능합니다.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -511,6 +540,11 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         return queryset.none()
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if hasattr(user, 'staff') and user.staff.company:
+                if serializer.validated_data.get('company') != user.staff.company:
+                    raise PermissionDenied('소속 회사 이외의 회사 명의로 공문을 등록할 수 없습니다.')
         letter = serializer.save(creator=self.request.user)
         if letter.dispatched_at and letter.parent_inbound_letter:
             parent = letter.parent_inbound_letter
@@ -833,9 +867,9 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
 
 class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
-    queryset = OfficialLetterAttachment.objects.all()
+    queryset = OfficialLetterAttachment.objects.select_related('letter', 'letter__company')
     serializer_class = OfficialLetterAttachmentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     filterset_fields = ('letter',)
 
     @property
@@ -849,6 +883,37 @@ class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
             'destroy': 'docs.delete',
         }
         return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        if hasattr(user, 'staff') and user.staff.company:
+            return queryset.filter(letter__company=user.staff.company)
+        return queryset.none()
+
+    def perform_create(self, serializer):
+        letter = serializer.validated_data.get('letter')
+        if letter and letter.dispatched_at is not None:
+            raise ValidationError('이미 대외 발송이 완료된 공문에는 첨부파일을 추가할 수 없습니다.')
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if hasattr(user, 'staff') and user.staff.company:
+                if letter and letter.company != user.staff.company:
+                    raise PermissionDenied('소속 회사 이외의 공문에 첨부파일을 추가할 수 없습니다.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if instance.letter and instance.letter.dispatched_at is not None:
+            raise ValidationError('이미 대외 발송이 완료된 공문의 첨부파일은 수정할 수 없습니다.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.letter and instance.letter.dispatched_at is not None:
+            raise ValidationError('이미 대외 발송이 완료된 공문의 첨부파일은 삭제할 수 없습니다.')
+        instance.delete()
 
 
 # Inbound Letter ViewSets ------------------------------------------------------------------
@@ -910,6 +975,11 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         return queryset.none()
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if hasattr(user, 'staff') and user.staff.company:
+                if serializer.validated_data.get('company') != user.staff.company:
+                    raise PermissionDenied('소속 회사 이외의 수신 공문을 등록할 수 없습니다.')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
@@ -1126,9 +1196,9 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
 
 
 class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
-    queryset = InboundLetterAttachment.objects.all()
+    queryset = InboundLetterAttachment.objects.select_related('letter', 'letter__company')
     serializer_class = InboundLetterAttachmentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     filterset_fields = ('letter',)
 
     @property
@@ -1142,5 +1212,36 @@ class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
             'destroy': 'docs.delete',
         }
         return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        if hasattr(user, 'staff') and user.staff.company:
+            return queryset.filter(letter__company=user.staff.company)
+        return queryset.none()
+
+    def perform_create(self, serializer):
+        letter = serializer.validated_data.get('letter')
+        if letter and letter.status == 'closed':
+            raise ValidationError('종결 처리된 수신 공문에는 첨부파일을 추가할 수 없습니다.')
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if hasattr(user, 'staff') and user.staff.company:
+                if letter and letter.company != user.staff.company:
+                    raise PermissionDenied('소속 회사 이외의 수신 공문에 첨부파일을 추가할 수 없습니다.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if instance.letter and instance.letter.status == 'closed':
+            raise ValidationError('종결 처리된 수신 공문의 첨부파일은 수정할 수 없습니다.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.letter and instance.letter.status == 'closed':
+            raise ValidationError('종결 처리된 수신 공문의 첨부파일은 삭제할 수 없습니다.')
+        instance.delete()
 
 

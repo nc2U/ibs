@@ -74,6 +74,20 @@ class ProjectPermission(permissions.BasePermission):
                         return project.slug
                     except (News.DoesNotExist, ValueError, TypeError):
                         pass
+
+                # 문서 ID를 기반으로 프로젝트 역추적
+                docs_id = source.get('docs')
+                if docs_id:
+                    from docs.models import Document
+                    try:
+                        doc = Document.objects.select_related('issue_project').get(pk=docs_id)
+                        project = doc.issue_project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (Document.DoesNotExist, ValueError, TypeError):
+                        pass
         return None
 
     @staticmethod

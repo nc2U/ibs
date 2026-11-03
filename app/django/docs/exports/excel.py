@@ -1,6 +1,7 @@
 import datetime
 
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from _excel.mixins import ExcelExportMixin
@@ -20,10 +21,28 @@ class ExportSuitCases(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('소송_목록')
 
         # data start --------------------------------------------- #
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return HttpResponse('인증이 필요합니다.', status=401)
+
+        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
+        from work.models.project import IssueProject
+
         com_id = request.GET.get('company')
-        company = Company.objects.get(pk=com_id) if com_id else None
+        company = None
+        if com_id:
+            try:
+                company = Company.objects.get(pk=com_id)
+            except (Company.DoesNotExist, ValueError):
+                return HttpResponse('존재하지 않는 회사입니다.', status=404)
+
         proj_id = request.GET.get('project')
-        project = Project.objects.get(pk=proj_id) if proj_id else None
+        project = None
+        if proj_id:
+            try:
+                project = Project.objects.get(pk=proj_id)
+            except (Project.DoesNotExist, ValueError):
+                return HttpResponse('존재하지 않는 프로젝트입니다.', status=404)
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -105,7 +124,14 @@ class ExportSuitCases(ExcelExportMixin):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
-        obj_list = LawsuitCase.objects.filter(issue_project__company=company)
+        if is_admin:
+            obj_list = LawsuitCase.objects.all()
+        else:
+            accessible_projects = IssueProject.objects.filter(members__user=user)
+            obj_list = LawsuitCase.objects.filter(issue_project__in=accessible_projects)
+
+        if company:
+            obj_list = obj_list.filter(issue_project__company=company)
 
         is_real_dev = request.GET.get('is_real_dev')
         sort = request.GET.get('sort')
@@ -192,7 +218,18 @@ class ExportSuitCase(ExcelExportMixin):
         output, workbook, worksheet = self.create_workbook('소송_사건', False, 25)
 
         # data start --------------------------------------------- #
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return HttpResponse('인증이 필요합니다.', status=401)
+
+        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
         obj = get_object_or_404(LawsuitCase, pk=request.GET.get('pk'))
+
+        # RLS 권한 제어: 관리자가 아닌 경우 해당 사건의 워크스페이스 멤버십 확인
+        if not is_admin:
+            from work.models.project import IssueProject
+            if not IssueProject.objects.filter(pk=obj.issue_project_id, members__user=user).exists():
+                return HttpResponse('해당 소송 사건을 열람할 권한이 없습니다.', status=403)
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
