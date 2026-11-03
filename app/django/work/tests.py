@@ -1716,3 +1716,40 @@ class WorkAuditAndRLSTests(TestCase):
         self.assertIn(self.private_project, proj_admin.get_queryset(request))
         self.assertIn(p_issue, issue_admin.get_queryset(request))
         self.assertIn(p_meet, meet_admin.get_queryset(request))
+
+
+class IssueSearchAPITestCase(APITestCase):
+    """업무관리 시스템 통합 검색(SearchViewSet) API 검증"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='search_user', email='search@test.com', password='password123')
+        self.company = Company.objects.create(name='검색테스트회사')
+        self.project = IssueProject.objects.create(
+            company=self.company,
+            name='검색 프로젝트',
+            slug='search-proj',
+            status='1',
+            is_public=True,
+            creator=self.user
+        )
+        Member.objects.create(project=self.project, user=self.user)
+
+    def test_search_run_all_targets_normal_user(self):
+        """일반 사용자로 전체 타겟(documents, meetings, issues, comments, news, posts) 통합 검색 시 500 에러 없이 200 반환"""
+        self.client.force_authenticate(user=self.user)
+        url = '/api/v1/issue-search/run/?q=테스트&scope=all&title_only=0&opened_only=0&attach_mode=1&t=meetings&t=issues&t=comments&t=news&t=documents&t=posts'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('documents', res.data)
+        self.assertIn('issues', res.data)
+        self.assertIn('meetings', res.data)
+        self.assertIn('news', res.data)
+        self.assertIn('comments', res.data)
+        self.assertIn('posts', res.data)
+
+    def test_search_min_query_length_validation(self):
+        """검색어가 2자 미만인 경우 400 에러 반환"""
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get('/api/v1/issue-search/run/?q=a')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+

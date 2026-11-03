@@ -12,7 +12,7 @@ from apiV1.permissions.work_perms import NewsPermission, QueryPermission
 from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
 from apiV1.serializers.work.inform import NewsSerializer, CustomQuerySerializer
 from apiV1.serializers.work.search import (CommentSearchSerializer)
-from work.models import NewsFile
+from work.models import NewsFile, IssueProject
 from work.models.inform import News, NewsComment, Search, CustomQuery
 from work.models.issue import IssueComment
 
@@ -350,13 +350,15 @@ class SearchViewSet(viewsets.ModelViewSet):
                 staff__user=user, department__isnull=False
             ).values_list('department_id', flat=True)
 
+            accessible_projects = IssueProject.objects.filter(Q(is_public=True) | Q(members__user=user))
+
             qs = qs.filter(
-                issue_project__members__user=user
+                issue_project__in=accessible_projects
             ).filter(
                 Q(security_level=Document.SECURITY_COMPANY)
                 | Q(security_level=Document.SECURITY_PROJECT)
                 | (Q(security_level=Document.SECURITY_TEAM)
-                   & Q(creator__staffassignment__department_id__in=user_dept_ids))
+                   & Q(creator__staff__assignments__department_id__in=user_dept_ids))
                 | Q(creator=user)
                 | Q(allowed_users=user)
             ).filter(is_blind=False).distinct()
