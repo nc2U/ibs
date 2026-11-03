@@ -85,21 +85,46 @@ class ExcelExportMixin(LoginRequiredMixin, View):
     raise_exception = False
 
     def dispatch(self, request, *args, **kwargs):
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not request.user.is_authenticated and auth_header:
-            from rest_framework_simplejwt.authentication import JWTAuthentication
-            try:
-                auth_result = JWTAuthentication().authenticate(request)
-                if auth_result is not None:
-                    request.user, request.auth = auth_result
-            except Exception:
-                pass
-            if not request.user.is_authenticated:
+        # 1. 미인증 사용자인 경우 토큰 기반 인증 시도 (Authorization 헤더, 쿠키, 쿼리 파라미터)
+        if not request.user.is_authenticated:
+            raw_token = None
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            if auth_header.startswith('Bearer '):
+                raw_token = auth_header.split(' ', 1)[1].strip()
+
+            if not raw_token:
+                raw_token = request.COOKIES.get('accessToken') or request.COOKIES.get('token')
+
+            if not raw_token:
+                raw_token = request.GET.get('token')
+
+            if raw_token:
+                from rest_framework_simplejwt.authentication import JWTAuthentication
+                try:
+                    jwt_auth = JWTAuthentication()
+                    validated_token = jwt_auth.get_validated_token(raw_token)
+                    request.user = jwt_auth.get_user(validated_token)
+                    request.auth = validated_token
+                except Exception:
+                    pass
+
+        # 2. 여전히 인증되지 않은 경우
+        if not request.user.is_authenticated:
+            # 토큰이 전송되었으나 유효하지 않은 경우 명시적 401 반환 (다운로드 시 HTML이 엑셀로 저장되는 현상 방지)
+            if (
+                request.META.get('HTTP_AUTHORIZATION') or
+                request.COOKIES.get('accessToken') or
+                request.COOKIES.get('token') or
+                request.GET.get('token') or
+                request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+                'application/json' in request.META.get('HTTP_ACCEPT', '')
+            ):
                 return HttpResponse(
-                    '유효하지 않거나 만료된 인증 토큰입니다.',
+                    '유효하지 않거나 만료된 인증 토큰입니다. 다시 로그인해 주세요.',
                     status=401,
                     content_type='text/plain; charset=utf-8',
                 )
+
         return super().dispatch(request, *args, **kwargs)
 
     @staticmethod
@@ -341,9 +366,16 @@ class ExcelExportMixin(LoginRequiredMixin, View):
         )
         # HTTP Response Splitting 및 특수문자 정제
         clean_name = re.sub(r'["\r\n]', '', str(filename)).strip() or 'export'
+        if clean_name.lower().endswith('.xlsx'):
+            clean_name = clean_name[:-5]
+
         encoded_filename = quote(f'{clean_name}.xlsx')
+        ascii_name = clean_name.encode('ascii', 'ignore').decode('ascii').strip()
+        if not ascii_name:
+            ascii_name = 'download'
+
         response['Content-Disposition'] = (
-            f'attachment; filename="{clean_name}.xlsx"; filename*=UTF-8\'\'{encoded_filename}'
+            f'attachment; filename="{ascii_name}.xlsx"; filename*=UTF-8\'\'{encoded_filename}'
         )
         return response
 

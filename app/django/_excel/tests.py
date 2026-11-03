@@ -37,6 +37,55 @@ class ExcelExportMixinTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue('/accounts/login/' in response.url or '/login/' in response.url)
 
+    def test_unauthenticated_with_token_returns_401(self):
+        """유효하지 않은 토큰(쿠키, 헤더, 쿼리)이 제공된 비인증 요청은 302가 아닌 401 반환 검증"""
+        view = ExcelExportMixin.as_view()
+
+        # 1. 잘못된 쿠키 토큰
+        request = self.factory.get('/excel/contracts/')
+        request.user = AnonymousUser()
+        request.COOKIES['accessToken'] = 'invalid_token_xyz'
+        response = view(request)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response['Content-Type'], 'text/plain; charset=utf-8')
+
+        # 2. 잘못된 Authorization 헤더
+        request = self.factory.get('/excel/contracts/', HTTP_AUTHORIZATION='Bearer invalid_token_xyz')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 401)
+
+        # 3. 잘못된 쿼리 파라미터 토큰
+        request = self.factory.get('/excel/contracts/?token=invalid_token_xyz')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 401)
+
+    def test_authenticated_via_jwt_cookie_and_header(self):
+        """JWT 토큰(쿠키 및 헤더)을 통한 ExcelExportMixin 인증 성공 검증"""
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = str(AccessToken.for_user(self.user))
+        view = ExcelExportMixin.as_view()
+
+        # 1. 쿠키 accessToken
+        request = self.factory.get('/excel/contracts/')
+        request.user = AnonymousUser()
+        request.COOKIES['accessToken'] = token
+        response = view(request)
+        self.assertEqual(response.status_code, 405)  # 인증 통과 후 get 미구현으로 405
+
+        # 2. Authorization 헤더
+        request = self.factory.get('/excel/contracts/', HTTP_AUTHORIZATION=f'Bearer {token}')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 405)
+
+        # 3. 쿼리 파라미터 token
+        request = self.factory.get(f'/excel/contracts/?token={token}')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 405)
+
     def test_authenticated_access_is_allowed(self):
         """인증된 사용자의 엑셀 요청은 정상 처리되는지 검증"""
         view = ExcelExportMixin.as_view()
@@ -174,6 +223,30 @@ class ExcelExportMixinTests(TestCase):
         self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         self.assertIn('test_export_2026.xlsx', response['Content-Disposition'])
 
+    def test_create_response_korean_filename_rfc6266(self):
+        """한글 파일명에 대해 RFC 6266 형식(filename*=UTF-8'') 및 ASCII fallback 정상 설정 검증"""
+        output, workbook, worksheet = ExcelExportMixin.create_workbook("테스트_시트")
+        worksheet.write(0, 0, "테스트")
+        workbook.close()
+
+        response = ExcelExportMixin.create_response(output, workbook, "계약현황_2026-11-03")
+        self.assertEqual(response.status_code, 200)
+        disposition = response['Content-Disposition']
+        # ASCII fallback
+        self.assertIn('filename="_2026-11-03.xlsx"', disposition)
+        # RFC 6266 UTF-8 인코딩
+        self.assertIn("filename*=UTF-8''", disposition)
+        from urllib.parse import quote
+        self.assertIn(quote("계약현황_2026-11-03.xlsx"), disposition)
+
+        # 영문/숫자가 전혀 없는 순수 한글 파일명인 경우
+        output2, workbook2, _ = ExcelExportMixin.create_workbook("시트")
+        workbook2.close()
+        response2 = ExcelExportMixin.create_response(output2, workbook2, "계약현황")
+        disposition2 = response2['Content-Disposition']
+        self.assertIn('filename="download.xlsx"', disposition2)
+        self.assertIn(quote("계약현황.xlsx"), disposition2)
+
 
 class ExcelUtilsMixinTests(TestCase):
     """ExcelUtilsMixin의 포맷팅 안전성 테스트"""
@@ -227,3 +300,91 @@ class ProjectFilterMixinTests(TestCase):
 
         req_invalid = self.factory.get('/excel/test/?col=invalid-abc')
         self.assertEqual(ProjectFilterMixin.get_selected_columns(req_invalid), [])
+
+
+class LedgerTransactionExportTests(TestCase):
+    """원장 입출금 내역 엑셀 내보내기 CBV 및 헤더 검증"""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(
+            username='ledger_excel_user',
+            email='ledger_user@example.com',
+            password='testpassword123'
+        )
+        from company.models import Company
+        from project.models import Project
+        from work.models.project import IssueProject
+        self.company = Company.objects.create(name='(주)테스트건설')
+        self.issue_project = IssueProject.objects.create(
+            company=self.company,
+            name='테스트 이슈 프로젝트',
+            slug='test-issue-project-excel',
+            type='2',
+            creator=self.user
+        )
+        self.project = Project.objects.create(
+            issue_project=self.issue_project,
+            name='테스트프로젝트',
+            order=1,
+            kind='1',
+            start_year=2026,
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24
+        )
+
+    def test_company_transaction_export_unauthenticated_blocked(self):
+        """비인증 유저의 본사 입출금 내역 엑셀 요청 차단 검증"""
+        from ledger.exports import ExportCompanyTransactions
+        view = ExportCompanyTransactions.as_view()
+
+        request = self.factory.get(f'/excel/com-trans/?company={self.company.pk}')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 302)
+
+        # 유효하지 않은 토큰 요청 시 401 반환 검증
+        request.COOKIES['accessToken'] = 'invalid_jwt_token'
+        response = view(request)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response['Content-Type'], 'text/plain; charset=utf-8')
+
+    def test_company_transaction_export_authenticated_success(self):
+        """인증된 유저의 본사 입출금 내역 엑셀 내보내기 정상 동작 및 RFC 6266 헤더 검증"""
+        from ledger.exports import ExportCompanyTransactions
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = str(AccessToken.for_user(self.user))
+        view = ExportCompanyTransactions.as_view()
+
+        request = self.factory.get(f'/excel/com-trans/?company={self.company.pk}&filename=본사출납내역')
+        request.user = AnonymousUser()
+        request.COOKIES['accessToken'] = token
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.ms-excel')
+        disposition = response['Content-Disposition']
+        self.assertIn("filename*=UTF-8''", disposition)
+        from urllib.parse import quote
+        self.assertIn(quote("본사출납내역.xls"), disposition)
+
+    def test_project_transaction_export_authenticated_success(self):
+        """인증된 유저의 프로젝트 입출금 내역 엑셀 내보내기 정상 동작 및 RFC 6266 헤더 검증"""
+        from ledger.exports import ExportProjectTransactions
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = str(AccessToken.for_user(self.user))
+        view = ExportProjectTransactions.as_view()
+
+        request = self.factory.get(f'/excel/pro-trans/?project={self.project.pk}&filename=프로젝트출납내역')
+        request.user = AnonymousUser()
+        request.COOKIES['accessToken'] = token
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.ms-excel')
+        disposition = response['Content-Disposition']
+        self.assertIn("filename*=UTF-8''", disposition)
+        from urllib.parse import quote
+        self.assertIn(quote("프로젝트출납내역.xls"), disposition)
+

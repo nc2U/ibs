@@ -3,7 +3,9 @@
 원장 관련 Excel 내보내기 뷰들
 """
 import datetime
+import re
 from collections import defaultdict
+from urllib.parse import quote
 
 import xlwt
 from dateutil.relativedelta import relativedelta
@@ -312,10 +314,18 @@ def export_com_transaction_xls(request):
     """본사 입출금 내역 (공용 서비스 함수 사용)"""
     # 서비스 함수를 직접 호출하므로 ViewSet 관련 import는 더 이상 필요 없음
 
-    filename = request.GET.get('filename')
-    filename = f'{filename}-{TODAY}' if filename else f'cashbook-{TODAY}'
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={filename}.xls'
+    raw_filename = request.GET.get('filename')
+    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'cashbook-{TODAY}'
+    if clean_name.lower().endswith('.xls'):
+        clean_name = clean_name[:-4]
+
+    encoded_filename = quote(f'{clean_name}.xls')
+    ascii_name = clean_name.encode('ascii', 'ignore').decode('ascii').strip() or 'download'
+
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = (
+        f'attachment; filename="{ascii_name}.xls"; filename*=UTF-8\'\'{encoded_filename}'
+    )
 
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('본사_입출금_내역')
@@ -1228,10 +1238,18 @@ def export_pro_transaction_xls(request):
     """프로젝트별 입출금 내역 (공용 서비스 함수 사용)"""
     # 서비스 함수를 직접 호출하므로 ViewSet 관련 import는 더 이상 필요 없음
 
-    filename = request.GET.get('filename')
-    filename = f'{filename}-{TODAY}' if filename else f'pro_transaction-{TODAY}'
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={filename}.xls'
+    raw_filename = request.GET.get('filename')
+    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'pro_transaction-{TODAY}'
+    if clean_name.lower().endswith('.xls'):
+        clean_name = clean_name[:-4]
+
+    encoded_filename = quote(f'{clean_name}.xls')
+    ascii_name = clean_name.encode('ascii', 'ignore').decode('ascii').strip() or 'download'
+
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = (
+        f'attachment; filename="{ascii_name}.xls"; filename*=UTF-8\'\'{encoded_filename}'
+    )
 
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('프로젝트_입출금_내역')
@@ -1345,3 +1363,17 @@ def export_pro_transaction_xls(request):
 
     wb.save(response)
     return response
+
+
+class ExportCompanyTransactions(ExcelExportMixin):
+    """본사 입출금 내역 엑셀 내보내기 (CBV)"""
+
+    def get(self, request, *args, **kwargs):
+        return export_com_transaction_xls(request)
+
+
+class ExportProjectTransactions(ExcelExportMixin):
+    """프로젝트별 입출금 내역 엑셀 내보내기 (CBV)"""
+
+    def get(self, request, *args, **kwargs):
+        return export_pro_transaction_xls(request)

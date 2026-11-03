@@ -1,4 +1,3 @@
-from django.contrib.auth.decorators import login_required
 from django.urls import path
 
 from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades,
@@ -8,9 +7,9 @@ from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, Expor
                              ExportStaffEvaluations, ExportPromotionCandidates, ExportPromotionPolicies)
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
-from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, export_com_transaction_xls,
+from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, ExportCompanyTransactions,
                             ExportProjectLedgerBalance, ExportProjectLedgerDateCashbook,
-                            ExportLedgerBudgetExecutionStatus, ExportLedgerCashFlowForm, export_pro_transaction_xls)
+                            ExportLedgerBudgetExecutionStatus, ExportLedgerCashFlowForm, ExportProjectTransactions)
 from payment.exports import (ExportLedgerPayments, ExportLedgerPaymentsByCont, ExportLedgerPaymentStatus,
                              ExportLedgerOverallSummary)
 from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
@@ -57,14 +56,14 @@ urlpatterns = [
     # ledger
     path('com-balance/', ExportLedgerBalanceByAcc.as_view(), name='com-balance'),
     path('com-daily-cash/', ExportLedgerDateCashbook.as_view(), name='com-daily-cash'),
-    path('com-trans/', login_required(export_com_transaction_xls), name='com-trans'),
+    path('com-trans/', ExportCompanyTransactions.as_view(), name='com-trans'),
 
     # ledger
     path('pro-balance/', ExportProjectLedgerBalance.as_view(), name='ledger-pro-balance'),
     path('pro-daily-cash/', ExportProjectLedgerDateCashbook.as_view(), name='ledger-pro-daily-cash'),
     path('pro-budget/', ExportLedgerBudgetExecutionStatus.as_view(), name='ledger-pro-budget'),
     path('ledger-cash-flow-form/', ExportLedgerCashFlowForm.as_view(), name='ledger-cash-flow-form'),
-    path('pro-trans/', login_required(export_pro_transaction_xls), name='pro-trans'),
+    path('pro-trans/', ExportProjectTransactions.as_view(), name='pro-trans'),
 
     # DocsItem 관련 (새 모듈)
     path('suitcases/', ExportSuitCases.as_view(), name='suitcases'),
