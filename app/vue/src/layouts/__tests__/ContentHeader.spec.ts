@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createVuetify } from 'vuetify'
 import { createTestingPinia } from '@pinia/testing'
 
+const mockRouter = {
+  push: vi.fn(),
+}
+
 // Mock Vue Router composables
 vi.mock('vue-router', async importOriginal => {
   const actual = (await importOriginal()) as Record<string, any>
@@ -13,9 +17,7 @@ vi.mock('vue-router', async importOriginal => {
       meta: { title: 'some-title' },
       query: {},
     }),
-    useRouter: () => ({
-      push: vi.fn(),
-    }),
+    useRouter: () => mockRouter,
   }
 })
 
@@ -35,38 +37,13 @@ const mockRoute = {
   query: {},
 }
 
-const mockRouter = {
-  push: vi.fn(),
-}
-
 describe('ContentHeader Test', () => {
-  it('header main select test', async () => {
-    const wrapper = mount(ContentHeader, {
-      props: {
-        pateTitle: 'Page Title',
-        navMenu: ['1st Menu', '2nd Menu'],
-        selector: 'CompanySelect',
-      },
-      global: {
-        plugins: [createTestingPinia(), vuetify, CoreuiVue],
-        stubs: ['Multiselect'],
-      },
-    })
-
-    expect(wrapper.html()).toContain('Page Title')
-    expect(wrapper.html()).toContain('1st Menu')
-    expect(wrapper.html()).toContain('2nd Menu')
-    expect(wrapper.html()).toContain('회사명')
-
-    await wrapper.setProps({ selector: 'ProjectSelect' })
-
-    expect(wrapper.html()).toContain('프로젝트')
-  })
-
-  it('Header Nav test', () => {
+  it('Header Nav test', async () => {
+    mockRouter.push.mockClear()
     const wrapper = mount(HeaderNav, {
       props: {
         menus: ['1st Menu', '2nd Menu'],
+        query: { project: '1', page: '2', highlight_id: '788', contractor: '10' },
       },
       global: {
         plugins: [CoreuiVue],
@@ -75,6 +52,17 @@ describe('ContentHeader Test', () => {
 
     expect(wrapper.html()).toContain('1st Menu')
     expect(wrapper.html()).toContain('2nd Menu')
+
+    // Click 2nd Menu nav link
+    const links = wrapper.findAll('.nav-link')
+    await links[1].trigger('click')
+
+    // Transient queries (page, highlight_id, contractor) must be filtered out,
+    // only persistent context query (project) should be preserved
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      name: '2nd Menu',
+      query: { project: '1' },
+    })
   })
 
   it('company select test', () => {

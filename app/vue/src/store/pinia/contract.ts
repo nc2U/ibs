@@ -290,7 +290,9 @@ export const useContract = defineStore('contract', () => {
       const response = await api.get('/contract-set/find_page/', { params })
       return response.data.page
     } catch (err: any) {
-      errorHandle(err.response.data)
+      if (err?.response?.status !== 404) {
+        errorHandle(err.response?.data)
+      }
       return 1
     }
   }
@@ -698,7 +700,9 @@ export const useContract = defineStore('contract', () => {
       const response = await api.get(url)
       return response.data.page
     } catch (err: any) {
-      errorHandle(err.response.data)
+      if (err?.response?.status !== 404) {
+        errorHandle(err.response?.data)
+      }
       return 1
     }
   }
@@ -711,7 +715,9 @@ export const useContract = defineStore('contract', () => {
       const response = await api.get(url)
       return response.data.page
     } catch (err: any) {
-      errorHandle(err.response.data)
+      if (err?.response?.status !== 404) {
+        errorHandle(err.response?.data)
+      }
       return 1
     }
   }
