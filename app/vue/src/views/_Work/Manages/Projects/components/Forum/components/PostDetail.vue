@@ -157,6 +157,18 @@ const userInfo = computed(() => accStore.userInfo)
       </v-btn>
     </div>
 
-    <Comment :post="post.pk as number" :comments="comments" />
+    <Comment
+      v-if="!post.is_hide_comment || userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
+      :post="post.pk as number"
+      :comments="comments"
+    />
+    <v-alert
+      v-else
+      type="info"
+      variant="tonal"
+      class="mt-4"
+    >
+      작성자에 의해 댓글이 숨김 처리된 게시물입니다.
+    </v-alert>
   </template>
 </template>

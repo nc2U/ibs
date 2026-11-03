@@ -25,23 +25,43 @@ class ForumSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_post_count(obj):
+        if hasattr(obj, 'annotated_post_count'):
+            return obj.annotated_post_count
         if not hasattr(obj, '_cached_post_count'):
             obj._cached_post_count = obj.post_set.filter(deleted=None, is_faq=False).count()
         return obj._cached_post_count
 
     def get_all_post_count(self, obj):
+        if hasattr(obj, 'annotated_all_post_count'):
+            return obj.annotated_all_post_count
         post_count = self.get_post_count(obj)
         comment_count = Comment.objects.filter(post__forum=obj, post__deleted=None, post__is_faq=False).count()
         return post_count + comment_count
 
-    @staticmethod
-    def get_last_post(obj):
+    def get_last_post(self, obj):
         last_post = obj.post_set.filter(deleted=None, is_faq=False).select_related('creator').order_by('-created').first()
         if last_post:
+            request = self.context.get('request')
+            user = request.user if request else None
+            title = last_post.title
+
+            # 비밀글 / 블라인드글 제목 마스킹
+            if last_post.is_secret or last_post.is_blind:
+                is_authorized = False
+                if user and user.is_authenticated:
+                    if user.is_superuser or getattr(user, 'work_manager', False):
+                        is_authorized = True
+                    elif last_post.creator_id and last_post.creator_id == user.pk:
+                        is_authorized = True
+                    elif obj.manager.filter(pk=user.pk).exists():
+                        is_authorized = True
+                if not is_authorized:
+                    title = '비밀글입니다.' if last_post.is_secret else '블라인드 처리된 게시물입니다.'
+
             return {
                 'pk': last_post.pk,
                 'is_notice': last_post.is_notice,
-                'title': last_post.title,
+                'title': title,
                 'creator': last_post.creator.username if last_post.creator else None,
                 'created': last_post.created,
             }
@@ -104,7 +124,7 @@ class PostSerializer(serializers.ModelSerializer):
                 data['content'] = '비밀글입니다.'
                 data['files'] = []
 
-        # 블라인드(is_blind) 마스킹
+        # 블라인드(is_blind) 마스킹 (제목 및 본문 모두 은닉)
         if instance.is_blind:
             is_manager = False
             if user and user.is_authenticated:
@@ -113,14 +133,42 @@ class PostSerializer(serializers.ModelSerializer):
                 elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
                     is_manager = True
             if not is_manager:
+                data['title'] = '블라인드 처리된 게시물입니다.'
                 data['content'] = '블라인드 처리된 게시물입니다.'
                 data['files'] = []
 
+        # IP 및 기기(device) 정보 일반 사용자 비노출 (관리자/포럼 매니저/작성자 본인만 노출)
+        is_admin_or_author = False
+        if user and user.is_authenticated:
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                is_admin_or_author = True
+            elif instance.creator_id and instance.creator_id == user.pk:
+                is_admin_or_author = True
+            elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+                is_admin_or_author = True
+        if not is_admin_or_author:
+            data.pop('ip', None)
+            data.pop('device', None)
+
         return data
 
-    def _get_filtered_queryset(self):
-        """prev_pk / next_pk 계산용 필터된 쿼리셋 (View 레이어와 필터 조건 동기화 필요)"""
-        queryset = Post.objects.all()
+    def _get_user_cache(self, user):
+        """context를 활용하여 동일 요청 내 Profile/Like/Blame/Scrape 재조회 방지 캐시"""
+        if not user or not user.is_authenticated:
+            return None
+        if '_post_user_cache' not in self.context:
+            profile, _ = Profile.objects.get_or_create(user=user)
+            self.context['_post_user_cache'] = {
+                'profile': profile,
+                'liked_ids': set(profile.like_posts.values_list('pk', flat=True)),
+                'blamed_ids': set(profile.blame_posts.values_list('pk', flat=True)),
+                'scraped_ids': set(user.postscrape_set.values_list('post_id', flat=True)),
+            }
+        return self.context['_post_user_cache']
+
+    def _get_filtered_queryset(self, obj=None):
+        """prev_pk / next_pk 계산용 필터된 쿼리셋 (동일 포럼 및 삭제 제외 강제)"""
+        queryset = Post.objects.filter(deleted=None)
         query = self.context['request'].query_params
         forum = query.get('forum')
         is_notice_param = query.get('is_notice')
@@ -130,6 +178,9 @@ class PostSerializer(serializers.ModelSerializer):
 
         if forum:
             queryset = queryset.filter(forum_id=forum)
+        elif obj and obj.forum_id:
+            queryset = queryset.filter(forum_id=obj.forum_id)
+
         if is_notice_param == 'true':
             queryset = queryset.filter(is_notice=True)
         elif is_notice_param == 'false':
@@ -146,52 +197,48 @@ class PostSerializer(serializers.ModelSerializer):
                 Q(content__icontains=search) |
                 Q(files__file__icontains=search) |
                 Q(creator__username__icontains=search)
-            )
+            ).distinct()
         return queryset
 
     @staticmethod
     def get_scrape(obj):
+        if hasattr(obj, 'scrape_count'):
+            return obj.scrape_count
         return obj.postscrape_set.count()
 
     def get_my_scrape(self, obj):
         user = self.context['request'].user
-        return obj.postscrape_set.filter(user=user).exists()
-
-    def _get_cached_profile(self, user):
-        """context를 활용하여 동일 요청 내 Profile 재조회 방지 캐시"""
-        if not user or not user.is_authenticated:
-            return None
-        if '_cached_profile' not in self.context:
-            profile, _ = Profile.objects.get_or_create(user=user)
-            self.context['_cached_profile'] = profile
-        return self.context['_cached_profile']
+        cache = self._get_user_cache(user)
+        if not cache:
+            return False
+        return obj.pk in cache['scraped_ids']
 
     def get_my_like(self, obj):
         user = self.context['request'].user
-        profile = self._get_cached_profile(user)
-        if not profile:
+        cache = self._get_user_cache(user)
+        if not cache:
             return False
-        return profile.like_posts.filter(pk=obj.pk).exists()
+        return obj.pk in cache['liked_ids']
 
     def get_my_blame(self, obj):
         user = self.context['request'].user
-        profile = self._get_cached_profile(user)
-        if not profile:
+        cache = self._get_user_cache(user)
+        if not cache:
             return False
-        return profile.blame_posts.filter(pk=obj.pk).exists()
+        return obj.pk in cache['blamed_ids']
 
     def get_prev_pk(self, obj):
         view = self.context.get('view')
         if view and view.action != 'retrieve':
             return None
-        prev_obj = self._get_filtered_queryset().filter(created__lt=obj.created).first()
+        prev_obj = self._get_filtered_queryset(obj).filter(created__lt=obj.created).first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
         view = self.context.get('view')
         if view and view.action != 'retrieve':
             return None
-        next_obj = self._get_filtered_queryset().filter(created__gt=obj.created).order_by('created').first()
+        next_obj = self._get_filtered_queryset(obj).filter(created__gt=obj.created).order_by('created').first()
         return next_obj.pk if next_obj else None
 
     @staticmethod
@@ -220,6 +267,12 @@ class PostSerializer(serializers.ModelSerializer):
         user = request.user if request else None
         category = attrs.get('category') or (self.instance.category if self.instance else None)
         forum = attrs.get('forum') or (self.instance.forum if self.instance else None)
+
+        # 0. 카테고리가 해당 포럼에 속하는지 검증
+        if category and forum and category.forum_id != forum.pk:
+            raise serializers.ValidationError({
+                'category': '선택한 카테고리가 해당 게시판에 속하지 않습니다.'
+            })
 
         # 1. 포럼 단위 관리자 전용 검사
         if forum and getattr(forum, 'manager_only', False):
@@ -339,7 +392,7 @@ class PostBlameSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostFile
-        fields = ('pk', 'post', 'file', 'hit')
+        fields = ('pk', 'post', 'file', 'file_name', 'file_size', 'file_type', 'hit', 'created')
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -351,7 +404,7 @@ class ImageSerializer(serializers.ModelSerializer):
 class SimplePostInCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('pk', 'forum')
+        fields = ('pk', 'forum', 'is_secret', 'creator')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -367,32 +420,76 @@ class CommentSerializer(serializers.ModelSerializer):
                   'blame', 'my_blame', 'ip', 'device', 'secret', 'creator', 'created')
         read_only_fields = ('ip',)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # 비밀 댓글(secret=True) 혹은 비밀글의 댓글 마스킹
+        is_post_secret = bool(instance.post and getattr(instance.post, 'is_secret', False))
+        if instance.secret or is_post_secret:
+            is_authorized = False
+            if user and user.is_authenticated:
+                if user.is_superuser or getattr(user, 'work_manager', False):
+                    is_authorized = True
+                elif instance.creator_id and instance.creator_id == user.pk:
+                    is_authorized = True
+                elif instance.post and instance.post.creator_id and instance.post.creator_id == user.pk:
+                    is_authorized = True
+                elif (instance.post and instance.post.forum and
+                      instance.post.forum.manager.filter(pk=user.pk).exists()):
+                    is_authorized = True
+
+            if not is_authorized:
+                data['content'] = '비밀 댓글입니다.'
+
+        # IP 및 기기(device) 정보 일반 사용자 비노출 (관리자/포럼 매니저/작성자 본인만 노출)
+        is_admin_or_author = False
+        if user and user.is_authenticated:
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                is_admin_or_author = True
+            elif instance.creator_id and instance.creator_id == user.pk:
+                is_admin_or_author = True
+            elif (instance.post and instance.post.forum and
+                  instance.post.forum.manager.filter(pk=user.pk).exists()):
+                is_admin_or_author = True
+        if not is_admin_or_author:
+            data.pop('ip', None)
+            data.pop('device', None)
+
+        return data
+
     def get_replies(self, instance):
         # 개선: bind 대신 인스턴스화 시 context를 직접 넘겨주어 DRF context 유실 예방
         serializer = self.__class__(instance.replies, many=True, context=self.context)
         return serializer.data
 
-    def _get_cached_profile(self, user):
+    def _get_comment_cache(self, user):
+        """context를 활용하여 동일 요청 내 Profile/Like/Blame 재조회 방지 캐시"""
         if not user or not user.is_authenticated:
             return None
-        if '_cached_profile' not in self.context:
+        if '_comment_user_cache' not in self.context:
             profile, _ = Profile.objects.get_or_create(user=user)
-            self.context['_cached_profile'] = profile
-        return self.context['_cached_profile']
+            self.context['_comment_user_cache'] = {
+                'profile': profile,
+                'liked_ids': set(profile.like_comments.values_list('pk', flat=True)),
+                'blamed_ids': set(profile.blame_comments.values_list('pk', flat=True)),
+            }
+        return self.context['_comment_user_cache']
 
     def get_my_like(self, obj):
         user = self.context['request'].user
-        profile = self._get_cached_profile(user)
-        if not profile:
+        cache = self._get_comment_cache(user)
+        if not cache:
             return False
-        return profile.like_comments.filter(pk=obj.pk).exists()
+        return obj.pk in cache['liked_ids']
 
     def get_my_blame(self, obj):
         user = self.context['request'].user
-        profile = self._get_cached_profile(user)
-        if not profile:
+        cache = self._get_comment_cache(user)
+        if not cache:
             return False
-        return profile.blame_comments.filter(pk=obj.pk).exists()
+        return obj.pk in cache['blamed_ids']
 
     @transaction.atomic
     def create(self, validated_data):

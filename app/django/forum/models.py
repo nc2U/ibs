@@ -86,6 +86,9 @@ class Post(models.Model):
     def delete(self, using=None, keep_parents=False):
         self.deleted = timezone.now()
         self.save(update_fields=['deleted'])
+        # 소프트 삭제 시 활동 로그 정리
+        from work.models.logging import ActivityLogEntry
+        ActivityLogEntry.objects.filter(sort='6', target_id=self.pk).delete()
 
     def restore(self):
         self.deleted = None

@@ -108,8 +108,7 @@ const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(
 const filesUpdate = (payload: any[]) => (form.value.files = payload)
 
 const submitCheck = (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
+  if (!isValidate(event)) {
     event.preventDefault()
     event.stopPropagation()
     validated.value = true
@@ -161,7 +160,7 @@ const dataSetup = () => {
     form.value.title = props.post.title
     form.value.content = props.post.content
     form.value.is_secret = props.post.is_secret
-    form.value.password = props.post.password
+    form.value.password = props.post.password || ''
     form.value.is_hide_comment = props.post.is_hide_comment
     form.value.is_notice = props.post.is_notice
     form.value.is_faq = props.post.is_faq ?? false

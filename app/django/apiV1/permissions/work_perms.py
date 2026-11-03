@@ -705,7 +705,7 @@ class ForumPermission(ProjectPermission):
         # 2. 조회(SAFE_METHODS) 요청 시 forum.read 권한 엄격히 대조 (레드마인 모델 준수)
         # 추천/신고(Like/Blame) 뷰셋들의 PATCH/PUT 액션 또한 'forum.read' 권한으로 판별
         is_like_blame_view = 'like' in view.__class__.__name__.lower() or 'blame' in view.__class__.__name__.lower()
-        if request.method in permissions.SAFE_METHODS or is_like_blame_view:
+        if request.method in permissions.SAFE_METHODS or (is_like_blame_view and view.action in ['update', 'partial_update']):
             if project.is_public:
                 return True
             required_perm = getattr(view, 'required_permission', 'forum.read') or 'forum.read'

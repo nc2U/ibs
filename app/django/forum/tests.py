@@ -4,8 +4,9 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from company.models import Company
-from forum.models import Forum, PostCategory, Post
+from forum.models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
 from work.models.project import IssueProject, Member, Role, Permission
+from work.models.logging import ActivityLogEntry
 
 User = get_user_model()
 
@@ -297,3 +298,185 @@ class ForumAppSecurityTests(TestCase):
             item = c_qs[0]
             _ = item.post.title
             _ = item.creator.username
+
+    def test_like_blame_delete_method_blocked(self):
+        """[Security] Like/Blame 뷰셋에서 DELETE 메서드 호출 시 405 Method Not Allowed 차단 검증"""
+        self.client.force_authenticate(user=self.member_user)
+        # 1. Post Like DELETE 차단
+        res_post_like_del = self.client.delete(f'/api/v1/post-like/{self.normal_post.pk}/')
+        self.assertEqual(res_post_like_del.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        # 글이 여전히 존재하는지 확인
+        self.assertTrue(Post.objects.filter(pk=self.normal_post.pk).exists())
+
+        # 2. Comment Like DELETE 차단
+        comment = Comment.objects.create(
+            post=self.normal_post, content='테스트 댓글', creator=self.member_user
+        )
+        res_cmt_like_del = self.client.delete(f'/api/v1/comment-like/{comment.pk}/')
+        self.assertEqual(res_cmt_like_del.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertTrue(Comment.objects.filter(pk=comment.pk).exists())
+
+    def test_secret_post_file_and_image_isolation(self):
+        """[Security] 비밀글 첨부파일/이미지에 대한 비인가 열람(RLS 우회) 차단 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        test_file = SimpleUploadedFile("secret_file.pdf", b"confidential content", content_type="application/pdf")
+        post_file = PostFile.objects.create(post=self.secret_post, file=test_file, file_name="secret_file.pdf")
+
+        # 1. 워크스페이스 타 멤버(another_m)가 비밀글의 파일 직접 조회 시도 -> 빈 목록 혹은 404
+        another_member = User.objects.create_user(
+            username='file_intruder', email='intruder@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        self.client.force_authenticate(user=another_member)
+        res_list = self.client.get(f'/api/v1/post-file/?post={self.secret_post.pk}')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        file_ids = [item['pk'] for item in res_list.data.get('results', res_list.data)]
+        self.assertNotIn(post_file.pk, file_ids)
+
+        res_detail = self.client.get(f'/api/v1/post-file/{post_file.pk}/')
+        self.assertEqual(res_detail.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 2. 작성자 본인은 정상 조회 가능
+        self.client.force_authenticate(user=self.member_user)
+        res_author = self.client.get(f'/api/v1/post-file/{post_file.pk}/')
+        self.assertEqual(res_author.status_code, status.HTTP_200_OK)
+
+        # 3. 포럼 매니저도 정상 조회 가능
+        self.client.force_authenticate(user=self.forum_manager)
+        res_mgr = self.client.get(f'/api/v1/post-file/{post_file.pk}/')
+        self.assertEqual(res_mgr.status_code, status.HTTP_200_OK)
+
+    def test_secret_comment_masking_and_authorization(self):
+        """[Security] 비밀 댓글(secret=True) 본문 마스킹 및 IP/기기 정보 은닉 검증"""
+        secret_comment = Comment.objects.create(
+            post=self.normal_post,
+            content='비밀 댓글 기밀 내용입니다.',
+            secret=True,
+            ip='192.168.1.100',
+            device='Mozilla/5.0 Test',
+            creator=self.member_user
+        )
+
+        another_member = User.objects.create_user(
+            username='comment_reader', email='reader@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        # 1. 제3자 일반 멤버가 비밀 댓글 조회 시 마스킹 및 IP/device 비노출
+        self.client.force_authenticate(user=another_member)
+        res_masked = self.client.get(f'/api/v1/comment/{secret_comment.pk}/')
+        self.assertEqual(res_masked.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_masked.data['content'], '비밀 댓글입니다.')
+        self.assertNotIn('ip', res_masked.data)
+        self.assertNotIn('device', res_masked.data)
+
+        # 2. 댓글 작성자 본인은 원문 확인 가능
+        self.client.force_authenticate(user=self.member_user)
+        res_author = self.client.get(f'/api/v1/comment/{secret_comment.pk}/')
+        self.assertEqual(res_author.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_author.data['content'], '비밀 댓글 기밀 내용입니다.')
+
+        # 3. 포럼 매니저도 원문 확인 가능
+        self.client.force_authenticate(user=self.forum_manager)
+        res_mgr = self.client.get(f'/api/v1/comment/{secret_comment.pk}/')
+        self.assertEqual(res_mgr.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_mgr.data['content'], '비밀 댓글 기밀 내용입니다.')
+
+    def test_comments_on_secret_post_and_hide_comments_isolated(self):
+        """[Security] 비밀글에 달린 댓글 및 댓글숨김(is_hide_comment) 글의 댓글 RLS 격리 검증"""
+        # (1) 비밀글에 달린 댓글
+        secret_post_comment = Comment.objects.create(
+            post=self.secret_post, content='비밀글에 대한 코멘트', creator=self.member_user
+        )
+        # (2) 댓글숨김 설정된 글
+        hide_post = Post.objects.create(
+            forum=self.general_forum,
+            title='댓글숨김 글',
+            content='댓글을 숨긴 게시글',
+            is_hide_comment=True,
+            creator=self.member_user
+        )
+        hide_post_comment = Comment.objects.create(
+            post=hide_post, content='숨겨진 댓글 내용', creator=self.member_user
+        )
+
+        another_member = User.objects.create_user(
+            username='intruder_comment', email='intruder_c@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        # 제3자 멤버는 비밀글/댓글숨김 글의 댓글 목록 조회 시 미노출 (0건)
+        self.client.force_authenticate(user=another_member)
+        res_secret_cmts = self.client.get(f'/api/v1/comment/?post={self.secret_post.pk}')
+        self.assertEqual(len(res_secret_cmts.data.get('results', res_secret_cmts.data)), 0)
+
+        res_hide_cmts = self.client.get(f'/api/v1/comment/?post={hide_post.pk}')
+        self.assertEqual(len(res_hide_cmts.data.get('results', res_hide_cmts.data)), 0)
+
+        # 작성자 본인은 조회 가능
+        self.client.force_authenticate(user=self.member_user)
+        res_author_secret = self.client.get(f'/api/v1/comment/?post={self.secret_post.pk}')
+        self.assertEqual(len(res_author_secret.data.get('results', res_author_secret.data)), 1)
+
+    def test_copy_post_cross_project_and_category_isolation(self):
+        """[Security] 타 비공개 프로젝트 포럼으로의 게시글 무인가 복사 차단 및 카테고리 외래키 오염 방지 검증"""
+        # 권한 없는 다른 비공개 프로젝트 및 포럼 생성
+        other_project = IssueProject.objects.create(
+            company=self.company, name='타사 프로젝트', slug='other-proj', is_public=False, type='2', creator=self.admin_user
+        )
+        other_forum = Forum.objects.create(project=other_project, name='타사 포럼')
+        origin_category = PostCategory.objects.create(forum=self.general_forum, name='일반카테고리')
+        self.normal_post.category = origin_category
+        self.normal_post.save()
+
+        # 1. 권한 없는 프로젝트 포럼으로 복사 시도 -> 403 Forbidden 차단
+        self.client.force_authenticate(user=self.member_user)
+        res_denied = self.client.post(
+            f'/api/v1/post/{self.normal_post.pk}/copy/',
+            {'forum': other_forum.pk},
+            format='json'
+        )
+        self.assertEqual(res_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 동일 프로젝트 내 다른 포럼(notice_forum)으로 포럼매니저가 복사 시 원본 카테고리가 대상 포럼과 불일치하므로 None으로 정제
+        self.client.force_authenticate(user=self.forum_manager)
+        res_ok = self.client.post(
+            f'/api/v1/post/{self.normal_post.pk}/copy/',
+            {'forum': self.notice_forum.pk},
+            format='json'
+        )
+        self.assertEqual(res_ok.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(res_ok.data['category'])
+
+    def test_activity_log_secret_masked_and_soft_delete_cleanup(self):
+        """[Privacy] 비밀글 생성 시 활동 로그 본문 마스킹 및 소프트 삭제 시 활동 로그 정리 검증"""
+        # 1. 비밀글의 활동로그 확인
+        secret_activity = ActivityLogEntry.objects.filter(sort='6', target_id=self.secret_post.pk).first()
+        self.assertIsNotNone(secret_activity)
+        self.assertEqual(secret_activity.summary, '비밀글입니다.')
+
+        # 2. 게시글 소프트 삭제 실행 시 활동 로그가 삭제되는지 확인
+        self.secret_post.delete()
+        self.assertFalse(ActivityLogEntry.objects.filter(sort='6', target_id=self.secret_post.pk).exists())
+
+    def test_tag_viewset_forum_project_isolation_and_permission(self):
+        """[Quality] 신규 생성된 태그(게시물 미할당)의 프로젝트 멤버 열람 및 권한 일원화 검증"""
+        tag = Tag.objects.create(forum=self.general_forum, name='신규태그')
+
+        # 1. 프로젝트 멤버는 게시글이 연결되지 않은 태그도 정상 조회 가능
+        self.client.force_authenticate(user=self.member_user)
+        res_member = self.client.get('/api/v1/tag/')
+        self.assertEqual(res_member.status_code, status.HTTP_200_OK)
+        tag_ids = [item['pk'] for item in res_member.data.get('results', res_member.data)]
+        self.assertIn(tag.pk, tag_ids)
+
+        # 2. 프로젝트 비멤버는 조회 불가
+        self.client.force_authenticate(user=self.other_user)
+        res_other = self.client.get('/api/v1/tag/')
+        self.assertEqual(res_other.status_code, status.HTTP_200_OK)
+        other_tag_ids = [item['pk'] for item in res_other.data.get('results', res_other.data)]
+        self.assertNotIn(tag.pk, other_tag_ids)

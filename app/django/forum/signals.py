@@ -12,11 +12,18 @@ from django.utils.html import strip_tags
 def post_log_changes(sender, instance, created, **kwargs):
     project = instance.forum.project
     if created and project and project.status == '1':
-        clean_text = html.unescape(strip_tags(instance.content or ''))
-        clean_text = ' '.join(clean_text.split())
+        if instance.is_secret:
+            summary = '비밀글입니다.'
+        elif instance.is_blind:
+            summary = '블라인드 처리된 게시물입니다.'
+        else:
+            clean_text = html.unescape(strip_tags(instance.content or ''))
+            clean_text = ' '.join(clean_text.split())
+            summary = clean_text[:150]
+
         ActivityLogEntry.objects.create(
             sort='6', project=project, target_id=instance.pk, parent_id=instance.forum.pk,
-            title=f"[게시물] {instance.title}"[:250], summary=clean_text[:150], creator=instance.creator
+            title=f"[게시물] {instance.title}"[:250], summary=summary, creator=instance.creator
         )
 
 

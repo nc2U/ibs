@@ -98,7 +98,7 @@ const hideComments = (post: number, state: boolean, filter: PostFilter) =>
     message(
       'info',
       '',
-      `이 게시물의 댓글을 숨김${!is_secret.value ? ' 해제' : ' 처리'}하였습니다.`,
+      `이 게시물의 댓글을 숨김${!is_hide_cmt.value ? ' 해제' : ' 처리'}하였습니다.`,
     ),
   )
 
