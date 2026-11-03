@@ -10,6 +10,7 @@ from django.views.generic import View
 from weasyprint import HTML
 
 from apiV1.permissions._utils import get_project_ids_with_permission
+from _pdf.mixins import PdfExportMixin
 from _pdf.utils import (get_contract, get_simple_orders, get_paid)
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
@@ -23,11 +24,10 @@ def get_today():
     return date.today()
 
 
-class PdfExportLedgerPayment(View):
+class PdfExportLedgerPayment(PdfExportMixin, View):
     """납부 확인서 (Ledger 기반)"""
 
-    @staticmethod
-    def get(request):
+    def get(self, request):
         context = dict()
 
         # 계약 건 객체
@@ -86,17 +86,8 @@ class PdfExportLedgerPayment(View):
         context['calc_sums'] = calc_sums
         # ----------------------------------------------------------------
 
-        html_string = render_to_string('pdf/payments_by_contractor.html', context)
-
-        html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
-
         filename = request.GET.get('filename', 'payments_contractor')
-        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
-
-        response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-        return response
+        return self.create_pdf_response('pdf/payments_by_contractor.html', context, filename)
 
     @staticmethod
     def get_simple_orders_from_plan(payment_plan, contract):
@@ -302,11 +293,10 @@ class PdfExportLedgerPayment(View):
         return result, cumulative, (penalty_total, discount_total, unpaid_indices)
 
 
-class PdfExportLedgerDailyLateFee(View):
+class PdfExportLedgerDailyLateFee(PdfExportMixin, View):
     """일자별 연체료 (Ledger 기반)"""
 
-    @staticmethod
-    def get(request):
+    def get(self, request):
         context = dict()
 
         # 계약 건 객체
@@ -360,17 +350,8 @@ class PdfExportLedgerDailyLateFee(View):
 
         # ----------------------------------------------------------------
 
-        html_string = render_to_string('pdf/daily_late_fee.html', context)
-
-        html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
-
         filename = request.GET.get('filename', 'daily_late_fee')
-        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
-
-        response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-        return response
+        return self.create_pdf_response('pdf/daily_late_fee.html', context, filename)
 
     @staticmethod
     def get_unpaid_summary_ledger(contract, pub_date):
@@ -524,7 +505,7 @@ class PdfExportLedgerDailyLateFee(View):
         return daily_fees
 
 
-class PdfExportLedgerCalculation(View):
+class PdfExportLedgerCalculation(PdfExportMixin, View):
     """선납할인/연체가산 내역서 (Ledger 기반)"""
 
     def get(self, request):
@@ -599,17 +580,8 @@ class PdfExportLedgerCalculation(View):
         context['calc_sums'] = calc_sums
         # ----------------------------------------------------------------
 
-        html_string = render_to_string('pdf/calculation_by_contractor.html', context)
-
-        html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
-
         filename = request.GET.get('filename', 'calculation_contractor')
-        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
-
-        response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-        return response
+        return self.create_pdf_response('pdf/calculation_by_contractor.html', context, filename)
 
     @staticmethod
     def get_down_pay(contract):

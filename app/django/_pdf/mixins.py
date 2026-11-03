@@ -4,10 +4,12 @@ PDF Export Common Mixins
 공통 PDF 내보내기 기능을 제공하는 믹스인 클래스들
 """
 import re
+import tempfile
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from urllib.parse import quote, urlparse
+from urllib.request import url2pathname
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -28,21 +30,46 @@ class PdfExportMixin(LoginRequiredMixin, View):
     raise_exception = False
 
     def dispatch(self, request, *args, **kwargs):
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not request.user.is_authenticated and auth_header:
-            from rest_framework_simplejwt.authentication import JWTAuthentication
-            try:
-                auth_result = JWTAuthentication().authenticate(request)
-                if auth_result is not None:
-                    request.user, request.auth = auth_result
-            except Exception:
-                pass
-            if not request.user.is_authenticated:
+        # 1. 미인증 사용자인 경우 토큰 기반 인증 시도 (Authorization 헤더, 쿠키, 쿼리 파라미터)
+        if not request.user.is_authenticated:
+            raw_token = None
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            if auth_header.startswith('Bearer '):
+                raw_token = auth_header.split(' ', 1)[1].strip()
+
+            if not raw_token:
+                raw_token = request.COOKIES.get('accessToken') or request.COOKIES.get('token')
+
+            if not raw_token:
+                raw_token = request.GET.get('token')
+
+            if raw_token:
+                from rest_framework_simplejwt.authentication import JWTAuthentication
+                try:
+                    jwt_auth = JWTAuthentication()
+                    validated_token = jwt_auth.get_validated_token(raw_token)
+                    request.user = jwt_auth.get_user(validated_token)
+                    request.auth = validated_token
+                except Exception:
+                    pass
+
+        # 2. 여전히 인증되지 않은 경우
+        if not request.user.is_authenticated:
+            # 토큰이 전송되었으나 유효하지 않은 경우 명시적 401 반환 (다운로드 시 HTML이 PDF로 저장되는 현상 방지)
+            if (
+                request.META.get('HTTP_AUTHORIZATION') or
+                request.COOKIES.get('accessToken') or
+                request.COOKIES.get('token') or
+                request.GET.get('token') or
+                request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+                'application/json' in request.META.get('HTTP_ACCEPT', '')
+            ):
                 return HttpResponse(
-                    '유효하지 않거나 만료된 인증 토큰입니다.',
+                    '유효하지 않거나 만료된 인증 토큰입니다. 다시 로그인해 주세요.',
                     status=401,
                     content_type='text/plain; charset=utf-8',
                 )
+
         return super().dispatch(request, *args, **kwargs)
 
     @staticmethod
@@ -55,16 +82,24 @@ class PdfExportMixin(LoginRequiredMixin, View):
         if scheme in ('data', ''):
             return _base_fetcher(url, *args, **kwargs)
 
-        # file: URI는 BASE_DIR 또는 시스템 임시 디렉토리 내부 경로만 허용 (LFI 차단)
+        # file: URI는 BASE_DIR, MEDIA_ROOT, STATIC_ROOT 또는 시스템 임시 디렉토리 내부 경로만 허용 (LFI 차단)
         if scheme == 'file':
-            file_path = parsed.path
+            file_path = url2pathname(parsed.path)
             try:
                 resolved = Path(file_path).resolve()
                 base_dir = Path(settings.BASE_DIR).resolve()
+                media_root = Path(settings.MEDIA_ROOT).resolve() if getattr(settings, 'MEDIA_ROOT', None) else None
+                static_root = Path(settings.STATIC_ROOT).resolve() if getattr(settings, 'STATIC_ROOT', None) else None
+                temp_dir = Path(tempfile.gettempdir()).resolve()
+
+                resolved_str = str(resolved).lower()
                 is_safe = (
-                    str(resolved).startswith(str(base_dir)) or
-                    str(resolved).startswith('/tmp') or
-                    str(resolved).startswith('/var/tmp')
+                    resolved_str.startswith(str(base_dir).lower()) or
+                    (media_root and resolved_str.startswith(str(media_root).lower())) or
+                    (static_root and resolved_str.startswith(str(static_root).lower())) or
+                    resolved_str.startswith(str(temp_dir).lower()) or
+                    resolved_str.startswith('/tmp') or
+                    resolved_str.startswith('/var/tmp')
                 )
                 if not is_safe:
                     raise ValueError(f"Access to file path {url} outside BASE_DIR is forbidden.")
@@ -89,12 +124,9 @@ class PdfExportMixin(LoginRequiredMixin, View):
         return _base_fetcher(url, *args, **kwargs)
 
     @classmethod
-    def create_pdf_response(cls, template_name, context, filename, request=None):
-        """PDF 응답 생성 (메모리 버퍼 기반 생성 및 base_url/SSRF 방어 지원)"""
-        html_string = render_to_string(template_name, context)
-
-        base_url = request.build_absolute_uri('/') if request else str(settings.BASE_DIR)
-        html = HTML(string=html_string, base_url=base_url, url_fetcher=cls.safe_url_fetcher)
+    def create_pdf_response_from_string(cls, html_string, filename):
+        """직접 생성된 HTML 문자열로부터 PDF 응답 생성 (메모리 버퍼 기반 및 SSRF 방어)"""
+        html = HTML(string=html_string, base_url=str(settings.BASE_DIR), url_fetcher=cls.safe_url_fetcher)
         pdf_bytes = html.write_pdf()
 
         clean_filename = re.sub(r'["\r\n]', '', str(filename)).strip() or 'document'
@@ -113,6 +145,12 @@ class PdfExportMixin(LoginRequiredMixin, View):
             f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_filename}'
         )
         return response
+
+    @classmethod
+    def create_pdf_response(cls, template_name, context, filename, request=None):
+        """PDF 응답 생성 (메모리 버퍼 기반 생성 및 base_url/SSRF 방어 지원)"""
+        html_string = render_to_string(template_name, context)
+        return cls.create_pdf_response_from_string(html_string, filename)
 
     @staticmethod
     def get_base_context(**kwargs):

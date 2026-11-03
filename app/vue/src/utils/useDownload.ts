@@ -105,7 +105,7 @@ export function useDownload(): UseDownloadReturn {
       }, 200)
 
       try {
-        const token = Cookies.get('token')
+        const token = Cookies.get('accessToken') || Cookies.get('token')
         const headers: Record<string, string> = {}
         if (token) {
           headers['Authorization'] = `Bearer ${token}`
@@ -119,6 +119,12 @@ export function useDownload(): UseDownloadReturn {
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const contentType = response.headers.get('content-type') || ''
+        if (contentType.includes('text/html') || contentType.includes('text/plain')) {
+          const errorText = await response.text()
+          throw new Error(errorText || '다운로드 파일 형식이 올바르지 않습니다.')
         }
 
         // Content-Disposition 헤더에서 파일명 추출
@@ -149,8 +155,16 @@ export function useDownload(): UseDownloadReturn {
         a.click()
         document.body.removeChild(a)
         window.URL.revokeObjectURL(blobUrl)
-      } catch (fetchError) {
-        console.warn('Fetch download failed, falling back to window.location.href', fetchError)
+      } catch (fetchError: any) {
+        console.warn('Fetch download failed:', fetchError)
+        if (
+          fetchError?.message &&
+          (fetchError.message.includes('401') ||
+            fetchError.message.includes('403') ||
+            fetchError.message.includes('형식'))
+        ) {
+          throw fetchError
+        }
         // 실패 시 기존 방식으로 fallback
         window.location.href = finalUrl
       }
@@ -189,7 +203,7 @@ export function useDownload(): UseDownloadReturn {
       downloadState.fileType = detectFileType(fileName)
       downloadState.progress = 0
 
-      const token = Cookies.get('token')
+      const token = Cookies.get('accessToken') || Cookies.get('token')
       const headers: Record<string, string> = {}
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
@@ -200,6 +214,16 @@ export function useDownload(): UseDownloadReturn {
         headers,
         credentials: 'include',
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('text/html') || contentType.includes('text/plain')) {
+        const errorText = await response.text()
+        throw new Error(errorText || '다운로드 파일 형식이 올바르지 않습니다.')
+      }
 
       if (!response.body) {
         throw new Error('Response body is null')

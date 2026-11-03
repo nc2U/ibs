@@ -68,17 +68,9 @@ class PdfExportBill(View):
 
         context['data_list'] = data_list
 
-        html_string = render_to_string('pdf/bill_control.html', context)
-        html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
-
         filename = request.GET.get('filename', 'payment_bill')
         filename = f'{filename}({len(contractor_list)}건)' if contractor_list else filename
-        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
-
-        response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
-        return response
+        return self.create_pdf_response('pdf/bill_control.html', context, filename)
 
     def get_bill_data(self, cont_id, payment_orders, now_due_order, pub_date, np, nl):
         """

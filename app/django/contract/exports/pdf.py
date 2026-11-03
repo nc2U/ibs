@@ -10,11 +10,12 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
+from _pdf.mixins import PdfExportMixin
 from _pdf.utils import get_contract
 from apiV1.permissions._utils import get_project_ids_with_permission
 
 
-class PdfExportCertOccupancy(View):
+class PdfExportCertOccupancy(PdfExportMixin, View):
 
     def get(self, request):
         user = getattr(request, 'user', None)
@@ -100,13 +101,8 @@ class PdfExportCertOccupancy(View):
         else:
             html_string = html_string + overlay_text
 
-        html = HTML(string=html_string)
-        pdf_bytes = html.write_pdf()
-
         filename = request.GET.get('filename', 'cert-occupancy')
-        response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
-        return response
+        return self.create_pdf_response_from_string(html_string, filename)
 
     @staticmethod
     def generate_text_overlay(context):

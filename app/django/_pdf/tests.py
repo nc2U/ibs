@@ -46,6 +46,36 @@ class PdfExportMixinTests(TestCase):
         # get() 미구현 시 405 Method Not Allowed이지만 LoginRequired 통과는 성공
         self.assertEqual(response.status_code, 405)
 
+    def test_jwt_authenticated_header_is_allowed(self):
+        """JWT 토큰이 Authorization 헤더로 전달된 경우 정상 인증되는지 검증"""
+        from rest_framework_simplejwt.tokens import RefreshToken
+        token = str(RefreshToken.for_user(self.user).access_token)
+        view = PdfExportMixin.as_view()
+        request = self.factory.get('/pdf/work/meeting/1/', HTTP_AUTHORIZATION=f'Bearer {token}')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 405)
+
+    def test_jwt_authenticated_cookie_is_allowed(self):
+        """JWT 토큰이 accessToken 쿠키로 전달된 경우 정상 인증되는지 검증"""
+        from rest_framework_simplejwt.tokens import RefreshToken
+        token = str(RefreshToken.for_user(self.user).access_token)
+        view = PdfExportMixin.as_view()
+        request = self.factory.get('/pdf/work/meeting/1/')
+        request.COOKIES['accessToken'] = token
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 405)
+
+    def test_invalid_jwt_returns_401(self):
+        """유효하지 않은 JWT 토큰 전달 시 401 Unauthorized 반환 검증 (HTML 다운로드 방지)"""
+        view = PdfExportMixin.as_view()
+        request = self.factory.get('/pdf/work/meeting/1/', HTTP_AUTHORIZATION='Bearer invalid_token')
+        request.user = AnonymousUser()
+        response = view(request)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('유효하지 않거나 만료된', response.content.decode('utf-8'))
+
     def test_safe_url_fetcher_blocks_ssrf(self):
         """WeasyPrint safe_url_fetcher가 내부망, 메타데이터 IP 및 비인가 로컬 파일을 차단하는지 검증 (SSRF/LFI 방어)"""
         # 1. AWS/클라우드 메타데이터 차단
@@ -77,6 +107,15 @@ class PdfExportMixinTests(TestCase):
             PdfExportMixin.safe_url_fetcher('file:///etc/passwd')
         with self.assertRaises(ValueError):
             PdfExportMixin.safe_url_fetcher('file:///etc/shadow')
+
+        # 6. BASE_DIR 내부 파일 file: URI 허용 (크로스 플랫폼/Windows 호환)
+        from django.conf import settings
+        from pathlib import Path
+        base_file = Path(settings.BASE_DIR) / 'manage.py'
+        if base_file.exists():
+            file_url = base_file.as_uri()
+            result = PdfExportMixin.safe_url_fetcher(file_url)
+            self.assertIsNotNone(result)
 
     def test_today_proxy_is_dynamic(self):
         """TODAY 심볼 및 get_today()가 현재 날짜를 동적으로 반환하고 해시를 지원하는지 검증"""
@@ -110,6 +149,19 @@ class PdfExportMixinTests(TestCase):
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertTrue(len(response.content) > 500)
         # Content-Disposition 헤더에 ASCII filename 및 RFC 5987 filename* 동시 지원 확인
+        self.assertIn('filename=', response['Content-Disposition'])
+        self.assertIn("filename*=UTF-8''", response['Content-Disposition'])
+
+    def test_create_pdf_response_from_string(self):
+        """create_pdf_response_from_string이 HTML 문자열로부터 PDF 응답을 생성하는지 검증"""
+        html_content = '<html><body><h1>테스트 문서</h1></body></html>'
+        response = PdfExportMixin.create_pdf_response_from_string(
+            html_content,
+            '테스트_스트링문서'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(len(response.content) > 100)
         self.assertIn('filename=', response['Content-Disposition'])
         self.assertIn("filename*=UTF-8''", response['Content-Disposition'])
 
