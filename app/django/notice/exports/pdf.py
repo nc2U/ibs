@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
+from _pdf.mixins import PdfExportMixin
 from _pdf.utils import get_contract, get_due_date_per_order
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import aggregate_installment_adjustments
@@ -15,7 +16,7 @@ from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
 
 
-class PdfExportBill(View):
+class PdfExportBill(PdfExportMixin, View):
     """고지서 리스트"""
 
     def get(self, request):

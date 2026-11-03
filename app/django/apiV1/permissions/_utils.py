@@ -150,6 +150,9 @@ def get_project_ids_with_permission(user, required_perm: str):
     Returns:
         list[int]: 해당 권한을 보유한 project.Project PK 목록
     """
+    if not user or not user.is_authenticated:
+        return []
+
     from work.models.project import IssueProject as _IssueProject
     # 소속 IssueProject 중 IBS project가 연결된 것만 조회
     candidate_ips = _IssueProject.objects.filter(
