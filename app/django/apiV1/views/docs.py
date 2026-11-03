@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
 from apiV1.permissions.ibs_perms import HqProjectModulePermission  # [H-4] 공문서 본사 권한 검증
+from apiV1.permissions._utils import get_company_ids_with_permission
 from company.models import Company
 from work.models import IssueProject
 from docs.models import (LetterSequence, Category, LawsuitCase, Document, Link,
@@ -535,16 +536,16 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        if hasattr(user, 'staff') and user.staff.company:
-            return queryset.filter(company=user.staff.company)
-        return queryset.none()
+        accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+        return queryset.filter(company_id__in=accessible_companies)
 
     def perform_create(self, serializer):
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if hasattr(user, 'staff') and user.staff.company:
-                if serializer.validated_data.get('company') != user.staff.company:
-                    raise PermissionDenied('소속 회사 이외의 회사 명의로 공문을 등록할 수 없습니다.')
+            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
+            company = serializer.validated_data.get('company')
+            if company and company.pk not in accessible_companies:
+                raise PermissionDenied('소속 회사 이외의 회사 명의로 공문을 등록할 수 없습니다.')
         letter = serializer.save(creator=self.request.user)
         if letter.dispatched_at and letter.parent_inbound_letter:
             parent = letter.parent_inbound_letter
@@ -707,7 +708,12 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if not hasattr(user, 'staff') or not user.staff.company_id or str(user.staff.company_id) != str(company_id):
+            accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+            try:
+                company_pk = int(company_id)
+            except (ValueError, TypeError):
+                company_pk = None
+            if not company_pk or company_pk not in accessible_companies:
                 return Response({'error': '해당 회사의 공문 번호를 조회할 권한이 없습니다.'},
                                 status=status.HTTP_403_FORBIDDEN)
 
@@ -889,9 +895,8 @@ class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        if hasattr(user, 'staff') and user.staff.company:
-            return queryset.filter(letter__company=user.staff.company)
-        return queryset.none()
+        accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+        return queryset.filter(letter__company_id__in=accessible_companies)
 
     def perform_create(self, serializer):
         letter = serializer.validated_data.get('letter')
@@ -899,9 +904,9 @@ class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
             raise ValidationError('이미 대외 발송이 완료된 공문에는 첨부파일을 추가할 수 없습니다.')
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if hasattr(user, 'staff') and user.staff.company:
-                if letter and letter.company != user.staff.company:
-                    raise PermissionDenied('소속 회사 이외의 공문에 첨부파일을 추가할 수 없습니다.')
+            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
+            if letter and letter.company_id not in accessible_companies:
+                raise PermissionDenied('소속 회사 이외의 공문에 첨부파일을 추가할 수 없습니다.')
         serializer.save()
 
     def perform_update(self, serializer):
@@ -970,16 +975,16 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        if hasattr(user, 'staff') and user.staff.company:
-            return queryset.filter(company=user.staff.company)
-        return queryset.none()
+        accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+        return queryset.filter(company_id__in=accessible_companies)
 
     def perform_create(self, serializer):
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if hasattr(user, 'staff') and user.staff.company:
-                if serializer.validated_data.get('company') != user.staff.company:
-                    raise PermissionDenied('소속 회사 이외의 수신 공문을 등록할 수 없습니다.')
+            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
+            company = serializer.validated_data.get('company')
+            if company and company.pk not in accessible_companies:
+                raise PermissionDenied('소속 회사 이외의 수신 공문을 등록할 수 없습니다.')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
@@ -994,7 +999,12 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if not hasattr(user, 'staff') or not user.staff.company_id or str(user.staff.company_id) != str(company_id):
+            accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+            try:
+                company_pk = int(company_id)
+            except (ValueError, TypeError):
+                company_pk = None
+            if not company_pk or company_pk not in accessible_companies:
                 return Response({'error': '해당 회사의 접수 번호를 조회할 권한이 없습니다.'},
                                 status=status.HTTP_403_FORBIDDEN)
 
@@ -1218,9 +1228,8 @@ class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        if hasattr(user, 'staff') and user.staff.company:
-            return queryset.filter(letter__company=user.staff.company)
-        return queryset.none()
+        accessible_companies = get_company_ids_with_permission(user, 'docs.read')
+        return queryset.filter(letter__company_id__in=accessible_companies)
 
     def perform_create(self, serializer):
         letter = serializer.validated_data.get('letter')
@@ -1228,9 +1237,9 @@ class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
             raise ValidationError('종결 처리된 수신 공문에는 첨부파일을 추가할 수 없습니다.')
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if hasattr(user, 'staff') and user.staff.company:
-                if letter and letter.company != user.staff.company:
-                    raise PermissionDenied('소속 회사 이외의 수신 공문에 첨부파일을 추가할 수 없습니다.')
+            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
+            if letter and letter.company_id not in accessible_companies:
+                raise PermissionDenied('소속 회사 이외의 수신 공문에 첨부파일을 추가할 수 없습니다.')
         serializer.save()
 
     def perform_update(self, serializer):

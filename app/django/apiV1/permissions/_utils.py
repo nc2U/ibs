@@ -170,3 +170,50 @@ def get_project_ids_with_permission(user, required_perm: str):
             allowed_ids.append(ip.project.id)
     return allowed_ids
 
+
+def get_company_ids_with_permission(user, required_perm: str = None):
+    """
+    사용자가 접근 권한을 보유한 회사(Company) PK 목록을 반환합니다.
+    1. 슈퍼유저 / work_manager: 전체 회사 ID 반환
+    2. 소속 Staff (직접 연결 또는 이메일 매칭): 해당 회사 ID
+    3. 본사 워크스페이스(IssueProject type='1') 멤버십 및 required_perm 보유 회사 ID
+    """
+    if not user or not user.is_authenticated:
+        return []
+
+    from company.models import Company, Staff
+    if user.is_superuser or getattr(user, 'work_manager', False):
+        return list(Company.objects.values_list('id', flat=True))
+
+    from django.db.models import Q
+    from work.models.project import IssueProject
+
+    allowed_company_ids = set()
+
+    # 1. Staff 소속 (직접 외래키 또는 이메일 일치)
+    if hasattr(user, 'staff') and user.staff and user.staff.company_id:
+        allowed_company_ids.add(user.staff.company_id)
+    for cid in Staff.objects.filter(
+        Q(user=user) | Q(email=user.email),
+        company__isnull=False
+    ).values_list('company_id', flat=True):
+        allowed_company_ids.add(cid)
+
+    # 2. 본사 워크스페이스(type='1') 멤버십 및 권한 검증
+    hq_ips = IssueProject.objects.filter(
+        type='1',
+        members__user=user,
+        company__isnull=False
+    ).select_related('company')
+
+    for ip in hq_ips:
+        if required_perm:
+            perms = set(ip.get_user_permissions(user))
+            if required_perm in perms:
+                allowed_company_ids.add(ip.company_id)
+        else:
+            allowed_company_ids.add(ip.company_id)
+
+    return list(allowed_company_ids)
+
+
