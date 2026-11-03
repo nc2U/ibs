@@ -38,6 +38,29 @@ const mockRoute = {
 }
 
 describe('ContentHeader Test', () => {
+  it('header main select test', async () => {
+    const wrapper = mount(ContentHeader, {
+      props: {
+        pageTitle: 'Page Title',
+        navMenu: ['1st Menu', '2nd Menu'],
+        selector: 'CompanySelect',
+      },
+      global: {
+        plugins: [createTestingPinia(), vuetify, CoreuiVue],
+        stubs: ['Multiselect'],
+      },
+    })
+
+    expect(wrapper.html()).toContain('Page Title')
+    expect(wrapper.html()).toContain('1st Menu')
+    expect(wrapper.html()).toContain('2nd Menu')
+    expect(wrapper.html()).toContain('회사명')
+
+    await wrapper.setProps({ selector: 'ProjectSelect' })
+
+    expect(wrapper.html()).toContain('프로젝트')
+  })
+
   it('Header Nav test', async () => {
     mockRouter.push.mockClear()
     const wrapper = mount(HeaderNav, {
@@ -68,7 +91,7 @@ describe('ContentHeader Test', () => {
   it('company select test', () => {
     const wrapper = mount(CompanySelect, {
       global: {
-        plugins: [vuetify, CoreuiVue],
+        plugins: [createTestingPinia(), vuetify, CoreuiVue],
         stubs: ['Multiselect'],
       },
     })
@@ -80,7 +103,7 @@ describe('ContentHeader Test', () => {
   it('project select test', () => {
     const wrapper = mount(ProjectSelect, {
       global: {
-        plugins: [vuetify, CoreuiVue],
+        plugins: [createTestingPinia(), vuetify, CoreuiVue],
         stubs: ['Multiselect'],
       },
     })

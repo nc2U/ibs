@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { useCompany } from '@/store/pinia/company'
@@ -8,7 +9,7 @@ import ProjectSelect from '@/layouts/ContentHeader/components/ProjectSelect.vue'
 
 defineProps({
   pageTitle: { type: String, default: 'Page Title' },
-  navMenu: { type: Array, default: () => ['Base Menu'] },
+  navMenu: { type: Array as PropType<string[]>, default: () => ['Base Menu'] },
   selector: { type: String, default: '' },
   selectable: { type: Boolean, default: true },
 })
