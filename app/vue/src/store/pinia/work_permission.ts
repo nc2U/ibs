@@ -31,6 +31,23 @@ export const usePermission = defineStore('permission', () => {
   // 프로젝트 역할 속성 세팅 (프로젝트 로드 시 호출)
   const setProjectRole = (role: MyRole | null) => (projectRole.value = role)
 
+  // 대상 프로젝트 객체 탐색 헬퍼 (myProjectsFlat / myProjects / allReadableProjectsFlat / allReadableProjects 순회)
+  const findTargetProject = (pid: number | string) => {
+    const match = (p: any) =>
+      p &&
+      (p.pk === pid ||
+        String(p.pk) === String(pid) ||
+        p.slug === pid ||
+        (p.project !== null && p.project !== undefined && (p.project === pid || String(p.project) === String(pid))))
+
+    return (
+      workStore.myProjectsFlat.find(match) ||
+      workStore.myProjects.find(match) ||
+      workStore.allReadableProjectsFlat.find(match) ||
+      workStore.allReadableProjects.find(match)
+    )
+  }
+
   // 역할 속성 조회 로직
   const getProjectRole = (projectIdentifier?: number | string): MyRole => {
     // 1. 업무 관리자(workManager)인 경우 무조건 모든 권한 최고 레벨
@@ -44,12 +61,7 @@ export const usePermission = defineStore('permission', () => {
 
     // 2. 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 역할 정보를 반환
     if (projectIdentifier !== undefined) {
-      const targetProj = workStore.allReadableProjectsFlat.find(
-        (p: any) =>
-          p.pk === projectIdentifier ||
-          p.slug === projectIdentifier ||
-          p.project === projectIdentifier,
-      )
+      const targetProj = findTargetProject(projectIdentifier)
       return (
         targetProj?.my_role || {
           assignable: false,
@@ -166,12 +178,7 @@ export const usePermission = defineStore('permission', () => {
       // 대상 프로젝트 객체 찾기
       const targetProj =
         projectIdentifier !== undefined
-          ? workStore.allReadableProjectsFlat.find(
-              (p: any) =>
-                p.pk === projectIdentifier ||
-                p.slug === projectIdentifier ||
-                p.project === projectIdentifier,
-            )
+          ? findTargetProject(projectIdentifier)
           : workStore.currentProject
 
       // [닫힘('2')] 워크스페이스: 읽기 전용 권한 이외의 쓰기 권한 차단
