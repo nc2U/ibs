@@ -11,7 +11,6 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
-    BankApiCredential, RawBankTransaction,
 )
 from django.db.models import Q
 from ledger.resources import (
@@ -801,53 +800,4 @@ class ProjectLedgerCalculationAdmin(admin.ModelAdmin):
             'fields': ('creator', 'created_at', 'updated_at')
         }),
     )
-
-
-# ============================================
-# Bank Scraping Admin - 은행 API 수집 관리
-# ============================================
-
-@admin.register(BankApiCredential)
-class BankApiCredentialAdmin(admin.ModelAdmin):
-    list_select_related = ('company_bank_account__company', 'project_bank_account__project')
-    list_display = ('__str__', 'bank_code', 'account_number', 'is_active', 'last_status', 'last_scraped_at')
-    list_filter = ('is_active', 'last_status', 'bank_code')
-    search_fields = ('account_number', 'connected_id')
-    readonly_fields = ('last_scraped_at', 'last_status', 'last_error_message', 'created_at', 'updated_at')
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-            return qs
-        from apiV1.views.ledger import get_accessible_company_ids, get_accessible_project_ids
-        c_ids = get_accessible_company_ids(request.user)
-        p_ids = get_accessible_project_ids(request.user)
-        return qs.filter(
-            Q(company_bank_account__company_id__in=c_ids) |
-            Q(project_bank_account__project_id__in=p_ids)
-        )
-
-
-@admin.register(RawBankTransaction)
-class RawBankTransactionAdmin(admin.ModelAdmin):
-    list_select_related = (
-        'credential__company_bank_account__company',
-        'credential__project_bank_account__project'
-    )
-    list_display = ('deal_date', 'deal_time', 'sort_type', 'amount', 'client_name', 'content', 'status', 'confidence_score', 'credential')
-    list_filter = ('status', 'sort_type', 'deal_date', 'credential__bank_code')
-    search_fields = ('client_name', 'content', 'amount', 'tx_hash')
-    readonly_fields = ('tx_hash', 'raw_data', 'created_at', 'updated_at', 'confirmed_at', 'confirmed_by')
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-            return qs
-        from apiV1.views.ledger import get_accessible_company_ids, get_accessible_project_ids
-        c_ids = get_accessible_company_ids(request.user)
-        p_ids = get_accessible_project_ids(request.user)
-        return qs.filter(
-            Q(credential__company_bank_account__company_id__in=c_ids) |
-            Q(credential__project_bank_account__project_id__in=p_ids)
-        )
 

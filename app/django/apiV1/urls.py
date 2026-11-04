@@ -182,8 +182,6 @@ router.register(r'ledger/company-calculation', ledger.CompanyLedgerCalculationVi
 router.register(r'ledger/project-calculation', ledger.ProjectLedgerCalculationViewSet)
 router.register(r'ledger/company-last-deal-date', ledger.CompanyLedgerLastDealDateViewSet)
 router.register(r'ledger/project-last-deal-date', ledger.ProjectLedgerLastDealDateViewSet)
-router.register(r'ledger/credentials', ledger.BankApiCredentialViewSet, basename='ledger-credentials')
-router.register(r'ledger/raw-transactions', ledger.RawBankTransactionViewSet, basename='ledger-raw-transactions')
 
 # contract
 router.register(r'order-group', contract.OrderGroupViewSet)

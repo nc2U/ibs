@@ -6,12 +6,12 @@ logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction as db_transaction
-from django.db.models import Sum, F, Case, When, Count, Q
+from django.db.models import Sum, F, Case, When, Count, Q, ProtectedError
 from django.utils import timezone
 from django_filters import CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -25,7 +25,6 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
-    BankApiCredential, RawBankTransaction,
 )
 from ledger.services.company_transaction import get_company_transactions, prefetch_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
@@ -41,9 +40,6 @@ from ..serializers.ledger import (
     CompanyCompositeTransactionSerializer, ProjectCompositeTransactionSerializer,
     CompanyLedgerCalculationSerializer, ProjectLedgerCalculationSerializer, CompanyLedgerLastDealDateSerializer,
     ProjectLedgerLastDealDateSerializer,
-    BankApiCredentialSerializer, RawBankTransactionSerializer,
-    RawBankTransactionConfirmSerializer, RawBankTransactionBulkConfirmSerializer,
-    BankCertificateRegisterSerializer, BankCredentialBatchLinkSerializer,
 )
 
 
@@ -86,6 +82,12 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             return qs
         return qs.filter(company_id__in=get_accessible_company_ids(user))
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('거래 내역이 존재하는 은행 계좌는 삭제할 수 없습니다. (비활성화 또는 숨김 처리하세요.)')
 
 
 def get_accessible_company_ids(user):
@@ -137,6 +139,12 @@ class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('거래 내역이 존재하는 은행 계좌는 삭제할 수 없습니다. (비활성화 또는 숨김 처리하세요.)')
 
 
 # ============================================
@@ -267,6 +275,12 @@ class CompanyAccountViewSet(viewsets.ModelViewSet):
 
         accounts = queryset.order_by('code', 'order')
         return Response(self.get_serializer(accounts, many=True).data)
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('하위 계정 또는 거래 분개가 연결된 계정과목은 삭제할 수 없습니다. (비활성화 처리하세요.)')
 
 
 class ProjectAccountFilter(FilterSet):
@@ -406,6 +420,12 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
         accounts = queryset.order_by('code', 'order')
         return Response(self.get_serializer(accounts, many=True).data)
 
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('하위 계정 또는 거래 분개가 연결된 계정과목은 삭제할 수 없습니다. (비활성화 처리하세요.)')
+
     @action(detail=False, methods=['get'])
     def payment_accounts(self, request):
         """분양대금 관련 계정만 조회"""
@@ -465,6 +485,12 @@ class AffiliateViewSet(viewsets.ModelViewSet):
             Q(sort='project', project_id__in=project_ids)
         )
 
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('회계 분개에 사용 중인 관계회사/프로젝트 항목은 삭제할 수 없습니다.')
+
 
 # ============================================
 # Bank Transaction ViewSets
@@ -506,6 +532,23 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def perform_destroy(self, instance):
+        try:
+            cal = CompanyLedgerCalculation.objects.get(company_id=instance.company_id)
+            if cal.calculated and instance.deal_date <= cal.calculated:
+                user = self.request.user
+                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
+                if not has_manage:
+                    from apiV1.permissions.ibs_perms import HqProjectModulePermission
+                    user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
+                    if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
+                        has_manage = True
+                if not has_manage:
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.')
+        except CompanyLedgerCalculation.DoesNotExist:
+            pass
+        instance.delete()
 
     def list(self, request, *args, **kwargs):
         """accounting_entries N+1 방지를 위한 수동 prefetch"""
@@ -659,6 +702,28 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def perform_destroy(self, instance):
+        try:
+            cal = ProjectLedgerCalculation.objects.get(project_id=instance.project_id)
+            if cal.calculated and instance.deal_date <= cal.calculated:
+                user = self.request.user
+                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
+                if not has_manage:
+                    try:
+                        from project.models import Project
+                        prj = Project.objects.select_related('issue_project').get(pk=instance.project_id)
+                        if hasattr(prj, 'issue_project') and prj.issue_project:
+                            user_perms = set(prj.issue_project.get_user_permissions(user))
+                            if 'ledger.manage' in user_perms:
+                                has_manage = True
+                    except Exception:
+                        pass
+                if not has_manage:
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.')
+        except ProjectLedgerCalculation.DoesNotExist:
+            pass
+        instance.delete()
 
     def list(self, request, *args, **kwargs):
         """get_project_transactions 서비스가 필터링한 쿼리셋에 대해 페이징 처리된 instances만 prefetch 맵핑 후 직렬화합니다"""
@@ -865,6 +930,24 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
             return qs
         return qs.filter(company_id__in=get_accessible_company_ids(user))
 
+    def perform_destroy(self, instance):
+        try:
+            cal = CompanyLedgerCalculation.objects.get(company_id=instance.company_id)
+            deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+            if cal.calculated and deal_date and deal_date <= cal.calculated:
+                user = self.request.user
+                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
+                if not has_manage:
+                    from apiV1.permissions.ibs_perms import HqProjectModulePermission
+                    user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
+                    if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
+                        has_manage = True
+                if not has_manage:
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 삭제할 수 없습니다.')
+        except CompanyLedgerCalculation.DoesNotExist:
+            pass
+        instance.delete()
+
 
 class ProjectAccountingEntryFilterSet(FilterSet):
     """프로젝트 회계 분개 필터셋"""
@@ -905,6 +988,29 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_destroy(self, instance):
+        try:
+            cal = ProjectLedgerCalculation.objects.get(project_id=instance.project_id)
+            deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+            if cal.calculated and deal_date and deal_date <= cal.calculated:
+                user = self.request.user
+                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
+                if not has_manage:
+                    try:
+                        from project.models import Project
+                        prj = Project.objects.select_related('issue_project').get(pk=instance.project_id)
+                        if hasattr(prj, 'issue_project') and prj.issue_project:
+                            user_perms = set(prj.issue_project.get_user_permissions(user))
+                            if 'ledger.manage' in user_perms:
+                                has_manage = True
+                    except Exception:
+                        pass
+                if not has_manage:
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 삭제할 수 없습니다.')
+        except ProjectLedgerCalculation.DoesNotExist:
+            pass
+        instance.delete()
 
 
 # ============================================
@@ -1244,6 +1350,7 @@ class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
     queryset = CompanyLedgerCalculation.objects.select_related('company', 'creator')
     serializer_class = CompanyLedgerCalculationSerializer
     permission_classes = (permissions.IsAuthenticated, HqProjectModulePermission)
+    pagination_class = PageNumberPaginationFifty
     filterset_fields = ('company',)
 
     @property
@@ -1288,6 +1395,7 @@ class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
     queryset = ProjectLedgerCalculation.objects.select_related('project', 'creator')
     serializer_class = ProjectLedgerCalculationSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project',)
 
     @property
@@ -1324,578 +1432,4 @@ class ProjectLedgerLastDealDateViewSet(viewsets.ModelViewSet):
             qs = qs.filter(project_id=project)
         return qs.order_by('-deal_date')[:1]
 
-
-# ============================================
-# Bank Scraping ViewSets
-# ============================================
-
-class BankApiCredentialViewSet(viewsets.ModelViewSet):
-    """은행 API 연동 계좌 ViewSet"""
-    queryset = BankApiCredential.objects.all().select_related(
-        'company_bank_account__company', 'project_bank_account__project'
-    )
-    serializer_class = BankApiCredentialSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationFifty
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset()
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            c_ids = get_accessible_company_ids(user)
-            p_ids = get_accessible_project_ids(user)
-            qs = qs.filter(
-                Q(company_bank_account__company_id__in=c_ids) |
-                Q(project_bank_account__project_id__in=p_ids)
-            )
-
-        company = self.request.query_params.get('company')
-        project = self.request.query_params.get('project')
-        is_imprest = self.request.query_params.get('is_imprest')
-        is_active = self.request.query_params.get('is_active')
-
-        if company:
-            qs = qs.filter(company_bank_account__company_id=company)
-        if project:
-            qs = qs.filter(project_bank_account__project_id=project)
-        if is_imprest is not None:
-            val = is_imprest.lower() in ('true', '1')
-            qs = qs.filter(project_bank_account__is_imprest=val)
-        if is_active is not None:
-            val = is_active.lower() in ('true', '1')
-            qs = qs.filter(is_active=val)
-        return qs
-
-    @action(detail=True, methods=['post'])
-    def sync(self, request, pk=None):
-        """특정 계좌의 거래내역 즉시 동기화"""
-        from ledger.services.bank_scraping import sync_credential_transactions
-        cred = self.get_object()
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
-
-        result = sync_credential_transactions(cred, start_date=start_date, end_date=end_date)
-        return Response(result, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'])
-    def sync_all(self, request):
-        """활성화된 은행 연동 계좌 거래내역 일괄 동기화 (특정 credential_ids 지정 가능)"""
-        from ledger.services.bank_scraping import sync_all_active_credentials
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
-        credential_ids = request.data.get('credential_ids')
-
-        summary = sync_all_active_credentials(start_date=start_date, end_date=end_date, credential_ids=credential_ids)
-        return Response(summary, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser, JSONParser])
-    def register_certificate(self, request):
-        """
-        공동인증서(또는 ID/PW) 등록 -> CODEF connectedId 발급 -> 은행 보유 계좌 목록 조회
-        """
-        import base64
-        import re
-        from ledger.services.codef_client import CodefClient, CodefException
-
-        serializer = BankCertificateRegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        bank_code = serializer.validated_data['bank_code']
-        login_type = serializer.validated_data['login_type']
-        raw_id = serializer.validated_data.get('id', '')
-        password = serializer.validated_data['password']
-        cert_file = serializer.validated_data.get('cert_file')
-        der_file = serializer.validated_data.get('der_file')
-        key_file = serializer.validated_data.get('key_file')
-
-        client = CodefClient(is_sandbox=False)
-
-        account_item = {
-            "countryCode": "KR",
-            "businessType": "BK",
-            "organization": bank_code,
-            "clientType": "B",  # 기본 기업(법인)
-            "loginType": login_type,
-        }
-
-        try:
-            if login_type == '0':  # 공동인증서
-                if cert_file:  # 통합 인증서 포맷 (.pfx, .p12, .pt2 등)
-                    cert_b64 = base64.b64encode(cert_file.read()).decode('utf-8')
-                    account_item['certType'] = 'pfx'
-                    account_item['certFile'] = cert_b64
-                    account_item['password'] = client.encrypt_rsa(password)
-                elif der_file and key_file:  # der + key 분리 포맷
-                    der_b64 = base64.b64encode(der_file.read()).decode('utf-8')
-                    key_b64 = base64.b64encode(key_file.read()).decode('utf-8')
-                    account_item['certType'] = '1'
-                    account_item['derFile'] = der_b64
-                    account_item['keyFile'] = key_b64
-                    account_item['password'] = client.encrypt_rsa(password)
-                else:
-                    return Response(
-                        {'error': '통합 인증서 파일(.pfx, .p12, .pt2) 또는 der/key 파일 쌍을 업로드해야 합니다.'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            else:  # 아이디/비밀번호
-                if not raw_id:
-                    return Response({'error': '인터넷뱅킹 아이디를 입력해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-                account_item['id'] = raw_id
-                account_item['password'] = client.encrypt_rsa(password)
-
-            connected_id = client.create_account([account_item])
-        except CodefException as ce:
-            msg = f"CODEF 계정 등록 실패 [{ce.code}]: {ce.message}"
-            if ce.extra_message:
-                msg += f" ({ce.extra_message})"
-            logger.warning("CODEF 계정 등록 실패: %s", msg)
-            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
-        except ValueError as ve:
-            logger.warning("CODEF 설정 오류: %s", str(ve))
-            return Response({'error': "CODEF 설정 정보가 올바르지 않습니다. 시스템 관리자에게 문의하세요."}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.exception("계정 등록 처리 중 예외 발생")
-            return Response({'error': "계정 등록 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
-
-
-        # 즉시 해당 은행의 보유 계좌 목록 조회
-        try:
-            raw_accounts = client.fetch_account_list(connected_id=connected_id, organization=bank_code, is_business=True)
-        except Exception as e:
-            logger.warning("보유 계좌 목록 조회 실패 (connected_id=%s, bank_code=%s): %s", connected_id, bank_code, str(e))
-            raw_accounts = []
-
-        # 기존 시스템의 CompanyBankAccount 및 ProjectBankAccount 조회하여 매칭
-        com_accounts = list(CompanyBankAccount.objects.all().select_related('company', 'bankcode'))
-        proj_accounts = list(ProjectBankAccount.objects.all().select_related('project', 'bankcode'))
-
-        def clean_num(n):
-            return re.sub(r'[^0-9]', '', str(n or ''))
-
-        results = []
-        for raw_acc in raw_accounts:
-            acc_num = raw_acc.get('resAccount') or raw_acc.get('account') or raw_acc.get('accountNo') or ''
-            acc_name = raw_acc.get('resAccountName') or raw_acc.get('accountName') or raw_acc.get('resAccountNickName') or ''
-            holder = raw_acc.get('resAccountHolder') or raw_acc.get('holder') or ''
-            balance = raw_acc.get('resAccountBalance') or raw_acc.get('balance') or raw_acc.get('resAccountDeposit') or None
-
-            clean_acc = clean_num(acc_num)
-            matched_type = None
-            matched_account_id = None
-            matched_account_alias = None
-            company_id = None
-            project_id = None
-            is_imprest = False
-
-            # 본사 계좌 매칭 시도
-            for ca in com_accounts:
-                if clean_num(ca.number) == clean_acc:
-                    matched_type = 'company'
-                    matched_account_id = ca.id
-                    matched_account_alias = ca.alias_name
-                    company_id = ca.company_id
-                    break
-
-            # 프로젝트 계좌 매칭 시도 (본사에 없으면)
-            if not matched_type:
-                for pa in proj_accounts:
-                    if clean_num(pa.number) == clean_acc:
-                        matched_type = 'project'
-                        matched_account_id = pa.id
-                        matched_account_alias = pa.alias_name
-                        project_id = pa.project_id
-                        is_imprest = pa.is_imprest
-                        break
-
-            # 이미 BankApiCredential에 등록되어 있는지 여부
-            is_already_registered = BankApiCredential.objects.filter(
-                bank_code=bank_code,
-                account_number=acc_num
-            ).exists()
-
-            results.append({
-                'account_number': acc_num,
-                'account_name': acc_name,
-                'holder': holder,
-                'balance': balance,
-                'matched_type': matched_type,
-                'matched_account_id': matched_account_id,
-                'matched_account_alias': matched_account_alias,
-                'company_id': company_id,
-                'project_id': project_id,
-                'is_imprest': is_imprest,
-                'is_already_registered': is_already_registered
-            })
-
-        return Response({
-            'connected_id': connected_id,
-            'bank_code': bank_code,
-            'accounts': results
-        }, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'])
-    def batch_link(self, request):
-        """
-        보유 계좌 목록 중 사용자가 선택한 계좌들을 BankApiCredential 및 계좌 모델과 일괄 연동/생성
-        """
-        serializer = BankCredentialBatchLinkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        connected_id = serializer.validated_data['connected_id']
-        bank_code_str = serializer.validated_data['bank_code']
-        items = serializer.validated_data['items']
-
-        bank_obj = BankCode.objects.filter(code=bank_code_str[-3:]).first() or BankCode.objects.filter(code=bank_code_str).first()
-        if not bank_obj:
-            bank_obj = BankCode.objects.first()
-
-        created_credentials = []
-
-        with db_transaction.atomic():
-            for item in items:
-                acc_num = item['account_number']
-                target_type = item['target_type']
-                company_id = item.get('company_id')
-                project_id = item.get('project_id')
-                is_imprest = item.get('is_imprest', False)
-                existing_id = item.get('existing_account_id')
-                alias_name = item.get('alias_name') or item.get('account_name') or f"계좌 {acc_num[-4:]}"
-                holder = item.get('holder', '')
-
-                com_bank_acc = None
-                proj_bank_acc = None
-
-                if target_type == 'company':
-                    if existing_id:
-                        com_bank_acc = CompanyBankAccount.objects.filter(id=existing_id).first()
-                    elif company_id:
-                        com_bank_acc, _ = CompanyBankAccount.objects.get_or_create(
-                            company_id=company_id,
-                            number=acc_num,
-                            defaults={
-                                'bankcode': bank_obj,
-                                'alias_name': alias_name,
-                                'holder': holder,
-                            }
-                        )
-                    if not com_bank_acc:
-                        continue
-                else:  # project
-                    if existing_id:
-                        proj_bank_acc = ProjectBankAccount.objects.filter(id=existing_id).first()
-                    elif project_id:
-                        proj_bank_acc, _ = ProjectBankAccount.objects.get_or_create(
-                            project_id=project_id,
-                            number=acc_num,
-                            defaults={
-                                'bankcode': bank_obj,
-                                'alias_name': alias_name,
-                                'holder': holder,
-                                'is_imprest': is_imprest
-                            }
-                        )
-                    if not proj_bank_acc:
-                        continue
-
-                cred_defaults = {
-                    'auth_type': 'cert',
-                    'connected_id': connected_id,
-                    'bank_code': bank_code_str,
-                    'account_number': acc_num,
-                    'is_active': True,
-                    'last_status': 'ready'
-                }
-                if com_bank_acc:
-                    cred, _ = BankApiCredential.objects.update_or_create(
-                        company_bank_account=com_bank_acc,
-                        defaults=cred_defaults
-                    )
-                else:
-                    cred, _ = BankApiCredential.objects.update_or_create(
-                        project_bank_account=proj_bank_acc,
-                        defaults=cred_defaults
-                    )
-                created_credentials.append(cred.pk)
-
-        return Response({
-            'success': True,
-            'linked_count': len(created_credentials),
-            'credential_ids': created_credentials
-        }, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'])
-    def register_fast_account(self, request):
-        """
-        신탁사/조합 빠른조회 계좌 직접 연동
-        공동인증서/connectedId 없이 사업자번호 + 계좌비밀번호로 즉시 연동 및 초기 테스트
-        """
-        from apiV1.serializers.ledger import BankFastAccountRegisterSerializer
-        serializer = BankFastAccountRegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        bank_code_str = serializer.validated_data['bank_code']
-        acc_num = serializer.validated_data['account_number']
-        biz_num = serializer.validated_data['business_number']
-        acc_pwd = serializer.validated_data['account_password']
-        target_type = serializer.validated_data['target_type']
-        project_id = serializer.validated_data.get('project_id')
-        company_id = serializer.validated_data.get('company_id')
-        existing_id = serializer.validated_data.get('existing_account_id')
-        alias_name = serializer.validated_data.get('alias_name') or f"신탁/빠른조회 ({acc_num[-4:]})"
-        holder = serializer.validated_data.get('holder', '')
-        is_imprest = serializer.validated_data.get('is_imprest', False)
-
-        bank_obj = BankCode.objects.filter(code=bank_code_str[-3:]).first() or BankCode.objects.filter(code=bank_code_str).first()
-        if not bank_obj:
-            bank_obj = BankCode.objects.first()
-
-        com_bank_acc = None
-        proj_bank_acc = None
-
-        with db_transaction.atomic():
-            if target_type == 'project':
-                if not project_id and not existing_id:
-                    return Response({'error': '프로젝트를 선택해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-                if existing_id:
-                    proj_bank_acc = ProjectBankAccount.objects.filter(id=existing_id).first()
-                elif project_id:
-                    proj_bank_acc, _ = ProjectBankAccount.objects.get_or_create(
-                        project_id=project_id,
-                        number=acc_num,
-                        defaults={
-                            'bankcode': bank_obj,
-                            'alias_name': alias_name,
-                            'holder': holder,
-                            'is_imprest': is_imprest,
-                        }
-                    )
-            else:
-                if not company_id and not existing_id:
-                    return Response({'error': '회사를 선택해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-                if existing_id:
-                    com_bank_acc = CompanyBankAccount.objects.filter(id=existing_id).first()
-                elif company_id:
-                    com_bank_acc, _ = CompanyBankAccount.objects.get_or_create(
-                        company_id=company_id,
-                        number=acc_num,
-                        defaults={
-                            'bankcode': bank_obj,
-                            'alias_name': alias_name,
-                            'holder': holder,
-                        }
-                    )
-
-            target_acc = proj_bank_acc or com_bank_acc
-            if not target_acc:
-                return Response({'error': '계좌 생성 또는 조회가 실패했습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            cred_defaults = {
-                'auth_type': 'fast',
-                'connected_id': '',
-                'bank_code': bank_code_str,
-                'account_number': acc_num,
-                'fast_business_number': biz_num.replace('-', '').strip(),
-                'fast_password': acc_pwd,
-                'is_active': True,
-                'last_status': 'ready'
-            }
-
-            if proj_bank_acc:
-                cred, _ = BankApiCredential.objects.update_or_create(
-                    project_bank_account=proj_bank_acc,
-                    defaults=cred_defaults
-                )
-            else:
-                cred, _ = BankApiCredential.objects.update_or_create(
-                    company_bank_account=com_bank_acc,
-                    defaults=cred_defaults
-                )
-
-        # 연동 완료 후 즉시 1회 거래내역 수집 시도 (테스트 및 초기 데이터 로드)
-        try:
-            from ledger.services.bank_scraping import sync_credential_transactions
-            sync_credential_transactions(cred)
-        except Exception as e:
-            logger.warning("신탁/빠른조회 초기 수집 실패 (등록은 완료됨): %s", str(e))
-
-        return Response({
-            'success': True,
-            'credential_id': cred.pk,
-            'message': f"신탁/빠른조회 계좌({alias_name})가 성공적으로 연동되었습니다."
-        }, status=status.HTTP_200_OK)
-
-
-
-class RawBankTransactionViewSet(viewsets.ModelViewSet):
-    """수집 원시 거래내역 ViewSet"""
-    queryset = RawBankTransaction.objects.all().select_related(
-        'credential__company_bank_account__company',
-        'credential__project_bank_account__project',
-        'suggested_company_account',
-        'suggested_project_account',
-        'suggested_contract__contractor',
-        'suggested_contract__key_unit',
-        'confirmed_by'
-    )
-    serializer_class = RawBankTransactionSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationFifty
-    filterset_fields = ('status', 'credential', 'deal_date', 'sort_type')
-    search_fields = ('client_name', 'content')
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset()
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            c_ids = get_accessible_company_ids(user)
-            p_ids = get_accessible_project_ids(user)
-            qs = qs.filter(
-                Q(credential__company_bank_account__company_id__in=c_ids) |
-                Q(credential__project_bank_account__project_id__in=p_ids)
-            )
-
-        company = self.request.query_params.get('company')
-        project = self.request.query_params.get('project')
-        is_imprest = self.request.query_params.get('is_imprest')
-
-        if company:
-            qs = qs.filter(credential__company_bank_account__company_id=company)
-        if project:
-            qs = qs.filter(credential__project_bank_account__project_id=project)
-        if is_imprest is not None:
-            val = is_imprest.lower() in ('true', '1')
-            qs = qs.filter(credential__project_bank_account__is_imprest=val)
-        return qs
-
-    @action(detail=True, methods=['post'])
-    def confirm(self, request, pk=None):
-        """단건 승인 및 원장 반영 (단일 계정 및 복수 분개 분할 지원)"""
-        from ledger.services.transaction_confirm import confirm_raw_transaction
-        from ledger.models import CompanyAccount, ProjectAccount
-        from contract.models import Contract
-
-        raw_tx = self.get_object()
-        user = request.user
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if raw_tx.credential.is_project:
-                manage_projects = get_accessible_project_ids(user, 'ledger.manage')
-                if raw_tx.credential.project_bank_account.project_id not in manage_projects:
-                    return Response(
-                        {'error': '해당 프로젝트의 거래 승인(ledger.manage) 권한이 없습니다.'},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-            else:
-                manage_companies = get_accessible_company_ids(user)
-                if raw_tx.credential.company_bank_account.company_id not in manage_companies:
-                    return Response(
-                        {'error': '해당 회사의 거래 승인 권한이 없습니다.'},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-
-        serializer = RawBankTransactionConfirmSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        custom_account_id = serializer.validated_data.get('custom_account_id')
-        custom_contract_id = serializer.validated_data.get('custom_contract_id')
-        entries_data = serializer.validated_data.get('entries')
-
-        custom_account = None
-        if custom_account_id:
-            if raw_tx.credential.is_project:
-                custom_account = ProjectAccount.objects.filter(id=custom_account_id).first()
-            else:
-                custom_account = CompanyAccount.objects.filter(id=custom_account_id).first()
-
-        custom_contract = None
-        if custom_contract_id and raw_tx.credential.is_project:
-            custom_contract = Contract.objects.filter(id=custom_contract_id).first()
-
-        resolved_entries = None
-        if entries_data and len(entries_data) > 0:
-            resolved_entries = []
-            for item in entries_data:
-                acc_id = item['account_id']
-                if raw_tx.credential.is_project:
-                    acc_obj = ProjectAccount.objects.filter(id=acc_id).first()
-                else:
-                    acc_obj = CompanyAccount.objects.filter(id=acc_id).first()
-                if not acc_obj:
-                    return Response({'error': f"존재하지 않는 회계계정 ID ({acc_id})입니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-                c_obj = None
-                c_id = item.get('contract_id')
-                if c_id and raw_tx.credential.is_project:
-                    c_obj = Contract.objects.filter(id=c_id).first()
-
-                resolved_entries.append({
-                    'account': acc_obj,
-                    'amount': item['amount'],
-                    'trader': item.get('trader', ''),
-                    'contract': c_obj
-                })
-
-        if raw_tx.status == 'confirmed':
-            return Response({'error': '이미 승인 완료된 거래입니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if resolved_entries:
-            total_entry_amount = sum(item['amount'] for item in resolved_entries)
-            if total_entry_amount != raw_tx.amount:
-                return Response(
-                    {'error': '분개 금액 합계가 통장 거래금액과 일치하지 않습니다.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            default_account = custom_account or (
-                raw_tx.suggested_project_account if raw_tx.credential.is_project else raw_tx.suggested_company_account
-            )
-            if not default_account:
-                return Response(
-                    {'error': '회계 계정과목이 지정되지 않았습니다. 계정을 선택해 주세요.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        try:
-            result = confirm_raw_transaction(
-                raw_tx=raw_tx,
-                user=request.user,
-                custom_account=custom_account,
-                custom_contract=custom_contract,
-                entries_data=resolved_entries
-            )
-            return Response(result, status=status.HTTP_200_OK)
-        except ValueError as ve:
-            logger.warning("거래 승인 유효성 검증 실패 (#%s): %s", raw_tx.pk, ve)
-            return Response(
-                {'error': "유효하지 않은 거래 승인 요청입니다. 입력 정보를 확인해 주세요."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            logger.exception("거래 승인 처리 중 예외 발생 (#%s)", raw_tx.pk)
-            return Response({'error': "거래 승인 처리 중 오류가 발생했습니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['post'], url_path='bulk-confirm')
-    def bulk_confirm(self, request):
-        """고신뢰도 거래 일괄 승인"""
-        from ledger.services.transaction_confirm import bulk_confirm_high_confidence
-
-        serializer = RawBankTransactionBulkConfirmSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        min_confidence = serializer.validated_data.get('min_confidence', 90)
-
-        base_qs = None
-        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            c_ids = get_accessible_company_ids(request.user)
-            p_ids = get_accessible_project_ids(request.user, 'ledger.manage')
-            base_qs = RawBankTransaction.objects.filter(
-                Q(credential__company_bank_account__company_id__in=c_ids) |
-                Q(credential__project_bank_account__project_id__in=p_ids)
-            )
-
-        result = bulk_confirm_high_confidence(user=request.user, min_confidence=min_confidence, base_qs=base_qs)
-        return Response(result, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'], url_path='bulk_confirm')
-    def bulk_confirm_legacy(self, request):
-        """고신뢰도 거래 일괄 승인 (언더스코어 URL 호환)"""
-        return self.bulk_confirm(request)
 

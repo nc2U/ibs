@@ -8,7 +8,6 @@ from ledger.models import (
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
-    BankApiCredential, RawBankTransaction,
 )
 from payment.models import ContractPayment
 
@@ -36,6 +35,26 @@ class LedgerCompanyBankAccountSerializer(serializers.ModelSerializer):
                   'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
                   'is_hide', 'inactive')
 
+    def validate(self, attrs):
+        company = attrs.get('company') or (self.instance.company if self.instance else None)
+        number = attrs.get('number', getattr(self.instance, 'number', ''))
+        alias_name = attrs.get('alias_name', getattr(self.instance, 'alias_name', ''))
+
+        if company:
+            if number:
+                qs = CompanyBankAccount.objects.filter(company=company, number=number)
+                if self.instance:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError({'number': f'해당 회사에 이미 동일한 계좌번호({number})가 등록되어 있습니다.'})
+            if alias_name:
+                qs_alias = CompanyBankAccount.objects.filter(company=company, alias_name=alias_name)
+                if self.instance:
+                    qs_alias = qs_alias.exclude(pk=self.instance.pk)
+                if qs_alias.exists():
+                    raise serializers.ValidationError({'alias_name': f'해당 회사에 이미 동일한 계좌별칭({alias_name})이 등록되어 있습니다.'})
+        return attrs
+
 
 class LedgerProjectBankAccountSerializer(serializers.ModelSerializer):
     """프로젝트 은행 계좌 시리얼라이저"""
@@ -47,6 +66,26 @@ class LedgerProjectBankAccountSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'project_name', 'bankcode', 'bankcode_name',
                   'order', 'alias_name', 'number', 'holder', 'open_date', 'note',
                   'is_hide', 'inactive', 'directpay', 'is_imprest')
+
+    def validate(self, attrs):
+        project = attrs.get('project') or (self.instance.project if self.instance else None)
+        number = attrs.get('number', getattr(self.instance, 'number', ''))
+        alias_name = attrs.get('alias_name', getattr(self.instance, 'alias_name', ''))
+
+        if project:
+            if number:
+                qs = ProjectBankAccount.objects.filter(project=project, number=number)
+                if self.instance:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError({'number': f'해당 프로젝트에 이미 동일한 계좌번호({number})가 등록되어 있습니다.'})
+            if alias_name:
+                qs_alias = ProjectBankAccount.objects.filter(project=project, alias_name=alias_name)
+                if self.instance:
+                    qs_alias = qs_alias.exclude(pk=self.instance.pk)
+                if qs_alias.exists():
+                    raise serializers.ValidationError({'alias_name': f'해당 프로젝트에 이미 동일한 계좌별칭({alias_name})이 등록되어 있습니다.'})
+        return attrs
 
 
 # ============================================
@@ -161,6 +200,23 @@ class AffiliateSerializer(serializers.ModelSerializer):
                   'description',
                   'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
+
+    def validate(self, attrs):
+        sort = attrs.get('sort', getattr(self.instance, 'sort', None))
+        company = attrs.get('company', getattr(self.instance, 'company', None))
+        project = attrs.get('project', getattr(self.instance, 'project', None))
+
+        if sort == 'company':
+            if not company:
+                raise serializers.ValidationError({'company': '관계 회사 구분일 경우 회사를 선택해야 합니다.'})
+            if project:
+                raise serializers.ValidationError({'project': '관계 회사 구분일 경우 프로젝트를 선택할 수 없습니다.'})
+        elif sort == 'project':
+            if not project:
+                raise serializers.ValidationError({'project': '관련 프로젝트 구분일 경우 프로젝트를 선택해야 합니다.'})
+            if company:
+                raise serializers.ValidationError({'company': '관련 프로젝트 구분일 경우 회사를 선택할 수 없습니다.'})
+        return attrs
 
 
 # ============================================
@@ -1176,151 +1232,5 @@ class ProjectLedgerLastDealDateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectBankTransaction
         fields = ('deal_date',)
-
-
-# ============================================
-# Bank Scraping Serializers
-# ============================================
-
-class BankApiCredentialSerializer(serializers.ModelSerializer):
-    """은행 API 연동 계좌 Serializer"""
-    account_alias = serializers.CharField(source='target_account.alias_name', read_only=True)
-    is_project = serializers.BooleanField(read_only=True)
-    company_id = serializers.IntegerField(source='company_bank_account.company_id', read_only=True, allow_null=True)
-    company_name = serializers.CharField(source='company_bank_account.company.name', read_only=True, allow_null=True)
-    project_id = serializers.IntegerField(source='project_bank_account.project_id', read_only=True, allow_null=True)
-    project_name = serializers.CharField(source='project_bank_account.project.name', read_only=True, allow_null=True)
-    is_imprest = serializers.BooleanField(source='project_bank_account.is_imprest', read_only=True, default=False)
-    directpay = serializers.BooleanField(source='project_bank_account.directpay', read_only=True, default=False)
-
-    class Meta:
-        model = BankApiCredential
-        fields = (
-            'pk', 'company_bank_account', 'project_bank_account',
-            'account_alias', 'is_project',
-            'company_id', 'company_name', 'project_id', 'project_name', 'is_imprest', 'directpay',
-            'auth_type', 'fast_business_number',
-            'connected_id', 'bank_code', 'account_number', 'is_active',
-            'last_scraped_at', 'last_status', 'last_error_message',
-            'created_at', 'updated_at'
-        )
-        read_only_fields = ('last_scraped_at', 'last_status', 'last_error_message', 'created_at', 'updated_at')
-
-
-class RawBankTransactionSerializer(serializers.ModelSerializer):
-    """수집 원시 거래내역 Serializer"""
-    account_alias = serializers.CharField(source='credential.target_account.alias_name', read_only=True)
-    bank_code = serializers.CharField(source='credential.bank_code', read_only=True)
-    account_number = serializers.CharField(source='credential.account_number', read_only=True)
-    is_project = serializers.BooleanField(source='credential.is_project', read_only=True)
-
-    company_id = serializers.IntegerField(source='credential.company_bank_account.company_id', read_only=True, allow_null=True)
-    company_name = serializers.CharField(source='credential.company_bank_account.company.name', read_only=True, allow_null=True)
-    project_id = serializers.IntegerField(source='credential.project_bank_account.project_id', read_only=True, allow_null=True)
-    project_name = serializers.CharField(source='credential.project_bank_account.project.name', read_only=True, allow_null=True)
-    is_imprest = serializers.BooleanField(source='credential.project_bank_account.is_imprest', read_only=True, default=False)
-    directpay = serializers.BooleanField(source='credential.project_bank_account.directpay', read_only=True, default=False)
-
-    suggested_company_account_name = serializers.CharField(source='suggested_company_account.name', read_only=True)
-    suggested_project_account_name = serializers.CharField(source='suggested_project_account.name', read_only=True)
-    suggested_contract_name = serializers.SerializerMethodField(read_only=True)
-
-    confirmed_by_name = serializers.CharField(source='confirmed_by.username', read_only=True)
-
-    class Meta:
-        model = RawBankTransaction
-        fields = (
-            'pk', 'credential', 'account_alias', 'bank_code', 'account_number', 'is_project',
-            'company_id', 'company_name', 'project_id', 'project_name', 'is_imprest', 'directpay',
-            'deal_date', 'deal_time', 'sort_type', 'amount', 'balance',
-            'client_name', 'content', 'branch_name',
-            'status', 'confidence_score', 'ai_reason',
-            'suggested_company_account', 'suggested_company_account_name',
-            'suggested_project_account', 'suggested_project_account_name',
-            'suggested_contract', 'suggested_contract_name',
-            'confirmed_by', 'confirmed_by_name', 'confirmed_at',
-            'created_company_transaction', 'created_project_transaction',
-            'created_at', 'updated_at'
-        )
-        read_only_fields = ('tx_hash', 'raw_data', 'created_at', 'updated_at')
-
-    def get_suggested_contract_name(self, obj):
-        if obj.suggested_contract:
-            c = obj.suggested_contract
-            contractor_name = c.contractor.name if hasattr(c, 'contractor') and c.contractor else ''
-            unit_str = str(c.key_unit) if c.key_unit else ''
-            return f"{contractor_name} ({unit_str})"
-        return None
-
-
-class RawBankTransactionEntryItemSerializer(serializers.Serializer):
-    """복수 분개 항목 Serializer"""
-    account_id = serializers.IntegerField()
-    amount = serializers.DecimalField(max_digits=15, decimal_places=0)
-    trader = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
-    contract_id = serializers.IntegerField(required=False, allow_null=True)
-
-
-class RawBankTransactionConfirmSerializer(serializers.Serializer):
-    """단건 승인 요청용 Serializer (단일 계정 또는 복수 분개 항목)"""
-    custom_account_id = serializers.IntegerField(required=False, allow_null=True)
-    custom_contract_id = serializers.IntegerField(required=False, allow_null=True)
-    entries = serializers.ListField(
-        child=RawBankTransactionEntryItemSerializer(),
-        required=False,
-        allow_null=True,
-        default=None
-    )
-
-
-class RawBankTransactionBulkConfirmSerializer(serializers.Serializer):
-    """일괄 승인 요청용 Serializer"""
-    min_confidence = serializers.IntegerField(required=False, default=90)
-
-
-class BankCertificateRegisterSerializer(serializers.Serializer):
-    """공동인증서/계정 등록 및 보유 계좌 조회 요청 Serializer"""
-    bank_code = serializers.CharField(max_length=10, help_text="CODEF 은행 기관코드 (예: 0004, 0088)")
-    login_type = serializers.ChoiceField(choices=[('0', '공동인증서'), ('1', '아이디/비밀번호')], default='0')
-    id = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
-    password = serializers.CharField(max_length=255, required=True, help_text="인증서 또는 뱅킹 비밀번호")
-    der_file = serializers.FileField(required=False, allow_null=True)
-    key_file = serializers.FileField(required=False, allow_null=True)
-    cert_file = serializers.FileField(required=False, allow_null=True, help_text="통합 인증서 파일 (.pfx, .p12, .pt2 등)")
-
-
-class BankFastAccountRegisterSerializer(serializers.Serializer):
-    """신탁사/조합 빠른조회 계좌 직접 연동 요청 Serializer"""
-    bank_code = serializers.CharField(max_length=10, help_text="은행 기관코드 (예: 0004, 0088)")
-    account_number = serializers.CharField(max_length=50, help_text="계좌번호")
-    business_number = serializers.CharField(max_length=20, help_text="신탁사/조합 사업자등록번호 (10자리 숫자)")
-    account_password = serializers.CharField(max_length=50, help_text="통장 비밀번호 또는 빠른조회 비밀번호")
-    target_type = serializers.ChoiceField(choices=[('project', '프로젝트 계좌'), ('company', '본사 계좌')], default='project')
-    project_id = serializers.IntegerField(required=False, allow_null=True)
-    company_id = serializers.IntegerField(required=False, allow_null=True)
-    existing_account_id = serializers.IntegerField(required=False, allow_null=True)
-    alias_name = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
-    holder = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
-    is_imprest = serializers.BooleanField(required=False, default=False)
-
-
-class BankCredentialBatchLinkItemSerializer(serializers.Serializer):
-    """일괄 연동 대상 개별 계좌 항목 Serializer"""
-    account_number = serializers.CharField(max_length=50)
-    account_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
-    holder = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
-    target_type = serializers.ChoiceField(choices=[('company', '본사 계좌'), ('project', '프로젝트 계좌')])
-    company_id = serializers.IntegerField(required=False, allow_null=True)
-    project_id = serializers.IntegerField(required=False, allow_null=True)
-    is_imprest = serializers.BooleanField(required=False, default=False)
-    existing_account_id = serializers.IntegerField(required=False, allow_null=True)
-    alias_name = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
-
-
-class BankCredentialBatchLinkSerializer(serializers.Serializer):
-    """보유 계좌 일괄 등록/연동 Serializer"""
-    connected_id = serializers.CharField(max_length=100)
-    bank_code = serializers.CharField(max_length=10)
-    items = serializers.ListField(child=BankCredentialBatchLinkItemSerializer())
 
 

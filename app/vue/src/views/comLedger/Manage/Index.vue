@@ -21,14 +21,10 @@ import AddTransaction from './components/AddTransaction.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 import TransForm from './components/TransForm.vue'
-import BankScrapingDialog from '@/components/BankScraping/BankScrapingDialog.vue'
-import BankRegisterDialog from '@/components/BankScraping/BankRegisterDialog.vue'
 
 const { canGlobal, PERM } = usePerms()
 const canComLedgerCreate = computed(() => canGlobal(PERM.HQ_LEDGER_CREATE))
 
-const isBankScrapingOpen = ref(false)
-const isBankRegisterOpen = ref(false)
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
@@ -252,8 +248,6 @@ onBeforeRouteLeave(() => {
           <AddTransaction
             v-if="canComLedgerCreate"
             :company="company as number"
-            @open-scraping="isBankScrapingOpen = true"
-            @open-register="isBankRegisterOpen = true"
           />
 
           <TableTitleRow
@@ -269,21 +263,6 @@ onBeforeRouteLeave(() => {
             :highlight-id="highlightId ?? undefined"
             :current-page="dataFilter.page || 1"
             @page-select="pageSelect"
-          />
-
-          <!-- 은행 거래 AI 가져오기 다이얼로그 (본사 모드) -->
-          <BankScrapingDialog
-            v-model="isBankScrapingOpen"
-            mode="company"
-            :company-id="company as number"
-            @confirmed="refreshList"
-          />
-
-          <!-- 공동인증서/은행 계좌 등록 다이얼로그 (본사 모드) -->
-          <BankRegisterDialog
-            v-model="isBankRegisterOpen"
-            :company-id="company as number"
-            @registered="refreshList"
           />
         </div>
 

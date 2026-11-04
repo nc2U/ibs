@@ -392,34 +392,3 @@ IBS 시스템
         fail_silently=True
     )
 
-
-# ============================================
-# Bank Scraping Celery Tasks
-# ============================================
-
-@shared_task(name='ledger.sync_bank_transactions_task')
-def sync_bank_transactions_task(start_date: str = None, end_date: str = None):
-    """
-    모든 활성 은행 계좌의 거래내역을 정기 자동 수집하는 Celery 태스크
-    """
-    from ledger.services.bank_scraping import sync_all_active_credentials
-    logger.info("Celery 은행 거래내역 자동 수집 태스크 시작")
-    summary = sync_all_active_credentials(start_date=start_date, end_date=end_date)
-    logger.info("Celery 은행 거래내역 자동 수집 완료: %s", summary)
-    return summary
-
-
-@shared_task(name='ledger.sync_single_credential_task')
-def sync_single_credential_task(credential_id: int, start_date: str = None, end_date: str = None):
-    """
-    특정 계좌의 거래내역을 즉시 수집하는 Celery 태스크 (수동 동기화용)
-    """
-    from ledger.models import BankApiCredential
-    from ledger.services.bank_scraping import sync_credential_transactions
-    try:
-        cred = BankApiCredential.objects.get(id=credential_id)
-        return sync_credential_transactions(cred, start_date=start_date, end_date=end_date)
-    except BankApiCredential.DoesNotExist:
-        logger.error("BankApiCredential ID=%d 를 찾을 수 없습니다.", credential_id)
-        return {'error': 'Credential not found'}
-
