@@ -15,6 +15,7 @@ import BulkTransUploadDialog from '@/views/proLedger/Manage/components/BulkTrans
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import AccountManage from './AccountManage.vue'
 import JournalRow from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
@@ -40,6 +41,7 @@ const canComLedgerEdit = computed(() =>
 )
 
 const confirmModal = ref()
+const alertModal = ref()
 const refAccountManage = ref()
 const refBankAcc = ref()
 
@@ -306,7 +308,7 @@ const handleFileChange = async (event: Event) => {
     })
   } catch (error) {
     console.error('Excel parsing error:', error)
-    alert('엑셀 파일 파싱 중 오류가 발생했습니다.')
+    alertModal.value?.callModal('엑셀 파싱 오류', '엑셀 파일 파싱 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
   } finally {
     // Reset file input
     target.value = ''
@@ -419,7 +421,12 @@ const handleBulkFileChange = async (event: Event) => {
     bulkDialogVisible.value = true
   } catch (error) {
     console.error('Bulk excel parsing error:', error)
-    alert(error instanceof Error ? error.message : '엑셀 파일 파싱 중 오류가 발생했습니다.')
+    alertModal.value?.callModal(
+      '엑셀 파싱 오류',
+      error instanceof Error ? error.message : '엑셀 파일 파싱 중 오류가 발생했습니다.',
+      'mdi-alert-circle',
+      'danger',
+    )
   } finally {
     target.value = ''
   }
@@ -429,8 +436,11 @@ const handleBulkPaste = async () => {
   try {
     const text = await navigator.clipboard.readText()
     if (!text || !text.trim()) {
-      alert(
-        '클립보드에 복사된 텍스트 데이터가 없습니다. 인터넷 뱅킹 거래 내역을 복사한 후 다시 시도해 주세요.',
+      alertModal.value?.callModal(
+        '클립보드 안내',
+        '클립보드에 복사된 텍스트 데이터가 없습니다.\n인터넷 뱅킹 거래 내역을 복사한 후 다시 시도해 주세요.',
+        'mdi-information-outline',
+        'info',
       )
       return
     }
@@ -444,10 +454,13 @@ const handleBulkPaste = async () => {
     bulkDialogVisible.value = true
   } catch (error) {
     console.error('Clipboard paste error:', error)
-    alert(
+    alertModal.value?.callModal(
+      '클립보드 오류',
       error instanceof Error
         ? error.message
         : '클립보드 데이터를 읽는 중 오류가 발생했습니다. 브라우저의 클립보드 접근 권한을 확인해 주세요.',
+      'mdi-alert-circle',
+      'danger',
     )
   }
 }
@@ -508,7 +521,7 @@ const removeEntry = (index: number) => {
 
 const insertTransferFeeEntry = (index: number) => {
   if (transferFeePk.value === undefined) {
-    alert('이체수수료 계정이 설정되지 않았습니다.')
+    alertModal.value?.callModal('계정 안내', '이체수수료 계정이 설정되지 않았습니다.', 'mdi-alert-circle', 'warning')
     return
   }
 
@@ -570,7 +583,7 @@ const handleTransferWithdraw = (sourceData: BankTransactionData) => {
   )
 
   if (!depositTransferAccount) {
-    alert('대체(입금) 계정을 찾을 수 없습니다.')
+    alertModal.value?.callModal('계정 안내', '대체(입금) 계정을 찾을 수 없습니다.', 'mdi-alert-circle', 'warning')
     return
   }
 
@@ -747,7 +760,7 @@ const saveTransaction = async (event: Event) => {
       await router.push({ name: '본사 거래 내역' })
     } catch (error: any) {
       console.error('저장 실패:', error)
-      alert(error.message || '저장 중 오류가 발생했습니다.')
+      alertModal.value?.callModal('저장 오류', error.message || '저장 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
     } finally {
       isSaving.value = false
     }
@@ -1156,6 +1169,8 @@ onBeforeRouteLeave((to, from, next) => {
       <v-btn size="small" color="warning" @click="delTransaction">삭제</v-btn>
     </template>
   </ConfirmModal>
+
+  <AlertModal ref="alertModal" />
 
   <AccountManage ref="refAccountManage" />
 
