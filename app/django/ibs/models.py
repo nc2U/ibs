@@ -126,6 +126,24 @@ class CalendarSchedule(models.Model):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        from django.utils.dateparse import parse_datetime, parse_date
+        if not self.start_date and self.start_time:
+            if hasattr(self.start_time, 'date'):
+                self.start_date = self.start_time.date()
+            elif isinstance(self.start_time, str):
+                parsed = parse_datetime(self.start_time)
+                self.start_date = parsed.date() if parsed else parse_date(self.start_time[:10])
+
+        if not self.end_date and self.end_time:
+            if hasattr(self.end_time, 'date'):
+                self.end_date = self.end_time.date()
+            elif isinstance(self.end_time, str):
+                parsed = parse_datetime(self.end_time)
+                self.end_date = parsed.date() if parsed else parse_date(self.end_time[:10])
+
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-id']
         verbose_name = '08. 캘린더 일정'

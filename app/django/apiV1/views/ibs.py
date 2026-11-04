@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django_filters import DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
@@ -12,7 +12,9 @@ from ..pagination import (
     PageNumberPaginationOneHundred, PageNumberPaginationTwenty,
     PageNumberPaginationTwoHundred, PageNumberPaginationThreeHundred
 )
-from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsStaffOrReadOnly
+from apiV1.permissions.auth_perms import (
+    permissions, IsProjectStaffOrReadOnly, IsStaffOrReadOnly, IsCreatorOrReadOnly
+)
 from ..serializers.ibs import (
     CalendarScheduleSerializer, AccountSortSerializer, AccountSubD1Serializer,
     AccountSubD2Serializer, AccountSubD3Serializer, ProjectAccountD2Serializer,
@@ -34,31 +36,31 @@ class CalendarScheduleFilterSet(FilterSet):
 
 
 class CalendarScheduleViewSet(viewsets.ModelViewSet):
-    queryset = CalendarSchedule.objects.select_related('creator').all()
+    queryset = CalendarSchedule.objects.select_related('creator__profile').all()
     serializer_class = CalendarScheduleSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsCreatorOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = CalendarScheduleFilterSet
-    search_fields = ('title', 'start_date', 'start_time', 'end_date', 'end_time')
+    search_fields = ('title', 'creator__username', 'creator__profile__name', 'start_date', 'start_time', 'end_date', 'end_time')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
 
-class AccountSortViewSet(viewsets.ModelViewSet):
+class AccountSortViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AccountSort.objects.all()
     serializer_class = AccountSortSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
 
 
-class AccountSubD1ViewSet(viewsets.ModelViewSet):
+class AccountSubD1ViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AccountSubD1.objects.prefetch_related('sorts').all()
     serializer_class = AccountSubD1Serializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     filterset_fields = ('sorts',)
 
 
-class AccountSubD2ViewSet(viewsets.ModelViewSet):
+class AccountSubD2ViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AccountSubD2.objects.select_related('d1').all()
     serializer_class = AccountSubD2Serializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
@@ -72,9 +74,10 @@ class AccountSubD3ViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationTwoHundred
     filterset_fields = ('sort', 'd2__d1', 'd2', 'is_hide', 'is_special')
+    http_method_names = ['get', 'patch', 'head', 'options']
 
 
-class ProjectAccountD2ViewSet(viewsets.ModelViewSet):
+class ProjectAccountD2ViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProjectAccountD2.objects.select_related('d1').all()
     pagination_class = PageNumberPaginationTwenty
     serializer_class = ProjectAccountD2Serializer
@@ -82,7 +85,7 @@ class ProjectAccountD2ViewSet(viewsets.ModelViewSet):
     filterset_fields = ('d1__sorts', 'd1')
 
 
-class ProjectAccountD3ViewSet(viewsets.ModelViewSet):
+class ProjectAccountD3ViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProjectAccountD3.objects.select_related('sort', 'd2').all()
     pagination_class = PageNumberPaginationOneHundred
     serializer_class = ProjectAccountD3Serializer
@@ -110,11 +113,19 @@ class UserWidgetConfigViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return super().create(request, *args, **kwargs)
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            instance = UserWidgetConfig.objects.select_for_update().get(user=request.user)
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class WiseSayViewSet(viewsets.ModelViewSet):
     queryset = WiseSaying.objects.all().order_by('id')
     serializer_class = WiseSaySerializer
     pagination_class = PageNumberPaginationThreeHundred
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+

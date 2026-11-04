@@ -59,6 +59,22 @@ class CalendarScheduleSerializer(serializers.ModelSerializer):
         fields = ('pk', 'title', 'all_day', 'start_date', 'end_date', 'start_time',
                   'end_time', 'creator', 'created', 'updated')
 
+    def validate(self, attrs):
+        all_day = attrs.get('all_day', getattr(self.instance, 'all_day', True))
+        start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None))
+        end_date = attrs.get('end_date', getattr(self.instance, 'end_date', None))
+        start_time = attrs.get('start_time', getattr(self.instance, 'start_time', None))
+        end_time = attrs.get('end_time', getattr(self.instance, 'end_time', None))
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({'end_date': '종료 일자는 시작 일자 이후여야 합니다.'})
+
+        if not all_day and start_time and end_time and start_time > end_time:
+            raise serializers.ValidationError({'end_time': '종료 시간은 시작 시간 이후여야 합니다.'})
+
+        return attrs
+
+
 
 class WiseSaySerializer(serializers.ModelSerializer):
     class Meta:

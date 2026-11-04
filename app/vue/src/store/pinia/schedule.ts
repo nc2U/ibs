@@ -45,11 +45,12 @@ export const useSchedule = defineStore('schedule', () => {
     const eventData = transform(payload)
     return await api
       .post('/schedule/', eventData)
-      .then(res =>
-        fetchScheduleList(res.data.start_date.substring(0, 7))
+      .then(res => {
+        const mon = res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
+        return fetchScheduleList(mon)
           .then(() => fetchSchedule(res.data.pk))
-          .then(() => message()),
-      )
+          .then(() => message())
+      })
       .catch(err => errorHandle(err.response))
   }
 
@@ -64,11 +65,12 @@ export const useSchedule = defineStore('schedule', () => {
     const eventData = transform(data)
     return await api
       .put(`/schedule/${pk}/`, eventData)
-      .then(res =>
-        fetchScheduleList(res.data.start_date.substring(0, 7))
+      .then(res => {
+        const mon = res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
+        return fetchScheduleList(mon)
           .then(() => fetchSchedule(res.data.pk))
-          .then(() => message()),
-      )
+          .then(() => message())
+      })
       .catch(err => errorHandle(err.response.data))
   }
 

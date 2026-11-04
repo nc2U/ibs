@@ -94,31 +94,31 @@ export const useIbs = defineStore('ibs', () => {
         wiseWordsList.value = res.data.results
         wiseWordsCount.value = res.data.count
       })
-      .catch(err => console.log(err.response.data))
+      .catch(err => errorHandle(err.response?.data))
 
   const fetchWiseWord = (pk: number) =>
     api
       .get(`/wise-say/${pk}/`)
       .then(res => (wiseWord.value = res.data))
-      .catch(err => console.log(err.response.data))
+      .catch(err => errorHandle(err.response?.data))
 
   return {
     sortList,
     fetchAccSortList,
 
-    formAccD1List,
+    listAccD1List,
     fetchAllAccD1List,
-    formAccD2List,
+    listAccD2List,
     fetchAllAccD2List,
-    formAccD3List,
+    listAccD3List,
     fetchAllAccD3List,
     patchAccD3,
 
-    listAccD1List,
+    formAccD1List,
     fetchFormAccD1List,
-    listAccD2List,
+    formAccD2List,
     fetchFormAccD2List,
-    listAccD3List,
+    formAccD3List,
     fetchFormAccD3List,
 
     wiseWordsList,

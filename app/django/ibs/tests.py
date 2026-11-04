@@ -287,6 +287,57 @@ class CalendarScheduleViewSetTest(TestCase):
         self.assertEqual(len(results2), 1)
         self.assertEqual(results2[0]['title'], '프로젝트 안전점검')
 
+    def test_schedule_idor_protection(self):
+        """[P0-보안] 타인의 캘린더 일정에 대한 수정(PUT/PATCH) 및 삭제(DELETE) IDOR 차단 검증"""
+        # 프로젝트 스태프 유저가 최고관리자의 일정(schedule1) 수정 시도 -> 403 차단
+        self.client.force_authenticate(user=self.project_staff)
+        put_res = self.client.put(f'/api/v1/schedule/{self.schedule1.pk}/', {
+            'title': '임의 변조 시도', 'all_day': True, 'start_date': '2026-09-20'
+        })
+        self.assertEqual(put_res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 최고관리자의 일정 삭제 시도 -> 403 차단
+        del_res = self.client.delete(f'/api/v1/schedule/{self.schedule1.pk}/')
+        self.assertEqual(del_res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 본인 일정(schedule2) 수정 -> 200 성공
+        own_put_res = self.client.put(f'/api/v1/schedule/{self.schedule2.pk}/', {
+            'title': '정상 일정 변경', 'all_day': True, 'start_date': '2026-09-25'
+        })
+        self.assertEqual(own_put_res.status_code, status.HTTP_200_OK)
+
+        # 최고관리자는 타인 일정 삭제 가능 -> 204 성공
+        self.client.force_authenticate(user=self.admin)
+        admin_del_res = self.client.delete(f'/api/v1/schedule/{self.schedule2.pk}/')
+        self.assertEqual(admin_del_res.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_schedule_auto_date_and_serializer_validation(self):
+        """[P0/P2] 시간제 일정 저장 시 start_date 자동 보정 및 시작/종료일시 역전 방지 검증"""
+        # 1. start_time만 있고 start_date가 없을 때 자동 보정 확인
+        timed_schedule = CalendarSchedule(
+            title='오후 현장 미팅',
+            all_day=False,
+            start_time='2026-11-04 14:00:00+09:00',
+            end_time='2026-11-04 16:00:00+09:00',
+            creator=self.project_staff
+        )
+        timed_schedule.save()
+        self.assertIsNotNone(timed_schedule.start_date)
+        self.assertEqual(str(timed_schedule.start_date), '2026-11-04')
+        self.assertEqual(str(timed_schedule.end_date), '2026-11-04')
+
+        # 2. 날짜 역전 (start_date > end_date) 시 유효성 검사 오류 (400)
+        self.client.force_authenticate(user=self.project_staff)
+        invalid_res = self.client.post('/api/v1/schedule/', {
+            'title': '종료일 역전 일정',
+            'all_day': True,
+            'start_date': '2026-11-10',
+            'end_date': '2026-11-05'
+        })
+        self.assertEqual(invalid_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('end_date', invalid_res.data)
+
+
 
 class AccountViewSetsPermissionTest(TestCase):
     """회계 계정 과목 API의 권한 제어 검증 (일반 사용자 변조 차단)"""
@@ -351,6 +402,35 @@ class AccountViewSetsPermissionTest(TestCase):
         self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
         self.d3.refresh_from_db()
         self.assertTrue(self.d3.is_hide)
+
+    def test_readonly_viewsets_block_post_and_delete_even_for_admin(self):
+        """[P0-보안] 회계 계정 과목 API의 ReadOnly 전환으로 관리자라도 API를 통한 임의 DELETE/POST 불가 (405 차단)"""
+        self.client.force_authenticate(user=self.admin)
+
+        # 1. ReadOnlyModelViewSet 엔드포인트는 DELETE 및 POST 불가 (405 Method Not Allowed)
+        self.assertEqual(
+            self.client.delete(f'/api/v1/account-sort/{self.sort.pk}/').status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+        self.assertEqual(
+            self.client.post('/api/v1/account-sort/', {'name': '테스트'}).status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+        self.assertEqual(
+            self.client.delete(f'/api/v1/project-account-depth3/{self.pro_d3.pk}/').status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+
+        # 2. AccountSubD3는 is_hide 변경을 위해 PATCH만 허용, DELETE나 POST는 405 차단
+        self.assertEqual(
+            self.client.delete(f'/api/v1/account-depth3/{self.d3.pk}/').status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+        self.assertEqual(
+            self.client.post('/api/v1/account-depth3/', {'name': '새계정'}).status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+
 
 
 class IbsPermsHardeningTest(TestCase):
