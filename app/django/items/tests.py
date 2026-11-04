@@ -33,6 +33,10 @@ class ItemsIsolationAndPermissionTests(APITestCase):
             code='contract.read',
             defaults={'name': '계약 조회', 'module': 'contract', 'is_for_project': True}
         )
+        self.perm_delete, _ = Permission.objects.get_or_create(
+            code='contract.delete',
+            defaults={'name': '계약 삭제', 'module': 'contract', 'is_for_project': True}
+        )
 
         # 역할 생성
         self.manager_role = Role.objects.create(
@@ -609,6 +613,170 @@ class ItemsIsolationAndPermissionTests(APITestCase):
             'name': '909'
         })
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_contracted_house_unit_cannot_change_key_unit_or_unit_code(self):
+        """[P0-보안] 계약이 체결된 세대의 unit_code 교체 및 key_unit/unit_type/building_unit 변조 차단 (이중분양 방지)"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. key_unit_a와 house_a 연결 및 계약 생성
+        self.house_a.key_unit = self.key_unit_a
+        self.house_a.save()
+
+        order_group = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, name='일반분양'
+        )
+        Contract.objects.create(
+            project=self.project_a, order_group=order_group, serial_number='CONT-P0-001',
+            key_unit=self.key_unit_a, creator=self.admin_user
+        )
+
+        # 2. 계약된 세대에 새로운 unit_code 전달하여 PATCH 시도 -> 400 Bad Request
+        res_code = self.client.patch(f'/api/v1/house-unit/{self.house_a.pk}/', {
+            'unit_code': 'KU-NEW'
+        })
+        self.assertEqual(res_code.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_code', res_code.data)
+
+        # 3. 계약된 세대에 다른 key_unit PK 전달하여 PATCH 시도 -> 400 Bad Request
+        other_key_unit = KeyUnit.objects.create(
+            project=self.project_a, unit_type=self.unit_type_a, unit_code='KU-OTHER'
+        )
+        res_ku = self.client.patch(f'/api/v1/house-unit/{self.house_a.pk}/', {
+            'key_unit': other_key_unit.pk
+        })
+        self.assertEqual(res_ku.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('key_unit', res_ku.data)
+
+        # 4. 계약된 세대의 unit_type 변경 시도 -> 400 Bad Request
+        unit_type_a2 = UnitType.objects.create(
+            project=self.project_a, name='74A', color='#555555', sort='1', num_unit=50
+        )
+        res_type = self.client.patch(f'/api/v1/house-unit/{self.house_a.pk}/', {
+            'unit_type': unit_type_a2.pk
+        })
+        self.assertEqual(res_type.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_type', res_type.data)
+
+    def test_contracted_key_unit_and_house_unit_cannot_be_deleted(self):
+        """[P0-보안] 계약이 체결된 KeyUnit 및 HouseUnit의 무단 삭제(DELETE) 차단 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 1. 계약 연결
+        self.house_a.key_unit = self.key_unit_a
+        self.house_a.save()
+
+        order_group = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, name='일반분양'
+        )
+        contract = Contract.objects.create(
+            project=self.project_a, order_group=order_group, serial_number='CONT-DEL-001',
+            key_unit=self.key_unit_a, creator=self.admin_user
+        )
+
+        # 2. 계약된 KeyUnit 삭제 시도 -> 400 Bad Request
+        res_ku_del = self.client.delete(f'/api/v1/key-unit/{self.key_unit_a.pk}/')
+        self.assertEqual(res_ku_del.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(KeyUnit.objects.filter(pk=self.key_unit_a.pk).exists())
+        contract.refresh_from_db()
+        self.assertIsNotNone(contract.key_unit)
+
+        # 3. 계약된 HouseUnit 삭제 시도 -> 400 Bad Request
+        res_hu_del = self.client.delete(f'/api/v1/house-unit/{self.house_a.pk}/')
+        self.assertEqual(res_hu_del.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(HouseUnit.objects.filter(pk=self.house_a.pk).exists())
+
+    def test_destroy_requires_contract_delete_permission(self):
+        """[P1-권한] 삭제(destroy) 요청 시 contract.delete 권한이 필요하며, contract.update만 있는 유저는 403 차단"""
+        # uncontracted_house 생성 (floor_no=9, bldg_line=9)
+        uncontracted_house = HouseUnit.objects.create(
+            building_unit=self.bldg_a, unit_type=self.unit_type_a,
+            bldg_line=9, floor_no=9, name='909'
+        )
+
+        # user_a는 contract.update, contract.read만 보유 (contract.delete 없음) -> 403 Forbidden
+        self.client.force_authenticate(user=self.user_a)
+        res_denied = self.client.delete(f'/api/v1/house-unit/{uncontracted_house.pk}/')
+        self.assertEqual(res_denied.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(HouseUnit.objects.filter(pk=uncontracted_house.pk).exists())
+
+        # contract.delete 권한 부여 후 삭제 성공 -> 204 No Content
+        self.manager_role.permissions.add(self.perm_delete)
+        res_allowed = self.client.delete(f'/api/v1/house-unit/{uncontracted_house.pk}/')
+        self.assertEqual(res_allowed.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(HouseUnit.objects.filter(pk=uncontracted_house.pk).exists())
+
+    def test_duplicates_and_area_validation(self):
+        """[P1/P2] 동일 프로젝트/동 내 중복(BuildingUnit, UnitType, HouseUnit) 방어 및 면적 정합성 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 1. 동일 프로젝트 내 동 이름 중복 등록 시 400
+        res_dup_bldg = self.client.post('/api/v1/bldg/', {
+            'project': self.project_a.pk,
+            'name': '101동'  # 이미 setUp에 존재
+        })
+        self.assertEqual(res_dup_bldg.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('name', res_dup_bldg.data)
+
+        # 2. 동일 프로젝트 내 타입 명칭 중복 등록 시 400
+        res_dup_type = self.client.post('/api/v1/type/', {
+            'project': self.project_a.pk,
+            'name': '84A',  # 이미 setUp에 존재
+            'color': '#111111',
+            'sort': '1',
+            'num_unit': 10
+        })
+        self.assertEqual(res_dup_type.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('name', res_dup_type.data)
+
+        # 3. 면적 역전 (actual_area > supply_area) 시 400
+        res_area = self.client.post('/api/v1/type/', {
+            'project': self.project_a.pk,
+            'name': '84C',
+            'color': '#222222',
+            'sort': '1',
+            'num_unit': 10,
+            'actual_area': 84.5,
+            'supply_area': 59.5
+        })
+        self.assertEqual(res_area.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('supply_area', res_area.data)
+
+        # 4. 동일 동 내 동일 라인/층 중복 등록 시 400
+        res_dup_hu_line = self.client.post('/api/v1/house-unit/', {
+            'building_unit': self.bldg_a.pk,
+            'unit_type': self.unit_type_a.pk,
+            'bldg_line': 1,
+            'floor_no': 1,  # 이미 house_a(1동 1층 1라인)가 존재
+            'name': '101N'
+        })
+        self.assertEqual(res_dup_hu_line.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('bldg_line', res_dup_hu_line.data)
+
+        # 5. 동일 동 내 동일 호수명 중복 등록 시 400
+        res_dup_hu_name = self.client.post('/api/v1/house-unit/', {
+            'building_unit': self.bldg_a.pk,
+            'unit_type': self.unit_type_a.pk,
+            'bldg_line': 3,
+            'floor_no': 3,
+            'name': '101'  # 이미 house_a(101호)가 존재
+        })
+        self.assertEqual(res_dup_hu_name.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('name', res_dup_hu_name.data)
+
+    def test_option_item_auto_balance_and_deposit_calculation(self):
+        """[P2] OptionItem 등록 시 잔금 미입력 시 옵션가 - 계약금 자동 계산 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        res = self.client.post('/api/v1/option-item/', {
+            'project': self.project_a.pk,
+            'opt_name': '발코니 확장',
+            'opt_price': 10000000,
+            'opt_deposit': 1000000,
+            'types': [self.unit_type_a.pk]
+        })
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['opt_balance'], 9000000)
+
 
 
 class ItemsAdminQueryOptimizationTest(TestCase):

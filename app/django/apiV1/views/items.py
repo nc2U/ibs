@@ -1,14 +1,18 @@
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django_filters import BooleanFilter, NumberFilter, CharFilter
 from django_filters.rest_framework import FilterSet
-from rest_framework import viewsets
+from rest_framework import viewsets, serializers
 
 from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
 from work.models import IssueProject
-from ..pagination import PageNumberPaginationFifty, PageNumberPaginationThreeHundred, PageNumberPaginationThreeThousand
+from ..pagination import (
+    PageNumberPaginationFifty, PageNumberPaginationOneHundred,
+    PageNumberPaginationThreeHundred, PageNumberPaginationOneThousand,
+    PageNumberPaginationThreeThousand
+)
 from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, KeyUnitSerializer,
                                  BuildingUnitSerializer, HouseUnitSerializer, AllHouseUnitSerializer,
                                  HouseUnitSummarySerializer, OptionItemSerializer)
@@ -24,6 +28,7 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
     queryset = UnitType.objects.select_related('project').all()
     serializer_class = UnitTypeSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project', 'sort', 'main_or_sub')
     search_fields = ('name',)
 
@@ -31,6 +36,8 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):
@@ -39,6 +46,12 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('유닛 또는 세대(호수) 데이터가 연결된 타입은 삭제할 수 없습니다.')
 
 
 class UnitFloorTypeViewSet(viewsets.ModelViewSet):
@@ -53,6 +66,8 @@ class UnitFloorTypeViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):
@@ -75,6 +90,7 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
     queryset = KeyUnit.objects.select_related('houseunit', 'project', 'unit_type', 'contract').all()
     serializer_class = KeyUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
     filterset_class = KeyUnitListFilterSet
     search_fields = ('unit_code',)
     ordering_fields = ('pk', 'unit_code', 'unit_type')
@@ -84,6 +100,8 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):
@@ -93,11 +111,17 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
+    def perform_destroy(self, instance):
+        if hasattr(instance, 'contract') and instance.contract is not None:
+            raise serializers.ValidationError('계약이 체결된 계약 유닛은 삭제할 수 없습니다.')
+        instance.delete()
+
 
 class BuildingUnitViewSet(viewsets.ModelViewSet):
     queryset = BuildingUnit.objects.select_related('project').all()
     serializer_class = BuildingUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project',)
     search_fields = ('name',)
 
@@ -105,6 +129,8 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):
@@ -113,6 +139,12 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('호수(세대) 데이터가 연결된 동수는 삭제할 수 없습니다.')
 
 
 class HouseUnitFilterSet(FilterSet):
@@ -131,6 +163,7 @@ class HouseUnitViewSet(viewsets.ModelViewSet):
     queryset = HouseUnit.objects.select_related('unit_type', 'floor_type', 'building_unit', 'key_unit').all()
     serializer_class = HouseUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
     filterset_class = HouseUnitFilterSet
     search_fields = ('name', 'building_unit__name', 'hold_reason')
 
@@ -138,6 +171,8 @@ class HouseUnitViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):
@@ -146,6 +181,14 @@ class HouseUnitViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(building_unit__project_id__in=get_accessible_project_ids(user))
+
+    def perform_destroy(self, instance):
+        if instance.key_unit and hasattr(instance.key_unit, 'contract') and instance.key_unit.contract is not None:
+            raise serializers.ValidationError('계약이 체결된 세대(호수)는 삭제할 수 없습니다.')
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError('계약 또는 공급가격 등 연관 데이터가 존재하는 세대는 삭제할 수 없습니다.')
 
 
 class AvailableHouseUnitViewSet(viewsets.ReadOnlyModelViewSet):
@@ -233,6 +276,7 @@ class OptionItemViewSet(viewsets.ModelViewSet):
     queryset = OptionItem.objects.select_related('project').prefetch_related('types').all()
     serializer_class = OptionItemSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project', 'types')
     search_fields = ('opt_code', 'opt_name', 'opt_desc', 'opt_maker')
 
@@ -240,6 +284,8 @@ class OptionItemViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return None
+        if self.action == 'destroy':
+            return 'contract.delete'
         return 'contract.update'
 
     def get_queryset(self):

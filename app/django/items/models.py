@@ -77,6 +77,11 @@ class KeyUnit(models.Model):
         self.clean()
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if hasattr(self, 'contract') and self.contract is not None:
+            raise ValidationError('계약이 체결된 계약 유닛은 삭제할 수 없습니다.')
+        super().delete(*args, **kwargs)
+
     class Meta:
         ordering = ['-project', 'id']
         verbose_name = '03. 계약 유닛'
@@ -135,6 +140,11 @@ class HouseUnit(models.Model):
         self.clean()
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if self.key_unit and hasattr(self.key_unit, 'contract') and self.key_unit.contract is not None:
+            raise ValidationError('계약이 체결된 세대(호수)는 삭제할 수 없습니다.')
+        super().delete(*args, **kwargs)
+
     class Meta:
         ordering = ['-building_unit__project', 'building_unit', '-floor_no', 'bldg_line']
         verbose_name = '05. 호수'
@@ -156,9 +166,18 @@ class OptionItem(models.Model):
         return self.opt_name
 
     def clean(self):
-        if self.opt_price is not None and self.opt_deposit is not None and self.opt_balance is not None:
-            if self.opt_deposit + self.opt_balance != self.opt_price:
-                raise ValidationError({'opt_deposit': '계약금 + 잔금의 합계가 옵션가격과 일치해야 합니다.'})
+        if self.opt_price is not None:
+            if self.opt_deposit is not None and self.opt_balance is None:
+                if self.opt_deposit > self.opt_price:
+                    raise ValidationError({'opt_deposit': '계약금은 옵션가격을 초과할 수 없습니다.'})
+                self.opt_balance = self.opt_price - self.opt_deposit
+            elif self.opt_deposit is None and self.opt_balance is not None:
+                if self.opt_balance > self.opt_price:
+                    raise ValidationError({'opt_balance': '잔금은 옵션가격을 초과할 수 없습니다.'})
+                self.opt_deposit = self.opt_price - self.opt_balance
+            elif self.opt_deposit is not None and self.opt_balance is not None:
+                if self.opt_deposit + self.opt_balance != self.opt_price:
+                    raise ValidationError({'opt_deposit': '계약금 + 잔금의 합계가 옵션가격과 일치해야 합니다.'})
 
     def save(self, *args, **kwargs):
         self.clean()
