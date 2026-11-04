@@ -25,9 +25,9 @@ const props = defineProps({
 
 watch(
   () => props.company,
-  val => {
+  async () => {
     if (isCreateMode.value) initializeCreateForm()
-    else router.push({ name: '본사 거래 내역' })
+    else await router.push({ name: '본사 거래 내역' })
   },
 )
 
@@ -374,7 +374,25 @@ const handleUploadConfirm = () => {
 const bulkFileInputRef = ref<HTMLInputElement | null>(null)
 const bulkDialogVisible = ref(false)
 const bulkResult = ref<BulkParseResult | null>(null)
-const { downloadBulkTemplate, parseBulkFile } = useBulkTransExcel()
+const { downloadBulkTemplate, parseBulkFile, parseBulkText } = useBulkTransExcel()
+
+const getExistingForDeduplication = () => {
+  const dbExisting = ledgerStore.bankTransactionList.map(t => ({
+    deal_date: t.deal_date,
+    amount: t.amount,
+    sort: t.sort,
+    content: t.content,
+  }))
+  const formExisting = bankTransactions.value
+    .filter(t => t.bankForm.amount && t.bankForm.deal_date)
+    .map(t => ({
+      deal_date: t.bankForm.deal_date,
+      amount: t.bankForm.amount || 0,
+      sort: t.bankForm.sort,
+      content: t.bankForm.content || '',
+    }))
+  return [...dbExisting, ...formExisting]
+}
 
 const handleBulkDownload = () =>
   downloadBulkTemplate({
@@ -396,13 +414,41 @@ const handleBulkFileChange = async (event: Event) => {
       accounts: ledgerStore.comAccounts,
       contracts: ledgerStore.affiliates,
       systemType: 'company',
+      existingTransactions: getExistingForDeduplication(),
     })
     bulkDialogVisible.value = true
   } catch (error) {
     console.error('Bulk excel parsing error:', error)
-    alert('엑셀 파일 파싱 중 오류가 발생했습니다.')
+    alert(error instanceof Error ? error.message : '엑셀 파일 파싱 중 오류가 발생했습니다.')
   } finally {
     target.value = ''
+  }
+}
+
+const handleBulkPaste = async () => {
+  try {
+    const text = await navigator.clipboard.readText()
+    if (!text || !text.trim()) {
+      alert(
+        '클립보드에 복사된 텍스트 데이터가 없습니다. 인터넷 뱅킹 거래 내역을 복사한 후 다시 시도해 주세요.',
+      )
+      return
+    }
+    bulkResult.value = await parseBulkText(text, {
+      bankAccounts: formBankAccounts.value,
+      accounts: ledgerStore.comAccounts,
+      contracts: ledgerStore.affiliates,
+      systemType: 'company',
+      existingTransactions: getExistingForDeduplication(),
+    })
+    bulkDialogVisible.value = true
+  } catch (error) {
+    console.error('Clipboard paste error:', error)
+    alert(
+      error instanceof Error
+        ? error.message
+        : '클립보드 데이터를 읽는 중 오류가 발생했습니다. 브라우저의 클립보드 접근 권한을 확인해 주세요.',
+    )
   }
 }
 
@@ -847,7 +893,7 @@ onBeforeRouteLeave((to, from, next) => {
         </v-btn>
         <v-btn
           size="small"
-          variant="tonal"
+          variant="flat"
           :disabled="isSaving"
           @click="router.push({ name: '본사 거래 내역' })"
         >
@@ -879,14 +925,14 @@ onBeforeRouteLeave((to, from, next) => {
             <!-- 신규 모드: 다수 은행거래 + 회계 계정 엑셀 대량 입력 -->
             <template v-if="isCreateMode">
               <span class="text-grey mx-2">|</span>
-              <span class="text-caption mr-1">엑셀 대량 입력</span>
+              <span class="text-caption mr-1">대량 입력</span>
               <v-icon
                 icon="mdi-download"
                 size="16"
                 color="info"
                 class="mr-2 pointer"
                 @click="handleBulkDownload"
-                v-tooltip="'다수 은행거래 + 회계 계정 대량 입력 템플릿 다운로드'"
+                v-tooltip="'IBS 표준 대량 입력 템플릿 다운로드'"
               />
               <v-icon
                 icon="mdi-upload"
@@ -894,12 +940,28 @@ onBeforeRouteLeave((to, from, next) => {
                 color="success"
                 class="pointer"
                 @click="handleBulkUploadClick"
-                v-tooltip="'다수 은행거래 + 회계 계정 엑셀 업로드 (1회 최대 50건 / 200행)'"
+                v-tooltip="'IBS 템플릿 엑셀 업로드 (1회 최대 60건 / 250행)'"
+              />
+              <v-icon
+                icon="mdi-bank-transfer"
+                size="16"
+                color="teal"
+                class="ms-2 pointer"
+                @click="handleBulkUploadClick"
+                v-tooltip="'은행 원본 엑셀/CSV 업로드 (국민/신한/우리/하나/기업/농협 등 다운로드 파일 바로 등록)'"
+              />
+              <v-icon
+                icon="mdi-content-paste"
+                size="16"
+                color="primary"
+                class="ms-2 pointer"
+                @click="handleBulkPaste"
+                v-tooltip="'인터넷 뱅킹 거래내역 복사 데이터(클립보드) 바로 붙여넣기'"
               />
               <input
                 ref="bulkFileInputRef"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv"
                 style="display: none"
                 @change="handleBulkFileChange"
               />
@@ -1111,6 +1173,8 @@ onBeforeRouteLeave((to, from, next) => {
     v-model="bulkDialogVisible"
     :result="bulkResult"
     :has-existing="hasEnteredTransactions"
+    :bank-accounts="formBankAccounts"
+    :accounts="ledgerStore.comAccounts"
     related-label="관계회사(프로젝트)"
     @confirm="handleBulkConfirm"
   />
