@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.humanize.templatetags.humanize import intcomma
 from import_export.admin import ImportExportMixin
 
-from apiV1.views.project import get_accessible_project_ids
+from apiV1.permissions._utils import get_project_ids_with_permission
 from .models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                      SiteOwner, SiteOwnshipRelationship, SiteOwnerConsultationLogs,
                      SiteContract, SiteContractFile)
@@ -41,7 +41,7 @@ class ProjectAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'project.public')
+        accessible_projects = get_project_ids_with_permission(request.user, 'project.public')
         return qs.filter(pk__in=accessible_projects)
 
 
@@ -59,7 +59,7 @@ class ProjectIncBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'project.public')
+        accessible_projects = get_project_ids_with_permission(request.user, 'project.public')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -77,7 +77,7 @@ class ProjectOutBudgetAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'project.public')
+        accessible_projects = get_project_ids_with_permission(request.user, 'project.public')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -102,7 +102,7 @@ class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'site.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'site.read')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -119,7 +119,7 @@ class SiteOwnerAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'site.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'site.read')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -135,7 +135,7 @@ class SiteOwnshipRelationshipAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'site.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'site.read')
         return qs.filter(site__project_id__in=accessible_projects)
 
 
@@ -170,7 +170,7 @@ class SiteOwnerConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'site.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'site.read')
         return qs.filter(site_owner__project_id__in=accessible_projects)
 
     def save_model(self, request, obj, form, change):
@@ -199,7 +199,7 @@ class SiteContractAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'site.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'site.read')
         return qs.filter(project_id__in=accessible_projects)
 
     def formatted_price(self, obj):

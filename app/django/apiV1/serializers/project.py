@@ -530,12 +530,12 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         sites = self.initial_data.get('sites', [])
         existing_relations = SiteOwnshipRelationship.objects.filter(site_owner=instance)
 
-        existing_site_pks = set(r.site.pk for r in existing_relations)
+        existing_site_pks = set(r.site_id for r in existing_relations)
         incoming_site_pks = set(sites)
 
         # 삭제할 관계
         for relation in existing_relations:
-            if relation.site.pk not in incoming_site_pks:
+            if relation.site_id not in incoming_site_pks:
                 relation.delete()
 
         # 새로 추가할 관계

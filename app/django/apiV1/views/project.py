@@ -14,7 +14,6 @@ from apiV1.permissions.ibs_perms import IbsModulePermission
 from ledger.models import ProjectAccountingEntry, ProjectBankTransaction
 from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner, \
     SiteOwnshipRelationship, SiteContract, SiteOwnerConsultationLogs
-from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationOneHundred, \
     PageNumberPaginationOneThousand
 from ..serializers.project import ProjectSerializer, ProjectIncBudgetSerializer, ProjectOutBudgetSerializer, \
@@ -319,6 +318,8 @@ class FindPageMixin:
         page_size = request.query_params.get('limit', '10')
         try:
             page_size = int(page_size) if page_size else 10
+            if page_size <= 0:
+                page_size = 10
         except ValueError:
             page_size = 10
 
