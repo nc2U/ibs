@@ -329,8 +329,8 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        update_fields = []
         if request and hasattr(request, 'data'):
-            update_fields = []
             if 'contract' in request.data:
                 contract_val = request.data.get('contract')
                 instance.contract_id = contract_val
@@ -342,9 +342,18 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
                 order_val = request.data.get('installment_order')
                 instance.installment_order_id = order_val
                 update_fields.append('installment_order')
-            if update_fields:
-                instance.save(update_fields=update_fields + ['updated_at'])
-        return super().update(instance, validated_data)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+            if attr not in update_fields:
+                update_fields.append(attr)
+
+        if update_fields:
+            if 'updated_at' not in update_fields:
+                update_fields.append('updated_at')
+            instance.save(update_fields=update_fields)
+
+        return instance
 
     def _get_related_transaction(self, obj):
         """related_transaction 캐시 조회 (동일 요청 내 중복 쿼리 방지)"""

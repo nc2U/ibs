@@ -1010,7 +1010,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
                 if has_house_units and not has_sales_price:
                     # 예산 데이터에서 기본 금액 가져오기
-                    base_amount = PaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                    base_amount = get_commercial_fallback_amount(
                         project_id, default_og.pk, unit_type.pk
                     )
 
@@ -1955,7 +1955,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                 # HouseUnit은 있지만 SalesPriceByGT가 없을 때만 fallback 적용
                 if has_house_units and not has_sales_price:
                     # 예산 데이터에서 기본 금액 가져오기
-                    base_amount = ContractPaymentStatusByUnitTypeViewSet._get_commercial_fallback_amount(
+                    base_amount = get_commercial_fallback_amount(
                         project_id, default_og.pk, unit_type.pk
                     )
 

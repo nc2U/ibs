@@ -739,9 +739,12 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
                 type_count = get_og_item_count(item['order_group_id']) - 1
 
                 if col_num == 0 and is_first_type_in_order_group(item):
-                    # 차수명 (행 병합)
-                    worksheet.merge_range(row_num, col_num, row_num + type_count, col_num, item['order_group_name'],
-                                          bformat)
+                    # 차수명 (2개 이상 타입 시 행 병합, 1개일 경우 단일 셀 쓰기)
+                    if type_count > 0:
+                        worksheet.merge_range(row_num, col_num, row_num + type_count, col_num, item['order_group_name'],
+                                              bformat)
+                    else:
+                        worksheet.write(row_num, col_num, item['order_group_name'], bformat)
                 elif col_num == 1:
                     # 타입명
                     worksheet.write(row_num, col_num, item['unit_type_name'], bformat)
