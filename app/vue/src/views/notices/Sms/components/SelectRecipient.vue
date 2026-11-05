@@ -637,9 +637,10 @@ const handleGroupSelect = async () => {
         phones: phones,
       })
 
+      const contractorCount = data.debug?.active_contractors ?? data.count ?? phones.length
       refAlertModal.value?.callModal(
         '',
-        `${data.debug.active_contractors}명의 계약자 중 중복 제거 후 ${phones.length}명의 연락처가 추가되었습니다.`,
+        `${contractorCount}명의 계약자 중 중복 제거 후 ${phones.length}명의 연락처가 추가되었습니다.`,
       )
     } catch (error) {
       refAlertModal.value?.callModal('', '그룹 조회 중 오류가 발생했습니다.')

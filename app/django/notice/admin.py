@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from apiV1.views.notice import get_accessible_project_ids
+from apiV1.permissions._utils import get_project_ids_with_permission
 from .models import (
     SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory,
     EmailNotice, EmailSendLog
@@ -17,7 +17,7 @@ class SalesBillIssueAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'notice.read')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -50,7 +50,7 @@ class MessageSendHistoryAdmin(ImportExportMixin, admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'notice.read')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -67,7 +67,7 @@ class EmailNoticeAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'notice.read')
         return qs.filter(project_id__in=accessible_projects)
 
 
@@ -84,5 +84,5 @@ class EmailSendLogAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return qs
-        accessible_projects = get_accessible_project_ids(request.user, 'notice.read')
+        accessible_projects = get_project_ids_with_permission(request.user, 'notice.read')
         return qs.filter(email_notice__project_id__in=accessible_projects)

@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime
 
@@ -22,13 +23,14 @@ from apiV1.pagination import PageNumberPaginationOneThousand, PageNumberPaginati
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.notice import (
-    SalesBillIssueSerializer, SallesBillIssueSerializer, RegisteredSenderNumberSerializer,
+    SalesBillIssueSerializer, RegisteredSenderNumberSerializer,
     MessageTemplateSerializer, SMSMessageSerializer, MMSMessageSerializer, KakaoMessageSerializer,
     SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer,
     PostLabelSerializer, EmailNoticeSerializer, EmailNoticeListSerializer,
     EmailSendLogSerializer, EmailSendRequestSerializer
 )
 
+logger = logging.getLogger(__name__)
 
 
 def get_accessible_project_ids(user, required_perm: str = 'notice.read'):
@@ -240,9 +242,8 @@ class MessageViewSet(viewsets.ViewSet):
                             sent_by=request.user
                         )
 
-                    except Exception:
-                        # 히스토리 저장 실패는 무시 (발송 자체는 성공)
-                        pass
+                    except Exception as exc:
+                        logger.error("Failed to save MessageSendHistory (SMS): %s", exc)
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 
@@ -353,9 +354,8 @@ class MessageViewSet(viewsets.ViewSet):
                             sent_by=request.user
                         )
 
-                    except Exception:
-                        # 히스토리 저장 실패는 무시 (발송 자체는 성공)
-                        pass
+                    except Exception as exc:
+                        logger.error("Failed to save MessageSendHistory (MMS): %s", exc)
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 
@@ -461,8 +461,8 @@ class MessageViewSet(viewsets.ViewSet):
                         schedule_datetime=schedule_datetime,
                         sent_by=request.user
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.error("Failed to save MessageSendHistory (Kakao): %s", exc)
             else:
                 response_status = status.HTTP_400_BAD_REQUEST
 
@@ -662,22 +662,6 @@ class MessageViewSet(viewsets.ViewSet):
         # 'all'은 base_filter만 사용
 
         try:
-            # 디버깅: 각 필터 단계별 카운트
-            total_contractors = Contractor.objects.filter(
-                contract__project_id=project_id
-            ).count()
-
-            active_contracts = Contract.objects.filter(
-                project_id=project_id,
-                is_active=True
-            ).count()
-
-            active_contractors = Contractor.objects.filter(
-                contract__project_id=project_id,
-                contract__is_active=True,
-                is_active=True
-            ).count()
-
             # 유효한 휴대폰 번호만 조회 (중복 제거)
             contacts = ContractorContact.objects.filter(
                 base_filter
@@ -686,16 +670,33 @@ class MessageViewSet(viewsets.ViewSet):
             ).values_list('cell_phone', flat=True).distinct()
 
             phone_list = list(contacts)
-
-            return Response({
+            resp_data = {
                 'count': len(phone_list),
                 'phone_numbers': phone_list,
-                'debug': {
-                    'total_contractors': total_contractors,
-                    'active_contracts': active_contracts,
-                    'active_contractors': active_contractors,
+            }
+
+            # 연락처 0건 시에만 원인 진단용 디버그 카운트 계산
+            if not phone_list:
+                resp_data['debug'] = {
+                    'total_contractors': Contractor.objects.filter(
+                        contract__project_id=project_id
+                    ).count(),
+                    'active_contracts': Contract.objects.filter(
+                        project_id=project_id,
+                        is_active=True
+                    ).count(),
+                    'active_contractors': Contractor.objects.filter(
+                        contract__project_id=project_id,
+                        contract__is_active=True,
+                        is_active=True
+                    ).count(),
                 }
-            }, status=status.HTTP_200_OK)
+            else:
+                resp_data['debug'] = {
+                    'active_contractors': len(phone_list),
+                }
+
+            return Response(resp_data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
@@ -921,7 +922,7 @@ class EmailNoticeViewSet(viewsets.ModelViewSet):
         project_id = data['project']
         # 권한 확인
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            accessible_projects = list(get_accessible_project_ids(request.user))
+            accessible_projects = list(get_accessible_project_ids(request.user, 'notice.create'))
             if project_id not in accessible_projects:
                 return Response({'error': '해당 프로젝트에 대한 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
