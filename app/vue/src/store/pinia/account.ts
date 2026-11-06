@@ -205,21 +205,15 @@ export const useAccount = defineStore('account', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const resetTokenList = ref<
-    {
-      pk: number
-      user: number
-      token: string
-      updated: string
-      is_expired: boolean
-    }[]
-  >([])
-
-  const fetchResetTokenList = (user: number) =>
+  // 재설정 링크의 토큰 유효성 검증 (토큰 값은 서버에서만 대조하며 응답으로 받지 않음)
+  const checkPassResetToken = (
+    user_id: LocationQueryValue | LocationQueryValue[],
+    token: LocationQueryValue | LocationQueryValue[],
+  ): Promise<boolean> =>
     api
-      .get(`/pass-reset-token/?user=${user}`)
-      .then(res => (resetTokenList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .get(`/password-reset-confirm/${user_id}/${token}/`)
+      .then(res => !!res.data?.valid)
+      .catch(() => false)
 
   // getters
   const superAuth = computed(() => userInfo.value?.is_superuser)
@@ -452,8 +446,7 @@ export const useAccount = defineStore('account', () => {
     passReset,
     passResetConfirm,
 
-    resetTokenList,
-    fetchResetTokenList,
+    checkPassResetToken,
 
     superAuth,
     workManager,

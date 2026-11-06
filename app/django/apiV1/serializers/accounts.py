@@ -6,7 +6,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import User, Profile, Todo, DocScrape, PasswordResetToken, PostScrape, FCMDevice, Notification
+from accounts.models import User, Profile, Todo, DocScrape, PostScrape, FCMDevice, Notification
 from forum.models import Post
 from docs.models import Document
 from work.models.issue import Issue
@@ -291,12 +291,6 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-
-
-class PasswordResetTokenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PasswordResetToken
-        fields = ('pk', 'user', 'token', 'updated', 'is_expired')
 
 
 class AdminCreateUserSerializer(serializers.Serializer):

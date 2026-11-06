@@ -216,6 +216,44 @@ class PasswordResetSecurityTests(APITestCase):
         )
         self.assertTrue(token_obj.is_expired())
 
+    def test_pass_reset_token_endpoint_removed(self):
+        """토큰 값을 노출하던 /pass-reset-token/ 엔드포인트는 더 이상 존재하지 않음"""
+        token = default_token_generator.make_token(self.user)
+        PasswordResetToken.objects.create(user=self.user, token=token)
+        res = self.client.get(f'/api/v1/pass-reset-token/?user={self.user.pk}')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertNotIn(token, res.content.decode())
+
+    def test_password_reset_confirm_get_validates_without_exposing_token(self):
+        """GET 검증: 유효 토큰은 valid=True, 응답에 토큰 값 미포함, 비밀번호/토큰 상태 변경 없음"""
+        token = default_token_generator.make_token(self.user)
+        PasswordResetToken.objects.create(user=self.user, token=token)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        res = self.client.get(f'/api/v1/password-reset-confirm/{uidb64}/{token}/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.json(), {'valid': True})
+        self.assertNotIn(token, res.content.decode())
+        self.assertTrue(PasswordResetToken.objects.filter(user=self.user, token=token).exists())
+
+    def test_password_reset_confirm_get_invalid_cases(self):
+        """GET 검증: 만료/불일치 토큰/잘못된 uid 는 모두 valid=False"""
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+
+        # 만료된 토큰
+        PasswordResetToken.objects.create(user=self.user, token=token, expired=0)
+        res = self.client.get(f'/api/v1/password-reset-confirm/{uidb64}/{token}/')
+        self.assertEqual(res.json(), {'valid': False})
+
+        # 토큰 불일치
+        res = self.client.get(f'/api/v1/password-reset-confirm/{uidb64}/wrong-token/')
+        self.assertEqual(res.json(), {'valid': False})
+
+        # 잘못된 uid
+        res = self.client.get('/api/v1/password-reset-confirm/invalid-base-64!/fake/')
+        self.assertEqual(res.json(), {'valid': False})
+
 
 class FCMDeviceAndNotificationTests(APITestCase):
     def setUp(self):

@@ -14,23 +14,8 @@ const [route, router] = [useRoute(), useRouter()]
 
 const isLoading = ref(true)
 
-const uid = computed(() => {
-  try {
-    return route.query.uidb64 ? Number(atob(route.query.uidb64 as string)) : 0
-  } catch {
-    return 0
-  }
-})
-const token = computed(() => route.query.token)
-const isExpired = computed(() => {
-  if (isLoading.value) return false
-  const resetToken = accStore.resetTokenList.length ? accStore.resetTokenList[0] : null
-  if (!!resetToken) {
-    if (resetToken.is_expired)
-      return true // expired!
-    else return token.value !== resetToken.token // if tokenCheck true -> not expired! false -> expired!
-  } else return true
-})
+const isTokenValid = ref(false)
+const isExpired = computed(() => !isLoading.value && !isTokenValid.value)
 
 const onSubmit = async (new_password: string) => {
   const payload = {
@@ -43,8 +28,9 @@ const onSubmit = async (new_password: string) => {
 }
 
 onBeforeMount(async () => {
-  if (uid.value) {
-    await accStore.fetchResetTokenList(uid.value)
+  const { uidb64, token } = route.query
+  if (uidb64 && token) {
+    isTokenValid.value = await accStore.checkPassResetToken(uidb64, token)
   }
   isLoading.value = false
 })

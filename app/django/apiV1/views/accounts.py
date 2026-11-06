@@ -28,7 +28,7 @@ from work.models.project import Role, Member, IssueProject
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
 from ..serializers.accounts import UserSerializer, ProfileSerializer, \
     DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
-    PasswordResetSerializer, PasswordResetTokenSerializer, AdminCreateUserSerializer, \
+    PasswordResetSerializer, AdminCreateUserSerializer, \
     FCMDeviceSerializer, NotificationSerializer
 
 
@@ -405,6 +405,25 @@ class PasswordResetConfirmView(APIView):
     permission_classes = (AllowAny,)
 
     @staticmethod
+    def get(request, *args, **kwargs):
+        """
+        재설정 링크의 토큰 유효성만 검증한다. (토큰 값 자체는 응답에 포함하지 않음)
+        응답: {'valid': bool}  — 사용자 없음/토큰 불일치/만료는 모두 valid=False 로 동일 처리.
+        """
+        try:
+            user_id = force_str(urlsafe_base64_decode(kwargs.get('user_id')))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'valid': False}, status=status.HTTP_200_OK)
+
+        token = kwargs.get('token')
+        valid = False
+        if default_token_generator.check_token(user, token):
+            token_db = PasswordResetToken.objects.filter(user=user, token=token).order_by('-created').first()
+            valid = bool(token_db and not token_db.is_expired())
+        return Response({'valid': valid}, status=status.HTTP_200_OK)
+
+    @staticmethod
     def post(request, *args, **kwargs):
         try:
             user_id = force_str(urlsafe_base64_decode(kwargs.get('user_id')))
@@ -427,13 +446,6 @@ class PasswordResetConfirmView(APIView):
                 return Response({'detail': 'This token was expired'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-class PasswordResetTokenViewSet(viewsets.ModelViewSet):
-    queryset = PasswordResetToken.objects.all()
-    serializer_class = PasswordResetTokenSerializer
-    permission_classes = (AllowAny,)
-    filterset_fields = ('user', 'token')
 
 
 class AdminManageUserView(APIView):
