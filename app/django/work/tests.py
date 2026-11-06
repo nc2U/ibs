@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import Profile
 from company.models import Company
+from work.models.inform import News
 from work.models.issue import Issue, Tracker, IssueStatus, CodeIssuePriority
 from work.models.issue import IssueRelation, IssueCategory
 from work.models.logging import ActivityLogEntry, IssueLogEntry
@@ -108,6 +109,28 @@ class WorkAppTests(TestCase):
         members = child_project.all_members()
         self.assertEqual(len(members), 1)
         self.assertTrue(members[0]['roles'][0]['inherited'])
+
+    def test_news_is_new(self):
+        news = News.objects.create(
+            project=self.project,
+            title='Test Notice',
+            author=self.user,
+        )
+        self.assertTrue(news.is_new)
+
+        # 4일 전 공지로 업데이트
+        News.objects.filter(pk=news.pk).update(created=timezone.now() - timedelta(days=4))
+        news.refresh_from_db()
+        self.assertFalse(news.is_new)
+
+        # 2일 전 공지로 업데이트
+        News.objects.filter(pk=news.pk).update(created=timezone.now() - timedelta(days=2))
+        news.refresh_from_db()
+        self.assertTrue(news.is_new)
+
+        # 저장되지 않은 새 인스턴스 (created가 없는 경우)
+        unsaved_news = News(project=self.project, title='Unsaved', author=self.user)
+        self.assertTrue(unsaved_news.is_new)
 
 
 class WorkMeetingAndSecurityAPITests(APITestCase):

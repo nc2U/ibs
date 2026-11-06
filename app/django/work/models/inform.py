@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.postgres.indexes import GinIndex
+from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_news_file_path, populate_file_meta
@@ -23,10 +24,11 @@ class News(models.Model):
     def __str__(self):
         return self.title
 
+    @property
     def is_new(self):
-        today = datetime.today().strftime('%Y-%m-%d %H:%M')
-        new_period = self.created + timedelta(days=3)
-        return today < new_period.strftime('%Y-%m-%d %H:%M')
+        if not self.created:
+            return True
+        return timezone.now() < self.created + timedelta(days=3)
 
     class Meta:
         ordering = ('-is_important', '-created',)
