@@ -185,5 +185,7 @@ class LeaveApprovalIntegrationTestCase(APITestCase):
         self.assertTrue(usage.is_cancelled)
 
         # 연차 잔여 일수 원상 복구 확인 (15.00)
-        self.assertEqual(self.quota.used_days, Decimal('0.00'))
-        self.assertEqual(self.quota.remaining_days, Decimal('15.00'))
+        # used_days 는 인스턴스 단위로 캐싱되므로 DB 에서 새 인스턴스를 조회해 검증한다.
+        quota = StaffLeaveQuota.objects.get(pk=self.quota.pk)
+        self.assertEqual(quota.used_days, Decimal('0.00'))
+        self.assertEqual(quota.remaining_days, Decimal('15.00'))

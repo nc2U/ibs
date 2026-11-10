@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.test import TestCase, Client, RequestFactory
+from django.test import TestCase, Client, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -271,6 +271,8 @@ class NoticeAppSecurityTests(TestCase):
         self.assertIn(self.history_b.pk, history_ids_admin)
         self.assertIn(self.history_user_b_unbound.pk, history_ids_admin)
 
+    # IwinvSMSService 초기화는 API 키가 없으면 ValueError 를 발생시키므로 테스트용 더미 키를 주입한다.
+    @override_settings(IWINV_API_KEY='test-api-key', IWINV_AUTH_KEY='test-auth-key')
     @patch('notice.utils.IwinvSMSService.send_kakao_alimtalk')
     def test_send_kakao_history_creation(self, mock_send_kakao):
         """카카오 알림톡 발송 성공 시 MessageSendHistory 기록 생성 검증"""

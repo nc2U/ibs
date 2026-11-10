@@ -48,7 +48,7 @@ jobs:
           --health-retries 10
     env:
       DEBUG: "True"
-      SECRET_KEY: ci-dummy-secret-key
+      SECRET_KEY: ci-dummy-secret-key-at-least-32-chars-long-for-jwt-security
       DATABASE_TYPE: postgres
       DATABASE_NAME: ibs
       DATABASE_USER: ibs
@@ -58,6 +58,8 @@ jobs:
       CELERY_BROKER_URL: redis://localhost:6379/0
       CELERY_RESULT_BACKEND: redis://localhost:6379/0
       SLACK_NOTIFICATIONS_ENABLED: "False"
+      IWINV_API_KEY: "ci-dummy-iwinv-api-key"
+      IWINV_AUTH_KEY: "ci-dummy-iwinv-auth-key"
     defaults:
       run:
         working-directory: app/django
