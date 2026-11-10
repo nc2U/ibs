@@ -20,5 +20,7 @@ overrides:
   katex: '>=0.18.2'
   follow-redirects: '>=1.16.2'
   minimatch: '>=11.0.3'
+  # minimatch 11 은 brace-expansion 5.x 가 필요 (위의 전역 1.1.x 고정과 충돌 방지)
+  'minimatch>brace-expansion': '^5.0.12'
 
 minimumReleaseAge: 0

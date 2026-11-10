@@ -78,6 +78,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r ../../deploy/docker/python/requirements.txt
 
+      # 마이그레이션이 gin_trgm_ops 인덱스를 사용하므로 pg_trgm 확장이 필요하다.
+      # 테스트 DB 는 template1 을 복제해 생성되므로 template1 에 확장을 설치한다.
+      - name: Enable pg_trgm extension
+        working-directory: .
+        env:
+          PGPASSWORD: ibs
+        run: |
+          psql -h localhost -U ibs -d template1 -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+          psql -h localhost -U ibs -d ibs -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
       - name: Django system check
         run: python manage.py check
 
