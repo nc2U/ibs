@@ -133,7 +133,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
 
 
 class IssueLogEntryViewSet(viewsets.ModelViewSet):
-    queryset = IssueLogEntry.objects.all()
+    queryset = IssueLogEntry.objects.order_by('id')
     serializer_class = IssueLogEntrySerializer
     permission_classes = (IsWorkManagerReadOnly,)
     pagination_class = PageNumberPaginationFifty

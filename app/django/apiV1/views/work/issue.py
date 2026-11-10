@@ -872,7 +872,7 @@ class IssueStatusViewSet(viewsets.ModelViewSet):
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
-    queryset = Workflow.objects.all()
+    queryset = Workflow.objects.order_by('id')
     serializer_class = WorkflowSerializer
     permission_classes = (IsWorkManagerReadOnly,)
 
