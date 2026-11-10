@@ -1,0 +1,131 @@
+name: "[CI] Verify (Django & Vue)"
+
+on:
+  pull_request:
+    paths:
+      - "app/django/**"
+      - "app/vue/**"
+      - "deploy/docker/python/requirements.txt"
+      - ".github/workflows/ci-verify.yml"
+  push:
+    branches: [ "develop", "master" ]
+    paths:
+      - "app/django/**"
+      - "app/vue/**"
+      - "deploy/docker/python/requirements.txt"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  django:
+    name: Django check & test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ibs
+          POSTGRES_PASSWORD: ibs
+          POSTGRES_DB: ibs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ibs"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "True"
+      SECRET_KEY: ci-dummy-secret-key
+      DATABASE_TYPE: postgres
+      DATABASE_NAME: ibs
+      DATABASE_USER: ibs
+      DATABASE_PASSWORD: ibs
+      DATABASE_HOST_OVERRIDE: localhost
+      REDIS_URL: redis://localhost:6379/1
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      SLACK_NOTIFICATIONS_ENABLED: "False"
+    defaults:
+      run:
+        working-directory: app/django
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: deploy/docker/python/requirements.txt
+
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpq-dev libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 fonts-nanum
+
+      - name: Install dependencies
+        run: pip install -r ../../deploy/docker/python/requirements.txt
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: python manage.py test --noinput
+
+  vue:
+    name: Vue lint, type-check & unit test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/vue
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 11
+          run_install: false
+
+      - name: Get pnpm store directory
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/vue/pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (no auto-fix)
+        run: pnpm lint:check
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Unit tests
+        run: pnpm exec vitest run
