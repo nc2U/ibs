@@ -90,3 +90,4 @@ app/flutter/ios/Runner/GoogleService-Info.plist
 *firebase-adminsdk*.json
 *serviceAccountKey*.json
 !/app/django/templates/partials/center_modal.html
+app/django/schema.yml

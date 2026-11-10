@@ -29,6 +29,8 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from apiV1.permissions.auth_perms import IsSuperUserOnly
 from ibs.views import CustomHandler404, install_check
 
 handler404 = CustomHandler404.as_view()
@@ -82,6 +84,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('apiV1.urls')),
     path('api-auth/', include('rest_framework.urls')),
+    # OpenAPI 스키마/문서: 슈퍼유저 전용
+    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsSuperUserOnly]), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsSuperUserOnly]), name='swagger-ui'),
     path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

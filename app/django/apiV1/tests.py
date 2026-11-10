@@ -425,3 +425,21 @@ class SSENotificationStreamSecurityTests(APITestCase):
     def test_stream_with_invalid_token_returns_403(self):
         res = self.client.get('/api/v1/notifications/stream/?token=invalid-jwt-token')
         self.assertEqual(res.status_code, 403)
+
+
+class WorkReferenceReadOnlyPermissionTests(TestCase):
+    """참조 데이터/로그 엔드포인트는 일반 사용자에게 읽기 전용이어야 한다."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username='ro_user', email='ro_user@example.com', password='password')
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_regular_user_can_read_but_not_write(self):
+        for ep in ('issue-status', 'workflow', 'code-priority', 'act-entry', 'log-entry'):
+            self.assertEqual(self.client.get(f'/api/v1/{ep}/').status_code, 200, ep)
+            self.assertEqual(self.client.post(f'/api/v1/{ep}/', {}, format='json').status_code, 403, ep)

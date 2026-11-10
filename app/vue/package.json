@@ -17,6 +17,7 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
+    "gen:api-types": "openapi-typescript ../django/schema.yml -o src/types/api.generated.ts",
     "format": "prettier --write src/"
   },
   "dependencies": {
@@ -94,6 +95,7 @@
     "sass-loader": "^16.0.8",
     "start-server-and-test": "^2.1.5",
     "terser": "^5.51.2",
+    "openapi-typescript": "^7.9.1",
     "typescript": "~5.8.3",
     "vite": "^7.3.7",
     "vite-plugin-vuetify": "^2.1.3",

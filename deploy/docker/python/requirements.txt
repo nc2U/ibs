@@ -18,6 +18,7 @@ django-tree-queries==0.24.0
 
 djangorestframework==3.18.2
 djangorestframework-simplejwt==5.5.1
+drf-spectacular>=0.28.0
 
 gunicorn>=21.2
 

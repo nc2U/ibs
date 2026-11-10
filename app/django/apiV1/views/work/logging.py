@@ -5,7 +5,7 @@ from django_filters.rest_framework import FilterSet, DateFilter, CharFilter
 from rest_framework import viewsets
 
 from apiV1.pagination import PageNumberPaginationThreeHundred, PageNumberPaginationFifty
-from apiV1.permissions.auth_perms import permissions
+from apiV1.permissions.auth_perms import permissions, IsWorkManagerReadOnly
 from apiV1.serializers.work import IssueLogEntrySerializer
 from apiV1.serializers.work.logging import ActivityLogEntrySerializer
 from work.models.logging import ActivityLogEntry, IssueLogEntry
@@ -69,7 +69,7 @@ class ActivityLogFilter(FilterSet):
 class ActivityLogEntryViewSet(viewsets.ModelViewSet):
     queryset = ActivityLogEntry.objects.all()
     serializer_class = ActivityLogEntrySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsWorkManagerReadOnly,)
     pagination_class = PageNumberPaginationThreeHundred
     filterset_class = ActivityLogFilter
 
@@ -135,7 +135,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
 class IssueLogEntryViewSet(viewsets.ModelViewSet):
     queryset = IssueLogEntry.objects.all()
     serializer_class = IssueLogEntrySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsWorkManagerReadOnly,)
     pagination_class = PageNumberPaginationFifty
     filterset_fields = ('issue', 'creator')
 

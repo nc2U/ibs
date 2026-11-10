@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apiV1.pagination import PageNumberPaginationTwenty
-from apiV1.permissions.auth_perms import permissions
+from apiV1.permissions.auth_perms import permissions, IsWorkManagerReadOnly
 from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission, \
     IssueRelationPermission
 from apiV1.serializers.work import (IssueCountByMemberSerializer, IssueRelationSerializer, IssueFileSerializer,
@@ -863,7 +863,7 @@ class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
 class IssueStatusViewSet(viewsets.ModelViewSet):
     queryset = IssueStatus.objects.all()
     serializer_class = IssueStatusSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsWorkManagerReadOnly,)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
 
@@ -874,13 +874,13 @@ class IssueStatusViewSet(viewsets.ModelViewSet):
 class WorkflowViewSet(viewsets.ModelViewSet):
     queryset = Workflow.objects.all()
     serializer_class = WorkflowSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsWorkManagerReadOnly,)
 
 
 class CodeIssuePriorityViewSet(viewsets.ModelViewSet):
     queryset = CodeIssuePriority.objects.all()
     serializer_class = CodeIssuePrioritySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsWorkManagerReadOnly,)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
 

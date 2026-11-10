@@ -88,6 +88,7 @@ INSTALLED_APPS += [  # plugin
     'storages',
     'mathfilters',
     'rest_framework',
+    'drf_spectacular',
     'rest_framework_simplejwt',
     'allauth',
     'allauth.account',
@@ -339,6 +340,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     # 'DEFAULT_PAGINATION_CLASS': 'apiV1.pagination.LimitOffsetPaginationWithMaxLimit',
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'DEFAULT_PAGINATION_CLASS': 'apiV1.pagination.PageNumberPaginationCustomBasic',
@@ -520,3 +522,13 @@ LOGGING = {
 # Firebase Admin SDK Configuration (FCM Push)
 FIREBASE_CREDENTIALS_BASE64 = config('FIREBASE_CREDENTIALS_BASE64', default='')
 FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='')
+
+
+# OpenAPI 스키마 (drf-spectacular) - `python manage.py spectacular --file schema.yml`
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'IBS API',
+    'DESCRIPTION': 'IBS 건설 관리 시스템 REST API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+}
