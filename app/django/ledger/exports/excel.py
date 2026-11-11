@@ -2,6 +2,7 @@
 
 원장 관련 Excel 내보내기 뷰들
 """
+import calendar
 import datetime
 import re
 from collections import defaultdict
@@ -9,10 +10,15 @@ from urllib.parse import quote
 
 import xlwt
 from dateutil.relativedelta import relativedelta
+from django.core.exceptions import PermissionDenied
 from django.db.models import Sum, When, F, PositiveBigIntegerField, Case, Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
-from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
+from _excel.mixins import ExcelExportMixin, XlwtStyleMixin, TODAY
+from apiV1.permissions._utils import get_project_ids_with_permission, is_project_locked
+from apiV1.permissions.ibs_perms import HqProjectModulePermission
+from apiV1.views.ledger import get_accessible_company_ids
 from company.models import Company
 from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, \
     ProjectAccountingEntry
@@ -20,13 +26,47 @@ from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from project.models import Project, ProjectOutBudget
 
-TODAY = datetime.date.today().strftime('%Y-%m-%d')
+
+def _get_authorized_company(request):
+    """요청 사용자의 본사 원장 조회 권한 및 소속 회사 접근 권한(RLS)을 검증하고 Company를 반환합니다."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        raise PermissionDenied('로그인이 필요합니다.')
+    company = get_object_or_404(Company, pk=request.GET.get('company'))
+    if user.is_superuser:
+        return company
+    if company.pk not in get_accessible_company_ids(user):
+        raise PermissionDenied('해당 회사의 원장 데이터를 조회할 권한이 없습니다.')
+    hq_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
+    if 'hq.ledger.read' not in hq_perms and 'hq.ledger.manage' not in hq_perms:
+        raise PermissionDenied('본사 원장 조회 권한이 없습니다.')
+    return company
+
+
+def _get_authorized_project(request):
+    """요청 사용자의 프로젝트 원장 조회 권한(ledger.read) 및 접근 권한(RLS)을 검증하고 Project를 반환합니다."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        raise PermissionDenied('로그인이 필요합니다.')
+    project = get_object_or_404(Project.objects.select_related('issue_project'), pk=request.GET.get('project'))
+    if getattr(project, 'issue_project', None) and is_project_locked(project.issue_project):
+        raise PermissionDenied('잠금보관된 프로젝트의 데이터에는 접근할 수 없습니다.')
+    if user.is_superuser or getattr(user, 'work_manager', False):
+        return project
+    if project.pk not in get_project_ids_with_permission(user, 'ledger.read'):
+        raise PermissionDenied('해당 프로젝트의 원장 데이터를 조회할 권한이 없습니다.')
+    return project
 
 
 class ExportLedgerBalanceByAcc(ExcelExportMixin):
     """본사 계좌별 잔고 내역 (원장 기반)"""
 
     def get(self, request):
+        # 권한 및 대상 회사 검증
+        company = _get_authorized_company(request)
+        com_name = company.name.replace('주식회사 ', '(주)')
+        date = request.GET.get('date') or str(TODAY)
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('본사_계좌별_자금현황')
 
@@ -37,11 +77,6 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
         center_format = self.create_center_format(workbook)
         left_format = self.create_left_format(workbook)
         sume_format = self.create_sum_format(workbook)
-
-        # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
-        com_name = company.name.replace('주식회사 ', '(주)')
-        date = request.GET.get('date') or TODAY
 
         # 1. Title
         row_num = 0
@@ -155,6 +190,11 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
     """본사 일별 입출금 내역 (원장 기반)"""
 
     def get(self, request):
+        # 권한 및 대상 회사 검증
+        company = _get_authorized_company(request)
+        com_name = company.name.replace('주식회사 ', '(주)')
+        date = request.GET.get('date') or str(TODAY)
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('당일_입출금내역')
 
@@ -165,11 +205,6 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
         center_format = self.create_center_format(workbook)
         left_format = self.create_left_format(workbook)
         sum_format = self.create_sum_format(workbook)
-
-        # data start --------------------------------------------- #
-        company = Company.objects.get(pk=request.GET.get('company'))
-        com_name = company.name.replace('주식회사 ', '(주)')
-        date = request.GET.get('date') or TODAY
 
         # 1. Title
         row_num = 0
@@ -312,7 +347,8 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
 
 def export_com_transaction_xls(request):
     """본사 입출금 내역 (공용 서비스 함수 사용)"""
-    # 서비스 함수를 직접 호출하므로 ViewSet 관련 import는 더 이상 필요 없음
+    company = _get_authorized_company(request)
+    com_name = company.name.replace('주식회사 ', '(주)')
 
     raw_filename = request.GET.get('filename')
     clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'cashbook-{TODAY}'
@@ -330,10 +366,10 @@ def export_com_transaction_xls(request):
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('본사_입출금_내역')
 
-    # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
-    # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
-    obj_list = get_company_transactions(request.GET)
-    obj_list = obj_list.order_by('deal_date', 'created_at')
+    # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출 + 회사 스코프 고정) ---
+    base_qs = CompanyBankTransaction.objects.filter(company_id=company.pk)
+    obj_list = get_company_transactions(request.GET, base_qs=base_qs)
+    obj_list = list(obj_list.order_by('deal_date', 'created_at'))
     # -----------------------------------------
 
     # --- N+1 문제 해결을 위한 수동 Prefetch ---
@@ -350,9 +386,6 @@ def export_com_transaction_xls(request):
         for transaction in obj_list:
             transaction.prefetched_entries = entries_map.get(transaction.transaction_id, [])
     # ------------------------------------
-
-    company = Company.objects.get(pk=request.GET.get('company'))
-    com_name = company.name.replace('주식회사 ', '(주)')
 
     # Sheet Title, first row
     row_num = 0
@@ -457,14 +490,14 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
     """프로젝트 계좌별 잔고 내역"""
 
     def get(self, request):
-        # 워크북 생성
-        output, workbook, worksheet = self.create_workbook('계좌별_자금현황')
-
-        # 데이터 조회
-        project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date') or TODAY
+        # 데이터 및 권한 조회
+        project = _get_authorized_project(request)
+        date = request.GET.get('date') or str(TODAY)
         directpay = request.GET.get('bank_account__directpay', '0')
         is_balance = request.GET.get('is_balance', '')
+
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('계좌별_자금현황')
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -581,13 +614,12 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
     """프로젝트 일별 입출금 내역"""
 
     def get(self, request):
+        # 권한 및 대상 프로젝트 검증
+        project = _get_authorized_project(request)
+        date = request.GET.get('date') or str(TODAY)
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('당일_입출금내역')
-
-        # data start --------------------------------------------- #
-
-        project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date') or TODAY
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -741,14 +773,14 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
     """프로젝트 예산 대비 현황 (ledger 기반)"""
 
     def get(self, request):
-        # 워크북 생성
-        output, workbook, worksheet = self.create_workbook('예산집행_현황')
-
-        # data start --------------------------------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date') or TODAY
+        # 권한 및 대상 프로젝트 검증
+        project = _get_authorized_project(request)
+        date = request.GET.get('date') or str(TODAY)
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
+
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('예산집행_현황')
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -825,50 +857,58 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
         # account_opt별 첫 번째 예산 추적
         opt_first_seen = {}
 
-        # 출금 거래만 조회 (sort_id=2) - Vue API와 동일한 로직
-        all_transaction_ids = list(ProjectBankTransaction.objects.filter(
+        # 출금 거래만 조회 (sort_id=2) - Vue API와 동일한 로직 (루프 외부 사전 집계로 N+1 제거)
+        all_transaction_ids = ProjectBankTransaction.objects.filter(
             project_id=project.pk,
             sort_id=2,  # 출금만
             deal_date__lte=date
-        ).values_list('transaction_id', flat=True))
+        ).values_list('transaction_id', flat=True)
 
         month_first = date[:8] + '01'
-        month_transaction_ids = list(ProjectBankTransaction.objects.filter(
+        month_transaction_ids = ProjectBankTransaction.objects.filter(
             project_id=project.pk,
             sort_id=2,  # 출금만
             deal_date__gte=month_first,
             deal_date__lte=date
-        ).values_list('transaction_id', flat=True))
+        ).values_list('transaction_id', flat=True)
 
-        for row, budget in enumerate(budgets):
+        total_amount_by_account = {
+            row['account_id']: (row['total'] or 0)
+            for row in ProjectAccountingEntry.objects.filter(
+                transaction_id__in=all_transaction_ids
+            ).values('account_id').annotate(total=Sum('amount'))
+        }
+        month_amount_by_account = {
+            row['account_id']: (row['total'] or 0)
+            for row in ProjectAccountingEntry.objects.filter(
+                transaction_id__in=month_transaction_ids
+            ).values('account_id').annotate(total=Sum('amount'))
+        }
+
+        budgets_list = list(budgets)
+        budget_count = len(budgets_list)
+        opt_budget_counts = defaultdict(int)
+        for b in budgets_list:
+            p_pk = b.account.parent_id if b.account and b.account.parent else None
+            if b.account_opt:
+                opt_budget_counts[(p_pk, b.account_opt)] += 1
+
+        for row, budget in enumerate(budgets_list):
             row_num += 1
 
-            # ledger 기반: account_id 사용 (출금 거래만)
-            budget_entries = ProjectAccountingEntry.objects.filter(
-                account_id=budget.account_id,
-                transaction_id__in=all_transaction_ids
-            )
-
-            # ledger 기반: 당월 출금 거래만
-            co_budget_month = ProjectAccountingEntry.objects.filter(
-                account_id=budget.account_id,
-                transaction_id__in=month_transaction_ids
-            ).aggregate(Sum('amount'))['amount__sum']
-            co_budget_month = co_budget_month if co_budget_month else 0
+            co_budget_month = month_amount_by_account.get(budget.account_id, 0)
             budget_month_sum += co_budget_month
 
             calc_budget = budget.revised_budget or budget.budget if is_revised else budget.budget
-            co_budget_total = budget_entries.aggregate(Sum('amount'))['amount__sum']
-            co_budget_total = co_budget_total if co_budget_total else 0
+            co_budget_total = total_amount_by_account.get(budget.account_id, 0)
             budget_total_sum += co_budget_total
 
             # ledger 기반: account.parent_id 사용
             parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
-            opt_budgets = self.get_sub_title(project, budget.account_opt, parent_pk)
 
             for col in range(9):
                 if col == 0 and row == 0:
-                    worksheet.merge_range(row_num, col, budgets.count() + 2, col, '사업비', center_format)
+                    worksheet.merge_range(row_num, col, budget_count + 2, col, '사업비', center_format)
                 if col == 1:
                     # ledger 기반: account.parent별 병합
                     if parent_pk and parent_pk not in parent_first_seen:
@@ -884,7 +924,8 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                         opt_key = (parent_pk, budget.account_opt)
                         if opt_key not in opt_first_seen:
                             opt_first_seen[opt_key] = True
-                            worksheet.merge_range(row_num, col, row_num + len(opt_budgets) - 1,
+                            opt_count = opt_budget_counts.get(opt_key, 1)
+                            worksheet.merge_range(row_num, col, row_num + opt_count - 1,
                                                   col, budget.account_opt, left_format)
                     else:
                         # ledger 기반: account.name 사용
@@ -946,6 +987,12 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
     """프로젝트 자금집행 내역 반영 캐시 플로우 폼"""
 
     def get(self, request):
+        # 권한 및 대상 프로젝트 검증
+        project = _get_authorized_project(request)
+        date = request.GET.get('date') or str(TODAY)
+        revised = request.GET.get('revised')
+        is_revised = int(revised) if revised in ('0', '1') else 0
+
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('캐시_플로우_폼')
 
@@ -956,12 +1003,6 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         center_format = self.create_center_format(workbook)
         left_format = self.create_left_format(workbook)
         sum_format = self.create_sum_format(workbook)
-
-        # data start --------------------------------------------- #
-        project = Project.objects.get(pk=request.GET.get('project'))
-        date = request.GET.get('date') or TODAY
-        revised = request.GET.get('revised')
-        is_revised = int(revised) if revised in ('0', '1') else 0
 
         # 프로젝트 일정 가져오기 (필수 필드)
         monthly_aggr_start = project.monthly_aggr_start_date
@@ -1061,7 +1102,8 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         cumulative_dict = {item['account_id']: item['total'] or 0 for item in cumulative_data}
 
         # 월별 데이터 (월별집계시작일 ~ 종료일) (동적) - 출금 거래만 (sort_id=2)
-        monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, 28)
+        last_day_of_end_month = calendar.monthrange(monthly_end_year, monthly_end_month)[1]
+        monthly_end_date_obj = datetime.date(monthly_end_year, monthly_end_month, last_day_of_end_month)
         monthly_transaction_ids = ProjectBankTransaction.objects.filter(
             project_id=project.pk,
             sort_id=2,  # 출금만
@@ -1236,7 +1278,8 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
 
 def export_pro_transaction_xls(request):
     """프로젝트별 입출금 내역 (공용 서비스 함수 사용)"""
-    # 서비스 함수를 직접 호출하므로 ViewSet 관련 import는 더 이상 필요 없음
+    project = _get_authorized_project(request)
+    pro_name = project.name
 
     raw_filename = request.GET.get('filename')
     clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'pro_transaction-{TODAY}'
@@ -1254,17 +1297,11 @@ def export_pro_transaction_xls(request):
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('프로젝트_입출금_내역')
 
-    # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
-    # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
-    obj_list = get_project_transactions(request.GET)
+    # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출 + 요청 유저 권한 반영) ---
+    obj_list = get_project_transactions(request.GET, user=request.user).filter(project_id=project.pk)
     obj_list = list(obj_list.order_by('deal_date', 'created_at'))
     prefetch_project_transactions(obj_list, request.GET)
     # -----------------------------------------
-
-    # ------------------------------------
-
-    project = Project.objects.get(pk=request.GET.get('project'))
-    pro_name = project.name
 
     # Sheet Title, first row
     row_num = 0

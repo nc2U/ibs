@@ -1331,4 +1331,309 @@ class LedgerAuditEnhancementsTests(LedgerTestBase):
         self.assertEqual(entry_proj._related_transaction.pk, tx_proj.pk)
         self.assertEqual(entry_proj.sort, self.sort_withdraw)
 
+    def test_account_hierarchy_filter_and_search_and_combination(self):
+        """상위 계정(code='1000' -> 하위 '1010') 트리 탐색 필터링 및 카테고리+검색어 AND 결합 검증"""
+        from ledger.services.company_transaction import get_company_transactions
+
+        # 4자리 코드 체계: 부모 '1000' -> 자식 '1010' (code__startswith로는 매칭 불가했던 케이스)
+        parent_acc = ProjectAccount.objects.create(
+            code='1000', name='프로젝트자산대분류', category='asset', direction='deposit',
+            depth=1, is_category_only=True, is_active=True
+        )
+        child_acc = ProjectAccount.objects.create(
+            code='1010', name='프로젝트단기예금', parent=parent_acc, category='asset', direction='deposit',
+            depth=2, is_category_only=False, is_active=True
+        )
+
+        tx_asset = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 8, 10),
+            sort=self.sort_deposit,
+            amount=200000,
+            content='공통검색키워드 자산입금',
+        )
+        ProjectAccountingEntry.objects.create(
+            project=self.project_a,
+            transaction_id=tx_asset.transaction_id,
+            account=child_acc,
+            amount=200000,
+            trader='자산거래처',
+        )
+
+        tx_expense = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 8, 11),
+            sort=self.sort_withdraw,
+            amount=300000,
+            content='공통검색키워드 비용출금',
+        )
+        ProjectAccountingEntry.objects.create(
+            project=self.project_a,
+            transaction_id=tx_expense.transaction_id,
+            account=self.account_expense,  # category='expense'
+            amount=300000,
+            trader='비용거래처',
+        )
+
+        # 1. 상위 분류 계정(parent_acc, code='1000')으로 필터링 시 하위 계정('1010') 거래가 조회되어야 함
+        qs_by_parent = get_project_transactions({'account': parent_acc.pk}, user=self.admin_user)
+        pks_by_parent = list(qs_by_parent.values_list('pk', flat=True))
+        self.assertIn(tx_asset.pk, pks_by_parent)
+        self.assertNotIn(tx_expense.pk, pks_by_parent)
+
+        # 2. 상위 계정 이름(account_name='프로젝트자산대분류') 검색 시에도 하위 계정 거래 조회
+        qs_by_name = get_project_transactions({'account_name': '프로젝트자산대분류'}, user=self.admin_user)
+        self.assertIn(tx_asset.pk, list(qs_by_name.values_list('pk', flat=True)))
+
+        # 3. account_category='asset' 과 search='공통검색키워드' 동시 지정 시 AND 조건으로 동작해야 함
+        qs_combined = get_project_transactions(
+            {'account_category': 'asset', 'search': '공통검색키워드'},
+            user=self.admin_user
+        )
+        combined_pks = list(qs_combined.values_list('pk', flat=True))
+        self.assertIn(tx_asset.pk, combined_pks)
+        self.assertNotIn(tx_expense.pk, combined_pks)
+
+        # 4. 본사(Company) 상위 계정('2000' -> '2010') 트리 필터링 및 AND 검색 검증
+        com_parent = CompanyAccount.objects.create(
+            code='2000', name='본사부채대분류', category='liability', direction='deposit',
+            depth=1, is_category_only=True, is_active=True
+        )
+        com_child = CompanyAccount.objects.create(
+            code='2010', name='본사단기차입금', parent=com_parent, category='liability', direction='deposit',
+            depth=2, is_category_only=False, is_active=True
+        )
+        tx_com = CompanyBankTransaction.objects.create(
+            company=self.company,
+            bank_account=self.com_bank_acc,
+            deal_date=date(2026, 8, 12),
+            sort=self.sort_deposit,
+            amount=500000,
+            content='본사차입금입금',
+        )
+        CompanyAccountingEntry.objects.create(
+            company=self.company,
+            transaction_id=tx_com.transaction_id,
+            account=com_child,
+            amount=500000,
+            trader='차입거래처',
+        )
+        qs_com = get_company_transactions({'account': com_parent.pk})
+        self.assertIn(tx_com.pk, list(qs_com.values_list('pk', flat=True)))
+
+    def test_prefetch_project_transactions_eliminates_n_plus_1_queries(self):
+        """prefetch_project_transactions 적용 후 ProjectBankTransactionSerializer 직렬화 시 추가 쿼리 0건 검증"""
+        from ledger.services.project_transaction import prefetch_project_transactions
+        from apiV1.serializers.ledger import ProjectBankTransactionSerializer
+
+        txs = []
+        for idx in range(5):
+            tx = ProjectBankTransaction.objects.create(
+                project=self.project_a,
+                bank_account=self.bank_acc_a,
+                deal_date=date(2026, 8, 15),
+                sort=self.sort_deposit,
+                amount=100000 * (idx + 1),
+                content=f'대량직렬화테스트-{idx}',
+                creator=self.admin_user,
+            )
+            ProjectAccountingEntry.objects.create(
+                project=self.project_a,
+                transaction_id=tx.transaction_id,
+                account=self.account_sales,
+                amount=100000 * (idx + 1),
+                contract=self.contract_a,
+                contractor=self.contractor_a,
+                trader=f'거래처-{idx}',
+            )
+            txs.append(tx)
+
+        loaded_txs = list(
+            ProjectBankTransaction.objects.filter(pk__in=[t.pk for t in txs]).select_related(
+                'project', 'bank_account', 'sort', 'creator'
+            )
+        )
+        prefetch_project_transactions(loaded_txs)
+
+        with self.assertNumQueries(0):
+            serialized = ProjectBankTransactionSerializer(loaded_txs, many=True).data
+            self.assertEqual(len(serialized), 5)
+
+    def test_put_composite_transaction_balance_and_split_overpayment_validation(self):
+        """PUT 전체 교체 시 삭제된 분개 제외 합계 검증 및 동일 계약 분할 분개 합산 초과 수납 차단 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 동일 계약(잔여 5억)에 대해 3억 + 3억 = 6억으로 분할 수납 시도 시 합산 금액으로 차단되어야 함
+        split_overpay_payload = {
+            'project': self.project_a.pk,
+            'bank_account': self.bank_acc_a.pk,
+            'deal_date': '2026-08-20',
+            'amount': 600000000,
+            'sort': 1,
+            'content': '분할 수납 초과 시도',
+            'accounting_entries': [
+                {
+                    'account': self.account_sales.pk,
+                    'amount': 300000000,
+                    'contract': self.contract_a.pk,
+                    'contractor': self.contractor_a.pk,
+                    'trader': '홍길동',
+                },
+                {
+                    'account': self.account_sales.pk,
+                    'amount': 300000000,
+                    'contract': self.contract_a.pk,
+                    'contractor': self.contractor_a.pk,
+                    'trader': '홍길동',
+                },
+            ],
+        }
+        res_overpay = self.client.post(
+            '/api/v1/ledger/project-composite-transaction/',
+            data=split_overpay_payload,
+            format='json',
+        )
+        self.assertEqual(res_overpay.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('잔여 미납액', str(res_overpay.data))
+
+        # 2. 정상 분할 거래(50,000 + 50,000 = 100,000) 생성 후 PUT으로 분개 1개만 남기고 거래금액을 100,000으로 유지하면 불일치 차단
+        create_res = self.client.post(
+            '/api/v1/ledger/project-composite-transaction/',
+            data={
+                'project': self.project_a.pk,
+                'bank_account': self.bank_acc_a.pk,
+                'deal_date': '2026-08-21',
+                'amount': 100000,
+                'sort': 1,
+                'content': '분할 입금',
+                'accounting_entries': [
+                    {'account': self.account_deposit.pk, 'amount': 50000, 'trader': 'A'},
+                    {'account': self.account_deposit.pk, 'amount': 50000, 'trader': 'B'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(create_res.status_code, http_status.HTTP_201_CREATED)
+        tx_pk = create_res.data['bank_transaction']['pk']
+        first_entry_pk = create_res.data['accounting_entries'][0]['pk']
+
+        # PUT 요청으로 분개 1건(50,000원)만 전달하면서 은행 거래금액은 100,000원인 경우 400 에러 발생해야 함
+        put_unbalanced_res = self.client.put(
+            f'/api/v1/ledger/project-composite-transaction/{tx_pk}/',
+            data={
+                'project': self.project_a.pk,
+                'bank_account': self.bank_acc_a.pk,
+                'deal_date': '2026-08-21',
+                'amount': 100000,
+                'sort': 1,
+                'content': '분할 입금 수정',
+                'accounting_entries': [
+                    {'pk': first_entry_pk, 'account': self.account_deposit.pk, 'amount': 50000, 'trader': 'A'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(put_unbalanced_res.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('accounting_entries', put_unbalanced_res.data)
+
+        # PUT 요청으로 은행 거래금액도 50,000원으로 맞추면 정상 업데이트 및 updator 기록
+        put_balanced_res = self.client.put(
+            f'/api/v1/ledger/project-composite-transaction/{tx_pk}/',
+            data={
+                'project': self.project_a.pk,
+                'bank_account': self.bank_acc_a.pk,
+                'deal_date': '2026-08-21',
+                'amount': 50000,
+                'sort': 1,
+                'content': '분할 입금 정상 축소',
+                'accounting_entries': [
+                    {'pk': first_entry_pk, 'account': self.account_deposit.pk, 'amount': 50000, 'trader': 'A'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(put_balanced_res.status_code, http_status.HTTP_200_OK)
+        updated_tx = ProjectBankTransaction.objects.get(pk=tx_pk)
+        self.assertEqual(updated_tx.updator, self.user_a)
+
+    def test_settlement_lock_on_entry_update_and_readonly_master_endpoints(self):
+        """정산 마감일 이전 분개 수정 차단, 마스터 엔드포인트 쓰기 권한 방어 및 엑셀 내보내기 RLS 검증"""
+        ProjectLedgerCalculation.objects.create(
+            project=self.project_a,
+            calculated=date(2026, 7, 15),
+            creator=self.admin_user,
+        )
+        tx_locked = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 7, 10),
+            sort=self.sort_deposit,
+            amount=100000,
+            content='마감 거래',
+        )
+        entry_locked = ProjectAccountingEntry.objects.create(
+            project=self.project_a,
+            transaction_id=tx_locked.transaction_id,
+            account=self.account_deposit,
+            amount=100000,
+            trader='기존거래처',
+        )
+
+        # 1. 일반 담당자(user_a, ledger.manage 없음)가 마감된 분개의 거래처(중요 필드) 수정 시도 -> 400 차단
+        self.client.force_authenticate(user=self.user_a)
+        res_patch_trader = self.client.patch(
+            f'/api/v1/ledger/project-accounting-entry/{entry_locked.pk}/',
+            data={'trader': '변경거래처'},
+            format='json',
+        )
+        self.assertEqual(res_patch_trader.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        # 단, 계정과목(account)만 단독 변경하는 것은 허용됨
+        other_acc = ProjectAccount.objects.create(
+            code='1120', name='별단예금', category='asset', direction='deposit', is_active=True
+        )
+        res_patch_acc = self.client.patch(
+            f'/api/v1/ledger/project-accounting-entry/{entry_locked.pk}/',
+            data={'account': other_acc.pk},
+            format='json',
+        )
+        self.assertEqual(res_patch_acc.status_code, http_status.HTTP_200_OK)
+
+        # 2. 일반 담당자(user_a)가 BankCode 또는 ProjectAccount 마스터 생성 시도 -> 403 Forbidden
+        res_bank_code = self.client.post(
+            '/api/v1/ledger/bank-code/',
+            data={'code': '999', 'name': '불법은행'},
+            format='json',
+        )
+        self.assertEqual(res_bank_code.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_proj_acc = self.client.post(
+            '/api/v1/ledger/project-account/',
+            data={'code': '9999', 'name': '불법계정', 'category': 'expense', 'direction': 'withdraw'},
+            format='json',
+        )
+        self.assertEqual(res_proj_acc.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 3. LastDealDate 엔드포인트는 ReadOnly이므로 슈퍼유저라도 POST/DELETE 시 405 Method Not Allowed 반환
+        self.client.force_authenticate(user=self.admin_user)
+        res_last_deal_post = self.client.post('/api/v1/ledger/project-last-deal-date/', data={}, format='json')
+        self.assertEqual(res_last_deal_post.status_code, http_status.HTTP_405_METHOD_NOT_ALLOWED)
+        res_com_last_deal_post = self.client.post('/api/v1/ledger/company-last-deal-date/', data={}, format='json')
+        self.assertEqual(res_com_last_deal_post.status_code, http_status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # 4. 엑셀 내보내기 엔드포인트 RLS: user_a(프로젝트 A 권한만 보유)가 프로젝트 B 엑셀 다운로드 시도 -> 403 차단
+        self.client.force_login(self.user_a)
+        res_excel_b = self.client.get(f'/excel/pro-balance/?project={self.project_b.pk}')
+        self.assertEqual(res_excel_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_excel_tx_b = self.client.get(f'/excel/pro-trans/?project={self.project_b.pk}')
+        self.assertEqual(res_excel_tx_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 반면 권한이 있는 프로젝트 A 엑셀 다운로드는 200 OK
+        res_excel_a = self.client.get(f'/excel/pro-balance/?project={self.project_a.pk}')
+        self.assertEqual(res_excel_a.status_code, http_status.HTTP_200_OK)
+
+
 

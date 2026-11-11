@@ -5,6 +5,30 @@ from django.db.models.functions import Coalesce
 from ledger.models import CompanyBankTransaction, CompanyAccount, CompanyAccountingEntry
 
 
+def _get_descendant_account_ids(seed_ids):
+    """주어진 본사 계정 ID 목록과 그 하위(자손) 활성 계정 ID들을 단일 쿼리 트리 탐색으로 반환합니다."""
+    seed_set = set(seed_ids)
+    if not seed_set:
+        return set()
+
+    rows = CompanyAccount.objects.filter(is_active=True).values_list('id', 'parent_id')
+    active_ids = set()
+    children_map = defaultdict(list)
+    for acc_id, parent_id in rows:
+        active_ids.add(acc_id)
+        if parent_id is not None:
+            children_map[parent_id].append(acc_id)
+
+    result = set()
+    queue = [acc_id for acc_id in seed_set if acc_id in active_ids]
+    while queue:
+        current = queue.pop()
+        if current not in result:
+            result.add(current)
+            queue.extend(children_map.get(current, ()))
+    return result
+
+
 def get_company_transactions(params, base_qs=None):
     """
     본사 은행 거래 내역을 필터링하고 검색하는 공용 함수
@@ -66,11 +90,9 @@ def get_company_transactions(params, base_qs=None):
     if account_id:
         try:
             account = CompanyAccount.objects.get(pk=account_id)
-        except CompanyAccount.DoesNotExist:
+        except (CompanyAccount.DoesNotExist, ValueError, TypeError):
             return CompanyBankTransaction.objects.none()
-        active_accounts = CompanyAccount.objects.filter(
-            code__startswith=account.code, is_active=True
-        ).values_list('pk', flat=True)
+        active_accounts = _get_descendant_account_ids([account.pk])
         entry_filters &= Q(account_id__in=active_accounts)
 
     if account_category:
@@ -82,64 +104,34 @@ def get_company_transactions(params, base_qs=None):
     if affiliate_id:
         entry_filters &= Q(affiliate_id=affiliate_id)
 
-    if search:
-        search_q = Q()
-        # 계정 이름 검색 — 매칭된 계정 + 하위 계정들을 code__startswith로 단일 쿼리 수집
-        matched_codes = list(CompanyAccount.objects.filter(
-            name__icontains=search, is_active=True
-        ).values_list('code', flat=True))
-
-        if matched_codes:
-            account_q = Q()
-            for code in matched_codes:
-                account_q |= Q(code__startswith=code)
-            account_ids = CompanyAccount.objects.filter(
-                account_q, is_active=True
-            ).values_list('pk', flat=True)
-            search_q |= Q(account_id__in=account_ids)
-
-        # trader 검색 추가
-        search_q |= Q(trader__icontains=search)
-
-        # 조립된 search_q 조건을 기존 필터에 AND 결합
-        entry_filters &= search_q
-
-    # entry_filters가 있는 경우, transaction_id를 통해 필터링
+    # entry_filters가 있는 경우, transaction_id를 통해 AND 필터링
     if entry_filters:
         transaction_ids = CompanyAccountingEntry.objects.filter(
             entry_filters
         ).values_list('transaction_id', flat=True).distinct()
+        qs = qs.filter(transaction_id__in=transaction_ids)
 
-        # search가 있는 경우 OR 조건, 없는 경우 AND 조건
-        if search:
-            # trader 검색을 위한 추가 transaction_ids
-            trader_transaction_ids = CompanyAccountingEntry.objects.filter(
-                trader__icontains=search
-            ).values_list('transaction_id', flat=True).distinct()
+    # search가 있는 경우, 거래 필드 또는 분개(계정명+하위계정 / 거래처) 매칭으로 AND 필터링
+    if search:
+        search_entry_q = Q(trader__icontains=search)
+        matched_seed_ids = list(CompanyAccount.objects.filter(
+            name__icontains=search, is_active=True
+        ).values_list('id', flat=True))
 
-            # 기존 조건과 trader 조건을 합침
-            all_transaction_ids = set(transaction_ids) | set(trader_transaction_ids)
+        if matched_seed_ids:
+            search_account_ids = _get_descendant_account_ids(matched_seed_ids)
+            if search_account_ids:
+                search_entry_q |= Q(account_id__in=search_account_ids)
 
-            qs = qs.filter(
-                Q(transaction_id__icontains=search) |
-                Q(content__icontains=search) |
-                Q(note__icontains=search) |
-                Q(transaction_id__in=all_transaction_ids)
-            )
-        else:
-            qs = qs.filter(transaction_id__in=transaction_ids)
-    elif search:
-        # entry_filters는 없지만 search는 있는 경우
-        # trader 검색을 위한 transaction_ids
-        trader_transaction_ids = CompanyAccountingEntry.objects.filter(
-            trader__icontains=search
+        search_transaction_ids = CompanyAccountingEntry.objects.filter(
+            search_entry_q
         ).values_list('transaction_id', flat=True).distinct()
 
         qs = qs.filter(
             Q(transaction_id__icontains=search) |
             Q(content__icontains=search) |
             Q(note__icontains=search) |
-            Q(transaction_id__in=trader_transaction_ids)
+            Q(transaction_id__in=search_transaction_ids)
         )
 
     # 정렬 및 반환
@@ -159,13 +151,25 @@ def prefetch_company_transactions(instances):
     # 페이징된 instances 대상 분개 쿼리 실행
     entries_qs = CompanyAccountingEntry.objects.filter(
         transaction_id__in=transaction_ids
-    ).select_related('account', 'affiliate', 'affiliate__company', 'affiliate__project')
+    ).select_related(
+        'company',
+        'account',
+        'account__parent',
+        'account__parent__parent',
+        'account__parent__parent__parent',
+        'affiliate',
+        'affiliate__company',
+        'affiliate__project',
+    )
 
     entries_map = defaultdict(list)
     for entry in entries_qs:
         entries_map[entry.transaction_id].append(entry)
 
     for tx in instances:
-        tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
+        tx_entries = entries_map.get(tx.transaction_id, [])
+        for entry in tx_entries:
+            entry._related_transaction = tx
+        tx.prefetched_accounting_entries = tx_entries
 
     return instances

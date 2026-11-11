@@ -506,56 +506,54 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         except CompanyLedgerCalculation.DoesNotExist:
             pass
 
-        # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
+        # 수정 요청일 경우, amount 관련 필드 변경 또는 PUT 분개 교체 시에만 합계 검증 수행
+        entries_data = attrs.get('accounting_entries')
+        should_check_balance = True
         if is_update:
             is_bank_amount_in_data = 'amount' in attrs
-            entries_data = attrs.get('accounting_entries')
+            is_entry_amount_in_data = bool(entries_data and any('amount' in entry for entry in entries_data))
+            is_put_with_entries = (not self.partial) and (entries_data is not None)
+            should_check_balance = is_bank_amount_in_data or is_entry_amount_in_data or is_put_with_entries
 
-            is_entry_amount_in_data = False
-            if entries_data:
-                is_entry_amount_in_data = any('amount' in entry for entry in entries_data)
+        incoming_entries = entries_data or []
 
-            # 은행 거래 금액과 분개 금액 모두 변경되지 않으면 합계 검증을 건너뜀
-            if not is_bank_amount_in_data and not is_entry_amount_in_data:
-                return attrs
+        # 분개 금액 양수(> 0) 검증
+        for entry_data in incoming_entries:
+            entry_amt = entry_data.get('amount')
+            if entry_amt is not None and entry_amt <= 0:
+                raise serializers.ValidationError({
+                    'accounting_entries': '회계 분개 금액은 0보다 커야 합니다.'
+                })
 
         # --- 합계 검증 로직 ---
         bank_amount = attrs.get('amount', instance.amount if is_update else None)
-        if bank_amount is None:
-            # 생성 시 amount가 없으면 DRF의 required=True에서 처리됨
-            return attrs
+        if should_check_balance and bank_amount is not None:
+            existing_amounts_map = (
+                dict(instance.accounting_entries.values_list('pk', 'amount'))
+                if is_update else {}
+            )
+            final_entry_amounts = dict(existing_amounts_map) if (is_update and self.partial) else {}
 
-        # 최종 분개 금액 목록 계산
-        final_entry_amounts = {}
-        if is_update and self.partial:
-            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 포함
-            # PUT 요청(전체 교체)일 때는 incoming_entries만으로 합계 계산
-            for pk, amount in instance.accounting_entries.values_list('pk', 'amount'):
-                final_entry_amounts[pk] = amount
+            new_entry_total = 0
+            for entry_data in incoming_entries:
+                pk = entry_data.get('pk')
+                amount = entry_data.get('amount')
 
-        # 들어온 데이터로 final_entry_amounts를 업데이트
-        incoming_entries = attrs.get('accounting_entries', [])
-        new_entry_total = 0
-        for entry_data in incoming_entries:
-            pk = entry_data.get('pk')
-            amount = entry_data.get('amount')
+                if pk is not None:
+                    if amount is not None:
+                        final_entry_amounts[pk] = amount
+                    elif not self.partial and pk in existing_amounts_map:
+                        final_entry_amounts[pk] = existing_amounts_map[pk]
+                else:
+                    if amount is not None:
+                        new_entry_total += amount
 
-            if pk is not None:
-                # 기존 분개 금액 수정 (요청에 amount가 없으면 기존 금액 유지)
-                if amount is not None:
-                    final_entry_amounts[pk] = amount
-            else:
-                # 신규 분개 추가 (수정 모드에서)
-                if amount is not None:
-                    new_entry_total += amount
+            entries_total = sum(final_entry_amounts.values()) + new_entry_total
 
-        # 최종 합계 계산
-        entries_total = sum(final_entry_amounts.values()) + new_entry_total
-
-        if bank_amount != entries_total:
-            raise serializers.ValidationError({
-                'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
-            })
+            if bank_amount != entries_total:
+                raise serializers.ValidationError({
+                    'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
+                })
 
         # 계정 필수 조건 (requires_affiliate 등) 검증
         for entry_data in incoming_entries:
@@ -634,6 +632,9 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         entries_data = validated_data.pop('accounting_entries', None)
 
         # 2. 은행 거래 업데이트
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
+            instance.updator = request.user
         instance.company_id = validated_data.get('company', instance.company_id)
         instance.bank_account_id = validated_data.get('bank_account', instance.bank_account_id)
         instance.deal_date = validated_data.get('deal_date', instance.deal_date)
@@ -809,8 +810,8 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                                                     'trader'] != existing_entry.trader) or
                                                 ('evidence_type' in entry_data and entry_data[
                                                     'evidence_type'] != existing_entry.evidence_type) or
-                                                # ('contract' in entry_data and entry_data['contract'] != existing_entry.contract_id) or
-                                                # ('contractor' in entry_data and entry_data['contractor'] != existing_entry.contractor_id) or
+                                                ('contract' in entry_data and entry_data['contract'] != existing_entry.contract_id) or
+                                                ('contractor' in entry_data and entry_data['contractor'] != existing_entry.contractor_id) or
                                                 ('installment_order' in entry_data and entry_data['installment_order'] != (
                                                 existing_entry.contract_payment.installment_order_id if hasattr(
                                                     existing_entry, 'contract_payment') else None))
@@ -848,63 +849,78 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         except ProjectLedgerCalculation.DoesNotExist:
             pass
 
-        # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
+        # 수정 요청일 경우, amount 관련 필드 변경 또는 PUT 분개 교체 시에만 합계 검증 수행
+        entries_data = attrs.get('accounting_entries')
+        should_check_balance = True
         if is_update:
             is_bank_amount_in_data = 'amount' in attrs
-            entries_data = attrs.get('accounting_entries')
+            is_entry_amount_in_data = bool(entries_data and any('amount' in entry for entry in entries_data))
+            is_put_with_entries = (not self.partial) and (entries_data is not None)
+            should_check_balance = is_bank_amount_in_data or is_entry_amount_in_data or is_put_with_entries
 
-            is_entry_amount_in_data = False
-            if entries_data:
-                is_entry_amount_in_data = any('amount' in entry for entry in entries_data)
+        incoming_entries = entries_data or []
 
-            # 은행 거래 금액과 분개 금액 모두 변경되지 않으면 합계 검증을 건너뜀
-            if not is_bank_amount_in_data and not is_entry_amount_in_data:
-                return attrs
+        # 분개 금액 양수(> 0) 검증
+        for entry_data in incoming_entries:
+            entry_amt = entry_data.get('amount')
+            if entry_amt is not None and entry_amt <= 0:
+                raise serializers.ValidationError({
+                    'accounting_entries': '회계 분개 금액은 0보다 커야 합니다.'
+                })
 
         # --- 합계 검증 로직 ---
         bank_amount = attrs.get('amount', instance.amount if is_update else None)
-        if bank_amount is None:
-            return attrs  # 생성 시 amount가 없으면 다른 유효성 검사(required=True)에서 처리됨
-
-        # 최종 분개 금액 목록을 계산
-        final_entry_amounts = {}
-        if is_update:
-            # 수정 모드: 같은 transaction_id를 가진 모든 기존 분개 포함
-            # account.is_payment=False인 분개(읽기 전용)도 합계에 포함해야 함
-            for pk, amount in ProjectAccountingEntry.objects.filter(
+        if should_check_balance and bank_amount is not None:
+            existing_amounts_map = (
+                dict(ProjectAccountingEntry.objects.filter(
                     transaction_id=instance.transaction_id
-            ).values_list('pk', 'amount'):
-                final_entry_amounts[pk] = amount
+                ).values_list('pk', 'amount'))
+                if is_update else {}
+            )
+            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 기본 포함하고,
+            # PUT 요청(전체 교체)일 때는 incoming_entries에 포함된 항목만으로 합계를 계산
+            final_entry_amounts = dict(existing_amounts_map) if (is_update and self.partial) else {}
 
-        # 들어온 데이터로 final_entry_amounts를 업데이트
-        incoming_entries = attrs.get('accounting_entries', [])
-        new_entry_total = 0
-        for entry_data in incoming_entries:
-            pk = entry_data.get('pk')
-            amount = entry_data.get('amount')
+            new_entry_total = 0
+            for entry_data in incoming_entries:
+                pk = entry_data.get('pk')
+                amount = entry_data.get('amount')
 
-            if pk is not None:
-                # 기존 분개 금액 수정 (요청에 amount가 없으면 기존 금액 유지)
-                if amount is not None:
-                    final_entry_amounts[pk] = amount
-            else:
-                # 신규 분개 추가 (수정 모드에서)
-                if amount is not None:
-                    new_entry_total += amount
+                if pk is not None:
+                    if amount is not None:
+                        final_entry_amounts[pk] = amount
+                    elif not self.partial and pk in existing_amounts_map:
+                        final_entry_amounts[pk] = existing_amounts_map[pk]
+                else:
+                    if amount is not None:
+                        new_entry_total += amount
 
-        # 최종 합계 계산
-        entries_total = sum(final_entry_amounts.values()) + new_entry_total
+            entries_total = sum(final_entry_amounts.values()) + new_entry_total
 
-        if bank_amount != entries_total:
-            raise serializers.ValidationError({
-                'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
-            })
+            if bank_amount != entries_total:
+                raise serializers.ValidationError({
+                    'accounting_entries': f'회계 분개 금액 총합({entries_total:,}원)이 은행 거래 금액({bank_amount:,}원)과 일치하지 않습니다.'
+                })
 
         # 계정 필수 조건 (requires_contract 등) 및 계약-프로젝트 일치, 수납 초과 납부 검증
         project_id = attrs.get('project', instance.project_id if is_update else None)
-        incoming_entries = attrs.get('accounting_entries', [])
+        sort_value = attrs.get('sort', instance.sort_id if is_update else None)
+        existing_entries_by_pk = {}
+        if is_update and incoming_entries:
+            existing_entries_by_pk = {
+                e.pk: e for e in ProjectAccountingEntry.objects.filter(
+                    transaction_id=instance.transaction_id
+                ).select_related('account')
+            }
+
+        contract_payment_totals = {}
+        contract_objs_by_id = {}
+
         for entry_data in incoming_entries:
-            account_id = entry_data.get('account')
+            pk = entry_data.get('pk')
+            existing_entry = existing_entries_by_pk.get(pk) if pk else None
+            account_id = entry_data.get('account', existing_entry.account_id if existing_entry else None)
+            account_obj = None
             if account_id:
                 try:
                     from ledger.models import ProjectAccount
@@ -922,47 +938,55 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         'accounting_entries': f'존재하지 않는 계정 과목(#{account_id})입니다.'
                     })
 
-            contract_id = entry_data.get('contract')
+            contract_id = entry_data.get('contract', existing_entry.contract_id if existing_entry else None)
             if contract_id:
+                from contract.models import Contract
                 try:
-                    from contract.models import Contract
-                    contract_obj = Contract.objects.select_related('contractprice').get(pk=contract_id)
-                    if project_id and contract_obj.project_id != project_id:
-                        raise serializers.ValidationError({
-                            'accounting_entries': f'지정된 계약(#{contract_id})의 프로젝트가 현재 거래의 프로젝트(#{project_id})와 일치하지 않습니다.'
-                        })
+                    if contract_id not in contract_objs_by_id:
+                        contract_objs_by_id[contract_id] = Contract.objects.select_related('contractprice').get(pk=contract_id)
+                    contract_obj = contract_objs_by_id[contract_id]
+                except Contract.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'accounting_entries': f'존재하지 않는 공급계약(#{contract_id})입니다.'
+                    })
 
-                    sort_value = attrs.get('sort', instance.sort_id if is_update else None)
-                    entry_amount = entry_data.get('amount', 0)
-                    if sort_value == 1 and entry_amount:
-                        from payment.models import ContractPayment
-                        from django.db.models import Sum as _Sum
-                        contract_price = getattr(contract_obj, 'contractprice', None)
-                        if contract_price and contract_price.price:
-                            total_price = contract_price.price
-                            paid_qs = ContractPayment.objects.valid_payments().filter(
-                                contract_id=contract_id
+                if project_id and contract_obj.project_id != project_id:
+                    raise serializers.ValidationError({
+                        'accounting_entries': f'지정된 계약(#{contract_id})의 프로젝트가 현재 거래의 프로젝트(#{project_id})와 일치하지 않습니다.'
+                    })
+
+                entry_amount = entry_data.get('amount', existing_entry.amount if existing_entry else 0) or 0
+                is_payment_account = bool(account_obj and account_obj.is_payment)
+                if sort_value == 1 and is_payment_account and entry_amount > 0:
+                    contract_payment_totals[contract_id] = contract_payment_totals.get(contract_id, 0) + entry_amount
+
+        if contract_payment_totals:
+            from payment.models import ContractPayment
+            from django.db.models import Sum as _Sum
+            for contract_id, tx_contract_amount in contract_payment_totals.items():
+                contract_obj = contract_objs_by_id[contract_id]
+                contract_price = getattr(contract_obj, 'contractprice', None)
+                if contract_price and contract_price.price:
+                    total_price = contract_price.price
+                    paid_qs = ContractPayment.objects.valid_payments().filter(
+                        contract_id=contract_id
+                    )
+                    if is_update:
+                        paid_qs = paid_qs.exclude(
+                            accounting_entry__transaction_id=instance.transaction_id
+                        )
+                    already_paid = paid_qs.aggregate(
+                        total=_Sum('accounting_entry__amount')
+                    )['total'] or 0
+                    remaining = total_price - already_paid
+                    if tx_contract_amount > remaining:
+                        raise serializers.ValidationError({
+                            'accounting_entries': (
+                                f'수납 금액({tx_contract_amount:,}원)이 해당 계약의 잔여 미납액'
+                                f'({remaining:,}원)을 초과합니다. '
+                                f'(계약 총액: {total_price:,}원, 기수납: {already_paid:,}원)'
                             )
-                            if is_update:
-                                paid_qs = paid_qs.exclude(
-                                    accounting_entry__transaction_id=instance.transaction_id
-                                )
-                            already_paid = paid_qs.aggregate(
-                                total=_Sum('accounting_entry__amount')
-                            )['total'] or 0
-                            remaining = total_price - already_paid
-                            if entry_amount > remaining:
-                                raise serializers.ValidationError({
-                                    'accounting_entries': (
-                                        f'수납 금액({entry_amount:,}원)이 해당 계약의 잔여 미납액'
-                                        f'({remaining:,}원)을 초과합니다. '
-                                        f'(계약 총액: {total_price:,}원, 기수납: {already_paid:,}원)'
-                                    )
-                                })
-                except serializers.ValidationError:
-                    raise
-                except Exception:
-                    pass
+                        })
 
         return attrs
 
@@ -1037,6 +1061,9 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         entries_data = validated_data.pop('accounting_entries', None)
 
         # 2. 은행 거래 업데이트
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
+            instance.updator = request.user
         instance.project_id = validated_data.get('project', instance.project_id)
         instance.bank_account_id = validated_data.get('bank_account', instance.bank_account_id)
         instance.deal_date = validated_data.get('deal_date', instance.deal_date)

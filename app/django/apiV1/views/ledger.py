@@ -47,7 +47,33 @@ def get_today_str():
     return timezone.localdate().strftime('%Y-%m-%d')
 
 
-TODAY = get_today_str()
+class IsLedgerMasterManagerOrReadOnly(permissions.BasePermission):
+    """은행 코드 등 공통 마스터는 인증 사용자 조회를 허용하고, 변경은 관리자/원장 관리 권한자에게만 허용"""
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
+        hq_perms = HqProjectModulePermission._get_all_hq_user_permissions(request.user)
+        if 'hq.ledger.manage' in hq_perms or 'ledger.com_manage' in hq_perms:
+            return True
+        return bool(get_project_ids_with_permission(request.user, 'ledger.manage'))
+
+
+class IsProjectAccountManagerOrReadOnly(permissions.BasePermission):
+    """프로젝트 계정과목 조회는 프로젝트 스태프에게 허용하고, 변경은 슈퍼유저·work_manager·ledger.manage 보유자에게만 허용"""
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
+        return bool(get_project_ids_with_permission(request.user, 'ledger.manage'))
 
 
 # ============================================
@@ -58,7 +84,7 @@ class LedgerBankCodeViewSet(viewsets.ModelViewSet):
     """은행 코드 ViewSet"""
     queryset = BankCode.objects.all()
     serializer_class = LedgerBankCodeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IsLedgerMasterManagerOrReadOnly)
     pagination_class = PageNumberPaginationFifty
     search_fields = ('code', 'name')
 
@@ -177,7 +203,7 @@ class CompanyAccountViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hq.ledger.read' if self.action in ('list', 'retrieve', 'search_with_parents') else 'hq.ledger.manage'
+        return 'hq.ledger.read' if self.action in ('list', 'retrieve', 'search_with_parents', 'tree') else 'hq.ledger.manage'
 
     @action(detail=False, methods=['get'])
     def search_with_parents(self, request):
@@ -301,7 +327,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
         children_count_annotated=Count('children', filter=Q(children__is_active=True))
     ).all()
     serializer_class = ProjectAccountSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IsProjectAccountManagerOrReadOnly)
     pagination_class = PageNumberPaginationThreeHundred
     filterset_class = ProjectAccountFilter
     search_fields = ('code', 'name', 'description')
@@ -530,24 +556,38 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
             return get_company_transactions(self.request.query_params, base_qs=qs)
         return qs
 
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+    def _has_hq_manage_perm(self, user):
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+        user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
+        return 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms
 
-    def perform_destroy(self, instance):
+    def _validate_company_settlement_lock(self, company_id, deal_date, action_label):
+        if not company_id or not deal_date:
+            return
         try:
-            cal = CompanyLedgerCalculation.objects.get(company_id=instance.company_id)
-            if cal.calculated and instance.deal_date <= cal.calculated:
-                user = self.request.user
-                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
-                if not has_manage:
-                    from apiV1.permissions.ibs_perms import HqProjectModulePermission
-                    user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
-                    if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
-                        has_manage = True
-                if not has_manage:
-                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.')
+            cal = CompanyLedgerCalculation.objects.get(company_id=company_id)
+            if cal.calculated and deal_date <= cal.calculated and not self._has_hq_manage_perm(self.request.user):
+                raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 {action_label}할 수 없습니다.')
         except CompanyLedgerCalculation.DoesNotExist:
             pass
+
+    def perform_create(self, serializer):
+        company = serializer.validated_data.get('company')
+        company_id = company.pk if hasattr(company, 'pk') else company
+        deal_date = serializer.validated_data.get('deal_date')
+        self._validate_company_settlement_lock(company_id, deal_date, '생성')
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        self._validate_company_settlement_lock(instance.company_id, instance.deal_date, '수정')
+        new_deal_date = serializer.validated_data.get('deal_date', instance.deal_date)
+        self._validate_company_settlement_lock(instance.company_id, new_deal_date, '수정')
+        serializer.save(updator=self.request.user)
+
+    def perform_destroy(self, instance):
+        self._validate_company_settlement_lock(instance.company_id, instance.deal_date, '삭제')
         instance.delete()
 
     def list(self, request, *args, **kwargs):
@@ -700,29 +740,45 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-    def perform_destroy(self, instance):
+    def _has_project_manage_perm(self, user, project_id):
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
         try:
-            cal = ProjectLedgerCalculation.objects.get(project_id=instance.project_id)
-            if cal.calculated and instance.deal_date <= cal.calculated:
-                user = self.request.user
-                has_manage = user.is_superuser or getattr(user, 'work_manager', False)
-                if not has_manage:
-                    try:
-                        from project.models import Project
-                        prj = Project.objects.select_related('issue_project').get(pk=instance.project_id)
-                        if hasattr(prj, 'issue_project') and prj.issue_project:
-                            user_perms = set(prj.issue_project.get_user_permissions(user))
-                            if 'ledger.manage' in user_perms:
-                                has_manage = True
-                    except Exception:
-                        pass
-                if not has_manage:
-                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.')
+            from project.models import Project
+            prj = Project.objects.select_related('issue_project').get(pk=project_id)
+            if hasattr(prj, 'issue_project') and prj.issue_project:
+                user_perms = set(prj.issue_project.get_user_permissions(user))
+                return 'ledger.manage' in user_perms
+        except Exception:
+            pass
+        return False
+
+    def _validate_project_settlement_lock(self, project_id, deal_date, action_label):
+        if not project_id or not deal_date:
+            return
+        try:
+            cal = ProjectLedgerCalculation.objects.get(project_id=project_id)
+            if cal.calculated and deal_date <= cal.calculated and not self._has_project_manage_perm(self.request.user, project_id):
+                raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 거래는 {action_label}할 수 없습니다.')
         except ProjectLedgerCalculation.DoesNotExist:
             pass
+
+    def perform_create(self, serializer):
+        project = serializer.validated_data.get('project')
+        project_id = project.pk if hasattr(project, 'pk') else project
+        deal_date = serializer.validated_data.get('deal_date')
+        self._validate_project_settlement_lock(project_id, deal_date, '생성')
+        serializer.save(creator=self.request.user)
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        self._validate_project_settlement_lock(instance.project_id, instance.deal_date, '수정')
+        new_deal_date = serializer.validated_data.get('deal_date', instance.deal_date)
+        self._validate_project_settlement_lock(instance.project_id, new_deal_date, '수정')
+        serializer.save(updator=self.request.user)
+
+    def perform_destroy(self, instance):
+        self._validate_project_settlement_lock(instance.project_id, instance.deal_date, '삭제')
         instance.delete()
 
     def list(self, request, *args, **kwargs):
@@ -930,22 +986,50 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
             return qs
         return qs.filter(company_id__in=get_accessible_company_ids(user))
 
-    def perform_destroy(self, instance):
+    def _check_company_entry_settlement_lock(self, company_id, deal_date, action_label, is_only_account_change=False):
+        if is_only_account_change or not company_id or not deal_date:
+            return
         try:
-            cal = CompanyLedgerCalculation.objects.get(company_id=instance.company_id)
-            deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
-            if cal.calculated and deal_date and deal_date <= cal.calculated:
+            cal = CompanyLedgerCalculation.objects.get(company_id=company_id)
+            if cal.calculated and deal_date <= cal.calculated:
                 user = self.request.user
                 has_manage = user.is_superuser or getattr(user, 'work_manager', False)
                 if not has_manage:
-                    from apiV1.permissions.ibs_perms import HqProjectModulePermission
                     user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
                     if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
                         has_manage = True
                 if not has_manage:
-                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 삭제할 수 없습니다.')
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 {action_label}할 수 없습니다.')
         except CompanyLedgerCalculation.DoesNotExist:
             pass
+
+    def perform_create(self, serializer):
+        company = serializer.validated_data.get('company')
+        company_id = company.pk if hasattr(company, 'pk') else company
+        tx_id = serializer.validated_data.get('transaction_id')
+        tx = CompanyBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        deal_date = tx.deal_date if tx else None
+        self._check_company_entry_settlement_lock(company_id, deal_date, '생성')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        vdata = serializer.validated_data
+        important_changed = any(
+            (k in vdata and getattr(instance, k) != vdata[k])
+            for k in ('amount', 'trader', 'evidence_type', 'affiliate', 'transaction_id', 'company')
+        )
+        account_changed = 'account' in vdata and instance.account != vdata['account']
+        is_only_account_change = (not important_changed) and account_changed
+        self._check_company_entry_settlement_lock(
+            instance.company_id, deal_date, '수정', is_only_account_change=is_only_account_change
+        )
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        self._check_company_entry_settlement_lock(instance.company_id, deal_date, '삭제')
         instance.delete()
 
 
@@ -989,17 +1073,18 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
-    def perform_destroy(self, instance):
+    def _check_project_entry_settlement_lock(self, project_id, deal_date, action_label, is_only_account_change=False):
+        if is_only_account_change or not project_id or not deal_date:
+            return
         try:
-            cal = ProjectLedgerCalculation.objects.get(project_id=instance.project_id)
-            deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
-            if cal.calculated and deal_date and deal_date <= cal.calculated:
+            cal = ProjectLedgerCalculation.objects.get(project_id=project_id)
+            if cal.calculated and deal_date <= cal.calculated:
                 user = self.request.user
                 has_manage = user.is_superuser or getattr(user, 'work_manager', False)
                 if not has_manage:
                     try:
                         from project.models import Project
-                        prj = Project.objects.select_related('issue_project').get(pk=instance.project_id)
+                        prj = Project.objects.select_related('issue_project').get(pk=project_id)
                         if hasattr(prj, 'issue_project') and prj.issue_project:
                             user_perms = set(prj.issue_project.get_user_permissions(user))
                             if 'ledger.manage' in user_perms:
@@ -1007,9 +1092,37 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
                     except Exception:
                         pass
                 if not has_manage:
-                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 삭제할 수 없습니다.')
+                    raise serializers.ValidationError(f'정산 마감일({cal.calculated}) 이전의 분개는 {action_label}할 수 없습니다.')
         except ProjectLedgerCalculation.DoesNotExist:
             pass
+
+    def perform_create(self, serializer):
+        project = serializer.validated_data.get('project')
+        project_id = project.pk if hasattr(project, 'pk') else project
+        tx_id = serializer.validated_data.get('transaction_id')
+        tx = ProjectBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        deal_date = tx.deal_date if tx else None
+        self._check_project_entry_settlement_lock(project_id, deal_date, '생성')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        vdata = serializer.validated_data
+        important_changed = any(
+            (k in vdata and getattr(instance, k) != vdata[k])
+            for k in ('amount', 'trader', 'evidence_type', 'contract', 'contractor', 'transaction_id', 'project')
+        )
+        account_changed = 'account' in vdata and instance.account != vdata['account']
+        is_only_account_change = (not important_changed) and account_changed
+        self._check_project_entry_settlement_lock(
+            instance.project_id, deal_date, '수정', is_only_account_change=is_only_account_change
+        )
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        self._check_project_entry_settlement_lock(instance.project_id, deal_date, '삭제')
         instance.delete()
 
 
@@ -1368,7 +1481,7 @@ class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
-class CompanyLedgerLastDealDateViewSet(viewsets.ModelViewSet):
+class CompanyLedgerLastDealDateViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CompanyBankTransaction.objects.all()
     serializer_class = CompanyLedgerLastDealDateSerializer
     permission_classes = (permissions.IsAuthenticated, HqProjectModulePermission)
@@ -1380,14 +1493,12 @@ class CompanyLedgerLastDealDateViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         company = self.request.query_params.get('company')
-        if not user.is_superuser and company:
-            try:
-                c_id = int(company)
-            except (ValueError, TypeError):
-                c_id = None
-            if c_id not in get_accessible_company_ids(user):
-                return CompanyBankTransaction.objects.none()
-        return CompanyBankTransaction.objects.filter(company_id=company).order_by('-deal_date')[:1]
+        qs = CompanyBankTransaction.objects.all()
+        if not user.is_superuser:
+            qs = qs.filter(company_id__in=get_accessible_company_ids(user))
+        if company:
+            qs = qs.filter(company_id=company)
+        return qs.order_by('-deal_date')[:1]
 
 
 class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
@@ -1413,7 +1524,7 @@ class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
-class ProjectLedgerLastDealDateViewSet(viewsets.ModelViewSet):
+class ProjectLedgerLastDealDateViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProjectBankTransaction.objects.all()
     serializer_class = ProjectLedgerLastDealDateSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)

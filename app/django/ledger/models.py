@@ -724,6 +724,11 @@ class AccountingEntry(models.Model):
             models.Index(fields=['evidence_type']),
         ]
 
+    def clean(self):
+        super().clean()
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError({'amount': '분개 금액은 0보다 커야 합니다.'})
+
     @property
     def related_transaction(self):
         """연관된 BankTransaction 조회"""

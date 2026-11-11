@@ -8,11 +8,22 @@ from company.models import Company
 from ibs.models import AccountSort
 from ledger.services.sync_payment_contract import set_bulk_import_active, _sync_contract_payment_for_entry
 from .models import (
+    CompanyAccount, ProjectAccount,
     CompanyBankTransaction, ProjectBankTransaction,
     CompanyAccountingEntry, ProjectAccountingEntry, CompanyBankAccount
 )
 
 User = get_user_model()
+
+
+class CompanyAccountResource(resources.ModelResource):
+    class Meta:
+        model = CompanyAccount
+
+
+class ProjectAccountResource(resources.ModelResource):
+    class Meta:
+        model = ProjectAccount
 
 
 class BaseTransactionResource(resources.ModelResource):
@@ -199,6 +210,8 @@ class ProjectBankTransactionResource(BaseTransactionResource):
 class CompanyAccountingEntryResource(BaseTransactionResource):
     """Resource for CompanyAccountingEntry with bulk operations"""
 
+    sort = fields.Field(column_name='sort', attribute='sort', readonly=True)
+
     class Meta:
         model = CompanyAccountingEntry
         batch_size = 1000
@@ -227,6 +240,7 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
 class ProjectAccountingEntryResource(BaseTransactionResource):
     """Resource for ProjectAccountingEntry with bulk operations and ContractPayment sync"""
 
+    sort = fields.Field(column_name='sort', attribute='sort', readonly=True)
     installment_order = fields.Field(column_name='installment_order', attribute=None)
 
     def __init__(self, *args, **kwargs):
