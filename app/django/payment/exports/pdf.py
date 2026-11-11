@@ -541,7 +541,7 @@ class PdfExportLedgerCalculation(PdfExportMixin, View):
 
         # 납부 회차 정보 (조정된 날짜 반영을 위해 필터링)
         payment_orders = InstallmentPaymentOrder.objects.filter(
-            project=project,
+            project=project or contract.project_id,
             type_sort=contract.unit_type.sort
         ).exclude(excluded_order_groups=contract.order_group)
 
@@ -561,8 +561,7 @@ class PdfExportLedgerCalculation(PdfExportMixin, View):
         context['price_land'] = price_land if unit else '-'  # 이 건 대지가
         context['price_tax'] = price_tax if unit else '-'  # 이 건 부가세
 
-        down1 = self.get_down_pay(contract)[0]
-        down2 = self.get_down_pay(contract)[1]
+        down1, down2 = self.get_down_pay(contract)
         amount = {'1': down1, '2': down2}
 
         # 2. 요약 테이블 데이터
@@ -585,9 +584,11 @@ class PdfExportLedgerCalculation(PdfExportMixin, View):
 
     @staticmethod
     def get_down_pay(contract):
-        try:
-            down = SpecialDownPay.objects.get(order_group=contract.order_group, unit_type=contract.unit_type)
+        down = SpecialDownPay.objects.filter(
+            project=contract.project,
+            order_group=contract.order_group,
+            unit_type=contract.unit_type
+        ).first()
+        if down:
             return down.payment_amount, down.payment_remain
-        except SpecialDownPay.DoesNotExist:
-            # 특수 계약금 데이터가 없는 경우 기본값 반환
-            return 0, 0
+        return 0, 0

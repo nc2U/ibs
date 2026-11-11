@@ -58,9 +58,9 @@ class PaymentPerInstallmentInline(admin.TabularInline):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "pay_order":
             # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
-            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            # 계약금(1), 계약금 정산(4), 발코니 확장비(5), 기타 옵션비(6), 제세 공과금(7), 후불 이자(8), 업무 대행비(9) 허용
             queryset = db_field.related_model.objects.filter(
-                pay_sort__in=['1', '4', '5', '6', '7']
+                pay_sort__in=['1', '4', '5', '6', '7', '8', '9']
             )
 
             # 현재 SalesPriceByGT의 프로젝트에 해당하는 항목만 필터링
@@ -120,9 +120,9 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "pay_order":
             # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
-            # 계약금(1), 기타 부담금(4), 제세 공과금(5), 금융 비용(6), 업무 대행비(7)만 허용
+            # 계약금(1), 계약금 정산(4), 발코니 확장비(5), 기타 옵션비(6), 제세 공과금(7), 후불 이자(8), 업무 대행비(9) 허용
             kwargs["queryset"] = db_field.related_model.objects.filter(
-                pay_sort__in=['1', '4', '5', '6', '7']
+                pay_sort__in=['1', '4', '5', '6', '7', '8', '9']
             )
         elif db_field.name == "sales_price":
             # SalesPriceByGT를 선택할 때 프로젝트별로 구분해서 표시
@@ -246,8 +246,8 @@ class ContractPaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'is_payment_mismatch', InstallmentOrderNullFilter)
     search_fields = ('contract__serial_number', 'accounting_entry__transaction_id')
     ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at', 'payment_mismatch_info')
-    raw_id_fields = ('accounting_entry', 'contract', 'installment_order')
+    readonly_fields = ('project', 'contract', 'deal_date', 'created_at', 'updated_at', 'payment_mismatch_info')
+    raw_id_fields = ('accounting_entry', 'installment_order')
 
     fieldsets = (
         ('기본 정보', {

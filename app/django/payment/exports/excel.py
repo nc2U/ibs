@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from apiV1.permissions._utils import get_project_ids_with_permission
 from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin
 from contract.models import Contract
-from ledger.models import ProjectBankAccount
+from ledger.models import ProjectBankAccount, ProjectBankTransaction
 from payment.models import InstallmentPaymentOrder, ContractPayment, SalesPriceByGT, DownPayment
 from project.models import ProjectIncBudget
 
@@ -133,6 +133,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         q = request.GET.get('q')
 
         # 유효 계약자 납부내역 조회 (Ledger 기반)
+        is_no_contract = str(nc).lower() in ('true', '1') if nc else False
         obj_list = (
             ContractPayment.objects
             .select_related(
@@ -147,12 +148,15 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             .filter(
                 project=project,
                 deal_date__range=(sd, ed),
-                contract__isnull=False,
-                contract__is_active=True,  # 유효 계약만
                 is_payment_mismatch=False  # 유효한 계약자 납부만
             )
             .order_by('deal_date', 'created_at')
         )
+
+        if is_no_contract:
+            obj_list = obj_list.filter(contract__isnull=True)
+        else:
+            obj_list = obj_list.filter(contract__isnull=False, contract__is_active=True)
 
         # Apply filters
         if og:
@@ -163,19 +167,25 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             obj_list = obj_list.filter(installment_order_id=ipo)
         # UUID-based bank_account filtering (using accounting_entry__transaction_id)
         if ba:
-            bank_account_uuids = ProjectBankAccount.objects.filter(
-                id=ba
-            ).values_list('account_uuid', flat=True)
-            obj_list = obj_list.filter(accounting_entry__transaction_id__in=bank_account_uuids)
-        if nc:
-            obj_list = obj_list.filter(contract__isnull=True)
+            tx_ids = ProjectBankTransaction.objects.filter(
+                bank_account_id=ba
+            ).values_list('transaction_id', flat=True)
+            obj_list = obj_list.filter(accounting_entry__transaction_id__in=tx_ids)
         if ni:
             obj_list = obj_list.filter(installment_order__isnull=True, contract__isnull=False)
         if q:
+            q_tx_ids = ProjectBankTransaction.objects.filter(
+                project=project
+            ).filter(
+                Q(content__icontains=q) |
+                Q(note__icontains=q) |
+                Q(bank_account__alias_name__icontains=q)
+            ).values_list('transaction_id', flat=True)
             obj_list = obj_list.filter(
                 Q(contract__contractor__name__icontains=q) |
-                Q(accounting_entry__content__icontains=q) |
-                Q(accounting_entry__trader__icontains=q)
+                Q(contract__serial_number__icontains=q) |
+                Q(accounting_entry__trader__icontains=q) |
+                Q(accounting_entry__transaction_id__in=q_tx_ids)
             )
 
         return obj_list.values_list(*params)
@@ -237,7 +247,9 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
 
         # 현재 납부 회차 구하기
         now_date = datetime.date.today()
-        pay_orders = InstallmentPaymentOrder.objects.filter(project=project).order_by('pay_code', 'pay_time')
+        pay_orders = InstallmentPaymentOrder.objects.filter(project=project).prefetch_related(
+            'excluded_order_groups'
+        ).order_by('pay_code', 'pay_time')
         now_order = pay_orders.first()
         for o in pay_orders:
             if o.pay_due_date is None or o.pay_due_date <= now_date:
@@ -251,6 +263,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         max_payment = (
             ContractPayment.objects
             .filter(project=project, installment_order__isnull=False, is_payment_mismatch=False)
+            .select_related('installment_order')
             .order_by('-installment_order__pay_code')
             .first()
         )
@@ -261,9 +274,11 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         else:
             calc_order = now_order
 
-        due_pay_orders = pay_orders.filter(project=project, id__lte=calc_order.id) if calc_order else pay_orders.none()
+        due_pay_orders = list(
+            pay_orders.filter(project=project, pay_code__lte=calc_order.pay_code)
+        ) if calc_order else []
 
-        add_order_cols = (now_order.pay_code * 2) if now_order else 0  # 납부회차 * 2
+        add_order_cols = len(due_pay_orders) * 2  # 납부회차 * 2
 
         col_cnt = 7 + add_order_cols  # 기본 컬럼수 + 납부회차 * 2
         is_us_cn = 2 if project.is_unit_set else 0  # 동호 표시할 경우 2라인 추가
@@ -378,14 +393,22 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
 
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
-        obj_list = Contract.objects.filter(project=project,
-                                           is_active=True,
-                                           contractor__status__in=['2', '3'],
-                                           contractor__contract_date__lte=date) \
-            .order_by('contractor__contract_date', 'created')
+        obj_list = Contract.objects.filter(
+            project=project,
+            is_active=True,
+            contractor__status__in=['2', '3'],
+            contractor__contract_date__lte=date
+        ).select_related(
+            'order_group',
+            'unit_type',
+            'contractprice',
+            'key_unit__unit_type',
+            'key_unit__houseunit__floor_type',
+        ).order_by('contractor__contract_date', 'created')
 
         # ----------------- get_queryset finish ----------------- #
 
+        contracts_map = {c.pk: c for c in obj_list}
         data = obj_list.values_list(*params)
 
         # Write body
@@ -403,51 +426,74 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                 is_payment_mismatch=False  # 유효한 계약자 납부만
             )
         )
-        paid_dict = paid_data.values_list(*paid_params)
+        paid_dict = list(paid_data.values_list(*paid_params))
+
+        # 배치 조회 캐시 구성 (N+1 쿼리 제거)
+        excluded_og_map = {
+            po.id: {og.id for og in po.excluded_order_groups.all()}
+            for po in due_pay_orders
+        }
+        sales_prices_map = {
+            (sp.order_group_id, sp.unit_type_id, sp.unit_floor_type_id): sp.price
+            for sp in SalesPriceByGT.objects.filter(project=project)
+        }
+        inc_budget_map = {
+            (ib.order_group_id, ib.unit_type_id): ib.average_price
+            for ib in ProjectIncBudget.objects.filter(project=project)
+        }
+        down_pay_map = {
+            (dp.order_group_id, dp.unit_type_id): dp.payment_amount
+            for dp in DownPayment.objects.filter(project=project)
+        }
 
         # 계약금 분납 횟수
-        down_num = due_pay_orders.filter(pay_sort='1').count()
+        down_num = sum(1 for po in due_pay_orders if po.pay_sort == '1')
         # ----------------------------------------------------------------- #
 
         for i, row in enumerate(data):
             row_num += 1
             row = list(row)  # tuple -> list
+            contract_pk = row[0]
 
             paid_sum = 0  # 기납부 총액
             if sum_col is not None:
-                paid_sum = sum([ps[1] for ps in paid_dict if ps[0] == row[0]])
+                paid_sum = sum(ps[1] for ps in paid_dict if ps[0] == contract_pk)
                 row.insert(sum_col, paid_sum)  # 순서 삽입
 
             next_col = sum_col
             due_amt_sum = 0  # 납부 약정액 합계
             unpaid_amt = 0  # 미납액
 
-            contract = Contract.objects.get(pk=row[0])
-            prices = SalesPriceByGT.objects.filter(project_id=project,
-                                                   order_group__name=row[3],
-                                                   unit_type__name=row[4])
-            try:
-                floor = contract.key_unit.houseunit.floor_type
-                cont_price = prices.get(unit_floor_type=floor).price  # 분양가
-            except ObjectDoesNotExist:
-                try:
-                    cont_price = ProjectIncBudget.objects.get(order_group__name=row[3],
-                                                              unit_type__name=row[4]).average_price
-                except ObjectDoesNotExist:
-                    price = contract.key_unit.unit_type.average_price
-                    cont_price = price if price else 0  # 분양가
+            contract = contracts_map.get(contract_pk) or Contract.objects.select_related(
+                'order_group', 'unit_type', 'contractprice', 'key_unit__unit_type', 'key_unit__houseunit__floor_type'
+            ).get(pk=contract_pk)
+
+            unit_type_obj = contract.unit_type or getattr(contract.key_unit, 'unit_type', None)
+            unit_type_id = unit_type_obj.pk if unit_type_obj else None
+            floor_obj = getattr(getattr(contract.key_unit, 'houseunit', None), 'floor_type', None)
+            floor_id = floor_obj.pk if floor_obj else None
+
+            cont_price = 0
+            if hasattr(contract, 'contractprice') and contract.contractprice and contract.contractprice.price:
+                cont_price = contract.contractprice.price
+            elif floor_id and (contract.order_group_id, unit_type_id, floor_id) in sales_prices_map:
+                cont_price = sales_prices_map[(contract.order_group_id, unit_type_id, floor_id)] or 0
+            elif (contract.order_group_id, unit_type_id) in inc_budget_map and inc_budget_map[(contract.order_group_id, unit_type_id)]:
+                cont_price = inc_budget_map[(contract.order_group_id, unit_type_id)]
+            elif unit_type_obj and unit_type_obj.average_price:
+                cont_price = unit_type_obj.average_price
 
             for pi, po in enumerate(due_pay_orders):  # 회차별 납입 내역 삽입
                 # 해당 차수 제외 여부 확인
-                is_excluded = po.excluded_order_groups.filter(id=contract.order_group_id).exists()
+                is_excluded = contract.order_group_id in excluded_og_map.get(po.id, set())
 
                 if is_excluded:
                     paid_date = '-'
                     paid_amount = 0
                 else:
-                    dates = [p[3] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code]
+                    dates = [p[3] for p in paid_dict if p[0] == contract_pk and p[2] == po.id and p[3] is not None]
                     paid_date = max(dates).strftime('%Y-%m-%d') if dates else None
-                    paid_amount = sum([p[1] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code])
+                    paid_amount = sum(p[1] for p in paid_dict if p[0] == contract_pk and p[2] == po.id)
 
                 row.insert(next_col + 1 + pi, paid_date)  # 거래일 정보 삽입
                 row.insert(next_col + 2 + pi, paid_amount)  # 납부 금액 정보 삽입
@@ -456,21 +502,18 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                 if is_excluded:
                     due_amt = 0
                 elif po.pay_sort == '1':  # 계약금일 때
-                    try:
-                        down_pay = DownPayment.objects.get(
-                            project_id=project,
-                            order_group=contract.order_group,
-                            unit_type=contract.key_unit.unit_type)
-                        due_amt = down_pay.payment_amount
-                    except DownPayment.DoesNotExist:
-                        pn = round(down_num / 2)
+                    dp_amount = down_pay_map.get((contract.order_group_id, unit_type_id))
+                    if dp_amount is not None:
+                        due_amt = dp_amount
+                    else:
+                        pn = max(1, round(down_num / 2))
                         due_amt = int(cont_price * 0.1 / pn)
                 elif po.pay_sort == '2':  # 중도금일 때
                     due_amt = cont_price * 0.1
                 else:  # 잔금일 때
                     due_amt = cont_price - due_amt_sum
 
-                due_amt_sum += due_amt if po.id <= now_order.id else 0
+                due_amt_sum += due_amt if (now_order and po.pay_code <= now_order.pay_code) else 0
                 unpaid_amt = due_amt_sum - paid_sum if due_amt_sum > paid_sum else 0
                 next_col += 1
 

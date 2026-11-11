@@ -212,8 +212,8 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     """
 
     calc_start_pay_code = simple_orders[0].get('calc_start') if simple_orders else 2  # 연체/가산 적용 시작 회차 코드
-    # 계약건에 연결된 모든 납부 내역을 가져오되, Ledger의 amount를 income으로 어노테이션함
-    paid_list = contract.payments.annotate(income=F('accounting_entry__amount')) \
+    # 계약건에 연결된 유효 납부 내역을 가져오되, Ledger의 amount를 income으로 어노테이션함
+    paid_list = contract.payments.valid_payments().annotate(income=F('accounting_entry__amount')) \
         .filter(deal_date__lte=pub_date).order_by('deal_date', 'created_at')
 
     is_past = True if kwargs.get('is_past') else False
@@ -224,7 +224,8 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     zip_pay_list = list(zip(paid_list, paid_sum_list))
 
     def get_date(item):
-        return item[0].deal_date if isinstance(item, tuple) else item['due_date']
+        d = item[0].deal_date if isinstance(item, tuple) else item.get('due_date')
+        return d or pub_date
 
     # 선납/할인 적용 시작 회차부터 현재 납부 의무 회차까지 (pub_date 기준)
     calc_orders = [item for item in simple_orders
@@ -286,9 +287,9 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
             ord_list.append(paid_ord_name)  # 납부회차 별칭 리스트 추가
 
             if curr_amt_total == 0 and paid_pay_code >= calc_start_pay_code:
-                curr_amt_total = paid_ords[-1]['amount_total'] if paid_ords else None
+                curr_amt_total = paid_ords[-1]['amount_total'] if paid_ords else 0
 
-            if curr_paid_total > curr_amt_total:  # 선납 시 (납부 총액 > 약정 총액)
+            if curr_paid_total > (curr_amt_total or 0):  # 선납 시 (납부 총액 > 약정 총액)
                 # --------------------------------
                 if is_first_pre:  # calc 약정 개시 전이면
                     # 약정 총액 - 납부 총액 (선납금 추출)

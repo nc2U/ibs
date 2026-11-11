@@ -1,8 +1,10 @@
+from django.db.models import Sum
 from rest_framework import serializers
 
+from _utils.contract_price import get_contract_price
 from contract.models import OrderGroup, Contract, Contractor
 from items.models import HouseUnit, KeyUnit
-from ledger.models import ProjectBankTransaction, ProjectAccountingEntry
+from ledger.models import ProjectBankTransaction, ProjectAccountingEntry, ProjectLedgerCalculation
 from payment.models import (InstallmentPaymentOrder, SalesPriceByGT, DownPayment,
                             ContractPayment, OverDueRule, PaymentPerInstallment)
 from .items import SimpleUnitTypeSerializer
@@ -307,24 +309,52 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context.get('request')
         if request and hasattr(request, 'data') and self.instance:
+            # 1. 회계 정산 마감일 검증
+            if self.instance.project_id and self.instance.deal_date:
+                calc = ProjectLedgerCalculation.objects.filter(project_id=self.instance.project_id).first()
+                if calc and calc.calculated and self.instance.deal_date <= calc.calculated:
+                    raise serializers.ValidationError(
+                        f'해당 기간({calc.calculated} 이전)은 회계 정산이 완료되어 수납 정보를 수정할 수 없습니다.'
+                    )
+
+            # 2. 계약(contract) 유효성 및 프로젝트/초과납부 검증
             if 'contract' in request.data:
                 contract_val = request.data.get('contract')
                 if contract_val:
                     try:
                         contract_obj = Contract.objects.get(pk=contract_val)
-                        if contract_obj.project_id != self.instance.project_id:
-                            raise serializers.ValidationError({'contract': '계약의 프로젝트와 일치하지 않습니다.'})
-                    except Contract.DoesNotExist:
-                        pass
+                    except (Contract.DoesNotExist, ValueError, TypeError):
+                        raise serializers.ValidationError({'contract': '유효하지 않은 계약입니다.'})
+
+                    if contract_obj.project_id != self.instance.project_id:
+                        raise serializers.ValidationError({'contract': '계약의 프로젝트와 일치하지 않습니다.'})
+
+                    if contract_obj.pk != self.instance.contract_id and self.instance.accounting_entry:
+                        entry_amount = self.instance.accounting_entry.amount or 0
+                        if entry_amount > 0:
+                            total_price = get_contract_price(contract_obj)[0]
+                            if total_price and total_price > 0:
+                                paid_qs = ContractPayment.objects.valid_payments().filter(contract=contract_obj)
+                                if self.instance.pk:
+                                    paid_qs = paid_qs.exclude(pk=self.instance.pk)
+                                already_paid = paid_qs.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
+                                remaining = total_price - already_paid
+                                if entry_amount > remaining:
+                                    raise serializers.ValidationError({
+                                        'contract': f'수납 금액({entry_amount:,}원)이 계약 잔여 분양대금({max(0, remaining):,}원)을 초과합니다.'
+                                    })
+
+            # 3. 납부회차(installment_order) 유효성 및 프로젝트 검증
             if 'installment_order' in request.data:
                 order_val = request.data.get('installment_order')
                 if order_val:
                     try:
                         order_obj = InstallmentPaymentOrder.objects.get(pk=order_val)
-                        if order_obj.project_id != self.instance.project_id:
-                            raise serializers.ValidationError({'installment_order': '납부회차의 프로젝트와 일치하지 않습니다.'})
-                    except InstallmentPaymentOrder.DoesNotExist:
-                        pass
+                    except (InstallmentPaymentOrder.DoesNotExist, ValueError, TypeError):
+                        raise serializers.ValidationError({'installment_order': '유효하지 않은 납부회차입니다.'})
+
+                    if order_obj.project_id != self.instance.project_id:
+                        raise serializers.ValidationError({'installment_order': '납부회차의 프로젝트와 일치하지 않습니다.'})
         return attrs
 
     def update(self, instance, validated_data):
@@ -332,14 +362,16 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         update_fields = []
         if request and hasattr(request, 'data'):
             if 'contract' in request.data:
-                contract_val = request.data.get('contract')
-                instance.contract_id = contract_val
-                update_fields.append('contract')
-                if instance.accounting_entry:
+                contract_val = request.data.get('contract') or None
+                if instance.accounting_entry and instance.accounting_entry.contract_id != contract_val:
                     instance.accounting_entry.contract_id = contract_val
-                    instance.accounting_entry.save(update_fields=['contract'])
+                    instance.accounting_entry.save(update_fields=['contract', 'updated_at'])
+                    instance.refresh_from_db()
+                elif instance.contract_id != contract_val:
+                    instance.contract_id = contract_val
+                    update_fields.append('contract')
             if 'installment_order' in request.data:
-                order_val = request.data.get('installment_order')
+                order_val = request.data.get('installment_order') or None
                 instance.installment_order_id = order_val
                 update_fields.append('installment_order')
 

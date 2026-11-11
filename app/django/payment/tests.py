@@ -832,3 +832,159 @@ class PaymentAdminRLSTests(PaymentTestCaseBase):
         req_admin.user = self.user
         qs_cp_admin = cp_admin.get_queryset(req_admin)
         self.assertIn(cp, qs_cp_admin)
+
+    def test_contract_payment_admin_change_form_renders_without_field_error(self):
+        """ContractPaymentAdmin 상세/수정 폼 생성 시 editable=False 필드(project, contract, deal_date)로 인한 FieldError 미발생 검증"""
+        factory = RequestFactory()
+        site = AdminSite()
+        cp = ContractPayment.objects.first()
+        cp_admin = ContractPaymentAdmin(ContractPayment, site)
+        req_admin = factory.get(f'/admin/payment/contractpayment/{cp.pk}/change/')
+        req_admin.user = self.user
+        form_class = cp_admin.get_form(req_admin, obj=cp)
+        self.assertIsNotNone(form_class)
+
+
+class PaymentAuditFixRegressionTests(PaymentTestCaseBase):
+    """payment 정밀검사 보완사항 회귀 검증 테스트"""
+
+    def test_mismatched_contract_or_unassigned_contract_validation_and_sync(self):
+        """ContractPayment.clean()의 contract 일치 검증 및 AccountingEntry 계약 해제 동기화 검증"""
+        cp = ContractPayment.objects.first()
+        # 1. accounting_entry.contract가 설정된 상태에서 cp.contract만 None으로 변경 시 ValidationError 발생
+        cp.contract = None
+        with self.assertRaises(ValidationError):
+            cp.clean()
+
+        # 2. accounting_entry에서 contract를 None으로 해제하면 ContractPayment.contract도 None으로 동기화
+        self.accounting_entry.contract = None
+        self.accounting_entry.save()
+        cp.refresh_from_db()
+        self.assertIsNone(cp.contract)
+
+    def test_contract_payment_search_filter_with_uuid_transaction_fields(self):
+        """ContractPaymentViewSet 검색(?search=) 시 FieldError 없이 계약자/동호수/계좌별칭/적요 통합 검색 동작 검증"""
+        url = reverse('api:ledger-payment-list')
+        for keyword in ('홍길동', '101동', 'Test Project Account', '1차 계약금'):
+            res = self.client.get(url, {'project': self.project.pk, 'search': keyword})
+            self.assertEqual(res.status_code, status.HTTP_200_OK, f'search={keyword} failed')
+            self.assertEqual(len(res.data['results']), 1, f'search={keyword} did not match')
+
+    def test_contract_payment_serializer_validation_and_settlement_lock(self):
+        """ContractPayment 수정 시 미존재 FK 400 방어, 초과납부 방어, 정산 마감 잠금 검증"""
+        from ledger.models import ProjectLedgerCalculation
+
+        cp = ContractPayment.objects.first()
+        detail_url = reverse('api:ledger-payment-detail', args=[cp.pk])
+
+        # 1. 존재하지 않는 contract / installment_order 전달 시 500 대신 400 반환
+        res_bad_cont = self.client.patch(detail_url, {'contract': 999999}, format='json')
+        self.assertEqual(res_bad_cont.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_bad_order = self.client.patch(detail_url, {'installment_order': 999999}, format='json')
+        self.assertEqual(res_bad_order.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 2. AllContractPaymentViewSet은 읽기 전용이므로 POST/DELETE 차단 (405)
+        all_url = reverse('api:ledger-all-payment-list')
+        self.assertEqual(self.client.post(all_url, {}).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # 3. 미등록 수납 건이 계약 잔여 분양대금을 초과할 때 해당 계약으로 매핑 차단
+        unmatched_tx = ProjectBankTransaction.objects.create(
+            project=self.project,
+            bank_account=self.project_bank_account,
+            deal_date=date(2026, 1, 2),
+            sort=self.account_sort_deposit,
+            amount=300000000,
+            content='초과 수납 테스트',
+            creator=self.user
+        )
+        unmatched_entry = ProjectAccountingEntry.objects.create(
+            project=self.project,
+            transaction_id=unmatched_tx.transaction_id,
+            account=self.project_account_payment,
+            amount=300000000,
+            trader='홍길동',
+            contract=None
+        )
+        unmatched_cp = ContractPayment.objects.get(accounting_entry=unmatched_entry)
+        unmatched_url = reverse('api:ledger-payment-detail', args=[unmatched_cp.pk])
+        # 이미 30,000,000원이 납부된 300,000,000원 계약에 300,000,000원 추가 매핑 시도 -> 400
+        res_overpay = self.client.patch(unmatched_url, {'contract': self.contract.pk}, format='json')
+        self.assertEqual(res_overpay.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 4. 회계 정산 마감일(calculated) 이전 거래 수정 차단
+        ProjectLedgerCalculation.objects.create(
+            project=self.project,
+            calculated=date(2026, 1, 15),
+            creator=self.user
+        )
+        res_locked = self.client.patch(detail_url, {'installment_order': self.pay_order_down.pk}, format='json')
+        self.assertEqual(res_locked.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_ledger_overall_summary_excludes_unmatched_and_falls_back_on_invalid_cache(self):
+        """ContractPaymentOverallSummaryViewSet에서 미계약 수납건 제외 및 캐시 무효 시 동적 계산 폴백 검증"""
+        cp = ContractPayment.objects.first()
+        cp.installment_order = self.pay_order_down
+        cp.save(update_fields=['installment_order', 'updated_at'])
+
+        # 계약 미지정 수납건 생성 (회차는 지정됨)
+        unmatched_tx = ProjectBankTransaction.objects.create(
+            project=self.project,
+            bank_account=self.project_bank_account,
+            deal_date=date(2026, 1, 1),
+            sort=self.account_sort_deposit,
+            amount=10000000,
+            content='미매칭 입금',
+            creator=self.user
+        )
+        unmatched_entry = ProjectAccountingEntry.objects.create(
+            project=self.project,
+            transaction_id=unmatched_tx.transaction_id,
+            account=self.project_account_payment,
+            amount=10000000,
+            trader='미확인',
+            contract=None
+        )
+        unmatched_cp = ContractPayment.objects.get(accounting_entry=unmatched_entry)
+        unmatched_cp.installment_order = self.pay_order_down
+        unmatched_cp.save(update_fields=['installment_order', 'updated_at'])
+
+        # 캐시 무효화 설정 후에도 폴백으로 계약금액(30,000,000)이 정상 계산되고 미매칭 입금(10,000,000)은 제외되는지 확인
+        self.contract_price.is_cache_valid = False
+        self.contract_price.save(update_fields=['is_cache_valid'])
+
+        url = reverse('api:ledger-overall-summary-list')
+        res = self.client.get(url, {'project': self.project.pk, 'date': '2026-01-31'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        down_order_data = next(o for o in res.data['pay_orders'] if o['pk'] == self.pay_order_down.pk)
+        self.assertEqual(down_order_data['contract_amount'], 30000000)
+        self.assertEqual(down_order_data['collection']['collected_amount'], 30000000)
+
+    def test_excel_exports_with_filters_and_edge_cases(self):
+        """엑셀 내보내기 시 ba/q/nc 필터 FieldError 미발생 및 동호 미지정/단일 계약금 회차 ZeroDivisionError 방어 검증"""
+        self.client.force_login(self.user)
+
+        # 1. ExportLedgerPayments의 ba, q, nc 필터 정상 동작 확인
+        url_pay = reverse('excel:ledger-payment')
+        res_filtered = self.client.get(url_pay, {
+            'project': self.project.pk,
+            'ba': self.project_bank_account.pk,
+            'q': '홍길동',
+        })
+        self.assertEqual(res_filtered.status_code, 200)
+
+        res_nc = self.client.get(url_pay, {
+            'project': self.project.pk,
+            'nc': 'true',
+        })
+        self.assertEqual(res_nc.status_code, 200)
+
+        # 2. ExportLedgerPaymentsByCont에서 DownPayment 삭제(down_num=1일 때 폴백) 및 key_unit=None 상태에서도 에러 없이 200 반환
+        DownPayment.objects.filter(project=self.project).delete()
+        self.contract.key_unit = None
+        self.contract.save()
+
+        url_by_cont = reverse('excel:ledger-paid-by-cont')
+        res_by_cont = self.client.get(url_by_cont, {'project': self.project.pk})
+        self.assertEqual(res_by_cont.status_code, 200)
+

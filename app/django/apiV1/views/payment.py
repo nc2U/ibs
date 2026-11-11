@@ -1,12 +1,15 @@
 import logging
+import operator
 from collections import defaultdict
 from datetime import datetime
+from functools import reduce
 
 from django.db import connection
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django_filters import CharFilter, BooleanFilter, DateFilter
-from django_filters.rest_framework import FilterSet
+from django_filters.rest_framework import DjangoFilterBackend, FilterSet
 from rest_framework import viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
 from _utils.contract_price import get_contract_payment_plan
@@ -1024,25 +1027,21 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                         if not installment_orders.exists():
                             # InstallmentPaymentOrder가 없으면 기본 납부회차 적용: 잔금 100%
                             # 잔금인지 확인 (pay_sort='3')
-                            try:
-                                pay_order = InstallmentPaymentOrder.objects.get(
-                                    project_id=project_id,
-                                    pay_time=pay_time
-                                )
-                                if pay_order.pay_sort == '3':  # 잔금
-                                    installment_amount = base_amount
-                                    total_fallback_amount += installment_amount
-                            except InstallmentPaymentOrder.DoesNotExist:
-                                pass
+                            pay_order = InstallmentPaymentOrder.objects.filter(
+                                project_id=project_id,
+                                pay_time=pay_time
+                            ).first()
+                            if pay_order and pay_order.pay_sort == '3':  # 잔금
+                                installment_amount = base_amount
+                                total_fallback_amount += installment_amount
                         else:
                             # InstallmentPaymentOrder가 있으면 해당 회차에 따라 계산
-                            try:
-                                pay_order = InstallmentPaymentOrder.objects.get(
-                                    project_id=project_id,
-                                    pay_time=pay_time,
-                                    type_sort='5'  # 근린생활시설용만
-                                )
-
+                            pay_order = InstallmentPaymentOrder.objects.filter(
+                                project_id=project_id,
+                                pay_time=pay_time,
+                                type_sort='5'  # 근린생활시설용만
+                            ).first()
+                            if pay_order:
                                 if pay_order.pay_amt:
                                     # pay_amt가 설정된 경우 그 값 사용
                                     installment_amount = pay_order.pay_amt
@@ -1063,9 +1062,6 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                                     if remaining_ratio > 0:
                                         installment_amount = int(base_amount * (remaining_ratio / 100))
                                         total_fallback_amount += installment_amount
-
-                            except InstallmentPaymentOrder.DoesNotExist:
-                                pass
 
             return total_fallback_amount
 
@@ -1448,6 +1444,35 @@ class ContractPaymentFilterSet(FilterSet):
         )
 
 
+class ContractPaymentSearchFilter(SearchFilter):
+    """ContractPayment 검색 필터 (UUID 기반 ProjectBankTransaction 계좌별칭/적요/비고 통합 검색 지원)"""
+
+    def filter_queryset(self, request, queryset, view):
+        search_terms = self.get_search_terms(request)
+        if not search_terms:
+            return queryset
+
+        orm_lookups = [
+            'contract__contractor__name__icontains',
+            'contract__serial_number__icontains',
+            'contract__key_unit__houseunit__name__icontains',
+            'contract__key_unit__houseunit__building_unit__name__icontains',
+            'accounting_entry__trader__icontains',
+        ]
+        conditions = []
+        for term in search_terms:
+            queries = [Q(**{lookup: term}) for lookup in orm_lookups]
+            tx_ids = ProjectBankTransaction.objects.filter(
+                Q(bank_account__alias_name__icontains=term)
+                | Q(note__icontains=term)
+                | Q(content__icontains=term)
+            ).values_list('transaction_id', flat=True)
+            queries.append(Q(accounting_entry__transaction_id__in=tx_ids))
+            conditions.append(reduce(operator.or_, queries))
+
+        return queryset.filter(reduce(operator.and_, conditions)).distinct()
+
+
 class ContractPaymentViewSet(viewsets.ModelViewSet):
     """
     ContractPayment 기본 CRUD ViewSet (구버전 ProjectCashBook 호환)
@@ -1469,16 +1494,15 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = ContractPaymentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    filter_backends = (DjangoFilterBackend, ContractPaymentSearchFilter, OrderingFilter)
     filterset_class = ContractPaymentFilterSet
     pagination_class = PageNumberPaginationTen
     search_fields = [
         'contract__contractor__name',  # 계약자명
         'contract__serial_number',  # 일련번호
         'contract__key_unit__houseunit__name',  # 호수
-        'contract__key_unit__houseunit__building_unit',  # 동
+        'contract__key_unit__houseunit__building_unit__name',  # 동
         'accounting_entry__trader',  # 거래처(입금자명)
-        'accounting_entry__related_transaction__bank_account__alias_name',  # 계좌별칭
-        'accounting_entry__related_transaction__note',  # 비고/메모
     ]
     ordering_fields = ['deal_date', 'created_at', 'installment_order']
     ordering = ['-deal_date', '-created_at']  # 기본 정렬
@@ -1580,6 +1604,7 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
 
 
 class AllContractPaymentViewSet(ContractPaymentViewSet):
+    http_method_names = ['get', 'head', 'options']
     pagination_class = PageNumberPaginationOneHundred
     ordering = ['installment_order', 'deal_date', 'created_at']
     serializer_class = ContractPaymentSerializer
@@ -1843,76 +1868,90 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _get_payment_amounts_cache(project_id, pay_orders):
-        """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성 (pay_time 기반)"""
-        pay_times = set()
-        for order in pay_orders:
-            pay_times.add(str(order.pay_time))
+        """PostgreSQL JSON 집계를 사용한 효율적인 납부 금액 캐시 생성 (pay_time 기반, 캐시 무효 계약 폴백 포함)"""
+        pay_times = {str(order.pay_time) for order in pay_orders}
+        payment_amounts_cache = {order.pay_time: 0 for order in pay_orders}
 
-        payment_amounts_cache = {}
+        if not pay_times:
+            return payment_amounts_cache
 
         try:
             with connection.cursor() as cursor:
-                for pay_time in sorted(pay_times):
-                    query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
-                            FROM contract_contractprice, jsonb_each_text(payment_amounts)
-                            WHERE contract_id IN (SELECT id
-                                                  FROM contract_contract
-                                                  WHERE project_id = %s
-                                                    AND is_active = %s)
-                              AND is_cache_valid = %s
-                              AND key = %s
-                            """
-                    cursor.execute(query, [project_id, True, True, pay_time])
-                    result = cursor.fetchone()
-                    payment_amounts_cache[int(pay_time)] = result[0] if result else 0
+                query = """
+                        SELECT key, COALESCE(SUM(CAST(value AS BIGINT)), 0) as total_amount
+                        FROM contract_contractprice, jsonb_each_text(payment_amounts)
+                        WHERE contract_id IN (SELECT id
+                                              FROM contract_contract
+                                              WHERE project_id = %s
+                                                AND is_active = %s)
+                          AND is_cache_valid = %s
+                          AND key = ANY(%s)
+                        GROUP BY key
+                        """
+                cursor.execute(query, [project_id, True, True, list(pay_times)])
+                for key, total_amount in cursor.fetchall():
+                    payment_amounts_cache[int(key)] = total_amount or 0
+
+            # 캐시 무효화 또는 ContractPrice 미생성 활성 계약에 대해 동적 계산 폴백 합산
+            invalid_contracts = Contract.objects.filter(
+                project_id=project_id,
+                is_active=True
+            ).filter(
+                Q(contractprice__isnull=True) | Q(contractprice__is_cache_valid=False)
+            ).select_related('contractprice', 'order_group', 'unit_type', 'key_unit__houseunit__floor_type')
+
+            for contract in invalid_contracts:
+                try:
+                    for plan_item in get_contract_payment_plan(contract):
+                        pt = plan_item['installment_order'].pay_time
+                        if pt in payment_amounts_cache:
+                            payment_amounts_cache[pt] += plan_item['amount']
+                except Exception:
+                    continue
 
         except Exception as e:
             logger.error(f"Error in ContractPaymentOverallSummaryViewSet._get_payment_amounts_cache: {e}")
             for order in pay_orders:
-                payment_amounts_cache[order.pay_time] = 0
+                payment_amounts_cache[order.pay_time] = OverallSummaryViewSet._get_contract_amount(order, project_id)
 
         return payment_amounts_cache
 
     @staticmethod
     def _get_non_contract_amounts_cache(project_id, pay_orders):
         """미계약 세대 납부 금액 캐시 생성 (pay_time 기반) - 근린생활시설 fallback 포함"""
-        pay_times = set()
-        for order in pay_orders:
-            pay_times.add(str(order.pay_time))
+        pay_times = {str(order.pay_time) for order in pay_orders}
+        non_contract_amounts_cache = {order.pay_time: 0 for order in pay_orders}
 
-        non_contract_amounts_cache = {}
+        if not pay_times:
+            return non_contract_amounts_cache
 
         try:
             with connection.cursor() as cursor:
-                # pay_time별로 미계약 세대의 개별 금액을 집계
-                for pay_time in sorted(pay_times):
-                    query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total
-                            FROM contract_contractprice cp, jsonb_each_text(payment_amounts)
-                            WHERE cp.contract_id IS NULL
-                              AND cp.house_unit_id IN (SELECT hu.id
-                                                       FROM items_houseunit hu
-                                                                JOIN items_unittype ut ON hu.unit_type_id = ut.id
-                                                       WHERE ut.project_id = %s)
-                              AND cp.is_cache_valid = %s
-                              AND key = %s
-                            """
-                    cursor.execute(query, [project_id, True, pay_time])
-                    result = cursor.fetchone()
-                    total_amount = result[0] if result else 0
+                query = """
+                        SELECT key, COALESCE(SUM(CAST(value AS BIGINT)), 0) as total
+                        FROM contract_contractprice cp, jsonb_each_text(payment_amounts)
+                        WHERE cp.contract_id IS NULL
+                          AND cp.house_unit_id IN (SELECT hu.id
+                                                   FROM items_houseunit hu
+                                                            JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                                                   WHERE ut.project_id = %s)
+                          AND cp.is_cache_valid = %s
+                          AND key = ANY(%s)
+                        GROUP BY key
+                        """
+                cursor.execute(query, [project_id, True, list(pay_times)])
+                db_totals = {int(key): (total or 0) for key, total in cursor.fetchall()}
 
-                    # 근린생활시설 fallback 추가
-                    commercial_fallback = ContractPaymentOverallSummaryViewSet._get_commercial_fallback_for_overall(
-                        project_id, int(pay_time)
-                    )
-                    total_amount += commercial_fallback
-
-                    non_contract_amounts_cache[int(pay_time)] = total_amount
+            for pay_time_str in sorted(pay_times):
+                pt = int(pay_time_str)
+                total_amount = db_totals.get(pt, 0)
+                commercial_fallback = ContractPaymentOverallSummaryViewSet._get_commercial_fallback_for_overall(
+                    project_id, pt
+                )
+                non_contract_amounts_cache[pt] = total_amount + commercial_fallback
 
         except Exception as e:
             logger.error(f"Error in ContractPaymentOverallSummaryViewSet._get_non_contract_amounts_cache: {e}")
-            # 실패 시 0으로 초기화
             for order in pay_orders:
                 non_contract_amounts_cache[order.pay_time] = 0
 
@@ -1969,25 +2008,21 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                         if not installment_orders.exists():
                             # InstallmentPaymentOrder가 없으면 기본 납부회차 적용: 잔금 100%
                             # 잔금인지 확인 (pay_sort='3')
-                            try:
-                                pay_order = InstallmentPaymentOrder.objects.get(
-                                    project_id=project_id,
-                                    pay_time=pay_time
-                                )
-                                if pay_order.pay_sort == '3':  # 잔금
-                                    installment_amount = base_amount
-                                    total_fallback_amount += installment_amount
-                            except InstallmentPaymentOrder.DoesNotExist:
-                                pass
+                            pay_order = InstallmentPaymentOrder.objects.filter(
+                                project_id=project_id,
+                                pay_time=pay_time
+                            ).first()
+                            if pay_order and pay_order.pay_sort == '3':  # 잔금
+                                installment_amount = base_amount
+                                total_fallback_amount += installment_amount
                         else:
                             # InstallmentPaymentOrder가 있으면 해당 회차에 따라 계산
-                            try:
-                                pay_order = InstallmentPaymentOrder.objects.get(
-                                    project_id=project_id,
-                                    pay_time=pay_time,
-                                    type_sort='5'  # 근린생활시설용만
-                                )
-
+                            pay_order = InstallmentPaymentOrder.objects.filter(
+                                project_id=project_id,
+                                pay_time=pay_time,
+                                type_sort='5'  # 근린생활시설용만
+                            ).first()
+                            if pay_order:
                                 if pay_order.pay_amt:
                                     # pay_amt가 설정된 경우 그 값 사용
                                     installment_amount = pay_order.pay_amt
@@ -2009,9 +2044,6 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                                         installment_amount = int(base_amount * (remaining_ratio / 100))
                                         total_fallback_amount += installment_amount
 
-                            except InstallmentPaymentOrder.DoesNotExist:
-                                pass
-
             return total_fallback_amount
 
         except Exception as e:
@@ -2032,10 +2064,11 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
             # ORM을 사용한 안전하고 간단한 집계
             order_ids = [order.pk for order in pay_orders]
 
-            payments_data = ContractPayment.objects.filter(
+            payments_data = ContractPayment.objects.valid_payments().filter(
                 project_id=project_id,
                 installment_order__in=order_ids,
-                is_payment_mismatch=False,
+                contract__isnull=False,
+                contract__is_active=True,
                 deal_date__lte=date
             ).values('installment_order').annotate(
                 total_collected=Sum('accounting_entry__amount')

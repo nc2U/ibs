@@ -337,14 +337,13 @@ class ContractPayment(models.Model):
                                f'(accounting_entry.project_id={self.accounting_entry.project_id})'
                 })
 
-            # contract 일치 검증 (둘 다 있는 경우)
-            if self.contract_id and self.accounting_entry.contract_id:
-                if self.contract_id != self.accounting_entry.contract_id:
-                    raise ValidationError({
-                        'contract': f'contract는 accounting_entry.contract와 자동 동기화됩니다. '
-                                    f'직접 수정할 수 없습니다. ProjectAccountingEntry를 수정하세요. '
-                                    f'(accounting_entry.contract_id={self.accounting_entry.contract_id})'
-                    })
+            # contract 일치 검증 (accounting_entry.contract와 항상 동기화되어야 함)
+            if self.contract_id != self.accounting_entry.contract_id:
+                raise ValidationError({
+                    'contract': f'contract는 accounting_entry.contract와 자동 동기화됩니다. '
+                                f'직접 수정할 수 없습니다. ProjectAccountingEntry를 수정하세요. '
+                                f'(accounting_entry.contract_id={self.accounting_entry.contract_id})'
+                })
 
             # deal_date 일치 검증
             # ✅ ProjectBankTransaction을 Master DB에서 명시적으로 재조회하여 최신 deal_date를 보장
