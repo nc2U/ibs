@@ -163,6 +163,87 @@ def _find_highest_role_label(user, current_dept_label: str, company, current_dep
     return current_dept_label
 
 
+def resolve_effective_final_authority(doc_type: DocumentType, content: dict = None, seal=None):
+    """
+    문서 유형 기본값, 공문 인장(seal), 금액별 조건부 전결 정책(ApprovalPolicyRule)을 종합 평가하여
+    실제 적용될 (effective_final_duty, effective_final_level)을 반환합니다.
+    """
+    amount = extract_amount_from_content(content)
+    effective_final_duty = doc_type.final_approval_duty
+    effective_final_level = doc_type.final_dept_level
+
+    # 🌟 공문 인장(CompanySeal)에 설정된 전결 기준 적용 (인장에 전결 직책/레벨이 지정된 경우 문서 유형 기본값보다 우선)
+    if seal:
+        if getattr(seal, 'final_approval_duty', None):
+            effective_final_duty = seal.final_approval_duty
+        if getattr(seal, 'final_dept_level', None):
+            effective_final_level = seal.final_dept_level
+
+    if amount is not None:
+        for rule in doc_type.policy_rules.order_by('priority'):
+            if rule.is_matched(amount):
+                # 금액 구간에 매칭되는 첫 번째 규칙(최고 우선순위)을 적용하고 탐색 종료
+                # 매칭 규칙이 일부 필드만 지정한 경우 나머지는 doc_type 기본값 유지
+                if rule.final_approval_duty:
+                    effective_final_duty = rule.final_approval_duty
+                if rule.final_dept_level:
+                    effective_final_level = rule.final_dept_level
+                break
+
+    return effective_final_duty, effective_final_level
+
+
+def check_drafter_auto_approval(
+    doc_type: DocumentType,
+    drafter_user,
+    assignment: StaffAssignment = None,
+    content: dict = None,
+    seal=None,
+):
+    """
+    기안자가 단독/각자 대표이사 또는 해당 문서(금액별 전결 정책 및 인장 포함)의 최종 전결권자 본인이어서
+    상신 즉시 자동 최종 승인 대상인지 판별하고 (is_auto_approvable, role_label)을 반환합니다.
+    """
+    from company.models import Company
+    company = assignment.company if assignment else Company.objects.filter(is_default=True).first()
+    ceo_users = _get_company_ceos(company, set()) if company else []
+    is_ceo = bool(drafter_user) and (
+        drafter_user in ceo_users or any(u.id == drafter_user.id for u in ceo_users)
+    )
+    if not is_ceo and drafter_user:
+        if assignment and assignment.duty and (assignment.duty.code == 'CEO' or '대표' in assignment.duty.name):
+            is_ceo = True
+        elif StaffAssignment.objects.filter(
+            Q(duty__code='CEO') | Q(duty__name__icontains='대표'),
+            staff__user=drafter_user
+        ).exists():
+            is_ceo = True
+
+    if is_ceo:
+        return True, '대표이사 승인'
+
+    _drafter_staff = getattr(drafter_user, 'staff', None) if drafter_user else None
+    drafter_duty = (
+        assignment.duty if assignment and assignment.duty
+        else getattr(_drafter_staff, 'duty', None)
+    )
+    effective_final_duty, effective_final_level = resolve_effective_final_authority(doc_type, content, seal)
+
+    is_final_authority = False
+    if effective_final_duty and drafter_duty and drafter_duty.id == effective_final_duty.id:
+        is_final_authority = True
+    elif effective_final_level and assignment and assignment.department and assignment.department.level <= effective_final_level:
+        mgr_user, _ = _get_department_manager(assignment.department, set())
+        if mgr_user and drafter_user and mgr_user.id == drafter_user.id:
+            is_final_authority = True
+
+    if is_final_authority:
+        role_label = f'{drafter_duty.name} 승인' if drafter_duty else '전결권자 승인'
+        return True, role_label
+
+    return False, ''
+
+
 def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None, content: dict = None, seal=None):
     """
     기안자의 보직(소속 부서), 문서 유형의 전결 규정 및 금액별 조건부 정책(ApprovalPolicyRule),
@@ -233,29 +314,8 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     from company.models import Company
     company = assignment.company if assignment else Company.objects.filter(is_default=True).first()
 
-    # 조건부 전결 정책(ApprovalPolicyRule) 적용 검사
-    # priority 오름차순 정렬을 명시하여 복수 규칙 매칭 시 우선순위를 보장
-    amount = extract_amount_from_content(content)
-    effective_final_duty = doc_type.final_approval_duty
-    effective_final_level = doc_type.final_dept_level
-
-    # 🌟 공문 인장(CompanySeal)에 설정된 전결 기준 적용 (인장에 전결 직책/레벨이 지정된 경우 문서 유형 기본값보다 우선)
-    if seal:
-        if getattr(seal, 'final_approval_duty', None):
-            effective_final_duty = seal.final_approval_duty
-        if getattr(seal, 'final_dept_level', None):
-            effective_final_level = seal.final_dept_level
-
-    if amount is not None:
-        for rule in doc_type.policy_rules.order_by('priority'):
-            if rule.is_matched(amount):
-                # 금액 구간에 매칭되는 첫 번째 규칙(최고 우선순위)을 적용하고 탐색 종료
-                # 매칭 규칙이 일부 필드만 지정한 경우 나머지는 doc_type 기본값 유지
-                if rule.final_approval_duty:
-                    effective_final_duty = rule.final_approval_duty
-                if rule.final_dept_level:
-                    effective_final_level = rule.final_dept_level
-                break
+    # 조건부 전결 정책(ApprovalPolicyRule) 및 인장(CompanySeal) 전결 기준 통합 산출
+    effective_final_duty, effective_final_level = resolve_effective_final_authority(doc_type, content, seal)
 
     # 기안자의 직책(Duty) 확인 (셀프 승인 방지용)
     # hasattr 단독 검사는 OneToOne 역참조 DoesNotExist를 잡지 못하므로 getattr 방어 패턴 사용

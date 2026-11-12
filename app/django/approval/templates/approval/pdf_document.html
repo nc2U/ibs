@@ -409,7 +409,7 @@
       {{ document.title }}
     </td>
   </tr>
-  {% if document.observers.exists %}
+  {% if document.observers.all %}
   <tr>
     <th>참&nbsp;&nbsp;&nbsp;&nbsp;조</th>
     <td colspan="3" style="color: #444;">
@@ -675,11 +675,11 @@
 </div>
 
 <!-- 5. 첨부파일 목록 (있는 경우) -->
-{% if document.attachments.exists %}
+{% if document.attachments.all %}
 <div class="section-header">2. 첨부 서류</div>
 <div class="attachment-list">
   {% for att in document.attachments.all %}
-    <div>• {{ att.file_name }} ({{ att.file_size|filesizeformat }}) - 등록자: {{ att.creator_name|default:att.creator.username }}</div>
+    <div>• {{ att.file_name }} ({{ att.file_size|filesizeformat }}) - 등록자: {% if att.creator %}{{ att.creator.profile.name|default:att.creator.username }}{% else %}-{% endif %}</div>
   {% endfor %}
 </div>
 {% endif %}

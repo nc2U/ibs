@@ -147,7 +147,8 @@ def render_and_save_approval_pdf(document_pk):
             'drafter_assignment__duty', 'drafter_assignment__company',
             'workspace__company', 'related_inbound_letter__company'
         ).prefetch_related(
-            'steps__approvers__profile', 'steps__actions__approver__profile'
+            'steps__approvers__profile', 'steps__actions__approver__profile',
+            'attachments__creator__profile', 'observers__profile'
         ).get(pk=document_pk)
 
         doc_company = document.company

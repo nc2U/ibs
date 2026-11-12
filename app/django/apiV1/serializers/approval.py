@@ -322,10 +322,16 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user if request else None
 
-        # 신규 생성(POST) 시 기안자의 보직(drafter_assignment) 존재 여부 엄격 검증
-        if not self.instance and user:
-            assignment = attrs.get('drafter_assignment')
-            if not assignment:
+        assignment = attrs.get('drafter_assignment') or (
+            self.instance.drafter_assignment if self.instance else None
+        )
+        doc_type = attrs.get('doc_type') or (
+            self.instance.doc_type if self.instance else None
+        )
+
+        # 기안자의 보직(drafter_assignment) 소유권 및 존재 여부 검증
+        if user:
+            if not self.instance and not assignment:
                 assignment = StaffAssignment.objects.filter(
                     staff__user=user, is_primary=True
                 ).first() or StaffAssignment.objects.filter(
@@ -337,6 +343,41 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {'drafter_assignment': '임직원(Staff) 보직 정보가 등록되지 않은 사용자는 전자결재 문서를 기안할 수 없습니다.'}
                     )
+
+            if assignment and not user.is_superuser:
+                expected_user_id = self.instance.drafter_id if self.instance else user.id
+                if assignment.staff.user_id != expected_user_id:
+                    raise serializers.ValidationError(
+                        {'drafter_assignment': '본인의 임직원 보직 정보만 기안 보직으로 지정할 수 있습니다.'}
+                    )
+
+            if doc_type:
+                if not self.instance and not doc_type.is_active:
+                    raise serializers.ValidationError(
+                        {'doc_type': '비활성화된 결재 서식은 기안할 수 없습니다.'}
+                    )
+                if assignment and not user.is_superuser:
+                    if doc_type.allowed_departments.exists() and (
+                        not assignment.department_id
+                        or not doc_type.allowed_departments.filter(pk=assignment.department_id).exists()
+                    ):
+                        raise serializers.ValidationError(
+                            {'doc_type': '소속 부서에서 기안할 수 없는 결재 서식입니다.'}
+                        )
+                    if doc_type.allowed_duties.exists() and (
+                        not assignment.duty_id
+                        or not doc_type.allowed_duties.filter(pk=assignment.duty_id).exists()
+                    ):
+                        raise serializers.ValidationError(
+                            {'doc_type': '현재 직책에서 기안할 수 없는 결재 서식입니다.'}
+                        )
+                    if doc_type.allowed_positions.exists() and (
+                        not assignment.position_id
+                        or not doc_type.allowed_positions.filter(pk=assignment.position_id).exists()
+                    ):
+                        raise serializers.ValidationError(
+                            {'doc_type': '현재 직급에서 기안할 수 없는 결재 서식입니다.'}
+                        )
         return attrs
 
     def create(self, validated_data):

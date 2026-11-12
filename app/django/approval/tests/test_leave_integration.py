@@ -189,3 +189,40 @@ class LeaveApprovalIntegrationTestCase(APITestCase):
         quota = StaffLeaveQuota.objects.get(pk=self.quota.pk)
         self.assertEqual(quota.used_days, Decimal('0.00'))
         self.assertEqual(quota.remaining_days, Decimal('15.00'))
+
+    def test_auto_approve_on_submit_syncs_leave_usage(self):
+        """전결권자/대표이사가 휴가 신청서 상신(submit) 시 즉시 자동 승인 경로에서도 연차 사용 내역(StaffLeaveUsage)이 정상 차감되는지 검증"""
+        from unittest.mock import patch
+
+        self.assign_drafter.duty = self.duty_ceo
+        self.assign_drafter.save(update_fields=['duty'])
+
+        doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type_leave,
+            title='대표이사/전결권자 연차 신청',
+            content={
+                'leave_type': 'ANNUAL',
+                'start_date': '2026-09-01',
+                'end_date': '2026-09-01',
+                'days_count': 1.0,
+                'reason': '개인 휴가',
+            },
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            status=ApprovalDocument.STATUS_DRAFT,
+        )
+
+        self.client.force_authenticate(user=self.user_drafter)
+        with patch('approval.tasks.generate_approval_pdf_task.delay'):
+            res = self.client.post(f'/api/v1/approval-document/{doc.id}/submit/')
+        self.assertEqual(res.status_code, 200)
+
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, ApprovalDocument.STATUS_APPROVED)
+
+        usage = StaffLeaveUsage.objects.filter(approval_doc=doc, is_cancelled=False).first()
+        self.assertIsNotNone(usage)
+        self.assertEqual(usage.deduction_days, Decimal('1.00'))
+
+        quota = StaffLeaveQuota.objects.get(pk=self.quota.pk)
+        self.assertEqual(quota.remaining_days, Decimal('14.00'))

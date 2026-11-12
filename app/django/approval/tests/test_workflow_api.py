@@ -879,3 +879,72 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user_leader)
         res_del_ok = self.client.delete(f'/api/v1/approval-delegation/{del_id}/')
         self.assertEqual(res_del_ok.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch('approval.tasks.generate_approval_pdf_task.delay')
+    def test_policy_rule_final_authority_drafter_auto_approves_on_submit(self, mock_pdf_task):
+        """전결 규정(ApprovalPolicyRule)에 의해 전결권자로 지정된 팀장이 해당 금액 범위의 문서를 기안·상신할 때 400 에러 없이 단독 자동 승인되는지 검증"""
+        from approval.models import ApprovalPolicyRule
+
+        expense_type = DocumentType.objects.create(
+            category=self.category,
+            code='EXP-RULE',
+            name='지출결의서(전결규정)',
+            final_approval_duty=None,
+        )
+        ApprovalPolicyRule.objects.create(
+            doc_type=expense_type,
+            priority=1,
+            name='100만원 이하 팀장 전결',
+            min_amount=0,
+            max_amount=1_000_000,
+            final_approval_duty=self.duty_team_leader,
+        )
+
+        doc = ApprovalDocument.objects.create(
+            doc_type=expense_type,
+            drafter=self.user_leader,
+            drafter_assignment=self.assign_leader,
+            title='팀장 50만원 소액 지출결의',
+            content={'amount': 500_000},
+            status=ApprovalDocument.STATUS_DRAFT,
+        )
+
+        self.client.force_authenticate(user=self.user_leader)
+        res = self.client.post(f'/api/v1/approval-document/{doc.id}/submit/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, ApprovalDocument.STATUS_APPROVED)
+        self.assertIsNotNone(doc.doc_number)
+        self.assertEqual(doc.steps.count(), 1)
+        self.assertEqual(doc.steps.first().status, ApprovalStep.STATUS_APPROVED)
+
+    def test_drafter_assignment_ownership_and_doc_type_restrictions(self):
+        """기안 시 타인의 보직(drafter_assignment) 도용 차단 및 서식별 허용 부서(allowed_departments) 검증"""
+        self.client.force_authenticate(user=self.user_drafter)
+
+        # 1. 타인(팀장)의 drafter_assignment를 지정하여 기안 시도 -> 400 차단
+        res_spoof = self.client.post('/api/v1/approval-document/', {
+            'doc_type': self.doc_type.id,
+            'title': '보직 도용 기안 시도',
+            'drafter_assignment': self.assign_leader.id,
+            'content': {},
+        }, format='json')
+        self.assertEqual(res_spoof.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('drafter_assignment', res_spoof.data)
+
+        # 2. 인사팀(dept_hr) 전용 서식을 개발팀(dept_dev) 직원이 기안 시도 -> 400 차단
+        hr_only_type = DocumentType.objects.create(
+            category=self.category,
+            code='HR-ONLY',
+            name='인사팀 전용 품의서',
+        )
+        hr_only_type.allowed_departments.add(self.dept_hr)
+
+        res_dept = self.client.post('/api/v1/approval-document/', {
+            'doc_type': hr_only_type.id,
+            'title': '타 부서 전용 서식 기안 시도',
+            'content': {},
+        }, format='json')
+        self.assertEqual(res_dept.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('doc_type', res_dept.data)

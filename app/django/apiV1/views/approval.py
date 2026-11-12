@@ -19,8 +19,13 @@ from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
-from approval.services import build_dynamic_approval_route, submit_document, finalize_approval, cancel_leave_approval
-from approval.services.route_builder import _get_company_ceos, _get_department_manager
+from approval.services import (
+    build_dynamic_approval_route,
+    check_drafter_auto_approval,
+    submit_document,
+    finalize_approval,
+    cancel_leave_approval,
+)
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
 
@@ -373,7 +378,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def submit(self, request, pk=None):
         """임시저장 → 상신. 조직도 또는 템플릿 기반으로 동적 결재선 생성 후 1단계 알림"""
-        document = self.get_object()
+        obj = self.get_object()
+        document = ApprovalDocument.objects.select_for_update(of=('self',)).select_related(
+            'doc_type', 'doc_type__target_doc_category', 'drafter',
+            'drafter_assignment__company', 'drafter_assignment__department',
+            'drafter_assignment__duty', 'related_inbound_letter'
+        ).get(pk=obj.pk)
+
         if document.drafter != request.user:
             return Response({'detail': '기안자만 상신할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
         if document.status not in (ApprovalDocument.STATUS_DRAFT, ApprovalDocument.STATUS_REJECTED):
@@ -400,20 +411,6 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         )
 
         if not route_steps:
-            # 기안자가 대표이사 본인인지 확인 (_get_company_ceos 기준)
-            company = assignment.company if assignment else None
-            ceo_users = _get_company_ceos(company, set()) if company else []
-            is_ceo = request.user in ceo_users or any(u.id == request.user.id for u in ceo_users)
-
-            if not is_ceo:
-                if assignment and assignment.duty and (assignment.duty.code == 'CEO' or '대표' in assignment.duty.name):
-                    is_ceo = True
-                elif StaffAssignment.objects.filter(
-                    Q(duty__code='CEO') | Q(duty__name__icontains='대표'),
-                    staff__user=request.user
-                ).exists():
-                    is_ceo = True
-
             # 연동된 공문이 있는 경우 공문의 is_solo_approval 여부 확인
             official_letter_id = (document.content or {}).get('official_letter_id')
             official_letter = None
@@ -424,21 +421,16 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 if official_letter and official_letter.is_solo_approval:
                     is_letter_solo = True
 
-            # 전결권자(현장소장, 본부장 등) 직접 기안 여부 판단
-            effective_final_duty = document.doc_type.final_approval_duty
-            drafter_duty = assignment.duty if assignment and assignment.duty else None
-            is_final_authority = False
-            if effective_final_duty and drafter_duty and drafter_duty.id == effective_final_duty.id:
-                is_final_authority = True
-            elif document.doc_type.final_dept_level and assignment and assignment.department and assignment.department.level <= document.doc_type.final_dept_level:
-                mgr_user, _ = _get_department_manager(assignment.department, set())
-                if mgr_user and mgr_user.id == request.user.id:
-                    is_final_authority = True
+            # 단독/각자 대표이사 또는 금액별 조건부 정책(ApprovalPolicyRule)을 포함한 최종 전결권자 직접 기안 판별
+            is_auto, auto_role_label = check_drafter_auto_approval(
+                document.doc_type, request.user, assignment, document.content
+            )
 
-            if is_ceo or is_letter_solo or is_final_authority:
+            if is_auto or is_letter_solo:
                 # 단독/각자 대표이사 또는 승인(전결)권자 직접 기안인 경우 → 승인된 Step 생성 후 즉시 최종 승인 처리
                 document.steps.all().delete()
-                role_label = '대표이사 승인' if is_ceo else (
+                drafter_duty = assignment.duty if assignment and assignment.duty else None
+                role_label = auto_role_label or (
                     f'{drafter_duty.name} 승인' if drafter_duty else '전결권자 승인'
                 )
                 step = ApprovalStep.objects.create(
@@ -450,16 +442,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 )
                 step.approvers.set([request.user])
 
-                document.status = ApprovalDocument.STATUS_APPROVED
                 now = timezone.now()
-                document.completed_at = now
                 document.submitted_at = now
                 document.content_hash = document.compute_hash()
-                # generate_doc_number()는 self.completed_at(Python 속성)을 사용하므로 save() 전 호출 가능
-                document.doc_number = document.generate_doc_number()
-                document.save(update_fields=[
-                    'status', 'completed_at', 'submitted_at', 'content_hash', 'doc_number'
-                ])
+                document.save(update_fields=['submitted_at', 'content_hash'])
+
+                # finalize_approval을 통해 채번, 자료실 자동 아카이빙, 휴가 연차 차감(sync_leave_approval) 일원화 처리
+                finalize_approval(document)
 
                 # 연동 수신공문 동기화
                 if document.related_inbound_letter:
@@ -481,11 +470,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.warning('공문 PDF 자동 생성 실패 (letter pk=%s): %s', official_letter.pk, e)
 
-                # 자동 아카이빙 처리
-                from approval.services.document_service import archive_to_docs
-                archive_to_docs(document)
-
-                generate_approval_pdf_task.delay(document.pk)
+                try:
+                    generate_approval_pdf_task.delay(document.pk)
+                except Exception:
+                    try:
+                        generate_approval_pdf_task(document.pk)
+                    except Exception:
+                        pass
                 serializer = ApprovalDocumentSerializer(document, context={'request': request})
                 return Response(serializer.data)
             else:
@@ -507,7 +498,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         # 1단계 결재자에게 알림
         first_step = document.steps.order_by('step_order').first()
-        notify_approvers_task.delay(document.pk, first_step.pk)
+        try:
+            notify_approvers_task.delay(document.pk, first_step.pk)
+        except Exception:
+            try:
+                notify_approvers_task(document.pk, first_step.pk)
+            except Exception:
+                pass
 
         serializer = ApprovalDocumentSerializer(document, context={'request': request})
         return Response(serializer.data)
@@ -517,7 +514,11 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def act(self, request, pk=None):
         """현재 결재 단계에서 승인 / 반려 / 의견 처리"""
-        document = self.get_object()
+        obj = self.get_object()
+        document = ApprovalDocument.objects.select_for_update(of=('self',)).select_related(
+            'doc_type', 'doc_type__target_doc_category', 'drafter', 'related_inbound_letter'
+        ).get(pk=obj.pk)
+
         if document.status != ApprovalDocument.STATUS_PENDING:
             return Response({'detail': '결재 진행 중인 문서가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -526,7 +527,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         act_data = input_ser.validated_data
 
         try:
-            current_step = document.steps.get(step_order=document.current_step)
+            current_step = document.steps.select_for_update().get(step_order=document.current_step)
         except ApprovalStep.DoesNotExist:
             return Response({'detail': '현재 결재 단계를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -535,9 +536,20 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         delegated_from = None
 
         if not is_direct_approver:
-            # 대결 권한 확인
+            # 대결 권한 확인 (다중 합의 단계에서 아직 승인/반려하지 않은 위임자를 우선 매칭)
             delegator_ids = get_active_delegator_ids(request.user)
-            delegator_match = current_step.approvers.filter(pk__in=delegator_ids).first()
+            delegator_qs = current_step.approvers.filter(pk__in=delegator_ids)
+            already_acted_ids = set(
+                current_step.actions.filter(
+                    action__in=[ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED]
+                ).values_list('approver_id', flat=True)
+            ) | set(
+                current_step.actions.filter(
+                    action__in=[ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED],
+                    delegated_from_id__isnull=False,
+                ).values_list('delegated_from_id', flat=True)
+            )
+            delegator_match = delegator_qs.exclude(pk__in=already_acted_ids).first() or delegator_qs.first()
             if delegator_match:
                 is_delegated = True
                 delegated_from = delegator_match
@@ -670,7 +682,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def cancel(self, request, pk=None):
         """기안자가 결재를 회수 (임시저장 상태로 복귀하여 수정 및 재상신 가능)"""
-        document = self.get_object()
+        obj = self.get_object()
+        document = ApprovalDocument.objects.select_for_update(of=('self',)).select_related(
+            'related_inbound_letter'
+        ).get(pk=obj.pk)
         if document.drafter != request.user and not request.user.is_superuser:
             return Response({'detail': '기안자만 회수할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
         if document.status == ApprovalDocument.STATUS_APPROVED:
@@ -780,7 +795,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if delegator_ids:
             approver_q |= Q(steps__approvers__in=delegator_ids)
 
-        qs = self.get_queryset().filter(
+        qs = self.filter_queryset(self.get_queryset()).filter(
             status=ApprovalDocument.STATUS_PENDING,
             steps__status=ApprovalStep.STATUS_PENDING,
             steps__step_order=F('current_step'),
@@ -793,7 +808,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_drafted(self, request):
         """내가 기안한 문서 목록"""
-        qs = self.get_queryset().filter(
+        qs = self.filter_queryset(self.get_queryset()).filter(
             drafter=request.user
         ).order_by('-created_at', '-id')
 
@@ -804,7 +819,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_approved(self, request):
         """내가 결재에 참여하여 최종 승인된 문서 목록 (대결 참여 승인 건 포함)"""
-        qs = self.get_queryset().filter(
+        qs = self.filter_queryset(self.get_queryset()).filter(
             status=ApprovalDocument.STATUS_APPROVED,
         ).filter(
             Q(steps__approvers=request.user) | Q(steps__actions__approver=request.user)
@@ -817,7 +832,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_observed(self, request):
         """내가 참조자로 지정된 문서 목록"""
-        qs = self.get_queryset().filter(
+        qs = self.filter_queryset(self.get_queryset()).filter(
             observers=request.user
         ).distinct().order_by('-created_at', '-id')
 
