@@ -1776,3 +1776,282 @@ class IssueSearchAPITestCase(APITestCase):
         res = self.client.get('/api/v1/issue-search/run/?q=a')
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
+
+class WorkDeepInspectionRegressionTests(APITestCase):
+    """
+    work 앱 정밀검사 7대 개선사항 회귀 검증 테스트:
+    1. PdfExportMeeting 비인증/비인가 차단(403) 및 미존재 PK 404 처리
+    2. ProjectPermission의 MeetingFile 업로드 권한 매핑 및 IssueRelation 비인가 업무 연결 차단
+    3. IssueCountByMemberView 비숫자 파라미터 400 방어, SearchViewSet 비공개 업무 댓글 은닉, ActivityLogEntry 공개 워크스페이스 조회
+    4. Issue / IssueRelation / IssueComment / NewsComment 다단계 순환 참조 방어
+    5. Workflow.old_status 다중 역할/트래커 등록 및 하위 워크스페이스 캐시 무효화
+    6. IssueProjectSerializer 비관리자 status='9' 변조 차단 및 CustomQuerySerializer 공용 전환 권한 검증
+    7. VersionViewSet 이슈 집계 annotation 및 VersionListSerializer 정합성 검증
+    """
+
+    def setUp(self):
+        self.patcher_meeting_mail = patch('work.services.work_services.MeetingService.send_meeting_mail')
+        self.patcher_issue_mail = patch('work.services.work_services.IssueService.send_issue_mail')
+        self.patcher_meeting_mail.start()
+        self.patcher_issue_mail.start()
+
+        self.admin_user = User.objects.create_superuser(
+            username='deep_admin', email='deep_admin@test.com', password='pw'
+        )
+        self.member_user = User.objects.create_user(
+            username='deep_member', email='deep_member@test.com', password='pw'
+        )
+        self.outsider_user = User.objects.create_user(
+            username='deep_outsider', email='deep_outsider@test.com', password='pw'
+        )
+        self.company = Company.objects.create(name='정밀검사건설')
+
+        self.public_ws = IssueProject.objects.create(
+            company=self.company, name='공개 워크스페이스', slug='deep-public',
+            is_public=True, creator=self.admin_user
+        )
+        self.private_ws = IssueProject.objects.create(
+            company=self.company, name='비공개 워크스페이스', slug='deep-private',
+            is_public=False, creator=self.admin_user
+        )
+
+        self.status_open = IssueStatus.objects.create(name='진행', creator=self.admin_user)
+        self.status_closed = IssueStatus.objects.create(name='완료', closed=True, creator=self.admin_user)
+        self.tracker_bug = Tracker.objects.create(name='결함', default_status=self.status_open, creator=self.admin_user)
+        self.tracker_task = Tracker.objects.create(name='작업', default_status=self.status_open, creator=self.admin_user)
+        self.priority = CodeIssuePriority.objects.create(name='보통', creator=self.admin_user)
+
+        self.perm_meeting_read, _ = Permission.objects.get_or_create(
+            code='meeting.read', defaults={'name': '회의 조회', 'module': 'meeting'}
+        )
+        self.perm_meeting_update, _ = Permission.objects.get_or_create(
+            code='meeting.update', defaults={'name': '회의 수정', 'module': 'meeting'}
+        )
+        self.perm_issue_rel, _ = Permission.objects.get_or_create(
+            code='issue.rel_manage', defaults={'name': '연결업무 관리', 'module': 'issue'}
+        )
+        self.perm_proj_update, _ = Permission.objects.get_or_create(
+            code='project.update', defaults={'name': '프로젝트 수정', 'module': 'project'}
+        )
+        self.perm_save_query, _ = Permission.objects.get_or_create(
+            code='project.save_query', defaults={'name': '검색양식 저장', 'module': 'project'}
+        )
+
+        self.role_member = Role.objects.create(name='실무자', creator=self.admin_user, issue_visible='PUB')
+        self.role_member.permissions.set([
+            self.perm_meeting_read, self.perm_meeting_update,
+            self.perm_issue_rel, self.perm_proj_update, self.perm_save_query
+        ])
+        Role.objects.get_or_create(pk=2, defaults={'name': '비회원', 'creator': self.admin_user, 'issue_visible': 'PUB'})
+
+        m = Member.objects.create(user=self.member_user, project=self.private_ws)
+        m.roles.add(self.role_member)
+        m_pub = Member.objects.create(user=self.member_user, project=self.public_ws)
+        m_pub.roles.add(self.role_member)
+
+    def tearDown(self):
+        self.patcher_meeting_mail.stop()
+        self.patcher_issue_mail.stop()
+
+    def test_1_pdf_export_meeting_security_and_404(self):
+        """1. PdfExportMeeting 비인증/비인가 403 차단 및 미존재 PK 404 반환 검증"""
+        from django.http import HttpResponse
+        meeting = Meeting.objects.create(
+            project=self.private_ws, title='비공개 회의록', creator=self.admin_user
+        )
+
+        # 비인증 요청 -> 302(로그인 리다이렉트) 또는 403
+        self.client.logout()
+        res_anon = self.client.get(f'/pdf/work/meeting/{meeting.pk}/')
+        self.assertIn(res_anon.status_code, [status.HTTP_302_FOUND, status.HTTP_403_FORBIDDEN])
+
+        # 비멤버(outsider) 요청 -> 403
+        self.client.force_login(self.outsider_user)
+        res_outsider = self.client.get(f'/pdf/work/meeting/{meeting.pk}/')
+        self.assertEqual(res_outsider.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 권한 있는 멤버 요청 -> 200
+        self.client.force_login(self.member_user)
+        with patch('work.exports.pdf.PdfExportMeeting.create_pdf_response', return_value=HttpResponse(b'%PDF-1.4')):
+            res_member = self.client.get(f'/pdf/work/meeting/{meeting.pk}/')
+            self.assertEqual(res_member.status_code, status.HTTP_200_OK)
+
+        # 존재하지 않는 PK -> 404 (500 에러 방지)
+        res_404 = self.client.get('/pdf/work/meeting/999999/')
+        self.assertEqual(res_404.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_2_meeting_file_permission_and_cross_project_issue_relation_guard(self):
+        """2. 일반 멤버의 MeetingFile 업로드 허용 및 타 비공개 워크스페이스 업무 연결 차단 검증"""
+        meeting = Meeting.objects.create(
+            project=self.private_ws, title='첨부파일 회의', creator=self.member_user
+        )
+        self.client.force_authenticate(user=self.member_user)
+        res_file = self.client.post('/api/v1/meeting-file/', {
+            'meeting': meeting.pk,
+            'file': SimpleUploadedFile('minutes.txt', b'meeting file content'),
+            'description': '회의록 첨부'
+        }, format='multipart')
+        self.assertEqual(res_file.status_code, status.HTTP_201_CREATED)
+
+        # outsider가 멤버로 속하지 않은 private_ws의 업무를 public_ws 업무에 연결 시도 -> 400 차단
+        pub_issue = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='공개 업무', start_date=timezone.now().date(), creator=self.member_user
+        )
+        secret_ws = IssueProject.objects.create(
+            company=self.company, name='타인 기밀 워크스페이스', slug='other-secret-ws',
+            is_public=False, creator=self.admin_user
+        )
+        secret_issue = Issue.objects.create(
+            project=secret_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='타인 기밀 업무', start_date=timezone.now().date(), creator=self.admin_user
+        )
+        res_rel = self.client.post('/api/v1/issue-relation/', {
+            'source': pub_issue.pk,
+            'target': secret_issue.pk
+        })
+        self.assertEqual(res_rel.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_3_rls_and_query_param_guards(self):
+        """3. IssueCountByMember 비숫자 400, 통합검색 비공개 업무 댓글 은닉, ActivityLog 공개 워크스페이스 노출 검증"""
+        self.client.force_authenticate(user=self.outsider_user)
+
+        # 비숫자 user 파라미터 -> 400
+        res_bad_user = self.client.get('/api/v1/issue-by-member/?user=not-an-int')
+        self.assertEqual(res_bad_user.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 공개 워크스페이스의 비공개 업무에 달린 일반 댓글은 outsider 통합검색에서 은닉되어야 함
+        priv_issue_in_pub = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='공개방 내 비공개업무', is_private=True,
+            start_date=timezone.now().date(), creator=self.admin_user
+        )
+        IssueComment.objects.create(
+            issue=priv_issue_in_pub, content='비공개업무특수키워드댓글', is_private=False, creator=self.admin_user
+        )
+        res_search = self.client.get(
+            '/api/v1/issue-search/run/?q=비공개업무특수키워드댓글&t=comments&attach_mode=invalid'
+        )
+        self.assertEqual(res_search.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_search.data['comments']), 0)
+
+        # 공개 워크스페이스의 공지 활동 로그는 비멤버(outsider)에게도 조회되어야 함
+        News.objects.create(project=self.public_ws, title='공개 공지사항 활동로그', author=self.admin_user)
+        res_logs = self.client.get('/api/v1/act-entry/')
+        self.assertEqual(res_logs.status_code, status.HTTP_200_OK)
+        log_results = res_logs.data.get('results', res_logs.data)
+        self.assertTrue(any('공개 공지사항 활동로그' in item['title'] for item in log_results))
+
+    def test_4_multi_step_cycle_detection(self):
+        """4. Issue, IssueRelation, IssueComment, NewsComment 다단계 순환 참조 방어 검증"""
+        i1 = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='I1', start_date=timezone.now().date(), creator=self.admin_user
+        )
+        i2 = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='I2', parent=i1, start_date=timezone.now().date(), creator=self.admin_user
+        )
+        i3 = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='I3', parent=i2, start_date=timezone.now().date(), creator=self.admin_user
+        )
+
+        # Issue 다단계 상위 순환: i1.parent = i3 (i1 -> i2 -> i3 -> i1)
+        i1.parent = i3
+        with self.assertRaises(ValidationError):
+            i1.save()
+        i1.refresh_from_db()
+
+        # IssueRelation 다단계 선후행 순환: i1 -> i2, i2 -> i3 상태에서 i3 -> i1 생성 시도
+        IssueRelation.objects.create(source=i1, target=i2, creator=self.admin_user)
+        IssueRelation.objects.create(source=i2, target=i3, creator=self.admin_user)
+        with self.assertRaises(ValidationError):
+            IssueRelation.objects.create(source=i3, target=i1, creator=self.admin_user)
+
+        # IssueComment 및 NewsComment 순환 참조
+        c1 = IssueComment.objects.create(issue=i1, content='댓글1', creator=self.admin_user)
+        c2 = IssueComment.objects.create(issue=i1, parent=c1, content='댓글2', creator=self.admin_user)
+        c1.parent = c2
+        with self.assertRaises(ValidationError):
+            c1.save()
+
+        news = News.objects.create(project=self.public_ws, title='공지', author=self.admin_user)
+        nc1 = NewsComment.objects.create(news=news, content='공지댓글1', creator=self.admin_user)
+        nc2 = NewsComment.objects.create(news=news, parent=nc1, content='공지댓글2', creator=self.admin_user)
+        nc1.parent = nc2
+        with self.assertRaises(ValidationError):
+            nc1.save()
+
+    def test_5_workflow_old_status_foreign_key_and_subproject_cache_invalidation(self):
+        """5. Workflow.old_status 다중 등록 허용 및 하위 워크스페이스 추가 시 트리 캐시 무효화 검증"""
+        from work.models.issue import Workflow
+        from apiV1.views.work.logging import get_sub_project_ids
+
+        wf1 = Workflow.objects.create(role=self.role_member, tracker=self.tracker_bug, old_status=self.status_open)
+        wf2 = Workflow.objects.create(role=self.role_member, tracker=self.tracker_task, old_status=self.status_open)
+        self.assertNotEqual(wf1.pk, wf2.pk)
+
+        # 초기 하위 프로젝트 캐시 생성
+        initial_ids = get_sub_project_ids(self.public_ws)
+        self.assertEqual(initial_ids, [self.public_ws.pk])
+
+        # 하위 워크스페이스 생성 시 캐시가 즉시 무효화되어 새 하위 워크스페이스 PK가 포함되어야 함
+        child_ws = IssueProject.objects.create(
+            company=self.company, name='하위 워크스페이스', slug='deep-child-ws',
+            parent=self.public_ws, creator=self.admin_user
+        )
+        updated_ids = get_sub_project_ids(self.public_ws)
+        self.assertIn(child_ws.pk, updated_ids)
+
+    def test_6_serializer_status_lock_and_custom_query_public_guard(self):
+        """6. 비관리자의 워크스페이스 status='9' 변조 차단 및 CustomQuery 공용 전환 권한 검증"""
+        from work.models.inform import CustomQuery
+        self.client.force_authenticate(user=self.member_user)
+
+        # 일반 멤버가 PATCH로 status='9'(잠금보관) 변경 시도 -> 400 차단
+        res_lock_bypass = self.client.patch(f'/api/v1/issue-project/{self.private_ws.slug}/', {
+            'status': '9'
+        })
+        self.assertEqual(res_lock_bypass.status_code, status.HTTP_400_BAD_REQUEST)
+        self.private_ws.refresh_from_db()
+        self.assertEqual(self.private_ws.status, '1')
+
+        # project.save_query만 있고 project.pub_query는 없는 멤버가 개인 양식을 is_public=True로 PATCH 시도 -> 400 차단
+        cq = CustomQuery.objects.create(
+            name='내 개인 양식', target_type='issue', project=self.private_ws,
+            user=self.member_user, is_public=False
+        )
+        res_pub_bypass = self.client.patch(f'/api/v1/custom-query/{cq.pk}/', {
+            'is_public': True
+        })
+        self.assertEqual(res_pub_bypass.status_code, status.HTTP_400_BAD_REQUEST)
+        cq.refresh_from_db()
+        self.assertFalse(cq.is_public)
+
+    def test_7_version_viewset_counts_and_done_ratio(self):
+        """7. VersionViewSet의 이슈 집계 annotation 기반 open_num, closed_num, total_num, done_ratio 검증"""
+        ver = Version.objects.create(project=self.public_ws, name='v2.0')
+        Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='오픈 업무', fixed_version=ver,
+            start_date=timezone.now().date(), creator=self.admin_user
+        )
+        Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_closed,
+            priority=self.priority, subject='완료 업무', fixed_version=ver,
+            start_date=timezone.now().date(), closed=timezone.now(), creator=self.admin_user
+        )
+
+        self.client.force_authenticate(user=self.member_user)
+        res = self.client.get(f'/api/v1/version/?project__slug={self.public_ws.slug}')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        results = res.data.get('results', res.data)
+        ver_data = next((v for v in results if v['pk'] == ver.pk), None)
+        self.assertIsNotNone(ver_data)
+        self.assertEqual(ver_data['total_num'], 2)
+        self.assertEqual(ver_data['open_num'], 1)
+        self.assertEqual(ver_data['closed_num'], 1)
+        self.assertEqual(ver_data['done_ratio'], 50.0)
+
+

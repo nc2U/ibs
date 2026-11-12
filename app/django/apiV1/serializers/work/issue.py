@@ -334,57 +334,80 @@ class IssueSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         project_val = self.initial_data.get('project', None)
-        if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
-            project = IssueProject.objects.get(pk=int(project_val))
-        else:
-            project = IssueProject.objects.get(slug=project_val)
+        try:
+            if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
+                project = IssueProject.objects.get(pk=int(project_val))
+            else:
+                project = IssueProject.objects.get(slug=project_val)
+        except (IssueProject.DoesNotExist, ValueError, TypeError):
+            raise serializers.ValidationError({'project': '존재하지 않는 프로젝트입니다.'})
 
         tracker_pk = self.initial_data.get('tracker', None)
         if tracker_pk:
-            tracker = Tracker.objects.get(pk=tracker_pk)
+            try:
+                tracker = Tracker.objects.get(pk=tracker_pk)
+            except (Tracker.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'tracker': '존재하지 않는 업무 유형입니다.'})
         else:
             tracker = project.trackers.first() or Tracker.objects.first()
 
         status_pk = self.initial_data.get('status', None)
         if status_pk:
-            status = IssueStatus.objects.get(pk=status_pk)
+            try:
+                status = IssueStatus.objects.get(pk=status_pk)
+            except (IssueStatus.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'status': '존재하지 않는 업무 상태입니다.'})
         else:
             status = IssueStatus.objects.filter(default=True).first() or IssueStatus.objects.first()
 
         priority_pk = self.initial_data.get('priority', None)
         if priority_pk:
-            priority = CodeIssuePriority.objects.get(pk=priority_pk)
+            try:
+                priority = CodeIssuePriority.objects.get(pk=priority_pk)
+            except (CodeIssuePriority.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'priority': '존재하지 않는 우선순위입니다.'})
         else:
             priority = CodeIssuePriority.objects.filter(default=True).first() or CodeIssuePriority.objects.first()
 
         if 'start_date' not in validated_data or not validated_data.get('start_date'):
             validated_data['start_date'] = timezone.now().date()
 
+        if status and status.closed and not validated_data.get('closed'):
+            validated_data['closed'] = timezone.localtime()
+
         meeting_val = self.initial_data.get('meeting', None)
         if meeting_val and 'meeting' not in validated_data:
             try:
                 validated_data['meeting'] = Meeting.objects.get(pk=meeting_val)
-            except Meeting.DoesNotExist:
+            except (Meeting.DoesNotExist, ValueError, TypeError):
                 pass
 
         fixed_version = self.initial_data.get('fixed_version')
         fixed_version = fixed_version if fixed_version else None
-        assigned_to = self.initial_data.get('assigned_to', None)
-        assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
+        assigned_to_val = self.initial_data.get('assigned_to', None)
+        try:
+            assigned_to = User.objects.get(pk=assigned_to_val) if assigned_to_val else None
+        except (User.DoesNotExist, ValueError, TypeError):
+            raise serializers.ValidationError({'assigned_to': '존재하지 않는 사용자입니다.'})
 
         parent_id = self.initial_data.get('parent', None)
         parent = Issue.objects.filter(pk=parent_id).first() if parent_id else None
 
-        # Pop 'watchers' from validated_data to avoid KeyError
-        issue = Issue.objects.create(project=project,
-                                     tracker=tracker,
-                                     status=status,
-                                     priority=priority,
-                                     fixed_version_id=fixed_version,
-                                     assigned_to=assigned_to,
-                                     parent=parent,
-                                     **validated_data)
+        try:
+            issue = Issue.objects.create(project=project,
+                                         tracker=tracker,
+                                         status=status,
+                                         priority=priority,
+                                         fixed_version_id=fixed_version,
+                                         assigned_to=assigned_to,
+                                         parent=parent,
+                                         **validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
+
         # Set the watchers of the instance to the list of watchers
         creator = self.context['request'].user
         profile = getattr(creator, 'profile', None)
@@ -436,25 +459,46 @@ class IssueSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if self.initial_data.get('project', None):
-            instance.project = IssueProject.objects.get(slug=self.initial_data.get('project', None))
+            project_val = self.initial_data.get('project', None)
+            try:
+                if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
+                    instance.project = IssueProject.objects.get(pk=int(project_val))
+                else:
+                    instance.project = IssueProject.objects.get(slug=project_val)
+            except (IssueProject.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'project': '존재하지 않는 프로젝트입니다.'})
         if self.initial_data.get('tracker'):
-            instance.tracker = Tracker.objects.get(pk=self.initial_data.get('tracker'))
+            try:
+                instance.tracker = Tracker.objects.get(pk=self.initial_data.get('tracker'))
+            except (Tracker.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'tracker': '존재하지 않는 업무 유형입니다.'})
         if self.initial_data.get('status'):
-            instance.status = IssueStatus.objects.get(pk=self.initial_data.get('status'))
+            try:
+                instance.status = IssueStatus.objects.get(pk=self.initial_data.get('status'))
+            except (IssueStatus.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'status': '존재하지 않는 업무 상태입니다.'})
             if instance.status.closed:
                 if not instance.closed:
                     instance.closed = timezone.localtime()
             else:
                 instance.closed = None
         if self.initial_data.get('priority'):
-            instance.priority = CodeIssuePriority.objects.get(pk=self.initial_data.get('priority'))
+            try:
+                instance.priority = CodeIssuePriority.objects.get(pk=self.initial_data.get('priority'))
+            except (CodeIssuePriority.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'priority': '존재하지 않는 우선순위입니다.'})
 
         if 'fixed_version' in self.initial_data:
             fixed_version = self.initial_data.get('fixed_version')
-            instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
+            try:
+                instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
+            except (Version.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'fixed_version': '존재하지 않는 목표 단계입니다.'})
 
         if 'parent' in self.initial_data:
             parent_id = self.initial_data.get('parent', None)
@@ -464,7 +508,10 @@ class IssueSerializer(serializers.ModelSerializer):
 
         if 'assigned_to' in self.initial_data:
             assigned_to_id = self.initial_data.get('assigned_to', None)
-            assigned_to = User.objects.get(pk=assigned_to_id) if assigned_to_id else None
+            try:
+                assigned_to = User.objects.get(pk=assigned_to_id) if assigned_to_id else None
+            except (User.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({'assigned_to': '존재하지 않는 사용자입니다.'})
             instance.assigned_to = assigned_to
             if assigned_to:
                 assignee_profile = getattr(assigned_to, 'profile', None)
@@ -515,7 +562,10 @@ class IssueSerializer(serializers.ModelSerializer):
                     name_val = new_link_names[i] if i < len(new_link_names) else ''
                     IssueLink.objects.create(issue=instance, link=str(link).strip(), name=name_val, creator=creator)
 
-        instance.save()
+        try:
+            instance.save()
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
         return instance
 
 
@@ -538,16 +588,18 @@ class IssueRelationSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         target_pk = self.initial_data.get('target', None)
         try:
             target = Issue.objects.get(pk=target_pk) if target_pk else None
-        except Issue.DoesNotExist:
+        except (Issue.DoesNotExist, ValueError, TypeError):
             raise serializers.ValidationError({'target': '존재하지 않는 업무입니다.'})
 
         source_pk = self.initial_data.get('source', None)
         try:
             source = Issue.objects.get(pk=source_pk) if source_pk else None
-        except Issue.DoesNotExist:
+        except (Issue.DoesNotExist, ValueError, TypeError):
             raise serializers.ValidationError({'source': '존재하지 않는 업무입니다.'})
 
         if not source:
@@ -558,12 +610,24 @@ class IssueRelationSerializer(serializers.ModelSerializer):
         if source == target:
             raise serializers.ValidationError("자기 자신과는 연결 관계를 맺을 수 없습니다.")
 
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from apiV1.views.work.issue import build_issue_queryset
+            accessible_qs = build_issue_queryset(user)
+            if not accessible_qs.filter(pk=source.pk).exists():
+                raise serializers.ValidationError({'source': '해당 선행 업무에 접근할 권한이 없습니다.'})
+            if not accessible_qs.filter(pk=target.pk).exists():
+                raise serializers.ValidationError({'target': '해당 후속 업무에 접근할 권한이 없습니다.'})
+
         try:
             return IssueRelation.objects.create(
                 source=source,
                 target=target,
                 delay=validated_data.get('delay')
             )
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
         except IntegrityError:
             raise serializers.ValidationError("해당 업무는 이미 등록되어 있는 연결된 업무입니다.")
 

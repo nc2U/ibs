@@ -378,7 +378,16 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         if trackers is not None:
             instance.trackers.set(trackers)
 
-        validated_data['status'] = self.initial_data.get('status', instance.status)
+        req_status = self.initial_data.get('status', instance.status)
+        if req_status != instance.status:
+            if req_status not in {'1', '2', '9'}:
+                raise serializers.ValidationError({'status': '유효하지 않은 상태 값입니다.'})
+            request = self.context.get('request')
+            user = getattr(request, 'user', None)
+            is_admin = bool(user and (user.is_superuser or getattr(user, 'work_manager', False)))
+            if (req_status == '9' or instance.status == '9') and not is_admin:
+                raise serializers.ValidationError({'status': '잠금보관 상태 변경은 관리자만 수행할 수 있습니다.'})
+            validated_data['status'] = req_status
 
         return super().update(instance, validated_data)
 
@@ -454,10 +463,16 @@ class MemberSerializer(serializers.ModelSerializer):
         fields = ('pk', 'user', 'project', 'roles', 'created', 'user_id', 'slug', 'role_ids')
 
     def create(self, validated_data):
-        slug = validated_data.pop('slug')
+        slug = validated_data.pop('slug', None)
         roles = validated_data.pop('roles', [])
+        if not slug:
+            raise serializers.ValidationError({'slug': '워크스페이스 슬러그가 필요합니다.'})
 
-        project = IssueProject.objects.get(slug=slug)
+        try:
+            project = IssueProject.objects.get(slug=slug)
+        except IssueProject.DoesNotExist:
+            raise serializers.ValidationError({'slug': '존재하지 않는 워크스페이스입니다.'})
+
         member = Member.objects.create(project=project, **validated_data)
 
         if roles:
@@ -544,14 +559,20 @@ class VersionListSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_closed_num(obj):
+        if hasattr(obj, 'annotated_closed_num'):
+            return obj.annotated_closed_num
         return obj.issues.filter(status__closed=True).count()
 
     @staticmethod
     def get_open_num(obj):
+        if hasattr(obj, 'annotated_open_num'):
+            return obj.annotated_open_num
         return obj.issues.filter(status__closed=False).count()
 
     @staticmethod
     def get_total_num(obj):
+        if hasattr(obj, 'annotated_total_num'):
+            return obj.annotated_total_num
         return obj.issues.count()
 
     def get_done_ratio(self, obj):

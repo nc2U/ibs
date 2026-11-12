@@ -76,8 +76,19 @@ class NewsComment(models.Model):
 
     def clean(self):
         super().clean()
-        if self.parent and self.news_id and self.parent.news_id != self.news_id:
-            raise ValidationError({'parent': '부모 댓글은 동일한 공지의 댓글이어야 합니다.'})
+        if self.parent:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 부모 댓글로 지정할 수 없습니다.'})
+            if self.news_id and self.parent.news_id != self.news_id:
+                raise ValidationError({'parent': '부모 댓글은 동일한 공지의 댓글이어야 합니다.'})
+            if self.pk:
+                visited = {self.pk}
+                curr = self.parent
+                while curr:
+                    if curr.pk in visited:
+                        raise ValidationError({'parent': '하위 댓글을 부모 댓글로 지정할 수 없습니다 (순환 참조).'})
+                    visited.add(curr.pk)
+                    curr = curr.parent
 
     def save(self, *args, **kwargs):
         self.clean()

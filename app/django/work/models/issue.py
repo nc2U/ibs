@@ -82,6 +82,15 @@ class Issue(models.Model):
                 errors['parent'] = '자기 자신을 상위 업무로 지정할 수 없습니다.'
             elif self.project_id and self.parent.project_id and self.parent.project_id != self.project_id:
                 errors['parent'] = '상위 업무는 동일한 워크스페이스 내의 업무여야 합니다.'
+            elif self.pk:
+                visited = {self.pk}
+                curr = self.parent
+                while curr:
+                    if curr.pk in visited:
+                        errors['parent'] = '하위 업무를 상위 업무로 지정할 수 없습니다 (순환 참조).'
+                        break
+                    visited.add(curr.pk)
+                    curr = curr.parent
 
         # 4. 범주(category) 프로젝트 일치 여부
         if self.category and self.project_id:
@@ -167,8 +176,19 @@ class IssueComment(models.Model):
 
     def clean(self):
         super().clean()
-        if self.parent and self.issue_id and self.parent.issue_id != self.issue_id:
-            raise ValidationError({'parent': '부모 댓글은 동일한 업무의 댓글이어야 합니다.'})
+        if self.parent:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 부모 댓글로 지정할 수 없습니다.'})
+            if self.issue_id and self.parent.issue_id != self.issue_id:
+                raise ValidationError({'parent': '부모 댓글은 동일한 업무의 댓글이어야 합니다.'})
+            if self.pk:
+                visited = {self.pk}
+                curr = self.parent
+                while curr:
+                    if curr.pk in visited:
+                        raise ValidationError({'parent': '하위 댓글을 부모 댓글로 지정할 수 없습니다 (순환 참조).'})
+                    visited.add(curr.pk)
+                    curr = curr.parent
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -196,13 +216,16 @@ class IssueRelation(models.Model):
         if self.source_id and self.target_id:
             if self.source_id == self.target_id:
                 raise ValidationError({'target': '선행 업무와 후속 업무는 동일한 업무일 수 없습니다.'})
-            reverse_relation = IssueRelation.objects.filter(
-                source_id=self.target_id, target_id=self.source_id
-            )
-            if self.pk:
-                reverse_relation = reverse_relation.exclude(pk=self.pk)
-            if reverse_relation.exists():
-                raise ValidationError({'target': '해당 업무와 상호 순환 참조되는 관계가 이미 존재합니다.'})
+            visited = {self.target_id}
+            curr_id = self.source_id
+            while curr_id:
+                if curr_id in visited:
+                    raise ValidationError({'target': '해당 업무와 순환 참조되는 선후행 관계가 이미 존재합니다.'})
+                visited.add(curr_id)
+                rel_qs = IssueRelation.objects.filter(target_id=curr_id)
+                if self.pk:
+                    rel_qs = rel_qs.exclude(pk=self.pk)
+                curr_id = rel_qs.values_list('source_id', flat=True).first()
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -294,8 +317,8 @@ class IssueCategory(models.Model):
 class Workflow(models.Model):
     role = models.ForeignKey('work.Role', on_delete=models.CASCADE, verbose_name='역할')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, verbose_name='업무 유형')
-    old_status = models.OneToOneField(IssueStatus, on_delete=models.CASCADE, verbose_name='업무 상태',
-                                      related_name='each_status')
+    old_status = models.ForeignKey(IssueStatus, on_delete=models.CASCADE, verbose_name='업무 상태',
+                                   related_name='each_status')
     new_statuses = models.ManyToManyField(IssueStatus, verbose_name='허용 업무 상태', blank=True)
 
     def __str__(self):

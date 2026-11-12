@@ -1,4 +1,5 @@
 import html
+from django.core.cache import cache
 from django.utils.html import strip_tags
 from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
@@ -7,7 +8,38 @@ from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.models.meeting import Meeting
+from work.models.project import IssueProject
 from work.services.work_services import MeetingService, IssueService
+
+
+def _invalidate_project_tree_cache(project):
+    """워크스페이스 계층 변경 시 하위 프로젝트 ID 캐시 무효화"""
+    visited = set()
+    curr = project
+    while curr and curr.pk and curr.pk not in visited:
+        visited.add(curr.pk)
+        cache.delete(f"filter:sub_projects:{curr.pk}")
+        curr = curr.parent
+
+
+@receiver(pre_save, sender=IssueProject)
+def issue_project_track_parent(sender, instance, **kwargs):
+    if instance.pk:
+        old_parent_id = IssueProject.objects.filter(pk=instance.pk).values_list('parent_id', flat=True).first()
+        if old_parent_id and old_parent_id != instance.parent_id:
+            old_parent = IssueProject.objects.filter(pk=old_parent_id).first()
+            if old_parent:
+                _invalidate_project_tree_cache(old_parent)
+
+
+@receiver(post_save, sender=IssueProject)
+def issue_project_clear_tree_cache_on_save(sender, instance, **kwargs):
+    _invalidate_project_tree_cache(instance)
+
+
+@receiver(pre_delete, sender=IssueProject)
+def issue_project_clear_tree_cache_on_delete(sender, instance, **kwargs):
+    _invalidate_project_tree_cache(instance)
 
 
 @receiver(pre_save, sender=Meeting)

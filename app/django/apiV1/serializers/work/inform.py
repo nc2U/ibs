@@ -122,36 +122,44 @@ class CustomQuerySerializer(serializers.ModelSerializer):
     def validate_description(self, value):
         return value or ''
 
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
+    def _check_query_permissions(self, user, project, is_public):
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return
+        if project:
+            user_perms = project.get_user_permissions(user)
+        else:
+            from work.models.project import Role
+            user_perms = list(
+                Role.objects.filter(
+                    projects__members__user=user
+                ).filter(
+                    permissions__code__in=['project.save_query', 'project.pub_query']
+                ).values_list('permissions__code', flat=True)
+            )
+            try:
+                role2 = Role.objects.prefetch_related('permissions').get(pk=2)
+                user_perms.extend(role2.permissions.values_list('code', flat=True))
+            except Role.DoesNotExist:
+                pass
 
-        # 공용 생성 검증: is_public이 True인 경우 권한 검사
+        if is_public and 'project.pub_query' not in user_perms:
+            raise serializers.ValidationError({"is_public": "공용 검색양식을 생성/설정할 권한이 없습니다."})
+        if not is_public and 'project.save_query' not in user_perms:
+            raise serializers.ValidationError({"non_field_errors": "검색양식을 저장할 권한이 없습니다."})
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
         is_public = validated_data.get('is_public', False)
         project = validated_data.get('project')
-        user = self.context['request'].user
-
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if project:
-                user_perms = project.get_user_permissions(user)
-            else:
-                from work.models.project import Role
-                user_perms = list(
-                    Role.objects.filter(
-                        projects__members__user=user
-                    ).filter(
-                        permissions__code__in=['project.save_query', 'project.pub_query']
-                    ).values_list('permissions__code', flat=True)
-                )
-                try:
-                    role2 = Role.objects.prefetch_related('permissions').get(pk=2)
-                    user_perms.extend(role2.permissions.values_list('code', flat=True))
-                except Role.DoesNotExist:
-                    pass
-
-            if is_public and 'project.pub_query' not in user_perms:
-                raise serializers.ValidationError({"is_public": "공용 검색양식을 생성할 권한이 없습니다."})
-            if not is_public and 'project.save_query' not in user_perms:
-                raise serializers.ValidationError({"non_field_errors": "검색양식을 저장할 권한이 없습니다."})
-
+        self._check_query_permissions(user, project, is_public)
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        is_public = validated_data.get('is_public', instance.is_public)
+        project = validated_data.get('project', instance.project)
+        if is_public != instance.is_public or 'project' in validated_data:
+            self._check_query_permissions(user, project, is_public)
+        return super().update(instance, validated_data)
 

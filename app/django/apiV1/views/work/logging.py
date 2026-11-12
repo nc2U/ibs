@@ -83,51 +83,20 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             return queryset.select_related('project', 'creator')
 
         # 2. 일반 유저는 본인이 소속되었거나 공개 프로젝트의 활동만 조회 가능
-        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+        member_all_project_ids = list(
+            Member.objects.filter(user=user).values_list('project_id', flat=True)
+        )
+        base_filter = Q(project__is_public=True) | Q(project_id__in=member_all_project_ids)
 
-        member_pub_pids = []
-        member_pri_pids = []
-        member_all_project_ids = []
+        # 3. 업무(sort='1') 및 의견(sort='2') 로그에 대한 비공개/가시성 접근 제한
+        from apiV1.views.work.issue import build_issue_queryset
+        accessible_issue_ids = build_issue_queryset(user).values_list('pk', flat=True)
 
-        for m in user_members:
-            member_all_project_ids.append(m.project_id)
-            roles = m.roles.all()
-            best_issue_visible = 'NOP'
-            visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
-            for role in roles:
-                if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
-                    best_issue_visible = role.issue_visible
-
-            if best_issue_visible == 'PUB':
-                member_pub_pids.append(m.project_id)
-            elif best_issue_visible == 'PRI':
-                member_pri_pids.append(m.project_id)
-
-        base_filter = Q(project_id__in=member_all_project_ids)
-
-        # 업무 및 의견 로그에 대한 비공개 이슈 접근 제한
-        inaccessible_issue_ids = set()
-        if member_pub_pids:
-            from work.models.issue import Issue
-            inaccessible_issue_ids.update(
-                Issue.objects.filter(project_id__in=member_pub_pids, is_private=True)
-                .exclude(Q(assigned_to=user) | Q(creator=user))
-                .values_list('pk', flat=True)
-            )
-        if member_pri_pids:
-            from work.models.issue import Issue
-            inaccessible_issue_ids.update(
-                Issue.objects.filter(project_id__in=member_pri_pids)
-                .exclude(Q(assigned_to=user) | Q(creator=user))
-                .values_list('pk', flat=True)
-            )
-
-        final_qs = queryset.filter(base_filter)
-        if inaccessible_issue_ids:
-            final_qs = final_qs.exclude(
-                (Q(sort='1') & Q(target_id__in=inaccessible_issue_ids)) |
-                (Q(sort='2') & Q(parent_id__in=inaccessible_issue_ids))
-            )
+        final_qs = queryset.filter(base_filter).filter(
+            ~Q(sort__in=['1', '2']) |
+            (Q(sort='1') & Q(target_id__in=accessible_issue_ids)) |
+            (Q(sort='2') & Q(parent_id__in=accessible_issue_ids))
+        )
 
         return final_qs.select_related('project', 'creator')
 
@@ -142,68 +111,30 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """IssueLogEntry 필터링: 해당 사용자가 접근 권한이 있는 업무의 로그만 조회 가능"""
         user = self.request.user
-        queryset = self.queryset.select_related('issue__project', 'comment', 'creator')
+        queryset = self.queryset.exclude(issue__project__status='9').select_related('issue__project', 'comment', 'creator')
 
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
+        from apiV1.views.work.issue import build_issue_queryset
+        accessible_issues = build_issue_queryset(user)
+
         user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
-
-        member_all_pids = []
-        member_pub_pids = []
-        member_pri_pids = []
-        member_all_project_ids = []
-        private_comment_read_pids = []
-
-        for m in user_members:
-            member_all_project_ids.append(m.project_id)
-            roles = m.roles.all()
-            best_issue_visible = 'NOP'
-            visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
-            has_private_comment_read = False
-            for role in roles:
-                if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
-                    best_issue_visible = role.issue_visible
-                for perm in role.permissions.all():
-                    if perm.code == 'issue.private_comment_read':
-                        has_private_comment_read = True
-
-            if best_issue_visible == 'ALL':
-                member_all_pids.append(m.project_id)
-            elif best_issue_visible == 'PUB':
-                member_pub_pids.append(m.project_id)
-            elif best_issue_visible == 'PRI':
-                member_pri_pids.append(m.project_id)
-
-            if has_private_comment_read:
-                private_comment_read_pids.append(m.project_id)
-
-        try:
-            non_member_visible = Role.objects.get(pk=2).issue_visible
-        except Role.DoesNotExist:
-            non_member_visible = 'NOP'
-
-        allowed_issues_filter = Q(issue__creator=user) | Q(issue__assigned_to=user)
-
-        if member_all_pids:
-            allowed_issues_filter |= Q(issue__project_id__in=member_all_pids)
-
-        if member_pub_pids:
-            allowed_issues_filter |= Q(
-                issue__project_id__in=member_pub_pids,
-                issue__is_private=False,
+        private_comment_read_pids = [
+            m.project_id
+            for m in user_members
+            if any(
+                perm.code == 'issue.private_comment_read'
+                for role in m.roles.all()
+                for perm in role.permissions.all()
             )
+        ]
 
-        if non_member_visible == 'ALL':
-            allowed_issues_filter |= Q(issue__project__is_public=True)
-        elif non_member_visible == 'PUB':
-            allowed_issues_filter |= Q(issue__project__is_public=True, issue__is_private=False)
-
-        # 4. 비공개 댓글 열람 가드 조건 빌드 (Method D)
+        # 비공개 댓글 열람 가드 조건 빌드 (Method D)
         comment_visibility_filter = (Q(comment__isnull=True)
                                      | Q(comment__is_private=False)
                                      | Q(comment__creator=user))
         if private_comment_read_pids:
             comment_visibility_filter |= Q(issue__project_id__in=private_comment_read_pids)
 
-        return queryset.filter(allowed_issues_filter).filter(comment_visibility_filter).distinct()
+        return queryset.filter(issue__in=accessible_issues).filter(comment_visibility_filter).distinct()

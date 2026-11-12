@@ -28,15 +28,20 @@ class IssueService:
     @staticmethod
     def track_changes(instance):
         """이슈 저장 전 변경사항 추적"""
+        fields_to_track = [
+            'project', 'tracker', 'status', 'priority', 'subject',
+            'description', 'category', 'fixed_version', 'assigned_to',
+            'parent', 'is_private', 'expected_duration',
+            'start_date', 'due_date', 'done_ratio', 'closed'
+        ]
+        for field in fields_to_track:
+            old_attr = f'old_{field}'
+            if hasattr(instance, old_attr):
+                delattr(instance, old_attr)
+
         if instance.pk:
             try:
                 old_instance = Issue.objects.get(pk=instance.pk)
-                fields_to_track = [
-                    'project', 'tracker', 'status', 'priority', 'subject',
-                    'description', 'category', 'fixed_version', 'assigned_to',
-                    'parent', 'is_private', 'expected_duration',
-                    'start_date', 'due_date', 'done_ratio', 'closed'
-                ]
                 for field in fields_to_track:
                     old_val = getattr(old_instance, field)
                     new_val = getattr(instance, field)
@@ -162,6 +167,12 @@ class IssueService:
                 if hasattr(instance, 'old_assigned_to'):
                     old_name = instance.old_assigned_to.username if instance.old_assigned_to else None
                     IssueService.send_issue_mail(instance, user, "reassign", None, old_name)
+
+        # 임시 변경 추적 속성 정리 (동일 인스턴스 재저장 시 중복 로깅 방지)
+        for field in tracked_fields:
+            old_attr = f'old_{field}'
+            if hasattr(instance, old_attr):
+                delattr(instance, old_attr)
 
     @staticmethod
     def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):

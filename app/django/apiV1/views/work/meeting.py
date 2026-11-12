@@ -257,15 +257,18 @@ class MeetingFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(meeting__project__status='9')
 
         # 1. 슈퍼유저나 work_manager는 전체 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
             base_qs = queryset
         else:
-            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 회의 파일만 조회
+            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트 OR 회의 작성자/참석자의 회의 파일만 조회
             base_qs = queryset.filter(
-                Q(meeting__project__is_public=True) | Q(meeting__project__members__user=user)
+                Q(meeting__project__is_public=True)
+                | Q(meeting__project__members__user=user)
+                | Q(meeting__creator=user)
+                | Q(meeting__attendees=user)
             ).distinct()
 
         # 3. 성능 최적화

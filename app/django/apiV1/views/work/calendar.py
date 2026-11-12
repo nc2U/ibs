@@ -80,13 +80,16 @@ class CalendarViewSet(viewsets.ViewSet):
 
         # ── 2. Meeting 쿼리셋 ──────────────────────────────────────────────
         if event_type in ('all', 'meeting'):
-            meeting_qs = Meeting.objects.all()
+            meeting_qs = Meeting.objects.exclude(project__status='9')
             if project_slug:
                 meeting_qs = meeting_qs.filter(project__slug=project_slug)
 
             if not is_admin:
                 meeting_qs = meeting_qs.filter(
-                    Q(project__is_public=True) | Q(project__members__user=user)
+                    Q(project__is_public=True)
+                    | Q(project__members__user=user)
+                    | Q(creator=user)
+                    | Q(attendees=user)
                 ).distinct()
 
             # 회의 전용 검색조건

@@ -602,14 +602,20 @@ class IssueCountByMemberView(APIView):
     @staticmethod
     def get(request, *args, **kwargs):
         user_param = request.query_params.get('user', None)
-        user = user_param if user_param else request.user
+        if user_param is not None and str(user_param).strip() != '':
+            if not str(user_param).isdigit():
+                return Response({'user': '유효한 사용자 ID가 아닙니다.'}, status=400)
+            target_user = int(user_param)
+        else:
+            target_user = request.user
 
-        # Count issues using a single aggregate query (사용중인 프로젝트 project__status='1' 기준)
-        counts = Issue.objects.filter(project__status='1').aggregate(
-            open_charged=Count('id', filter=Q(assigned_to=user, status__closed=False)),
-            closed_charged=Count('id', filter=Q(assigned_to=user, status__closed=True)),
-            open_created=Count('id', filter=Q(creator=user, status__closed=False)),
-            closed_created=Count('id', filter=Q(creator=user, status__closed=True)),
+        # Count issues using a single aggregate query (사용중인 프로젝트 project__status='1' 및 RLS 기준)
+        base_qs = build_issue_queryset(request.user, Issue.objects.filter(project__status='1'))
+        counts = base_qs.aggregate(
+            open_charged=Count('id', filter=Q(assigned_to=target_user, status__closed=False)),
+            closed_charged=Count('id', filter=Q(assigned_to=target_user, status__closed=True)),
+            open_created=Count('id', filter=Q(creator=target_user, status__closed=False)),
+            closed_created=Count('id', filter=Q(creator=target_user, status__closed=True)),
         )
         open_charged = counts['open_charged']
         closed_charged = counts['closed_charged']
@@ -651,7 +657,13 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset().select_related('source', 'target').order_by('id')
+        queryset = (
+            super().get_queryset()
+            .exclude(source__project__status='9')
+            .exclude(target__project__status='9')
+            .select_related('source', 'target')
+            .order_by('id')
+        )
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         accessible_issues = build_issue_queryset(user)
@@ -683,7 +695,7 @@ class IssueFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset().select_related('issue', 'creator').order_by('id')
+        queryset = super().get_queryset().exclude(issue__project__status='9').select_related('issue', 'creator').order_by('id')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         accessible_issues = build_issue_queryset(user)
@@ -714,75 +726,42 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = IssueComment.objects.all().select_related('issue')
+        queryset = IssueComment.objects.exclude(issue__project__status='9').select_related('issue__project', 'creator')
 
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        # 1. 사용자의 멤버 프로젝트들을 가져와 권한 수준에 따라 분류
-        from work.models.project import Member
+        # 1. 부모 업무(Issue) 가시성 필터링 (build_issue_queryset 재사용으로 완벽한 일관성 보장)
+        accessible_issues = build_issue_queryset(user)
+
+        # 2. 비공개 댓글 가시성에 따른 필터 조건 (comment_q)
+        from work.models.project import Member, Role
         user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
+        private_comment_read_pids = [
+            member.project_id
+            for member in user_members
+            if any(
+                perm.code == 'issue.private_comment_read'
+                for role in member.roles.all()
+                for perm in role.permissions.all()
+            )
+        ]
 
-        member_all_pids = []
-        member_pub_pids = []
-        private_comment_read_pids = []
-
-        issue_visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
-
-        for member in user_members:
-            # (A) issue_visible 수준 판별
-            best_visible = 'NOP'
-            has_private_read = False
-
-            for role in member.roles.all():
-                if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
-                    best_visible = role.issue_visible
-
-                for perm in role.permissions.all():
-                    if perm.code == 'issue.private_comment_read':
-                        has_private_read = True
-
-            if best_visible == 'ALL':
-                member_all_pids.append(member.project_id)
-            elif best_visible == 'PUB':
-                member_pub_pids.append(member.project_id)
-
-            if has_private_read:
-                private_comment_read_pids.append(member.project_id)
-
-        # 2. 비회원 역할(pk=2) 정보 가져오기
-        from work.models.project import Role
         try:
             non_member_role = Role.objects.prefetch_related('permissions').get(pk=2)
-            non_member_visible = non_member_role.issue_visible
             non_member_private_read = any(
-                perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all())
+                perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all()
+            )
         except Role.DoesNotExist:
-            non_member_visible = 'NOP'
             non_member_private_read = False
 
-        # 3. 부모 업무(Issue) 가시성에 따른 필터 조건 (issue_q)
-        issue_q = Q(issue__creator=user) | Q(issue__assigned_to=user)
-
-        if member_all_pids:
-            issue_q |= Q(issue__project_id__in=member_all_pids)
-        if member_pub_pids:
-            issue_q |= Q(issue__project_id__in=member_pub_pids, issue__is_private=False)
-
-        if non_member_visible == 'ALL':
-            issue_q |= Q(issue__project__is_public=True)
-        elif non_member_visible == 'PUB':
-            issue_q |= Q(issue__project__is_public=True, issue__is_private=False)
-
-        # 4. 비공개 댓글 가시성에 따른 필터 조건 (comment_q)
         comment_q = Q(is_private=False) | Q(creator=user)
-
         if private_comment_read_pids:
             comment_q |= Q(issue__project_id__in=private_comment_read_pids)
         if non_member_private_read:
             comment_q |= Q(issue__project__is_public=True)
 
-        return queryset.filter(issue_q & comment_q).distinct()
+        return queryset.filter(issue__in=accessible_issues).filter(comment_q).distinct()
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -807,7 +786,7 @@ class IssueCategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset().select_related('project', 'assigned_to')
+        queryset = super().get_queryset().exclude(project__status='9').select_related('project', 'assigned_to')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         return queryset.filter(
@@ -830,10 +809,12 @@ class IssueCategoryViewSet(viewsets.ModelViewSet):
 class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
     serializer_class = IssueCountByTrackerSerializer
+    permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('projects',)
 
     def get_queryset(self):
+        user = self.request.user
         qs = super().get_queryset()
         project_param = self.request.query_params.get('projects')
         filter_kwargs = {}
@@ -847,6 +828,9 @@ class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
                 filter_kwargs['issue__project__slug__in'] = slugs
             except IssueProject.DoesNotExist:
                 pass
+
+        if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            filter_kwargs['issue__in'] = build_issue_queryset(user)
 
         return qs.annotate(
             open_issues_count=Count('issue', filter=Q(issue__closed__isnull=True, **filter_kwargs), distinct=True),

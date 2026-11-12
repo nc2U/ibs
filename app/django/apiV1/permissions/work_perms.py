@@ -21,7 +21,7 @@ class ProjectPermission(permissions.BasePermission):
                     return slug
 
                 # 이슈 ID를 기반으로 프로젝트 역추적
-                issue_id = source.get('issue') or source.get('source') or source.get('parent')
+                issue_id = source.get('issue') or source.get('source')
                 if issue_id:
                     from work.models.issue import Issue
                     try:
@@ -32,6 +32,20 @@ class ProjectPermission(permissions.BasePermission):
                             request._cached_project = project
                         return project.slug
                     except (Issue.DoesNotExist, ValueError, TypeError):
+                        pass
+
+                # 회의록 ID를 기반으로 프로젝트 역추적
+                meeting_id = source.get('meeting')
+                if meeting_id:
+                    from work.models.meeting import Meeting
+                    try:
+                        meeting = Meeting.objects.select_related('project').get(pk=meeting_id)
+                        project = meeting.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (Meeting.DoesNotExist, ValueError, TypeError):
                         pass
 
                 # 게시글/게시판 ID를 기반으로 프로젝트 역추적
@@ -87,6 +101,20 @@ class ProjectPermission(permissions.BasePermission):
                             request._cached_project = project
                         return project.slug
                     except (Document.DoesNotExist, ValueError, TypeError):
+                        pass
+
+                # 상위 업무(parent) ID를 기반으로 프로젝트 역추적
+                parent_id = source.get('parent')
+                if parent_id:
+                    from work.models.issue import Issue
+                    try:
+                        issue = Issue.objects.select_related('project').get(pk=parent_id)
+                        project = issue.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (Issue.DoesNotExist, ValueError, TypeError):
                         pass
         return None
 
@@ -310,14 +338,15 @@ class MeetingPermission(ProjectPermission):
         # 3. 수정 및 삭제 관련 로직
         if view.action in ['update', 'partial_update', 'destroy']:
             user = request.user
-            project = getattr(obj, 'project', None)
+            project = self.extract_project(obj)
             if not project:
                 return False
 
             user_perms = project.get_user_permissions(user)
+            meeting_obj = obj.meeting if hasattr(obj, 'meeting') else obj
 
             # (A) 회의록이 확정(is_confirmed)된 상태인 경우 수정/삭제 제한
-            if obj.is_confirmed:
+            if getattr(meeting_obj, 'is_confirmed', False):
                 if user.is_superuser or getattr(user, 'work_manager', False) or 'meeting.edit_confirmed' in user_perms:
                     return True
                 return False
@@ -329,7 +358,12 @@ class MeetingPermission(ProjectPermission):
                     return True
                 if 'meeting.own_update' in user_perms:
                     # 개선: filter().exists()를 사용해 M2M 전체 인메모리 로드 방지
-                    if (user == obj.creator) or obj.attendees.filter(pk=user.pk).exists():
+                    is_owner_or_attendee = (
+                        user == getattr(obj, 'creator', None)
+                        or user == getattr(meeting_obj, 'creator', None)
+                        or (hasattr(meeting_obj, 'attendees') and meeting_obj.attendees.filter(pk=user.pk).exists())
+                    )
+                    if is_owner_or_attendee:
                         return True
                 return False
 
@@ -614,9 +648,9 @@ class NewsPermission(ProjectPermission):
 
         # 수정 및 삭제 로직
         if view.action in ['update', 'partial_update', 'destroy', 'create']:
-            from work.models import News, NewsComment  # 모델 임포트
+            from work.models import News, NewsFile, NewsComment  # 모델 임포트
 
-            if isinstance(obj, News):
+            if isinstance(obj, (News, NewsFile)):
                 return 'news.manage' in user_perms
             elif isinstance(obj, NewsComment):
                 return 'news.comment' in user_perms

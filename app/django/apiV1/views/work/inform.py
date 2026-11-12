@@ -87,7 +87,7 @@ class NewsFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(news__project__status='9')
 
         # 1. 슈퍼유저나 work_manager는 전체 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
@@ -126,7 +126,7 @@ class NewsCommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(news__project__status='9')
 
         # 1. 슈퍼유저나 work_manager는 전체 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
@@ -229,15 +229,16 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_comments(user, q, scope, slug):
+        from apiV1.views.work.issue import build_issue_queryset
+
         qs = IssueComment.objects.filter(
             content__icontains=q,
             issue__project__status='1',
         ).select_related('issue__project', 'creator')
 
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(
-                Q(issue__project__is_public=True) | Q(issue__project__members__user=user)
-            ).filter(
+            accessible_issues = build_issue_queryset(user)
+            qs = qs.filter(issue__in=accessible_issues).filter(
                 Q(is_private=False) | Q(creator=user)
             ).distinct()
         else:
@@ -257,9 +258,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            if attach_mode == '1':
-                q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
-            elif attach_mode == '2':
+            if attach_mode == '2':
                 q_expr = (
                         Q(title__icontains=q) |
                         Q(agenda__icontains=q) |
@@ -269,11 +268,16 @@ class SearchViewSet(viewsets.ModelViewSet):
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
+            else:
+                q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
 
-        qs = Meeting.objects.filter(q_expr).select_related('project', 'creator')
+        qs = Meeting.objects.exclude(project__status='9').filter(q_expr).select_related('project', 'creator')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(
-                Q(project__is_public=True) | Q(project__members__user=user)
+                Q(project__is_public=True)
+                | Q(project__members__user=user)
+                | Q(creator=user)
+                | Q(attendees=user)
             ).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
@@ -289,9 +293,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            if attach_mode == '1':
-                q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
-            elif attach_mode == '2':
+            if attach_mode == '2':
                 q_expr = (
                         Q(title__icontains=q) |
                         Q(summary__icontains=q) |
@@ -301,8 +303,10 @@ class SearchViewSet(viewsets.ModelViewSet):
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
+            else:
+                q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
 
-        qs = News.objects.filter(q_expr).select_related('project', 'author')
+        qs = News.objects.exclude(project__status='9').filter(q_expr).select_related('project', 'author')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(
                 Q(project__is_public=True) | Q(project__members__user=user)
@@ -321,9 +325,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            if attach_mode == '1':
-                q_expr = Q(title__icontains=q) | Q(description__icontains=q)
-            elif attach_mode == '2':
+            if attach_mode == '2':
                 q_expr = (
                         Q(title__icontains=q) |
                         Q(description__icontains=q) |
@@ -339,6 +341,8 @@ class SearchViewSet(viewsets.ModelViewSet):
                         Q(images__image_name__icontains=q) |
                         Q(links__link__icontains=q)
                 )
+            else:
+                q_expr = Q(title__icontains=q) | Q(description__icontains=q)
 
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
         qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
@@ -377,9 +381,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            if attach_mode == '1':
-                q_expr = Q(title__icontains=q) | Q(content__icontains=q)
-            elif attach_mode == '2':
+            if attach_mode == '2':
                 q_expr = (
                         Q(title__icontains=q) |
                         Q(content__icontains=q) |
@@ -388,6 +390,8 @@ class SearchViewSet(viewsets.ModelViewSet):
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(images__image_name__icontains=q)
+            else:
+                q_expr = Q(title__icontains=q) | Q(content__icontains=q)
 
         # 소프트 딜리트 필터, 검색 가능 게시판(forum__search_able=True), 프로젝트 활성 상태(status='1')
         qs = Post.objects.filter(

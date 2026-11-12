@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db import models
+from django.db import connection, models
 
 from work.models import News
 from work.models.issue import IssueComment, Issue
@@ -45,11 +45,15 @@ class ActivityLogEntry(models.Model):
 class SequentialIntegerField(models.IntegerField):
     def pre_save(self, model_instance, add):
         if add:
+            if getattr(model_instance, 'issue_id', None) and connection.in_atomic_block:
+                Issue.objects.select_for_update(of=('self',)).filter(
+                    pk=model_instance.issue_id
+                ).values_list('pk', flat=True).first()
             # Get the maximum value of the sequential field for the current issue
-            max_value = \
-                model_instance.__class__.objects.filter(issue=model_instance.issue).aggregate(models.Max(self.attname))[
-                    f'{self.attname}__max'
-                ]
+            max_value = (
+                model_instance.__class__.objects.filter(issue=model_instance.issue)
+                .aggregate(models.Max(self.attname))[f'{self.attname}__max']
+            )
             # Increment the maximum value by 1 if it's not None, else start from 1
             value = (max_value or 0) + 1
             setattr(model_instance, self.attname, value)

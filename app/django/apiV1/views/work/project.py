@@ -517,14 +517,14 @@ class VersionViewSet(viewsets.ModelViewSet):
         project_slug = self.request.query_params.get('project__slug')
 
         # 기본 쿼리셋
-        queryset = Version.objects.all()
+        queryset = Version.objects.exclude(project__status='9')
 
         # 1. 특정 워크스페이스 기준 조회가 요청된 경우
         if project_slug:
             try:
                 project = IssueProject.objects.get(slug=project_slug)
                 # 구현한 VersionManager 사용
-                base_qs = Version.objects.accessible_from(project)
+                base_qs = Version.objects.accessible_from(project).exclude(project__status='9')
 
                 # [보안 복원] 관리자가 아닌 경우, 접근 가능한 워크스페이스의 버전만 필터링
                 if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -543,8 +543,13 @@ class VersionViewSet(viewsets.ModelViewSet):
                     Q(project__is_public=True) | Q(project__members__user=user)
                 ).distinct()
 
-        # 3. 성능 최적화
-        return base_qs.select_related('project').prefetch_related('issues__tracker', 'issues__project')
+        # 3. 성능 최적화 (Count annotation으로 버전별 N+1 쿼리 제거)
+        from django.db.models import Count
+        return base_qs.select_related('project').annotate(
+            annotated_total_num=Count('issues', distinct=True),
+            annotated_open_num=Count('issues', filter=Q(issues__status__closed=False), distinct=True),
+            annotated_closed_num=Count('issues', filter=Q(issues__status__closed=True), distinct=True),
+        ).prefetch_related('issues__tracker', 'issues__project').order_by('-effective_date', '-id')
 
     @property
     def required_permission(self):
