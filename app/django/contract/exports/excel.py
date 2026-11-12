@@ -7,6 +7,7 @@ import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Max, OuterRef, Subquery, Sum
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
@@ -57,11 +58,13 @@ class ExportContracts(ContractExportMixin):
         if err_response:
             return err_response
 
-        # 컬럼 파라미터 처리 (누락되거나 형식 오류 시 기본 컬럼 1~14 적용하여 500 방지)
+        # 컬럼 파라미터 처리 (누락되거나 형식 오류/범위 밖 인덱스 시 기본 컬럼 1~14 적용하여 500 방지)
         col_param = request.GET.get('col')
         if col_param:
             try:
-                cols = sorted(list(map(int, col_param.split('-'))))
+                cols = sorted([n for n in map(int, col_param.split('-')) if 1 <= n <= 28])
+                if not cols:
+                    cols = list(range(1, 15))
             except (ValueError, TypeError):
                 cols = list(range(1, 15))
         else:
@@ -212,7 +215,13 @@ class ExportContracts(ContractExportMixin):
         order_list = ['-created', 'created', '-contractor__contract_date',
                       'contractor__contract_date', '-serial_number',
                       'serial_number', '-contractor__name', 'contractor__name']
-        queryset = queryset.order_by(order_list[int(order_qry)]) if order_qry else queryset
+        if order_qry is not None and order_qry != '':
+            try:
+                order_idx = int(order_qry)
+                if 0 <= order_idx < len(order_list):
+                    queryset = queryset.order_by(order_list[order_idx])
+            except (ValueError, TypeError):
+                pass
 
         # ----------------- get_queryset finish ----------------- #
         # Use annotations to get current address fields
@@ -266,7 +275,7 @@ class ExportContracts(ContractExportMixin):
 
         # Write body
         for col_num, title in enumerate(titles):
-            if title in ('생년월일', f'{t_name}일자'):
+            if title in ('생년월일', f'가입{t_name}일', '공급계약일'):
                 is_date.append(col_num)
             if title == '등록상태':
                 reg_col = col_num
@@ -295,6 +304,7 @@ class ExportContracts(ContractExportMixin):
         fmt_currency = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'right', 'num_format': 41})
         fmt_left = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'left', 'num_format': '@'})
         fmt_date = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'center', 'num_format': 'yyyy-mm-dd'})
+        fmt_center_text = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'center', 'num_format': '@'})
 
         for i, row in enumerate(data):
             row_num += 1
@@ -313,8 +323,10 @@ class ExportContracts(ContractExportMixin):
                     bf = fmt_currency
                 elif col_num in is_left:
                     bf = fmt_left
-                else:
+                elif col_num in is_date:
                     bf = fmt_date
+                else:
+                    bf = fmt_center_text
 
                 # 인가 여부 데이터 치환
                 cell_value = quali_str.get(cell_data, '') if reg_col == col_num else cell_data
@@ -470,7 +482,7 @@ class ExportReleases(ContractExportMixin):
         # title_list
         header_src = [[],
                       ['해지자', 'contractor__name', 10],
-                      ['해지일련번호', 'contractor__contract__serial_number', 30],
+                      ['해지일련번호', 'serial_number_resolved', 30],
                       ['현재상태', 'status', 12],
                       ['환불(예정)금액', 'refund_amount', 15],
                       ['환불 은행', 'refund_account_bank', 15],
@@ -528,7 +540,12 @@ class ExportReleases(ContractExportMixin):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
-        queryset = ContractorRelease.objects.filter(project=project)
+        queryset = ContractorRelease.objects.filter(project=project).annotate(
+            serial_number_resolved=Coalesce(
+                'contractor__contract__serial_number',
+                'contractor__prev_contract__serial_number'
+            )
+        )
 
         data = queryset.values_list(*params)
 

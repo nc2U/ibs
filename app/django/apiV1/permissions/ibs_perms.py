@@ -314,6 +314,38 @@ class IbsModulePermission(ProjectPermission):
                         if project_rel is not None:
                             project_pk = getattr(project_rel, 'pk', None)
 
+            # prev_contract 관계를 경유하는 모델 (해지/승계된 Contractor 등) 역추적
+            if project_pk is None and hasattr(obj, 'prev_contract'):
+                prev_contract = getattr(obj, 'prev_contract', None)
+                if prev_contract is not None:
+                    project_pk = getattr(prev_contract, 'project_id', None)
+
+            # contractor 관계를 경유하는 모델 (ContractFile, ContractDocument, Address, Contact, ConsultationLogs 등) 역추적
+            if project_pk is None and hasattr(obj, 'contractor'):
+                contractor = getattr(obj, 'contractor', None)
+                if contractor is not None:
+                    c_rel = getattr(contractor, 'contract', None) or getattr(contractor, 'prev_contract', None)
+                    if c_rel is not None:
+                        project_pk = getattr(c_rel, 'project_id', None)
+
+            # contract_document 관계를 경유하는 모델 (ContractDocumentFile 등) 역추적
+            if project_pk is None and hasattr(obj, 'contract_document'):
+                cd = getattr(obj, 'contract_document', None)
+                if cd is not None:
+                    contractor = getattr(cd, 'contractor', None)
+                    if contractor is not None:
+                        c_rel = getattr(contractor, 'contract', None) or getattr(contractor, 'prev_contract', None)
+                        if c_rel is not None:
+                            project_pk = getattr(c_rel, 'project_id', None)
+
+            # house_unit 관계를 경유하는 모델 (미계약 ContractPrice 등) 역추적
+            if project_pk is None and hasattr(obj, 'house_unit'):
+                hu = getattr(obj, 'house_unit', None)
+                if hu is not None:
+                    ut = getattr(hu, 'unit_type', None)
+                    if ut is not None:
+                        project_pk = getattr(ut, 'project_id', None)
+
             # building_unit 관계를 경유하는 모델 (예: HouseUnit 등) 역추적
             if project_pk is None and hasattr(obj, 'building_unit'):
                 bldg = getattr(obj, 'building_unit', None)

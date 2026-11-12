@@ -4,6 +4,7 @@ Contract PDF Export Views
 계약 관련 PDF 내보내기 뷰들 (고지서 등)
 """
 from datetime import date
+import html
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -117,16 +118,19 @@ class PdfExportCertOccupancy(PdfExportMixin, View):
 
         # 프로젝트 정보
         project = contract.project
-        project_name = project.name if project else ""
-        project_location = project.location if project else ""
+        project_name = html.escape(str(project.name)) if project and project.name else ""
+        project_location = html.escape(str(project.location)) if project and project.location else ""
 
         # 동호수 정보
         unit_info = ""
         try:
             if hasattr(contract, 'key_unit') and contract.key_unit:
-                unit_info = str(contract.key_unit.houseunit) if hasattr(contract.key_unit, 'houseunit') else ""
-        except:
+                raw_unit = str(contract.key_unit.houseunit) if hasattr(contract.key_unit, 'houseunit') else ""
+                unit_info = html.escape(raw_unit)
+        except Exception:
             unit_info = ""
+
+        safe_user = html.escape(str(user)) if user is not None else ""
 
         # 텍스트 오버레이 HTML 생성 (예시 좌표 - 실제 좌표는 조정 필요)
         overlay_html = f"""
@@ -179,10 +183,10 @@ class PdfExportCertOccupancy(PdfExportMixin, View):
         </div>
         
         <div style="position: absolute; top: 642px; left: 530px; font-size: 12px; z-index: 10;">
-            {user}
+            {safe_user}
         </div>
         <div style="position: absolute; top: 642px; left: 855px; font-size: 12px; z-index: 10;">
-            {user}
+            {safe_user}
         </div>
         """
 

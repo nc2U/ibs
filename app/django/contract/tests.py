@@ -1156,4 +1156,278 @@ class ContractAndPaymentSecurityTests(APITestCase):
         filtered_qs, use_distinct = admin.get_search_results(request, qs, '홍길동')
         self.assertIsNotNone(list(filtered_qs))
 
+    def test_sub_viewsets_write_permission_and_upload_idor_blocked(self):
+        """[CRITICAL-1] 계약 하위 ViewSet 8종 쓰기 권한(IbsModulePermission) 통제 및 파일 업로드 Cross-Project IDOR 차단 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from contract.models import DocumentType, RequiredDocument, ContractDocument
+
+        # 1. 읽기 전용 멤버(contract.read만 보유) 생성
+        readonly_user = User.objects.create_user(username='readonly_a', email='ro@test.com', password='password123')
+        perm_read = Permission.objects.get(code='contract.read')
+        role_ro = Role.objects.create(name='읽기전용', creator=self.admin_user, issue_visible='ALL')
+        role_ro.permissions.set([perm_read])
+        m_ro = Member.objects.create(user=readonly_user, project=self.ip_a)
+        m_ro.roles.add(role_ro)
+
+        self.client.force_authenticate(user=readonly_user)
+
+        # 읽기 전용 멤버가 프로젝트 A의 계약자, 주소, 연락처, 가격, 상담내역 수정/생성 시도 -> 403 차단
+        res_patch_cont = self.client.patch(f'/api/v1/contractor/{self.contractor_a.pk}/', {'name': '변조시도'}, format='json')
+        self.assertEqual(res_patch_cont.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_patch_addr = self.client.patch(f'/api/v1/contractor-address/{self.addr_a.pk}/', {'id_address1': '변조주소'}, format='json')
+        self.assertEqual(res_patch_addr.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_patch_contact = self.client.patch(f'/api/v1/contractor-contact/{self.contact_a.pk}/', {'cell_phone': '010-9999-9999'}, format='json')
+        self.assertEqual(res_patch_contact.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_patch_cp = self.client.patch(f'/api/v1/cont-price/{self.cp_a.pk}/', {'price': 100}, format='json')
+        self.assertEqual(res_patch_cp.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_post_consult = self.client.post('/api/v1/contractor-consultations/', {
+            'contractor': self.contractor_a.pk,
+            'consultation_date': '2026-02-01',
+            'channel': '1',
+            'category': '1',
+            'content': '무단 상담 등록'
+        }, format='json')
+        self.assertEqual(res_post_consult.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. 프로젝트 A 담당자(user_a, contract.create 보유)가 프로젝트 B 계약자/서류에 파일 업로드 시도 -> 403 IDOR 차단
+        self.client.force_authenticate(user=self.user_a)
+        dummy_file = SimpleUploadedFile('test.pdf', b'%PDF-1.4 dummy', content_type='application/pdf')
+        res_upload_b = self.client.post(
+            f'/api/v1/contract-file/upload/{self.contractor_b.pk}/',
+            {'file': dummy_file},
+            format='multipart'
+        )
+        self.assertEqual(res_upload_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        doc_type = DocumentType.objects.create(name='신분증사본')
+        req_doc_b = RequiredDocument.objects.create(project=self.project_b, document_type=doc_type, sort='proof')
+        cont_doc_b = ContractDocument.objects.create(contractor=self.contractor_b, required_document=req_doc_b)
+        dummy_file2 = SimpleUploadedFile('doc.pdf', b'%PDF-1.4 dummy2', content_type='application/pdf')
+        res_doc_upload_b = self.client.post(
+            f'/api/v1/contract-docs-file/upload/{cont_doc_b.pk}/',
+            {'file': dummy_file2},
+            format='multipart'
+        )
+        self.assertEqual(res_doc_upload_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 본인 프로젝트(A) 계약자에 대한 파일 업로드는 201 Created 정상 처리
+        dummy_file3 = SimpleUploadedFile('valid.pdf', b'%PDF-1.4 valid', content_type='application/pdf')
+        res_upload_a = self.client.post(
+            f'/api/v1/contract-file/upload/{self.contractor_a.pk}/',
+            {'file': dummy_file3},
+            format='multipart'
+        )
+        self.assertEqual(res_upload_a.status_code, http_status.HTTP_201_CREATED)
+
+    def test_payment_processing_service_cross_contract_tampering_blocked(self):
+        """[CRITICAL-2] PaymentProcessingService.process_payment_update에서 타 계약의 payment ID 전달 시 변조 차단 검증"""
+        from contract.services import PaymentProcessingService
+        from rest_framework import serializers
+
+        with self.assertRaises(serializers.ValidationError) as ctx:
+            PaymentProcessingService.process_payment_update(
+                contract=self.contract_a,
+                data={
+                    'deal_date': '2026-02-01',
+                    'payment': self.payment_b.pk,  # 타 계약(contract_b)의 납부 ID
+                    'amount': 1000,
+                },
+                user=self.admin_user
+            )
+        self.assertIn('다른 계약의 납부 내역은 수정할 수 없습니다', str(ctx.exception))
+
+        # payment_b의 금액이 변조되지 않았음을 확인
+        self.payment_b.accounting_entry.refresh_from_db()
+        self.assertEqual(self.payment_b.accounting_entry.amount, 60000000)
+
+    def test_succession_serializer_release_cancel_code_and_missing_fields_defense(self):
+        """[HIGH-1] 권리의무승계 생성 시 기존 해지 신청 취소 코드('9') 정합성 및 주소/연락처 None 방어, 다중 주소 업데이트 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        # self.release_a는 현재 status='1'(신청중) 상태
+        self.assertEqual(self.release_a.status, '1')
+
+        # 주소/연락처 필드를 생략하고, 잘못된 seller ID를 주입하여 승계 생성 요청
+        res = self.client.post('/api/v1/succession/', {
+            'contract': self.contract_a.pk,
+            'seller': self.contractor_b.pk,  # 조작된 타 계약자 ID 전달
+            'name': '신규양수인',
+            'gender': 'M',
+            'apply_date': '2026-02-10',
+            'trading_date': '2026-02-10',
+        }, format='json')
+        self.assertEqual(res.status_code, http_status.HTTP_201_CREATED)
+
+        # 1. 해지 신청이 '0'이 아닌 유효 코드 '9'(신청취소)로 변경되었는지 검증
+        self.release_a.refresh_from_db()
+        self.assertEqual(self.release_a.status, '9')
+
+        # 2. 조작된 seller 입력값 대신 contract_a의 실제 계약자(contractor_a)가 seller로 저장되었는지 검증
+        succ = Succession.objects.get(pk=res.data['pk'])
+        self.assertEqual(succ.seller_id, self.contractor_a.pk)
+
+        # 3. 양수인에게 과거 주소 이력을 추가하여 주소가 2개 이상인 상태에서 PUT 업데이트 시 MultipleObjectsReturned 없이 성공하는지 검증
+        ContractorAddress.objects.create(
+            contractor=succ.buyer, id_zipcode='00000', id_address1='과거주소', is_current=False
+        )
+        res_upd = self.client.put(f'/api/v1/succession/{succ.pk}/', {
+            'contract': self.contract_a.pk,
+            'seller': self.contractor_a.pk,
+            'buyer': succ.buyer.pk,
+            'name': '신규양수인_수정',
+            'gender': 'M',
+            'id_zipcode': '13579',
+            'id_address1': '서울시 송파구',
+            'apply_date': '2026-02-10',
+            'trading_date': '2026-02-10',
+            'status': '2',
+        }, format='json')
+        self.assertEqual(res_upd.status_code, http_status.HTTP_200_OK)
+
+    def test_contractor_release_completion_date_fallback_and_already_released_defense(self):
+        """[HIGH-2] 해지 확정(status='4') 시 기존 completion_date 폴백으로 은행거래 환불노트 기록 및 중복 해지 방어 검증"""
+        from contract.services import ContractorReleaseService
+        from rest_framework import serializers
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 환불 계정 생성
+        ProjectAccount.objects.create(
+            name='해지자환불', code='2100', category='revenue',
+            direction='deposit', is_related_contractor=True
+        )
+
+        # release_a에 completion_date를 먼저 저장해 둔 뒤, payload에 completion_date 없이 status='4'로 PATCH
+        self.release_a.completion_date = date(2026, 2, 20)
+        self.release_a.save()
+
+        res = self.client.patch(f'/api/v1/contractor-release/{self.release_a.pk}/', {
+            'status': '4',
+        }, format='json')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        # 은행 거래 note에 환불 완료 메시지가 정상 추가되었는지 검증
+        tx_a = self.payment_a.accounting_entry.related_transaction
+        tx_a.refresh_from_db()
+        self.assertIn('환불 계약 건', tx_a.note)
+
+        # 이미 해지 완료되어 contractor_a.contract가 None인 상태에서 재차 해지 완결 호출 시 ValidationError 발생 검증
+        self.release_a.refresh_from_db()
+        with self.assertRaises(serializers.ValidationError):
+            ContractorReleaseService.process_release_completion(self.release_a, '2026-02-25')
+
+    def test_contract_update_service_duplicate_serial_number_validation(self):
+        """[HIGH-3] ContractUpdateService에서 중복된 serial_number로 수정 시도 시 ValidationError 발생 검증"""
+        from contract.services import ContractUpdateService
+        from rest_framework import serializers
+
+        service = ContractUpdateService()
+        with self.assertRaises(serializers.ValidationError) as ctx:
+            service.update_contract(
+                instance=self.contract_a,
+                data={'serial_number': self.contract_b.serial_number},
+                user=self.admin_user
+            )
+        self.assertIn('serial_number', ctx.exception.detail)
+
+    def test_excel_exports_edge_cases_and_released_serial_number(self):
+        """[HIGH-4] ExportContracts 잘못된 col/order 파라미터 방어 및 ExportReleases 해지확정건 일련번호(prev_contract) 보존 검증"""
+        from django.test import RequestFactory
+        from contract.exports.excel import ExportContracts, ExportReleases
+        from contract.services import ContractorReleaseService
+
+        factory = RequestFactory()
+
+        # 1. 범위 밖 col 및 잘못된 order 파라미터 전달 시 500 에러 없이 200 OK 반환
+        req = factory.get(f'/contract/export/contracts/?project={self.project_a.pk}&col=0-99&order=999&status=2')
+        req.user = self.admin_user
+        res = ExportContracts().get(req)
+        self.assertEqual(res.status_code, 200)
+
+        # 2. 해지 완결 후(contract=None, prev_contract=contract_a) ExportReleases에서 일련번호가 Coalesce로 조회되는지 검증
+        orig_sn = self.contract_a.serial_number
+        ContractorReleaseService.process_release_completion(self.release_a, '2026-02-20')
+        self.contractor_a.refresh_from_db()
+        self.assertIsNone(self.contractor_a.contract)
+        self.assertIsNotNone(self.contractor_a.prev_contract)
+
+        req_rel = factory.get(f'/contract/export/releases/?project={self.project_a.pk}')
+        req_rel.user = self.admin_user
+        res_rel = ExportReleases().get(req_rel)
+        self.assertEqual(res_rel.status_code, 200)
+
+        from django.db.models.functions import Coalesce
+        resolved_sn = ContractorRelease.objects.filter(pk=self.release_a.pk).annotate(
+            sn=Coalesce('contractor__contract__serial_number', 'contractor__prev_contract__serial_number')
+        ).values_list('sn', flat=True).first()
+        self.assertIsNotNone(resolved_sn)
+        self.assertTrue(resolved_sn.startswith(orig_sn[:10]))
+
+    def test_pdf_export_cert_occupancy_html_escape(self):
+        """[MEDIUM-1] PdfExportCertOccupancy 오버레이 생성 시 HTML 특수문자 이스케이프 검증"""
+        from contract.exports.pdf import PdfExportCertOccupancy
+
+        self.project_a.name = '강남 <script>alert(1)</script> 프로젝트'
+        self.project_a.location = '서울시 & "강남구"'
+        overlay = PdfExportCertOccupancy.generate_text_overlay({
+            'contract': self.contract_a,
+            'pub_date': date(2026, 2, 1),
+            'user': '<img src=x onerror=alert(1)>'
+        })
+        self.assertNotIn('<script>', overlay)
+        self.assertNotIn('<img src=x', overlay)
+        self.assertIn('&lt;script&gt;', overlay)
+        self.assertIn('&amp;', overlay)
+
+    def test_uncontracted_contract_price_visibility_and_find_page_limit_defense(self):
+        """[MEDIUM-2] 미계약 세대 ContractPrice RLS 조회 허용 및 find_page / 가격 업데이트 파라미터 예외 방어 검증"""
+        # 1. 프로젝트 A의 미계약 세대 ContractPrice 생성
+        ku_un = KeyUnit.objects.create(project=self.project_a, unit_type=self.contract_a.unit_type, unit_code='A-102')
+        hu_un = HouseUnit.objects.create(
+            unit_type=self.contract_a.unit_type,
+            building_unit=self.cp_a.house_unit.building_unit,
+            key_unit=ku_un,
+            name='102호',
+            bldg_line=2,
+            floor_no=1
+        )
+        cp_uncontracted = ContractPrice.objects.create(
+            contract=None, house_unit=hu_un, price=500000000
+        )
+
+        # user_a로 조회 시 미계약 세대 ContractPrice도 정상 포함됨
+        self.client.force_authenticate(user=self.user_a)
+        res_cp = self.client.get('/api/v1/cont-price/')
+        self.assertEqual(res_cp.status_code, http_status.HTTP_200_OK)
+        cp_ids = [item['pk'] for item in res_cp.data['results']]
+        self.assertIn(cp_uncontracted.pk, cp_ids)
+
+        # user_b로 조회 시 프로젝트 A의 미계약 세대 ContractPrice는 노출되지 않음
+        self.client.force_authenticate(user=self.user_b)
+        res_cp_b = self.client.get('/api/v1/cont-price/')
+        cp_ids_b = [item['pk'] for item in res_cp_b.data['results']]
+        self.assertNotIn(cp_uncontracted.pk, cp_ids_b)
+
+        # 2. find_page에서 limit=0 또는 limit=invalid 전달 시 ZeroDivisionError/ValueError 없이 200 OK 반환
+        self.client.force_authenticate(user=self.user_a)
+        res_fp_set = self.client.get(f'/api/v1/contract-set/find_page/?highlight_id={self.contract_a.pk}&limit=0')
+        self.assertEqual(res_fp_set.status_code, http_status.HTTP_200_OK)
+
+        res_fp_rel = self.client.get(
+            f'/api/v1/contractor-release/find-page/?highlight_id={self.release_a.pk}&project={self.project_a.pk}&limit=abc'
+        )
+        self.assertEqual(res_fp_rel.status_code, http_status.HTTP_200_OK)
+
+        # 3. 가격 일괄 업데이트 뷰에 비정수 project ID 전달 시 500 대신 400 Bad Request 반환
+        res_bulk_bad = self.client.post('/api/v1/contract-bulk-price-update/', {'project': 'invalid-id'}, format='json')
+        self.assertEqual(res_bulk_bad.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        res_prev_bad = self.client.get('/api/v1/contract-price-update-preview/?project=invalid-id')
+        self.assertEqual(res_prev_bad.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+
 

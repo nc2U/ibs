@@ -56,6 +56,56 @@ def get_project_pk_from_request(request, view):
         except Exception:
             pass
 
+    # house_unit 기반 프로젝트 ID 역추적 (미계약 ContractPrice 등)
+    hu_pk = (
+        (data.get('house_unit') if isinstance(data, dict) else None)
+        or query_params.get('house_unit')
+    )
+    if hu_pk is not None:
+        try:
+            from items.models import HouseUnit
+            return HouseUnit.objects.filter(pk=int(hu_pk)).values_list('unit_type__project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # contractor 기반 프로젝트 ID 역추적 (ContractFile, ContractDocument, Address, Contact, ConsultationLogs 등)
+    contractor_pk = (
+        view.kwargs.get('contractor_id')
+        or (data.get('contractor') if isinstance(data, dict) else None)
+        or query_params.get('contractor')
+    )
+    if contractor_pk is not None:
+        try:
+            from contract.models import Contractor
+            c_obj = Contractor.objects.select_related('contract', 'prev_contract').filter(pk=int(contractor_pk)).first()
+            if c_obj:
+                if c_obj.contract_id and c_obj.contract:
+                    return c_obj.contract.project_id
+                if c_obj.prev_contract_id and c_obj.prev_contract:
+                    return c_obj.prev_contract.project_id
+        except Exception:
+            pass
+
+    # contract_document 기반 프로젝트 ID 역추적 (ContractDocumentFile 등)
+    cd_pk = (
+        view.kwargs.get('contract_document_id')
+        or (data.get('contract_document') if isinstance(data, dict) else None)
+        or query_params.get('contract_document')
+    )
+    if cd_pk is not None:
+        try:
+            from contract.models import ContractDocument
+            cd_obj = ContractDocument.objects.select_related(
+                'contractor__contract', 'contractor__prev_contract'
+            ).filter(pk=int(cd_pk)).first()
+            if cd_obj and cd_obj.contractor:
+                if cd_obj.contractor.contract_id and cd_obj.contractor.contract:
+                    return cd_obj.contractor.contract.project_id
+                if cd_obj.contractor.prev_contract_id and cd_obj.contractor.prev_contract:
+                    return cd_obj.contractor.prev_contract.project_id
+        except Exception:
+            pass
+
     # sales.SalesAgency 기반 프로젝트 ID 역추적
     agency_pk = (
         (data.get('agency') if isinstance(data, dict) else None)

@@ -563,7 +563,10 @@ class ContractSetViewSet(ContractViewSet):
             return Response({'error': 'Item not found'}, status=404)
 
         # limit 파라미터 가져오기 (기본값은 10)
-        limit = int(request.query_params.get('limit', 10))
+        try:
+            limit = max(1, int(request.query_params.get('limit', 10)))
+        except (ValueError, TypeError):
+            limit = 10
 
         # Contract 모델의 기본 정렬이 없으므로 ordering 파라미터 확인
         ordering = request.query_params.get('ordering', '-created')
@@ -601,10 +604,22 @@ class SimpleContractViewSet(ContractViewSet):
 class ContractPriceViewSet(viewsets.ModelViewSet):
     queryset = ContractPrice.objects.all()
     serializer_class = ContractPriceSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('contract__project', 'contract__order_group',
                         'contract__unit_type', 'contract__is_active',
                         'contract__contractor__status')
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -617,7 +632,11 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
         )
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+        allowed_ids = get_accessible_project_ids(user)
+        return qs.filter(
+            Q(contract__project_id__in=allowed_ids) |
+            Q(contract__isnull=True, house_unit__unit_type__project_id__in=allowed_ids)
+        )
 
 
 class SubsSummaryViewSet(viewsets.ModelViewSet):
@@ -661,13 +680,18 @@ class ContractAggreateView(APIView):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def get(self, request, project_id):
+        try:
+            pid_int = int(project_id)
+        except (ValueError, TypeError):
+            return Response({'detail': 'Invalid project ID'}, status=status.HTTP_400_BAD_REQUEST)
+
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if int(project_id) not in get_accessible_project_ids(user):
+            if pid_int not in get_accessible_project_ids(user):
                 return Response({'detail': '해당 프로젝트에 대한 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            project = Project.objects.get(pk=project_id)
+            project = Project.objects.get(pk=pid_int)
         except Project.DoesNotExist:
             return Response({'detail': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -698,7 +722,7 @@ class ContractAggreateView(APIView):
 class ContractorViewSet(viewsets.ModelViewSet):
     queryset = Contractor.objects.all()
     serializer_class = ContractorSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('contract__project', 'gender', 'qualification', 'status', 'is_active')
     search_fields = ('name', 'note', 'contract__serial_number', 'contract__succession__seller__name',
                      'addresses__id_address1', 'addresses__id_address2',
@@ -707,6 +731,18 @@ class ContractorViewSet(viewsets.ModelViewSet):
                      'contractorcontact__cell_phone', 'contractorcontact__home_phone',
                      'contractorcontact__other_phone', 'contractorcontact__email')
     ordering = ['-id']
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -746,9 +782,23 @@ class ContractFileViewSet(viewsets.ModelViewSet):
     """계약서 파일 업로드 관리"""
     queryset = ContractFile.objects.all()
     serializer_class = ContractFileSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     parser_classes = [MultiPartParser, FormParser]
     filterset_fields = ('contractor',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'upload_file':
+            return None
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -774,7 +824,30 @@ class ContractFileViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='upload/(?P<contractor_id>[^/.]+)')
     def upload_file(self, request, contractor_id=None):
         """특정 계약자에 대한 파일 업로드"""
-        contractor = get_object_or_404(Contractor, pk=contractor_id)
+        contractor = get_object_or_404(
+            Contractor.objects.select_related('contract__project__issue_project', 'prev_contract__project__issue_project'),
+            pk=contractor_id
+        )
+
+        c_rel = contractor.contract or contractor.prev_contract
+        project_id = getattr(c_rel, 'project_id', None)
+        issue_project = getattr(getattr(c_rel, 'project', None), 'issue_project', None)
+        if issue_project and issue_project.status in ('2', '9'):
+            return Response(
+                {'detail': '닫힘 또는 잠금 상태의 프로젝트에는 파일을 업로드할 수 없습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            allowed_ids = (
+                set(get_accessible_project_ids(request.user, 'contract.create'))
+                | set(get_accessible_project_ids(request.user, 'contract.update'))
+            )
+            if not project_id or project_id not in allowed_ids:
+                return Response(
+                    {'detail': '해당 계약자에 파일을 업로드할 권한이 없습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         if 'file' not in request.FILES:
             return Response(
@@ -794,8 +867,20 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
     """계약자 제출 서류 관리"""
     queryset = ContractDocument.objects.all()
     serializer_class = ContractDocumentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('contractor', 'required_document__sort', 'required_document', 'contractor__contract__project')
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -821,9 +906,23 @@ class ContractDocumentFileViewSet(viewsets.ModelViewSet):
     """계약자 제출 서류 첨부 파일 관리"""
     queryset = ContractDocumentFile.objects.all()
     serializer_class = ContractDocumentFileSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     parser_classes = [MultiPartParser, FormParser]
     filterset_fields = ('contract_document',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'upload_file':
+            return None
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -842,7 +941,34 @@ class ContractDocumentFileViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='upload/(?P<contract_document_id>[^/.]+)')
     def upload_file(self, request, contract_document_id=None):
         """특정 제출 서류에 대한 파일 업로드"""
-        contract_document = get_object_or_404(ContractDocument, pk=contract_document_id)
+        contract_document = get_object_or_404(
+            ContractDocument.objects.select_related(
+                'contractor__contract__project__issue_project',
+                'contractor__prev_contract__project__issue_project'
+            ),
+            pk=contract_document_id
+        )
+
+        contractor = contract_document.contractor
+        c_rel = (contractor.contract or contractor.prev_contract) if contractor else None
+        project_id = getattr(c_rel, 'project_id', None)
+        issue_project = getattr(getattr(c_rel, 'project', None), 'issue_project', None)
+        if issue_project and issue_project.status in ('2', '9'):
+            return Response(
+                {'detail': '닫힘 또는 잠금 상태의 프로젝트에는 파일을 업로드할 수 없습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            allowed_ids = (
+                set(get_accessible_project_ids(request.user, 'contract.create'))
+                | set(get_accessible_project_ids(request.user, 'contract.update'))
+            )
+            if not project_id or project_id not in allowed_ids:
+                return Response(
+                    {'detail': '해당 제출 서류에 파일을 업로드할 권한이 없습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         if 'file' not in request.FILES:
             return Response(
@@ -862,8 +988,20 @@ class ContAddressViewSet(viewsets.ModelViewSet):
     queryset = ContractorAddress.objects.all()
     serializer_class = ContractorAddressSerializer
     filterset_fields = ('contractor', 'is_current')
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     ordering = ['-id']
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -887,8 +1025,20 @@ class ContAddressViewSet(viewsets.ModelViewSet):
 class ContContactViewSet(viewsets.ModelViewSet):
     queryset = ContractorContact.objects.all()
     serializer_class = ContractorContactSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     ordering = ['-id']
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -915,9 +1065,21 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
         'contractor', 'consultant', 'creator', 'updator'
     ).all()
     serializer_class = ContractorConsultationLogsSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('contractor', 'status', 'category', 'channel')
     ordering = ['-consultation_date', '-created']
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'contract.read'
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
     def get_queryset(self):
         user = self.request.user
@@ -1062,7 +1224,10 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Item not found'}, status=404)
 
         # limit 파라미터 가져오기 (기본값은 10)
-        limit = int(request.query_params.get('limit', 10))
+        try:
+            limit = max(1, int(request.query_params.get('limit', 10)))
+        except (ValueError, TypeError):
+            limit = 10
 
         # Succession 모델의 정확한 신규 ordering: ['-is_ongoing', '-apply_date', '-id']
         target_is_ongoing = 1 if target_item.status in ('1', '2') else 0
@@ -1194,7 +1359,10 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Item not found'}, status=404)
 
         # limit 파라미터 가져오기 (기본값은 10)
-        limit = int(request.query_params.get('limit', 10))
+        try:
+            limit = max(1, int(request.query_params.get('limit', 10)))
+        except (ValueError, TypeError):
+            limit = 10
 
         # ContractorRelease 모델의 정확한 신규 ordering: ['-is_ongoing', '-request_date', '-id']
         target_is_ongoing = 1 if target_item.status in ('1', '2', '3') else 0
@@ -1261,7 +1429,15 @@ def bulk_update_contract_prices(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        project = Project.objects.get(pk=project_id)
+        pid_int = int(project_id)
+    except (ValueError, TypeError):
+        return Response({
+            'success': False,
+            'message': 'project parameter must be an integer'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        project = Project.objects.get(pk=pid_int)
     except Project.DoesNotExist:
         return Response({
             'success': False,
@@ -1270,7 +1446,7 @@ def bulk_update_contract_prices(request):
 
     # [RLS] 프로젝트 계약 변경 권한 검증
     if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-        if int(project_id) not in get_accessible_project_ids(request.user, 'contract.update'):
+        if pid_int not in get_accessible_project_ids(request.user, 'contract.update'):
             return Response({
                 'success': False,
                 'message': '해당 프로젝트에 대한 계약 수정 권한이 없습니다.'
@@ -1384,11 +1560,19 @@ def contract_price_update_preview(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        project = Project.objects.get(pk=project_id)
+        pid_int = int(project_id)
+    except (ValueError, TypeError):
+        return Response({
+            'success': False,
+            'message': 'project parameter must be an integer'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        project = Project.objects.get(pk=pid_int)
 
         # [RLS] 프로젝트 계약 조회 권한 검증
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            if int(project_id) not in get_accessible_project_ids(request.user, 'contract.read'):
+            if pid_int not in get_accessible_project_ids(request.user, 'contract.read'):
                 return Response({
                     'success': False,
                     'message': '해당 프로젝트에 대한 계약 조회 권한이 없습니다.'

@@ -755,24 +755,31 @@ class PaymentProcessingService:
         if not data.get('deal_date'):
             return
 
-        payment_id = data.get('payment')
+        payment_id = clean_id_value(data.get('payment'))
 
         contractor = Contractor.objects.using('default').get(contract=contract)
 
         if payment_id:
+            if ContractPayment.objects.filter(pk=payment_id).exclude(contract=contract).exists():
+                raise serializers.ValidationError({'payment': '다른 계약의 납부 내역은 수정할 수 없습니다.'})
+
             # 기존 납부 수정
             try:
                 # ContractPayment를 통해 ProjectAccountingEntry 찾기
-                contract_payment = ContractPayment.objects.get(pk=payment_id)
+                contract_payment = ContractPayment.objects.get(pk=payment_id, contract=contract)
                 accounting_entry = contract_payment.accounting_entry
                 bank_tx = accounting_entry.related_transaction
 
                 # 기본 정보 조회
-                order_group_sort = int(data.get('order_group_sort'))
+                order_group_sort = int(data.get('order_group_sort') or contract.order_group.sort)
 
-                # 계정 선택
+                # 계정 선택 (order_group_sort 에 따라 출자금 / 매출금=분양대금)
+                category = ('equity', 'revenue')
+                target_category = category[0] if order_group_sort == 1 else category[1]
                 payment_accounts = ProjectAccount.objects.filter(is_payment=True)
-                account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+                account = payment_accounts.filter(category=target_category).first()
+                if not account and payment_accounts.exists():
+                    account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
 
                 # 납부 정보
                 installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
@@ -936,8 +943,11 @@ class ContractUpdateService:
         new_serial_number = data.get('serial_number')
         if new_serial_number and new_serial_number != instance.serial_number and not new_serial_number.startswith(
                 'TEMP-'):
-            if not Contract.objects.filter(serial_number=new_serial_number).exclude(pk=instance.pk).exists():
-                instance.serial_number = new_serial_number
+            if Contract.objects.filter(serial_number=new_serial_number).exclude(pk=instance.pk).exists():
+                raise serializers.ValidationError({
+                    'serial_number': f'이미 등록된 계약 일련번호({new_serial_number})입니다. 유닛 또는 차수 정보를 확인해 주세요.'
+                })
+            instance.serial_number = new_serial_number
 
         # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
         new_unit_pk = clean_id_value(data.get('key_unit'))
@@ -1053,6 +1063,8 @@ class ContractorReleaseService:
         """
         contractor = contractor_release.contractor
         contract = contractor.contract
+        if not contract:
+            raise serializers.ValidationError({'contractor': '해지 처리할 활성 계약 정보가 존재하지 않습니다.'})
 
         result = {
             'contract_updated': False,
