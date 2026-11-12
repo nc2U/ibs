@@ -34,8 +34,16 @@ class SalesTeamSerializer(serializers.ModelSerializer):
         if agency and parent:
             if parent.agency_id != agency.pk:
                 raise serializers.ValidationError({'parent': '상위 조직은 동일한 대행사 소속이어야 합니다.'})
-            if self.instance and parent.pk == self.instance.pk:
-                raise serializers.ValidationError({'parent': '자기 자신을 상위 조직으로 지정할 수 없습니다.'})
+            if self.instance:
+                if parent.pk == self.instance.pk:
+                    raise serializers.ValidationError({'parent': '자기 자신을 상위 조직으로 지정할 수 없습니다.'})
+                curr = parent
+                visited = {self.instance.pk}
+                while curr is not None:
+                    if curr.pk in visited:
+                        raise serializers.ValidationError({'parent': '상위 조직 구조에 순환 참조(Cycle)가 발생할 수 없습니다.'})
+                    visited.add(curr.pk)
+                    curr = curr.parent
         return attrs
 
     def get_members_count(self, obj):
@@ -256,6 +264,16 @@ class CommissionPayoutSerializer(serializers.ModelSerializer):
             'note', 'contract_details', 'created_at', 'updated_at'
         )
 
+    def validate(self, attrs):
+        period = attrs.get('period') or (self.instance.period if self.instance else None)
+        sales_person = attrs.get('sales_person') or (self.instance.sales_person if self.instance else None)
+        if period and sales_person and hasattr(sales_person, 'team') and hasattr(sales_person.team, 'agency'):
+            if sales_person.team.agency.project_id != period.project_id:
+                raise serializers.ValidationError(
+                    {'sales_person': '영업인력의 소속 프로젝트와 정산 회차의 프로젝트가 일치해야 합니다.'}
+                )
+        return attrs
+
 
 class SettlementPeriodSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
@@ -301,6 +319,16 @@ class CommissionClawbackSerializer(serializers.ModelSerializer):
             'amount', 'reason', 'is_settled', 'settled_payout', 'created_at'
         )
 
+    def validate(self, attrs):
+        contract = attrs.get('contract') or (self.instance.contract if self.instance else None)
+        sales_person = attrs.get('sales_person') or (self.instance.sales_person if self.instance else None)
+        if contract and sales_person and hasattr(sales_person, 'team') and hasattr(sales_person.team, 'agency'):
+            if sales_person.team.agency.project_id != contract.project_id:
+                raise serializers.ValidationError(
+                    {'sales_person': '환수 대상자의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'}
+                )
+        return attrs
+
 
 class AgencyPayoutContractDetailSerializer(serializers.ModelSerializer):
     contract_serial = serializers.ReadOnlyField(source='contract.serial_number')
@@ -329,3 +357,12 @@ class AgencyPayoutSerializer(serializers.ModelSerializer):
             'business_number', 'bank_name', 'account_number', 'account_holder',
             'note', 'contract_details', 'created_at', 'updated_at'
         )
+
+    def validate(self, attrs):
+        period = attrs.get('period') or (self.instance.period if self.instance else None)
+        agency = attrs.get('agency') or (self.instance.agency if self.instance else None)
+        if period and agency and agency.project_id != period.project_id:
+            raise serializers.ValidationError(
+                {'agency': '대행사의 프로젝트와 정산 회차의 프로젝트가 일치해야 합니다.'}
+            )
+        return attrs

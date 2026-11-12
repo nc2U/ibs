@@ -47,11 +47,13 @@ def _resolve_policy(
 ) -> CommissionPolicy | None:
     """
     계약 매핑에 명시된 정책을 우선 사용.
-    없으면 사전 로드된 정책 목록(cached_policies)에서 계약일 기준으로 탐색.
+    없으면 사전 로드된 정책 목록(cached_policies)에서 계약일·차수·유니트 타입 기준으로 탐색.
 
-    탐색 순서:
-      1) 유니트 타입이 일치하는 정책 중 계약일 유효 정책
-      2) 유니트 타입이 미지정(전체 공통)인 정책 중 계약일 유효 정책
+    탐색 우선순위 (start_date DESC 정렬 기준):
+      1) 차수(order_group) 일치 + 유니트 타입(unit_type) 일치 정책
+      2) 차수 미지정(공통) + 유니트 타입 일치 정책
+      3) 차수 일치 + 유니트 타입 미지정(차수 공통) 정책
+      4) 차수 미지정 + 유니트 타입 미지정(프로젝트 전체 공통) 정책
 
     N+1 방지: 루프 외부에서 미리 가져온 리스트를 메모리 탐색으로 처리.
     날짜 검증(C-2 수정): contract_date가 start_date~end_date 구간에 포함될 때만 적용.
@@ -59,32 +61,41 @@ def _resolve_policy(
     if mapping.policy_id:
         return mapping.policy
 
-    unit_type_id = getattr(mapping.contract.unit_type, 'pk', None) if mapping.contract.unit_type else None
+    order_group_id = getattr(mapping.contract, 'order_group_id', None)
+    unit_type_id = getattr(mapping.contract, 'unit_type_id', None)
     contract_date = mapping.contract_date
 
     # 계약일이 없으면 날짜 비교 불가 → 정책 미적용
     if not contract_date:
         return None
 
-    # 1차: 유니트 타입 매칭 정책 탐색 (start_date DESC 정렬 기준, 가장 최신 적용)
-    for policy in cached_policies:
-        if policy.unit_type_id != unit_type_id:
-            continue
-        if policy.start_date > contract_date:
-            continue
-        if policy.end_date and policy.end_date < contract_date:
-            continue
-        return policy
+    valid_date_policies = [
+        p for p in cached_policies
+        if p.start_date <= contract_date and (not p.end_date or p.end_date >= contract_date)
+    ]
 
-    # 2차: 전체 공통 정책 폴백 탐색
-    for policy in cached_policies:
-        if policy.unit_type_id is not None:
-            continue
-        if policy.start_date > contract_date:
-            continue
-        if policy.end_date and policy.end_date < contract_date:
-            continue
-        return policy
+    # 1차: 차수 일치 + 유니트 타입 일치
+    if order_group_id is not None and unit_type_id is not None:
+        for policy in valid_date_policies:
+            if policy.order_group_id == order_group_id and policy.unit_type_id == unit_type_id:
+                return policy
+
+    # 2차: 차수 공통(None) + 유니트 타입 일치
+    if unit_type_id is not None:
+        for policy in valid_date_policies:
+            if policy.order_group_id is None and policy.unit_type_id == unit_type_id:
+                return policy
+
+    # 3차: 차수 일치 + 유니트 타입 공통(None)
+    if order_group_id is not None:
+        for policy in valid_date_policies:
+            if policy.order_group_id == order_group_id and policy.unit_type_id is None:
+                return policy
+
+    # 4차: 프로젝트 전체 공통 (차수 None + 유니트 타입 None)
+    for policy in valid_date_policies:
+        if policy.order_group_id is None and policy.unit_type_id is None:
+            return policy
 
     return None
 
@@ -342,7 +353,7 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
     cached_policies = list(
         CommissionPolicy.objects.filter(
             project=period.project, is_active=True
-        ).order_by('-start_date').select_related('unit_type')
+        ).order_by('-start_date', '-id').select_related('unit_type', 'order_group')
     )
 
     # ── N+1 방지: 프로젝트 내 재직 중인 팀장(2) 및 본부장(3, 4) 인력 사전 캐싱 ──
@@ -373,14 +384,16 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
     )
 
     # ── 정산 대상 계약 수집 ──
-    # 1. 회차 마감일(end_date) 이전의 계약 (과거 미정산 소급건 포함)
+    # 1. 활성 계약(contract__is_active=True) 중 회차 마감일(end_date) 이전의 계약 (과거 미정산 소급건 포함)
     # 2. 관리자가 '정산 승인(is_settlement_approved=True)' 처리한 건만 포함 (서류 미비/분납 중인 보류건 자동 제외)
     # 3. 이미 다른 회차에 배정/정산 완료된 건은 절대 제외 (이중 정산 방지)
     mappings = ContractSalesAgent.objects.filter(
         contract__project=period.project,
+        contract__is_active=True,
         contract_date__lte=period.end_date,
         is_settlement_approved=True,
     ).select_related(
+        'contract__order_group',
         'contract__unit_type',
         'agency',
         'sales_person__team__agency',
@@ -393,15 +406,11 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
     if other_settled_contract_ids:
         mappings = mappings.exclude(contract_id__in=other_settled_contract_ids)
 
-    # ── 재계산 시 기존 회차의 Payout 및 상세 내역 초기화 ──
+    # ── 재계산 시 기존 회차의 환수금 상계 초기화 ──
     # 환수금 영구 유실 방지: 기존 회차 Payout에 상계되었던 clawback들을 미상계로 복원
     CommissionClawback.objects.filter(settled_payout__period=period).update(
         is_settled=False, settled_payout=None
     )
-
-    period.payouts.all().delete()
-
-    period.agency_payouts.all().delete()
 
     # ── 직영 매핑: person_id → {person, [(contract, fee, role_type)]} ──
     direct_map: dict[int, dict] = {}
@@ -493,6 +502,10 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
                 'fee': total_policy_fee,
             })
 
+
+    # ── 금회차 정산 대상에서 제외된 기존 명세만 선택 삭제 (수기 입력된 base_pay, bonus_amount, note 보존) ──
+    period.payouts.exclude(sales_person_id__in=direct_map.keys()).delete()
+    period.agency_payouts.exclude(agency_id__in=agency_map.keys()).delete()
 
     # ── 직영 CommissionPayout 생성/갱신 ──
     direct_person_count = 0
@@ -638,3 +651,28 @@ def generate_period_payouts(period: SettlementPeriod) -> dict:
         'org_warnings': org_health['items'],
         'org_is_healthy': org_health['is_healthy'],
     }
+
+
+def recalculate_period_totals(period: SettlementPeriod) -> SettlementPeriod:
+    """
+    개별 지급 명세(CommissionPayout / AgencyPayout)의 수정·추가·삭제 시
+    상위 정산 회차(SettlementPeriod)의 합계 금액 필드를 재집계하여 동기화한다.
+    """
+    direct_payouts = period.payouts.all()
+    agency_payouts = period.agency_payouts.all()
+
+    period.total_gross_amount = direct_payouts.aggregate(s=Sum('gross_amount'))['s'] or 0
+    period.total_tax_amount = direct_payouts.aggregate(s=Sum('total_tax'))['s'] or 0
+    period.total_net_amount = direct_payouts.aggregate(s=Sum('net_amount'))['s'] or 0
+
+    supply_sum = agency_payouts.aggregate(s=Sum('agency_fee_sum'))['s']
+    if supply_sum is not None:
+        period.billing_supply_price = supply_sum
+        period.billing_vat = int(period.billing_supply_price * 0.1 // 10 * 10)
+        period.billing_total_amount = period.billing_supply_price + period.billing_vat
+
+    period.save(update_fields=[
+        'total_gross_amount', 'total_tax_amount', 'total_net_amount',
+        'billing_supply_price', 'billing_vat', 'billing_total_amount', 'updated_at',
+    ])
+    return period

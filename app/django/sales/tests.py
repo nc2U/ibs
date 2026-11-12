@@ -1801,5 +1801,215 @@ class SalesImprovementTests(APITestCase):
         self.assertNotIn(doc2, doc_admin.get_queryset(req_normal))
         self.assertIn(doc2, doc_admin.get_queryset(req_admin))
 
+    def test_resolve_policy_order_group_priority_and_isolation(self):
+        """수수료 정책 자동 탐색 시 차수(order_group)별 정책 우선 매칭 및 타 차수 정책 오적용 방지 검증"""
+        from sales.services import generate_period_payouts
+
+        og_2nd = OrderGroup.objects.create(project=self.project1, order_number=2, name='2차 분양')
+        # 2차 분양 전용 정책 (상담사 500만원) - 최신 등록
+        CommissionPolicy.objects.create(
+            project=self.project1,
+            order_group=og_2nd,
+            unit_type=self.unit_type1,
+            name='2차 59A 특별 수수료',
+            agent_fee=5000000,
+            start_date=date(2026, 9, 1),
+        )
+        # 1차 분양 전용 정책 (상담사 200만원)
+        CommissionPolicy.objects.create(
+            project=self.project1,
+            order_group=self.order_group1,
+            unit_type=self.unit_type1,
+            name='1차 59A 기본 수수료',
+            agent_fee=2000000,
+            start_date=date(2026, 9, 1),
+        )
+
+        # self.contract1은 1차(self.order_group1) 소속 계약, 정책 미지정(policy=None)으로 매핑
+        ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 10),
+            is_settlement_approved=True,
+        )
+
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='차수별 정책 매칭 검증 회차',
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+        )
+        generate_period_payouts(period)
+
+        payout = period.payouts.get(sales_person=self.person1)
+        # 2차 정책(500만원)이 아닌 1차 정책(200만원)이 정확히 적용되어야 함
+        self.assertEqual(payout.commission_amount, 2000000)
+
+    def test_generate_payouts_excludes_inactive_contracts_and_preserves_manual_base_pay(self):
+        """해지(is_active=False) 계약 정산 배제, contract_date 자동 보완, 재계산 시 수기 기본급/보너스 보존 및 수정 시 회차 합계 동기화 검증"""
+        from sales.services import generate_period_payouts
+
+        CommissionPolicy.objects.create(
+            project=self.project1,
+            name='공통 정책',
+            agent_fee=1500000,
+            start_date=date(2026, 9, 1),
+        )
+
+        # 1. 정상 계약: contractor.contract_date로부터 contract_date 자동 보완 검증
+        Contractor.objects.create(
+            contract=self.contract1,
+            name='정상계약자',
+            status='2',
+            contract_date=date(2026, 9, 5),
+        )
+        mapping_active = ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            is_settlement_approved=True,
+        )
+        self.assertEqual(mapping_active.contract_date, date(2026, 9, 5))
+
+        # 2. 해지된 계약(is_active=False): 정산 집계에서 제외되어야 함
+        ku_cancelled = KeyUnit.objects.create(project=self.project1, unit_type=self.unit_type1, unit_code='U99')
+        contract_cancelled = Contract.objects.create(
+            project=self.project1,
+            serial_number='CONT-CANCELLED',
+            order_group=self.order_group1,
+            unit_type=self.unit_type1,
+            key_unit=ku_cancelled,
+            is_active=False,
+        )
+        ContractSalesAgent.objects.create(
+            contract=contract_cancelled,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 6),
+            is_settlement_approved=True,
+        )
+
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='해지 제외 및 수기 보존 회차',
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+        )
+        generate_period_payouts(period)
+
+        # 활성 계약 1건(150만원)만 집계되어야 함
+        payout = period.payouts.get(sales_person=self.person1)
+        self.assertEqual(payout.contract_count, 1)
+        self.assertEqual(payout.commission_amount, 1500000)
+
+        # 3. API를 통해 기본급(base_pay=500,000)과 보너스(bonus_amount=200,000) 수기 반영 시 회차 합계 동기화 검증
+        self.client.force_authenticate(user=self.admin_user)
+        res_patch = self.client.patch(
+            f'/api/v1/sales-payout/{payout.id}/',
+            {'base_pay': 500000, 'bonus_amount': 200000, 'note': '우수상담원 인센티브'},
+            format='json',
+        )
+        self.assertEqual(res_patch.status_code, http_status.HTTP_200_OK)
+
+        period.refresh_from_db()
+        # 1,500,000 + 500,000 + 200,000 = 2,200,000
+        self.assertEqual(period.total_gross_amount, 2200000)
+
+        # 4. 정산 재계산(generate_period_payouts) 실행 후에도 base_pay, bonus_amount, note가 보존되는지 검증
+        generate_period_payouts(period)
+        payout.refresh_from_db()
+        period.refresh_from_db()
+        self.assertEqual(payout.base_pay, 500000)
+        self.assertEqual(payout.bonus_amount, 200000)
+        self.assertEqual(payout.note, '우수상담원 인센티브')
+        self.assertEqual(payout.gross_amount, 2200000)
+        self.assertEqual(period.total_gross_amount, 2200000)
+
+        # 5. 회차 확정('2') 후 지급 명세 임의 수정/삭제 및 회차 삭제 409 차단 검증
+        period.status = '2'
+        period.save(update_fields=['status'])
+
+        res_locked_patch = self.client.patch(
+            f'/api/v1/sales-payout/{payout.id}/',
+            {'base_pay': 999999},
+            format='json',
+        )
+        self.assertEqual(res_locked_patch.status_code, http_status.HTTP_409_CONFLICT)
+
+        res_locked_del = self.client.delete(f'/api/v1/sales-payout/{payout.id}/')
+        self.assertEqual(res_locked_del.status_code, http_status.HTTP_409_CONFLICT)
+
+        res_period_del = self.client.delete(f'/api/v1/sales-settlement-period/{period.id}/')
+        self.assertEqual(res_period_del.status_code, http_status.HTTP_409_CONFLICT)
+
+    def test_policy_read_permission_and_paid_date_reset_and_cycle_guard(self):
+        """sales.read 권한자의 정책 조회 허용, 지급상태 원복 시 paid_date 초기화, 영업팀 다단계 순환 참조 차단 및 지급/환수 시리얼라이저 검증"""
+        from apiV1.serializers.sales import (
+            CommissionPayoutSerializer, AgencyPayoutSerializer, CommissionClawbackSerializer
+        )
+
+        # 1. sales.read 전용 사용자 생성 후 수수료 정책 조회 허용(200) 및 생성 차단(403) 검증
+        CommissionPolicy.objects.create(
+            project=self.project1, name='조회테스트정책', agent_fee=1000000, start_date=date(2026, 9, 1)
+        )
+        reader = User.objects.create_user(username='policy_reader', password='password123')
+        read_role = Role.objects.create(name='ReaderOnly', category='ibs_pr_manage', creator=self.admin_user)
+        perm_read = Permission.objects.get(code='sales.read')
+        read_role.permissions.add(perm_read)
+        mem = Member.objects.create(user=reader, project=self.issue_project1)
+        mem.roles.add(read_role)
+
+        self.client.force_authenticate(user=reader)
+        res_get = self.client.get(f'/api/v1/sales-policy/?project={self.project1.id}')
+        self.assertEqual(res_get.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_get.data['count'], 1)
+
+        res_post = self.client.post('/api/v1/sales-policy/', {
+            'project': self.project1.id, 'name': '무단생성', 'start_date': '2026-09-01'
+        })
+        self.assertEqual(res_post.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. 지급 완료('3') 후 대기('1')로 변경 시 paid_date 초기화 검증
+        self.client.force_authenticate(user=self.admin_user)
+        period = SettlementPeriod.objects.create(
+            project=self.project1, title='상태원복회차', start_date=date(2026, 9, 1), end_date=date(2026, 9, 30), status='2'
+        )
+        payout = CommissionPayout.objects.create(period=period, sales_person=self.person1, commission_amount=1000000)
+
+        self.client.post(f'/api/v1/sales-payout/{payout.id}/update-pay-status/', {'pay_status': '3'})
+        payout.refresh_from_db()
+        period.refresh_from_db()
+        self.assertIsNotNone(payout.paid_date)
+        self.assertEqual(period.status, '3')
+
+        self.client.post(f'/api/v1/sales-payout/{payout.id}/update-pay-status/', {'pay_status': '1'})
+        payout.refresh_from_db()
+        period.refresh_from_db()
+        self.assertIsNone(payout.paid_date)
+        self.assertEqual(period.status, '2')
+
+        # 3. 영업팀 다단계 순환 참조(team_a -> team_b -> team_a) 방어 검증
+        team_b = SalesTeam.objects.create(agency=self.agency1, parent=self.team1, name='하위팀B')
+        self.team1.parent = team_b
+        with self.assertRaises(self.ValidationError):
+            self.team1.clean()
+        self.team1.refresh_from_db()
+
+        s_cycle = SalesTeamSerializer(instance=self.team1, data={'parent': team_b.pk}, partial=True)
+        self.assertFalse(s_cycle.is_valid())
+        self.assertIn('parent', s_cycle.errors)
+
+        # 4. 지급/환수 시리얼라이저 타 프로젝트 매핑 방어 검증
+        sp_ser = CommissionPayoutSerializer(data={'period': period.pk, 'sales_person': self.person2.pk})
+        self.assertFalse(sp_ser.is_valid())
+        self.assertIn('sales_person', sp_ser.errors)
+
+        ap_ser = AgencyPayoutSerializer(data={'period': period.pk, 'agency': self.agency2.pk})
+        self.assertFalse(ap_ser.is_valid())
+        self.assertIn('agency', ap_ser.errors)
+
+        cb_ser = CommissionClawbackSerializer(data={'contract': self.contract1.pk, 'sales_person': self.person2.pk, 'amount': 100000})
+        self.assertFalse(cb_ser.is_valid())
+        self.assertIn('sales_person', cb_ser.errors)
+
+
 
 

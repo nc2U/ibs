@@ -22,7 +22,7 @@ from sales.models import (
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback, AgencyPayout, AgencyPayoutContractDetail,
 )
-from sales.services import generate_period_payouts
+from sales.services import generate_period_payouts, recalculate_period_totals
 from work.models import IssueProject
 
 
@@ -44,6 +44,9 @@ def _sync_period_status(period: SettlementPeriod) -> None:
     with transaction.atomic():
         period = SettlementPeriod.objects.select_for_update().get(pk=period.pk)
         if period.status not in ('2', '3'):
+            return
+        has_any = period.payouts.exists() or period.agency_payouts.exists()
+        if not has_any:
             return
         has_pending = (
             period.payouts.exclude(pay_status='3').exists()
@@ -150,12 +153,16 @@ class CommissionPolicyViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.policy 권한을 실제로 보유한 프로젝트만 필터링
-        allowed_ids = get_project_ids_with_permission(user, 'sales.policy')
+        # [H-7] sales.read 또는 sales.policy 권한을 보유한 프로젝트만 필터링
+        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
+            get_project_ids_with_permission(user, 'sales.policy')
+        )
         return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
         return 'sales.policy'
 
 
@@ -335,12 +342,14 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         return Response(result, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='confirm-settlement')
+    @transaction.atomic
     def confirm_settlement(self, request, pk=None):
         """정산 회차 확정 (상태: 정산 확정).
         '작성 중(1)' 상태에서만 '확정(2)'으로 전환 가능하며,
         이미 '지급 완료(3)' 또는 '확정(2)' 상태인 회차는 재처리 방지.
         """
-        period = self.get_object()
+        obj = self.get_object()
+        period = SettlementPeriod.objects.select_for_update().get(pk=obj.pk)
         if period.status == '3':
             return Response(
                 {'detail': f'[{period.title}] 이미 지급 완료된 회차는 확정 처리할 수 없습니다.'},
@@ -354,6 +363,15 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         period.status = '2'  # 확정
         period.save(update_fields=['status', 'updated_at'])
         return Response({'detail': f'[{period.title}] 정산이 확정되었습니다.'})
+
+    def destroy(self, request, *args, **kwargs):
+        period = self.get_object()
+        if period.status in ('2', '3'):
+            return Response(
+                {'detail': f'[{period.title}] 이미 확정되거나 지급 완료된 정산 회차는 삭제할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 
@@ -387,6 +405,35 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.settle'
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        recalculate_period_totals(instance.period)
+
+    def update(self, request, *args, **kwargs):
+        payout = self.get_object()
+        if payout.period.status in ('2', '3'):
+            return Response(
+                {'detail': '확정되거나 지급 완료된 정산 회차의 지급 명세는 수정할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        recalculate_period_totals(instance.period)
+
+    def destroy(self, request, *args, **kwargs):
+        payout = self.get_object()
+        if payout.period.status in ('2', '3'):
+            return Response(
+                {'detail': '확정되거나 지급 완료된 정산 회차의 지급 명세는 삭제할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        period = payout.period
+        response = super().destroy(request, *args, **kwargs)
+        recalculate_period_totals(period)
+        return response
+
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     @transaction.atomic
     def update_pay_status(self, request, pk=None):
@@ -398,8 +445,11 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status
-            if pay_status == '3' and not payout.paid_date:
-                payout.paid_date = timezone.localdate()
+            if pay_status == '3':
+                if not payout.paid_date:
+                    payout.paid_date = timezone.localdate()
+            else:
+                payout.paid_date = None
             payout.save()
 
             # 회차 내 모든 지급 대상(직영+외주)의 완료 여부에 따라 회차 상태 자동 동기화
@@ -526,6 +576,35 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.settle'
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        recalculate_period_totals(instance.period)
+
+    def update(self, request, *args, **kwargs):
+        payout = self.get_object()
+        if payout.period.status in ('2', '3'):
+            return Response(
+                {'detail': '확정되거나 지급 완료된 정산 회차의 지급 명세는 수정할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        recalculate_period_totals(instance.period)
+
+    def destroy(self, request, *args, **kwargs):
+        payout = self.get_object()
+        if payout.period.status in ('2', '3'):
+            return Response(
+                {'detail': '확정되거나 지급 완료된 정산 회차의 지급 명세는 삭제할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        period = payout.period
+        response = super().destroy(request, *args, **kwargs)
+        recalculate_period_totals(period)
+        return response
+
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     @transaction.atomic
     def update_pay_status(self, request, pk=None):
@@ -536,8 +615,11 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         pay_status = request.data.get('pay_status')
         if pay_status in ('1', '2', '3', '4'):
             payout.pay_status = pay_status
-            if pay_status == '3' and not payout.paid_date:
-                payout.paid_date = timezone.localdate()
+            if pay_status == '3':
+                if not payout.paid_date:
+                    payout.paid_date = timezone.localdate()
+            else:
+                payout.paid_date = None
             payout.save()
 
             # 회차 내 모든 지급 대상(직영+외주)의 완료 여부에 따라 회차 상태 자동 동기화

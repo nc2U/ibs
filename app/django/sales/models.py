@@ -68,8 +68,16 @@ class SalesTeam(models.Model):
         if self.parent:
             if self.parent.agency_id != self.agency_id:
                 raise ValidationError({'parent': '상위 조직은 동일한 대행사 소속이어야 합니다.'})
-            if self.pk and self.parent_id == self.pk:
-                raise ValidationError({'parent': '자기 자신을 상위 조직으로 지정할 수 없습니다.'})
+            if self.pk:
+                if self.parent_id == self.pk:
+                    raise ValidationError({'parent': '자기 자신을 상위 조직으로 지정할 수 없습니다.'})
+                curr = self.parent
+                visited = {self.pk}
+                while curr is not None:
+                    if curr.pk in visited:
+                        raise ValidationError({'parent': '상위 조직 구조에 순환 참조(Cycle)가 발생할 수 없습니다.'})
+                    visited.add(curr.pk)
+                    curr = curr.parent
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -285,6 +293,15 @@ class ContractSalesAgent(models.Model):
         elif self.agency_id:
             self.team = None
             self.sales_person = None
+
+        # 3. 영업 성과 인정일(contract_date) 미입력 시 계약자의 계약일로 자동 보완
+        if not self.contract_date and self.contract_id:
+            try:
+                contractor = self.contract.contractor
+                if contractor and contractor.contract_date:
+                    self.contract_date = contractor.contract_date
+            except Exception:
+                pass
 
         self.clean()
         super().save(*args, **kwargs)
