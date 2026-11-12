@@ -334,6 +334,35 @@ class LedgerTransactionExportTests(TestCase):
             construction_period_months=24
         )
 
+        # 권한 및 멤버십 설정 (원장 조회 RLS 통과를 위한 설정)
+        from work.models.project import Member, Role, Permission
+
+        perm_ledger_read, _ = Permission.objects.get_or_create(
+            code='ledger.read', defaults={'name': '원장 조회', 'module': 'ledger', 'is_for_project': True}
+        )
+        perm_hq_read, _ = Permission.objects.get_or_create(
+            code='hq.ledger.read', defaults={'name': '본사 원장 조회', 'module': 'ledger', 'is_for_hq': True}
+        )
+
+        # 1. 프로젝트 원장 조회 권한 부여
+        role_prj = Role.objects.create(name='프로젝트 원장 열람자', category='ibs_pr_manage', creator=self.user)
+        role_prj.permissions.add(perm_ledger_read)
+        member_prj = Member.objects.create(project=self.issue_project, user=self.user)
+        member_prj.roles.add(role_prj)
+
+        # 2. 본사 원장 조회 권한 부여 (본사 워크스페이스 type='1' 생성 및 멤버십 할당)
+        self.hq_issue_project = IssueProject.objects.create(
+            company=self.company,
+            name='본사 워크스페이스',
+            slug='hq-workspace-excel',
+            type='1',
+            creator=self.user
+        )
+        role_hq = Role.objects.create(name='본사 원장 열람자', category='ibs_hq_manage', creator=self.user)
+        role_hq.permissions.add(perm_hq_read)
+        member_hq = Member.objects.create(project=self.hq_issue_project, user=self.user)
+        member_hq.roles.add(role_hq)
+
     def test_company_transaction_export_unauthenticated_blocked(self):
         """비인증 유저의 본사 입출금 내역 엑셀 요청 차단 검증"""
         from ledger.exports import ExportCompanyTransactions
