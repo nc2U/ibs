@@ -2,11 +2,12 @@
 Contract 관련 비즈니스 로직 서비스
 """
 import os
+import uuid
 from datetime import date
 from datetime import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -144,14 +145,32 @@ class ContractPriceBulkUpdateService:
             existing.price_land = price[2]
             existing.price_tax = price[3]
 
-            if house_unit:
+            if house_unit and existing.house_unit != house_unit:
+                # 다른 ContractPrice가 해당 house_unit을 가지고 있는지 확인하고 detach
+                conflicting_price = ContractPrice.objects.filter(house_unit=house_unit).exclude(pk=existing.pk).first()
+                if conflicting_price:
+                    conflicting_price.house_unit = None
+                    conflicting_price.save()
                 existing.house_unit = house_unit
 
             existing.save()  # order_group은 변경되지 않음 (save 메서드에서 생성시에만 설정)
             return existing, False
 
         except ContractPrice.DoesNotExist:
-            # 생성: 모든 필드 포함하여 새로 생성
+            # 생성: house_unit으로 기존 ContractPrice가 있는지 확인하여 재사용
+            if house_unit:
+                try:
+                    existing_by_unit = ContractPrice.objects.get(house_unit=house_unit)
+                    existing_by_unit.contract = contract
+                    existing_by_unit.price = price[0]
+                    existing_by_unit.price_build = price[1]
+                    existing_by_unit.price_land = price[2]
+                    existing_by_unit.price_tax = price[3]
+                    existing_by_unit.save()
+                    return existing_by_unit, False
+                except ContractPrice.DoesNotExist:
+                    pass
+
             defaults = {
                 'price': price[0],
                 'price_build': price[1],
@@ -856,12 +875,12 @@ class ContractCreationService:
             # Generate a temporary serial number if none provided or temporary format
             project_id = clean_id_value(data.get('project'))
             order_group_id = clean_id_value(data.get('order_group'))
-            serial_number = f'TEMP-{project_id}-{order_group_id}-{timezone.now().microsecond}'
+            short_id = uuid.uuid4().hex[:6]
+            serial_number = f'TEMP-{project_id}-{order_group_id}-{short_id}'
 
         # Handle case where unit_type might be empty string from FormData
         unit_type_id = clean_id_value(data.get('unit_type'))
 
-        from django.db import IntegrityError
         if serial_number and not serial_number.startswith('TEMP-'):
             if Contract.objects.filter(serial_number=serial_number).exists():
                 raise serializers.ValidationError({
@@ -915,7 +934,8 @@ class ContractUpdateService:
 
         # serial_number 동기화 (유닛 변경 등에 따른 일련번호 갱신)
         new_serial_number = data.get('serial_number')
-        if new_serial_number and new_serial_number != instance.serial_number and not new_serial_number.startswith('TEMP-'):
+        if new_serial_number and new_serial_number != instance.serial_number and not new_serial_number.startswith(
+                'TEMP-'):
             if not Contract.objects.filter(serial_number=new_serial_number).exclude(pk=instance.pk).exists():
                 instance.serial_number = new_serial_number
 
@@ -1042,8 +1062,17 @@ class ContractorReleaseService:
             'contractor_updated': False,
         }
 
-        # 1. 계약 상태 변경
-        contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
+        # 1. 계약 상태 변경 (max_length=30 초과 방지 및 고유성 보장)
+        date_str = str(completion_date).replace('-', '')[-6:] if completion_date else timezone.now().strftime('%y%m%d')
+        suffix = f"-T{date_str}"
+        base_sn = contract.serial_number[:(30 - len(suffix))]
+        new_sn = f"{base_sn}{suffix}"
+        if Contract.objects.filter(serial_number=new_sn).exclude(pk=contract.pk).exists():
+            short_uid = uuid.uuid4().hex[:4]
+            suffix = f"-T{date_str}-{short_uid}"
+            base_sn = contract.serial_number[:(30 - len(suffix))]
+            new_sn = f"{base_sn}{suffix}"
+        contract.serial_number = new_sn
         contract.is_active = False
         result['contract_updated'] = True
 
@@ -1131,9 +1160,9 @@ class ContractorReleaseService:
     @staticmethod
     def _process_payment_refunds(contract, contractor, completion_date):
         """납부분담금 환불 처리"""
-        payments = ContractPayment.objects.filter(contract=contract).select_related(
+        payments = list(ContractPayment.objects.filter(contract=contract).select_related(
             'accounting_entry__account'
-        )
+        ))
 
         refund_count = 0
         for payment in payments:

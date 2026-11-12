@@ -6,7 +6,7 @@ Contract Excel Export Views
 import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q, Max, OuterRef, Subquery
+from django.db.models import Q, Max, OuterRef, Subquery, Sum
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
@@ -277,8 +277,17 @@ class ExportContracts(ContractExportMixin):
             if title in ('', '비고'):
                 is_left.append(col_num)
 
-        paid_params = ['contract', 'income']
-        paid_dict = []
+        paid_map = {}
+        if sum_col is not None:
+            from payment.models import ContractPayment
+            contract_ids = [r[0] for r in data]
+            if contract_ids:
+                paid_qs = ContractPayment.objects.valid_payments().filter(
+                    contract_id__in=contract_ids
+                ).values('contract_id').annotate(
+                    total_paid=Sum('accounting_entry__amount')
+                )
+                paid_map = {p['contract_id']: (p['total_paid'] or 0) for p in paid_qs}
 
         quali_str = {'1': '일반분양', '2': '미인가', '3': '인가', '4': '부적격', }
 
@@ -292,7 +301,7 @@ class ExportContracts(ContractExportMixin):
             row = list(row)
 
             if sum_col is not None:
-                paid_sum = sum([ps[1] for ps in paid_dict if ps[0] == row[0]])
+                paid_sum = paid_map.get(row[0], 0)
                 row.insert(sum_col, paid_sum)  # 순서 삽입
 
             row[0] = i + 1  # pk 대신 순서 삽입

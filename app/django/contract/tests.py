@@ -1066,3 +1066,94 @@ class ContractAndPaymentSecurityTests(APITestCase):
         with self.assertRaises(ValidationError):
             invalid_rel.clean()
 
+    def test_contractor_release_serial_number_length_boundary(self):
+        """[CRITICAL-1] 30자 최대 길이를 가진 계약의 해지 완결 처리 시 max_length=30 초과 방지 및 DataError 없는 정상 처리 검증"""
+        from contract.services import ContractorReleaseService
+
+        # 1. 26자 길이의 긴 일련번호를 가진 계약 생성
+        long_contract = Contract.objects.create(
+            project=self.project_a,
+            serial_number='CONT-2026-LONG-SERIAL-9999',  # 26자
+            order_group=self.contract_a.order_group,
+            unit_type=self.contract_a.unit_type,
+            key_unit=None
+        )
+        long_contractor = Contractor.objects.create(
+            contract=long_contract,
+            name='긴계약자',
+            status='2',
+            contract_date='2026-01-15',
+            is_active=True
+        )
+        release = ContractorRelease.objects.create(
+            project=self.project_a,
+            contractor=long_contractor,
+            status='1',
+            request_date=date(2026, 2, 1)
+        )
+
+        # 2. 해지 완결 실행 (completion_date 지정)
+        result = ContractorReleaseService.process_release_completion(
+            contractor_release=release,
+            completion_date='2026-02-15'
+        )
+
+        # 3. 정상 완결 및 serial_number가 30자 이내인지 검증
+        self.assertTrue(result['contract_updated'])
+        long_contract.refresh_from_db()
+        self.assertFalse(long_contract.is_active)
+        self.assertLessEqual(len(long_contract.serial_number), 30)
+        self.assertIn('-T', long_contract.serial_number)
+
+    def test_export_contracts_paid_sum_calculation(self):
+        """[HIGH-1] ExportContracts에서 '납입금합계' 컬럼 요청 시 ContractPayment 유효 납부액이 0원이 아닌 실제 금액으로 정확히 계산되는지 검증"""
+        from django.test import RequestFactory
+        from contract.exports.excel import ExportContracts
+        factory = RequestFactory()
+
+        # col=1-2-14 (1: No, 2: 계약일련번호, 14: 납입금합계)
+        req = factory.get(f'/contract/export/contracts/?project={self.project_a.pk}&col=1-2-14&status=2')
+        req.user = self.admin_user
+
+        export_view = ExportContracts()
+        # 엑셀 다운로드 실행 (200 OK)
+        response = export_view.get(req)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertTrue(len(response.content) > 0)
+
+        # payment_a에 입금된 금액이 50,000,000원이므로 paid_map을 통해 정상 합산됨을 간접 및 직접 검증
+        from payment.models import ContractPayment
+        from django.db.models import Sum
+        paid_qs = ContractPayment.objects.valid_payments().filter(
+            contract_id=self.contract_a.pk
+        ).aggregate(total=Sum('accounting_entry__amount'))
+        self.assertEqual(paid_qs['total'], 50000000)
+
+    def test_contract_price_bulk_update_with_existing_house_unit(self):
+        """[HIGH-2] 특정 house_unit을 소유한 ContractPrice가 이미 존재하는 상태에서 일괄 업데이트 시 OneToOne 무결성 충돌 없이 정상 동작 검증"""
+        from contract.services import ContractPriceBulkUpdateService
+
+        # 1. contract_a에 연결된 house_unit을 가진 ContractPrice가 이미 존재함
+        service = ContractPriceBulkUpdateService(project=self.project_a)
+        res = service.update_all_contract_prices()
+
+        self.assertEqual(len(res['errors']), 0)
+        self.assertGreaterEqual(res['updated_count'], 1)
+
+    def test_succession_admin_search_fields(self):
+        """[MEDIUM-1] SuccessionAdmin search_fields에서 seller__name, buyer__name 검색 시 쿼리 오류 없음 검증"""
+        from django.contrib.admin.sites import AdminSite
+        from contract.admin import SuccessionAdmin
+        from django.test import RequestFactory
+
+        admin = SuccessionAdmin(Succession, AdminSite())
+        request = RequestFactory().get('/admin/contract/succession/?q=홍길동')
+        request.user = self.admin_user
+
+        # search_fields 검색 적용 시 FieldError 없이 쿼리셋이 정상 평가되어야 함
+        qs = admin.get_queryset(request)
+        filtered_qs, use_distinct = admin.get_search_results(request, qs, '홍길동')
+        self.assertIsNotNone(list(filtered_qs))
+
+

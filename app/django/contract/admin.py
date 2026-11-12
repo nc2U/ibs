@@ -1,8 +1,10 @@
 from django.contrib import admin
+from django.db.models import Q
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 
+from apiV1.permissions._utils import get_project_ids_with_permission
 from .models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractDocument,
                      ContractDocumentFile, ContractPrice, ContractFile, Contractor, ContractorAddress,
                      ContractorContact, ContractorConsultationLogs, Succession, ContractorRelease)
@@ -62,10 +64,14 @@ class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = [ContractPriceInline, ContractorInline]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
+        qs = super().get_queryset(request).select_related(
             'project', 'key_unit__houseunit', 'order_group', 'unit_type',
             'contractor', 'contractprice', 'creator'
         )
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(project_id__in=accessible_projects)
 
 
 class ContractStatusFilter(admin.SimpleListFilter):
@@ -127,6 +133,18 @@ class ContractPriceAdmin(ImportExportMixin, admin.ModelAdmin):
         return "-"
 
     unit_type_display.short_description = "유닛 타입"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related(
+            'order_group', 'contract__unit_type', 'house_unit__unit_type'
+        )
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(
+            Q(contract__project_id__in=accessible_projects) |
+            Q(house_unit__unit_type__project_id__in=accessible_projects)
+        )
 
 
 class CAdressInline(ImportExportMixin, admin.StackedInline):
@@ -344,16 +362,31 @@ class ContractorConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
 class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'contract', 'seller', 'buyer', 'apply_date', 'trading_date',
                     'status', 'approval_date', 'creator')
-    search_fields = ('seller', 'buyer')
+    search_fields = ('seller__name', 'buyer__name', 'contract__serial_number')
     list_display_links = ('contract', 'seller', 'buyer')
-    list_select_related = ('contract', 'seller', 'buyer', 'creator')
+    list_select_related = ('contract__project', 'seller', 'buyer', 'creator')
     list_editable = ('status', 'approval_date')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(contract__project_id__in=accessible_projects)
 
 
 @admin.register(ContractorRelease)
 class ContractorReleaseAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'contractor', 'status', 'release_type', 'refund_amount',
+    list_display = ('id', 'project', 'contractor', 'status', 'release_type', 'refund_amount',
                     'refund_account_bank', 'refund_account_number',
                     'refund_account_depositor', 'request_date', 'completion_date')
-    list_select_related = ('contractor',)
+    search_fields = ('contractor__name', 'refund_account_number', 'refund_account_depositor')
+    list_select_related = ('project', 'contractor')
     list_editable = ('status', 'release_type', 'request_date', 'completion_date')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(project_id__in=accessible_projects)
