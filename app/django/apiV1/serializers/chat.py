@@ -33,6 +33,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         read_only_fields = ('created', 'is_deleted')
 
     def validate(self, attrs):
+        if attrs.get('message_type') == 'system':
+            raise serializers.ValidationError({'message_type': '시스템 알림 메시지는 직접 생성할 수 없습니다.'})
         file = attrs.get('file')
         if file and getattr(file, 'size', 0) > 50 * 1024 * 1024:
             raise serializers.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
@@ -177,7 +179,7 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             return 0
         membership = getattr(obj, '_cached_my_membership', None)
         last_read_id = membership.last_read_message_id if membership else 0
-        return obj.messages.filter(id__gt=last_read_id).exclude(sender=request.user).count()
+        return obj.messages.filter(id__gt=last_read_id, is_deleted=False).exclude(sender=request.user).count()
 
     def get_members(self, obj):
         if obj.room_type == 'channel' and obj.project:

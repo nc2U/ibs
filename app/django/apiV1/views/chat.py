@@ -89,7 +89,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             qs = ChatRoom.objects.filter(
                 (Q(members=user) & ~Q(memberships__user=user, memberships__is_hidden=True)) |
-                Q(room_type='channel')
+                Q(room_type='channel', project__chat_channel_enabled=True)
             ).distinct()
             return self._base_queryset_with_prefetch(qs)
 
@@ -103,13 +103,68 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def perform_create(self, serializer):
-        room = serializer.save(created_by=self.request.user)
+        user = self.request.user
+        room_type = serializer.validated_data.get('room_type', 'group')
+        project = serializer.validated_data.get('project')
+
+        if room_type in ['direct', 'self']:
+            raise exceptions.ValidationError({
+                'room_type': '1:1 대화방 및 나와의 채팅방은 전용 엔드포인트(get-or-create-dm / get-or-create-self)를 통해서만 개설할 수 있습니다.'
+            })
+
+        my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+        if room_type == 'channel':
+            if not project:
+                raise exceptions.ValidationError({'project': '워크스페이스 공용 채널은 소속 워크스페이스가 필요합니다.'})
+            if not user.is_superuser and project.pk not in my_project_ids:
+                raise exceptions.PermissionDenied('소속되지 않은 워크스페이스의 공용 채널을 생성할 수 없습니다.')
+        elif project and not user.is_superuser and project.pk not in my_project_ids:
+            raise exceptions.PermissionDenied('소속되지 않은 워크스페이스에 대화방을 생성할 수 없습니다.')
+
+        room = serializer.save(created_by=user)
         # 생성자 자동 멤버십 및 방장 등록
         ChatRoomMember.objects.get_or_create(
             room=room,
-            user=self.request.user,
+            user=user,
             defaults={'is_admin': True}
         )
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        user = self.request.user
+        room = self.get_object()
+
+        if 'room_type' in serializer.validated_data and serializer.validated_data['room_type'] != room.room_type:
+            raise exceptions.ValidationError({'room_type': '대화방 유형은 변경할 수 없습니다.'})
+        if 'project' in serializer.validated_data and serializer.validated_data['project'] != room.project:
+            raise exceptions.ValidationError({'project': '소속 워크스페이스는 변경할 수 없습니다.'})
+
+        is_room_admin = (
+            room.created_by_id == user.pk or
+            room.memberships.filter(user=user, is_admin=True).exists() or
+            (room.room_type == 'channel' and user.is_superuser)
+        )
+        if not is_room_admin:
+            raise exceptions.PermissionDenied('대화방 관리자만 대화방 정보를 수정할 수 있습니다.')
+
+        serializer.save()
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if instance.room_type in ['channel', 'direct', 'self']:
+            raise exceptions.PermissionDenied(
+                '워크스페이스 공용 채널, 1:1 대화방 및 나와의 채팅방은 임의로 삭제할 수 없습니다.'
+            )
+
+        is_room_admin = (
+            instance.created_by_id == user.pk or
+            instance.memberships.filter(user=user, is_admin=True).exists()
+        )
+        if not is_room_admin:
+            raise exceptions.PermissionDenied('대화방 관리자만 대화방을 삭제할 수 있습니다.')
+
+        instance.delete()
 
     def list(self, request, *args, **kwargs):
         """
@@ -130,14 +185,14 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         latest_messages = {}
 
         if room_ids:
-            # 방별 미읽음 메시지 수 — 단일 집계
+            # 방별 미읽음 메시지 수 — 단일 집계 (소프트 삭제된 메시지 제외)
             whens = [
                 When(room_id=rid, id__gt=my_reads.get(rid, 0), then=1)
                 for rid in room_ids
             ]
             rows = (
                 ChatMessage.objects
-                .filter(room_id__in=room_ids)
+                .filter(room_id__in=room_ids, is_deleted=False)
                 .exclude(sender=request.user)
                 .values('room_id')
                 .annotate(
@@ -294,13 +349,18 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             latest_msg = room.messages.order_by('-created').first()
             last_message_id = latest_msg.id if latest_msg else 0
 
+        try:
+            target_read_id = int(last_message_id)
+        except (ValueError, TypeError):
+            return Response({'error': '잘못된 last_message_id 형식입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         membership, _ = ChatRoomMember.objects.get_or_create(
             room=room,
             user=request.user
         )
         was_updated = False
-        if int(last_message_id) > membership.last_read_message_id:
-            membership.last_read_message_id = int(last_message_id)
+        if target_read_id > membership.last_read_message_id:
+            membership.last_read_message_id = target_read_id
             membership.save(update_fields=['last_read_message_id'])
             was_updated = True
 
@@ -380,7 +440,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                 for room_id, last_read_id in room_ids_and_last_read
             ]
             total = ChatMessage.objects.filter(
-                room_id__in=[r[0] for r in room_ids_and_last_read]
+                room_id__in=[r[0] for r in room_ids_and_last_read],
+                is_deleted=False,
             ).exclude(sender=user).aggregate(
                 total=Coalesce(
                     Sum(Case(*whens, default=0, output_field=IntegerField())),
@@ -411,6 +472,26 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     serializer_class = ChatMessageSerializer
     pagination_class = None  # 커스텀 커서 페이지네이션 사용 (아래 list 오버라이드)
 
+    def _can_access_room(self, user, room):
+        """
+        대화방 접근 권한 및 사생활 격리(Privacy Isolation) 검증:
+        - 공용 채널(channel): 공용 채널이 활성화된 상태에서 슈퍼유저이거나 소속 워크스페이스 멤버인 경우 허용
+        - 나와의 채팅(self): 생성자 본인(또는 참여 멤버)만 허용
+        - 1:1 DM(direct) 및 비공개 그룹방(group): 슈퍼유저라도 실제 참여 멤버(members)만 허용
+        """
+        if not room or not user or not user.is_authenticated:
+            return False
+        if room.room_type == 'channel':
+            if not room.project or not room.project.chat_channel_enabled:
+                return False
+            if user.is_superuser:
+                return True
+            my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+            return room.project_id in my_project_ids
+        if room.room_type == 'self':
+            return room.created_by_id == user.pk or room.members.filter(pk=user.pk).exists()
+        return room.members.filter(pk=user.pk).exists()
+
     def get_queryset(self):
         user = self.request.user
         if not user.is_authenticated:
@@ -418,37 +499,37 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
 
         room_id = self.request.query_params.get('room')
         if room_id:
-            # 방 접근 권한 검증: 1) 내가 멤버인 방 또는 2) 내 워크스페이스 공용 채널
-            room = ChatRoom.objects.filter(pk=room_id).first()
-            if not room:
+            try:
+                room_id_int = int(room_id)
+            except (ValueError, TypeError):
                 return ChatMessage.objects.none()
 
-            if room.room_type == 'channel':
-                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-                if room.project_id not in my_project_ids and not user.is_superuser:
-                    return ChatMessage.objects.none()
-            else:
-                if not room.members.filter(pk=user.pk).exists() and not user.is_superuser:
-                    return ChatMessage.objects.none()
+            room = ChatRoom.objects.select_related('project').filter(pk=room_id_int).first()
+            if not self._can_access_room(user, room):
+                return ChatMessage.objects.none()
 
-            return ChatMessage.objects.filter(room_id=room_id).select_related(
+            return ChatMessage.objects.filter(room_id=room_id_int).select_related(
                 'room', 'sender', 'sender__profile',
                 'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
             ).order_by('-created')  # 역순 정렬 후 클라이언트에서 뒤집어 사용
 
         # room 파라미터가 없는 경우 (단일 메시지 삭제/조회 등 detail 액션 지원)
+        # 사생활 격리: 슈퍼유저도 본인이 참여한 방 또는 공용 채널(channel)의 메시지만 접근 가능
         if user.is_superuser:
-            return ChatMessage.objects.all().select_related(
-                'sender', 'sender__profile', 'room',
-                'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+            allowed_filter = (
+                Q(sender=user) |
+                Q(room__members=user) |
+                Q(room__room_type='channel', room__project__chat_channel_enabled=True)
+            )
+        else:
+            my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+            allowed_filter = (
+                Q(sender=user) |
+                Q(room__members=user) |
+                Q(room__room_type='channel', room__project_id__in=my_project_ids, room__project__chat_channel_enabled=True)
             )
 
-        my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-        return ChatMessage.objects.filter(
-            Q(sender=user) |
-            Q(room__members=user) |
-            Q(room__room_type='channel', room__project_id__in=my_project_ids)
-        ).distinct().select_related(
+        return ChatMessage.objects.filter(allowed_filter).distinct().select_related(
             'sender', 'sender__profile', 'room',
             'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
         )
@@ -542,18 +623,13 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         if file_obj and file_obj.size > 50 * 1024 * 1024:
             raise exceptions.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
 
-        # 대화방 접근 권한 검증
-        if not user.is_superuser:
+        # 대화방 접근 권한 및 사생활 격리 검증 (슈퍼유저라도 비참여 1:1 DM / 나와의 채팅 / 비공개 그룹방 작성 불가)
+        if not self._can_access_room(user, room):
             if room.room_type == 'channel':
-                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-                if room.project_id not in my_project_ids or not getattr(room.project, 'chat_channel_enabled', True):
-                    raise exceptions.PermissionDenied('해당 워크스페이스 공용 채널에 메시지를 작성할 권한이 없습니다.')
-            elif room.room_type == 'self':
-                if room.created_by_id != user.pk:
-                    raise exceptions.PermissionDenied('본인의 나와의 채팅방에만 메시지를 작성할 수 있습니다.')
-            else:
-                if not room.members.filter(pk=user.pk).exists():
-                    raise exceptions.PermissionDenied('해당 대화방의 참여 멤버만 메시지를 작성할 수 있습니다.')
+                raise exceptions.PermissionDenied('해당 워크스페이스 공용 채널에 메시지를 작성할 권한이 없습니다.')
+            if room.room_type == 'self':
+                raise exceptions.PermissionDenied('본인의 나와의 채팅방에만 메시지를 작성할 수 있습니다.')
+            raise exceptions.PermissionDenied('해당 대화방의 참여 멤버만 메시지를 작성할 수 있습니다.')
 
         # 답장(reply_to)이 전달된 경우 동일 대화방 메시지인지 검증
         reply_to = serializer.validated_data.get('reply_to')
@@ -758,18 +834,24 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         except (ValueError, TypeError):
             page_size = 30
 
-        # 접근 가능한 대화방 필터링
+        # 접근 가능한 대화방 필터링 (사생활 격리: 슈퍼유저도 참여 방 또는 활성 공용 채널만 검색 허용)
         if user.is_superuser:
-            allowed_rooms = ChatRoom.objects.all()
+            allowed_rooms = ChatRoom.objects.filter(
+                Q(members=user) |
+                Q(room_type='channel', project__chat_channel_enabled=True)
+            ).distinct()
         else:
             my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
             allowed_rooms = ChatRoom.objects.filter(
                 Q(members=user) |
-                Q(room_type='channel', project_id__in=my_project_ids)
+                Q(room_type='channel', project_id__in=my_project_ids, project__chat_channel_enabled=True)
             ).distinct()
 
         if room_id:
-            allowed_rooms = allowed_rooms.filter(pk=room_id)
+            try:
+                allowed_rooms = allowed_rooms.filter(pk=int(room_id))
+            except (ValueError, TypeError):
+                return Response({'results': [], 'count': 0, 'page': page, 'has_more': False})
 
         qs = ChatMessage.objects.filter(
             room__in=allowed_rooms,
@@ -820,20 +902,19 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         if not msg_id:
             return Response({'error': 'message_id is required'}, status=400)
 
-        target_msg = ChatMessage.objects.filter(pk=msg_id).select_related('room').first()
+        try:
+            msg_id_int = int(msg_id)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid message_id'}, status=400)
+
+        target_msg = ChatMessage.objects.filter(pk=msg_id_int).select_related('room', 'room__project').first()
         if not target_msg:
             return Response({'error': 'Message not found'}, status=404)
 
         room = target_msg.room
-        # 방 접근 권한 체크
-        if not user.is_superuser:
-            if room.room_type == 'channel':
-                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-                if room.project_id not in my_project_ids:
-                    return Response({'error': 'Permission denied'}, status=403)
-            else:
-                if not room.members.filter(pk=user.pk).exists():
-                    return Response({'error': 'Permission denied'}, status=403)
+        # 방 접근 권한 체크 (사생활 격리: 슈퍼유저도 비참여 비공개 방 접근 불가)
+        if not self._can_access_room(user, room):
+            return Response({'error': 'Permission denied'}, status=403)
 
         try:
             limit = min(50, max(5, int(request.query_params.get('limit', 15))))
@@ -880,18 +961,17 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         if not room_id:
             return Response({'error': 'room is required'}, status=400)
 
-        room = ChatRoom.objects.filter(pk=room_id).first()
+        try:
+            room_id_int = int(room_id)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid room id'}, status=400)
+
+        room = ChatRoom.objects.select_related('project').filter(pk=room_id_int).first()
         if not room:
             return Response({'error': 'Room not found'}, status=404)
 
-        if not user.is_superuser:
-            if room.room_type == 'channel':
-                my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
-                if room.project_id not in my_project_ids:
-                    return Response({'error': 'Permission denied'}, status=403)
-            else:
-                if not room.members.filter(pk=user.pk).exists():
-                    return Response({'error': 'Permission denied'}, status=403)
+        if not self._can_access_room(user, room):
+            return Response({'error': 'Permission denied'}, status=403)
 
         tab = request.query_params.get('tab', 'all')
         try:

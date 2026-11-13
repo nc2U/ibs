@@ -335,6 +335,163 @@ class ChatMessageAPITests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('file', res.data)
 
+    def test_superuser_privacy_isolation_in_message_endpoints(self):
+        """슈퍼유저라도 비참여 1:1 DM, 나와의 채팅, 비공개 그룹방 메시지 열람·검색·맥락·파일·전송 차단 검증"""
+        from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+
+        dm_room = ChatRoom.objects.create(room_type='direct', created_by=self.user1)
+        ChatRoomMember.objects.create(room=dm_room, user=self.user1)
+        ChatRoomMember.objects.create(room=dm_room, user=self.user2)
+        secret_dm_msg = ChatMessage.objects.create(
+            room=dm_room,
+            sender=self.user1,
+            content='절대 노출되면 안 되는 1:1 기밀 대화',
+        )
+
+        self.client.force_authenticate(user=self.superuser)
+
+        # 1) 목록 조회 (?room=dm_room.id) -> 빈 결과
+        res_list = self.client.get(f'/api/v1/chat-message/?room={dm_room.id}')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_list.data['results']), 0)
+
+        # 2) 단건 상세 조회 -> 404
+        res_detail = self.client.get(f'/api/v1/chat-message/{secret_dm_msg.id}/')
+        self.assertEqual(res_detail.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 3) 통합 검색 -> 검색 결과 0건
+        res_search = self.client.get('/api/v1/chat-message/search/?q=기밀')
+        self.assertEqual(res_search.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_search.data['count'], 0)
+
+        # 4) 전후 맥락(context) 조회 -> 403
+        res_ctx = self.client.get(f'/api/v1/chat-message/context/?message_id={secret_dm_msg.id}')
+        self.assertEqual(res_ctx.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5) 파일 서랍(files) 조회 -> 403
+        res_files = self.client.get(f'/api/v1/chat-message/files/?room={dm_room.id}')
+        self.assertEqual(res_files.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 6) 비참여 1:1 DM 방에 메시지 작성 시도 -> 403
+        res_post = self.client.post('/api/v1/chat-message/', {
+            'room': dm_room.id,
+            'content': '슈퍼유저 개입 시도',
+            'message_type': 'text',
+        })
+        self.assertEqual(res_post.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_chat_message_admin_masked_content_hides_plaintext(self):
+        """Django Admin 목록에서 1:1 DM 및 나와의 채팅 원문이 평문 노출되지 않고 마스킹되는지 검증"""
+        from django.contrib.admin.sites import AdminSite
+        from chat.admin import ChatMessageAdmin
+        from chat.models import ChatRoom, ChatMessage
+
+        dm_room = ChatRoom.objects.create(room_type='direct', created_by=self.user1)
+        secret_msg = ChatMessage.objects.create(
+            room=dm_room,
+            sender=self.user1,
+            content='비밀번호는 123456입니다',
+        )
+        admin_inst = ChatMessageAdmin(ChatMessage, AdminSite())
+        rendered = str(admin_inst.masked_content(secret_msg))
+        self.assertNotIn('비밀번호는 123456입니다', rendered)
+        self.assertIn('사생활 보호 마스킹 처리됨', rendered)
+
+    def test_chat_room_destroy_and_update_permissions(self):
+        """공용 채널/DM 임의 삭제 차단 및 그룹방 관리자 권한 검증"""
+        from chat.models import ChatRoom
+
+        channel_room = ChatRoom.objects.create(
+            project=self.project,
+            room_type='channel',
+            title=self.project.name,
+            created_by=self.user1,
+        )
+
+        # 1) 워크스페이스 일반 멤버나 방장이라도 공용 채널(channel)은 DELETE 불가 (403)
+        self.client.force_authenticate(user=self.user1)
+        res_del_channel = self.client.delete(f'/api/v1/chat-room/{channel_room.id}/')
+        self.assertEqual(res_del_channel.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2) 그룹방 일반 멤버(user2)는 그룹방 수정/삭제 불가 (403)
+        self.client.force_authenticate(user=self.user2)
+        res_patch_non_admin = self.client.patch(f'/api/v1/chat-room/{self.room.id}/', {'title': '임의 변경'})
+        self.assertEqual(res_patch_non_admin.status_code, status.HTTP_403_FORBIDDEN)
+        res_del_non_admin = self.client.delete(f'/api/v1/chat-room/{self.room.id}/')
+        self.assertEqual(res_del_non_admin.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3) 그룹방 관리자(user1)도 room_type 변조는 불가 (400), 제목 수정 및 삭제는 가능
+        self.client.force_authenticate(user=self.user1)
+        res_mutate_type = self.client.patch(f'/api/v1/chat-room/{self.room.id}/', {'room_type': 'channel'})
+        self.assertEqual(res_mutate_type.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_patch_admin = self.client.patch(f'/api/v1/chat-room/{self.room.id}/', {'title': '정상 변경'})
+        self.assertEqual(res_patch_admin.status_code, status.HTTP_200_OK)
+
+        # 4) 일반 create 엔드포인트로 direct/self 방 직접 생성 시도 차단 (400)
+        res_create_direct = self.client.post('/api/v1/chat-room/', {'room_type': 'direct', 'title': '불법 DM'})
+        self.assertEqual(res_create_direct.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_soft_deleted_messages_excluded_from_unread_counts(self):
+        """소프트 삭제된 메시지(is_deleted=True)가 미읽음 배지 카운트에 합산되지 않는지 검증"""
+        from chat.models import ChatMessage
+
+        # 현재 user2 기준 안 읽은 메시지는 msg1 (1개)
+        self.client.force_authenticate(user=self.user2)
+        res_before = self.client.get('/api/v1/chat-room/total-unread/')
+        self.assertEqual(res_before.data['total_unread'], 1)
+
+        # 소프트 삭제된 메시지 추가 생성
+        ChatMessage.objects.create(
+            room=self.room,
+            sender=self.user1,
+            content='삭제된 메시지입니다.',
+            is_deleted=True,
+        )
+
+        res_after = self.client.get('/api/v1/chat-room/total-unread/')
+        self.assertEqual(res_after.data['total_unread'], 1)
+
+        res_rooms = self.client.get('/api/v1/chat-room/')
+        target_room_data = next(r for r in res_rooms.data if r['id'] == self.room.id)
+        self.assertEqual(target_room_data['unread_count'], 1)
+
+    def test_system_message_spoofing_and_invalid_params_blocked(self):
+        """시스템 메시지 사칭 차단, 비정상 쿼리 파라미터 방어 및 워크스페이스 이름 변경 시그널 동기화 검증"""
+        from chat.models import ChatRoom
+
+        self.client.force_authenticate(user=self.user1)
+
+        # 1) message_type='system' 사칭 전송 차단 (400)
+        res_sys = self.client.post('/api/v1/chat-message/', {
+            'room': self.room.id,
+            'content': '관리자 사칭 공지',
+            'message_type': 'system',
+        })
+        self.assertEqual(res_sys.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 2) 비정상 쿼리 파라미터 방어 (500 에러 없이 200/400 반환)
+        self.assertEqual(self.client.get('/api/v1/chat-message/?room=invalid').status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get('/api/v1/chat-message/search/?q=test&room=invalid').status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.get('/api/v1/chat-message/context/?message_id=invalid').status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.client.get('/api/v1/chat-message/files/?room=invalid').status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            self.client.post(f'/api/v1/chat-room/{self.room.id}/read/', {'last_message_id': 'invalid'}).status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        # 3) 워크스페이스 이름 변경 시 공용 채널 제목 자동 동기화 검증
+        channel_room = ChatRoom.objects.create(
+            project=self.project,
+            room_type='channel',
+            title=self.project.name,
+            created_by=self.user1,
+        )
+        self.project.name = '변경된 워크스페이스명'
+        self.project.save()
+        channel_room.refresh_from_db()
+        self.assertEqual(channel_room.title, '변경된 워크스페이스명')
+
 
 class ChatWebSocketAPITests(APITransactionTestCase):
     """WebSocket Consumer 및 Middleware 비동기 스레드 통합 테스트"""
@@ -360,6 +517,34 @@ class ChatWebSocketAPITests(APITransactionTestCase):
         # 본인이 참여한 멤버(user1)는 정상 접근 가능
         can_access_member = async_to_sync(consumer.check_room_access)(direct_room.id, self.user1)
         self.assertTrue(can_access_member)
+
+    def test_websocket_kicked_user_cannot_send_or_rejoin(self):
+        """대화방에서 퇴장/제외된 사용자가 기존 WebSocket으로 메시지 전송 시 자동 재등록되지 않고 차단되는지 검증"""
+        from asgiref.sync import async_to_sync
+        from chat.models import ChatRoom, ChatRoomMember
+        from chat.consumers import ChatConsumer
+
+        group_room = ChatRoom.objects.create(room_type='group', title='그룹방', created_by=self.user1)
+        ChatRoomMember.objects.create(room=group_room, user=self.user1, is_admin=True)
+        m2 = ChatRoomMember.objects.create(room=group_room, user=self.user2)
+
+        # user2가 방에서 나감 (멤버십 삭제)
+        m2.delete()
+
+        consumer = ChatConsumer()
+        with self.assertRaises(PermissionError):
+            async_to_sync(consumer.save_message)(
+                room_id=group_room.id,
+                user=self.user2,
+                content='퇴장 후 몰래 전송',
+                message_type='text',
+                ref_id=None,
+                ref_title='',
+                ref_sub='',
+                reply_to_id=None,
+            )
+
+        self.assertFalse(ChatRoomMember.objects.filter(room=group_room, user=self.user2).exists())
 
     def test_websocket_header_jwt_auth(self):
         """[T-WS-HEADER-AUTH] Authorization: Bearer <token> 헤더 기반 WebSocket 인증 지원 검증"""

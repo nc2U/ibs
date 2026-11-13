@@ -53,8 +53,8 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
     @admin.display(description='메시지 내용')
     def masked_content(self, obj):
-        """비공개(1:1, 나와의 채팅) 대화인 경우 마스킹 텍스트 안내 표출"""
+        """비공개(1:1, 나와의 채팅) 대화인 경우 마스킹 텍스트 안내 표출 (원문 평문 노출 차단)"""
         if obj.room and obj.room.room_type in ['direct', 'self']:
             tag = '1:1 비밀 대화' if obj.room.room_type == 'direct' else '나와의 채팅 메모'
-            return format_html('<span style="color: #888; font-style: italic;">🔒 [{}] {}</span>', tag, obj.content[:30] if len(obj.content) > 30 else obj.content)
+            return format_html('<span style="color: #888; font-style: italic;">🔒 [{}] (사생활 보호 마스킹 처리됨)</span>', tag)
         return obj.content[:50]

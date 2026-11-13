@@ -16,6 +16,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
       2. typing (상대방 입력 중 알림)
       3. read (메시지 읽음 위치 갱신 동기화)
     """
+    ALLOWED_USER_MESSAGE_TYPES = {'text', 'image', 'file', 'issue', 'meeting', 'approval'}
 
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
@@ -59,11 +60,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         event_type = data.get('type', 'chat_message')
 
         if event_type == 'chat_message':
-            content = data.get('content', '').strip()
-            message_type = data.get('message_type', 'text')
+            content = str(data.get('content') or '').strip()
+            raw_message_type = str(data.get('message_type') or 'text').strip()
+            if raw_message_type not in self.ALLOWED_USER_MESSAGE_TYPES:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': '허용되지 않는 메시지 유형입니다.',
+                }))
+                return
+            message_type = raw_message_type
             ref_id = data.get('ref_id')
-            ref_title = data.get('ref_title', '')
-            ref_sub = data.get('ref_sub', '')
+            ref_title = str(data.get('ref_title') or '')[:255]
+            ref_sub = str(data.get('ref_sub') or '')[:100]
             reply_to_id = data.get('reply_to_id') or data.get('reply_to')
 
             if not content and message_type == 'text':
@@ -105,21 +113,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'type': 'broadcast_typing',
                     'user_id': self.user.pk,
                     'username': self.user.username,
-                    'is_typing': data.get('is_typing', True),
+                    'is_typing': bool(data.get('is_typing', True)),
                 }
             )
 
         elif event_type == 'read':
             last_message_id = data.get('last_message_id', 0)
             if last_message_id:
-                updated = await self.update_last_read(self.room_id, self.user, last_message_id)
-                if updated:
+                updated_id = await self.update_last_read(self.room_id, self.user, last_message_id)
+                if updated_id:
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
                             'type': 'broadcast_read',
                             'user_id': self.user.pk,
-                            'last_message_id': last_message_id,
+                            'last_message_id': updated_id,
                         }
                     )
 
@@ -159,34 +167,48 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # ── Database Sync Helpers ─────────────────────────────────────────
 
-    @database_sync_to_async
-    def check_room_access(self, room_id, user):
-        room = ChatRoom.objects.filter(pk=room_id).first()
-        if not room:
+    def _has_room_access_sync(self, room, user):
+        if not room or not user or not user.is_authenticated:
             return False
 
         if room.room_type == 'channel':
-            # 워크스페이스 공용 채널: 슈퍼유저이거나 소속 워크스페이스 활성 채널인 경우 허용
-            if user.is_superuser:
-                return True
+            # 워크스페이스 공용 채널: 공용 채널이 활성화된 상태에서 슈퍼유저이거나 소속 워크스페이스 멤버인 경우 허용
             if not room.project or not room.project.chat_channel_enabled:
                 return False
+            if user.is_superuser:
+                return True
             my_pjt_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
             return room.project_id in my_pjt_ids
 
-        # 사생활 격리 원칙: direct(1:1 DM), self(나와의 채팅), group(비공개 그룹방)은
+        if room.room_type == 'self':
+            return room.created_by_id == user.pk or room.members.filter(pk=user.pk).exists()
+
+        # 사생활 격리 원칙: direct(1:1 DM), group(비공개 그룹방)은
         # 슈퍼유저라도 실제 참여 멤버(members)가 아니면 웹소켓 접속 불가
         return room.members.filter(pk=user.pk).exists()
 
     @database_sync_to_async
+    def check_room_access(self, room_id, user):
+        try:
+            room_id_int = int(room_id)
+        except (ValueError, TypeError):
+            return False
+        room = ChatRoom.objects.select_related('project').filter(pk=room_id_int).first()
+        return self._has_room_access_sync(room, user)
+
+    @database_sync_to_async
     @transaction.atomic
     def save_message(self, room_id, user, content, message_type, ref_id, ref_title, ref_sub, reply_to_id):
-        room = ChatRoom.objects.get(pk=room_id)
+        room = ChatRoom.objects.select_related('project').get(pk=room_id)
+        # 연결 이후 퇴장/권한 해제된 사용자의 메시지 전송 및 자동 재등록 방지
+        if not self._has_room_access_sync(room, user):
+            raise PermissionError('해당 대화방에 메시지를 전송할 권한이 없습니다.')
+
         reply_to_detail = None
         valid_reply_to_id = None
         if reply_to_id:
             try:
-                target = ChatMessage.objects.select_related('sender__profile').get(pk=reply_to_id, room_id=room_id)
+                target = ChatMessage.objects.select_related('sender__profile').get(pk=int(reply_to_id), room_id=room_id)
                 target_sender_name = target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음')
                 reply_to_detail = {
                     'id': target.id,
@@ -195,7 +217,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message_type': target.message_type,
                 }
                 valid_reply_to_id = target.id
-            except ChatMessage.DoesNotExist:
+            except (ChatMessage.DoesNotExist, ValueError, TypeError):
                 pass
 
         msg = ChatMessage.objects.create(
@@ -265,10 +287,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_last_read(self, room_id, user, last_message_id):
-        membership, _ = ChatRoomMember.objects.get_or_create(room_id=room_id, user=user)
-        if int(last_message_id) > membership.last_read_message_id:
-            membership.last_read_message_id = int(last_message_id)
+        try:
+            target_id = int(last_message_id)
+        except (ValueError, TypeError):
+            return 0
+        if target_id <= 0:
+            return 0
+
+        room = ChatRoom.objects.select_related('project').filter(pk=room_id).first()
+        if not self._has_room_access_sync(room, user):
+            return 0
+
+        membership, _ = ChatRoomMember.objects.get_or_create(room=room, user=user)
+        if target_id > membership.last_read_message_id:
+            membership.last_read_message_id = target_id
             membership.save(update_fields=['last_read_message_id'])
-            return True
-        return False
+            return target_id
+        return 0
 
