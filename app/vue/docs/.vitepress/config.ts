@@ -133,18 +133,19 @@ export default withMermaid(
         {
           text: '본사 관리 시스템',
           items: [
+            { text: '본사 회계 관리', link: '/ledger/company' },
             {
               text: '인사 조직 관리',
               collapsed: true,
               items: [
                 { text: '조직 체계 관리', link: '/hr-manage/organization' },
                 { text: '직원 인사 관리', link: '/hr-manage/staff' },
-                { text: '근태 및 휴가 관리', link: '/hr-manage/attendance' },
-                { text: '인사 평가 및 승진', link: '/hr-manage/evaluation' },
+                { text: '근태 휴가 관리', link: '/hr-manage/attendance' },
+                { text: '인사 승진 평가', link: '/hr-manage/evaluation' },
               ],
             },
             {
-              text: '전자결재 시스템',
+              text: '전자 결재 관리',
               collapsed: true,
               items: [
                 { text: '전자결재 개요', link: '/approval/' },
@@ -187,7 +188,7 @@ export default withMermaid(
           ],
         },
         {
-          text: 'PJT 관리 시스템',
+          text: '프로젝트 관리 시스템',
           items: [
             {
               text: '프로젝트 설정',
@@ -263,7 +264,7 @@ export default withMermaid(
           ],
         },
         {
-          text: '관리자 메뉴얼',
+          text: '관리자 매뉴얼',
           items: [
             { text: '회사 정보 관리', link: '/authority/' },
             { text: '권한 설정 관리', link: '/authority/manage' },
@@ -279,10 +280,6 @@ export default withMermaid(
       editLink: {
         pattern: 'https://github.com/nc2U/ibs/blob/master/app/vue/docs/:path',
         text: 'Edit this page on GitHub',
-      },
-      carbonAds: {
-        code: 'your-carbon-code',
-        placement: 'your-carbon-placement',
       },
       footer: {
         message: 'Released under the MIT License.',
