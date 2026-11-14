@@ -218,9 +218,6 @@ jobs:
             emailHostPassword: '${{ secrets.EMAIL_HOST_PASSWORD }}'
             defaultFromEmail: "${{ secrets.EMAIL_DEFAULT_FROM }}"
 
-          erpRedirect:
-            enabled: true
-
           postgres:
             auth:
               postgresPassword: "${{ secrets.DATABASE_PASS }}"
@@ -260,7 +257,6 @@ jobs:
                     - ibs.${{ secrets.DOMAIN_NAME }}
                     - ibs.dyibs.co.kr
                     - ibs.brdnc.co.kr
-                    - erp.${{ secrets.DOMAIN_NAME }}
 
           web:
             imageConfigMaps:

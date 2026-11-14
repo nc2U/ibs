@@ -79,7 +79,3 @@ nginx:
           - my-host.com
           - my-subhost-1.com
           - my-subhost-2.com
-          - my-legacy-host.com # 추후 삭제
-
-erpRedirect: # 추후 삭제
-  enabled: true # 추후 삭제
