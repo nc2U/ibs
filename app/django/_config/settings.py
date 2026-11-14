@@ -547,6 +547,13 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        # 테스트 중 의도된 403/404 보안 검증의 django.request WARNING 트레이스백이
+        # CI Python Problem Matcher에 오류 어노테이션으로 잡히지 않도록 test 실행 시 ERROR 이상만 출력
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR" if "test" in sys.argv else "WARNING",
+            "propagate": False,
+        },
         # 🔍 범인인 weasyprint의 로그 레벨을 WARNING(경고) 이상으로 높여서 INFO/DEBUG 로그를 차단합니다.
         "weasyprint": {
             "handlers": ["console"],
