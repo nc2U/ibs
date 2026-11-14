@@ -1,133 +1,71 @@
 # AGENTS.md
 
-이 파일은 이 저장소의 코드를 다룰 때 개발 에이전트 (Antigravity 등)에게 지침을 제공합니다.
+이 파일은 이 저장소의 코드를 다룰 때 개발 에이전트(Antigravity 등)에게 적용되는 공통 핵심 지침입니다.
 
-## 프로젝트 개요
+## 프로젝트 개요 및 구조
 
-IBS는 Django 6.* 백엔드와 Vue 3.5 프론트엔드로 구축된 종합 건설 관리 시스템입니다. 건설 회사의 건설 프로젝트, 계약, 기납부/미납금, 자금 흐름 (캐시플로우) 및 문서 관리를 수행합니다.
+IBS는 부동산 개발·건설 프로젝트, 계약, 수납, 자금 흐름(캐시플로우), 전자결재, 사내 메신저 및 업무를 통합 관리하는 시스템입니다.
 
-## 개발 명령어
+* **백엔드 (`app/django/`)**: Django 6.1.* (`Python 3.14`), DRF + SimpleJWT, Daphne(ASGI + Channels WebSocket), Celery + Redis, PostgreSQL
+  * 도메인 앱: `accounts`, `approval`, `book`, `chat`, `company`, `contract`, `docs`, `forum`, `ibs`, `items`, `ledger`, `notice`, `payment`, `project`, `sales`, `work`
+  * API/공통: `apiV1`, `_excel`, `_pdf`, `_utils`, `_config`
+* **웹 프론트엔드 (`app/vue/`)**: Vue 3.5, Vite 7.*, TypeScript 5.8, Vuetify 4.*, CoreUI, Pinia, Vitest/Cypress
+* **모바일 앱 (`app/flutter/`)**: Flutter (`mobile_ibs`, Dart `>=3.9.2 <4.0.0`), Riverpod + GoRouter
+* **사용자 매뉴얼 (`app/vue/docs/`)**: VitePress 기반 운영 매뉴얼
+* **배포/인프라 (`deploy/`, `volume/`)**: Docker Compose, Dockerfile, K3s Helm 차트(`deploy/helm/`), 배포/백업 스크립트
+
+---
+
+## 개발 및 검증 명령어 (CI 게이트 기준)
 
 ### Docker 개발 환경 (권장)
 
 ```bash
-# Docker를 통한 Django 명령어 실행
-docker compose -f deploy/docker-compose.yml exec web python manage.py <command>
-
-# 예시:
 docker compose -f deploy/docker-compose.yml exec web python manage.py check
 docker compose -f deploy/docker-compose.yml exec web python manage.py showmigrations
 docker compose -f deploy/docker-compose.yml exec web python manage.py test <app_name>
 docker compose -f deploy/docker-compose.yml exec web sh migrate.sh
 ```
 
-### Django 백엔드 (app/django/)
+### Django 백엔드 (`app/django/`)
 
 ```bash
-# 마이그레이션 실행 (모든 앱의 마이그레이션을 생성하고 마이그레이트 실행)
-sh migrate.sh -m # sh migrate.sh => 마이그레이트 실행, -m => 마이그레이션 + 마이그레이트 실행
-
-# 정적 파일 수집 (static files)
-python manage.py collectstatic
-
-# 개발 서버 실행
-python manage.py runserver
-
-# 슈퍼유저(관리자) 생성
-python manage.py createsuperuser
-
-# 시드 데이터 로드
-cd ibs/fixtures && sh loaddata.sh
-
-# 테스트 실행
-python manage.py test
-python manage.py test <app_name>
-
-# 시스템 검사
-python manage.py check
+python manage.py check                              # 시스템 검사 (CI 필수)
+python manage.py makemigrations --check --dry-run   # 누락 마이그레이션 검사 (CI 필수)
+python manage.py test --noinput                     # 전체 테스트 (또는 <app_name>)
+python manage.py runserver                          # 개발 서버 (로컬 ASGI/Channels 테스트 시 daphne 사용)
+python manage.py collectstatic                      # _assets/ -> static/ 정적 파일 수집
+cd ibs/fixtures && sh loaddata.sh                   # 시드 데이터 로드
 ```
 
-### Vue 프론트엔드 (app/vue/)
+* **마이그레이션 주의**: `sh migrate.sh -m`은 스크립트 내부에 하드코딩된 16개 앱 목록에 대해 `makemigrations`를 실행하므로(`_excel`, `_pdf` 등 제외), 모델 변경이 의도된 경우에만 사용하고 검증 시에는 `makemigrations --check --dry-run`을 우선 실행합니다.
+* **PostgreSQL `pg_trgm` 확장**: `GinIndex`를 사용하므로 로컬/테스트 PostgreSQL(`template1` 및 대상 DB)에 `CREATE EXTENSION IF NOT EXISTS pg_trgm;`이 적용되어 있어야 합니다.
+
+### Vue 프론트엔드 (`app/vue/`)
 
 ```bash
-# 의존성 패키지 설치
-pnpm install
-
-# 개발 서버 실행
-pnpm dev
-
-# 프로덕션 빌드
-pnpm build
-
-# 테스트 실행
-pnpm test:unit
-pnpm test:e2e
-
-# 린트 및 포맷팅
-pnpm lint
-pnpm format
-
-# 타입 검사
-pnpm type-check
+pnpm install              # 의존성 설치 (CI: pnpm install --frozen-lockfile)
+pnpm dev                  # Vite 개발 서버
+pnpm lint:check           # ESLint 비수정 검사 (CI 필수) — pnpm lint 는 --fix 자동 수정 실행
+pnpm type-check           # TypeScript 검사 (vue-tsc --noEmit)
+pnpm exec vitest run      # 유닛 테스트 단발 실행 (⚠️ pnpm test:unit 은 watch 모드이므로 에이전트/CI에서 사용 금지)
+pnpm build-only           # Vite 프로덕션 빌드 (../django/static/dist 로 출력됨)
+pnpm build                # type-check + build-only 병렬 실행
+pnpm format               # Prettier 포맷팅
+pnpm docs:dev             # VitePress 매뉴얼 로컬 서버 (빌드: pnpm docs:build)
 ```
 
-## 아키텍처 개요
+### Flutter 모바일 (`app/flutter/`)
 
-### 백엔드 구조
+```bash
+flutter pub get && flutter analyze && flutter test
+```
 
-- **Django 앱**: 각 비즈니스 영역을 독립적인 Django 앱으로 구성하여 관리합니다.
-    - `accounts` - 사용자 관리 및 인증 (커스텀 User 모델)
-    - `apiV1` - 프론트엔드 연동을 위한 REST API 엔드포인트
-    - `approval` - 전자결재 시스템
-    - `book` - 도서 / 문서 관리
-    - `chat` - 사내 메신저, 채팅 시스템
-    - `company` - 회사 및 회사 정보 관리
-    - `contract` - 계약 및 계약자 관리
-    - `docs` - 문서 등록 시스템
-    - `forum` - 게시판 기능
-    - `ibs` - 기초 회계 계정 / 대시보드 설정 / 캘린더 / 오늘의 한마디
-    - `items` - 분양 계약 유니트 및 타입 / 속성 관리
-    - `ledger` - 재무 거래 및 자금 흐름 관리
-    - `notice` - 고객 고지 및 알림 관리
-    - `payment` - 수납 처리 및 수납 청구 관리
-    - `project` - 건설 프로젝트 관리
-    - `sales` - 분양 대행 관리 시스템
-    - `work` - 레드마인 기반 업무 (Issue) 및 회의 연동 관리
+---
 
-### 데이터베이스 아키텍처
+## 도메인 용어 체계 (Domain Terminology Architecture)
 
-- `DATABASE_TYPE` 환경 변수를 통해 PostgreSQL를 지원합니다.
-- `_config/database_router.py`에 마스터-슬레이브 (Read/Write 분리) 라우팅이 설정되어 있습니다.
-- `KUBERNETES_SERVICE_HOST` 환경 변수가 감지되면 읽기 전용 복제본 (Replica) 데이터베이스를 사용하여 조회 작업을 분산합니다.
-- 모든 쓰기 작업은 default 데이터베이스로 전송되며, 읽기 작업은 복제본으로 분산 가능합니다.
-- 개발/프로덕션 등 환경에 따른 멀티 데이터베이스 설정이 적용되어 있습니다.
-
-### API 구조
-
-- REST API 엔드포인트는 `apiV1/` 앱에 통합 관리됩니다.
-- `django-rest-framework-simplejwt`를 사용한 JWT 인증을 수행합니다.
-- 도메인 단위 코드 구성:
-    - Serializer 정의: `apiV1/serializers/` (accounts, company, project 등)
-    - ViewSet 정의: `apiV1/views/` (각 도메인에 대응)
-- 자동으로 URL을 생성하기 위해 `DefaultRouter`를 사용합니다.
-
-### 프론트엔드 통합
-
-- **Vue 3.5**: Vite 7.* 빌드 시스템, TypeScript 5.8, Vuetify 4.* UI 프레임워크 기반의 메인 SPA입니다.
-    - 풍부한 컴포넌트 생태계 활용 (d3, 차트, 마크다운 에디터, 데이트 피커 등)
-    - Pinia를 활용한 전역 상태 관리
-    - Vitest 및 Cypress를 사용한 테스트 코드 작성
-
-### 핵심 아키텍처 개념
-
-이 시스템은 건설 프로젝트의 전 생애주기 데이터를 **'워크스페이스 & 프로젝트 기반의 협업 환경'**으로 통합하여 관리하는 것을 목표로 합니다.
-
-* **데이터 무결성 및 이력 관리**: 모든 비즈니스 활동은 변경 이력 (`log`)과 권한 체계를 통해 관리되며, 단순히 현재 상태뿐만 아니라 진행 과정을 투명하게 공개합니다.
-* **결합된 도메인 관리**: 독립적인 도메인 (계약, 수납, 문서 등)이 프로젝트라는 공통 분모를 통해 하나의 맥락으로 연결되어 작동합니다.
-
-### 도메인 용어 체계 (Domain Terminology Architecture)
-
-개발 시 백엔드 데이터 모델과 프론트엔드/모바일 UI 용어 간의 명확한 역할 분담과 개념 일관성을 위해 아래 용어 매핑 규칙을 반드시 준수합니다.
+백엔드 모델과 클라이언트(Vue / Flutter) UI 용어의 개념 일관성을 위해 아래 매핑을 반드시 준수합니다.
 
 | 구분              | 백엔드 모델                                         | 비즈니스 도메인 범위                                                     | 클라이언트(Vue / Flutter) UI 표출 용어 |
 |:------------------|:----------------------------------------------------|:-------------------------------------------------------------------------|:---------------------------------------|
@@ -135,210 +73,38 @@ pnpm type-check
 | **IBS HQ Manage** | `work.Role/Permission` (`category='ibs_hq_manage'`) | 본사 회계/자금, 인사/조직, 법무, 감사 등 본사 경영 직무 (보안 격리 지원) | **`본사 관리` (HQ Manage)**            |
 | **IBS PR Manage** | `work.Role/Permission` (`category='ibs_pr_manage'`) | 분양, 수납, 사업부지, 사업비 등 부동산 개발 전용 사업지                  | **`프로젝트` (Project)**               |
 
-- **'현장' 용어의 무분별한 사용 지양 (시스템/도메인 영역)**: 시스템 아키텍처, 메뉴명, DB 모델 등 협업 공간이나 사업지를 지칭할 때는 '현장' 대신 반드시 '워크스페이스' 또는 '프로젝트'를 사용합니다. 단, "현장 사진/동영상 첨부", "현장 실사/외근", "공사 현장 상황"과 같이 실제 오프라인의 물리적 작업 현장을 명확히 지칭하는 사용자 친화적 실무 표현은 허용합니다.
-- **워크스페이스 (`work_space`)**: 업무 (Issue), 회의록 (Meeting), 로드맵, 공지사항 등 본사/프로젝트/기타 전반의 협업을 수행하는 공간 단위.
-- **본사 관리 (`ibs_hq_manage`)**: 본사 경영지원, 재경, 인사, 법무 등 본사 경영 직무를 전담하며 슈퍼유저 전용 보안 격리 (`is_confidential`)를 지원하는 역할/권한 영역.
-- **프로젝트 (`ibs_pr_manage`)**: 부동산 개발 (`type='2'`)에 한정되어 계약 (Contract), 수납 (Payment), 재무 (Ledger), 부지 (Site)를 관리하는 사업지 단위.
+* **'현장' 용어 지양 (시스템/도메인 영역)**: 메뉴명, 아키텍처, DB 모델에서 협업 공간이나 사업지를 지칭할 때는 '현장' 대신 **'워크스페이스'** 또는 **'프로젝트'**를 사용합니다. 단, `"현장 사진/동영상 첨부"`, `"현장 외근/실사"`, `"공사 현장 상황"`처럼 물리적 작업 현장을 직접 가리키는 실무 표현은 허용합니다.
 
-## 업무 관리 시스템 (work 앱) 아키텍처
+---
 
-부동산 시행 및 개발 프로세스를 '업무 (Issue)'와 '회의 (Meeting)' 단위로 관리하는 핵심 도메인입니다. 개발 및 수정 시 다음 규칙을 준수하십시오.
+## 핵심 개발 원칙
 
-#### 1. 데이터 모델 및 비즈니스 흐름
+### 백엔드 (`app/django/`)
 
-* **워크스페이스 (IssueProject) 및 회의 (Meeting) 중심 협업**: 워크스페이스는 최상위 관리 단위이며, 회의는 워크스페이스 내 의사결정을 자산화하는 핵심 도구입니다. 단순 회의 기록 작성을 넘어 의제 (`agenda`), 결정 사항 (`decisions`), 후속 조치 (`action_items`)를 자산화합니다. 외부인 참석자는 `other_attendees` 텍스트 필드로 기록합니다.
-* **회의와 업무의 유기적 매핑**: `Issue` 모델은 `meeting`을 외래키로 참조합니다. 회의 중 생성된 액션 아이템은 관련 업무 (`Issue`)로 자동/수동 할당되어 진척률 (`done_ratio`)과 완료율이 실시간 모니터링됩니다.
-* **통합 이력 추적**: `ActivityLogEntry`를 통해 워크스페이스 내 전체 활동을 로깅하며, `IssueLogEntry`를 활용해 업무의 상태 변경 정보와 텍스트 차이점 (`diff`)을 보관하여 변경 이력을 투명하게 보관합니다.
+* **인증 및 API**: `AUTH_USER_MODEL = 'accounts.User'`, 한국어(`ko-kr`) / `Asia/Seoul`, JWT(`djangorestframework-simplejwt`), `apiV1/` 아래 도메인별 `serializers/`·`views/` 분리 및 `DefaultRouter` 등록.
+* **ASGI & 비동기**: `ibs-web`은 **Daphne**(`_config.asgi:application`)로 HTTP와 `channels` WebSocket(`chat`)을 동시에 서빙하며, 비동기 작업은 Celery(`_config`)와 Redis를 사용합니다.
+* **DB 라우팅 (`_config/database_router.py`)**: `KUBERNETES_SERVICE_HOST` 환경에서 읽기를 `replica`로 분산합니다(`atomic()` 블록 내부와 저장 직후 인스턴스는 `default` 사용 — 트랜잭션 외부 즉시 재조회 시 Replica Lag 주의).
+* **정적/미디어 파일**: 원본 정적 파일은 `_assets/`(`STATICFILES_DIRS`), 수집 및 Nginx 서빙 경로는 `static/`(`STATIC_ROOT`), Vue 빌드 산출물은 `static/dist/`입니다. 미디어는 MinIO/S3 Pre-signed URL을 사용하며 미설정 시 `FileSystemStorage`로 폴백됩니다.
+* **마이그레이션 및 보안**: 마이그레이션을 항상 최신 상태로 유지하고, `work`/`approval`/`chat`/`sales` 등 뷰셋은 액션 권한(`required_permission`)과 `get_queryset()` 행 단위 보안(Row-Level Security) 및 `select_related`/`prefetch_related` 최적화를 준수합니다.
 
-#### 2. 백엔드 API & 권한 통제
+### 프론트엔드 (`app/vue/`, 엄수 ⭐️)
 
-* **액션 기반 권한 매핑**: 각 ViewSet에는 `@property`로 `required_permission`을 정의하여 DRF 액션별 권한 코드 (예: `meeting.read`, `issue.create`)를 명시합니다. 이 코드는 `ProjectPermission` 등의 커스텀 권한 클래스에서 요청 유저의 역할 (`Role`)과 비교 검증됩니다.
-* **행 단위 데이터 보안 (Row-Level Security)**: 권한 검증과 별개로 목록 조회 (`list`) 시 권한 없는 워크스페이스의 데이터 유출을 막기 위해, `get_queryset()` 메서드에서 반드시 슈퍼유저/work_manager가 아닐 경우 **"공개 워크스페이스이거나, 사용자가 속한 워크스페이스이거나, 작성자/담당자인 데이터"**로만 필터링해야 합니다.
-* **Eager Loading 최적화**: N+1 쿼리 문제를 원천 차단하기 위해 `select_related` 및 `prefetch_related`를 통해 관계 테이블을 미리 로딩해야 합니다.
+* **개행 코드 표준**: 모든 프론트엔드 소스(`.vue`, `.ts`, `.js`, `.json` 등)는 **LF (Line Feed)** 개행 코드를 엄수합니다.
+* **Bootstrap 5 표준 클래스 준수** (단, Vuetify 전용 컴포넌트 유틸리티 예: `mr-n2` 음수 마진 등은 예외):
+  * `text-left`/`text-right` ➔ `text-start`/`text-end`
+  * `ml-*`/`mr-*`, `pl-*`/`pr-*` ➔ `ms-*`/`me-*`, `ps-*`/`pe-*`
+  * `font-weight-bold`/`font-weight-normal` ➔ `fw-bold`/`fw-normal`
+  * `icon="mdi mdi-*"` ➔ `icon="mdi-*"`
+* **공통 모달 사용**: `window.confirm()`, `window.alert()` 금지 ➔ `src/components/Modals/`의 `ConfirmModal.vue`, `AlertModal.vue`, `FormModal.vue` 사용.
+* **이중 API 호출(Race Condition) 방지**: `ContentHeader`의 `@proj-select`/`@com-select` 핸들러와 `watch(project)`/`watch(comId)` 간 중복 조회를 피하고 `watch`로 단일화합니다.
+* **웹 표준 및 폼 검증**: `href="javascript:void(0);"` 대신 `@click.prevent` 사용, 폼 유효성 검사는 `@/utils/helper`의 `isValidate(event)` 사용.
+* **TypeScript 엄격성**: Props에 `PropType<T>` 명시, 템플릿 ref 호출 시 `?.` 옵셔널 체이닝 적용, `store/types/*.ts`를 백엔드 Serializer 스키마와 일치시킵니다(`pnpm gen:api-types` 사용 시 먼저 `python manage.py spectacular --file schema.yml` 생성 필요).
 
-#### 3. 프론트엔드 Pinia & 타입 연동
+---
 
-* **상태 동기화**: Pinia 스토어 (`useIssue`, `useMeeting` 등)에서 CRUD 완료 시, 연관된 타 스토어 (`useLogging`, `useWork` 등)의 액션을 재조회하여 화면의 일관성을 맞춥니다. 파일이 첨부된 폼을 전송할 때는 `multipart/form-data` 헤더를 설정합니다.
-* **타입 안전성**: 프론트엔드 `store/types/work_*.ts` 파일 내 인터페이스는 백엔드 Serializer가 반환하는 필드 및 Nullable 옵션과 100% 일치하도록 일원화되어야 합니다.
+## 상세 참조 문서 (해당 영역 작업 시 필독)
 
-## 분양 대행 관리 시스템 (sales 앱) 아키텍처
-
-부동산 개발 프로젝트(`type='2'`)에서 발생하는 분양 대행 조직, 계약 실적 매핑, 수수료 정책, 정산 회차 및 지급/환수를 총괄하는 도메인입니다.
-
-#### 1. 비즈니스 모델 및 흐름
-
-* **영업 조직 관리 (`SalesAgency`, `SalesTeam`, `SalesPerson`)**: 직영 사업부(`is_direct_managed=True`)와 외주 대행사(`is_direct_managed=False`)를 구분하여 관리하며, 인력별 직책(`duty`: 1-상담사, 2-팀장, 3-본부장, 4-임원, 5-지원직)과 재직 상태(`status`: 1-재직, 2-퇴사)를 관리합니다.
-* **계약 실적 매핑 (`ContractSalesAgent`)**: 분양 계약(`contract.Contract`)과 영업 인력 또는 외주 대행사의 1:1 매핑 정보를 관리합니다. MGM/중개사 소개 수수료 연계 정보 및 수수료 정산 대상 포함 여부(`is_settlement_approved`)를 지정합니다.
-* **수수료 정책 (`CommissionPolicy`)**: 차수/타입별 건당 직급별 인센티브(상담사, 팀장, 본부장, 대행사) 기준표를 정의하며, 공급가(VAT 별도) 및 시행사 청구액(VAT 10% 포함)을 자동으로 계산합니다.
-* **정산 회차 및 산출 (`SettlementPeriod`, `CommissionPayout`, `AgencyPayout`)**:
-  - 지정 기간 내 체결된 승인 계약 건을 집계하며 타 회차 기정산 건은 자동 제외합니다.
-  - 소속 팀에 팀장 부재 시 상위 본부장에게 합산 배정되거나 대행사 이익(`unallocated_fee`)으로 자동 귀속됩니다.
-  - 개인별 지급 명세(`CommissionPayout`)는 인센티브, 기본급/일비, 공제/환수액을 반영한 뒤 원천징수 세액 3.3%(사업소득세 3% + 지방소득세 0.3%)를 공제한 세후 실지급액을 산출합니다.
-  - 계약 해지 시 발생하는 환수 건(`CommissionClawback`)은 차기 정산 시 자동으로 차감 상계됩니다.
-* **지급 관리**: 정산 확정(`status='2'`) 후 회차별/개인별/대행사별 지급 상태(1-미지급, 2-지급 준비, 3-지급 완료)를 갱신 및 관리합니다.
-
-#### 2. 백엔드 & 프론트엔드 연동 규칙
-
-* **권한 통제**: `sales.read`(조회), `sales.settle`(정산 실행/확정), `sales.payout`(지급 처리), `sales.policy`(정책 관리), `sales.manage`(조직 및 매핑 관리) 권한 체계를 엄격히 준수합니다.
-* **상태 일관성**: 정산 실행(`generatePayouts`) 및 확정(`confirmSettlement`) 시 연관된 대장(개인별 명세, 대행사 명세, 환수 대장)의 상태를 동기화하여 재조회합니다.
-
-### 설정 아키텍처 (Configuration)
-
-- `_config/settings.py` - 환경 변수 로드를 위해 `python-decouple`을 사용하는 Django 설정 파일
-- `_config/urls.py` - 헬스 체크 (Health check) 및 API 엔드포인트를 포함한 메인 URL 라우팅
-- `_config/database_router.py` - 마스터-슬레이브 설정을 위한 데이터베이스 라우팅 로직
-- Django 루트 디렉토리의 `.env` 파일로부터 환경 변수를 로드합니다.
-- Docker 환경 변수는 `deploy/docker-compose.yml`에 정의되어 있습니다.
-
-## 배포 (Deployment)
-
-### Docker 배포 (운영 환경 대응)
-
-- **멀티 컨테이너 설정**: 5개 컨테이너 아키텍처
-    - `ibs-nginx` - Nginx 리버스 프록시 (포트 80)
-    - `ibs-web` - uWSGI 구동 Django 애플리케이션 (포트 8000)
-    - `ibs-postgres` - PostgreSQL 데이터베이스 (포트 5432)
-    - `ibs-redis` - 캐싱 및 세션 저장을 위한 Redis 7
-    - `ibs-celery` - 비동기 작업을 처리하는 Celery 워커
-- **구성**: 서비스 정의가 포함된 `deploy/docker-compose.yml`
-- **볼륨**: 영구 데이터 (Persistent data), 정적/미디어 파일, DB 백업, Redis 데이터를 볼륨으로 유지
-- **환경 설정**: 타임존 `Asia/Seoul`, 한국어 지원 설정
-
-### Kubernetes 배포 및 인프라 아키텍처
-
-- **하드웨어 및 노드 구성**:
-    - **Master 노드** (`Ubuntu 26.04 LTS`, 4 vCPU / 4GB RAM / NVMe 50 GB / Traffic 620GB / Network 2.5Gbps)
-        - 역할: 관리 서버 겸 컨트롤 플레인.
-        - 내장 NFS 서버 역할 수행: `CNPG` 데이터베이스 영구 볼륨, Django 정적 파일 (`static`), Django 비밀 설정 파일 (`.env`) 보관.
-        - 관리 기능: K3s 및 기본 인프라 패키지 (Ingress-Nginx, Cert-Manager 등)의 **설치/재시작 스크립트들을 내부에 직접 보관 및 관리**함.
-    - **Worker 노드 1** (`Ubuntu 26.04 LTS`, 4 vCPU / 4GB RAM / NVMe 50 GB / Traffic 620GB / Network 2.5Gbps)
-        - 역할: 컨테이너 실행 및 트래픽 처리.
-    - **시놀로지 NAS** (외부 NFS 서버)
-        - 역할: Django 미디어 파일 (`media`) 보관 및 데이터베이스 정기 백업 파일 저장.
-- **실제 서비스 배포 경로**:
-    - 모든 애플리케이션 및 헬름 차트 배포는 **`.github/workflows/` 기반의 GitHub Actions 자동 배포 (Git Push 트리거)**와 **로컬/마스터 서버 내 배포 스크립트를 통한 수동 배포** 방식을 병행하여 지원함.
-- **Helm 차트**: `deploy/helm/` 내에 전체 배포 설정 위치
-- **CI/CD**: 자동 배포를 위한 종합적인 GitHub Actions 워크플로우 구성
-    - Django 백엔드 및 Vue 컴포넌트 각각을 위한 워크플로우 분리
-- **스토리지**: 영구 스토리지를 위한 NFS 서브디렉토리 외부 프로비저너 사용 (`nfs-subdir-external-provisioner`)
-- **보안**: SSL 인증서 관리를 위한 `cert-manager` 적용
-- **수신 트래픽**: 트래픽 제어를 위한 `ingress-nginx` 설정
-- **데이터베이스**: 백업 및 복제를 지원하는 CloudNative-PG (`cnpg`) 오퍼레이터 기반 PostgreSQL 설정들
-
-## 테스트
-
-### Django 테스트
-
-```bash
-# 모든 테스트 실행
-python manage.py test
-
-# 특정 앱 테스트 실행
-python manage.py test accounts
-python manage.py test contract
-```
-
-### Vue 테스트
-
-```bash
-# Vitest를 사용한 유닛 테스트
-pnpm test:unit
-
-# Cypress를 사용한 E2E 테스트
-pnpm test:e2e
-```
-
-## CI/CD 및 자동화
-
-### GitHub Actions 배포 자동화 구조
-
-이 프로젝트는 GitHub Actions와 Kubernetes (Helm)를 결합하여 개발 (Dev) 및 운영 (Prod) 환경으로의 자동화된 빌드 및 무중단 배포를 지원합니다.
-
-* **개발 환경 (Dev)**: `develop` 브랜치에 코드가 push되면 `ibs-dev` 네임스페이스에 자동 배포됩니다.
-* **운영 환경 (Prod)**: `master` 브랜치에 코드가 push되면 `ibs-prod` 네임스페이스에 자동 배포됩니다.
-
-#### 1. 백엔드 배포 (`django_dev.yml`, `django_prod.yml`)
-
-* **컨테이너 이미지 빌드**: Git SHA 값을 태그 (`dev-${SHA}` / `${SHA}`)로 지정하여 Dockerfile 기반 이미지를 빌드하고 Docker Hub (`nc2u/django`)에 푸시합니다.
-* **K8s 리소스 충돌 관리**: 배포 전 보류 중인 Helm 업그레이드 작업을 클리닝하고, 기존 PV/PVC를 Helm 릴리즈에 자동 편입 (Adoption)합니다.
-* **Helm 배포**: `deploy/helm/` 차트를 사용하여 지정된 네임스페이스에 배포 및 마이그레이션 작업을 수행하며, 완료 시 롤아웃 상태를 검증합니다.
-
-#### 2. 프론트엔드 배포 (`vue_dev.yml`, `vue_prod.yml`)
-
-* **정적 파일 빌드**: Node.js와 pnpm을 사용하여 Vue.js SPA를 빌드하며, 빌드 무결성을 자동 검증합니다.
-* **무중단 원자적 배포**: 빌드 폴더 (`dist_${TIMESTAMP}`)를 CI/CD 서버로 복사 (SCP)한 뒤, `dist` 심볼릭 링크를 원자적으로 교체 (Symlink Swap)하여 중단 없는 서비스를 실현합니다.
-* **리소싱 효율성**: 성공한 최신 3개의 빌드 디렉토리만 서버에 유지하고 이전 빌드는 자동 삭제합니다.
-* **캐시 갱신**: 프론트엔드 배포 후 Django 템플릿과 Nginx의 파일 변경이 즉시 반영되도록 관련 Pod를 재시작 (`rollout restart`)합니다.
-
-#### 3. 헬름 배포 (`helm_dev.yml`, `helm_prod.yml`)
-
-* **인프라 변경**: `deploy/helm/**` 경로 수정 시 트리거되어 Helm 차트 구성을 서버와 동기화합니다.
-* **커스텀 설정 유지**: 서버에 보관된 커스텀 설정 파일 (`values-dev-custom.yaml` / `values-prod-custom.yaml`)을 배포 시 백업 및 복원하여 설정 유실을 방지합니다.
-* **NFS 스토리지**: `nfs-subdir-external-provisioner` Helm 리포지토리를 추가 및 설치하여 NFS 스토리지 공유 볼륨 설정을 자동 연동합니다.
-
-#### 4. 기타 워크플로우 및 통합
-
-* **데이터베이스 작업**: `db_backup.yml`(백업), `db_sync.yml`(동기화) 등을 통해 정기 및 수동 데이터베이스 관리 스크립트 실행이 가능합니다.
-* **보안 검증**: `codeql-analysis.yml`을 통한 취약점 스캔을 지원합니다.
-* **Slack 연동**: 모든 주요 배포 워크플로우의 성공/실패 상태를 Slack 수신 웹훅 (`secrets.SLACK_INCOMING_URL`)으로 즉시 알립니다.
-
-## 중요 유의사항
-
-### 핵심 설정
-
-- 커스텀 사용자 모델 적용: `AUTH_USER_MODEL = 'accounts.User'`
-- 정적 파일은 `_assets/` 디렉토리에서 서비스됨
-- 미디어 파일 지원: 로컬 스토리지 및 S3 클라우드 스토리지 연동
-- 기본 언어/국가: 한국어 (`ko`), 타임존 `Asia/Seoul`
-- SMTP 설정을 통한 이메일 연동
-
-### 개발 프랙티스
-
-#### 백엔드 개발 원칙
-- 모든 데이터베이스 마이그레이션이 항상 최신으로 반영되어야 함
-- 확장을 고려한 마스터-슬레이브 데이터베이스 라우팅
-- Redis 기반 캐싱 및 세션 관리 사용
-- 비동기 태스크 처리를 위한 Celery 사용
-
-#### 프론트엔드 개발 및 리팩토링 원칙 (엄수 ⭐️)
-- **개행 코드 표준 준수**: 모든 프론트엔드 소스 파일(`.vue`, `.ts`, `.js`, `.json` 등)은 Git 및 빌드 일관성을 위해 반드시 **LF (Line Feed)** 개행 코드를 엄수합니다.
-- **Bootstrap 5 표준 클래스 준수**:
-  - 텍스트 정렬: `text-left` / `text-right` (폐기) ➔ `text-start` / `text-end`
-  - 마진/패딩: `ml-*` / `mr-*` (폐기) ➔ `ms-*` / `me-*`, `pl-*` / `pr-*` (폐기) ➔ `ps-*` / `pe-*`
-  - 글꼴 두께: `font-weight-bold` / `font-weight-normal` ➔ `fw-bold` / `fw-normal`
-  - 아이콘 접두사: `icon="mdi mdi-*"` 중복 방지 ➔ `icon="mdi-*"` 사용
-- **브라우저 기본 다이얼로그 사용 금지**: `window.confirm()`, `window.alert()` 사용을 엄금하며 프로젝트 표준 공통 모달 컴포넌트(`ConfirmModal.vue`, `AlertModal.vue`, `FormModal.vue`)를 사용합니다.
-- **이중 동시 API 호출(Race Condition) 방지**: 상단 셀렉터(`ContentHeader`의 `@proj-select`, `@com-select`) 이벤트 핸들러와 `watch(project)`, `watch(comId)` 간의 중복 `loadData` 호출을 방지하고 `watch`로 데이터 조회를 단일화합니다.
-- **웹 표준 및 폼 유효성 검사**:
-  - `href="javascript:void(0);"` 안티패턴 대신 `@click.prevent`를 사용합니다.
-  - 폼 유효성 검사 시 `(event.currentTarget as HTMLInputElement).checkValidity()` 등 불안전한 캐스팅 대신 공통 헬퍼인 `isValidate(event)` (`@/utils/helper`)를 사용합니다.
-- **TypeScript 타입 엄격성**:
-  - 컴포넌트 Props 정의 시 `Array as () => any[]` 또는 `Object` 같은 느슨한 타입 지양 ➔ `PropType<T>`을 통해 모델 타입을 명확히 정의합니다.
-  - 템플릿 ref 호출 시 옵셔널 체이닝(`?.`)을 적용하여 렌더링 타이밍 이슈를 원천 차단합니다.
-
-### 사용자 매뉴얼 (VitePress) 작성 규칙 (엄수 ⭐️)
-
-- **신입사원 눈높이의 친절하고 실용적인 사용자 친화성**:
-  - 신입사원이나 처음 시스템을 접하는 임직원이 매뉴얼을 보고 실제 업무에 즉시 적용할 수 있도록 친절하고 알기 쉽게 작성합니다.
-  - 개발자/백엔드 관점(Django 모델명, DB 테이블명, 내부 엔진 명칭 등)을 배제하고, 실제 화면 UI에 표시되는 한글 레이블과 버튼 명칭을 기준으로 설명합니다.
-  - 단순 기능 나열에 그치지 않고 "누가, 언제, 왜 이 기능을 쓰며, 화면의 어디를 클릭해야 하는지" 실제 사용에 직접적인 도움이 되는 실무 가이드와 팁(Tip)을 제공합니다.
-- **실제 화면 이미지 플레이스홀더 및 등록 가이드**:
-  - 시각적 이해가 필요한 핵심 화면이나 복잡한 입력 폼은 매뉴얼 내에 **실제 화면 이미지 섹션(플레이스홀더)**을 명시적으로 구성합니다.
-  - 관리자가 향후 실제 시스템 UI 캡처본을 손쉽게 등록·교체할 수 있도록 다음과 같은 가이드 블록 형식으로 표준화합니다:
-    ```markdown
-    ::: tip 📸 실제 화면 안내
-    ![화면 설명](./images/화면명.png)
-    *관리자 참고: 해당 화면의 실제 캡처 이미지를 `./images/화면명.png` 경로에 등록해 주세요.*
-    :::
-    ```
-  - 이미지가 아직 준비되지 않은 경우에도 해당 섹션을 통해 사용자에게 UI 위치와 구조를 직관적으로 파악할 수 있는 기준을 제시합니다.
-- **맥락에 부합하는 자연스러운 실무 용어 사용**:
-  - 시스템 단위(워크스페이스, 프로젝트)의 도메인 개념은 엄격히 준수하되, "현장 사진 첨부", "현장 외근/실사"와 같이 실제 오프라인의 물리적 작업 현장을 명확히 지칭할 때는 억지스러운 치환을 지양하고 자연스러운 실무 표현을 사용하여 사용자의 혼란을 방지합니다.
-- **`##` (h2) 요소 직전 구분선 (`---`) 사용 엄금**: VitePress 기본 CSS 테마에서 `h2` 요소 상단에 `border-top` 구분선이 자동으로 렌더링됩니다. 따라서 `##` 직전에 수동으로 `---` 구분선을 추가하면 선이 이중으로 중복 표출되므로 **`##` 바로 앞에는 절대로 `---`를 작성하지 않습니다.**
-
-### 파일 구조 요약
-
-- Django 백엔드: `app/django/`
-- Vue 프론트엔드: `app/vue/` (TypeScript, Vuetify)
-- 배포 설정 파일: `deploy/`
-- 영구 보관용 볼륨 데이터: `volume/`
+* [`.agents/docs/backend-domains.md`](docs/backend-domains.md) — `work`·`sales` 앱 상세 비즈니스 흐름, 권한, Pinia 연동 규칙
+* [`.agents/docs/infra-deploy.md`](docs/infra-deploy.md) — Docker, K3s/Helm, `.github/workflows/` CI/CD 파이프라인 및 설정 상세
+* [`.agents/docs/vitepress-manual.md`](docs/vitepress-manual.md) — `app/vue/docs/` 사용자 매뉴얼 작성 규칙 (이미지 플레이스홀더, `##` 앞 `---` 금지 등)
+* `.agents/artifacts/` — 도메인별 설계 로드맵 및 백업/보안 운영 아카이브

@@ -3,7 +3,7 @@
 # Rebuild trigger for latest settings.py MinIO S3 custom domain fix
 # Multi-stage build for Django Application
 # ========================================
-FROM python:3.12 AS builder
+FROM python:3.14 AS builder
 
 ENV PYTHONUNBUFFERED=1
 
@@ -48,7 +48,7 @@ RUN python manage.py collectstatic --noinput --clear
 # ========================================
 # Stage 2: Runtime
 # ========================================
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1
 
@@ -96,7 +96,7 @@ RUN mkdir -pv /app/django
 WORKDIR /app/django
 
 # copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # copy Django application source and collected static files from builder
