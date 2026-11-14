@@ -43,8 +43,8 @@ const projSelect = async (proj: number | null) => {
 <template>
   <CCard class="text-body mt-4 mx-2 mx-md-3 mx-xl-5">
     <CCardHeader>
-      <v-icon icon="mdi mdi-text-box-check-outline" size="small" />
-      <strong class="pl-1"> {{ pageTitle }}</strong>
+      <v-icon icon="mdi-text-box-check-outline" size="small" />
+      <strong class="ps-1"> {{ pageTitle }}</strong>
     </CCardHeader>
 
     <CCardBody>

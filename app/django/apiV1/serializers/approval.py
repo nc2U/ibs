@@ -1,4 +1,5 @@
 import logging
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
@@ -11,19 +12,20 @@ import json
 User = get_user_model()
 
 
+@extend_schema_serializer(component_name='ApprovalSimpleUser')
 class SimpleUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     sign_image = serializers.SerializerMethodField()
     sign_type = serializers.SerializerMethodField()
 
-    def get_full_name(self, obj):
+    def get_full_name(self, obj) -> str:
         # Profile.name 우선, 없으면 username 반환
         try:
             return obj.profile.name or obj.username
         except Exception:
             return obj.username
 
-    def get_sign_image(self, obj):
+    def get_sign_image(self, obj) -> str | None:
         try:
             profile = getattr(obj, 'profile', None)
             if profile and profile.sign_image:
@@ -32,7 +34,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
             pass
         return None
 
-    def get_sign_type(self, obj):
+    def get_sign_type(self, obj) -> str:
         try:
             profile = getattr(obj, 'profile', None)
             if profile:

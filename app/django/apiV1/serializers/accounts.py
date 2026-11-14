@@ -22,12 +22,12 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('pk', 'username', 'name', 'email')
 
-    def get_name(self, obj):
+    def get_name(self, obj) -> str:
         if isinstance(obj, dict):
             return obj.get('name', '')
         return getattr(getattr(obj, 'profile', None), 'name', '') or ''
 
-    def get_email(self, obj):
+    def get_email(self, obj) -> str:
         if isinstance(obj, dict):
             return obj.get('email', '')
         return getattr(obj, 'email', '') or ''

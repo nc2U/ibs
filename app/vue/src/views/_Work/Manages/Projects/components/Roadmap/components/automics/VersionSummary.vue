@@ -130,7 +130,7 @@ const groupedSummary = computed<SummaryItem[]>(() => {
 
         <div v-else>
           <CRow v-for="item in groupedSummary" :key="item.name" class="my-2 align-items-center">
-            <CCol class="col-4 text-truncate text-right small fw-bold" :title="item.name">
+            <CCol class="col-4 text-truncate text-end small fw-bold" :title="item.name">
               {{ item.name }}
             </CCol>
             <CCol class="col-5">

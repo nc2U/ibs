@@ -53,25 +53,25 @@ const onDelete = (payload: { pk: number; project: number }) => {
   >
     <CTableDataCell>{{ site.order }}</CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" @click="showDetail">
+      <a href="#" @click.prevent="showDetail">
         {{ site.district }}
       </a>
     </CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" @click="showDetail">
+      <a href="#" @click.prevent="showDetail">
         {{ site.lot_number }}
       </a>
     </CTableDataCell>
     <CTableDataCell>
       {{ site.site_purpose }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(site.official_area || 0, 2) }}
     </CTableDataCell>
-    <CTableDataCell class="text-right" color="warning">
+    <CTableDataCell class="text-end" color="warning">
       {{ numFormat((Number(site.official_area) || 0) * 0.3025, 2) }}
     </CTableDataCell>
-    <CTableDataCell v-if="isReturned" class="text-right">
+    <CTableDataCell v-if="isReturned" class="text-end">
       {{ numFormat(site.returned_area || 0, 2) }}
     </CTableDataCell>
     <CTableDataCell v-if="isReturned" class="text-right" color="warning">

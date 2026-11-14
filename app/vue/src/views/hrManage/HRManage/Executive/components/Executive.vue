@@ -26,7 +26,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTableRow v-if="executive" class="text-center">
     <CTableDataCell>
-      <a href="javascript:void(0);" role="button" @click.prevent="showDetail">{{
+      <a href="#" role="button" @click.prevent="showDetail">{{
         executive.full_name
       }}</a>
     </CTableDataCell>

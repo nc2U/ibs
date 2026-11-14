@@ -1,6 +1,5 @@
 from django.contrib import admin
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html, format_html_join
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
@@ -155,25 +154,28 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
                 model_name, obj.pk
             )
 
-        links = []
-        for child in children:
-            icon = '📁' if child.is_category_only else '📄'
-            child_name = child.name or '이름 없음'
-            links.append(format_html(
-                '{} <a href="/admin/ledger/{}/{}/change/" target="_blank">{}</a>',
-                icon, model_name, child.pk, child_name
-            ))
-
         add_link = format_html(
             '<a href="/admin/ledger/{}/add/?parent={}" target="_blank">+ 하위 계정 추가</a>',
             model_name, obj.pk
         )
 
-        if links:
-            result = '<br>'.join(links) + '<br><br>' + add_link
-            return mark_safe(result)
-        else:
-            return mark_safe(add_link)
+        child_args = [
+            (
+                '📁' if child.is_category_only else '📄',
+                model_name,
+                child.pk,
+                child.name or '이름 없음',
+            )
+            for child in children
+        ]
+        if child_args:
+            joined_links = format_html_join(
+                '',
+                '{} <a href="/admin/ledger/{}/{}/change/" target="_blank">{}</a><br>',
+                child_args,
+            )
+            return format_html('{}<br>{}', joined_links, add_link)
+        return add_link
 
     def get_changeform_initial_data(self, request):
         """URL 파라미터에서 초기값 설정"""
@@ -305,6 +307,45 @@ class ProjectBankAccountAdmin(ImportExportMixin, admin.ModelAdmin):
 # Bank Transaction Admin
 # ============================================
 
+
+def _render_related_accounting_entries(obj, model_cls, model_slug):
+    """은행 거래에 연결된 회계분개 변경/추가 Admin HTML 링크 목록을 안전하게 생성합니다."""
+    if not obj.pk:
+        return "저장 후 회계분개를 확인할 수 있습니다."
+
+    entries = model_cls.objects.filter(transaction_id=obj.transaction_id)
+    if not entries.exists():
+        return format_html(
+            '<a href="/admin/ledger/{}/add/?transaction_id={}" target="_blank">'
+            '+ 회계분개 추가</a>',
+            model_slug,
+            str(obj.transaction_id),
+        )
+
+    entries_args = [
+        (
+            model_slug,
+            entry.pk,
+            entry.sort.name if entry.sort else '미분류',
+            f"{entry.amount:,}",
+            f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음",
+        )
+        for entry in entries
+    ]
+    joined_links = format_html_join(
+        '',
+        '<a href="/admin/ledger/{}/{}/change/" target="_blank">{} - {}원 ({})</a><br>',
+        entries_args,
+    )
+    add_link = format_html(
+        '<a href="/admin/ledger/{}/add/?transaction_id={}" target="_blank">'
+        '+ 추가</a>',
+        model_slug,
+        str(obj.transaction_id),
+    )
+    return format_html('{}{}', joined_links, add_link)
+
+
 @admin.register(CompanyBankTransaction)
 class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
     resource_class = CompanyBankTransactionResource
@@ -320,37 +361,7 @@ class CompanyBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     def related_accounting_entries(self, obj):
         """연관된 회계분개 항목들을 표시"""
-        if not obj.pk:
-            return "저장 후 회계분개를 확인할 수 있습니다."
-
-        entries = CompanyAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
-        if not entries.exists():
-            return format_html(
-                '<a href="/admin/ledger/companyaccountingentry/add/?transaction_id={}" target="_blank">'
-                '+ 회계분개 추가</a>',
-                str(obj.transaction_id)
-            )
-
-        links = []
-        for entry in entries:
-            account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
-            sort_display = entry.sort.name if entry.sort else '미분류'
-            links.append(format_html(
-                '<a href="/admin/ledger/companyaccountingentry/{}/change/" target="_blank">'
-                '{} - {}원 ({})</a>',
-                entry.pk,
-                sort_display,
-                f"{entry.amount:,}",
-                account_name
-            ))
-
-        add_link = format_html(
-            '<a href="/admin/ledger/companyaccountingentry/add/?transaction_id={}" target="_blank">'
-            '+ 추가</a>',
-            str(obj.transaction_id)
-        )
-
-        return mark_safe('<br>'.join(links) + '<br>' + add_link)
+        return _render_related_accounting_entries(obj, CompanyAccountingEntry, 'companyaccountingentry')
 
     related_accounting_entries.short_description = '연관 회계분개'
 
@@ -440,37 +451,7 @@ class ProjectBankTransactionAdmin(AsyncImportExportMixin, admin.ModelAdmin):
 
     def related_accounting_entries(self, obj):
         """연관된 회계분개 항목들을 표시"""
-        if not obj.pk:
-            return "저장 후 회계분개를 확인할 수 있습니다."
-
-        entries = ProjectAccountingEntry.objects.filter(transaction_id=obj.transaction_id)
-        if not entries.exists():
-            return format_html(
-                '<a href="/admin/ledger/projectaccountingentry/add/?transaction_id={}" target="_blank">'
-                '+ 회계분개 추가</a>',
-                str(obj.transaction_id)
-            )
-
-        links = []
-        for entry in entries:
-            account_name = f"{entry.account.code} {entry.account.name}" if entry.account else "계정 없음"
-            sort_display = entry.sort.name if entry.sort else '미분류'
-            links.append(format_html(
-                '<a href="/admin/ledger/projectaccountingentry/{}/change/" target="_blank">'
-                '{} - {}원 ({})</a>',
-                entry.pk,
-                sort_display,
-                f"{entry.amount:,}",
-                account_name
-            ))
-
-        add_link = format_html(
-            '<a href="/admin/ledger/projectaccountingentry/add/?transaction_id={}" target="_blank">'
-            '+ 추가</a>',
-            str(obj.transaction_id)
-        )
-
-        return mark_safe('<br>'.join(links) + '<br>' + add_link)
+        return _render_related_accounting_entries(obj, ProjectAccountingEntry, 'projectaccountingentry')
 
     related_accounting_entries.short_description = '연관 회계분개'
 

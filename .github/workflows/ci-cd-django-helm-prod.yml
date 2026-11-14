@@ -48,13 +48,24 @@ jobs:
             helm:
               - 'deploy/helm/**'
 
-  # 2. 빌드: 코드나 도커 파일이 변경된 경우만 실행
+  # 2. 검증: Django 또는 Docker 변경(또는 수동 실행) 시 시스템 체크·테스트 통과 필수
+  verify:
+    name: Verify Django
+    needs: changes
+    if: needs.changes.outputs.django == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/ci-verify.yml
+    with:
+      run_django: true
+      run_vue: false
+      run_flutter: false
+
+  # 3. 빌드: 코드나 도커 파일이 변경되고 검증을 통과한 경우만 실행
   build:
     name: Build Docker Image
-    needs: changes
+    needs: [changes, verify]
     runs-on: ubuntu-latest
-    # Django, Docker 관련 변경이 있거나 수동 실행 시에만 빌드
-    if: needs.changes.outputs.django == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'workflow_dispatch'
+    # Django, Docker 관련 변경이 있거나 수동 실행 시 검증 통과 후 빌드
+    if: needs.verify.result == 'success' && (needs.changes.outputs.django == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'workflow_dispatch')
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
@@ -90,14 +101,14 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
             ${{ env.IMAGE_NAME }}:latest
 
-  # 3. 배포: 항상 실행 (build가 건너뛰어지거나 성공하면)
+  # 4. 배포: 검증 및 빌드가 통과했거나, Helm 만 변경되어 건너뛰어진 경우 실행
   deploy:
     name: Deploy to Kubernetes
-    needs: [changes, build]
+    needs: [changes, verify, build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # 빌드 Job이 성공했거나, 빌드 Job이 아예 실행되지 않았을 때(헬름만 변경된 경우)
-    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    # 검증 실패/취소 시 차단하고, 빌드 성공 또는 헬름 전용 변경으로 건너뛰어진 경우에만 배포
+    if: always() && needs.changes.result == 'success' && (needs.verify.result == 'success' || needs.verify.result == 'skipped') && (needs.build.result == 'success' || needs.build.result == 'skipped')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

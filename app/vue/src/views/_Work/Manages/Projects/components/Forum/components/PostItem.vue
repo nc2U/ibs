@@ -17,14 +17,14 @@ const canForumRead = computed(() => can(PERM.FORUM_READ))
 
 <template>
   <CTableDataCell class="text-center">{{ post.pk }}</CTableDataCell>
-  <CTableDataCell class="text-left">
-    <v-chip v-if="post.is_notice" variant="elevated" color="primary" size="x-small" class="mr-2">
+  <CTableDataCell class="text-start">
+    <v-chip v-if="post.is_notice" variant="elevated" color="primary" size="x-small" class="me-2">
       공지
     </v-chip>
-    <v-chip v-if="post.is_faq" variant="elevated" color="success" size="x-small" class="mr-2">
+    <v-chip v-if="post.is_faq" variant="elevated" color="success" size="x-small" class="me-2">
       FAQ
     </v-chip>
-    <span v-if="post.cate_name" class="mr-2">[{{ post.cate_name }}]</span>
+    <span v-if="post.cate_name" class="me-2">[{{ post.cate_name }}]</span>
     <router-link
       v-if="canForumRead"
       :to="{

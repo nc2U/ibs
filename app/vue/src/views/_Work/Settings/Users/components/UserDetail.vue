@@ -43,7 +43,7 @@ const projectResults = computed(() => props.projectResults.slice())
       </span>
     </CCol>
 
-    <CCol class="text-right form-text">
+    <CCol class="text-end form-text">
       <span v-if="user?.pk === userInfo?.pk">
         <TextButton
           name="내 계정"

@@ -44,13 +44,13 @@ const projStatus = computed(() => workStore.currentProject?.status)
         <v-tooltip activator="parent" location="top">다운로드</v-tooltip>
       </a>
     </span>
-    <span v-if="file.description" class="mr-2">{{ file.description }}</span>
-    <span class="file-desc2 mr-1 text-grey"> {{ file.creator?.username }}, </span>
-    <span class="file-desc2 mr-2 text-grey">{{ timeFormat(file.created) }}</span>
+    <span v-if="file.description" class="me-2">{{ file.description }}</span>
+    <span class="file-desc2 me-1 text-grey"> {{ file.creator?.username }}, </span>
+    <span class="file-desc2 me-2 text-grey">{{ timeFormat(file.created) }}</span>
     <span v-if="projStatus === '1'">
       <a
-        href="javascript:void(0)"
-        class="mr-2 cursor-pointer"
+        href="#"
+        class="me-2 cursor-pointer"
         @click.prevent="RefDelFile?.callModal()"
       >
         <v-icon

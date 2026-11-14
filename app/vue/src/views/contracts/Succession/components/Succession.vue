@@ -47,17 +47,17 @@ const callFormModal = () => {
 
 <template>
   <CTableDataCell class="text-center">
-    <a href="javascript:void(0)" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
+    <a href="#" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
       {{ succession.contract.serial_number }}
     </a>
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <a href="javascript:void(0)" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
+    <a href="#" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
       {{ succession.seller.name }}
     </a>
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <a href="javascript:void(0)" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
+    <a href="#" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
       {{ succession.buyer.name }}
     </a>
   </CTableDataCell>

@@ -257,7 +257,7 @@ const emit = defineEmits([
             검색
           </button>
         </div>
-        <div class="text-right">
+        <div class="text-end">
           <v-btn
             size="x-small"
             variant="text"

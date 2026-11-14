@@ -27,6 +27,10 @@ export interface selectProject {
   value: number
   label: string
   slug: string
+  pk?: number
+  status?: '1' | '2' | '9'
+  depth?: number
+  parent_visible?: boolean
   module?: Module | null
 }
 

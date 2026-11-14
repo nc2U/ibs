@@ -155,8 +155,8 @@ onBeforeRouteUpdate(async () => await formDataSetup())
         <CCol lg="12">
           <!-- Account Info Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-account-cog" class="me-1" color="primary" />
               계정 정보
             </CCardHeader>
             <CCardBody>
@@ -249,14 +249,14 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                 </CCol>
                 <CCol v-if="genPass" sm="4">
                   <div
-                    class="p-1 mb-1 bg-yellow-lighten-1 text-center font-weight-bold"
+                    class="p-1 mb-1 bg-yellow-lighten-1 text-center fw-bold"
                     style="width: 120px; display: inline-block; vertical-align: middle"
                   >
                     {{ genPass }}
                   </div>
-                  <div style="display: inline-block; vertical-align: middle" class="ml-2">
+                  <div style="display: inline-block; vertical-align: middle" class="ms-2">
                     <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
-                    <v-btn color="light" size="small" class="mr-1" @click="genPass = ''" flat>
+                    <v-btn color="light" size="small" class="me-1" @click="genPass = ''" flat>
                       취소
                     </v-btn>
                   </div>
@@ -312,8 +312,8 @@ onBeforeRouteUpdate(async () => await formDataSetup())
     <CCol class="col-lg-6">
       <!-- Mail Notifications Card -->
       <CCard class="mb-4">
-        <CCardHeader class="font-weight-bold">
-          <v-icon icon="mdi-email-arrow-right-outline" class="mr-1" color="primary" />
+        <CCardHeader class="fw-bold">
+          <v-icon icon="mdi-email-arrow-right-outline" class="me-1" color="primary" />
           알림 메일 발송 설정
         </CCardHeader>
         <CCardBody>
@@ -329,7 +329,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
               </CCol>
             </CRow>
 
-            <CRow class="pl-4">
+            <CRow class="ps-4">
               <CCol sm="12" class="mb-3">
                 <CFormCheck
                   v-model="form.send_option"
@@ -343,7 +343,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
               </CCol>
 
               <CRow class="mb-3">
-                <CCol sm="4" class="pl-5 pt-1">
+                <CCol sm="4" class="ps-5 pt-1">
                   <span>링크 만료 시간 : </span>
                 </CCol>
                 <CCol sm="4">
@@ -378,11 +378,11 @@ onBeforeRouteUpdate(async () => await formDataSetup())
       </CCard>
 
       <!-- Submit & Cancel Footer -->
-      <div class="text-right mb-4">
+      <div class="text-end mb-4">
         <v-btn type="submit" :color="user?.pk ? 'success' : 'primary'" :disabled="formCheck">
           저장
         </v-btn>
-        <v-btn color="light" class="mr-2" @click="router.push({ name: '사용자' })" flat>
+        <v-btn color="light" class="ms-2" @click="router.push({ name: '사용자' })" flat>
           취소
         </v-btn>
       </div>

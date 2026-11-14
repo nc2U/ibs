@@ -132,8 +132,8 @@ const totals = computed(() => ({
           <!-- 차수명 -->
           {{ item.order_group_name }}
         </CTableDataCell>
-        <CTableDataCell class="text-left pl-4">
-          <v-icon icon="mdi mdi-square" :color="item.unit_type_color" size="sm" />
+        <CTableDataCell class="text-start ps-4">
+          <v-icon icon="mdi-square" :color="item.unit_type_color" size="sm" />
           <!-- 타입명 -->
           {{ item.unit_type_name }}
         </CTableDataCell>

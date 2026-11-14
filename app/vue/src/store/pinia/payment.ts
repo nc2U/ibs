@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { cleanupParams, errorHandle, message } from '@/utils/helper'
 import { type CashBookFilter } from '@/store/types/payment'
+import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger'
 import type {
   AllPayment,
   ContractPaymentPayload,
@@ -177,8 +178,8 @@ export const usePayment = defineStore('payment', () => {
     try {
       const response = await api.get(url)
       return response.data.results || []
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return []
     }
   }
@@ -379,7 +380,9 @@ export const usePayment = defineStore('payment', () => {
       params.no_contract = false
     }
 
-    const queryString = new URLSearchParams(params).toString()
+    const queryString = new URLSearchParams(
+      Object.entries(params).map(([k, v]) => [k, String(v)]),
+    ).toString()
     const url = `/ledger/payment/?${queryString}`
 
     return await api
@@ -513,8 +516,8 @@ export const usePayment = defineStore('payment', () => {
       await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('success', '', '계약 납부가 등록되었습니다.')
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -564,8 +567,8 @@ export const usePayment = defineStore('payment', () => {
       await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -622,8 +625,8 @@ export const usePayment = defineStore('payment', () => {
       await fetchLedgerPaymentList(ledgerPaymentFilter.value)
       message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -653,8 +656,8 @@ export const usePayment = defineStore('payment', () => {
       // 계약 납부 목록 리프레시
       await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
       message('warning', '', '계약 납부가 삭제되었습니다.')
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -665,19 +668,19 @@ export const usePayment = defineStore('payment', () => {
    * 특정 은행 거래의 상세 정보와 연결된 회계 분개 목록을 조회합니다.
    *
    * @param bankTransactionId - 조회할 은행 거래 ID
-   * @returns Promise<any>
+   * @returns Promise<ProBankTrans>
    *
    * @example
    * const detail = await fetchBankTransactionDetail(456)
    * console.log(detail.bank_transaction) // 은행 거래 정보
    * console.log(detail.accounting_entries) // 회계 분개 배열
    */
-  const fetchBankTransactionDetail = async (bankTransactionId: number): Promise<any> => {
+  const fetchBankTransactionDetail = async (bankTransactionId: number): Promise<ProBankTrans> => {
     try {
       const response = await api.get(`/ledger/project-bank-transaction/${bankTransactionId}/`)
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -689,21 +692,23 @@ export const usePayment = defineStore('payment', () => {
    * 분할 납부 시 여러 회차의 분개 내역을 확인할 때 유용합니다.
    *
    * @param transactionId - 거래 UUID (ProjectBankTransaction.transaction_id)
-   * @returns Promise<any[]>
+   * @returns Promise<ProAccountingEntry[]>
    *
    * @example
    * // UUID로 회계 분개 조회
    * const entries = await fetchAccountingEntriesByTransactionId('uuid-string-here')
    * console.log(entries) // [{ pk: 789, amount: 50000000, ... }, ...]
    */
-  const fetchAccountingEntriesByTransactionId = async (transactionId: string): Promise<any[]> => {
+  const fetchAccountingEntriesByTransactionId = async (
+    transactionId: string,
+  ): Promise<ProAccountingEntry[]> => {
     try {
       const response = await api.get(
         `/ledger/project-accounting-entry/?transaction_id=${transactionId}`,
       )
       return response.data.results || response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }

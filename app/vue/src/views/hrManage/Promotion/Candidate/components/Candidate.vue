@@ -47,7 +47,7 @@ const getStatusBadge = (status: string) => {
   <CTableRow v-if="candidate" class="text-center">
     <CTableDataCell>{{ candidate.eval_year }}년</CTableDataCell>
     <CTableDataCell class="fw-bold">
-      <a href="javascript:void(0);" @click.prevent="showDetail">{{ candidate.staff_name }}</a>
+      <a href="#" @click.prevent="showDetail">{{ candidate.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
       <v-chip color="light" variant="flat" size="x-small" class="text-body border">

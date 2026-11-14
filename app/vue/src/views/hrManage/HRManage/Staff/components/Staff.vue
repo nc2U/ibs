@@ -32,7 +32,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell>{{ staff.position }}</CTableDataCell>
     <CTableDataCell>{{ staff.duty }}</CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" role="button" @click.prevent="showDetail">{{ staff.name }}</a>
+      <a href="#" role="button" @click.prevent="showDetail">{{ staff.name }}</a>
     </CTableDataCell>
     <CTableDataCell class="text-start">{{ staff.email }}</CTableDataCell>
     <CTableDataCell>{{ staff.date_join }}</CTableDataCell>

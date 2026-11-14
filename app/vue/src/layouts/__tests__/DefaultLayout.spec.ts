@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import CoreuiVue from '@coreui/vue'
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
@@ -8,7 +9,7 @@ describe('DefaultLayout', () => {
   it('DefaultLayout check', () => {
     const wrapper = shallowMount(DefaultLayout, {
       global: {
-        plugins: [createTestingPinia()],
+        plugins: [createTestingPinia(), CoreuiVue],
         stubs: ['router-view'],
       },
     })
@@ -23,5 +24,6 @@ describe('DefaultLayout', () => {
     expect(div2.html()).toContain('c-container-stub')
     expect(wrapper.html()).toContain('app-footer-stub')
     expect(wrapper.html()).toContain('back-to-top-stub')
+    expect(wrapper.html()).toContain('chat-drawer-stub')
   })
 })

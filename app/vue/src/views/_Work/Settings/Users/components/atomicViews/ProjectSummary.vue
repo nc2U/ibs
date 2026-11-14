@@ -33,14 +33,14 @@ const getMember = (members: any[]) => {
         <CTableBody>
           <template v-for="proj in projectResults" :key="proj.pk">
             <CTableRow>
-              <CTableDataCell class="text-left">
+              <CTableDataCell class="text-start">
                 <router-link
                   :to="{ name: '(개요)', params: { projId: proj.slug } }"
                   :class="{ 'text-muted': proj.status !== '1' }"
                 >
                   {{ proj.name }}
                 </router-link>
-                <span v-if="proj.status !== '1'" class="text-caption text-grey ml-2">[닫힘]</span>
+                <span v-if="proj.status !== '1'" class="text-caption text-grey ms-2">[닫힘]</span>
               </CTableDataCell>
               <CTableDataCell>
                 {{

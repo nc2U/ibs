@@ -43,7 +43,7 @@ const formatTime = (time: string | null): string => {
     allow-prevent-default
   >
     <template #input-icon>
-      <v-icon icon="mdi mdi-clock-outline" class="m-1" size="14" />
+      <v-icon icon="mdi-clock-outline" class="m-1" size="14" />
     </template>
     <template #dp-input="{ value, onInput, onEnter, onTab, onBlur, onPaste }">
       <input

@@ -66,12 +66,12 @@ const deleteObject = (bankTransactionId: number) => {
     <CTableDataCell>
       {{ payment.installment_order ? payment.installment_order.str_display : '-' }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       <a
         v-if="canPaymentUpdate"
-        href="javascript:void(0)"
+        href="#"
         class="text-decoration-none"
-        @click="showDetail"
+        @click.prevent="showDetail"
       >
         {{ numFormat(payment.amount || 0) }}
       </a>

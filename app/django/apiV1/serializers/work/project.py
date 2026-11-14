@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
@@ -24,7 +25,7 @@ class ProjectPermissionMixin:
             setattr(self, cache_key, obj.all_members())
         return getattr(self, cache_key)
 
-    def get_visible(self, obj):
+    def get_visible(self, obj) -> bool:
         if not obj:
             return False
         request = self.context.get('request')
@@ -534,64 +535,6 @@ class ProjectSubscriptionSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class VersionListSerializer(serializers.ModelSerializer):
-    project = SimpleIssueProjectSerializer(read_only=True)
-    status_desc = serializers.CharField(source='get_status_display', read_only=True)
-    sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
-    is_default = serializers.SerializerMethodField(read_only=True)
-
-    open_num = serializers.SerializerMethodField(read_only=True)
-    closed_num = serializers.SerializerMethodField(read_only=True)
-    total_num = serializers.SerializerMethodField(read_only=True)
-    done_ratio = serializers.SerializerMethodField(read_only=True)
-    recent_issues = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = Version
-        fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing',
-                  'sharing_desc', 'effective_date', 'description', 'is_default',
-                  'open_num', 'closed_num', 'total_num', 'done_ratio', 'recent_issues')
-
-    @staticmethod
-    def get_is_default(obj):
-        default_ver = obj.project.default_version
-        return True if default_ver and default_ver.pk == obj.pk else False
-
-    @staticmethod
-    def get_closed_num(obj):
-        if hasattr(obj, 'annotated_closed_num'):
-            return obj.annotated_closed_num
-        return obj.issues.filter(status__closed=True).count()
-
-    @staticmethod
-    def get_open_num(obj):
-        if hasattr(obj, 'annotated_open_num'):
-            return obj.annotated_open_num
-        return obj.issues.filter(status__closed=False).count()
-
-    @staticmethod
-    def get_total_num(obj):
-        if hasattr(obj, 'annotated_total_num'):
-            return obj.annotated_total_num
-        return obj.issues.count()
-
-    def get_done_ratio(self, obj):
-        # 1. 이슈가 아예 없는 경우
-        total_num = self.get_total_num(obj)
-        if total_num == 0:
-            return 0
-        # 2. 종료된 업무가 없는 경우
-        closed_num = self.get_closed_num(obj)
-        if closed_num == 0:
-            return 0
-        else:
-            return round(closed_num / total_num * 100, 2)
-
-    @staticmethod
-    def get_recent_issues(obj):
-        return SimpleIssueSerializer(obj.issues.all().order_by('-id')[:5], many=True, read_only=True).data
-
-
 class SimpleIssueStatusSerializer(serializers.ModelSerializer):
     class Meta:
         from work.models.issue import IssueStatus
@@ -628,6 +571,65 @@ class SimpleIssueSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
                   'fixed_version', 'category', 'assigned_to', 'creator', 'watchers',
                   'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
+
+
+class VersionListSerializer(serializers.ModelSerializer):
+    project = SimpleIssueProjectSerializer(read_only=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
+    is_default = serializers.SerializerMethodField(read_only=True)
+
+    open_num = serializers.SerializerMethodField(read_only=True)
+    closed_num = serializers.SerializerMethodField(read_only=True)
+    total_num = serializers.SerializerMethodField(read_only=True)
+    done_ratio = serializers.SerializerMethodField(read_only=True)
+    recent_issues = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Version
+        fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing',
+                  'sharing_desc', 'effective_date', 'description', 'is_default',
+                  'open_num', 'closed_num', 'total_num', 'done_ratio', 'recent_issues')
+
+    @staticmethod
+    def get_is_default(obj) -> bool:
+        default_ver = obj.project.default_version
+        return True if default_ver and default_ver.pk == obj.pk else False
+
+    @staticmethod
+    def get_closed_num(obj) -> int:
+        if hasattr(obj, 'annotated_closed_num'):
+            return obj.annotated_closed_num
+        return obj.issues.filter(status__closed=True).count()
+
+    @staticmethod
+    def get_open_num(obj) -> int:
+        if hasattr(obj, 'annotated_open_num'):
+            return obj.annotated_open_num
+        return obj.issues.filter(status__closed=False).count()
+
+    @staticmethod
+    def get_total_num(obj) -> int:
+        if hasattr(obj, 'annotated_total_num'):
+            return obj.annotated_total_num
+        return obj.issues.count()
+
+    def get_done_ratio(self, obj) -> float:
+        # 1. 이슈가 아예 없는 경우
+        total_num = self.get_total_num(obj)
+        if total_num == 0:
+            return 0
+        # 2. 종료된 업무가 없는 경우
+        closed_num = self.get_closed_num(obj)
+        if closed_num == 0:
+            return 0
+        else:
+            return round(closed_num / total_num * 100, 2)
+
+    @staticmethod
+    @extend_schema_field(SimpleIssueSerializer(many=True))
+    def get_recent_issues(obj):
+        return SimpleIssueSerializer(obj.issues.all().order_by('-id')[:5], many=True, read_only=True).data
 
 
 class VersionSerializer(VersionListSerializer):

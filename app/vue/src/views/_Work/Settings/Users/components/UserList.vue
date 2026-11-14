@@ -25,14 +25,14 @@ const workManager = computed(() => accStore.workManager)
           icon="mdi-account-multiple-plus-outline"
           color="blue-grey-lighten-1"
           size="small"
-          class="mr-2"
+          class="me-2"
         />
         {{ route.name }}
       </h5>
     </CCol>
 
-    <CCol v-if="workManager" class="text-right">
-      <span class="mr-2">
+    <CCol v-if="workManager" class="text-end">
+      <span class="me-2">
         <TextButton name="새 사용자" :to="{ name: '사용자 - 생성' }" />
       </span>
 

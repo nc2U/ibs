@@ -76,7 +76,7 @@ onBeforeMount(async () => {
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
         <CRow class="mb-3">
-          <CFormLabel for="category-name" class="col-sm-2 col-form-label text-right required">
+          <CFormLabel for="category-name" class="col-sm-2 col-form-label text-end required">
             이름
           </CFormLabel>
 
@@ -86,7 +86,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="category-assigned" class="col-sm-2 col-form-label text-right">
+          <CFormLabel for="category-assigned" class="col-sm-2 col-form-label text-end">
             담당자
           </CFormLabel>
           <CCol sm="10" lg="6">

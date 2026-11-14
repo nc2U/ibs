@@ -82,8 +82,8 @@ const deleteCategory = () => {
                 </router-link>
               </span>
               <span>
-                <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
-                <a href="javascript:void(0)" @click="toDelete(category.pk)">삭제</a>
+                <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
+                <a href="#" @click.prevent="toDelete(category.pk)">삭제</a>
               </span>
             </CTableDataCell>
           </CTableRow>

@@ -26,7 +26,7 @@ export const useInform = defineStore('inform', () => {
     project__status?: string
   }) => {
     const { project, author, page = 1, project__status } = payload
-    const params: Record<string, any> = { page }
+    const params: Record<string, string | number> = { page }
     if (project) {
       params.project__slug = project
     } else {
@@ -63,7 +63,7 @@ export const useInform = defineStore('inform', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const patchNews = (pk: number, payload: any) =>
+  const patchNews = (pk: number, payload: FormData | Partial<News> | Record<string, unknown>) =>
     api
       .patch(`/news/${pk}/`, payload)
       .then(async res => {
@@ -94,7 +94,7 @@ export const useInform = defineStore('inform', () => {
       .then(res => (newsComment.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchNewsCommentList = (payload: any) =>
+  const fetchNewsCommentList = (payload: { news: number }) =>
     api
       .get(`/news-comment/?news=${payload.news}`)
       .then(res => (newsCommentList.value = res.data.results))
@@ -109,7 +109,7 @@ export const useInform = defineStore('inform', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const patchNewsComment = (payload: any) =>
+  const patchNewsComment = (payload: { pk: number; [key: string]: unknown }) =>
     api
       .patch(`/news-comment/${payload.pk}/`, payload)
       .then(() => message())
@@ -138,8 +138,8 @@ export const useInform = defineStore('inform', () => {
 
       const res = await api.get(`/custom-query/?${params.toString()}`)
       queries.value = res.data.results
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     } finally {
       loading.value = false
     }
@@ -150,8 +150,8 @@ export const useInform = defineStore('inform', () => {
       const res = await api.post('/custom-query/', payload)
       message()
       return res.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -160,8 +160,8 @@ export const useInform = defineStore('inform', () => {
       const res = await api.put(`/custom-query/${pk}/`, payload)
       message()
       return res.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -169,8 +169,8 @@ export const useInform = defineStore('inform', () => {
     try {
       await api.delete(`/custom-query/${pk}/`)
       message()
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 

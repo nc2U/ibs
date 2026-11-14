@@ -64,13 +64,13 @@ const getCourt = (court: string | undefined) =>
     <CTableDataCell>
       <CCol v-if="suitCase.related_case">
         [
-        <a href="javascript:void(0);" @click="relatedFilter">
+        <a href="#" @click.prevent="relatedFilter">
           {{ relatedCaseName }}
         </a>
         ]
       </CCol>
     </CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       <router-link :to="{ name: `${viewRoute} - 보기`, params: { caseId: suitCase.pk } }">
         {{ cutString(suitCaseName, 30) }}
       </router-link>

@@ -156,7 +156,7 @@ onBeforeMount(() => accStore.fetchUsersList())
       </span>
     </CCol>
 
-    <CCol class="text-right">
+    <CCol class="text-end">
       <span class="form-text">
         <TextButton name="관리" :to="{ name: '사용자' }" icon="mdi-cog" icon-color="grey" />
       </span>
@@ -176,21 +176,21 @@ onBeforeMount(() => accStore.fetchUsersList())
         </colgroup>
         <CTableHead>
           <CTableRow>
-            <CTableHeaderCell class="pl-5" scope="col">사용자</CTableHeaderCell>
-            <CTableHeaderCell class="pl-3" scope="col">역할</CTableHeaderCell>
+            <CTableHeaderCell class="ps-5" scope="col">사용자</CTableHeaderCell>
+            <CTableHeaderCell class="ps-3" scope="col">역할</CTableHeaderCell>
             <CTableHeaderCell scope="col"></CTableHeaderCell>
           </CTableRow>
         </CTableHead>
 
         <CTableBody>
           <CTableRow v-for="mem in allMembers" :key="mem.pk" align="middle">
-            <CTableDataCell class="pl-5">
+            <CTableDataCell class="ps-5">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: mem.user.pk } }">
                 {{ mem.user.username }}
               </router-link>
             </CTableDataCell>
 
-            <CTableDataCell class="pl-3">
+            <CTableDataCell class="ps-3">
               <div v-if="editMode === mem.pk">
                 <div v-for="role in currentProject?.allowed_roles" :key="role.pk">
                   <CFormCheck
@@ -199,7 +199,7 @@ onBeforeMount(() => accStore.fetchUsersList())
                     :value="role.pk"
                     :id="'role-' + role.pk"
                     :disabled="isInherit(mem.roles, role.pk)"
-                    class="text-left"
+                    class="text-start"
                   />
                   <span v-if="isInherit(mem.roles, role.pk)" class="form-text">
                     상위 프로젝트로부터 상속
@@ -242,19 +242,19 @@ onBeforeMount(() => accStore.fetchUsersList())
             <CTableDataCell class="px-3">
               <span
                 v-if="canManageMembers && (editMode === null || editMode !== mem.pk)"
-                class="mr-2"
+                class="me-2"
               >
                 <v-icon icon="mdi-pencil" color="amber" size="sm" />
-                <a href="javascript:void(0)" @click="toEdit(mem)">편집</a>
+                <a href="#" @click.prevent="toEdit(mem)">편집</a>
               </span>
-              <span v-else-if="editMode === mem.pk" class="mr-2">
-                <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="mr-1" />
-                <a href="javascript:void(0)" @click="cancelEdit">취소</a>
+              <span v-else-if="editMode === mem.pk" class="me-2">
+                <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="me-1" />
+                <a href="#" @click.prevent="cancelEdit">취소</a>
               </span>
 
               <span v-if="canManageMembers && noInheritMem(mem.pk)">
-                <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="mr-1" />
-                <a href="javascript:void(0)" @click="toDelete(mem.pk)">삭제</a>
+                <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
+                <a href="#" @click.prevent="toDelete(mem.pk)">삭제</a>
               </span>
             </CTableDataCell>
           </CTableRow>

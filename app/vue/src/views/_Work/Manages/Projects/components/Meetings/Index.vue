@@ -136,12 +136,12 @@ onBeforeMount(fetchMeetings)
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-account-group" color="green-darken-1" size="small" class="mr-2" />회의
+            <v-icon icon="mdi-account-group" color="green-darken-1" size="small" class="me-2" />회의
           </h5>
         </CCol>
 
-        <CCol class="text-right">
-          <span v-if="canMeetingCreate" class="mr-2 form-text">
+        <CCol class="text-end">
+          <span v-if="canMeetingCreate" class="me-2 form-text">
             <TextButton
               name="새 회의록"
               :to="{ name: '(회의) - 추가', params: { projId: route.params.projId } }"

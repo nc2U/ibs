@@ -1,7 +1,24 @@
 import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle } from '@/utils/helper'
+import { message, errorHandle, getErrorMessage } from '@/utils/helper'
+
+export interface RecipientGroupResponse {
+  phone_numbers: string[]
+  count?: number
+  debug?: {
+    total_contractors?: number
+    active_contracts?: number
+    active_contractors?: number
+  }
+  [key: string]: unknown
+}
+
+const handleNoticeError = (err: unknown, fallback: string, failTitle?: string): void => {
+  const errorMsg = getErrorMessage(err, fallback)
+  if (failTitle) message('danger', failTitle, errorMsg)
+  errorHandle(err || { message: errorMsg })
+}
 import type {
   SalesBillIssue,
   SMSMessage,
@@ -159,10 +176,8 @@ export const useNotice = defineStore('notice', () => {
       }
 
       return response.data
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
-      message('danger', '발송 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발송 중 오류가 발생했습니다.', '발송 실패')
       throw err
     } finally {
       loading.value = false
@@ -201,11 +216,8 @@ export const useNotice = defineStore('notice', () => {
       }
 
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.detail || err.response?.data?.message || '발송 중 오류가 발생했습니다.'
-      message('danger', '발송 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발송 중 오류가 발생했습니다.', '발송 실패')
       throw err
     } finally {
       loading.value = false
@@ -229,10 +241,8 @@ export const useNotice = defineStore('notice', () => {
       }
 
       return response.data
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발송 중 오류가 발생했습니다.'
-      message('danger', '발송 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발송 중 오류가 발생했습니다.', '발송 실패')
       throw err
     } finally {
       loading.value = false
@@ -249,8 +259,8 @@ export const useNotice = defineStore('notice', () => {
       else message('warning', '', response.data.message)
 
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data || { message: '내역 조회 중 오류가 발생했습니다.' })
+    } catch (err: unknown) {
+      handleNoticeError(err, '내역 조회 중 오류가 발생했습니다.')
       throw err
     } finally {
       loading.value = false
@@ -267,8 +277,8 @@ export const useNotice = defineStore('notice', () => {
       else message('warning', '', response.data.message)
 
       return response.data.charge
-    } catch (err: any) {
-      errorHandle(err.response?.data || { message: '잔액 조회 중 오류가 발생했습니다.' })
+    } catch (err: unknown) {
+      handleNoticeError(err, '잔액 조회 중 오류가 발생했습니다.')
       throw err
     } finally {
       loading.value = false
@@ -283,8 +293,8 @@ export const useNotice = defineStore('notice', () => {
     try {
       const response = await api.get('/messages/error-codes/')
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response?.data || { message: '에러 코드 조회 중 오류가 발생했습니다.' })
+    } catch (err: unknown) {
+      handleNoticeError(err, '에러 코드 조회 중 오류가 발생했습니다.')
       throw err
     }
   }
@@ -298,9 +308,9 @@ export const useNotice = defineStore('notice', () => {
       const data = response.data.results || response.data
       senderNumbers.value = Array.isArray(data) ? data : []
       return response.data
-    } catch (err: any) {
+    } catch (err: unknown) {
       senderNumbers.value = [] // Ensure it remains an array on error
-      errorHandle(err.response?.data || { message: '발신번호 목록 조회 중 오류가 발생했습니다.' })
+      handleNoticeError(err, '발신번호 목록 조회 중 오류가 발생했습니다.')
       throw err
     } finally {
       loading.value = false
@@ -315,13 +325,8 @@ export const useNotice = defineStore('notice', () => {
       message('success', '', '발신번호가 등록되었습니다.')
       await fetchSenderNumbers() // 목록 갱신
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.phone_number?.[0] ||
-        err.response?.data?.message ||
-        '발신번호 등록 중 오류가 발생했습니다.'
-      message('danger', '등록 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발신번호 등록 중 오류가 발생했습니다.', '등록 실패')
       throw err
     } finally {
       loading.value = false
@@ -339,13 +344,8 @@ export const useNotice = defineStore('notice', () => {
       message('success', '', '발신번호가 수정되었습니다.')
       await fetchSenderNumbers() // 목록 갱신
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.phone_number?.[0] ||
-        err.response?.data?.message ||
-        '발신번호 수정 중 오류가 발생했습니다.'
-      message('danger', '수정 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발신번호 수정 중 오류가 발생했습니다.', '수정 실패')
       throw err
     } finally {
       loading.value = false
@@ -359,10 +359,8 @@ export const useNotice = defineStore('notice', () => {
       await api.delete(`/registered-sender-numbers/${id}/`)
       message('warning', '', '발신번호가 삭제되었습니다.')
       await fetchSenderNumbers() // 목록 갱신
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발신번호 삭제 중 오류가 발생했습니다.'
-      message('danger', '삭제 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발신번호 삭제 중 오류가 발생했습니다.', '삭제 실패')
       throw err
     } finally {
       loading.value = false
@@ -378,9 +376,9 @@ export const useNotice = defineStore('notice', () => {
       const data = response.data.results || response.data
       messageTemplates.value = Array.isArray(data) ? data : []
       return response.data
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageTemplates.value = [] // Ensure it remains an array on error
-      errorHandle(err.response?.data || { message: '템플릿 목록 조회 중 오류가 발생했습니다.' })
+      handleNoticeError(err, '템플릿 목록 조회 중 오류가 발생했습니다.')
       throw err
     } finally {
       loading.value = false
@@ -401,13 +399,8 @@ export const useNotice = defineStore('notice', () => {
       message('success', '', '메시지 템플릿이 등록되었습니다.')
       await fetchMessageTemplates() // 목록 갱신
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.title?.[0] ||
-        err.response?.data?.message ||
-        '템플릿 등록 중 오류가 발생했습니다.'
-      message('danger', '등록 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '템플릿 등록 중 오류가 발생했습니다.', '등록 실패')
       throw err
     } finally {
       loading.value = false
@@ -422,13 +415,8 @@ export const useNotice = defineStore('notice', () => {
       message('success', '', '메시지 템플릿이 수정되었습니다.')
       await fetchMessageTemplates() // 목록 갱신
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.title?.[0] ||
-        err.response?.data?.message ||
-        '템플릿 수정 중 오류가 발생했습니다.'
-      message('danger', '수정 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '템플릿 수정 중 오류가 발생했습니다.', '수정 실패')
       throw err
     } finally {
       loading.value = false
@@ -442,10 +430,8 @@ export const useNotice = defineStore('notice', () => {
       await api.delete(`/message-templates/${id}/`)
       message('warning', '', '메시지 템플릿이 삭제되었습니다.')
       await fetchMessageTemplates() // 목록 갱신
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '템플릿 삭제 중 오류가 발생했습니다.'
-      message('danger', '삭제 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '템플릿 삭제 중 오류가 발생했습니다.', '삭제 실패')
       throw err
     } finally {
       loading.value = false
@@ -453,7 +439,10 @@ export const useNotice = defineStore('notice', () => {
   }
 
   // 수신자 그룹 조회
-  const fetchRecipientGroup = async (projectId: number, groupType: string): Promise<any> => {
+  const fetchRecipientGroup = async (
+    projectId: number,
+    groupType: string,
+  ): Promise<RecipientGroupResponse> => {
     loading.value = true
     try {
       const response = await api.get('/messages/recipient-groups/', {
@@ -466,13 +455,8 @@ export const useNotice = defineStore('notice', () => {
       }
 
       return response.data
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        '수신자 그룹 조회 중 오류가 발생했습니다.'
-      message('danger', '조회 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '수신자 그룹 조회 중 오류가 발생했습니다.', '조회 실패')
       throw err
     } finally {
       loading.value = false
@@ -488,10 +472,8 @@ export const useNotice = defineStore('notice', () => {
       const response = await api.get<HistoryListResponse>('/message-send-history/', { params })
       messageSendHistory.value = response.data
       return response.data
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발송 기록 조회 중 오류가 발생했습니다.'
-      message('danger', '조회 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발송 기록 조회 중 오류가 발생했습니다.', '조회 실패')
       throw err
     } finally {
       loading.value = false
@@ -505,10 +487,8 @@ export const useNotice = defineStore('notice', () => {
       const response = await api.get<MessageSendHistory>(`/message-send-history/${id}/`)
       currentHistory.value = response.data
       return response.data
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '발송 기록 상세 조회 중 오류가 발생했습니다.'
-      message('danger', '조회 실패', errorMsg)
-      errorHandle(err.response?.data || { message: errorMsg })
+    } catch (err: unknown) {
+      handleNoticeError(err, '발송 기록 상세 조회 중 오류가 발생했습니다.', '조회 실패')
       throw err
     } finally {
       loading.value = false
@@ -537,11 +517,11 @@ export const useNotice = defineStore('notice', () => {
         postLabels.value = res.data || []
         postLabelsCount.value = (res.data || []).length
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       postLabels.value = []
       postLabelsCount.value = 0
       console.error(err)
-      errorHandle(err.response?.data || err.message)
+      errorHandle(err)
     } finally {
       loading.value = false
     }
@@ -563,10 +543,10 @@ export const useNotice = defineStore('notice', () => {
       const res = await api.get('/email-notices/recipients/', { params })
       emailRecipientsData.value = res.data
       return res.data as EmailRecipientsResponse
-    } catch (err: any) {
+    } catch (err: unknown) {
       emailRecipientsData.value = null
       console.error(err)
-      errorHandle(err.response?.data || err.message)
+      errorHandle(err)
     } finally {
       loading.value = false
     }
@@ -593,9 +573,9 @@ export const useNotice = defineStore('notice', () => {
       const res = await api.post('/email-notices/send-email/', payload)
       message('success', '이메일 발송 요청이 정상 접수되었습니다.')
       return res.data
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      errorHandle(err.response?.data || err.message)
+      errorHandle(err)
       throw err
     } finally {
       loading.value = false
@@ -617,11 +597,11 @@ export const useNotice = defineStore('notice', () => {
         emailNotices.value = res.data || []
         emailNoticesCount.value = (res.data || []).length
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       emailNotices.value = []
       emailNoticesCount.value = 0
       console.error(err)
-      errorHandle(err.response?.data || err.message)
+      errorHandle(err)
     } finally {
       loading.value = false
     }
@@ -633,10 +613,10 @@ export const useNotice = defineStore('notice', () => {
       const res = await api.get(`/email-notices/${id}/`)
       currentEmailNotice.value = res.data
       return res.data as EmailNotice
-    } catch (err: any) {
+    } catch (err: unknown) {
       currentEmailNotice.value = null
       console.error(err)
-      errorHandle(err.response?.data || err.message)
+      errorHandle(err)
     } finally {
       loading.value = false
     }

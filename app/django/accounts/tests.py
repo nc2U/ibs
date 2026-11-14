@@ -164,6 +164,8 @@ class AccountsSecurityAndIsolationTests(APITestCase):
 
 class PasswordResetSecurityTests(APITestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.user = User.objects.create_user(
             username='resetuser', email='resetuser@test.com', password='old_password123'
         )
@@ -200,6 +202,29 @@ class PasswordResetSecurityTests(APITestCase):
 
         # 일회용 토큰 삭제 확인
         self.assertFalse(PasswordResetToken.objects.filter(user=self.user, token=token).exists())
+
+    def test_password_reset_confirm_rejects_empty_or_weak_password(self):
+        """빈 값이나 비밀번호 정책에 위배되는 약한 비밀번호는 거부하고 토큰을 소모하지 않음"""
+        token = default_token_generator.make_token(self.user)
+        PasswordResetToken.objects.create(user=self.user, token=token)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        confirm_url = f'/api/v1/password-reset-confirm/{uidb64}/{token}/'
+
+        # 빈 문자열 및 누락
+        for payload in ({'new_password': ''}, {}):
+            res_empty = self.client.post(confirm_url, payload)
+            self.assertEqual(res_empty.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertTrue(PasswordResetToken.objects.filter(user=self.user, token=token).exists())
+
+        # 너무 짧고 단순한 비밀번호
+        res_weak = self.client.post(confirm_url, {'new_password': '123'})
+        self.assertEqual(res_weak.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsInstance(res_weak.data['detail'], list)
+        self.assertTrue(PasswordResetToken.objects.filter(user=self.user, token=token).exists())
+
+        # 기존 비밀번호가 유지되는지 검증
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('old_password123'))
 
     def test_password_reset_confirm_invalid_uid_returns_400(self):
         """잘못된 UIDb64가 전달되었을 때 500이 아닌 400 Bad Request 반환"""
@@ -399,3 +424,28 @@ class PasswordAndAuthSecurityTests(APITestCase):
         self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password('BrandNewSecurePassword1234!'))
+
+    def test_production_settings_hardening_helpers(self):
+        """운영 모드 SECRET_KEY 기본값 차단 및 빌드 커맨드(collectstatic) 예외, ALLOWED_HOSTS 기본값 검증"""
+        from django.core.exceptions import ImproperlyConfigured
+        from _config.settings import _resolve_allowed_hosts, _validate_production_secret_key
+
+        # DEBUG=False, 런타임(daphne)에서 기본/빈 SECRET_KEY 차단
+        with self.assertRaises(ImproperlyConfigured):
+            _validate_production_secret_key(False, 'SECRET_KEY', ['daphne', '_config.asgi:application'])
+        with self.assertRaises(ImproperlyConfigured):
+            _validate_production_secret_key(False, '', ['celery', '-A', '_config', 'worker'])
+
+        # Docker 빌드 단계(collectstatic)는 SECRET_KEY 미주입 상태여도 허용
+        _validate_production_secret_key(False, 'SECRET_KEY', ['manage.py', 'collectstatic', '--noinput'])
+
+        # 정상 SECRET_KEY 는 운영 기동 허용
+        _validate_production_secret_key(False, 'prod-very-long-random-secret-key-at-least-50-chars!', ['daphne'])
+
+        # DEBUG=False 에서 ALLOWED_HOSTS 미지정 시 와일드카드 대신 localhost/127.0.0.1 및 DOMAIN_NAME 사용
+        hosts = _resolve_allowed_hosts(False, [], 'ibs.dyibs.com')
+        self.assertNotIn('*', hosts)
+        self.assertEqual(hosts, ['localhost', '127.0.0.1', 'ibs.dyibs.com'])
+
+        # DEBUG=True 에서 비어있으면 '*' 폴백
+        self.assertEqual(_resolve_allowed_hosts(True, []), ['*'])

@@ -100,7 +100,7 @@ onBeforeMount(async () => {
       <CCard :color="colorLight" class="mb-3">
         <CCardBody>
           <CRow class="mb-3">
-            <CFormLabel for="name" class="col-sm-2 col-form-label text-right required">
+            <CFormLabel for="name" class="col-sm-2 col-form-label text-end required">
               이름
             </CFormLabel>
 
@@ -110,7 +110,7 @@ onBeforeMount(async () => {
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel for="description" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="description" class="col-sm-2 col-form-label text-end">
               설명
             </CFormLabel>
 
@@ -124,7 +124,7 @@ onBeforeMount(async () => {
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel for="status" class="col-sm-2 col-form-label text-right"> 상태</CFormLabel>
+            <CFormLabel for="status" class="col-sm-2 col-form-label text-end"> 상태</CFormLabel>
 
             <CCol sm="10" lg="6">
               <CFormSelect id="status" v-model="form.status">
@@ -136,7 +136,7 @@ onBeforeMount(async () => {
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel for="effective_date" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="effective_date" class="col-sm-2 col-form-label text-end">
               날짜
             </CFormLabel>
 
@@ -146,7 +146,7 @@ onBeforeMount(async () => {
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel for="sharing" class="col-sm-2 col-form-label text-right"> 공유</CFormLabel>
+            <CFormLabel for="sharing" class="col-sm-2 col-form-label text-end"> 공유</CFormLabel>
 
             <CCol sm="6">
               <CFormSelect id="sharing" v-model="form.sharing">
@@ -160,7 +160,7 @@ onBeforeMount(async () => {
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel for="is_default" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="is_default" class="col-sm-2 col-form-label text-end">
               기본 단계
             </CFormLabel>
 

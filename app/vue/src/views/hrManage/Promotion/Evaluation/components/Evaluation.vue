@@ -50,7 +50,7 @@ const getGradeBadge = (grade: string) => {
       <v-chip color="info" variant="flat" size="x-small">{{ evaluation.eval_period_desc }}</v-chip>
     </CTableDataCell>
     <CTableDataCell class="fw-bold">
-      <a href="javascript:void(0);" @click.prevent="showDetail">{{ evaluation.staff_name }}</a>
+      <a href="#" @click.prevent="showDetail">{{ evaluation.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
       <v-chip

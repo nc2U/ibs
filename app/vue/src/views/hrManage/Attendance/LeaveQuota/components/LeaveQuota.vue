@@ -27,7 +27,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
   <CTableRow v-if="quota" class="text-center">
     <CTableDataCell>{{ quota.year }}년</CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" role="button" @click.prevent="showDetail">{{
+      <a href="#" role="button" @click.prevent="showDetail">{{
         quota.staff_name
       }}</a>
     </CTableDataCell>

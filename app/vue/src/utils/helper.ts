@@ -25,39 +25,90 @@ export const message = (
   )
 }
 
-export const errorHandle = (err: any) => {
-  // Handle different error response structures safely
-  const errorData = err?.response?.data || err?.data || err
+const isRecord = (val: unknown): val is Record<string, unknown> =>
+  typeof val === 'object' && val !== null
 
-  if (errorData?.code === 'token_not_valid') {
+/**
+ * Extract structured API error payload from an Axios error, response object, or plain error.
+ */
+export const getErrorData = (err: unknown): unknown => {
+  if (isRecord(err)) {
+    const response = isRecord(err.response) ? err.response : null
+    if (
+      response &&
+      response.data !== undefined &&
+      response.data !== null &&
+      response.data !== ''
+    ) {
+      return response.data
+    }
+    if (err.data !== undefined && err.data !== null && err.data !== '') {
+      return err.data
+    }
+  }
+  return err
+}
+
+/**
+ * Extract a user-facing error message from an unknown error value.
+ */
+export const getErrorMessage = (
+  err: unknown,
+  fallback = '알 수 없는 오류가 발생했습니다.',
+): string => {
+  const errorData = getErrorData(err)
+
+  if (typeof errorData === 'string' && errorData.trim()) return errorData
+
+  if (isRecord(errorData) && !(errorData instanceof Error)) {
+    for (const key of ['detail', 'error', 'message', 'non_field_errors']) {
+      const value = errorData[key]
+      if (typeof value === 'string' && value.trim()) return value
+      if (Array.isArray(value) && value.length > 0) return String(value[0])
+    }
+    for (const value of Object.values(errorData)) {
+      if (typeof value === 'string' && value.trim()) return value
+      if (Array.isArray(value) && value.length > 0) return String(value[0])
+    }
+  }
+
+  if (err instanceof Error && err.message) return err.message
+  if (isRecord(err) && typeof err.message === 'string' && err.message) return err.message
+
+  return fallback
+}
+
+export const errorHandle = (err: unknown): void => {
+  const errorData = getErrorData(err)
+
+  if (isRecord(errorData) && errorData.code === 'token_not_valid') {
     console.log('token_not_valid')
-  } else if (errorData?.detail === '자격 인증 데이터가 제공되지 않았습니다.') {
+  } else if (isRecord(errorData) && errorData.detail === '자격 인증 데이터가 제공되지 않았습니다.') {
     // 401 Unauthorized 에러의 경우 조용히 처리 (이미 API 인터셉터에서 리다이렉트 처리됨)
     console.log('Unauthorized - redirecting to login')
   } else {
     console.error('[API Error Detail]:', JSON.stringify(errorData, null, 2))
     console.log(err)
 
-    // If errorData is an object with error details, iterate through them
-    if (errorData && typeof errorData === 'object') {
-      for (const key in errorData) {
-        if (typeof errorData[key] === 'string') {
-          message('danger', `${key} - 에러`, `${errorData[key]}`, 10000)
-        } else if (Array.isArray(errorData[key])) {
-          // Handle array of error messages
-          errorData[key].forEach((msg: string) => {
-            message('danger', `${key} - 에러`, msg, 10000)
+    // If errorData is a structured API error object, display each field error message
+    if (isRecord(errorData) && !(errorData instanceof Error)) {
+      let handled = false
+      for (const [key, value] of Object.entries(errorData)) {
+        if (typeof value === 'string') {
+          message('danger', `${key} - 에러`, value, 10000)
+          handled = true
+        } else if (Array.isArray(value)) {
+          value.forEach((msg: unknown) => {
+            message('danger', `${key} - 에러`, String(msg), 10000)
+            handled = true
           })
         }
       }
+      if (!handled) {
+        message('danger', '에러', getErrorMessage(err), 10000)
+      }
     } else {
-      // Fallback for simple error messages
-      message(
-        'danger',
-        '에러',
-        String(errorData || err || '알 수 없는 오류가 발생했습니다.'),
-        10000,
-      )
+      message('danger', '에러', getErrorMessage(err), 10000)
     }
   }
 }
@@ -101,14 +152,8 @@ export const markdownRender = (content: string) => {
   return DOMPurify.sanitize(parts.join(''))
 }
 
-interface Item {
-  pk: number
-
-  [key: string]: any
-}
-
 // localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
-export const getOrderedList = (objectList: Item[], key: string) => {
+export const getOrderedList = <T extends { pk: number }>(objectList: T[], key: string): T[] => {
   const savedOrder = JSON.parse(localStorage.getItem(key) || '[]') as {
     pk: number
     order: number
@@ -117,7 +162,9 @@ export const getOrderedList = (objectList: Item[], key: string) => {
   if (savedOrder.length) {
     // pk -> Forum 매핑
     const objectMap = new Map(objectList.map(obj => [obj.pk, obj]))
-    const ordered = savedOrder.map(item => objectMap.get(item.pk)).filter(Boolean) as any[]
+    const ordered = savedOrder
+      .map(item => objectMap.get(item.pk))
+      .filter((item): item is T => item !== undefined)
 
     // 누락된 boardList 항목을 추가로 병합
     const missing = objectList.filter(b => !ordered.some(o => o.pk === b.pk))
@@ -126,7 +173,7 @@ export const getOrderedList = (objectList: Item[], key: string) => {
 }
 
 // 순서가 바뀌면 저장
-export const setLocalStorage = (orderedList: Item[], key: string) => {
+export const setLocalStorage = <T extends { pk: number }>(orderedList: T[], key: string) => {
   const order = orderedList.map((obj, idx) => ({
     pk: obj.pk,
     order: idx,
@@ -137,8 +184,8 @@ export const setLocalStorage = (orderedList: Item[], key: string) => {
 // 파일 다운로드
 export const { downloadFile, downloadViaWindowOpen } = useDownload()
 
-export const cleanupParams = (params: Record<string, any>): Record<string, any> => {
-  const cleanedParams: Record<string, any> = {}
+export const cleanupParams = (params: Record<string, unknown>): Record<string, unknown> => {
+  const cleanedParams: Record<string, unknown> = {}
   for (const key in params) {
     const value = params[key]
     if (value !== null && value !== undefined && value !== '') {

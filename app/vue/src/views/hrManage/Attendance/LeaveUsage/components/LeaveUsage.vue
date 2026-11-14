@@ -30,7 +30,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     :class="{ 'table-secondary opacity-75': usage.is_cancelled }"
   >
     <CTableDataCell>
-      <a href="javascript:void(0);" role="button" @click.prevent="showDetail">{{
+      <a href="#" role="button" @click.prevent="showDetail">{{
         usage.staff_name
       }}</a>
     </CTableDataCell>

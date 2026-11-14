@@ -63,14 +63,14 @@ const logout = () => {
           color="info"
           variant="flat"
           size="x-small"
-          class="ml-2"
+          class="ms-2"
         >
           업무관리자
         </v-chip>
       </CDropdownHeader>
 
       <CDropdownItem @click="refsTodoModal.callModal()">
-        <v-icon icon="mdi mdi-calendar-check-outline" size="small" />
+        <v-icon icon="mdi-calendar-check-outline" size="small" />
         할일 관리
         <v-chip color="danger" variant="flat" size="x-small" class="ms-auto">
           {{ itemsCount }}
@@ -82,24 +82,24 @@ const logout = () => {
       </CDropdownHeader>
 
       <CDropdownItem v-if="userInfo.is_staff" @click="locationBlank('/admin/')">
-        <v-icon icon="mdi mdi-cog-outline" size="small" />
+        <v-icon icon="mdi-cog-outline" size="small" />
         관리자 페이지
       </CDropdownItem>
 
       <CDropdownItem @click="locationBlank('https://docs.dyibs.com/')">
-        <v-icon icon="mdi mdi-file-document-outline" size="small" />
+        <v-icon icon="mdi-file-document-outline" size="small" />
         사용자 매뉴얼
       </CDropdownItem>
 
       <CDropdownItem @click="router.push({ name: '사용자 - 내 계정' })">
-        <v-icon icon="mdi mdi-account-outline" size="small" />
+        <v-icon icon="mdi-account-outline" size="small" />
         내 계정 관리
       </CDropdownItem>
 
       <CDropdownDivider />
 
       <CDropdownItem style="cursor: pointer" @click="logout">
-        <v-icon icon="mdi mdi-logout-variant" size="small" />
+        <v-icon icon="mdi-logout-variant" size="small" />
         로그아웃
       </CDropdownItem>
     </CDropdownMenu>

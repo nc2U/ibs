@@ -1026,16 +1026,16 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">메모</CTableHeaderCell>
           <CTableHeaderCell scope="col">
             거래계좌
-            <a href="javascript:void(0)">
-              <CIcon name="cilCog" @click="accCallModal" />
+            <a href="#" @click.prevent="accCallModal">
+              <CIcon name="cilCog" />
             </a>
           </CTableHeaderCell>
           <CTableHeaderCell scope="col">적요</CTableHeaderCell>
           <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">
             계정
-            <a href="javascript:void(0)">
-              <CIcon name="cilCog" @click="refAccountManage.callModal()" />
+            <a href="#" @click.prevent="refAccountManage.callModal()">
+              <CIcon name="cilCog" />
             </a>
           </CTableHeaderCell>
           <CTableHeaderCell scope="col">거래처</CTableHeaderCell>

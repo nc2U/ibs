@@ -13,16 +13,23 @@ on:
 # 여러 개의 job 을 사용할 수 있으며, 여러 개의 job 을 사용할 때는 서로 정보도 교환 가능.
 # 각각 독립적으로도 실행 가능.
 jobs:
+  verify:
+    name: Verify Vue
+    uses: ./.github/workflows/ci-verify.yml
+    with:
+      run_django: false
+      run_vue: true
+      run_flutter: false
+
   build:
     name: Build
+    needs: verify
     runs-on: ubuntu-latest
     
     steps:
-      # 레파지터리 체크 아웃
+      # 레파지터리 체크 아웃 (verify job 과 동일한 커밋 보장)
       - name: Check out source code
         uses: actions/checkout@v4
-        with:
-          ref: 'develop'
       
       # Node.js 사용
       - name: Use Node.js
@@ -55,18 +62,11 @@ jobs:
       - name: Disable pnpm minimumReleaseAge policy
         run: cd app/vue && pnpm config set minimum-release-age 0
 
-      # node_modules 변화기 있으면 빌드
+      # lockfile 기준 결정적 의존성 설치 (lint/type-check/vitest 는 verify job 에서 선행 검증)
       - name: Install Dependencies
-        run: cd app/vue && pnpm i --no-frozen-lockfile
+        run: cd app/vue && pnpm install --frozen-lockfile
       
-      #      - run: pnpm lint
-      #        # `if: ${{ always() }}`
-      #        # 만약 `pnpm lint`라는 곳에서 에러가 났을 경우 이후 build를 실행하지 않고 해당 workflow가 종료됨.
-      #        # `if: ${{ always() }}`라는 문법을 사용 시 `pnpm lint`라는 곳에서 에러가 나도
-      #        # 이후의 build까지 다 실행을 해보고 난 뒤 종료 하므로 모든 테스트 스크립트에 `if: ${{ always() }}`를 붙임.
-      #        if: ${{ always() }}
-      
-      # setup and lint 에러가 없으면 빌드
+      # 검증(verify) 통과 후 프로덕션 정적 자산 빌드
       - name: Build the Source Code
         env:
           NODE_ENV: production
@@ -130,10 +130,6 @@ jobs:
           echo "  - index.html: $(wc -c < index.html) bytes"
           echo "  - Total assets: $(find assets -type f | wc -l) files"
           echo "  - Total size: $(du -sh assets | cut -f1)"
-
-      # 단위 테스트
-      - name: Vue Unit Test using Vitest
-        run: cd app/vue && pnpm test:unit
 
       # 새 빌드만 업로드 (전체 static이 아닌)
       - name: Upload new build to server

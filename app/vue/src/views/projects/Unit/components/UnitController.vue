@@ -200,7 +200,7 @@ const modalAction = () => {
       </CCol>
       <CCol v-if="canProjectUpdate" class="pt-1">
         <v-icon
-          icon="mdi mdi-plus-thick"
+          icon="mdi-plus-thick"
           size="16"
           color="success"
           class="pointer"

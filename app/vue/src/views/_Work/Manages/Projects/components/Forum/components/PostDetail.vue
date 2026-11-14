@@ -40,13 +40,13 @@ const userInfo = computed(() => accStore.userInfo)
     <v-card class="mb-6 card-white" flat border>
       <v-card-text class="py-3 bg-more-light border-bottom">
         <v-row class="py-2">
-          <h5 class="font-weight-bold">
+          <h5 class="fw-bold">
             <v-chip
               v-if="post.is_notice"
               variant="elevated"
               color="primary"
               size="x-small"
-              class="mr-2"
+              class="me-2"
             >
               공지
             </v-chip>
@@ -56,8 +56,8 @@ const userInfo = computed(() => accStore.userInfo)
 
         <!-- CCardHeader 대신 v-card-text 사용 -->
         <v-row no-gutters align="center" class="text-muted text-grey">
-          <v-col cols="auto" class="mr-3 strong">
-            <v-icon icon="mdi-account-circle-outline" size="small" class="mr-1" />
+          <v-col cols="auto" class="me-3 strong">
+            <v-icon icon="mdi-account-circle-outline" size="small" class="me-1" />
             <router-link
               v-if="post.creator?.pk && canViewUser(post.creator.pk)"
               :to="{
@@ -70,12 +70,12 @@ const userInfo = computed(() => accStore.userInfo)
             </router-link>
             <span v-else>{{ post.creator?.username }}</span>
           </v-col>
-          <v-col cols="auto" class="mr-3">
-            <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
+          <v-col cols="auto" class="me-3">
+            <v-icon icon="mdi-clock-outline" size="small" class="me-1" />
             {{ elapsedTime(post.created as string) }}
           </v-col>
           <v-col cols="auto">
-            <v-icon icon="mdi-eye-outline" size="small" class="mr-1" />
+            <v-icon icon="mdi-eye-outline" size="small" class="me-1" />
             조회수 {{ post.hit }}
           </v-col>
         </v-row>
@@ -88,9 +88,9 @@ const userInfo = computed(() => accStore.userInfo)
           <!-- 상단 간격 조정 -->
           <h6 class="mb-2">첨부 파일</h6>
           <div v-for="file in post.files" :key="file.pk as number" class="mb-2">
-            <v-icon icon="mdi-attachment" size="small" class="mr-2" />
+            <v-icon icon="mdi-attachment" size="small" class="me-2" />
             <a :href="file.file" target="_blank">{{ file.file_name }}</a>
-            <span class="ml-2 text-muted">{{ humanizeFileSize(file.file_size) }}</span>
+            <span class="ms-2 text-muted">{{ humanizeFileSize(file.file_size) }}</span>
           </div>
         </div>
       </v-card-text>
@@ -101,7 +101,7 @@ const userInfo = computed(() => accStore.userInfo)
           size="small"
           :variant="post.my_like ? 'flat' : 'tonal'"
           color="primary"
-          class="mr-2"
+          class="me-2"
           @click="emit('like-post', post.pk)"
         >
           {{ post.like }}
@@ -118,12 +118,12 @@ const userInfo = computed(() => accStore.userInfo)
       </v-card-actions>
     </v-card>
 
-    <div class="text-right mb-6">
+    <div class="text-end mb-6">
       <!-- 하단 간격 조정 -->
       <v-btn
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="success"
-        class="mr-2 no-underline"
+        class="me-2 no-underline"
         :disabled="!canForumUpdate"
         :to="{
           name: '(게시판) - 게시물 수정',

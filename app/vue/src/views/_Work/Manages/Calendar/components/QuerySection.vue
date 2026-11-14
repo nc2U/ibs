@@ -524,7 +524,7 @@ defineExpose({ applyQuery, resetFilter })
         </CCol>
 
         <!-- 검색조건 추가 멀티셀렉트 -->
-        <CCol md="4" class="text-right">
+        <CCol md="4" class="text-end">
           <CRow>
             <CFormLabel
               for="calSearchOptions"

@@ -1,10 +1,11 @@
-name: "[CI] Verify (Django & Vue)"
+name: "[CI] Verify (Django, Vue & Flutter)"
 
 on:
   pull_request:
     paths:
       - "app/django/**"
       - "app/vue/**"
+      - "app/flutter/**"
       - "deploy/docker/python/requirements.txt"
       - ".github/workflows/ci-verify.yml"
   push:
@@ -12,16 +13,30 @@ on:
     paths:
       - "app/django/**"
       - "app/vue/**"
+      - "app/flutter/**"
       - "deploy/docker/python/requirements.txt"
+      - ".github/workflows/ci-verify.yml"
+  workflow_call:
+    inputs:
+      run_django:
+        type: boolean
+        default: true
+      run_vue:
+        type: boolean
+        default: true
+      run_flutter:
+        type: boolean
+        default: true
   workflow_dispatch:
 
 concurrency:
-  group: ci-verify-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-verify-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   django:
     name: Django check & test
+    if: ${{ github.event_name != 'workflow_call' || inputs.run_django }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -101,6 +116,7 @@ jobs:
 
   vue:
     name: Vue lint, type-check & unit test
+    if: ${{ github.event_name != 'workflow_call' || inputs.run_vue }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -141,3 +157,29 @@ jobs:
 
       - name: Unit tests
         run: pnpm exec vitest run
+
+  flutter:
+    name: Flutter analyze & test
+    if: ${{ github.event_name != 'workflow_call' || inputs.run_flutter }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/flutter
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Unit & widget tests
+        run: flutter test

@@ -1,5 +1,7 @@
 import uuid
 from datetime import date
+from types import SimpleNamespace
+from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from rest_framework import status as http_status
@@ -1634,6 +1636,107 @@ class LedgerAuditEnhancementsTests(LedgerTestBase):
         # 반면 권한이 있는 프로젝트 A 엑셀 다운로드는 200 OK
         res_excel_a = self.client.get(f'/excel/pro-balance/?project={self.project_a.pk}')
         self.assertEqual(res_excel_a.status_code, http_status.HTTP_200_OK)
+
+
+class AdminHtmlRenderingTests(LedgerTestBase):
+    """Django Admin HTML 헬퍼가 구조적 HTML을 유지하면서 XSS 문자열을 이스케이프하는지 검증"""
+
+    def test_related_accounting_entries_escapes_html_and_preserves_links(self):
+        from ledger.admin import _render_related_accounting_entries
+
+        xss_account = ProjectAccount.objects.create(
+            code='9910',
+            name='<script>alert("xss")</script>',
+            category='asset',
+            direction='deposit',
+            is_active=True,
+            is_category_only=False,
+        )
+        tx = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 8, 1),
+            amount=1000000,
+            sort=self.sort_deposit,
+            content='관리자 HTML 테스트',
+            creator=self.admin_user,
+        )
+        entry = ProjectAccountingEntry.objects.create(
+            transaction_id=tx.transaction_id,
+            project=self.project_a,
+            account=xss_account,
+            amount=1000000,
+            trader='테스트거래처',
+        )
+
+        rendered = str(
+            _render_related_accounting_entries(tx, ProjectAccountingEntry, 'projectaccountingentry')
+        )
+        self.assertIn(f'/admin/ledger/projectaccountingentry/{entry.pk}/change/', rendered)
+        self.assertIn('+ 추가', rendered)
+        self.assertNotIn('<script>', rendered)
+        self.assertIn('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', rendered)
+
+        tx_empty = ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 8, 2),
+            amount=500000,
+            sort=self.sort_deposit,
+            content='분개 없는 거래',
+            creator=self.admin_user,
+        )
+        empty_rendered = str(
+            _render_related_accounting_entries(
+                tx_empty, ProjectAccountingEntry, 'projectaccountingentry'
+            )
+        )
+        self.assertIn(f'/admin/ledger/projectaccountingentry/add/?transaction_id={tx_empty.transaction_id}', empty_rendered)
+        self.assertIn('+ 회계분개 추가', empty_rendered)
+
+    def test_payment_admin_html_escapes_account_name_and_preserves_badges(self):
+        from ledger.admin import ProjectAccountAdmin
+        from payment.admin import ContractPaymentAdmin
+
+        parent_acc = ProjectAccount.objects.create(
+            code='9900',
+            name='상위계정',
+            category='asset',
+            direction='deposit',
+            is_active=True,
+            is_category_only=True,
+        )
+        ProjectAccount.objects.create(
+            code='9901',
+            name='<b>XSS</b>',
+            parent=parent_acc,
+            category='asset',
+            direction='deposit',
+            is_active=True,
+            is_category_only=False,
+        )
+        children_html = str(ProjectAccountAdmin(ProjectAccount, admin.site).children_display(parent_acc))
+        self.assertIn('+ 하위 계정 추가', children_html)
+        self.assertNotIn('<b>XSS</b>', children_html)
+        self.assertIn('&lt;b&gt;XSS&lt;/b&gt;', children_html)
+
+        payment_admin = ContractPaymentAdmin(ContractPayment, admin.site)
+        xss_stub = SimpleNamespace(
+            is_payment_mismatch=True,
+            contract=self.contract_a,
+            accounting_entry=SimpleNamespace(
+                account=SimpleNamespace(name='<img src=x onerror=alert(1)>', is_payment=False)
+            ),
+        )
+
+        badge_html = str(payment_admin.payment_status_display(xss_stub))
+        self.assertIn('<span style="color: red; font-weight: bold;">❌ 계정 불일치</span>', badge_html)
+
+        detail_html = str(payment_admin.payment_mismatch_info(xss_stub))
+        self.assertIn('<div style="color: red;">', detail_html)
+        self.assertNotIn('<img ', detail_html)
+        self.assertIn('&lt;img src=x onerror=alert(1)&gt;', detail_html)
+
 
 
 

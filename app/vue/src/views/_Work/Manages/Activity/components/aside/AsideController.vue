@@ -173,15 +173,15 @@ onBeforeMount(async () => {
   <CRow class="mb-3">
     <CCol>
       <CFormCheck v-model="actFilter.sort" value="1" id="issue-filter" />
-      <a href="javascript:void(0)" @click="pickSort('1')" class="ml-2">업무</a> <br />
+      <a href="#" @click.prevent="pickSort('1')" class="ms-2">업무</a> <br />
       <CFormCheck v-model="actFilter.sort" value="3" id="meeting-filter" />
-      <a href="javascript:void(0)" @click="pickSort('3')" class="ml-2">회의</a> <br />
+      <a href="#" @click.prevent="pickSort('3')" class="ms-2">회의</a> <br />
       <CFormCheck v-model="actFilter.sort" value="4" id="news-filter" />
-      <a href="javascript:void(0)" @click="pickSort('4')" class="ml-2">공지</a> <br />
+      <a href="#" @click.prevent="pickSort('4')" class="ms-2">공지</a> <br />
       <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />
-      <a href="javascript:void(0)" @click="pickSort('5')" class="ml-2">문서</a> <br />
+      <a href="#" @click.prevent="pickSort('5')" class="ms-2">문서</a> <br />
       <CFormCheck v-model="actFilter.sort" value="6" id="message-filter" />
-      <a href="javascript:void(0)" @click="pickSort('6')" class="ml-2">글</a>
+      <a href="#" @click.prevent="pickSort('6')" class="ms-2">글</a>
     </CCol>
   </CRow>
 

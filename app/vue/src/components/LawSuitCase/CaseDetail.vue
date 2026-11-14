@@ -392,9 +392,9 @@ onBeforeMount(() => {
       <CCol class="text-grey-darken-1 pt-2 social">
         <a
           id="kakaotalk-sharing-btn"
-          href="javascript:void(0)"
-          @click="shareKakaoTalk"
-          class="mr-2"
+          href="#"
+          @click.prevent="shareKakaoTalk"
+          class="me-2"
         >
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"

@@ -49,19 +49,20 @@
 * **개발 환경 (Dev)**: `develop` 브랜치 푸시 시 `ibs-dev` 네임스페이스 배포
 * **운영 환경 (Prod)**: `master` 브랜치 푸시 시 `ibs-prod` 네임스페이스 배포
 
-1. **자동 검증 (`ci-verify.yml`)** — PR 및 `develop`·`master` 푸시 시 실행
+1. **자동 검증 (`ci-verify.yml`)** — PR, `develop`·`master` 푸시 및 각 배포 워크플로우의 `workflow_call` 사전 게이트로 실행
    * **Django (`app/django`)**: PostgreSQL 17(`template1` + `ibs` DB에 `pg_trgm` 확장 설치) + Redis 7 서비스 기동 → `python manage.py check` → `python manage.py makemigrations --check --dry-run` → `python manage.py test --noinput`
    * **Vue (`app/vue`)**: `pnpm install --frozen-lockfile` → `pnpm lint:check` → `pnpm type-check` → `pnpm exec vitest run`
+   * **Flutter (`app/flutter`)**: `flutter pub get` → `flutter analyze` → `flutter test`
 2. **백엔드 & Helm 배포 (`ci-cd-django-helm-dev.yml`, `ci-cd-django-helm-prod.yml`)**
-   * `dorny/paths-filter`로 변경 경로(`app/django/**`, `deploy/docker/**`, `deploy/helm/**`)를 감지해 이미지 빌드 및/또는 Helm 배포 수행.
+   * `dorny/paths-filter`로 변경 경로(`app/django/**`, `deploy/docker/**`, `deploy/helm/**`)를 감지하고, 변경 시 `ci-verify.yml` (`run_django: true`) 검증 통과 후 이미지 빌드·Helm 배포 수행.
    * Docker Hub(`nc2u/django`)에 `dev-${SHORT_SHA}` / `${SHORT_SHA}`(및 `:dev-latest` / `:latest`) 태그 푸시.
    * K8s 배포 전 `pending-*` Helm Secret 정리 및 기존 PV/PVC·CNPG Cluster의 Helm 릴리즈 편입(Adoption) 수행, `values-*-custom.yaml` 보존.
 3. **프론트엔드 정적 배포 (`ci-cd-vue-static-dev.yml`, `ci-cd-vue-static-prod.yml`)**
-   * `pnpm build`로 `app/django/static/dist_${BUILD_TIMESTAMP}` 빌드 및 `/static/dist/assets/` 경로 검증.
+   * 변경 감지 후 `ci-verify.yml` (`run_vue: true`) 검증 통과 시 `pnpm build`로 `app/django/static/dist_${BUILD_TIMESTAMP}` 빌드 및 `/static/dist/assets/` 경로 검증.
    * CI/CD 서버로 전송 후 `dist` 심볼릭 링크를 원자적으로 교체(Symlink Swap).
    * **롤아웃 순서**: `deployment/nginx` 먼저 재시작 및 완료 대기 → 이후 `deployment/web` 재시작 → 최종적으로 활성 빌드를 제외한 최신 3개만 남기고 구 `dist_*` 디렉토리 정리(NFS stale handle 방지).
 4. **모바일 앱 배포 (`ci-cd-flutter-dev.yml`, `ci-cd-flutter-prod.yml`)**
-   * 수동(`workflow_dispatch`) 트리거. Dev는 APK 빌드 후 Firebase App Distribution 배포, Prod는 Android App Bundle/Play 스토어 트랙(`internal`/`production`) 배포 수행.
+   * 수동(`workflow_dispatch`) 트리거 시 `ci-verify.yml` (`run_flutter: true`) 검증 통과 후 실행. Dev는 APK 빌드 후 Firebase App Distribution 배포, Prod는 Android App Bundle/Play 스토어 트랙(`internal`/`production`) 배포 수행.
 5. **기타 워크플로우**
    * `manual-image-build.yml`(수동 Django 이미지 빌드·배포), `manual-db-backup.yml`(수동 DB 백업), `sync-db-prod-dev.yml`(운영→개발 DB 동기화), `_init-install-setup-dev.yml` / `_init-install-setup-prod.yml`(초기 인프라 설치), `codeql-analysis.yml`(Python/JS 취약점 분석).
    * 주요 워크플로우는 `.github/actions/slack-notify`(`secrets.SLACK_INCOMING_URL`)로 Slack 알림 전송.

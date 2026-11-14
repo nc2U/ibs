@@ -283,7 +283,7 @@ onBeforeMount(async () => {
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
         <CRow class="mb-3">
-          <CFormLabel class="required col-form-label text-right col-2">회사</CFormLabel>
+          <CFormLabel class="required col-form-label text-end col-2">회사</CFormLabel>
           <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
             <MultiSelect
               v-model="form.company"
@@ -323,7 +323,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-name" class="required col-form-label text-right col-2">이름</CFormLabel>
+          <CFormLabel for="project-name" class="required col-form-label text-end col-2">이름</CFormLabel>
           <CCol>
             <CFormInput
               id="project-name"
@@ -337,14 +337,14 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">설명</CFormLabel>
           <CCol>
             <MdEditor v-model="form.description" placeholder="워크스페이스 설명" />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-slug" class="required col-form-label text-right col-2">식별자</CFormLabel>
+          <CFormLabel for="project-slug" class="required col-form-label text-end col-2">식별자</CFormLabel>
           <CCol>
             <CFormInput
               id="project-slug"
@@ -359,14 +359,14 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-homepage" class="col-form-label text-right col-2">홈페이지</CFormLabel>
+          <CFormLabel for="project-homepage" class="col-form-label text-end col-2">홈페이지</CFormLabel>
           <CCol>
             <CFormInput id="project-homepage" v-model="form.homepage" maxlength="255" placeholder="홈페이지 URL" />
           </CCol>
         </CRow>
 
         <CRow v-if="canProjectPublic" class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">공개여부</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">공개여부</CFormLabel>
           <CCol style="padding-top: 5px">
             <CFormSwitch v-model="form.is_public" id="is_public" label="워크스페이스 공개 여부" />
             <div class="form-text">
@@ -376,7 +376,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">상위 워크스페이스</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">상위 워크스페이스</CFormLabel>
           <CCol>
             <IssueProjectSelector
               v-model.number.lazy="form.parent"
@@ -388,7 +388,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">
+          <CFormLabel class="col-form-label text-end col-2">
             상위 워크스페이스 구성원 상속
           </CFormLabel>
           <CCol class="pt-2">
@@ -402,7 +402,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">허용 역할</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">허용 역할</CFormLabel>
           <CCol>
             <MultiSelect
               v-model="form.allowed_roles"
@@ -414,7 +414,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">허용 유형</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">허용 유형</CFormLabel>
           <CCol>
             <MultiSelect
               v-model="form.trackers"
@@ -426,7 +426,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">공용 대화방</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">공용 대화방</CFormLabel>
           <CCol style="padding-top: 5px">
             <CFormSwitch
               v-model="form.chat_channel_enabled"
@@ -440,7 +440,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">슬랙 알림</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">슬랙 알림</CFormLabel>
           <CCol style="padding-top: 5px">
             <CFormSwitch
               v-model="form.slack_notifications_enabled"
@@ -511,7 +511,7 @@ onBeforeMount(async () => {
     </CCard>
 
     <CRow>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn type="submit" :color="!project ? 'primary' : 'success'" :disabled="formsCheck">
           저장
         </v-btn>

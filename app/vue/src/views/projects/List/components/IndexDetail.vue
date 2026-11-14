@@ -84,7 +84,7 @@ const toUpdate = () => {
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 세대(호/실)수
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ numFormat(project?.num_unit as number) }}
                 <span v-if="project?.num_unit">세대(호/실)</span>
               </CTableDataCell>
@@ -92,7 +92,7 @@ const toUpdate = () => {
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 대지매입면적
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.buy_land_extent as number) }}
               </CTableDataCell>
             </CTableRow>
@@ -101,46 +101,46 @@ const toUpdate = () => {
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 계획대지면적
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.scheme_land_extent as number) }}
               </CTableDataCell>
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 기부채납면적
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.donation_land_extent as number) }}
               </CTableDataCell>
             </CTableRow>
 
             <CTableRow>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 지상연면적</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.on_floor_area as number) }}
               </CTableDataCell>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 지하연면적</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.under_floor_area as number) }}
               </CTableDataCell>
             </CTableRow>
 
             <CTableRow>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 총 연면적</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.total_floor_area as number) }}
               </CTableDataCell>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 건축면적</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ areaM2PyFormat(project?.build_area as number) }}
               </CTableDataCell>
             </CTableRow>
 
             <CTableRow>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 용적율</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ ratioFormat(project?.floor_area_ratio as number) }}
               </CTableDataCell>
               <CTableHeaderCell scope="row" :color="TableSecondary"> 건폐율</CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ ratioFormat(project?.build_to_land_ratio as number) }}
               </CTableDataCell>
             </CTableRow>
@@ -149,14 +149,14 @@ const toUpdate = () => {
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 법정주차대수
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ numFormat(project?.num_legal_parking as number) }}
                 <span v-if="project?.num_legal_parking">대</span>
               </CTableDataCell>
               <CTableHeaderCell scope="row" :color="TableSecondary">
                 계획주차대수
               </CTableHeaderCell>
-              <CTableDataCell class="text-right pr-3">
+              <CTableDataCell class="text-end pe-3">
                 {{ numFormat(project?.num_planed_parking as number) }}
                 <span v-if="project?.num_planed_parking">대</span>
               </CTableDataCell>

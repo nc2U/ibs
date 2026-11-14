@@ -52,7 +52,7 @@ export interface CustomQuery {
   user: number
   username: string
   is_public: boolean
-  filters: Record<string, any>
+  filters: Record<string, unknown>
   column_names: string[]
   sort_criteria: [string, 'asc' | 'desc'][]
   group_by: string

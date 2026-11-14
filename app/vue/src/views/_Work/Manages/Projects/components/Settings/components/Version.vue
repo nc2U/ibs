@@ -69,8 +69,8 @@ const deleteSubmit = () => {
       </span>
     </CCol>
 
-    <CCol class="text-right">
-      <span v-if="canManageVersions" class="mr-2 form-text">
+    <CCol class="text-end">
+      <span v-if="canManageVersions" class="me-2 form-text">
         <TextButton
           name="완료된 단계 닫기"
           icon="mdi-lock"
@@ -95,7 +95,7 @@ const deleteSubmit = () => {
       <CCard class="mb-3" :color="colorLight">
         <CCardBody>
           <CRow>
-            <CFormLabel for="version-status" class="col-sm-1 col-form-label text-right">
+            <CFormLabel for="version-status" class="col-sm-1 col-form-label text-end">
               상태
             </CFormLabel>
             <CCol sm="2">
@@ -107,7 +107,7 @@ const deleteSubmit = () => {
               </CFormSelect>
             </CCol>
 
-            <CFormLabel for="version-search" class="col-sm-1 col-form-label text-right">
+            <CFormLabel for="version-search" class="col-sm-1 col-form-label text-end">
               단계
             </CFormLabel>
             <CCol sm="2">
@@ -118,9 +118,9 @@ const deleteSubmit = () => {
               <v-btn color="primary" size="small" variant="outlined" @click="versionFilter">
                 적용
               </v-btn>
-              <span class="ml-2">
+              <span class="ms-2">
                 <v-icon icon="mdi-reload" size="sm" color="success" />
-                <a href="javascript:void(0)" @click="formReset">지우기</a>
+                <a href="#" @click.prevent="formReset">지우기</a>
               </span>
             </CCol>
           </CRow>
@@ -159,11 +159,11 @@ const deleteSubmit = () => {
         <CTableBody>
           <CTableRow v-for="ver in versions" :key="ver.pk" class="text-center">
             <CTableDataCell
-              class="text-left pl-4"
+              class="text-start ps-4"
               :class="{ 'text-secondary': ver.status === '3' }"
             >
               <template v-if="ver.project?.slug !== currentProjectSlug">
-                <v-icon icon="mdi-link-variant" color="grey" size="sm" class="mr-2" />
+                <v-icon icon="mdi-link-variant" color="grey" size="sm" class="me-2" />
 
                 <router-link
                   :to="{
@@ -181,7 +181,7 @@ const deleteSubmit = () => {
                     name: '(로드맵) - 보기',
                     params: { projId: ver.project?.slug, verId: ver.pk },
                   }"
-                  class="pl-4"
+                  class="ps-4"
                 >
                   {{ ver.name }}
                 </router-link>
@@ -193,7 +193,7 @@ const deleteSubmit = () => {
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
               {{ ver.effective_date }}
             </CTableDataCell>
-            <CTableDataCell class="text-left" :class="{ 'text-secondary': ver.status === '3' }">
+            <CTableDataCell class="text-start" :class="{ 'text-secondary': ver.status === '3' }">
               {{ ver.description }}
             </CTableDataCell>
             <CTableDataCell :class="textClass[Number(ver.status) - 1]">
@@ -217,8 +217,8 @@ const deleteSubmit = () => {
                   </router-link>
                 </span>
                 <span v-if="canManageVersions">
-                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
-                  <a href="javascript:void(0)" @click="toDelete(ver?.pk as number)">삭제</a>
+                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
+                  <a href="#" @click.prevent="toDelete(ver?.pk as number)">삭제</a>
                 </span>
               </span>
             </CTableDataCell>

@@ -57,20 +57,20 @@ const previewContent = computed(() => {
           <router-link
             v-if="can(PERM.NEWS_READ)"
             :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
-            class="text-decoration-none font-weight-bold"
+            class="text-decoration-none fw-bold"
           >
             <v-chip
               v-if="news.is_important"
               color="primary"
               variant="flat"
               size="x-small"
-              class="mr-2"
+              class="me-2"
             >
               중요 공지
             </v-chip>
             {{ news.title }}
 
-            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ms-2">
               new
             </v-chip>
             <v-chip
@@ -78,18 +78,18 @@ const previewContent = computed(() => {
               color="info"
               variant="flat"
               size="x-small"
-              class="ml-1"
+              class="ms-1"
             >
               <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
             </v-chip>
           </router-link>
-          <span v-else class="font-weight-bold text-muted">
+          <span v-else class="fw-bold text-muted">
             <v-chip
               v-if="news.is_important"
               color="primary"
               variant="flat"
               size="x-small"
-              class="mr-2"
+              class="me-2"
             >
               중요 공지
             </v-chip>

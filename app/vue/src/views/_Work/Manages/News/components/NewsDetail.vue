@@ -31,14 +31,14 @@ const deleteFile = (pk: number) => {
   <div v-if="news" class="news-view">
     <v-card variant="flat" border class="pa-5 rounded-lg card-white">
       <!-- Title Section -->
-      <div class="d-flex justify-space-between align-start my-3 pl-1">
-        <h5 class="font-weight-bold">
+      <div class="d-flex justify-space-between align-start my-3 ps-1">
+        <h5 class="fw-bold">
           <v-chip
             v-if="news.is_important"
             color="primary"
             size="small"
             variant="flat"
-            class="mr-2 mb-1"
+            class="me-2 mb-1"
           >
             중요 공지
           </v-chip>
@@ -48,8 +48,8 @@ const deleteFile = (pk: number) => {
 
       <!-- Metadata Section -->
       <div class="metadata d-flex flex-wrap align-center mb-5">
-        <div class="d-flex align-center mr-4">
-          <v-avatar size="24" class="mr-2">
+        <div class="d-flex align-center me-4">
+          <v-avatar size="24" class="me-2">
             <v-icon icon="mdi-account" size="18" />
           </v-avatar>
           <router-link
@@ -61,8 +61,8 @@ const deleteFile = (pk: number) => {
           </router-link>
           <span v-else class="text-primary font-weight-medium">{{ news.author?.username }}</span>
         </div>
-        <div class="d-flex align-center mr-4">
-          <v-icon icon="mdi-clock-outline" size="18" class="mr-1" />
+        <div class="d-flex align-center me-4">
+          <v-icon icon="mdi-clock-outline" size="18" class="me-1" />
           <router-link
             :to="{
               name: '(업무실행내역)',
@@ -73,10 +73,10 @@ const deleteFile = (pk: number) => {
           >
             {{ elapsedTime(news.created) }}
           </router-link>
-          <span class="ml-1">에 추가됨</span>
+          <span class="ms-1">에 추가됨</span>
         </div>
         <div v-if="news.updated !== news.created" class="d-flex align-center">
-          <v-icon icon="mdi-update" size="18" class="mr-1" />
+          <v-icon icon="mdi-update" size="18" class="me-1" />
           <span class="small">수정됨: {{ elapsedTime(news.updated) }}</span>
         </div>
       </div>
@@ -85,7 +85,7 @@ const deleteFile = (pk: number) => {
 
       <!-- Summary Section -->
       <div v-if="news.summary" class="summary-box my-6 pa-4 rounded-e-lg bg-more-light">
-        <div class="text-subtitle-2 mb-1 font-weight-bold">요약</div>
+        <div class="text-subtitle-2 mb-1 fw-bold">요약</div>
         <div class="text-body-1 fst-italic">
           {{ news.summary }}
         </div>
@@ -95,23 +95,23 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Content Section -->
-      <div class="content-body pl-4 py-4 mb-6" v-html="markdownRender(news.content)" />
+      <div class="content-body ps-4 py-4 mb-6" v-html="markdownRender(news.content)" />
 
       <!-- Files Section -->
       <div v-if="news.files.length" class="files-section mt-6 pt-6">
         <div class="d-flex align-center mb-4">
-          <v-icon icon="mdi-attachment" size="20" class="mr-2 text-grey" />
-          <span class="font-weight-bold"> 첨부 파일 ({{ news.files.length }}) </span>
+          <v-icon icon="mdi-attachment" size="20" class="me-2 text-grey" />
+          <span class="fw-bold"> 첨부 파일 ({{ news.files.length }}) </span>
         </div>
         <v-list density="compact" class="bg-transparent pa-0" style="overflow-x: hidden">
-          <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 no-gutters">
+          <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 g-0">
             <FileDisplay :file="file" @delete-file="deleteFile" />
           </CRow>
         </v-list>
       </div>
     </v-card>
 
-    <CRow class="text-right my-3">
+    <CRow class="text-end my-3">
       <CCol>
         <v-btn
           size="small"
@@ -127,14 +127,14 @@ const deleteFile = (pk: number) => {
     <!-- Comments Section -->
     <v-sheet border rounded="lg" class="pa-5 card-white">
       <div class="d-flex align-center mb-6">
-        <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="mr-3 text-primary" />
-        <h6 class="font-weight-bold mb-0">댓글</h6>
+        <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="me-3 text-primary" />
+        <h6 class="fw-bold mb-0">댓글</h6>
         <v-badge
           v-if="news.comments?.length"
           :content="news.comments.length"
           color="primary"
           inline
-          class="ml-2"
+          class="ms-2"
         />
       </div>
       <CommentList />

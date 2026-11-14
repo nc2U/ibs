@@ -145,12 +145,12 @@ onBeforeMount(() => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-domain" color="primary" size="small" class="mr-2" />워크스페이스
+            <v-icon icon="mdi-domain" color="primary" size="small" class="me-2" />워크스페이스
           </h5>
         </CCol>
 
-        <CCol v-if="canProjectCreate" class="text-right form-text">
-          <span v-show="route.name !== '워크스페이스 - 추가'" class="mr-2">
+        <CCol v-if="canProjectCreate" class="text-end form-text">
+          <span v-show="route.name !== '워크스페이스 - 추가'" class="me-2">
             <TextButton name="새 워크스페이스" :to="{ name: '워크스페이스 - 추가' }" />
           </span>
         </CCol>
@@ -165,7 +165,7 @@ onBeforeMount(() => {
         <template #option>
           <CRow class="m-2" color="light">
             <CCol>
-              <span class="mr-3">결과 표시 </span>
+              <span class="me-3">결과 표시 </span>
               <CFormCheck
                 v-model="viewMode"
                 label="보드"
@@ -213,22 +213,22 @@ onBeforeMount(() => {
       </CRow>
 
       <CRow class="mt-3">
-        <CCol class="text-right form-text">
-          <span class="mr-3">
-            <v-icon icon="mdi-account-tag" color="success" size="small" class="mr-2" />
+        <CCol class="text-end form-text">
+          <span class="me-3">
+            <v-icon icon="mdi-account-tag" color="success" size="small" class="me-2" />
             내 워크스페이스
           </span>
 
-          <span class="mr-2">
-            <v-icon icon="mdi-bookmark" color="info" size="small" class="mr-2" />
+          <span class="me-2">
+            <v-icon icon="mdi-bookmark" color="info" size="small" class="me-2" />
             내 북마크
           </span>
         </CCol>
       </CRow>
-      <CRow class="text-right text">
+      <CRow class="text-end text">
         <div class="my-5"></div>
         <CCol class="mt-4 p-3 bg-more-light text-muted">
-          <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="mr-2" />
+          <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="me-2" />
           워크스페이스를 생성 하려면
           <strong>
             {{

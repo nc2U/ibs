@@ -5,8 +5,22 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
-import type { IssueProject } from '@/store/types/work_project'
-import type { Issue, SimpleCategory } from '@/store/types/work_issue'
+import type {
+  FormVersion,
+  IssueProject,
+  selectProject,
+  SimpleUser,
+  SimpleVersion,
+  Version,
+} from '@/store/types/work_project'
+import type {
+  CodeValue,
+  Issue,
+  IssueFile,
+  IssueLink,
+  IssueStatus,
+  SimpleCategory,
+} from '@/store/types/work_issue'
 import { isValidate } from '@/utils/helper'
 import { dateFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms'
@@ -21,9 +35,9 @@ import WatcherAdd from './aside/WatcherAdd.vue'
 const props = defineProps({
   currentProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, default: null },
-  myProjects: { type: Array as PropType<any[]>, default: () => [] },
-  statusList: { type: Array as PropType<any[]>, default: () => [] },
-  priorityList: { type: Array as PropType<any[]>, default: () => [] },
+  myProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
+  priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   btnSize: { type: String, default: 'default' },
   initialSubject: { type: String, default: '' },
@@ -55,8 +69,8 @@ const form = ref({
   expected_duration: '',
   done_ratio: 0,
   watchers: [] as number[],
-  files: [] as any[],
-  links: [] as any[],
+  files: [] as IssueFile[],
+  links: [] as IssueLink[],
 })
 
 const newLinks = ref<{ link: string; name: string }[]>([])
@@ -327,7 +341,10 @@ watch(
     if (newCateId) {
       const selectedCate = categories.value.find(c => c.pk === newCateId)
       if (selectedCate?.assigned_to && !form.value.assigned_to) {
-        form.value.assigned_to = selectedCate.assigned_to.pk
+        form.value.assigned_to =
+          typeof selectedCate.assigned_to === 'object'
+            ? selectedCate.assigned_to.pk
+            : selectedCate.assigned_to
       }
     }
   },
@@ -342,21 +359,21 @@ const newIssueStatusList = computed(() => {
   return props.statusList // 수정 모드일 때는 모든 상태 반환
 })
 
-const categories = computed(() => {
-  const slug = form.value.project || props.currentProject?.slug
-  const storeCats = (issueStore.categoryList as any[]).filter(
-    c => !slug || c.project?.slug === slug,
-  ) as SimpleCategory[]
-  if (storeCats.length) return storeCats
-  return (props.currentProject?.categories as SimpleCategory[]) ?? []
-})
+const categories = computed(
+  (): Array<{ pk: number; name: string; assigned_to?: SimpleUser | number | null }> => {
+    const slug = form.value.project || props.currentProject?.slug
+    const storeCats = issueStore.categoryList.filter(c => !slug || c.project?.slug === slug)
+    if (storeCats.length) return storeCats
+    return (props.currentProject?.categories as SimpleCategory[]) ?? []
+  },
+)
 const versions = computed(() => {
-  const projVers = props.currentProject?.versions ?? []
+  const projVers: Array<SimpleVersion | Version> = props.currentProject?.versions ?? []
   const extra =
     form.value.fixed_version && !projVers.some(v => v.pk === form.value.fixed_version)
-      ? (workStore.versionList as any[]).filter(v => v.pk === form.value.fixed_version)
+      ? workStore.versionList.filter(v => v.pk === form.value.fixed_version)
       : []
-  const allVers = projVers.length || extra.length ? [...projVers, ...extra] : (workStore.versionList as any[])
+  const allVers = projVers.length || extra.length ? [...projVers, ...extra] : workStore.versionList
   return allVers.filter(v => {
     // status: '1' (열림/진행) 버전만 지정 가능
     if (v.status === '1') return true
@@ -379,7 +396,7 @@ watch(
         form.value.fixed_version = Number(route.query.version)
       } else {
         const defaultVersion = newVersions.find(v => v.is_default)
-        if (defaultVersion) {
+        if (defaultVersion?.pk) {
           form.value.fixed_version = defaultVersion.pk
         }
       }
@@ -433,7 +450,8 @@ const onSubmit = (event: Event) => {
 
 const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
-const callReply = (payload: any) => {
+const callReply = (payload?: { id?: number; user?: string; content?: string }) => {
+  if (!payload) return
   comment.value.content = `> ${payload.user} [#note-${payload.id}](이력#note-${payload.id})  \n> ${payload.content}  \n\n`
   cmtFocus.value = true
 }
@@ -442,16 +460,20 @@ const RefCategoryModal = ref<InstanceType<typeof FormModal> | null>(null)
 const RefVersionModal = ref<InstanceType<typeof FormModal> | null>(null)
 const refWatcherAdd = ref<InstanceType<typeof WatcherAdd> | null>(null)
 
-const createCategory = async (payload: any) => {
+const createCategory = async (payload: { name: string; assigned_to: number | null }) => {
   const projectSlug = form.value.project || projId.value || props.currentProject?.slug
   if (!projectSlug) return
   const newPk = await issueStore.createCategory({ ...payload, project: projectSlug })
   if (newPk) form.value.category = newPk
 }
-const createVersion = async (payload: any) => {
+const createVersion = async (payload: Omit<FormVersion, 'pk' | 'project'> & { pk?: number | null }) => {
   const projectSlug = form.value.project || projId.value || props.currentProject?.slug
   if (!projectSlug) return
-  const newPk = await workStore.createVersion({ ...payload, project: projectSlug })
+  const newPk = await workStore.createVersion({
+    ...payload,
+    pk: payload.pk ?? null,
+    project: projectSlug,
+  })
   if (newPk) form.value.fixed_version = newPk
 }
 
@@ -779,7 +801,7 @@ defineExpose({ callComment, callReply })
                     :disabled="!!props.currentProject || !!issue"
                   >
                     <option value="">---------</option>
-                    <option v-for="proj in myProjects" :key="proj.pk" :value="proj.slug">
+                    <option v-for="proj in myProjects" :key="proj.pk ?? proj.value" :value="proj.slug">
                       <template v-if="!!proj.depth && proj.parent_visible">
                         {{ '\u00A0'.repeat(proj.depth) }} »
                       </template>

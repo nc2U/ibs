@@ -66,14 +66,14 @@ onBeforeMount(async () => {
               icon="mdi-office-building-cog-outline"
               color="blue-grey-lighten-1"
               size="small"
-              class="mr-2"
+              class="me-2"
             />
             워크스페이스 관리
           </h5>
         </CCol>
 
-        <CCol v-if="canProjectCreate" class="text-right form-text">
-          <span v-show="route.name !== '워크스페이스 - 추가'" class="mr-2">
+        <CCol v-if="canProjectCreate" class="text-end form-text">
+          <span v-show="route.name !== '워크스페이스 - 추가'" class="me-2">
             <TextButton name="새 워크스페이스" :to="{ name: '워크스페이스 - 추가' }" />
           </span>
         </CCol>

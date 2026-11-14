@@ -68,17 +68,17 @@ const scrollToVersion = (verId?: number) => {
 </script>
 
 <template>
-  <div class="roadmap-aside pr-2">
+  <div class="roadmap-aside pe-2">
     <!-- 1. 필터 및 옵션 영역 -->
     <div class="mb-4">
-      <h6 class="text-subtitle-1 font-weight-bold mb-2">
-        <v-icon icon="mdi-filter-variant" size="small" class="mr-1" />
+      <h6 class="text-subtitle-1 fw-bold mb-2">
+        <v-icon icon="mdi-filter-variant" size="small" class="me-1" />
         로드맵 설정
       </h6>
 
       <!-- 유형별 필터 -->
       <div v-if="trackers.length" class="mb-3">
-        <div class="text-caption font-weight-bold text-grey-darken-2 mb-1">유형</div>
+        <div class="text-caption fw-bold text-grey-darken-2 mb-1">유형</div>
         <div v-for="tracker in trackers" :key="tracker.pk" class="form-check mb-1">
           <input
             :id="`tracker-filter-${tracker.pk}`"
@@ -122,24 +122,24 @@ const scrollToVersion = (verId?: number) => {
 
     <!-- 2. 단계(버전) 색인 / 바로가기 목차 -->
     <div v-if="versionList.length">
-      <h6 class="text-subtitle-1 font-weight-bold mb-2">
-        <v-icon icon="mdi-format-list-bulleted" size="small" class="mr-1" />
+      <h6 class="text-subtitle-1 fw-bold mb-2">
+        <v-icon icon="mdi-format-list-bulleted" size="small" class="me-1" />
         단계 색인
       </h6>
-      <ul class="list-unstyled version-index-list pl-1">
+      <ul class="list-unstyled version-index-list ps-1">
         <li v-for="ver in versionList" :key="ver.pk" class="mb-1">
           <a
-            href="javascript:void(0)"
+            href="#"
             class="text-decoration-none text-body-2 version-link d-flex align-items-center justify-content-between px-2 py-1 rounded"
             :class="{ 'active-version': selectedVersionId === ver.pk }"
-            @click="scrollToVersion(ver.pk)"
+            @click.prevent="scrollToVersion(ver.pk)"
           >
-            <span class="text-truncate mr-1">
+            <span class="text-truncate me-1">
               <v-icon
                 :icon="ver.status === '3' ? 'mdi-checkbox-marked-circle' : 'mdi-target'"
                 :color="ver.status === '3' ? 'grey' : 'green-darken-1'"
                 size="x-small"
-                class="mr-1"
+                class="me-1"
               />
               {{ ver.name }}
             </span>

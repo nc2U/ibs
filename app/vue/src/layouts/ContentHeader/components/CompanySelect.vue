@@ -54,9 +54,9 @@ onBeforeMount(async () => {
         @clear="comClear"
       />
     </CCol>
-    <CCol v-if="!comSelectList?.length" class="pl-0 align-middle">
+    <CCol v-if="!comSelectList?.length" class="ps-0 align-middle">
       <v-icon
-        icon="mdi mdi-plus-thick"
+        icon="mdi-plus-thick"
         color="primary"
         :disabled="!canProjectCreate"
         @click="router.push({ name: '회사 정보 관리' })"

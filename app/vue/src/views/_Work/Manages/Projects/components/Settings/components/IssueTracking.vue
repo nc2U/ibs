@@ -4,7 +4,7 @@ import { colorLight } from '@/utils/cssMixins'
 
 <template>
   <CRow class="py-2">
-    <CCol class="text-right"></CCol>
+    <CCol class="text-end"></CCol>
   </CRow>
 
   <CRow>
@@ -26,7 +26,7 @@ import { colorLight } from '@/utils/cssMixins'
               <CFormCheck inline id="feature" label="기능" />
               <CFormCheck inline id="support" label="지원" />
             </CCol>
-            <CCol class="text-right">
+            <CCol class="text-end">
               <span>
                 <v-icon icon="mdi-cog" color="secondary" size="15" />
                 업무 유형 관리
@@ -43,7 +43,7 @@ import { colorLight } from '@/utils/cssMixins'
       <CCard class="mb-3" :color="colorLight">
         <CCardBody>
           <CRow class="mb-2">
-            <CFormLabel for="default-version" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="default-version" class="col-sm-2 col-form-label text-end">
               기본 단계
             </CFormLabel>
             <CCol sm="4">
@@ -53,7 +53,7 @@ import { colorLight } from '@/utils/cssMixins'
             </CCol>
           </CRow>
           <CRow class="mb-2">
-            <CFormLabel for="default-assignee" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="default-assignee" class="col-sm-2 col-form-label text-end">
               기본 담당자
             </CFormLabel>
             <CCol sm="4">
@@ -63,7 +63,7 @@ import { colorLight } from '@/utils/cssMixins'
             </CCol>
           </CRow>
           <CRow>
-            <CFormLabel for="default-query" class="col-sm-2 col-form-label text-right">
+            <CFormLabel for="default-query" class="col-sm-2 col-form-label text-end">
               기본 업무 요청
             </CFormLabel>
             <CCol sm="4">

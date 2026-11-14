@@ -19,7 +19,7 @@ const { canViewUser } = usePerms()
   <CCard :color="isDark ? '' : 'light'" class="mb-3">
     <CCardBody>
       <CCardSubtitle class="mb-2">
-        <v-icon icon="mdi-newspaper" size="sm" color="grey" class="mr-1" />
+        <v-icon icon="mdi-newspaper" size="sm" color="grey" class="me-1" />
         최근 공지
       </CCardSubtitle>
       <CCardText>
@@ -29,7 +29,7 @@ const { canViewUser } = usePerms()
               name: '(공지) - 보기',
               params: { projId: news.project?.slug || route.params.projId, newsId: news.pk },
             }"
-            class="font-weight-bold"
+            class="fw-bold"
           >
             {{ news.title }}
           </router-link>

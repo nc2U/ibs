@@ -68,7 +68,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             label
             size="x-small"
             color="amber-darken-3"
-            class="ml-2 font-weight-bold text-white"
+            class="ms-2 fw-bold text-white"
           >
             고정
           </v-chip>
@@ -78,13 +78,13 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             size="x-small"
             :color="docs.is_blind ? 'error' : 'warning'"
             variant="tonal"
-            class="ml-2"
+            class="ms-2"
           >
             {{ docs.is_blind ? 'BLIND' : '비공개' }}
           </v-chip>
         </CCol>
-        <CCol sm="4" class="text-right text-grey small">
-          <v-icon icon="mdi-clock-outline" size="x-small" class="mr-1" />
+        <CCol sm="4" class="text-end text-grey small">
+          <v-icon icon="mdi-clock-outline" size="x-small" class="me-1" />
           {{ timeFormat(docs.created as string, 'min', '/') }}
         </CCol>
       </CRow>

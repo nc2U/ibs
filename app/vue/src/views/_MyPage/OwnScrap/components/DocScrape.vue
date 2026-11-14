@@ -24,6 +24,7 @@ const viewRoute = computed(() => {
     if (props.scrape.docs?.doc_type === 1) return '일반 문서 관리'
     else if (props.scrape.docs?.doc_type === 2) return '소송 문서 관리'
   }
+  return ''
 })
 
 const patchTitle = () => {

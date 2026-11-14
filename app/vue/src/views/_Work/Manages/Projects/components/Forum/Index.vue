@@ -168,12 +168,12 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-forum" color="green-darken-1" class="mr-2" />
+            <v-icon icon="mdi-forum" color="green-darken-1" class="me-2" />
             게시판 <span v-if="route.name !== '(게시판)' && !!forum?.name">- {{ forum.name }}</span>
           </h5>
         </CCol>
 
-        <CCol v-if="route.name === '(게시판) - 보기' && canForumCreate" class="text-right">
+        <CCol v-if="route.name === '(게시판) - 보기' && canForumCreate" class="text-end">
           <TextButton
             name="새 게시물"
             icon="mdi-pencil-plus"

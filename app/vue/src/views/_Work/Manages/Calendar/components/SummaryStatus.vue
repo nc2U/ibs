@@ -20,15 +20,15 @@ defineProps({
         <div class="text-subtitle-2 text-grey mb-2">{{ title }}</div>
         <div class="d-flex justify-space-around align-center">
           <div class="text-center">
-            <div class="text-h6 font-weight-bold">{{ summary.total }}</div>
+            <div class="text-h6 fw-bold">{{ summary.total }}</div>
             <div class="text-caption text-grey">전체</div>
           </div>
           <div class="text-center">
-            <div class="text-h6 font-weight-bold text-info">{{ summary.open }}</div>
+            <div class="text-h6 fw-bold text-info">{{ summary.open }}</div>
             <div class="text-caption text-grey">진행중</div>
           </div>
           <div class="text-center">
-            <div class="text-h6 font-weight-bold text-success">{{ summary.closed }}</div>
+            <div class="text-h6 fw-bold text-success">{{ summary.closed }}</div>
             <div class="text-caption text-grey">완료</div>
           </div>
         </div>
@@ -36,8 +36,8 @@ defineProps({
       <CCol md="8" class="pl-md-6">
         <div class="text-subtitle-2 text-grey mb-2">일정 가이드</div>
         <div class="d-flex flex-wrap gap-4">
-          <div class="d-flex align-center mr-4">
-            <v-icon icon="mdi-arrow-right-bold" color="success" size="small" class="mr-1" />
+          <div class="d-flex align-center me-4">
+            <v-icon icon="mdi-arrow-right-bold" color="success" size="small" class="me-1" />
             <span class="text-body-2">오늘 시작</span>
           </div>
           <div class="d-flex align-center mr-4">

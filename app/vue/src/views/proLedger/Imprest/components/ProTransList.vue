@@ -73,8 +73,8 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
-          <a href="javascript:void(0)" class="ms-1">
-            <CIcon name="cilCog" @click="accCallModal" />
+          <a href="#" class="ms-1" @click.prevent="accCallModal">
+            <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
@@ -82,8 +82,8 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">확인</CTableHeaderCell>
         <CTableHeaderCell class="ps-0" scope="col">
           <span class="text-grey me-2">|</span> 계정
-          <a href="javascript:void(0)" class="ms-1">
-            <CIcon name="cilCog" @click="refAccountManage.callModal()" />
+          <a href="#" class="ms-1" @click.prevent="refAccountManage.callModal()">
+            <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>

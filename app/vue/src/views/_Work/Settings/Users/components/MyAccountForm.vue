@@ -175,11 +175,11 @@ onBeforeRouteUpdate(async to => {
   <div>
     <CRow class="py-2">
       <CCol class="mb-2">
-        <span class="h5 mr-2"> 내 계정 </span>
+        <span class="h5 me-2"> 내 계정 </span>
       </CCol>
 
-      <CCol class="text-right form-text">
-        <span class="mr-2">
+      <CCol class="text-end form-text">
+        <span class="me-2">
           <TextButton
             name="내 프로젝트 목록"
             @click="setMyAccount"
@@ -187,7 +187,7 @@ onBeforeRouteUpdate(async to => {
             icon-color="info"
           />
         </span>
-        <span class="mr-2">
+        <span class="me-2">
           <TextButton
             name="비밀번호 변경"
             :to="{ name: '사용자 - 비밀번호 변경' }"
@@ -208,8 +208,8 @@ onBeforeRouteUpdate(async to => {
         <CCol class="col-lg-6">
           <!-- Account Info Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-account-cog" class="me-1" color="primary" />
               계정 정보
             </CCardHeader>
             <CCardBody>
@@ -252,8 +252,8 @@ onBeforeRouteUpdate(async to => {
 
           <!-- Profile Image Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-account-circle" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-account-circle" class="me-1" color="primary" />
               프로필 이미지
             </CCardHeader>
             <CCardBody>
@@ -274,8 +274,8 @@ onBeforeRouteUpdate(async to => {
 
           <!-- Seal / Sign Image Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-draw-pen" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-draw-pen" class="me-1" color="primary" />
               전자결재 인장 / 서명
             </CCardHeader>
             <CCardBody>
@@ -296,8 +296,8 @@ onBeforeRouteUpdate(async to => {
         <CCol class="col-lg-6">
           <!-- Profile Info Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-account-check" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-account-check" class="me-1" color="primary" />
               내 프로필
             </CCardHeader>
             <CCardBody>
@@ -354,8 +354,8 @@ onBeforeRouteUpdate(async to => {
 
           <!-- Mail Notifications Card -->
           <CCard class="mb-4">
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-cog" class="mr-1" color="primary" />
+            <CCardHeader class="fw-bold">
+              <v-icon icon="mdi-cog" class="me-1" color="primary" />
               업무 및 알림 설정
             </CCardHeader>
             <CCardBody>
@@ -424,9 +424,9 @@ onBeforeRouteUpdate(async to => {
           </CCard>
 
           <!-- Submit & Cancel Footer -->
-          <div class="text-right mb-4">
+          <div class="text-end mb-4">
             <v-btn type="submit" color="primary"> 저장</v-btn>
-            <v-btn color="light" class="mr-2" @click="router.push({ name: '사용자' })" flat>
+            <v-btn color="light" class="me-2" @click="router.push({ name: '사용자' })" flat>
               취소
             </v-btn>
           </div>

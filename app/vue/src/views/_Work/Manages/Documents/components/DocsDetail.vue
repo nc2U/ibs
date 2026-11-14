@@ -80,14 +80,14 @@ onMounted(() => {
   <div v-if="docs" class="pa-5 rounded border bg-more-light">
     <CRow class="mb-2">
       <CCol class="d-flex align-center gap-2">
-        <h4 class="font-weight-bold mb-1">
+        <h4 class="fw-bold mb-1">
           {{ docs.title }}
           <v-chip
             v-if="docs.is_pinned"
             label
             size="x-small"
             color="brown-lighten-1"
-            class="ml-2 font-weight-bold"
+            class="ms-2 fw-bold"
             style="vertical-align: middle"
           >
             <v-icon start icon="mdi-pin" color="danger" size="x-small" class="rotate-45" />
@@ -225,8 +225,8 @@ onMounted(() => {
 
     <v-divider />
 
-    <CRow class="mt-1 pr-0">
-      <CCol class="text-right pr-0">
+    <CRow class="mt-1 pe-0">
+      <CCol class="text-end pe-0">
         <v-btn color="light" variant="flat" @click="router.push({ name: '(문서)' })" size="small">
           목록으로
         </v-btn>

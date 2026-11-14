@@ -21,8 +21,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    name: Verify Flutter
+    uses: ./.github/workflows/ci-verify.yml
+    with:
+      run_django: false
+      run_vue: false
+      run_flutter: true
+
   build-and-deploy-android:
     name: Build & Deploy Android (Google Play)
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -88,6 +97,7 @@ jobs:
 
   build-and-deploy-ios:
     name: Build & Deploy iOS (Prod)
+    needs: verify
     runs-on: macos-15
     steps:
       - name: Checkout repository

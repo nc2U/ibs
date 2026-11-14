@@ -69,11 +69,11 @@ const onSubmit = async (event: Event) => {
 <template>
   <CRow class="py-2">
     <CCol class="mb-2">
-      <span class="h5 mr-2"> 비밀번호 변경 </span>
+      <span class="h5 me-2"> 비밀번호 변경 </span>
     </CCol>
 
-    <CCol class="text-right form-text">
-      <span class="mr-2">
+    <CCol class="text-end form-text">
+      <span class="me-2">
         <TextButton
           name="내 계정"
           :to="{ name: '사용자 - 내 계정' }"
@@ -88,12 +88,12 @@ const onSubmit = async (event: Event) => {
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
       <CCol>
         <CCard class="mb-4">
-          <CCardHeader class="font-weight-bold">
-            <v-icon icon="mdi-key" class="mr-1" color="warning" />
+          <CCardHeader class="fw-bold">
+            <v-icon icon="mdi-key" class="me-1" color="warning" />
             비밀번호 변경
           </CCardHeader>
           <CCardBody>
-            <CRow class="pl-4 pt-3 mb-3">
+            <CRow class="ps-4 pt-3 mb-3">
               <CFormLabel class="col-sm-4 col-lg-2 col-form-label">이름</CFormLabel>
               <CCol sm="6" lg="4" xl="2" class="pt-2">{{ usernameVal }}</CCol>
             </CRow>
@@ -120,19 +120,19 @@ const onSubmit = async (event: Event) => {
                   </v-btn>
                   <CFormFeedback invalid>현재 비밀번호를 입력하세요.</CFormFeedback>
                 </CInputGroup>
-                <div class="mt-1 text-right">
+                <div class="mt-1 text-end">
                   <a
-                    href="javascript:void(0)"
+                    href="#"
                     class="text-decoration-none small text-primary"
-                    @click="openResetModal"
+                    @click.prevent="openResetModal"
                   >
-                    <v-icon icon="mdi-help-circle-outline" size="14" class="mr-1" />
+                    <v-icon icon="mdi-help-circle-outline" size="14" class="me-1" />
                     비밀번호를 잊으셨나요?
                   </a>
                 </div>
               </CCol>
             </CRow>
-            <CRow class="pl-4 my-3">
+            <CRow class="ps-4 my-3">
               <CFormLabel class="col-sm-4 col-lg-2 col-form-label">새로운 비밀번호</CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
@@ -180,9 +180,9 @@ const onSubmit = async (event: Event) => {
                 </CInputGroup>
               </CCol>
             </CRow>
-            <CRow class="pl-4 mb-3">
+            <CRow class="ps-4 mb-3">
               <CCol class="col-sm-4 col-lg-2"></CCol>
-              <CCol sm="6" lg="4" xl="3" class="text-right">
+              <CCol sm="6" lg="4" xl="3" class="text-end">
                 <v-btn type="submit" color="success">수정하기</v-btn>
                 <v-btn color="light" @click="router.back()" flat>취소</v-btn>
               </CCol>
@@ -197,7 +197,7 @@ const onSubmit = async (event: Event) => {
   <CModal :visible="isResetModalOpen" @close="isResetModalOpen = false" alignment="center">
     <CModalHeader>
       <CModalTitle>
-        <v-icon icon="mdi-email-lock-outline" class="mr-1" color="primary" />
+        <v-icon icon="mdi-email-lock-outline" class="me-1" color="primary" />
         비밀번호 재설정 링크 발송
       </CModalTitle>
     </CModalHeader>
@@ -206,7 +206,7 @@ const onSubmit = async (event: Event) => {
         가입된 이메일 주소로 비밀번호 재설정 링크가 포함된 메일을 발송합니다.<br />
         메일 수신 후 안내 링크를 통해 새로운 비밀번호를 설정하실 수 있습니다.
       </p>
-      <CFormLabel class="font-weight-bold">이메일 주소</CFormLabel>
+      <CFormLabel class="fw-bold">이메일 주소</CFormLabel>
       <CFormInput
         v-model="resetEmail"
         type="email"

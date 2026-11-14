@@ -8,7 +8,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Number, required: true },
-  files: { type: Object as PropType<AFile[]>, default: () => [] },
+  files: { type: Array as PropType<AFile[]>, default: () => [] },
   btnDirection: { type: String, default: 'left' },
 })
 

@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import type { SimpleProject } from '@/store/types/work_project.ts'
 import type {
   CodeValue,
   Issue,
@@ -64,8 +65,8 @@ export const useIssue = defineStore('issue', () => {
       const res = await api.get(`/issue/${pk}/`)
       issue.value = res.data
       return { pk: res.data.pk, project: res.data.project.slug }
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -207,7 +208,7 @@ export const useIssue = defineStore('issue', () => {
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
-  const createIssue = (payload: any) =>
+  const createIssue = (payload: FormData | Record<string, unknown>) =>
     api
       .post(`/issue/`, payload, config_headers)
       .then(async res => {
@@ -221,7 +222,7 @@ export const useIssue = defineStore('issue', () => {
       })
       .catch(err => errorHandle(err.response?.data || err.message))
 
-  const updateIssue = (pk: number, payload: any) =>
+  const updateIssue = (pk: number, payload: FormData | Record<string, unknown>) =>
     api
       .put(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
@@ -234,7 +235,7 @@ export const useIssue = defineStore('issue', () => {
       })
       .catch(err => errorHandle(err.response?.data || err.message))
 
-  const patchIssue = (pk: number, payload: any) =>
+  const patchIssue = (pk: number, payload: FormData | Record<string, unknown>) =>
     api
       .patch(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
@@ -289,7 +290,11 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (issueRelationList.value = res.data.results))
       .catch(err => errorHandle(err.response?.data || err.message))
 
-  const createIssueRelation = (payload: any) =>
+  const createIssueRelation = (payload: {
+    source: number | null
+    target: number | null
+    delay?: number | null
+  }) =>
     api
       .post(`/issue-relation/`, payload)
       .then(async res => {
@@ -332,7 +337,7 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (issueComment.value = res.data))
       .catch(err => errorHandle(err.response?.data || err.message))
 
-  const fetchIssueCommentList = async (payload: any) => {
+  const fetchIssueCommentList = async (payload: { issue?: number; user?: number }) => {
     let url = `/issue-comment/?1=1`
     if (payload.issue) url += `&issue=${payload.issue}`
     if (payload.user) url += `&user=${payload.user}`
@@ -343,11 +348,11 @@ export const useIssue = defineStore('issue', () => {
       .catch(err => errorHandle(err.response?.data || err.message))
   }
 
-  const patchIssueComment = (payload: any) =>
+  const patchIssueComment = (payload: { pk?: number; issue?: number; [key: string]: unknown }) =>
     api
       .patch(`/issue-comment/${payload.pk}/`, payload)
       .then(async () => {
-        await fetchIssueComment(payload.pk)
+        if (payload.pk) await fetchIssueComment(payload.pk)
         await fetchIssueCommentList({ issue: payload.issue })
         await logStore.fetchIssueLogList({ issue: payload.issue })
         message()
@@ -412,7 +417,7 @@ export const useIssue = defineStore('issue', () => {
     // 1. 만약 'global' 캐시가 이미 존재하고 특정 project 조회가 들어온 경우, 전역 캐시에서 해당 프로젝트 항목 바로 추출
     if (!force && project && categoryCacheMap.value['global']) {
       categoryList.value = categoryCacheMap.value['global'].filter(
-        c => c.project && (c.project as any).slug === project,
+        c => c.project && c.project.slug === project,
       )
       return Promise.resolve()
     }
@@ -432,7 +437,9 @@ export const useIssue = defineStore('issue', () => {
       .catch(err => errorHandle(err.response?.data || err.message))
   }
 
-  const createCategory = (payload: IssueCategory) =>
+  const createCategory = (
+    payload: Partial<Omit<IssueCategory, 'project'>> & { project?: number | string | SimpleProject },
+  ) =>
     api
       .post(`/issue-category/`, payload)
       .then(async res => {

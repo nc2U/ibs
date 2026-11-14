@@ -306,13 +306,13 @@ watch(
             <v-icon
               :icon="isSuitCase ? 'mdi-scale-balance' : 'mdi-text-box-search-outline'"
               color="primary"
-              class="mr-2"
+              class="me-2"
             />
             {{ isSuitCase ? '소송 사건' : '문서' }}
           </h5>
         </CCol>
 
-        <CCol class="text-right">
+        <CCol class="text-end">
           <!-- 문서/소송사건 전환 및 대외 공문 발송 대장 바로가기 -->
           <v-btn
             v-if="isSuitCase"
@@ -320,7 +320,7 @@ watch(
             variant="tonal"
             color="indigo-lighten-1"
             prepend-icon="mdi-text-box-search-outline"
-            class="mr-2"
+            class="me-2"
             @click="goToDocs"
           >
             문서 목록
@@ -331,19 +331,19 @@ watch(
             variant="tonal"
             color="deep-purple-lighten-1"
             prepend-icon="mdi-scale-balance"
-            class="mr-2"
+            class="me-2"
             @click="goToSuitCase"
           >
             소송 사건
           </v-btn>
 
           <!-- 새 문서 또는 새 사건 등록 버튼 -->
-          <span v-if="canDocsCreate && !isSuitCase" class="mr-2 form-text">
+          <span v-if="canDocsCreate && !isSuitCase" class="me-2 form-text">
             <TextButton name="새 문서" @click="viewForm = !viewForm" />
           </span>
           <span
             v-else-if="canDocsCreate && isSuitCase && route.name === '문서 사건'"
-            class="mr-2 form-text"
+            class="me-2 form-text"
           >
             <TextButton
               name="새 사건"

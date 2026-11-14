@@ -75,9 +75,9 @@ watch(
         @clear="emit('proj-select', null)"
       />
     </CCol>
-    <CCol v-if="!projSelectList.length" class="pl-0 align-middle">
+    <CCol v-if="!projSelectList.length" class="ps-0 align-middle">
       <v-icon
-        icon="mdi mdi-plus-thick"
+        icon="mdi-plus-thick"
         color="success"
         :disabled="!canProjectCreate"
         @click="router.push({ name: '프로젝트 등록' })"

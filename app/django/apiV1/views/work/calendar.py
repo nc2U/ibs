@@ -1,5 +1,6 @@
 from django.db.models import Q
-from rest_framework import viewsets, permissions
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
 from apiV1.permissions.work_perms import ProjectPermission
@@ -8,17 +9,44 @@ from work.models.issue import Issue
 from work.models.meeting import Meeting
 
 
+class CalendarEventStatusSerializer(serializers.Serializer):
+    pk = serializers.IntegerField(allow_null=True)
+    closed = serializers.BooleanField(allow_null=True)
+
+
+class CalendarEventSerializer(serializers.Serializer):
+    """캘린더 통합 이벤트(업무/회의) 응답 스키마"""
+    id = serializers.CharField()
+    type = serializers.ChoiceField(choices=('issue', 'meeting'))
+    title = serializers.CharField()
+    start = serializers.CharField(allow_null=True)
+    end = serializers.CharField(required=False, allow_null=True)
+    project = serializers.CharField(allow_null=True)
+    status = CalendarEventStatusSerializer(required=False)
+    expected_duration = serializers.CharField(required=False, allow_null=True)
+
+
 class CalendarViewSet(viewsets.ViewSet):
     """
     캘린더 화면 전용 통합 이벤트 API ViewSet
     `calendar.read` 권한이 적용되며, start/end 날짜 파라미터를 받아 기간 내의 Issue와 Meeting 데이터를 조회 및 가공합니다.
     """
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    serializer_class = CalendarEventSerializer
 
     @property
     def required_permission(self):
         return 'calendar.read'
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('project', OpenApiTypes.STR, description='프로젝트 슬러그'),
+            OpenApiParameter('start', OpenApiTypes.DATE, description='조회 시작일 (YYYY-MM-DD)'),
+            OpenApiParameter('end', OpenApiTypes.DATE, description='조회 종료일 (YYYY-MM-DD)'),
+            OpenApiParameter('event_type', OpenApiTypes.STR, enum=['all', 'issue', 'meeting'], default='all'),
+        ],
+        responses=CalendarEventSerializer(many=True),
+    )
     def list(self, request):
         user = self.request.user
         project_slug = request.query_params.get('project')

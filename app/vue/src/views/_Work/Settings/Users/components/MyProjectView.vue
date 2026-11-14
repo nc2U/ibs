@@ -11,11 +11,11 @@ const userInfo = computed(() => accStore.userInfo)
 <template>
   <CRow class="py-2">
     <CCol class="mb-2">
-      <span class="h5 mr-2"> 내 프로젝트 목록 </span>
+      <span class="h5 me-2"> 내 프로젝트 목록 </span>
     </CCol>
 
-    <CCol class="text-right form-text">
-      <span class="mr-2">
+    <CCol class="text-end form-text">
+      <span class="me-2">
         <TextButton
           name="내 계정"
           :to="{ name: '사용자 - 내 계정' }"

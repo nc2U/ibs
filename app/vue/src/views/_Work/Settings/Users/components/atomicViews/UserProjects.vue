@@ -188,7 +188,7 @@ onBeforeMount(async () => {
               </CTableDataCell>
 
               <!-- 역할 (편집 모드 or 표시 모드) -->
-              <CTableDataCell class="pl-3">
+              <CTableDataCell class="ps-3">
                 <div v-if="editMode === mem.pk">
                   <div v-for="role in roleList" :key="role.pk">
                     <CFormCheck
@@ -196,7 +196,7 @@ onBeforeMount(async () => {
                       :label="role.name"
                       :value="role.pk"
                       :id="'user-proj-role-' + role.pk"
-                      class="text-left"
+                      class="text-start"
                       :disabled="
                         !getAllowedRoleIdsByProject(mem.project.pk).includes(Number(role.pk))
                       "
@@ -233,18 +233,18 @@ onBeforeMount(async () => {
 
               <!-- 액션 버튼 -->
               <CTableDataCell v-if="canProjectMember" class="px-3">
-                <span v-if="editMode === null || editMode !== mem.pk" class="mr-2">
+                <span v-if="editMode === null || editMode !== mem.pk" class="me-2">
                   <v-icon icon="mdi-pencil" color="amber" size="sm" />
-                  <a href="javascript:void(0)" @click="toEdit(mem)">편집</a>
+                  <a href="#" @click.prevent="toEdit(mem)">편집</a>
                 </span>
-                <span v-else-if="editMode === mem.pk" class="mr-2">
-                  <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="mr-1" />
-                  <a href="javascript:void(0)" @click="cancelEdit">취소</a>
+                <span v-else-if="editMode === mem.pk" class="me-2">
+                  <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="me-1" />
+                  <a href="#" @click.prevent="cancelEdit">취소</a>
                 </span>
 
                 <span>
-                  <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="mr-1" />
-                  <a href="javascript:void(0)" @click="toDelete(mem.pk)">삭제</a>
+                  <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
+                  <a href="#" @click.prevent="toDelete(mem.pk)">삭제</a>
                 </span>
               </CTableDataCell>
             </CTableRow>

@@ -7,8 +7,8 @@ const route = useRoute()
   <CCard class="text-body my-4 mx-2 mx-md-3 mx-xl-5">
     <slot name="header">
       <CCardHeader>
-        <v-icon icon="mdi mdi-subtitles-outline" size="small" />
-        <strong class="pl-1"> {{ route?.meta.title ?? route?.name }}</strong>
+        <v-icon icon="mdi-subtitles-outline" size="small" />
+        <strong class="ps-1"> {{ route?.meta.title ?? route?.name }}</strong>
       </CCardHeader>
     </slot>
 

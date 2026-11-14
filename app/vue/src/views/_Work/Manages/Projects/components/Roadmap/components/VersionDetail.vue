@@ -64,13 +64,13 @@ onBeforeMount(() => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <span class="title bold mr-2" style="font-size: 1.4em">{{ version?.name }}</span>
+      <span class="title bold me-2" style="font-size: 1.4em">{{ version?.name }}</span>
       <span :class="boxClass[Number(version?.status) - 1]">{{ version?.status_desc }}</span>
     </CCol>
 
-    <CCol class="text-right form-text">
-      <span v-if="canManageVersions" class="mr-3">
-        <v-icon icon="mdi-pencil" color="amber" size="16" class="mr-1" />
+    <CCol class="text-end form-text">
+      <span v-if="canManageVersions" class="me-3">
+        <v-icon icon="mdi-pencil" color="amber" size="16" class="me-1" />
         <router-link
           :to="{
             name: '(로드맵) - 수정',
@@ -80,12 +80,12 @@ onBeforeMount(() => {
           편집
         </router-link>
       </span>
-      <span v-if="canManageVersions" class="mr-3">
-        <v-icon icon="mdi-trash-can-outline" color="grey" size="16" class="mr-1" />
+      <span v-if="canManageVersions" class="me-3">
+        <v-icon icon="mdi-trash-can-outline" color="grey" size="16" class="me-1" />
         <a
-          href="javascript:void(0)"
+          href="#"
           class="text-decoration-none"
-          @click="
+          @click.prevent="
             RefVersionConfirm?.callModal(
               '',
               '이 단계 삭제를 계속 진행 하시겠습니까?',

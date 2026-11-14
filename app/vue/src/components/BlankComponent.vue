@@ -1,8 +1,8 @@
 <template>
   <CCard class="mb-4">
     <CCardHeader>
-      <v-icon icon="mdi mdi-subtitles-outline" size="small" />
-      <strong class="pl-1"> Subpage Title</strong>
+      <v-icon icon="mdi-subtitles-outline" size="small" />
+      <strong class="ps-1"> Subpage Title</strong>
     </CCardHeader>
 
     <CCardBody class="blank-body"></CCardBody>

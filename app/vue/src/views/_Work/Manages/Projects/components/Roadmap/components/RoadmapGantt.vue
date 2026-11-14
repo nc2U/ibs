@@ -194,7 +194,7 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
             <div
               v-for="m in monthColumns"
               :key="`${m.year}-${m.month}`"
-              class="month-cell text-center border-end p-2 small font-weight-bold text-secondary"
+              class="month-cell text-center border-end p-2 small fw-bold text-secondary"
               :style="{ width: `${m.widthPercent}%` }"
             >
               {{ m.label }}

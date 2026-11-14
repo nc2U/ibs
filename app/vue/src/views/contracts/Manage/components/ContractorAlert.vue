@@ -59,19 +59,18 @@ const resumeForm = () => {
           {{ isSuccession ? '-> (!!!-변경 인가 진행 중-!!!)' : '' }}
         </strong>
       </CCol>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <span v-if="!isBlank || !contractor.contract">
           <v-icon icon="mdi-close" class="pointer" style="cursor: pointer" @click.stop="clearContractor" />
           <v-tooltip activator="parent" location="start"> 계약자 선택 해제</v-tooltip>
         </span>
-        <a v-else href="javascript:void(0)">
+        <a v-else href="#" @click.prevent="resumeForm">
           <v-icon
             icon="mdi-refresh"
             size="large"
             color="primary"
             class="rotate pointer"
             style="cursor: pointer"
-            @click="resumeForm"
           />
           <v-tooltip activator="parent" location="start"> 계약자 정보 채우기</v-tooltip>
         </a>

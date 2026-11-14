@@ -148,8 +148,8 @@ const handleConfirm = () => {
   <v-dialog :model-value="modelValue" max-width="1180" persistent scrollable>
     <v-card>
       <v-card-title class="d-flex align-center bg-grey-lighten-4 py-2">
-        <v-icon color="primary" class="mr-2">mdi-file-excel-box</v-icon>
-        <span class="font-weight-bold">대량 거래 입력 엑셀 미리보기 및 검증</span>
+        <v-icon color="primary" class="me-2">mdi-file-excel-box</v-icon>
+        <span class="fw-bold">대량 거래 입력 엑셀 미리보기 및 검증</span>
         <v-spacer />
         <v-btn icon size="small" variant="text" @click="emit('update:modelValue', false)">
           <v-icon>mdi-close</v-icon>
@@ -167,7 +167,7 @@ const handleConfirm = () => {
         >
           <div class="d-flex align-center justify-space-between flex-wrap">
             <div>
-              <v-chip size="x-small" color="primary" variant="flat" class="mr-2 font-weight-bold">
+              <v-chip size="x-small" color="primary" variant="flat" class="me-2 fw-bold">
                 {{ result.detectedBankName || '인터넷 뱅킹' }} 원본 서식 감지
               </v-chip>
               <strong>은행 거래내역 엑셀 파일</strong>이 자동으로 감지되어 시스템 거래 항목으로 변환되었습니다.
@@ -190,7 +190,7 @@ const handleConfirm = () => {
                 | <strong class="text-warning">중복 의심:</strong> {{ duplicateCount }}건
               </template>
             </div>
-            <v-chip size="x-small" color="primary" variant="outlined" class="ml-auto">
+            <v-chip size="x-small" color="primary" variant="outlined" class="ms-auto">
               {{ result.fileFormat === 'bank_raw' ? '은행 원본 변환 모드' : 'IBS 표준 템플릿' }}
             </v-chip>
           </div>
@@ -202,8 +202,8 @@ const handleConfirm = () => {
         <!-- 일괄 지정 도구 패널 (통장 / 계정과목 / 납부회차 / 중복제외) -->
         <v-card variant="outlined" class="mb-3 bg-grey-lighten-5">
           <v-card-text class="py-2">
-            <div class="text-caption font-weight-bold text-primary mb-2 d-flex align-center">
-              <v-icon size="16" color="primary" class="mr-1">mdi-auto-fix</v-icon>
+            <div class="text-caption fw-bold text-primary mb-2 d-flex align-center">
+              <v-icon size="16" color="primary" class="me-1">mdi-auto-fix</v-icon>
               원클릭 일괄 지정 및 편의 도구
             </div>
 
@@ -346,7 +346,7 @@ const handleConfirm = () => {
                 </v-chip>
 
                 <v-spacer />
-                <span class="font-weight-bold">
+                <span class="fw-bold">
                   {{ (t.bankForm.amount ?? 0).toLocaleString() }}원
                 </span>
               </div>
@@ -366,39 +366,39 @@ const handleConfirm = () => {
               <table class="w-100 mt-2" style="border-collapse: collapse; font-size: 0.85rem">
                 <thead>
                   <tr style="background: #f5f5f5">
-                    <th class="pa-1 text-left" style="width: 50px">행</th>
-                    <th class="pa-1 text-left">계정이름</th>
-                    <th class="pa-1 text-left">거래처</th>
-                    <th class="pa-1 text-right" style="width: 130px">분류금액</th>
-                    <th class="pa-1 text-left">{{ relatedLabel ?? '계약자' }}</th>
-                    <th v-if="payOrders && payOrders.length" class="pa-1 text-left">납부회차</th>
-                    <th class="pa-1 text-left" style="width: 140px">상태/검증</th>
+                    <th class="pa-1 text-start" style="width: 50px">행</th>
+                    <th class="pa-1 text-start">계정이름</th>
+                    <th class="pa-1 text-start">거래처</th>
+                    <th class="pa-1 text-end" style="width: 130px">분류금액</th>
+                    <th class="pa-1 text-start">{{ relatedLabel ?? '계약자' }}</th>
+                    <th v-if="payOrders && payOrders.length" class="pa-1 text-start">납부회차</th>
+                    <th class="pa-1 text-start" style="width: 140px">상태/검증</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="e in t.entries" :key="e.rowNumber" style="border-top: 1px solid #eee">
                     <td class="pa-1 text-grey">{{ e.rowNumber }}</td>
                     <td class="pa-1">
-                      <span v-if="e.account_name" class="font-weight-medium">
+                      <span v-if="e.account_name" class="fw-medium">
                         {{ e.account_name }}
                       </span>
-                      <span v-else class="text-error font-weight-bold">
+                      <span v-else class="text-error fw-bold">
                         (미지정)
                       </span>
-                      <v-chip v-if="e.isAutoMatched" size="x-small" color="teal" variant="flat" class="ml-1">
+                      <v-chip v-if="e.isAutoMatched" size="x-small" color="teal" variant="flat" class="ms-1">
                         자동추천
                       </v-chip>
                     </td>
                     <td class="pa-1">{{ e.trader || '-' }}</td>
-                    <td class="pa-1 text-right font-weight-medium">{{ e.amount.toLocaleString() }}원</td>
+                    <td class="pa-1 text-end fw-medium">{{ e.amount.toLocaleString() }}원</td>
                     <td class="pa-1">
                       <span>{{ e.contract_name || '-' }}</span>
-                      <v-chip v-if="e.isContractAutoMatched" size="x-small" color="indigo" variant="flat" class="ml-1">
+                      <v-chip v-if="e.isContractAutoMatched" size="x-small" color="indigo" variant="flat" class="ms-1">
                         계약자 매칭
                       </v-chip>
                     </td>
                     <td v-if="payOrders && payOrders.length" class="pa-1">
-                      <span v-if="e.installment_order_name" class="text-primary font-weight-medium">
+                      <span v-if="e.installment_order_name" class="text-primary fw-medium">
                         {{ e.installment_order_name }}
                       </span>
                       <span v-else class="text-grey">-</span>
@@ -410,7 +410,7 @@ const handleConfirm = () => {
                       <span v-for="(m, i) in e.warnings" :key="`ew${i}`" class="text-warning d-block">
                         ⚠ {{ m }}
                       </span>
-                      <span v-if="!e.errors.length && !e.warnings.length" class="text-success font-weight-bold">
+                      <span v-if="!e.errors.length && !e.warnings.length" class="text-success fw-bold">
                         ✓ 정상
                       </span>
                     </td>
@@ -429,7 +429,7 @@ const handleConfirm = () => {
           density="compact"
           hide-details
           :label="replace ? '현재 입력 내용을 대체' : '현재 입력 내용 뒤에 추가'"
-          class="mr-3"
+          class="me-3"
         />
         <v-spacer />
         <v-btn variant="tonal" @click="emit('update:modelValue', false)">취소</v-btn>

@@ -37,7 +37,7 @@ const route = useRoute()
         </CTableHead>
         <CTableBody>
           <CTableRow>
-            <CTableDataCell class="text-left">
+            <CTableDataCell class="text-start">
               <router-link :to="{ name: '업무', query: { assignee: route.params.userId } }">
                 할당된 업무
               </router-link>
@@ -71,7 +71,7 @@ const route = useRoute()
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
-            <CTableDataCell class="text-left">
+            <CTableDataCell class="text-start">
               <router-link :to="{ name: '업무', query: { author: route.params.userId } }">
                 작성한 업무
               </router-link>

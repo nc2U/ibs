@@ -160,15 +160,15 @@ onBeforeMount(async () => {
                   icon="mdi-arrow-up-down-bold"
                   color="success"
                   size="16"
-                  class="cursor-move mr-3"
+                  class="cursor-move me-3"
                 />
-                <span v-if="canForumManage" class="mr-3 cursor-pointer">
-                  <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-2" />
-                  <a href="javascript:void(0)" @click="modifyCall(element)">편집</a>
+                <span v-if="canForumManage" class="me-3 cursor-pointer">
+                  <v-icon icon="mdi-pencil" color="amber" size="15" class="me-2" />
+                  <a href="#" @click.prevent="modifyCall(element)">편집</a>
                 </span>
                 <span v-if="canForumManage">
-                  <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
-                  <a href="javascript:void(0)" @click="deleteModalCall(element.pk)">삭제</a>
+                  <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="me-2" />
+                  <a href="#" @click.prevent="deleteModalCall(element.pk)">삭제</a>
                 </span>
               </CTableDataCell>
             </CTableRow>

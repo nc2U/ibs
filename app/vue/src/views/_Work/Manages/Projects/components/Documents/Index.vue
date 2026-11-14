@@ -19,7 +19,7 @@ import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseDetail from '@/components/LawSuitCase/CaseDetail.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
-defineProps({
+const props = defineProps({
   navMenu: { type: Array as PropType<string[]>, default: () => [] },
   currentProject: { type: Object as PropType<IssueProject | null>, default: null },
   query: { type: Object, default: () => ({}) },
@@ -43,9 +43,9 @@ const mainViewName = ref('(문서 사건)')
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
-const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && currentProject.value?.status === '1')
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE) && currentProject.value?.status === '1')
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE) && currentProject.value?.status === '1')
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && activeProject.value?.status === '1')
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE) && activeProject.value?.status === '1')
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE) && activeProject.value?.status === '1')
 
 const viewForm = ref(false)
 
@@ -53,7 +53,9 @@ const route = useRoute()
 const router = useRouter()
 
 const workStore = useWork()
-const currentProject = computed<IssueProject | null>(() => workStore.currentProject)
+const activeProject = computed<IssueProject | null>(
+  () => props.currentProject ?? workStore.currentProject,
+)
 
 const docStore = useDocs()
 const docs = computed<Docs | null>(() => docStore.docs)
@@ -126,7 +128,7 @@ const excelFilter = computed(() => {
   return `issue_project=${issue_project ?? ''}&sort=${sort ?? ''}&level=${level ?? ''}&court=${court ?? ''}&in_progress=${in_progress ?? ''}&search=${search ?? ''}`
 })
 const excelUrl = computed(
-  () => `/excel/suitcases/?company=${currentProject.value?.company ?? ''}&${excelFilter.value}`,
+  () => `/excel/suitcases/?company=${activeProject.value?.company ?? ''}&${excelFilter.value}`,
 )
 
 const getDocsList = (target: unknown) => {
@@ -143,8 +145,8 @@ const getDocsList = (target: unknown) => {
 }
 
 const goToSuitCase = () => {
-  caseFilter.value.company = currentProject.value?.company ?? ''
-  caseFilter.value.issue_project = currentProject.value?.pk ?? docsFilter.value.issue_project ?? ''
+  caseFilter.value.company = activeProject.value?.company ?? ''
+  caseFilter.value.issue_project = activeProject.value?.pk ?? docsFilter.value.issue_project ?? ''
   fetchSuitCaseList(caseFilter.value)
   if (route.name !== '(문서 사건)' && !String(route.name ?? '').startsWith('(문서 사건) -')) {
     router.push({ name: '(문서 사건)', params: { projId: projId.value } })
@@ -191,8 +193,8 @@ const relatedFilter = (related: number) => {
 
 const caseReset = () => {
   caseFilter.value = {
-    company: currentProject.value?.company ?? '',
-    issue_project: currentProject.value?.pk ?? docsFilter.value.issue_project ?? '',
+    company: activeProject.value?.company ?? '',
+    issue_project: activeProject.value?.pk ?? docsFilter.value.issue_project ?? '',
     sort: '',
     level: '',
     court: '',
@@ -215,7 +217,7 @@ const onCaseSubmit = async (payload: SuitCase) => {
   } else {
     if (!payload.issue_project) {
       payload.issue_project =
-        (currentProject.value?.pk as number) || (docsFilter.value.issue_project as number) || null
+        (activeProject.value?.pk as number) || (docsFilter.value.issue_project as number) || null
     }
     await createSuitCase(payload)
     await router.replace({ name: mainViewName.value, params: { projId: projId.value } })
@@ -269,20 +271,20 @@ const loading = ref<boolean>(true)
 const dataSetup = async (projId: string, docId?: string | string[]) => {
   loading.value = true
   try {
-    if (projId && (!currentProject.value || currentProject.value.slug !== projId)) {
+    if (projId && (!activeProject.value || activeProject.value.slug !== projId)) {
       await workStore.fetchIssueProject(projId as string)
     }
 
-    if (currentProject.value?.type === '3') {
+    if (activeProject.value?.type === '3') {
       typeNumber.value = 2 // 소송 워크스페이스인 경우 기본 소송기록
     } else {
       typeNumber.value = 1
     }
 
-    const currentProjPk = currentProject.value?.pk ?? ''
+    const currentProjPk = activeProject.value?.pk ?? ''
     docsFilter.value.issue_project = currentProjPk
 
-    caseFilter.value.company = currentProject.value?.company ?? ''
+    caseFilter.value.company = activeProject.value?.company ?? ''
     caseFilter.value.issue_project = currentProjPk
 
     const tasks: Promise<any>[] = [fetchAllSuitCaseList({ issue_project: currentProjPk })]
@@ -339,7 +341,7 @@ watch(
         await fetchSuitCase(Number(route.params.caseId))
       } else {
         docStore.removeSuitcase()
-        caseFilter.value.issue_project = currentProject.value?.pk ?? ''
+        caseFilter.value.issue_project = activeProject.value?.pk ?? ''
         await fetchSuitCaseList(caseFilter.value)
       }
     }
@@ -370,38 +372,38 @@ watch(
           </h5>
         </CCol>
 
-        <CCol v-if="!isSuitCase && route.name === '(문서)'" class="text-right">
+        <CCol v-if="!isSuitCase && route.name === '(문서)'" class="text-end">
           <!-- 문서/소송사건 전환 버튼 -->
           <v-btn
             size="small"
             variant="tonal"
             color="deep-purple-lighten-1"
             prepend-icon="mdi-scale-balance"
-            class="mr-2"
+            class="me-2"
             @click="goToSuitCase"
           >
             소송 사건
           </v-btn>
 
-          <span v-if="canDocsCreate" class="mr-2 form-text">
+          <span v-if="canDocsCreate" class="me-2 form-text">
             <TextButton name="새 문서" @click="viewForm = !viewForm" />
           </span>
         </CCol>
 
-        <CCol v-else-if="isSuitCase && route.name === '(문서 사건)'" class="text-right">
+        <CCol v-else-if="isSuitCase && route.name === '(문서 사건)'" class="text-end">
           <!-- 문서 목록 복귀 버튼 -->
           <v-btn
             size="small"
             variant="tonal"
             color="indigo-lighten-1"
             prepend-icon="mdi-text-box-search-outline"
-            class="mr-2"
+            class="me-2"
             @click="goToDocs"
           >
             문서 목록
           </v-btn>
 
-          <span v-if="canDocsCreate" class="mr-2 form-text">
+          <span v-if="canDocsCreate" class="me-2 form-text">
             <TextButton
               name="새 사건"
               @click="router.push({ name: `${mainViewName} - 작성`, params: { projId } })"
@@ -409,21 +411,21 @@ watch(
           </span>
         </CCol>
 
-        <CCol v-else-if="isSuitCase" class="text-right">
+        <CCol v-else-if="isSuitCase" class="text-end">
           <!-- 소송 사건 상세/작성/수정 시 상단 버튼 -->
           <v-btn
             size="small"
             variant="tonal"
             color="indigo-lighten-1"
             prepend-icon="mdi-text-box-search-outline"
-            class="mr-2"
+            class="me-2"
             @click="goToDocs"
           >
             문서 목록
           </v-btn>
         </CCol>
 
-        <CCol v-else class="text-right">
+        <CCol v-else class="text-end">
           <!-- 일반문서 보기 화면에서의 편집/삭제 -->
           <span v-if="canDocsUpdate">
             <TextButton
@@ -459,7 +461,7 @@ watch(
             />
 
             <CaseList
-              :company="currentProject?.company || undefined"
+              :company="activeProject?.company || undefined"
               :limit="caseFilter.limit || 10"
               :page="caseFilter.page || 1"
               :case-list="suitcaseList"
@@ -488,7 +490,7 @@ watch(
           <!-- 사건 신규 등록 -->
           <div v-else-if="String(route.name ?? '').includes('작성')">
             <CaseForm
-              :sort-name="currentProject?.name ?? '[워크스페이스]'"
+              :sort-name="activeProject?.name ?? '[워크스페이스]'"
               :get-suit-case="getSuitCase"
               :view-route="mainViewName"
               @on-submit="onCaseSubmit"
@@ -498,7 +500,7 @@ watch(
           <!-- 사건 수정 -->
           <div v-else-if="String(route.name ?? '').includes('수정')">
             <CaseForm
-              :sort-name="currentProject?.name ?? '[워크스페이스]'"
+              :sort-name="activeProject?.name ?? '[워크스페이스]'"
               :get-suit-case="getSuitCase"
               :suitcase="suitcase"
               :view-route="mainViewName"
@@ -528,7 +530,7 @@ watch(
           <DocsForm
             ref="refDocsForm"
             v-if="viewForm"
-            :project-pk="currentProject?.pk"
+            :project-pk="activeProject?.pk"
             :type-number="typeNumber"
             :categories="getCategories"
             :get-suit-case="getSuitCase"

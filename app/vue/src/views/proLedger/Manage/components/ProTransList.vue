@@ -57,8 +57,8 @@ const accCallModal = () => {
     <CTableHead>
       <CTableRow :color="TableSecondary">
         <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="canLedgerEdit ? 5 : 4">
-          <span class="text-grey mr-2">|</span> 분류 내역
+        <CTableHeaderCell class="ps-0" :colspan="canLedgerEdit ? 5 : 4">
+          <span class="text-grey me-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
 
@@ -67,17 +67,17 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">메모</CTableHeaderCell>
         <CTableHeaderCell scope="col">
           거래계좌
-          <a href="javascript:void(0)" class="ml-1">
-            <CIcon name="cilCog" @click="accCallModal" />
+          <a href="#" class="ms-1" @click.prevent="accCallModal">
+            <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">적요</CTableHeaderCell>
         <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">확인</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" scope="col">
-          <span class="text-grey mr-2">|</span> 계정
-          <a href="javascript:void(0)" class="ml-1">
-            <CIcon name="cilCog" @click="refAccountManage.callModal()" />
+        <CTableHeaderCell class="ps-0" scope="col">
+          <span class="text-grey me-2">|</span> 계정
+          <a href="#" class="ms-1" @click.prevent="refAccountManage.callModal()">
+            <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>

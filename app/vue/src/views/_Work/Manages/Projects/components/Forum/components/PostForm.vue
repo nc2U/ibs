@@ -197,7 +197,7 @@ watch(
         <CRow class="mb-3">
           <CCol sm="12" lg="6">
             <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4">카테고리</CFormLabel>
+              <CFormLabel class="col-form-label text-end col-2 col-lg-4">카테고리</CFormLabel>
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6 d-flex align-center">
                 <CFormSelect v-if="availableCategories.length" v-model.number="form.category">
                   <option value="">---------</option>
@@ -221,7 +221,7 @@ watch(
                       variant="text"
                       density="comfortable"
                       title="카테고리 추가"
-                      class="ml-2"
+                      class="ms-2"
                       @click="openCategoryDialog"
                     >
                     </v-btn>
@@ -237,7 +237,7 @@ watch(
               label="공지사항"
               id="is_notice"
               inline
-              class="mr-3"
+              class="me-3"
             />
             <CFormCheck
               v-if="canForumManage || isForumManager"
@@ -245,7 +245,7 @@ watch(
               label="FAQ 등록"
               id="is_faq"
               inline
-              class="mr-3"
+              class="me-3"
             />
             <CFormCheck v-model="form.is_blind" label="숨김글" id="is_blind" inline />
             <span v-if="form.is_blind" class="text-muted">
@@ -259,14 +259,14 @@ watch(
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2 required">제목</CFormLabel>
           <CCol class="col-sm-10">
             <CFormInput v-model="form.title" placeholder="게시물 제목" required />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">내용</CFormLabel>
+          <CFormLabel class="col-form-label text-end col-2">내용</CFormLabel>
           <CCol class="col-sm-10">
             <QuillEditor v-model:content="form.content" />
           </CCol>
@@ -282,13 +282,13 @@ watch(
       </CCardBody>
     </CCard>
 
-    <CRow class="mb-5 text-right">
+    <CRow class="mb-5 text-end">
       <CCol>
         <v-btn
           type="submit"
           :color="!post?.pk ? 'primary' : 'success'"
           :disabled="!post?.pk ? !canForumCreate : !canForumUpdate"
-          class="mr-2"
+          class="me-2"
         >
           저장
         </v-btn>

@@ -182,13 +182,13 @@ onBeforeUpdate(() => dataSetup())
     @submit.prevent="onSubmit"
   >
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label required text-right">제목</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label required text-end">제목</CFormLabel>
       <CCol :md="typeNum === 2 ? 6 : 5">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
       </CCol>
       <CFormLabel
         for="security_level"
-        class="col-sm-2 col-form-label text-right"
+        class="col-sm-2 col-form-label text-end"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
         보안등급
@@ -207,7 +207,7 @@ onBeforeUpdate(() => dataSetup())
       <CFormLabel
         v-if="typeNum === 2"
         for="inputPassword"
-        class="col-sm-2 col-form-label required text-right"
+        class="col-sm-2 col-form-label required text-end"
       >
         사건[등록] 번호
       </CFormLabel>
@@ -237,7 +237,7 @@ onBeforeUpdate(() => dataSetup())
 
       <CFormLabel
         for="category"
-        class="col-sm-2 col-form-label required text-right"
+        class="col-sm-2 col-form-label required text-end"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
         카테고리
@@ -253,7 +253,7 @@ onBeforeUpdate(() => dataSetup())
 
       <CFormLabel
         for="security_level"
-        class="col-sm-2 col-form-label text-right"
+        class="col-sm-2 col-form-label text-end"
         :class="typeNum === 2 ? 'col-lg-1' : 'offset-2'"
       >
         발행일자
@@ -264,14 +264,14 @@ onBeforeUpdate(() => dataSetup())
     </CRow>
 
     <CRow style="margin-bottom: 52px">
-      <CFormLabel for="title" class="col-md-2 col-form-label text-right">내용</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-end">내용</CFormLabel>
       <CCol md="10 mb-5">
         <QuillEditor v-model:content="form.description" placeholder="본문 내용" />
       </CCol>
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label text-right">파일</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-end">파일</CFormLabel>
       <CCol md="10" lg="8" xl="6">
         <FileModify
           v-if="docs && (form.files as AFile[]).length"
@@ -285,7 +285,7 @@ onBeforeUpdate(() => dataSetup())
     </CRow>
 
     <CRow class="mb-3">
-      <CFormLabel for="title" class="col-md-2 col-form-label text-right">링크</CFormLabel>
+      <CFormLabel for="title" class="col-md-2 col-form-label text-end">링크</CFormLabel>
       <CCol md="10" lg="8" xl="6">
         <LinkModify
           v-if="docs && (form.links as Link[]).length"
@@ -300,7 +300,7 @@ onBeforeUpdate(() => dataSetup())
     </CRow>
 
     <CRow>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn v-if="canDocsManage" :color="btnClass" type="submit" :disabled="formsCheck">
           저장하기
         </v-btn>

@@ -34,8 +34,8 @@ const isOwnProject = (project: IssueProject) => {
           <CTableHeaderCell
             scope="col"
             :class="{
-              'text-left pl-4': colKey === 'name',
-              'text-left': colKey === 'description',
+              'text-start ps-4': colKey === 'name',
+              'text-start': colKey === 'description',
             }"
           >
             {{ PROJECT_COLUMN_LABEL_MAP[colKey] || colKey }}
@@ -51,14 +51,14 @@ const isOwnProject = (project: IssueProject) => {
       >
         <template v-for="colKey in columns" :key="'body-' + proj.pk + '-' + colKey">
           <!-- 이름 컬럼 -->
-          <CTableDataCell v-if="colKey === 'name'" class="pl-4">
+          <CTableDataCell v-if="colKey === 'name'" class="ps-4">
             <span :style="{ paddingLeft: `${(proj.depth ?? 0) * 10}px` }">
               <v-icon
                 v-if="proj.depth > 0"
                 icon="mdi-chevron-right"
                 size="small"
                 color="grey"
-                class="mr-1"
+                class="me-1"
               />
               <router-link
                 :to="{ name: '(개요)', params: { projId: proj.slug } }"
@@ -72,7 +72,7 @@ const isOwnProject = (project: IssueProject) => {
                 icon="mdi-lock"
                 size="15"
                 color="blue-grey-lighten-2"
-                class="ml-2"
+                class="ms-2"
                 title="비공개 워크스페이스"
               />
               <v-icon
@@ -80,7 +80,7 @@ const isOwnProject = (project: IssueProject) => {
                 icon="mdi-account-tag"
                 color="success"
                 size="15"
-                class="ml-2"
+                class="ms-2"
                 title="내 워크스페이스"
               />
               <v-icon
@@ -88,7 +88,7 @@ const isOwnProject = (project: IssueProject) => {
                 icon="mdi-bookmark"
                 color="info"
                 size="15"
-                class="ml-2"
+                class="ms-2"
                 title="북마크됨"
               />
             </span>

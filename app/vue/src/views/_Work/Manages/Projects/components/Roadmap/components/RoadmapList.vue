@@ -33,10 +33,10 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><v-icon icon="mdi-target" color="green-darken-1" size="small" class="mr-2" />로드맵</h5>
+      <h5><v-icon icon="mdi-target" color="green-darken-1" size="small" class="me-2" />로드맵</h5>
     </CCol>
 
-    <CCol class="text-right d-flex align-items-center justify-content-end">
+    <CCol class="text-end d-flex align-items-center justify-content-end">
       <!-- View mode toggle: List vs Gantt Timeline -->
       <v-btn-toggle
         :model-value="viewMode"
@@ -44,7 +44,7 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
         density="compact"
         variant="outlined"
         color="primary"
-        class="mr-2"
+        class="me-2"
         style="height: 28px"
         @update:model-value="onViewModeChange"
       >

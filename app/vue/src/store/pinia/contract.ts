@@ -1,8 +1,10 @@
 import api from '@/api'
+import axios from 'axios'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message, cleanupParams } from '@/utils/helper'
 import type {
+  AddressInContractor,
   BuyerForm,
   ConsultationLog,
   ContFilter,
@@ -234,14 +236,14 @@ export const useContract = defineStore('contract', () => {
     // status='1'(청약 탭): is_contract=false → backend에서 status='1' 처리
     // 명시적 status 필터(ContractFilter의 contractor__status)는 사용자가 직접 선택 시에만 사용
     const status = filters.status ?? '2'
-    const statusParam: Record<string, any> =
+    const statusParam: Record<string, string | boolean> =
       status === '2'
         ? { is_contract: true }
         : status === '1'
           ? { is_contract: false }
           : { contractor__status: status }
 
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       project: filters.project,
       is_active: true,
       is_completed: filters.is_completed,
@@ -289,9 +291,9 @@ export const useContract = defineStore('contract', () => {
     try {
       const response = await api.get('/contract-set/find_page/', { params })
       return response.data.page
-    } catch (err: any) {
-      if (err?.response?.status !== 404) {
-        errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      if (!axios.isAxiosError(err) || err.response?.status !== 404) {
+        errorHandle(err)
       }
       return 1
     }
@@ -344,7 +346,11 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const patchContractor = (pk: number, payload: any, project?: number) =>
+  const patchContractor = (
+    pk: number,
+    payload: Partial<Contractor> | Record<string, unknown>,
+    project?: number,
+  ) =>
     api
       .patch(`/contractor/${pk}/?project=${project || ''}`, payload)
       .then(res => {
@@ -464,8 +470,8 @@ export const useContract = defineStore('contract', () => {
       )
       const existingDocs = response.data.results
       return existingDocs.length > 0 ? existingDocs[0] : null
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return null
     }
   }
@@ -513,7 +519,7 @@ export const useContract = defineStore('contract', () => {
       .then(res => (contAddressList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createContAddress = (payload: any) =>
+  const createContAddress = (payload: Omit<AddressInContractor, 'pk'> | Partial<ContractorAddress>) =>
     api
       .post(`/contractor-address/`, payload)
       .then(async res => {
@@ -529,7 +535,10 @@ export const useContract = defineStore('contract', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const patchContAddress = (pk: number, payload: any) =>
+  const patchContAddress = (
+    pk: number,
+    payload: Partial<AddressInContractor> | Partial<ContractorAddress>,
+  ) =>
     api
       .patch(`/contractor-address/${pk}/`, payload)
       .then(async res => {
@@ -573,8 +582,8 @@ export const useContract = defineStore('contract', () => {
       consultationLogList.value = res.data.results
       consultationLogCount.value = res.data.count
       return res.data
-    } catch (err: any) {
-      return errorHandle(err.response.data)
+    } catch (err: unknown) {
+      return errorHandle(err)
     }
   }
 
@@ -699,9 +708,9 @@ export const useContract = defineStore('contract', () => {
     try {
       const response = await api.get(url)
       return response.data.page
-    } catch (err: any) {
-      if (err?.response?.status !== 404) {
-        errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      if (!axios.isAxiosError(err) || err.response?.status !== 404) {
+        errorHandle(err)
       }
       return 1
     }
@@ -714,9 +723,9 @@ export const useContract = defineStore('contract', () => {
     try {
       const response = await api.get(url)
       return response.data.page
-    } catch (err: any) {
-      if (err?.response?.status !== 404) {
-        errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      if (!axios.isAxiosError(err) || err.response?.status !== 404) {
+        errorHandle(err)
       }
       return 1
     }
@@ -785,8 +794,8 @@ export const useContract = defineStore('contract', () => {
       }
       const response = await api.get(url)
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -817,8 +826,8 @@ export const useContract = defineStore('contract', () => {
       }
 
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -828,8 +837,8 @@ export const useContract = defineStore('contract', () => {
     try {
       const response = await api.get(`/contract/${contractId}/payment-plan/`)
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }
@@ -841,8 +850,8 @@ export const useContract = defineStore('contract', () => {
     try {
       const response = await api.get(`/contract/${contractId}/price-payment-plan/`)
       return response.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       throw err
     }
   }

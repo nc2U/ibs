@@ -358,9 +358,9 @@ onMounted(() => {
       <CCol class="text-grey-darken-1 pt-2 social">
         <a
           id="kakaotalk-sharing-btn"
-          href="javascript:void(0)"
-          @click="shareKakaoTalk"
-          class="mr-2"
+          href="#"
+          @click.prevent="shareKakaoTalk"
+          class="me-2"
         >
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"
@@ -368,10 +368,10 @@ onMounted(() => {
             width="20px;"
           />
         </a>
-        <v-icon icon="mdi-facebook" class="mr-2" @click="shareFacebook" />
-        <v-icon icon="mdi-twitter" class="mr-2" @click="shareTwitter" />
+        <v-icon icon="mdi-facebook" class="me-2" @click="shareFacebook" />
+        <v-icon icon="mdi-twitter" class="me-2" @click="shareTwitter" />
       </CCol>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn
           variant="tonal"
           :color="docs.my_scrape ? 'primary' : ''"

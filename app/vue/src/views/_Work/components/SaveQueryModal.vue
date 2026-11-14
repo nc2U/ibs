@@ -93,7 +93,7 @@ defineExpose({ callModal, closeModal })
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveQuery">
       <CModalBody class="text-body">
         <CRow class="mb-3">
-          <CFormLabel for="query-name" class="col-sm-3 col-form-label required text-right">
+          <CFormLabel for="query-name" class="col-sm-3 col-form-label required text-end">
             양식 이름
           </CFormLabel>
           <CCol class="col-sm-9">
@@ -107,7 +107,7 @@ defineExpose({ callModal, closeModal })
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-right">
+          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-end">
             설명
           </CFormLabel>
           <CCol class="col-sm-9">

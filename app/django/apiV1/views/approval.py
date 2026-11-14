@@ -49,6 +49,8 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ApprovalDelegation.objects.none()
         user = self.request.user
         if user.is_superuser:
             return ApprovalDelegation.objects.all().select_related('delegator__profile', 'delegatee__profile')
@@ -202,6 +204,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     filterset_class = ApprovalDocumentFilter
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ApprovalDocument.objects.none()
         user = self.request.user
         qs = ApprovalDocument.objects.select_related(
             'doc_type', 'doc_type__category', 'doc_type__target_doc_category', 'drafter', 'drafter__profile',
@@ -862,6 +866,8 @@ class ApprovalAttachmentViewSet(viewsets.ModelViewSet):
     filterset_fields = ('document',)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return ApprovalAttachment.objects.none()
         user = self.request.user
         if user.is_superuser or getattr(user, 'work_manager', False):
             return ApprovalAttachment.objects.all().select_related('document', 'creator')

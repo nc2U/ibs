@@ -79,7 +79,7 @@ onBeforeMount(() => {
     <CCard :color="colorLight" class="mb-3">
       <CCardBody>
         <CRow v-if="!route.params.projId" class="mb-2">
-          <CFormLabel for="project" class="col-sm-2 col-form-label text-right required">
+          <CFormLabel for="project" class="col-sm-2 col-form-label text-end required">
             프로젝트
           </CFormLabel>
 
@@ -94,7 +94,7 @@ onBeforeMount(() => {
         </CRow>
 
         <CRow class="mb-2">
-          <CFormLabel for="title" class="col-sm-2 col-form-label text-right required">
+          <CFormLabel for="title" class="col-sm-2 col-form-label text-end required">
             제목
           </CFormLabel>
 
@@ -111,7 +111,7 @@ onBeforeMount(() => {
         </CRow>
 
         <CRow class="mb-2">
-          <CFormLabel for="summary" class="col-sm-2 col-form-label text-right"> 요약</CFormLabel>
+          <CFormLabel for="summary" class="col-sm-2 col-form-label text-end"> 요약</CFormLabel>
 
           <CCol sm="10">
             <CFormTextarea id="summary" v-model="form.summary" placeholder="공지 요약" />
@@ -119,7 +119,7 @@ onBeforeMount(() => {
         </CRow>
 
         <CRow class="mb-2">
-          <CFormLabel for="content" class="col-sm-2 col-form-label text-right"> 내용</CFormLabel>
+          <CFormLabel for="content" class="col-sm-2 col-form-label text-end"> 내용</CFormLabel>
 
           <CCol sm="10">
             <MdEditor v-model="form.content" placeholder="공지 내용" />
@@ -127,7 +127,7 @@ onBeforeMount(() => {
         </CRow>
 
         <CRow>
-          <CFormLabel for="files" class="col-md-2 col-form-label text-right">파일</CFormLabel>
+          <CFormLabel for="files" class="col-md-2 col-form-label text-end">파일</CFormLabel>
           <CCol md="10" lg="9" xl="8">
             <FileModify
               v-if="news && form.files.length"
@@ -142,11 +142,11 @@ onBeforeMount(() => {
       </CCardBody>
     </CCard>
 
-    <CCol class="mt-4 mb-5 text-right">
+    <CCol class="mt-4 mb-5 text-end">
       <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!can(PERM.NEWS_MANAGE)">
         저장
       </v-btn>
-      <v-btn color="light" type="button" class="ml-2" @click="emit('close-form')" flat>취소</v-btn>
+      <v-btn color="light" type="button" class="ms-2" @click="emit('close-form')" flat>취소</v-btn>
     </CCol>
   </CForm>
 </template>

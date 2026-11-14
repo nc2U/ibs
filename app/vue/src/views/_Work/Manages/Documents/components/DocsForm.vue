@@ -231,7 +231,7 @@ onBeforeMount(() => dataSetup())
       <CCard :color="colorLight" class="mb-3">
         <CCardBody>
           <CRow class="mb-3">
-            <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
+            <CFormLabel class="col-form-label text-end col-2">유형</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model.number="form.doc_type" disabled required>
                 <option :value="1">일반 문서</option>
@@ -259,7 +259,7 @@ onBeforeMount(() => dataSetup())
           </CRow>
 
           <CRow v-if="!projectPk" class="mb-3">
-            <CFormLabel class="col-form-label text-right col-2 required">워크스페이스</CFormLabel>
+            <CFormLabel class="col-form-label text-end col-2 required">워크스페이스</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model="form.issue_project" required>
                 <option value="">---------</option>
@@ -273,7 +273,7 @@ onBeforeMount(() => dataSetup())
           <CRow>
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
-                <CFormLabel class="col-form-label text-right col-2 col-lg-4">범주</CFormLabel>
+                <CFormLabel class="col-form-label text-end col-2 col-lg-4">범주</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
                   <CFormSelect v-model.number="form.category">
                     <option value="">---------</option>
@@ -287,7 +287,7 @@ onBeforeMount(() => dataSetup())
 
             <CCol v-if="form.doc_type === 1" sm="12" lg="6" class="mb-3">
               <CRow>
-                <CFormLabel class="col-form-label text-right col-2 col-lg-4"> 발행일자</CFormLabel>
+                <CFormLabel class="col-form-label text-end col-2 col-lg-4"> 발행일자</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
                   <DatePicker v-model="form.execution_date" />
                 </CCol>
@@ -298,7 +298,7 @@ onBeforeMount(() => dataSetup())
           <CRow v-if="form.doc_type === 2">
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
-                <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
+                <CFormLabel class="col-form-label text-end col-2 col-lg-4">사건번호</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
                   <div class="d-flex align-center gap-1">
                     <div class="flex-grow-1">
@@ -329,7 +329,7 @@ onBeforeMount(() => dataSetup())
 
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
-                <CFormLabel class="col-form-label text-right col-2 col-lg-4">발행일자</CFormLabel>
+                <CFormLabel class="col-form-label text-end col-2 col-lg-4">발행일자</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
                   <DatePicker v-model="form.execution_date" />
                 </CCol>
@@ -338,14 +338,14 @@ onBeforeMount(() => dataSetup())
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel class="col-form-label text-right col-2 required">제목</CFormLabel>
+            <CFormLabel class="col-form-label text-end col-2 required">제목</CFormLabel>
             <CCol class="col-sm-10">
               <CFormInput v-model="form.title" placeholder="문서 제목" required />
             </CCol>
           </CRow>
 
           <CRow class="mb-3">
-            <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
+            <CFormLabel class="col-form-label text-end col-2">설명</CFormLabel>
             <CCol class="col-sm-10 mb-5">
               <MdEditor v-model="form.description" placeholder="문서 내용 설명" />
             </CCol>
@@ -371,7 +371,7 @@ onBeforeMount(() => dataSetup())
       </CCard>
     </CRow>
 
-    <CRow class="mb-5 text-right">
+    <CRow class="mb-5 text-end">
       <CCol>
         <v-btn
           type="submit"

@@ -15,6 +15,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,18 +23,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
+_OFFLINE_MGMT_COMMANDS = frozenset({'collectstatic', 'makemigrations', 'spectacular', 'test', 'check'})
+
+
+def _resolve_allowed_hosts(debug: bool, raw_hosts: list[str], domain_name: str = '') -> list[str]:
+    """ALLOWED_HOSTS 기본값 및 로컬 헬스체크/도메인 호스트를 안전하게 구성합니다."""
+    hosts = [h.strip() for h in raw_hosts if h and h.strip()]
+    if not hosts:
+        hosts = ['*'] if debug else ['localhost', '127.0.0.1']
+    # 로컬 헬스체크 및 K8s Pod 내부 Probe 통신을 위해 localhost/127.0.0.1 보장 (와일드카드가 아닐 경우)
+    if '*' not in hosts:
+        candidates = ['localhost', '127.0.0.1']
+        if domain_name:
+            candidates.append(domain_name)
+        for _host in candidates:
+            if _host not in hosts:
+                hosts.append(_host)
+    return hosts
+
+
+def _validate_production_secret_key(debug: bool, secret_key: str, argv: list[str]) -> None:
+    """운영 환경(DEBUG=False)에서 빌드 전용 커맨드 외 기동 시 기본/빈 SECRET_KEY 사용을 차단합니다."""
+    is_offline_cmd = len(argv) > 1 and argv[1] in _OFFLINE_MGMT_COMMANDS
+    if not debug and not is_offline_cmd and (not secret_key or secret_key == 'SECRET_KEY'):
+        raise ImproperlyConfigured(
+            'Production 환경(DEBUG=False)에서는 기본값("SECRET_KEY")이나 빈 SECRET_KEY를 사용할 수 없습니다.'
+        )
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
-# 로컬 헬스체크 및 K8s Pod 내부 Probe 통신을 위해 localhost/127.0.0.1 보장 (와일드카드가 아닐 경우)
-if '*' not in ALLOWED_HOSTS:
-    for _host in ('localhost', '127.0.0.1'):
-        if _host not in ALLOWED_HOSTS:
-            ALLOWED_HOSTS.append(_host)
+_DEFAULT_ALLOWED_HOSTS = '*' if DEBUG else 'localhost,127.0.0.1'
+_RAW_ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=_DEFAULT_ALLOWED_HOSTS, cast=Csv())
+_DOMAIN_NAME = config('DOMAIN_NAME', default='').strip()
+ALLOWED_HOSTS = _resolve_allowed_hosts(DEBUG, _RAW_ALLOWED_HOSTS, _DOMAIN_NAME)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='SECRET_KEY')
+_validate_production_secret_key(DEBUG, SECRET_KEY, sys.argv)
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',
                               default='http://localhost:8000,http://127.0.0.1:8000',
                               cast=lambda v: [s.strip() for s in v.split(",") if s.strip()], )
@@ -369,9 +397,9 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=28),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_MINUTES', default=60 * 24 * 7, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('JWT_REFRESH_TOKEN_DAYS', default=28, cast=int)),
+    'ROTATE_REFRESH_TOKENS': config('JWT_ROTATE_REFRESH_TOKENS', default=False, cast=bool),
     'UPDATE_LAST_LOGIN': True,
 
     'ALGORITHM': 'HS256',
@@ -414,17 +442,26 @@ MDEDITOR_CONFIGS = {
 # Redis Cache Configuration
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/1')
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'ibs',
-        'TIMEOUT': 3600,  # 1시간
+if 'test' in sys.argv:
+    # 테스트 실행 간 스로틀/캐시 상태 오염 방지 및 공유 Redis 격리
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'ibs-test-cache',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'ibs',
+            'TIMEOUT': 3600,  # 1시간
+        }
+    }
 
 # Import-Export Optimization Settings
 IMPORT_EXPORT_USE_TRANSACTIONS = True

@@ -154,7 +154,7 @@ onMounted(() => {
 
   <ConfirmModal ref="refConfirmModal">
     <template #icon>
-      <v-icon icon="mdi mdi-sync-alert" color="danger" class="mr-2" />
+      <v-icon icon="mdi-sync-alert" color="danger" class="me-2" />
     </template>
     <template #header> 전체 계약건 공급가 / 계약금 재설정</template>
     <template #default>

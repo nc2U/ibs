@@ -56,9 +56,9 @@ const copyRole = (role: Role) => {
         </CTableDataCell>
         <CTableHeaderCell scope="row">
           <a
-            href="javascript:void(0)"
+            href="#"
             class="text-decoration-none fw-bold"
-            @click="emit('show-modal', role)"
+            @click.prevent="emit('show-modal', role)"
           >
             {{ role.name }}
           </a>

@@ -341,7 +341,7 @@ defineExpose({ applyQuery, resetFilter })
             </template>
           </CCol>
 
-          <CCol md="4" class="text-right">
+          <CCol md="4" class="text-end">
             <CRow>
               <CFormLabel
                 for="searchOptions"

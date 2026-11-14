@@ -13,7 +13,8 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from rest_framework import viewsets, status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -300,8 +301,20 @@ class CheckPasswordView(APIView):
     """비밀번호가 맞는지 체크하는 API"""
     permission_classes = (IsAuthenticated,)
 
-    @staticmethod
-    def post(request, *args, **kwargs):
+    @extend_schema(
+        request=inline_serializer(
+            name='CheckPasswordRequest',
+            fields={
+                'password': serializers.CharField(),
+                'email': serializers.EmailField(required=False),
+            },
+        ),
+        responses=inline_serializer(
+            name='CheckPasswordResponse',
+            fields={'detail': serializers.CharField()},
+        ),
+    )
+    def post(self, request, *args, **kwargs):
         password = request.data.get('password', None)
 
         if not password:
@@ -321,9 +334,16 @@ class CheckPasswordView(APIView):
 class ChangePasswordView(APIView):
     """종전 비밀번호를 확인 한 후 비밀번호를 변경하는 API"""
     permission_classes = (IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
 
-    @staticmethod
-    def post(request, *args, **kwargs):
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses=inline_serializer(
+            name='ChangePasswordResponse',
+            fields={'detail': serializers.CharField()},
+        ),
+    )
+    def post(self, request, *args, **kwargs):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             # Check if the old password is correct
@@ -352,9 +372,16 @@ class ChangePasswordView(APIView):
 class PasswordResetRequestView(APIView):
     """비밀번호 분실 시 재설정 링크를 요청하는 API"""
     permission_classes = (AllowAny,)
+    serializer_class = PasswordResetSerializer
 
-    @staticmethod
-    def post(request, *args, **kwargs):
+    @extend_schema(
+        request=PasswordResetSerializer,
+        responses=inline_serializer(
+            name='PasswordResetRequestResponse',
+            fields={'detail': serializers.CharField()},
+        ),
+    )
+    def post(self, request, *args, **kwargs):
         serializer = PasswordResetSerializer(data=request.data)
         if serializer.is_valid():
             # Find the user with the given email
@@ -404,8 +431,13 @@ class PasswordResetConfirmView(APIView):
     """비밀번호 재설정 링크를 통해서 비밀번호를 재설정하는 API"""
     permission_classes = (AllowAny,)
 
-    @staticmethod
-    def get(request, *args, **kwargs):
+    @extend_schema(
+        responses=inline_serializer(
+            name='PasswordResetVerifyResponse',
+            fields={'valid': serializers.BooleanField()},
+        ),
+    )
+    def get(self, request, *args, **kwargs):
         """
         재설정 링크의 토큰 유효성만 검증한다. (토큰 값 자체는 응답에 포함하지 않음)
         응답: {'valid': bool}  — 사용자 없음/토큰 불일치/만료는 모두 valid=False 로 동일 처리.
@@ -423,8 +455,17 @@ class PasswordResetConfirmView(APIView):
             valid = bool(token_db and not token_db.is_expired())
         return Response({'valid': valid}, status=status.HTTP_200_OK)
 
-    @staticmethod
-    def post(request, *args, **kwargs):
+    @extend_schema(
+        request=inline_serializer(
+            name='PasswordResetConfirmRequest',
+            fields={'new_password': serializers.CharField()},
+        ),
+        responses=inline_serializer(
+            name='PasswordResetConfirmResponse',
+            fields={'detail': serializers.CharField()},
+        ),
+    )
+    def post(self, request, *args, **kwargs):
         try:
             user_id = force_str(urlsafe_base64_decode(kwargs.get('user_id')))
             user = User.objects.get(pk=user_id)
@@ -435,8 +476,15 @@ class PasswordResetConfirmView(APIView):
         if default_token_generator.check_token(user, token):
             token_db = PasswordResetToken.objects.filter(user=user, token=token).order_by('-created').first()
             if token_db and not token_db.is_expired():
-                # Token is valid, perform password reset
+                # Token is valid, validate and perform password reset
                 new_password = request.data.get('new_password')
+                if not isinstance(new_password, str) or not new_password:
+                    return Response({'detail': '새 비밀번호를 입력해 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    validate_password(new_password, user)
+                except ValidationError as e:
+                    return Response({'detail': list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
                 user.set_password(new_password)
                 user.save()
                 token_db.delete()  # 일회용 토큰 소모
@@ -449,11 +497,21 @@ class PasswordResetConfirmView(APIView):
 
 
 class AdminManageUserView(APIView):
-    """비밀번호 분실 시 재설정 링크를 요청하는 API"""
+    """관리자 사용자 생성·권한 수정 및 안내 메일 발송 API"""
     permission_classes = (IsAuthenticated, IsWorkManagerOnly)
+    serializer_class = AdminCreateUserSerializer
 
-    @staticmethod
-    def post(request, *args, **kwargs):
+    @extend_schema(
+        request=AdminCreateUserSerializer,
+        responses=inline_serializer(
+            name='AdminManageUserResponse',
+            fields={
+                'pk': serializers.IntegerField(required=False),
+                'detail': serializers.CharField(),
+            },
+        ),
+    )
+    def post(self, request, *args, **kwargs):
         serializer = AdminCreateUserSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -553,8 +611,17 @@ IBS 워크스페이스'''
         except Exception:
             return Response({'detail': f'사용자 생성 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @staticmethod
-    def put(request, *args, **kwargs):
+    @extend_schema(
+        request=AdminCreateUserSerializer,
+        responses=inline_serializer(
+            name='AdminManageUserUpdateResponse',
+            fields={
+                'pk': serializers.IntegerField(required=False),
+                'detail': serializers.CharField(),
+            },
+        ),
+    )
+    def put(self, request, *args, **kwargs):
         email = request.data.get('email')
 
         try:

@@ -90,14 +90,14 @@ onBeforeMount(async () => {
               icon="mdi-cog-transfer-outline"
               color="blue-grey-lighten-1"
               size="small"
-              class="mr-2"
+              class="me-2"
             />
             {{ $route.name }}
           </h5>
         </CCol>
 
-        <CCol class="text-right">
-          <span v-if="workManager" class="mr-2 form-text">
+        <CCol class="text-end">
+          <span v-if="workManager" class="me-2 form-text">
             <TextButton name="새 역할" @click="showRoleModal" />
           </span>
         </CCol>
@@ -107,12 +107,12 @@ onBeforeMount(async () => {
         <CCol>
           <CNav variant="tabs" class="mb-3">
             <CNavItem>
-              <CNavLink href="javascript:void(0)" :active="activeTab === 0" @click="activeTab = 0">
+              <CNavLink href="#" :active="activeTab === 0" @click.prevent="activeTab = 0">
                 역할
               </CNavLink>
             </CNavItem>
             <CNavItem>
-              <CNavLink href="javascript:void(0)" :active="activeTab === 1" @click="activeTab = 1">
+              <CNavLink href="#" :active="activeTab === 1" @click.prevent="activeTab = 1">
                 권한 보고서
               </CNavLink>
             </CNavItem>
@@ -145,8 +145,8 @@ onBeforeMount(async () => {
         @close="roleModal = false"
       />
 
-      <CCol class="text-right">
-        <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="mr-2" />
+      <CCol class="text-end">
+        <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="me-2" />
         <span class="text-secondary">
           역할 및 권한은 시스템 관리자가 생성 및 수정할 수 있습니다.
         </span>

@@ -143,12 +143,12 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-message-badge" color="green-darken-1" class="mr-2" />
+            <v-icon icon="mdi-message-badge" color="green-darken-1" class="me-2" />
             공지
           </h5>
         </CCol>
 
-        <CCol v-if="route.name === '(공지)'" class="text-right">
+        <CCol v-if="route.name === '(공지)'" class="text-end">
           <span v-if="canNewsManage">
             <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
@@ -158,7 +158,7 @@ onBeforeMount(async () => {
           </span>
         </CCol>
 
-        <CCol v-else class="text-right">
+        <CCol v-else class="text-end">
           <span v-if="can(PERM.NEWS_READ)">
             <TextButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>

@@ -7,9 +7,10 @@ import { useMeeting } from '@/store/pinia/work_meeting'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
 import { timeFormat } from '@/utils/baseMixins'
-import { isValidate } from '@/utils/helper'
-import type { Meeting } from '@/store/types/work_meeting'
+import { getErrorMessage, isValidate } from '@/utils/helper'
+import type { Meeting, MeetingLink } from '@/store/types/work_meeting'
 import type { IssueProject } from '@/store/types/work_project'
+import type { Issue, IssueFile, IssueLink } from '@/store/types/work_issue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -55,7 +56,7 @@ const form = ref({
   location: '',
   attendees: [] as number[],
   other_attendees: '',
-  links: [] as any[],
+  links: [] as MeetingLink[],
 })
 
 const parsedOtherAttendees = computed(() => {
@@ -286,13 +287,13 @@ const onSubmit = async (event: Event) => {
       }
 
       // Append form fields
-      for (const key in form.value) {
+      for (const key of Object.keys(form.value) as Array<keyof typeof form.value>) {
         if (key === 'links' || key === 'pk') continue
-        const val = (form.value as any)[key]
-        if (key === 'attendees') {
-          val.forEach((v: number) => formData.append('attendees', v.toString()))
+        const val = form.value[key]
+        if (key === 'attendees' && Array.isArray(val)) {
+          val.forEach(v => formData.append('attendees', v.toString()))
         } else if (val !== null && val !== undefined && val !== '') {
-          formData.append(key, val as string)
+          formData.append(key, String(val))
         }
       }
 
@@ -320,10 +321,10 @@ const onSubmit = async (event: Event) => {
       let targetSlug = projId.value
 
       if (meetingPk) {
-        const updated = await meetingStore.updateMeeting(meetingPk, formData as any)
+        const updated = await meetingStore.updateMeeting(meetingPk, formData)
         if (updated?.project_desc?.slug) targetSlug = updated.project_desc.slug
       } else {
-        const created = await meetingStore.createMeeting(formData as any)
+        const created = await meetingStore.createMeeting(formData)
         if (created && created.pk) {
           meetingPk = created.pk
           form.value.pk = created.pk
@@ -381,7 +382,7 @@ const onSubmit = async (event: Event) => {
       } else {
         router.back()
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error during meeting submit:', err)
       alertMessage.value = '회의록 저장 중 오류가 발생했습니다. 입력 내용을 확인해 주세요.'
       refAlertModal.value?.callModal()
@@ -391,8 +392,28 @@ const onSubmit = async (event: Event) => {
   }
 }
 
+interface NewIssueFile {
+  file: File | string | Blob
+  description?: string
+}
+
+interface NewIssueLink {
+  link: string
+  name?: string
+}
+
+interface RelatedIssuePayload {
+  pk?: number | null
+  watchers?: number[]
+  files?: IssueFile[]
+  links?: IssueLink[]
+  newFiles?: NewIssueFile[]
+  newLinks?: NewIssueLink[]
+  [key: string]: unknown
+}
+
 const refIssueModal = ref<InstanceType<typeof FormModal> | null>(null)
-const selectedIssue = ref<any>(null)
+const selectedIssue = ref<Issue | null>(null)
 const modalKey = ref(0)
 
 const callIssueModal = async (pk?: number) => {
@@ -405,7 +426,7 @@ const callIssueModal = async (pk?: number) => {
   refIssueModal.value?.callModal()
 }
 
-const createRelatedIssue = async (payload: any) => {
+const createRelatedIssue = async (payload: RelatedIssuePayload) => {
   if (!form.value.pk) return
   try {
     const { pk, ...getData } = payload
@@ -441,15 +462,15 @@ const createRelatedIssue = async (payload: any) => {
       ]
       if (fkFields.includes(key) && val === '') continue
 
-      if (key === 'watchers' || key === 'files' || key === 'links') {
-        val?.forEach((v: any) => formData.append(key, JSON.stringify(v)))
-      } else if (key === 'newFiles') {
-        val.forEach((v: any) => {
+      if ((key === 'watchers' || key === 'files' || key === 'links') && Array.isArray(val)) {
+        ;(val as unknown[]).forEach(v => formData.append(key, JSON.stringify(v)))
+      } else if (key === 'newFiles' && Array.isArray(val)) {
+        ;(val as NewIssueFile[]).forEach(v => {
           formData.append('new_files', v.file as string | Blob)
           formData.append('descriptions', v.description ?? '')
         })
-      } else if (key === 'newLinks') {
-        val.forEach((v: any) => {
+      } else if (key === 'newLinks' && Array.isArray(val)) {
+        ;(val as NewIssueLink[]).forEach(v => {
           if (v.link && v.link.trim()) {
             formData.append('newLinks', v.link.trim())
             formData.append('newLinkNames', v.name ?? '')
@@ -542,7 +563,7 @@ const onCategorySubmit = async (event: Event) => {
     categoryValidated.value = true
   } else {
     categoryValidated.value = false
-    const created = await meetingStore.createCategory(categoryForm.value as any)
+    const created = await meetingStore.createCategory(categoryForm.value)
     if (created?.pk) form.value.category = created.pk
     refCategoryModal.value?.close()
   }
@@ -746,7 +767,7 @@ const audioFileInput = ref<HTMLInputElement | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
-let recordingTimer: any = null
+let recordingTimer: ReturnType<typeof setInterval> | null = null
 
 const formattedRecordingTime = computed(() => {
   const mins = Math.floor(recordingSeconds.value / 60)
@@ -790,7 +811,7 @@ const startRecording = async () => {
     recordingTimer = setInterval(() => {
       recordingSeconds.value++
     }, 1000)
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Microphone access denied:', err)
     alertMessage.value = '마이크 접근 권한이 거부되었거나 사용 가능한 마이크 장치가 없습니다.'
     refAlertModal.value?.callModal()
@@ -855,12 +876,12 @@ const processAudioWithAi = async (audioBlob: Blob, filename: string) => {
       populateFormFromAiSummary(result)
       refAiRecordModal.value?.close()
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('AI summary failed:', err)
-    alertMessage.value =
-      err.response?.data?.detail ||
-      err.message ||
-      'AI 회의록 생성에 실패했습니다. API 키 및 파일 형식을 확인해 주세요.'
+    alertMessage.value = getErrorMessage(
+      err,
+      'AI 회의록 생성에 실패했습니다. API 키 및 파일 형식을 확인해 주세요.',
+    )
     refAlertModal.value?.callModal()
   } finally {
     isAiAnalyzing.value = false
@@ -868,7 +889,17 @@ const processAudioWithAi = async (audioBlob: Blob, filename: string) => {
   }
 }
 
-const populateFormFromAiSummary = (aiData: any) => {
+interface AiMeetingSummary {
+  title?: string
+  agenda?: string
+  content?: string
+  decisions?: string
+  action_items?: string
+  category_name?: string
+  [key: string]: unknown
+}
+
+const populateFormFromAiSummary = (aiData: AiMeetingSummary) => {
   if (aiData.title) form.value.title = aiData.title
   if (aiData.agenda) form.value.agenda = aiData.agenda
   if (aiData.content) form.value.content = aiData.content
@@ -880,9 +911,10 @@ const populateFormFromAiSummary = (aiData: any) => {
   }
 
   // 카테고리 매핑
-  if (aiData.category_name && categories.value?.length) {
+  const categoryName = aiData.category_name
+  if (categoryName && categories.value?.length) {
     const found = categories.value.find(
-      c => c.name === aiData.category_name || c.name.includes(aiData.category_name),
+      c => c.name === categoryName || c.name.includes(categoryName),
     )
     if (found) form.value.category = found.pk
   }
@@ -1555,7 +1587,7 @@ onBeforeMount(async () => {
     <template #default>
       <IssueForm
         :key="modalKey"
-        :issue="selectedIssue"
+        :issue="selectedIssue ?? undefined"
         :current-project="workStore.allReadableProjectsFlat.find(p => p.pk === form.project)"
         :my-projects="myProjects"
         :status-list="statusList"

@@ -49,25 +49,25 @@ const onDelete = (payload: { pk: number; project: number }) => {
   >
     <CTableDataCell>{{ contract.owner_desc?.own_sort_desc }}</CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" @click="showDetail">
+      <a href="#" @click.prevent="showDetail">
         {{ contract.owner_desc?.owner }}
       </a>
     </CTableDataCell>
     <CTableDataCell>
-      <a href="javascript:void(0);" @click="showDetail">
+      <a href="#" @click.prevent="showDetail">
         {{ contract.contract_date }}
       </a>
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.contract_area || 0, 2) }}
     </CTableDataCell>
-    <CTableDataCell class="text-right" color="warning">
+    <CTableDataCell class="text-end" color="warning">
       {{ numFormat((contract.contract_area || 0) * 0.3025, 2) }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.total_price || 0) }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.down_pay1 || 0) }}
     </CTableDataCell>
     <CTableDataCell :class="{ 'bg-success': contract.down_pay1_is_paid }">

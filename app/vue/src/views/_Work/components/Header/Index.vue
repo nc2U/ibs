@@ -191,10 +191,10 @@ const cngProject = async (slug: string | number | null | undefined) => {
           </CRow>
         </CCol>
 
-        <CCol class="text-body d-lg-none text-right p-3">
+        <CCol class="text-body d-lg-none text-end p-3">
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
-        <CCol class="d-none d-lg-block text-right">
+        <CCol class="d-none d-lg-block text-end">
           <HeaderSearch :all-active-projects="allActiveProjects" @change-project="cngProject" />
         </CCol>
       </CRow>

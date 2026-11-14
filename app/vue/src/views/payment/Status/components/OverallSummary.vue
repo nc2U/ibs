@@ -68,7 +68,7 @@ const total_total_unpaid = computed(() =>
           </strong>
           <small class="text-medium-emphasis"> ({{ date }}) 현재 </small>
         </CTableDataCell>
-        <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
+        <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-center" align="middle">
@@ -93,7 +93,7 @@ const total_total_unpaid = computed(() =>
         <CTableDataCell v-for="order in payOrderList" :key="order.pk as number">
           {{ order.pay_due_date }}
         </CTableDataCell>
-        <CTableDataCell class="text-right"></CTableDataCell>
+        <CTableDataCell class="text-end"></CTableDataCell>
       </CTableRow>
 
       <CTableRow>
@@ -102,84 +102,84 @@ const total_total_unpaid = computed(() =>
           계약({{ numFormat(contAggregate?.conts_num ?? 0) }})
         </CTableDataCell>
 
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_cont_amount) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_cont_amount) }}</CTableDataCell>
       </CTableRow>
 
       <CTableRow>
         <CTableDataCell class="text-center">
           미계약({{ numFormat(contAggregate?.non_conts_num ?? 0) }})
         </CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.non_contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_non_cont_amount) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_non_cont_amount) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">
           총계({{ numFormat(contAggregate?.total_units ?? 0) }})
         </CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat((order.contract_amount ?? 0) + (order.non_contract_amount ?? 0)) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_cont_amount + total_non_cont_amount) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">계약율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.contract_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(contAggregate?.contract_rate ?? 0, 2) }}%
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">수납</CTableDataCell>
         <CTableDataCell class="text-center">수납액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.collection?.collected_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_collected_amount) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">할인료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.collection?.discount_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_discount_amount) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.collection?.overdue_fee ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_overdue_fee) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">실수납액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.collection?.actual_collected ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_actual_collected) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">수납율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.collection?.collection_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{
             numFormat(
               total_cont_amount > 0 ? (total_actual_collected / total_cont_amount) * 100 : 0,
@@ -191,26 +191,26 @@ const total_total_unpaid = computed(() =>
       <CTableRow>
         <CTableDataCell rowspan="5" class="text-center">기간도래</CTableDataCell>
         <CTableDataCell class="text-center">약정금액</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.due_period?.contract_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{ numFormat(total_due_contract_amount) }}
         </CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.due_period?.unpaid_amount ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_due_unpaid_amount) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_due_unpaid_amount) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.due_period?.unpaid_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{
             numFormat(
               total_due_contract_amount > 0
@@ -223,40 +223,40 @@ const total_total_unpaid = computed(() =>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">연체료</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.due_period?.overdue_fee ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_due_overdue_fee) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_due_overdue_fee) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">소계</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.due_period?.subtotal ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_due_subtotal) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_due_subtotal) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">기간미도래</CTableDataCell>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.not_due_unpaid ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_not_due_unpaid) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_not_due_unpaid) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell rowspan="2" class="text-center">총계</CTableDataCell>
         <CTableDataCell class="text-center">미수금</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.total_unpaid ?? 0) }}
         </CTableDataCell>
-        <CTableDataCell class="text-right">{{ numFormat(total_total_unpaid) }}</CTableDataCell>
+        <CTableDataCell class="text-end">{{ numFormat(total_total_unpaid) }}</CTableDataCell>
       </CTableRow>
       <CTableRow>
         <CTableDataCell class="text-center">미수율</CTableDataCell>
-        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-right">
+        <CTableDataCell v-for="order in payOrderList" :key="order.pk as number" class="text-end">
           {{ numFormat(order.total_unpaid_rate ?? 0, 2) }}%
         </CTableDataCell>
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-end">
           {{
             numFormat(
               total_cont_amount > 0 ? (total_total_unpaid / total_cont_amount) * 100 : 0,

@@ -60,7 +60,7 @@ export const useMeeting = defineStore('meeting', () => {
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
-  const createMeeting = async (payload: any) =>
+  const createMeeting = async (payload: FormData) =>
     await api
       .post(`/meeting/`, payload, config_headers)
       .then(async res => {
@@ -108,7 +108,7 @@ export const useMeeting = defineStore('meeting', () => {
       .catch(err => errorHandle(err.response?.data || err.message))
   }
 
-  const createCategory = async (payload: MeetingCategory) =>
+  const createCategory = async (payload: Partial<MeetingCategory> | Record<string, unknown>) =>
     await api
       .post(`/meeting-category/`, payload)
       .then(async res => {

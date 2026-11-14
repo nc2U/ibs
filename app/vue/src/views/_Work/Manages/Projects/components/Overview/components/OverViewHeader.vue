@@ -49,12 +49,12 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
   <CRow class="py-2">
     <CCol>
       <h5>
-        <v-icon icon="mdi-folder-open" color="green-darken-1" size="small" class="mr-2" />개요
+        <v-icon icon="mdi-folder-open" color="green-darken-1" size="small" class="me-2" />개요
       </h5>
     </CCol>
 
-    <CCol class="text-right">
-      <span class="mr-2">
+    <CCol class="text-end">
+      <span class="me-2">
         <TextButton
           :name="isBookMarked ? '북마크 해제' : '북마크 추가'"
           :icon="isBookMarked ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple'"

@@ -37,15 +37,15 @@ watch(menu, newVal => {
 <template>
   <CRow class="py-2">
     <CCol class="mb-2">
-      <span class="h5 mr-2">
+      <span class="h5 me-2">
         <router-link :to="{ name: '사용자' }">사용자</router-link>
       </span>
-      <span class="mr-2">»</span>
+      <span class="me-2">»</span>
       <span class="h5">{{ user?.pk ? user.username : '새 사용자' }}</span>
     </CCol>
 
-    <CCol v-if="user?.pk" class="text-right form-text">
-      <span class="mr-2">
+    <CCol v-if="user?.pk" class="text-end form-text">
+      <span class="me-2">
         <TextButton
           name="사용자 정보"
           icon="mdi-account"

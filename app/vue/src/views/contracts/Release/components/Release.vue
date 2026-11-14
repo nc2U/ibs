@@ -56,7 +56,7 @@ const callFormModal = () => {
 
 <template>
   <CTableDataCell class="text-center">
-    <a href="javascript:void(0)" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
+    <a href="#" class="text-decoration-none fw-semibold" @click.prevent="callFormModal">
       {{ cutString(release.__str__ || '', 25) }}
     </a>
   </CTableDataCell>

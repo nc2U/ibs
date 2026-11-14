@@ -65,9 +65,9 @@ onMounted(() => {
   <CNav variant="tabs" class="mb-3">
     <CNavItem>
       <CNavLink
-        href="javascript:void(0);"
+        href="#"
         :active="activeTab === 'approved'"
-        @click="activeTab = 'approved'"
+        @click.prevent="activeTab = 'approved'"
       >
         <CIcon name="cilCheckCircle" class="me-1 text-success" />
         결재 완료 문서
@@ -78,9 +78,9 @@ onMounted(() => {
     </CNavItem>
     <CNavItem>
       <CNavLink
-        href="javascript:void(0);"
+        href="#"
         :active="activeTab === 'observed'"
-        @click="activeTab = 'observed'"
+        @click.prevent="activeTab = 'observed'"
       >
         <CIcon name="cilUserFollow" class="me-1 text-info" />
         참조 / 공람 문서

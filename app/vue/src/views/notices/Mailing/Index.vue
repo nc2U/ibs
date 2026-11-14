@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
+import { formatMailMergePreview } from './preview'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin.ts'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useProject } from '@/store/pinia/project.ts'
@@ -252,16 +253,10 @@ const showDetailModal = ref(false)
 const showRawHtml = ref(false)
 const selectedNotice = computed(() => noticeStore.currentEmailNotice)
 
-// 템플릿 변수를 시각적으로 돋보이게 스타일링한 HTML 반환
-const formattedPreviewContent = computed(() => {
-  const content = selectedNotice.value?.content || ''
-  if (!content) return ''
-  // {{ 변수 }} 머지 태그를 스타일이 적용된 뱃지 형태로 치환하여 미리보기 제공
-  return content.replace(
-    /(\{\{\s*[^}]+\s*\}\})/g,
-    '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-1 py-0 rounded font-monospace">$1</span>',
-  )
-})
+// 템플릿 변수를 시각적으로 돋보이게 스타일링하고 XSS Sanitize 처리한 HTML 반환
+const formattedPreviewContent = computed(() =>
+  formatMailMergePreview(selectedNotice.value?.content),
+)
 
 const openDetail = async (noticeItem: EmailNotice) => {
   showRawHtml.value = false

@@ -21,18 +21,18 @@ const showTab = (num: number) => {
       <CNav variant="pills" layout="justified">
         <CNavItem>
           <CNavLink
-            href="javascript:void(0);"
+            href="#"
             :active="tabPanePillsActiveKey === 1"
-            @click="showTab(1)"
+            @click.prevent="showTab(1)"
           >
             계좌별 자금현황
           </CNavLink>
         </CNavItem>
         <CNavItem>
           <CNavLink
-            href="javascript:void(0);"
+            href="#"
             :active="tabPanePillsActiveKey === 2"
-            @click="showTab(2)"
+            @click.prevent="showTab(2)"
           >
             당일 입출금내역
           </CNavLink>

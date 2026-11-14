@@ -1,5 +1,27 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { CustomQuery } from '@/store/types/work_inform'
+
+export type CalendarFilterValue = string | number | boolean | null | undefined
+
+export interface CalendarSavedFilters {
+  eventTypes?: ('issue' | 'meeting')[]
+  searchCond?: string[]
+  cond?: Record<string, string>
+  form?: Record<string, CalendarFilterValue>
+  assignee?: string | number | null
+  assigned_to?: string | number | null
+  author?: string | number | null
+  creator?: string | number | null
+  meeting_attendees?: string | number | null
+  meeting_creator?: string | number | null
+  [key: string]: unknown
+}
+
+export interface CalendarSavedQuery {
+  pk?: number | null
+  filters?: CalendarSavedFilters | Record<string, unknown> | null
+}
 
 export const useCalendarFilter = defineStore('calendarFilter', () => {
   // 1. 이벤트 종류 (업무, 회의) 선택
@@ -13,7 +35,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   const enabledFields = ref<string[]>(['issue_status'])
 
   // 3. 연산자 조건
-  const defaultCond: Record<string, any> = {
+  const defaultCond: Record<string, string> = {
     issue_status: 'open',
     project: 'is',
     tracker: 'is',
@@ -30,10 +52,10 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
     meeting_title: 'contains',
     meeting_date: 'between',
   }
-  const cond = ref<Record<string, any>>({ ...defaultCond })
+  const cond = ref<Record<string, string>>({ ...defaultCond })
 
   // 4. 폼 값 상태
-  const defaultForm: Record<string, any> = {
+  const defaultForm: Record<string, CalendarFilterValue> = {
     project: '',
     issue_status: null,
     issue_status__exclude: null,
@@ -72,10 +94,14 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
     meeting_date__between_min: '',
     meeting_date__between_max: '',
   }
-  const form = ref<Record<string, any>>({ ...defaultForm })
+  const form = ref<Record<string, CalendarFilterValue>>({ ...defaultForm })
 
   // 5. 날짜 헬퍼
-  const _applyDateFilter = (payload: Record<string, any>, key: string, op: string) => {
+  const _applyDateFilter = (
+    payload: Record<string, CalendarFilterValue>,
+    key: string,
+    op: string,
+  ) => {
     if (op === 'is' && form.value[key]) {
       payload[key] = form.value[key]
     } else if (op === 'gte' && form.value[`${key}__gte`]) {
@@ -91,8 +117,8 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   }
 
   // 6. 페이로드 빌드 로직
-  const buildFilterPayload = (currentProjSlug = ''): Record<string, any> => {
-    const payload: Record<string, any> = {
+  const buildFilterPayload = (currentProjSlug = ''): Record<string, CalendarFilterValue> => {
+    const payload: Record<string, CalendarFilterValue> = {
       event_type: eventTypes.value.length === 2 ? 'all' : (eventTypes.value[0] ?? 'all'),
     }
 
@@ -213,7 +239,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
 
   // 8. 저장된 쿼리 복원
   const applySavedQuery = (
-    query: any,
+    query: CalendarSavedQuery | CustomQuery | null | undefined,
     currentUserId?: number,
     defaultUserId?: number,
     currentProjSlug = '',
@@ -225,7 +251,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
 
     activeQueryId.value = query.pk ?? null
 
-    const f = query.filters
+    const f = query.filters as CalendarSavedFilters
     searchCond.value = ['issue_status']
     enabledFields.value = ['issue_status']
     cond.value = { ...defaultCond }

@@ -23,11 +23,11 @@ const { canViewUser } = usePerms()
             <router-link
               v-if="canViewUser(comment.creator?.pk)"
               :to="{ name: '사용자 - 보기', params: { userId: comment.creator?.pk } }"
-              class="text-decoration-none text-subtitle-2 font-weight-bold"
+              class="text-decoration-none text-subtitle-2 fw-bold"
             >
               {{ comment.creator?.username }}
             </router-link>
-            <span v-else class="text-subtitle-2 font-weight-bold">
+            <span v-else class="text-subtitle-2 fw-bold">
               {{ comment.creator?.username }}
             </span>
             <span class="text-caption text-grey">{{ elapsedTime(comment.created) }}</span>
@@ -36,8 +36,8 @@ const { canViewUser } = usePerms()
             {{ comment.content }}
           </span>
         </v-card>
-        <div class="d-flex mt-1 ml-1">
-          <v-btn variant="text" size="x-small" density="comfortable" color="primary" class="mr-2">
+        <div class="d-flex mt-1 ms-1">
+          <v-btn variant="text" size="x-small" density="comfortable" color="primary" class="me-2">
             답글
           </v-btn>
           <v-btn variant="text" size="x-small" density="comfortable" color="grey">공감</v-btn>

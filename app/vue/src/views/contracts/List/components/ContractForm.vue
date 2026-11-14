@@ -991,7 +991,7 @@ onBeforeRouteLeave(() => formDataReset())
               <CFormFeedback invalid>납부회차를 선택하세요.</CFormFeedback>
             </CCol>
             <CCol v-if="form.payment" xs="3" md="2" lg="1" class="pt-1 mb-3">
-              <a href="javascript:void(0)" @click="payReset">Reset</a>
+              <a href="#" @click.prevent="payReset">Reset</a>
             </CCol>
           </CRow>
         </CAlert>

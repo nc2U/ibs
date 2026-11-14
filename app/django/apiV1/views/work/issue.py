@@ -1,5 +1,6 @@
 from django.db.models import Q, F, Count
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -598,9 +599,15 @@ class IssueViewSet(viewsets.ModelViewSet):
 
 class IssueCountByMemberView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = IssueCountByMemberSerializer
 
-    @staticmethod
-    def get(request, *args, **kwargs):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('user', OpenApiTypes.INT, description='조회할 사용자 ID (생략 시 요청자 본인)'),
+        ],
+        responses=IssueCountByMemberSerializer,
+    )
+    def get(self, request, *args, **kwargs):
         user_param = request.query_params.get('user', None)
         if user_param is not None and str(user_param).strip() != '':
             if not str(user_param).isdigit():

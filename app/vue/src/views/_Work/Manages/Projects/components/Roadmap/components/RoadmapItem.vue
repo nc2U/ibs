@@ -60,7 +60,7 @@ const done_ratio = computed(() => {
           {{ version.status_desc }}
         </span>
       </CCol>
-      <CCol v-if="canManageVersions" class="text-right">
+      <CCol v-if="canManageVersions" class="text-end">
         <!-- 관리자 권한 있을 때 렌더링 -->
         <v-icon
           icon="mdi-pencil"
@@ -143,10 +143,10 @@ const done_ratio = computed(() => {
       <CRow v-if="version.recent_issues?.length">
         <CCol class="mb-3">
           <VersionIssuesTable :issues="version.recent_issues" />
-          <div v-if="version.total_num > 5" class="text-right mt-1">
+          <div v-if="version.total_num > 5" class="text-end mt-1">
             <router-link
               :to="{ name: '(로드맵) - 보기', params: { projId, verId: version.pk } }"
-              class="small text-decoration-none font-weight-bold"
+              class="small text-decoration-none fw-bold"
             >
               전체보기 (총 {{ version.total_num }}개) »
             </router-link>
