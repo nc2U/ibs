@@ -17,12 +17,12 @@ const { canViewUser } = usePerms()
 
 <template>
   <CRow>
-    <CCol class="pl-0">
+    <CCol class="ps-0">
       <CRow
-        :id="`note-${log.pk}`"
+        :id="`note-${log.log_id}`"
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
-        <CCol v-if="log.creator" class="ml-2">
+        <CCol v-if="log.creator" class="ms-2">
           <router-link
             v-if="canViewUser(log.creator.pk)"
             :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }"
@@ -34,7 +34,11 @@ const { canViewUser } = usePerms()
           <span>
             <router-link
               :to="{
-                name: '(업무실행내역)',
+                name: route.params.projId || log.issue?.project?.slug ? '(업무실행내역)' : '업무실행내역',
+                params:
+                  route.params.projId || log.issue?.project?.slug
+                    ? { projId: (route.params.projId as string) || log.issue?.project?.slug }
+                    : {},
                 query: { from: log.timestamp.substring(0, 10) },
               }"
             >
@@ -44,17 +48,17 @@ const { canViewUser } = usePerms()
           </span>
           에 변경
         </CCol>
-        <CCol class="text-right">
+        <CCol class="text-end">
           <router-link :to="{ hash: '#note-' + log.log_id }">#{{ log.log_id }}</router-link>
         </CCol>
       </CRow>
       <v-divider class="mt-1 mb-2" />
       <div class="history">
-        <ul class="ml-0 pl-0">
+        <ul class="ms-0 ps-0">
           <li v-for="(src, i) in getHistory(log.details)" :key="i" class="list-item">
             <div v-html="markdownRender(src)" />
-            <span v-if="log.diff && src.includes('**설명**')" class="ml-5">
-              <a href="javascript:void(0);">
+            <span v-if="log.diff && src.includes('**설명**')" class="ms-5">
+              <a href="#" @click.prevent>
                 (변경 내용)
                 <v-tooltip activator="parent" location="start">
                   <span v-html="markdownRender(log.diff)" />

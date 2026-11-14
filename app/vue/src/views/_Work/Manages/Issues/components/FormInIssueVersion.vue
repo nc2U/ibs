@@ -16,24 +16,39 @@ const nVersion = ref({
   is_default: false,
 })
 
+const resetForm = () => {
+  nVersion.value = {
+    name: '',
+    description: '',
+    status: '1',
+    effective_date: null,
+    sharing: '0',
+    is_default: false,
+  }
+  validated.value = false
+}
+
 const createVersion = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
     emit('create-version', { ...nVersion.value })
-    validated.value = false
+    resetForm()
     emit('close')
   }
 }
 
-const closeModal = () => emit('close')
+const closeModal = () => {
+  resetForm()
+  emit('close')
+}
 </script>
 
 <template>
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="createVersion">
     <CModalBody class="text-body">
       <CRow class="mb-3">
-        <CFormLabel for="version-name" class="col-sm-3 col-form-label text-right required">
+        <CFormLabel for="version-name" class="col-sm-3 col-form-label text-end required">
           이름
         </CFormLabel>
 
@@ -43,7 +58,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="version-description" class="col-sm-3 col-form-label text-right"> 설명</CFormLabel>
+        <CFormLabel for="version-description" class="col-sm-3 col-form-label text-end"> 설명</CFormLabel>
 
         <CCol class="col-7">
           <CFormInput id="version-description" v-model="nVersion.description" placeholder="새 단계에 대한 설명" />
@@ -51,7 +66,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="version-status" class="col-sm-3 col-form-label text-right"> 상태</CFormLabel>
+        <CFormLabel for="version-status" class="col-sm-3 col-form-label text-end"> 상태</CFormLabel>
 
         <CCol class="col-7">
           <CFormSelect id="version-status" v-model="nVersion.status">
@@ -63,7 +78,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="version-date" class="col-sm-3 col-form-label text-right"> 날짜</CFormLabel>
+        <CFormLabel for="version-date" class="col-sm-3 col-form-label text-end"> 날짜</CFormLabel>
 
         <CCol class="col-7">
           <DatePicker id="version-date" v-model="nVersion.effective_date" placeholder="단계 완료 기한" />
@@ -71,7 +86,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="version-sharing" class="col-sm-3 col-form-label text-right"> 공유</CFormLabel>
+        <CFormLabel for="version-sharing" class="col-sm-3 col-form-label text-end"> 공유</CFormLabel>
 
         <CCol class="col-7">
           <CFormSelect id="version-sharing" v-model="nVersion.sharing">
@@ -85,7 +100,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="version-default" class="col-sm-3 col-form-label text-right"> 기본 단계</CFormLabel>
+        <CFormLabel for="version-default" class="col-sm-3 col-form-label text-end"> 기본 단계</CFormLabel>
 
         <CCol class="col-7 pt-2">
           <CFormCheck id="version-default" v-model="nVersion.is_default" />

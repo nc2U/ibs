@@ -64,13 +64,13 @@ const delWatcher = (pk: number) => {
 </script>
 
 <template>
-  <template v-if="workManager && route.name === '(업무) - 보기'">
-    <CRow class="mb-1 mr-3 pr-2">
+  <template v-if="(workManager || canAddWatcher || watchers.length > 0) && route.name === '(업무) - 보기'">
+    <CRow class="mb-1 me-3 pe-2">
       <CCol>
         <h6 class="asideTitle">업무 관람자 ({{ watchers.length }})</h6>
       </CCol>
-      <CCol v-if="canAddWatcher" class="text-right">
-        <a href="javascript:void(0)" @click="refWatcherAdd?.callModal()">추가</a>
+      <CCol v-if="canAddWatcher" class="text-end">
+        <a href="#" @click.prevent="refWatcherAdd?.callModal()">추가</a>
       </CCol>
     </CRow>
     <CRow v-for="watcher in watchers" :key="watcher.pk">
@@ -83,7 +83,7 @@ const delWatcher = (pk: number) => {
         </router-link>
         <span v-else>{{ watcher.username }}</span>
         <span v-if="canDeleteWatcher(watcher.pk)" @click="delWatcher(watcher.pk)">
-          <v-icon icon="mdi-trash-can-outline" size="sm" color="grey" class="ml-2 pointer" />
+          <v-icon icon="mdi-trash-can-outline" size="sm" color="grey" class="ms-2 pointer" />
           <v-tooltip activator="parent" location="right">삭제</v-tooltip>
         </span>
       </CCol>

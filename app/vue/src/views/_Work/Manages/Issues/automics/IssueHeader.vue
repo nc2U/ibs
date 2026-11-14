@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
@@ -9,7 +9,7 @@ import { CRow } from '@coreui/vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
-  viewMode: { type: String as () => 'list' | 'kanban', default: 'list' },
+  viewMode: { type: String as PropType<'list' | 'kanban'>, default: 'list' },
 })
 
 const emit = defineEmits(['update:viewMode'])
@@ -40,14 +40,14 @@ const router = useRouter()
           icon="mdi-clipboard-check"
           :color="route.name === '업무' ? 'primary' : 'green-darken-1'"
           size="small"
-          class="mr-2"
+          class="me-2"
         />
         업무
       </h5>
     </CCol>
     <CCol
       v-if="['업무', '(업무)'].includes(route.name as string)"
-      class="text-right d-flex align-items-center justify-content-end"
+      class="text-end d-flex align-items-center justify-content-end"
     >
       <!-- View mode toggle: List vs Kanban -->
       <v-btn-toggle
@@ -56,19 +56,19 @@ const router = useRouter()
         density="compact"
         variant="outlined"
         color="primary"
-        class="mr-2"
+        class="me-2"
         style="height: 28px"
         @update:model-value="val => emit('update:viewMode', val)"
       >
         <v-btn value="list" size="x-small" title="목록 뷰" class="text-muted">
-          <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
+          <v-icon icon="mdi-format-list-bulleted" size="14" class="me-1" /> 목록
         </v-btn>
         <v-btn value="kanban" size="x-small" title="칸반 보드 뷰" class="text-muted">
-          <v-icon icon="mdi-view-column-outline" size="14" class="mr-1" /> 칸반
+          <v-icon icon="mdi-view-column-outline" size="14" class="me-1" /> 칸반
         </v-btn>
       </v-btn-toggle>
 
-      <span v-if="canIssueCreate" class="mr-2 form-text">
+      <span v-if="canIssueCreate" class="me-2 form-text">
         <TextButton
           v-if="route.name === '업무'"
           name="새 업무"
@@ -96,14 +96,14 @@ const router = useRouter()
               class="form-text pointer"
               @click="router.push({ name: '(업무) - 보고서' })"
             >
-              <v-icon icon="mdi-chart-bar" color="amber" size="sm" class="mr-1" />요약
+              <v-icon icon="mdi-chart-bar" color="amber" size="sm" class="me-1" />요약
             </CDropdownItem>
             <CDropdownItem v-if="projStatus !== '9'" class="form-text" disabled>
               <v-icon
                 icon="mdi-file-document-arrow-right"
                 color="blue-lighten"
                 size="sm"
-                class="mr-1"
+                class="me-1"
               />가져오기
             </CDropdownItem>
             <CDropdownItem
@@ -111,7 +111,7 @@ const router = useRouter()
               class="form-text pointer"
               @click="router.push({ name: '(설정)', query: { menu: '업무추적' } })"
             >
-              <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />설정
+              <v-icon icon="mdi-cog" color="secondary" size="sm" class="me-1" />설정
             </CDropdownItem>
           </CDropdownMenu>
         </CDropdown>

@@ -71,7 +71,7 @@ const fallbackCopy = (text: string) => {
   try {
     document.execCommand('copy')
     message('success', '복사 완료', '댓글 링크가 클립보드에 복사되었습니다.')
-  } catch (err) {
+  } catch {
     message('danger', '오류!', '댓글 링크 복사에 실패했습니다.')
   }
   document.body.removeChild(textArea)
@@ -107,7 +107,7 @@ const delSubmit = () => {
   <CRow>
     <CCol>
       <CRow
-        :id="`note-${log.pk}`"
+        :id="`note-${log.log_id}`"
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
         <CCol v-if="log.creator" class="pt-1">
@@ -122,8 +122,11 @@ const delSubmit = () => {
           <span>
             <router-link
               :to="{
-                name: '(업무실행내역)',
-                params: { projId: route.params.projId },
+                name: route.params.projId || log.issue?.project?.slug ? '(업무실행내역)' : '업무실행내역',
+                params:
+                  route.params.projId || log.issue?.project?.slug
+                    ? { projId: (route.params.projId as string) || log.issue?.project?.slug }
+                    : {},
                 query: { from: log.timestamp.substring(0, 10) },
               }"
             >
@@ -132,26 +135,22 @@ const delSubmit = () => {
             <v-tooltip activator="parent" location="top">{{ timeFormat(log.timestamp) }}</v-tooltip>
           </span>
           에 변경
-          <v-icon
-            v-if="log.comment?.is_private"
-            icon="mdi-lock"
-            color="warning"
-            size="14"
-            class="ml-1 align-middle"
-          />
-          <v-tooltip activator="parent" location="top"> 비공개 댓글 </v-tooltip>
+          <span v-if="log.comment?.is_private" class="ms-1 align-middle">
+            <v-icon icon="mdi-lock" color="warning" size="14" />
+            <v-tooltip activator="parent" location="top"> 비공개 댓글 </v-tooltip>
+          </span>
         </CCol>
-        <CCol class="text-right">
+        <CCol class="text-end">
           <span v-if="can(PERM.ISSUE_COMMENT_CREATE)">
             <v-icon
               icon="mdi-comment-processing-outline"
               color="info"
               size="16"
-              class="mr-2 pointer"
+              class="me-2 pointer"
               @click="
                 callReply(
                   log.log_id,
-                  log.comment?.creator.username ?? '',
+                  log.comment?.creator?.username ?? '',
                   log.comment?.content ?? '',
                 )
               "
@@ -161,14 +160,14 @@ const delSubmit = () => {
           <span
             v-if="
               can(PERM.ISSUE_COMMENT_UPDATE) ||
-              (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator.pk)
+              (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator?.pk)
             "
           >
             <v-icon
               icon="mdi-pencil"
               color="amber"
               size="16"
-              class="mr-1 pointer"
+              class="me-1 pointer"
               @click="toEdit(log.comment?.content ?? '')"
             />
             <v-tooltip activator="parent" location="top">편집</v-tooltip>
@@ -190,18 +189,18 @@ const delSubmit = () => {
                   class="form-text pointer"
                   @click="copyLink(route.path, `#note-${log.log_id}`)"
                 >
-                  <v-icon icon="mdi-link-variant" color="amber" size="sm" class="mr-1" />
+                  <v-icon icon="mdi-link-variant" color="amber" size="sm" class="me-1" />
                   링크 복사
                 </CDropdownItem>
                 <CDropdownItem
                   v-if="
                     can(PERM.ISSUE_COMMENT_UPDATE) ||
-                    (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator.pk)
+                    (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator?.pk)
                   "
                   class="form-text pointer"
                   @click="delConfirm(log.comment?.pk as number)"
                 >
-                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
+                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
                   삭제
                 </CDropdownItem>
               </CDropdownMenu>
@@ -212,8 +211,8 @@ const delSubmit = () => {
         </CCol>
       </CRow>
       <v-divider class="mt-0 mb-2" />
-      <div class="history pl-0 text-body">
-        <div v-if="!editMode" v-html="markdownRender(log.comment?.content + '\n' || '\n')" />
+      <div class="history ps-0 text-body">
+        <div v-if="!editMode" v-html="markdownRender((log.comment?.content ?? '') + '\n')" />
         <span v-else>
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
           <CFormCheck

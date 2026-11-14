@@ -366,6 +366,7 @@ defineExpose({ applyQuery, resetFilter })
                       show-closed-option
                       value-type="slug"
                       size="sm"
+                      @change="filterSubmit"
                     />
                   </template>
 

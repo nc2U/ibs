@@ -18,10 +18,10 @@ const routeParams = projId ? { projId } : {}
 </script>
 
 <template>
-  <span class="title mr-2">
+  <span class="title me-2">
     <router-link
       v-if="can(PERM.ISSUE_READ)"
-      :to="{ name: routeName, params: routeParams, query: { parent: issuePk } }"
+      :to="{ name: routeName, params: routeParams, query: { parent_issue: issuePk } }"
     >
       {{ subIssues.length }}
     </router-link>
@@ -31,7 +31,7 @@ const routeParams = projId ? { projId } : {}
     (<span v-if="subIssues.filter(i => !i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: routeName, params: routeParams, query: { parent: issuePk, status: 'open' } }"
+        :to="{ name: routeName, params: routeParams, query: { parent_issue: issuePk, status: 'open' } }"
       >
         {{ subIssues.filter(i => !i.closed).length }} 건 진행 중
       </router-link>
@@ -42,7 +42,11 @@ const routeParams = projId ? { projId } : {}
     <span v-if="subIssues.filter(i => i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: routeName, params: routeParams, query: { parent: issuePk, status: 'closed' } }"
+        :to="{
+          name: routeName,
+          params: routeParams,
+          query: { parent_issue: issuePk, status: 'closed' },
+        }"
       >
         {{ subIssues.filter(i => i.closed).length }} 건 완료
       </router-link>

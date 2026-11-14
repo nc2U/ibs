@@ -82,7 +82,7 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
         else if (cond.value.project === 'exclude') payload.project_status__exclude = '2'
       } else if (form.value.project) {
         if (cond.value.project === 'is') payload.project = form.value.project
-        else if (cond.value.project === 'exclude') payload.project = form.value.project
+        else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
       }
     }
 

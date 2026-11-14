@@ -3,6 +3,7 @@ import { computed, type PropType } from 'vue'
 import { DEFAULT_ISSUE_COLUMNS } from '@/views/_Work/Manages/Issues/constants'
 import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms'
+import { useIssue } from '@/store/pinia/work_issue'
 import type { Issue } from '@/store/types/work_issue'
 import IssueDropDown from './IssueDropDown.vue'
 
@@ -10,6 +11,8 @@ const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   columns: { type: Array as PropType<string[]>, default: () => DEFAULT_ISSUE_COLUMNS },
 })
+
+const issueStore = useIssue()
 
 const { can, canViewUser, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
@@ -51,8 +54,8 @@ const statusColor = computed(() => {
 
   <template v-for="colKey in columns" :key="'body-' + issue.pk + '-' + colKey">
     <!-- 제목 -->
-    <CTableDataCell v-if="colKey === 'subject'" class="text-left">
-      <v-icon v-if="issue.is_private" icon="mdi-lock" size="x-small" color="warning" class="mr-2" />
+    <CTableDataCell v-if="colKey === 'subject'" class="text-start">
+      <v-icon v-if="issue.is_private" icon="mdi-lock" size="x-small" color="warning" class="me-2" />
       <router-link
         v-if="canIssueRead"
         :to="{
@@ -79,14 +82,14 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 상위업무 -->
-    <CTableDataCell v-else-if="colKey === 'parent'" class="text-left truncate">
+    <CTableDataCell v-else-if="colKey === 'parent'" class="text-start truncate">
       <span v-if="issue?.parent?.pk">
         <v-icon
           v-if="issue?.parent?.is_private"
           icon="mdi-lock"
           size="x-small"
           color="warning"
-          class="mr-2"
+          class="me-2"
         />
         <router-link
           v-if="canIssueRead"
@@ -121,7 +124,9 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 범주 -->
-    <CTableDataCell v-else-if="colKey === 'category'"> {{ issue.category }} </CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'category'">
+      {{ issueStore.categoryList.find(c => c.pk === issue.category)?.name ?? issue.category }}
+    </CTableDataCell>
 
     <!-- 목표버전 -->
     <CTableDataCell v-else-if="colKey === 'fixed_version'">
@@ -193,8 +198,11 @@ const statusColor = computed(() => {
     <CTableDataCell v-else-if="colKey === 'meeting'">
       <template v-if="issue.meeting_desc">
         <router-link
-          v-if="canMeetingRead"
-          :to="{ name: '(회의) - 보기', params: { meetingId: issue.meeting_desc.pk } }"
+          v-if="canMeetingRead && issue.project?.slug"
+          :to="{
+            name: '(회의) - 보기',
+            params: { projId: issue.project.slug, meetingId: issue.meeting_desc.pk },
+          }"
         >
           {{ issue.meeting_desc.title }}
         </router-link>
@@ -203,7 +211,7 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 하위업무 -->
-    <CTableDataCell v-else-if="colKey === 'sub_issues'" class="text-left">
+    <CTableDataCell v-else-if="colKey === 'sub_issues'" class="text-start">
       <template v-if="issue.sub_issues?.length">
         <template v-for="(sub, i) in issue.sub_issues" :key="sub.pk">
           <router-link
@@ -222,7 +230,7 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 연결된 업무 -->
-    <CTableDataCell v-else-if="colKey === 'rel_issues'" class="text-left">
+    <CTableDataCell v-else-if="colKey === 'rel_issues'" class="text-start">
       <div v-if="issue.incoming_relation?.issue" class="d-flex align-center ga-1 text-truncate">
         <v-chip size="x-small" color="info" variant="flat">선행</v-chip>
         <router-link

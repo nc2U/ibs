@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
@@ -38,6 +38,8 @@ const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 const alertMessage = ref('')
 
 const validated = ref(false)
+const categoryValidated = ref(false)
+const templateValidated = ref(false)
 const form = ref({
   pk: null as number | null,
   project: null as number | null,
@@ -153,16 +155,17 @@ const parseActionItemsFromText = () => {
     }
 
     // Clean subject
-    let cleanSubject = text
+    const cleanSubject = text
       .replace(/\((?:담당(?:자)?|기한|마감|완료|일자)[^)]*\)/gi, '')
       .replace(/@([a-zA-Z0-9가-힣]+)/g, '')
       .trim()
       .replace(/^[-,:\s]+|[-,:\s]+$/g, '')
 
     if (cleanSubject) {
-      const alreadyExists = pendingActionItems.value.some(
-        item => item.subject.toLowerCase() === cleanSubject.toLowerCase(),
-      )
+      const normalized = cleanSubject.toLowerCase()
+      const alreadyExists =
+        pendingActionItems.value.some(item => item.subject.toLowerCase() === normalized) ||
+        (meeting.value?.issues?.some(issue => issue.subject.toLowerCase() === normalized) ?? false)
       if (!alreadyExists) {
         newItems.push({
           id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
@@ -182,7 +185,6 @@ const parseActionItemsFromText = () => {
 
 const { can, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ))
-const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
 const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
 
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
@@ -285,6 +287,7 @@ const onSubmit = async (event: Event) => {
 
       // Append form fields
       for (const key in form.value) {
+        if (key === 'links' || key === 'pk') continue
         const val = (form.value as any)[key]
         if (key === 'attendees') {
           val.forEach((v: number) => formData.append('attendees', v.toString()))
@@ -323,6 +326,7 @@ const onSubmit = async (event: Event) => {
         const created = await meetingStore.createMeeting(formData as any)
         if (created && created.pk) {
           meetingPk = created.pk
+          form.value.pk = created.pk
           if (created.project_desc?.slug) targetSlug = created.project_desc.slug
         }
       }
@@ -402,17 +406,29 @@ const callIssueModal = async (pk?: number) => {
 }
 
 const createRelatedIssue = async (payload: any) => {
-  if (form.value.pk) {
+  if (!form.value.pk) return
+  try {
     const { pk, ...getData } = payload
     const formData = new FormData()
+    const nullableClearable = [
+      'category',
+      'fixed_version',
+      'parent',
+      'assigned_to',
+      'due_date',
+      'expected_duration',
+    ]
 
     formData.append('meeting', form.value.pk.toString())
 
     for (const key in getData) {
       const val = getData[key]
-      if (val === null || val === undefined) continue // Skip null/undefined values
+      if (pk && nullableClearable.includes(key) && (val === null || val === '')) {
+        formData.append(key, '')
+        continue
+      }
+      if (val === null || val === undefined) continue
 
-      // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
       const fkFields = [
         'project',
         'tracker',
@@ -425,9 +441,9 @@ const createRelatedIssue = async (payload: any) => {
       ]
       if (fkFields.includes(key) && val === '') continue
 
-      if (key === 'watchers' || key === 'files' || key === 'links')
+      if (key === 'watchers' || key === 'files' || key === 'links') {
         val?.forEach((v: any) => formData.append(key, JSON.stringify(v)))
-      else if (key === 'newFiles') {
+      } else if (key === 'newFiles') {
         val.forEach((v: any) => {
           formData.append('new_files', v.file as string | Blob)
           formData.append('descriptions', v.description ?? '')
@@ -439,19 +455,23 @@ const createRelatedIssue = async (payload: any) => {
             formData.append('newLinkNames', v.name ?? '')
           }
         })
+      } else if (key === 'project' && !val) {
+        const projectSlug = (workStore.currentProject as IssueProject)?.slug || ''
+        if (projectSlug) formData.append(key, projectSlug)
       } else {
-        if (key === 'project' && !val) {
-          const projectSlug = (workStore.currentProject as IssueProject)?.slug || ''
-          if (projectSlug) formData.append(key, projectSlug)
-        } else formData.append(key, val as string)
+        formData.append(key, val as string)
       }
     }
 
     if (pk) await issueStore.updateIssue(pk, formData)
     else await issueStore.createIssue(formData)
 
-    await meetingStore.fetchMeeting(form.value.pk) // Refresh meeting to get updated issues list
+    await meetingStore.fetchMeeting(form.value.pk)
     refIssueModal.value?.close()
+  } catch (err) {
+    console.error('Failed to save related issue:', err)
+    alertMessage.value = '후속 조치 업무 저장 중 오류가 발생했습니다.'
+    refAlertModal.value?.callModal()
   }
 }
 
@@ -509,6 +529,7 @@ const categoryForm = ref({
 })
 
 const callCategoryModal = () => {
+  categoryValidated.value = false
   categoryForm.value.project = form.value.project as number
   categoryForm.value.name = ''
   categoryForm.value.color = '#fffdbd'
@@ -516,17 +537,22 @@ const callCategoryModal = () => {
   refCategoryModal.value?.callModal()
 }
 
-const onCategorySubmit = (event: Event) => {
+const onCategorySubmit = async (event: Event) => {
   if (isValidate(event)) {
-    validated.value = true
+    categoryValidated.value = true
   } else {
-    meetingStore.createCategory(categoryForm.value as any)
+    categoryValidated.value = false
+    const created = await meetingStore.createCategory(categoryForm.value as any)
+    if (created?.pk) form.value.category = created.pk
     refCategoryModal.value?.close()
   }
 }
 
 const onConfirmToggle = async () => {
-  if (form.value.pk) await meetingStore.confirmMeeting(form.value.pk)
+  if (form.value.pk) {
+    await meetingStore.confirmMeeting(form.value.pk)
+    if (meeting.value) form.value.is_confirmed = meeting.value.is_confirmed
+  }
 }
 
 export interface MeetingTemplate {
@@ -633,6 +659,7 @@ const openTemplateManageModal = () => {
 }
 
 const openTemplateEditModal = (index?: number) => {
+  templateValidated.value = false
   if (index !== undefined) {
     templateEditIndex.value = index
     templateEditForm.value = JSON.parse(JSON.stringify(meetingTemplates.value[index]))
@@ -651,9 +678,10 @@ const openTemplateEditModal = (index?: number) => {
 
 const saveTemplateEdit = (event: Event) => {
   if (isValidate(event)) {
-    validated.value = true
+    templateValidated.value = true
     return
   }
+  templateValidated.value = false
   if (!templateEditForm.value.name.trim()) return
 
   if (templateEditIndex.value !== null) {
@@ -690,20 +718,8 @@ const applyMeetingTemplate = (tmpl: MeetingTemplate) => {
     form.value.title = `${tmpl.titlePrefix}${dateStr} 회의`
   }
 
-  // 의제(agenda): 비어있거나 이전 템플릿의 의제와 동일하면 새 템플릿으로 교체
-  if (!form.value.agenda || (prevTmpl && form.value.agenda === prevTmpl.agenda)) {
-    form.value.agenda = tmpl.agenda
-  } else if (!form.value.agenda.includes(tmpl.agenda)) {
-    // 사용자가 일부 편집했더라도 템플릿을 바꾸면 새 템플릿 내용으로 덮어씀
-    form.value.agenda = tmpl.agenda
-  }
-
-  // 후속 조치(action_items): 비어있거나 이전 템플릿과 동일하면 새 템플릿으로 교체
-  if (!form.value.action_items || (prevTmpl && form.value.action_items === prevTmpl.actionItems)) {
-    form.value.action_items = tmpl.actionItems
-  } else {
-    form.value.action_items = tmpl.actionItems
-  }
+  form.value.agenda = tmpl.agenda
+  form.value.action_items = tmpl.actionItems
 
   // 회의 카테고리(category) 자동 지정: 템플릿의 categoryName과 일치하는 카테고리가 있으면 자동 선택
   if (tmpl.categoryName && categories.value?.length) {
@@ -784,13 +800,22 @@ const startRecording = async () => {
 const stopRecordingAndAnalyze = async () => {
   if (!mediaRecorder || mediaRecorder.state === 'inactive') return
 
-  mediaRecorder.stop()
+  const recorder = mediaRecorder
+  const mimeType = recorder.mimeType || 'audio/webm'
+
+  const stopPromise = new Promise<void>(resolve => {
+    const prevOnStop = recorder.onstop
+    recorder.onstop = ev => {
+      if (typeof prevOnStop === 'function') prevOnStop.call(recorder, ev)
+      resolve()
+    }
+  })
+
+  recorder.stop()
   isRecording.value = false
   if (recordingTimer) clearInterval(recordingTimer)
 
-  // 청크가 수집될 때까지 짧은 대기
-  await new Promise(r => setTimeout(r, 400))
-  const mimeType = mediaRecorder.mimeType || 'audio/webm'
+  await stopPromise
   const audioBlob = new Blob(audioChunks, { type: mimeType })
 
   await processAudioWithAi(audioBlob, `meeting_record_${Date.now()}.webm`)
@@ -805,6 +830,10 @@ const cancelRecording = () => {
   recordingSeconds.value = 0
   audioChunks = []
 }
+
+onUnmounted(() => {
+  cancelRecording()
+})
 
 const onAudioFileSelected = async (event: Event) => {
   const el = event.target as HTMLInputElement
@@ -917,13 +946,13 @@ onBeforeMount(async () => {
           <CCol md="8">
             <!-- Quick Meeting Template Banner -->
             <CRow v-if="!form.pk" class="mb-3">
-              <CFormLabel class="col-sm-2 col-form-label text-right pt-0">
-                <span class="text-primary font-weight-bold">회의 템플릿</span>
+              <CFormLabel class="col-sm-2 col-form-label text-end pt-0">
+                <span class="text-primary fw-bold">회의 템플릿</span>
               </CFormLabel>
               <CCol sm="10">
                 <div class="p-2 border rounded bg-light d-flex flex-wrap align-items-center">
-                  <span class="text-muted small mr-2">
-                    <v-icon icon="mdi-magic-staff" size="14" color="primary" class="mr-1" />
+                  <span class="text-muted small me-2">
+                    <v-icon icon="mdi-magic-staff" size="14" color="primary" class="me-1" />
                     자주 쓰는 양식 자동 채우기:
                   </span>
                   <v-chip
@@ -932,14 +961,14 @@ onBeforeMount(async () => {
                     size="small"
                     :variant="selectedTemplate === tmpl.name ? 'elevated' : 'outlined'"
                     :color="selectedTemplate === tmpl.name ? 'primary' : 'secondary'"
-                    class="mr-2 my-1 cursor-pointer font-weight-medium"
+                    class="me-2 my-1 cursor-pointer fw-medium"
                     @click="applyMeetingTemplate(tmpl)"
                   >
                     <v-icon
                       v-if="selectedTemplate === tmpl.name"
                       icon="mdi-check"
                       size="14"
-                      class="mr-1"
+                      class="me-1"
                     />
                     {{ tmpl.name }}
                   </v-chip>
@@ -948,10 +977,10 @@ onBeforeMount(async () => {
                     variant="text"
                     color="primary"
                     size="x-small"
-                    class="ml-auto my-1"
+                    class="ms-auto my-1"
                     @click="openTemplateManageModal"
                   >
-                    <v-icon icon="mdi-cog-outline" size="14" class="mr-1" />
+                    <v-icon icon="mdi-cog-outline" size="14" class="me-1" />
                     양식 관리
                   </v-btn>
 
@@ -959,10 +988,10 @@ onBeforeMount(async () => {
                     variant="flat"
                     color="success"
                     size="x-small"
-                    class="ml-2 my-1"
+                    class="ms-2 my-1"
                     @click="openAiRecordModal"
                   >
-                    <v-icon icon="mdi-microphone" size="14" class="mr-1" />
+                    <v-icon icon="mdi-microphone" size="14" class="me-1" />
                     AI 음성 회의록 생성
                   </v-btn>
                 </div>
@@ -970,7 +999,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="title" class="col-sm-2 col-form-label text-right required">
+              <CFormLabel for="title" class="col-sm-2 col-form-label text-end required">
                 회의 제목
               </CFormLabel>
               <CCol sm="10">
@@ -985,7 +1014,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="agenda" class="col-sm-2 col-form-label text-right">
+              <CFormLabel for="agenda" class="col-sm-2 col-form-label text-end">
                 회의 의제
               </CFormLabel>
               <CCol sm="10">
@@ -999,7 +1028,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="content" class="col-sm-2 col-form-label text-right">
+              <CFormLabel for="content" class="col-sm-2 col-form-label text-end">
                 회의 내용
               </CFormLabel>
               <CCol sm="10">
@@ -1012,7 +1041,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="decisions" class="col-sm-2 col-form-label text-right">
+              <CFormLabel for="decisions" class="col-sm-2 col-form-label text-end">
                 주요 결정 사항
               </CFormLabel>
               <CCol sm="10">
@@ -1026,7 +1055,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right">
+              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-end">
                 후속 조치 사항
               </CFormLabel>
               <CCol sm="10">
@@ -1041,24 +1070,24 @@ onBeforeMount(async () => {
 
             <!-- File Upload Section -->
             <CRow class="mb-0">
-              <CFormLabel class="col-sm-2 col-form-label text-right">파일</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label text-end">파일</CFormLabel>
               <CCol sm="10">
                 <div
                   class="d-flex align-items-center justify-content-between text-muted small mb-2"
                 >
                   <span>
-                    <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
+                    <v-icon icon="mdi-paperclip" size="14" class="me-1" />
                     첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
                   </span>
-                  <span :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }">
+                  <span :class="{ 'text-danger fw-bold': totalFileSize > MAX_TOTAL_SIZE }">
                     {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
                   </span>
                 </div>
 
                 <div v-if="fileErrorMessage" class="text-danger small mb-2">
-                  <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+                  <v-icon icon="mdi-alert-circle" size="14" class="me-1" />
                   {{ fileErrorMessage }}
-                  <span class="ml-2 font-weight-bold text-body">
+                  <span class="ms-2 fw-bold text-body">
                     💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google
                     Drive 등)를 직접 추가하여 공유할 수 있습니다.
                   </span>
@@ -1075,7 +1104,7 @@ onBeforeMount(async () => {
                             v-model="files_del"
                             :value="`${file.pk}`"
                             inline
-                            class="ml-2"
+                            class="ms-2"
                             :id="`del-${index}`"
                           />
                         </CTableDataCell>
@@ -1093,7 +1122,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow v-for="(f, i) in newFiles" :key="i" class="mb-2">
-              <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
+              <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-end">
               </CFormLabel>
               <CCol sm="5">
                 <CFormInput type="text" :value="f.file.name" disabled />
@@ -1109,7 +1138,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
             <CRow class="mb-3">
-              <CCol :sm="{ span: 10, offset: 2 }" class="text-right">
+              <CCol :sm="{ span: 10, offset: 2 }" class="text-end">
                 <input
                   type="file"
                   ref="fileInput"
@@ -1122,7 +1151,7 @@ onBeforeMount(async () => {
                   size="x-small"
                   @click="(fileInput as HTMLInputElement)?.click()"
                 >
-                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" />
+                  <v-icon icon="mdi-paperclip" size="small" class="me-1" />
                   첨부 파일 추가
                 </v-btn>
               </CCol>
@@ -1130,7 +1159,7 @@ onBeforeMount(async () => {
 
             <!-- 외부 클라우드 링크 섹션 -->
             <CRow class="mb-2">
-              <CFormLabel class="col-sm-2 col-form-label text-right">외부 링크</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label text-end">외부 링크</CFormLabel>
               <CCol sm="10">
                 <div v-if="form.links?.length" class="mb-2">
                   <CTable small striped hover>
@@ -1138,14 +1167,14 @@ onBeforeMount(async () => {
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
                         <CTableDataCell>
                           <a :href="linkItem.link" target="_blank" rel="noopener noreferrer">
-                            <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                            <v-icon icon="mdi-link-variant" size="14" class="me-1" />
                             {{ linkItem.name ? linkItem.name : linkItem.link }}
                           </a>
                           <CFormCheck
                             label="삭제"
                             v-model="linkItem.del"
                             inline
-                            class="ml-2"
+                            class="ms-2"
                             :id="`meeting-link-del-${index}`"
                           />
                         </CTableDataCell>
@@ -1157,7 +1186,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
-              <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-right">
+              <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end">
               </CFormLabel>
               <CCol sm="5">
                 <CFormInput
@@ -1185,9 +1214,9 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CCol :sm="{ span: 10, offset: 2 }" class="text-right">
+              <CCol :sm="{ span: 10, offset: 2 }" class="text-end">
                 <v-btn color="info" size="x-small" @click="addLink">
-                  <v-icon icon="mdi-link-plus" size="small" class="mr-1" />
+                  <v-icon icon="mdi-link-plus" size="small" class="me-1" />
                   외부 링크 추가
                 </v-btn>
               </CCol>
@@ -1195,8 +1224,8 @@ onBeforeMount(async () => {
 
             <!-- Related Issues & Inline Action Items Section -->
             <CRow class="mb-3">
-              <CFormLabel class="col-sm-2 col-form-label text-right">
-                <span class="text-primary font-weight-bold">후속 조치 업무</span>
+              <CFormLabel class="col-sm-2 col-form-label text-end">
+                <span class="text-primary fw-bold">후속 조치 업무</span>
               </CFormLabel>
               <CCol sm="10">
                 <div class="d-flex align-items-center justify-content-between mb-2">
@@ -1204,7 +1233,7 @@ onBeforeMount(async () => {
                     <v-icon
                       icon="mdi-clipboard-check-outline"
                       size="small"
-                      class="mr-1"
+                      class="me-1"
                       color="primary"
                     />
                     회의록 저장 시 등록된 업무가 해당 회의와 연동되어 일괄 생성됩니다.
@@ -1217,11 +1246,11 @@ onBeforeMount(async () => {
                       variant="tonal"
                       @click="parseActionItemsFromText"
                     >
-                      <v-icon icon="mdi-magic-staff" size="14" class="mr-1" />
+                      <v-icon icon="mdi-magic-staff" size="14" class="me-1" />
                       후속 조치에서 자동 추출
                     </v-btn>
                     <v-btn color="primary" size="x-small" @click="addPendingActionItem()">
-                      <v-icon icon="mdi-plus" size="14" class="mr-1" />
+                      <v-icon icon="mdi-plus" size="14" class="me-1" />
                       업무 추가
                     </v-btn>
                   </div>
@@ -1230,7 +1259,7 @@ onBeforeMount(async () => {
                 <!-- 1. Existing linked issues (when editing an existing meeting) -->
                 <div v-if="form.pk && meeting?.issues?.length" class="mb-3">
                   <div class="small fw-bold text-muted mb-1">
-                    <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                    <v-icon icon="mdi-link-variant" size="14" class="me-1" />
                     이미 등록된 관련 업무 ({{ meeting.issues.length }}건)
                   </div>
                   <CTable small striped borderless class="border-bottom">
@@ -1240,13 +1269,13 @@ onBeforeMount(async () => {
                           <v-icon
                             icon="mdi-checkbox-marked-circle-outline"
                             size="small"
-                            class="mr-1"
+                            class="me-1"
                             color="success"
                           />
                           <a
                             v-if="canIssueRead"
-                            href="javascript:void(0)"
-                            @click="callIssueModal(issue.pk)"
+                            href="#"
+                            @click.prevent="callIssueModal(issue.pk)"
                           >
                             {{ issue.subject }}
                           </a>
@@ -1261,13 +1290,13 @@ onBeforeMount(async () => {
                             {{ issue.status }}
                           </v-chip>
                         </CTableDataCell>
-                        <CTableDataCell style="width: 20%" class="text-right">
+                        <CTableDataCell style="width: 20%" class="text-end">
                           <span v-if="issue.assigned_to" class="small text-muted">
-                            <v-icon icon="mdi-account-outline" size="12" class="mr-1" />
+                            <v-icon icon="mdi-account-outline" size="12" class="me-1" />
                             {{ issue.assigned_to.username }}
                           </span>
                         </CTableDataCell>
-                        <CTableDataCell style="width: 10%" class="text-right">
+                        <CTableDataCell style="width: 10%" class="text-end">
                           <v-btn
                             v-if="canIssueUpdate"
                             icon
@@ -1287,7 +1316,7 @@ onBeforeMount(async () => {
                 <!-- 2. Pending Action Items Table -->
                 <div v-if="pendingActionItems.length > 0" class="mb-2">
                   <div class="small fw-bold text-primary mb-1">
-                    <v-icon icon="mdi-playlist-plus" size="14" class="mr-1" />
+                    <v-icon icon="mdi-playlist-plus" size="14" class="me-1" />
                     새로 등록할 후속 조치 업무 ({{ pendingActionItems.length }}건)
                   </div>
                   <CTable small bordered hover responsive class="align-middle mb-1 bg-white">
@@ -1349,7 +1378,7 @@ onBeforeMount(async () => {
                   v-if="!pendingActionItems.length && (!form.pk || !meeting?.issues?.length)"
                   class="text-muted small p-3 text-center border rounded border-dashed bg-more-light"
                 >
-                  <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+                  <v-icon icon="mdi-information-outline" size="small" class="me-1" />
                   연결된 후속 조치 업무가 없습니다. 상단의
                   <strong>[후속 조치에서 자동 추출]</strong> 또는
                   <strong>[업무 추가]</strong> 버튼을 눌러 후속 조치를 업무로 등록하세요.
@@ -1361,7 +1390,7 @@ onBeforeMount(async () => {
           <!-- Sidebar Column (Meta Info) -->
           <CCol md="4" class="bg-more-light p-4">
             <CRow class="mb-3">
-              <CFormLabel for="project" class="col-sm-4 col-form-label text-right required">
+              <CFormLabel for="project" class="col-sm-4 col-form-label text-end required">
                 프로젝트
               </CFormLabel>
               <CCol sm="8">
@@ -1376,7 +1405,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-right required">
+              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-end required">
                 회의일시
               </CFormLabel>
               <CCol sm="8">
@@ -1390,7 +1419,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="location" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="location" class="col-sm-4 col-form-label text-end">
                 회의장소
               </CFormLabel>
               <CCol sm="8">
@@ -1403,12 +1432,12 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="category" class="col-sm-4 col-form-label text-right required">
+              <CFormLabel for="category" class="col-sm-4 col-form-label text-end required">
                 카테고리
               </CFormLabel>
               <CCol sm="8">
                 <CInputGroup>
-                  <CFormSelect v-model="form.category" id="category" required>
+                  <CFormSelect v-model.number="form.category" id="category" required>
                     <option value="">---------</option>
                     <option v-for="cat in categories" :key="cat.pk" :value="cat.pk">
                       {{ cat.name }}
@@ -1422,7 +1451,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3 mt-3">
-              <CFormLabel for="status" class="col-sm-4 col-form-label text-right required">
+              <CFormLabel for="status" class="col-sm-4 col-form-label text-end required">
                 상태
               </CFormLabel>
               <CCol sm="8">
@@ -1435,7 +1464,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel class="col-sm-4 col-form-label text-right">참석자</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label text-end">참석자</CFormLabel>
               <CCol sm="8">
                 <v-autocomplete
                   v-model="form.attendees"
@@ -1452,7 +1481,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-end">
                 외부 참석자
               </CFormLabel>
               <CCol sm="8">
@@ -1486,7 +1515,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow v-if="meeting?.pk && canMeetingConfirm" class="mt-5">
-              <CFormLabel for="is_confirmed" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="is_confirmed" class="col-sm-4 col-form-label text-end">
                 확정 여부
               </CFormLabel>
               <CCol sm="8" class="pt-2">
@@ -1503,7 +1532,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mt-4">
-          <CCol class="text-right">
+          <CCol class="text-end">
             <v-btn
               type="submit"
               :color="form.pk ? 'success' : 'primary'"
@@ -1545,7 +1574,7 @@ onBeforeMount(async () => {
       <CForm
         class="needs-validation p-4"
         novalidate
-        :validated="validated"
+        :validated="categoryValidated"
         @submit.prevent="onCategorySubmit"
       >
         <CRow class="mb-3">
@@ -1588,7 +1617,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow>
-          <CCol class="text-right">
+          <CCol class="text-end">
             <v-btn type="submit" color="primary" size="small"> 저장</v-btn>
             <v-btn color="light" size="small" @click="refCategoryModal?.close()" flat> 취소</v-btn>
           </CCol>
@@ -1604,16 +1633,16 @@ onBeforeMount(async () => {
       <div class="p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <span class="text-muted small">
-            <v-icon icon="mdi-information-outline" size="14" class="mr-1" />
+            <v-icon icon="mdi-information-outline" size="14" class="me-1" />
             자주 사용하는 회의 의제 및 후속 조치 양식을 나만의 템플릿으로 설정할 수 있습니다.
           </span>
           <div class="d-flex gap-2">
             <v-btn color="secondary" variant="tonal" size="small" @click="resetDefaultTemplates">
-              <v-icon icon="mdi-restore" size="14" class="mr-1" />
+              <v-icon icon="mdi-restore" size="14" class="me-1" />
               기본값 초기화
             </v-btn>
             <v-btn color="primary" size="small" @click="openTemplateEditModal()">
-              <v-icon icon="mdi-plus" size="14" class="mr-1" />
+              <v-icon icon="mdi-plus" size="14" class="me-1" />
               새 템플릿 추가
             </v-btn>
           </div>
@@ -1631,7 +1660,7 @@ onBeforeMount(async () => {
           </CTableHead>
           <CTableBody>
             <CTableRow v-for="(tmpl, idx) in meetingTemplates" :key="idx">
-              <CTableDataCell class="font-weight-medium">
+              <CTableDataCell class="fw-medium">
                 {{ tmpl.name }}
               </CTableDataCell>
               <CTableDataCell class="text-center">
@@ -1687,7 +1716,7 @@ onBeforeMount(async () => {
       <CForm
         class="needs-validation p-4"
         novalidate
-        :validated="validated"
+        :validated="templateValidated"
         @submit.prevent="saveTemplateEdit"
       >
         <CRow class="mb-3">
@@ -1762,12 +1791,12 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow>
-          <CCol class="text-right">
+          <CCol class="text-end">
             <v-btn type="submit" color="primary" size="small">저장</v-btn>
             <v-btn
               color="light"
               size="small"
-              class="ml-2"
+              class="ms-2"
               @click="refTemplateEditModal?.close()"
               flat
             >
@@ -1789,7 +1818,7 @@ onBeforeMount(async () => {
           <v-progress-circular indeterminate color="primary" size="64" width="6" class="mb-4" />
           <h5 class="fw-bold text-primary mb-2">회의 음성을 분석하고 있습니다</h5>
           <p class="text-muted small">{{ aiStatusText }}</p>
-          <div class="alert alert-info py-2 px-3 small d-inline-block text-left mt-2">
+          <div class="alert alert-info py-2 px-3 small d-inline-block text-start mt-2">
             💡 음성 인식, 핵심 의제, 결정 사항 및 액션 아이템 추출 완료 즉시 서버의 음성 원본은 자동
             영구 삭제됩니다.
           </div>
@@ -1819,13 +1848,13 @@ onBeforeMount(async () => {
             </div>
 
             <div
-              class="display-6 font-weight-bold mb-2"
+              class="display-6 fw-bold mb-2"
               :class="isRecording ? 'text-danger' : 'text-muted'"
             >
               {{ formattedRecordingTime }}
             </div>
 
-            <div v-if="isRecording" class="text-danger small font-weight-bold mb-3">
+            <div v-if="isRecording" class="text-danger small fw-bold mb-3">
               🔴 실시간 회의 음성 녹음 진행 중...
             </div>
             <div v-else class="text-muted small mb-3">
@@ -1860,7 +1889,7 @@ onBeforeMount(async () => {
 
           <!-- 파일 업로드 대안 -->
           <div class="mt-4 pt-3 border-top">
-            <span class="text-muted small mr-3">
+            <span class="text-muted small me-3">
               스마트폰이나 녹음기로 이미 녹음한 파일이 있으신가요?
             </span>
             <input

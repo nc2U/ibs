@@ -78,7 +78,7 @@ const downloadPdf = (event: Event) => {
     </CTableDataCell>
 
     <!-- 상태 -->
-    <CTableDataCell v-else-if="colKey === 'status'" class="text-left">
+    <CTableDataCell v-else-if="colKey === 'status'" class="text-start">
       <v-chip :color="statusColor" size="x-small" variant="flat">
         {{ meeting.status_display }}
       </v-chip>
@@ -88,7 +88,7 @@ const downloadPdf = (event: Event) => {
         :color="confirmAlertColor"
         size="x-small"
         variant="flat"
-        class="ml-1"
+        class="ms-1"
       >
         확정 필요
       </v-chip>
@@ -97,7 +97,7 @@ const downloadPdf = (event: Event) => {
         color="primary"
         size="x-small"
         variant="flat"
-        class="ml-1"
+        class="ms-1"
       >
         확정
       </v-chip>
@@ -111,7 +111,7 @@ const downloadPdf = (event: Event) => {
     <!-- 제목 -->
     <CTableDataCell
       v-else-if="colKey === 'title'"
-      class="text-left"
+      class="text-start"
       :class="{ closed: meeting.status === '3' }"
     >
       <router-link

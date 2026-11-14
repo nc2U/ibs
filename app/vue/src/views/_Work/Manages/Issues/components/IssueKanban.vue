@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref, type PropType } from 'vue'
-import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
@@ -16,7 +15,6 @@ const props = defineProps({
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
 })
 
-const route = useRoute()
 const accStore = useAccount()
 const issueStore = useIssue()
 const { can, PERM } = usePerms()
@@ -49,6 +47,8 @@ const filteredIssues = computed(() => {
   })
 })
 
+const optimisticStatus = ref<Record<number, number>>({})
+
 // Group issues by status
 const issuesByStatus = computed(() => {
   const map = new Map<number, Issue[]>()
@@ -59,7 +59,7 @@ const issuesByStatus = computed(() => {
   })
 
   filteredIssues.value.forEach(issue => {
-    const statusPk = issue.status?.pk
+    const statusPk = optimisticStatus.value[issue.pk] ?? issue.status?.pk
     if (statusPk && map.has(statusPk)) {
       map.get(statusPk)!.push(issue)
     } else if (statusPk) {
@@ -122,6 +122,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
   if (!draggedIssue.value || !canIssueUpdate.value) return
 
   const issue = draggedIssue.value
+  draggedIssue.value = null
   if (issue.status.pk === targetStatus.pk) return
 
   const formData = new FormData()
@@ -130,11 +131,12 @@ const onDrop = async (targetStatus: IssueStatus) => {
     formData.append('done_ratio', '100')
   }
 
-  // Optimistic UI update
-  issue.status = { ...issue.status, pk: targetStatus.pk, name: targetStatus.name }
-
-  await issueStore.patchIssue(issue.pk, formData)
-  draggedIssue.value = null
+  optimisticStatus.value[issue.pk] = targetStatus.pk
+  try {
+    await issueStore.patchIssue(issue.pk, formData)
+  } finally {
+    delete optimisticStatus.value[issue.pk]
+  }
 }
 </script>
 
@@ -198,7 +200,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                   :icon="status.closed ? 'mdi-check-circle' : 'mdi-circle-slice-5'"
                   size="14"
                   :color="getStatusBorderColor(status)"
-                  class="mr-1"
+                  class="me-1"
                 />
                 {{ status.name }}
               </span>
@@ -254,7 +256,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                     }"
                     class="issue-subject-link text-decoration-none"
                   >
-                    <span class="issue-id mr-1">#{{ issue.pk }}</span>
+                    <span class="issue-id me-1">#{{ issue.pk }}</span>
                     {{ issue.subject }}
                   </router-link>
                 </div>
@@ -266,7 +268,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                     class="badge bg-secondary-subtle text-secondary small"
                     style="font-size: 10px"
                   >
-                    <v-icon icon="mdi-folder-outline" size="10" class="mr-1" />
+                    <v-icon icon="mdi-folder-outline" size="10" class="me-1" />
                     {{ issue.project.name }}
                   </span>
                   <span
@@ -274,7 +276,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                     class="badge bg-purple-subtle text-purple small"
                     style="font-size: 10px"
                   >
-                    <v-icon icon="mdi-account-group" size="10" class="mr-1" />
+                    <v-icon icon="mdi-account-group" size="10" class="me-1" />
                     {{ issue.meeting_desc.title }}
                   </span>
                 </div>
@@ -299,18 +301,18 @@ const onDrop = async (targetStatus: IssueStatus) => {
                   style="font-size: 11px"
                 >
                   <span class="text-muted text-truncate" style="max-width: 140px">
-                    <v-icon icon="mdi-account" size="12" class="mr-1 text-secondary" />
+                    <v-icon icon="mdi-account" size="12" class="me-1 text-secondary" />
                     {{ issue.assigned_to?.username || '미지정' }}
                   </span>
 
                   <span
                     v-if="issue.due_date"
                     :class="{
-                      'text-danger font-weight-bold': !issue.closed && diffDate(issue.due_date) > 0,
+                      'text-danger fw-bold': !issue.closed && diffDate(issue.due_date) > 0,
                       'text-muted': issue.closed || diffDate(issue.due_date) <= 0,
                     }"
                   >
-                    <v-icon icon="mdi-calendar-clock" size="11" class="mr-1" />
+                    <v-icon icon="mdi-calendar-clock" size="11" class="me-1" />
                     {{ issue.due_date }}
                   </span>
                   <span v-else class="text-muted" style="font-size: 10px">-</span>

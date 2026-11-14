@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { errorHandle, message } from '@/utils/helper'
@@ -54,16 +54,13 @@ const trackerList = computed(() => {
 })
 const priorityList = computed(() => issueStore.priorityList)
 
-const isWatcher = ref(false)
-
-const isComputedWatcher = computed(() =>
-  props.issue?.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),
+const isComputedWatcher = computed(
+  () => !!props.issue?.watchers?.some(w => w.pk === userInfo?.value?.pk),
 )
 
 const watchControl = () => {
   // 지켜보기 / 관심끄기
   issueStore.watchIssue(props.issue?.pk)
-  isWatcher.value = !isWatcher.value
 }
 
 const changeStatus = (statusPk: number) => {
@@ -90,6 +87,7 @@ const changePriority = (priorityPk: number) => {
 
 // 담당자 변경 관련 로직 추가
 const members = ref<any[]>([])
+const loadedProjSlug = ref('')
 const loadingMembers = ref(false)
 const assignableMembers = computed(() => members.value.filter(m => m.is_assignable))
 
@@ -101,11 +99,13 @@ const canAssignToMe = computed(() => {
 })
 
 const fetchMembersOnDemand = async (visible: boolean) => {
-  if (visible && members.value.length === 0) {
+  const slug = props.issue?.project?.slug || (route.params.projId as string)
+  if (visible && slug && (members.value.length === 0 || loadedProjSlug.value !== slug)) {
     loadingMembers.value = true
     try {
-      await workStore.fetchProjectMembers(props.issue?.project.slug)
+      await workStore.fetchProjectMembers(slug)
       members.value = workStore.projectMembers
+      loadedProjSlug.value = slug
     } catch (err: any) {
       errorHandle(err.response?.data)
     } finally {
@@ -167,14 +167,19 @@ const fallbackCopy = (text: string) => {
   try {
     document.execCommand('copy')
     message('success', '복사 완료', '업무 상세 링크가 클립보드에 복사되었습니다.')
-  } catch (err) {
+  } catch {
     message('danger', '오류!', '링크 복사에 실패했습니다.')
   }
   document.body.removeChild(textArea)
 }
 
 const issueLinkCopy = () => {
-  const url = `${window.location.origin}/work/project/${props.issue.project.slug}/issue/${props.issue.pk}`
+  const projSlug = props.issue.project?.slug || (route.params.projId as string)
+  const resolved = router.resolve({
+    name: '(업무) - 보기',
+    params: { projId: projSlug, issueId: props.issue.pk },
+  })
+  const url = `${window.location.origin}/${resolved.href.replace(/^\/?/, '')}`
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard
       .writeText(url)
@@ -213,8 +218,6 @@ const confirmDelete = async () => {
   await issueStore.deleteIssue(props.issue.pk)
   refDelModal.value?.close()
 }
-
-onBeforeMount(() => (isWatcher.value = !!isComputedWatcher.value))
 </script>
 
 <template>
@@ -468,7 +471,7 @@ onBeforeMount(() => (isWatcher.value = !!isComputedWatcher.value))
                       "
                       :color="isWatcherMember(member.user_id) ? 'purple' : 'grey'"
                       size="x-small"
-                      class="mr-2"
+                      class="me-2"
                     />
                   </template>
                   <v-list-item-title class="text-caption">{{ member.username }}</v-list-item-title>
@@ -481,13 +484,13 @@ onBeforeMount(() => (isWatcher.value = !!isComputedWatcher.value))
             <template v-slot:prepend>
               <v-icon
                 icon="mdi-star"
-                :color="isWatcher ? 'amber' : 'secondary'"
+                :color="isComputedWatcher ? 'amber' : 'secondary'"
                 size="small"
                 class="mr-n2"
               />
             </template>
             <v-list-item-title class="text-caption">
-              {{ isWatcher ? '관심끄기' : '지켜보기' }}
+              {{ isComputedWatcher ? '관심끄기' : '지켜보기' }}
             </v-list-item-title>
           </v-list-item>
 

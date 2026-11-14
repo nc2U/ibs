@@ -72,23 +72,23 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       : {{ sub.subject }}
     </CCol>
 
-    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
-      <span class="mr-3">{{ sub.status }}</span>
-      <span v-if="sub.assigned_to" class="mr-3">
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-end pt-1">
+      <span class="me-3">{{ sub.status }}</span>
+      <span v-if="sub.assigned_to" class="me-3">
         <router-link :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }">
           {{ cutString(sub.assigned_to.username, 9) }}
         </router-link>
       </span>
-      <span class="mr-3">
+      <span class="me-3">
         {{ sub?.start_date }}
       </span>
-      <span class="mr-3" :class="{ 'text-danger': sub.due_date && diffDate(sub.due_date) > 0 }">
+      <span class="me-3" :class="{ 'text-danger': sub.due_date && diffDate(sub.due_date) > 0 }">
         {{ sub.due_date }}
       </span>
     </CCol>
 
-    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right">
-      <span class="mr-3">
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-end">
+      <span class="me-3">
         <CProgress
           :color="sub.done_ratio === 100 ? 'success' : 'warning'"
           :value="sub?.done_ratio ?? 0"
@@ -99,7 +99,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       <v-btn
         v-if="can(PERM.ISSUE_SUB_MANAGE)"
         variant="plain"
-        class="mr-3"
+        class="me-3"
         @click="parentUnlink(sub.pk)"
       >
         <v-icon icon="mdi-link-variant-off" size="16" />

@@ -50,6 +50,11 @@ const issueFilterStore = useIssueFilter()
 const { searchCond, enabledFields, cond, form } = storeToRefs(issueFilterStore)
 
 const refQuerySaveModal = ref<InstanceType<typeof SaveQueryModal> | null>(null)
+const extraQueryData = computed(() => {
+  const projId = (route.params.projId as string) || ''
+  const projectObj = props.searchProjects.find(p => p.slug === projId)
+  return { project: projectObj ? projectObj.value : null }
+})
 const openSaveModal = () => {
   refQuerySaveModal.value?.callModal()
 }
@@ -689,11 +694,24 @@ onBeforeMount(async () => {
     form.value.version = Number(route.query.version)
     cond.value.version = 'is'
   }
-  if (!!route.query.parent) {
-    if (!searchCond.value.includes('parent')) searchCond.value.push('parent')
-    if (!enabledFields.value.includes('parent')) enabledFields.value.push('parent')
-    form.value.parent = Number(route.query.parent)
-    cond.value.parent = 'is'
+  const parentVal = route.query.parent_issue || route.query.parent
+  if (parentVal) {
+    if (!searchCond.value.includes('parent_issue')) searchCond.value.push('parent_issue')
+    if (!enabledFields.value.includes('parent_issue')) enabledFields.value.push('parent_issue')
+    form.value.parent_issue = Number(parentVal)
+    cond.value.parent_issue = 'is'
+  }
+  if (route.query.precedes_issue) {
+    if (!searchCond.value.includes('precedes_issue')) searchCond.value.push('precedes_issue')
+    if (!enabledFields.value.includes('precedes_issue')) enabledFields.value.push('precedes_issue')
+    form.value.precedes_issue = Number(route.query.precedes_issue)
+    cond.value.precedes_issue = 'is'
+  }
+  if (route.query.follows_issue) {
+    if (!searchCond.value.includes('follows_issue')) searchCond.value.push('follows_issue')
+    if (!enabledFields.value.includes('follows_issue')) enabledFields.value.push('follows_issue')
+    form.value.follows_issue = Number(route.query.follows_issue)
+    cond.value.follows_issue = 'is'
   }
 })
 
@@ -804,6 +822,7 @@ defineExpose({ applyQuery, resetFilter })
                       show-closed-option
                       value-type="slug"
                       size="sm"
+                      @change="filterSubmit"
                     />
                   </template>
 
@@ -1048,7 +1067,7 @@ defineExpose({ applyQuery, resetFilter })
             </template>
           </CCol>
 
-          <CCol md="4" class="text-right">
+          <CCol md="4" class="text-end">
             <CRow>
               <CFormLabel
                 for="searchOptions"
@@ -1122,5 +1141,6 @@ defineExpose({ applyQuery, resetFilter })
     :target-type="targetType"
     :cond="cond"
     :form="form"
+    :extra-data="extraQueryData"
   />
 </template>

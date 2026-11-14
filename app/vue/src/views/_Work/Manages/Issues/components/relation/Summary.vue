@@ -4,9 +4,11 @@ import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import type { SubIssue } from '@/store/types/work_issue'
 
-defineProps({
+const props = defineProps({
   issuePk: { type: Number, required: true },
   relations: { type: Array as PropType<SubIssue[]>, default: () => [] },
+  hasOutgoing: { type: Boolean, default: true },
+  hasIncoming: { type: Boolean, default: false },
 })
 
 const route = useRoute()
@@ -15,13 +17,14 @@ const { can, PERM } = usePerms()
 const projId = route.params.projId as string
 const routeName = projId ? '(업무)' : '업무'
 const routeParams = projId ? { projId } : {}
+const relQueryKey = !props.hasOutgoing && props.hasIncoming ? 'follows_issue' : 'precedes_issue'
 </script>
 
 <template>
-  <span class="title mr-2">
+  <span class="title me-2">
     <router-link
       v-if="can(PERM.ISSUE_READ)"
-      :to="{ name: routeName, params: routeParams, query: { issueId: issuePk } }"
+      :to="{ name: routeName, params: routeParams, query: { [relQueryKey]: issuePk } }"
     >
       {{ relations.length }}
     </router-link>
@@ -31,7 +34,11 @@ const routeParams = projId ? { projId } : {}
     (<span v-if="relations.filter(i => !i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: routeName, params: routeParams, query: { issueId: issuePk, status: 'open' } }"
+        :to="{
+          name: routeName,
+          params: routeParams,
+          query: { [relQueryKey]: issuePk, status: 'open' },
+        }"
       >
         {{ relations.filter(i => !i.closed).length }} 건 진행 중
       </router-link>
@@ -45,7 +52,7 @@ const routeParams = projId ? { projId } : {}
         :to="{
           name: routeName,
           params: routeParams,
-          query: { issueId: issuePk, status: 'closed' },
+          query: { [relQueryKey]: issuePk, status: 'closed' },
         }"
       >
         {{ relations.filter(i => i.closed).length }} 건 완료

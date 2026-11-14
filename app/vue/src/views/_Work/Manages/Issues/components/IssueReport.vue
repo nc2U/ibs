@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
+import type { SimpleUser } from '@/store/types/work_project'
 
 const route = useRoute()
 const workStore = useWork()
@@ -11,19 +12,28 @@ const issueStore = useIssue()
 // 프로젝트 식별자 추출 (Slug)
 const projSlug = computed(() => route.params.projId as string | undefined)
 
+const getPk = (val: number | { pk: number } | null | undefined): number | undefined =>
+  typeof val === 'object' && val !== null ? val.pk : (val ?? undefined)
+
 onMounted(async () => {
-  // 공통 메타데이터 조회
-  await issueStore.fetchTrackerList()
-  await issueStore.fetchStatusList()
-  await issueStore.fetchPriorityList()
+  // 공통 메타데이터 병렬 조회
+  await Promise.all([
+    issueStore.fetchTrackerList(),
+    issueStore.fetchStatusList(),
+    issueStore.fetchPriorityList(),
+  ])
 
   if (projSlug.value) {
-    await workStore.fetchIssueProject(projSlug.value)
-    await workStore.fetchVersionList({ project: projSlug.value })
-    await issueStore.fetchCategoryList(projSlug.value)
-    // status__closed='' 로 진행중/완료 통합 전체 로드 (최대 1000개)
-    await issueStore.fetchAllIssueList(projSlug.value, '')
-  } else await issueStore.fetchAllIssueList('', '')
+    await Promise.all([
+      workStore.fetchIssueProject(projSlug.value),
+      workStore.fetchVersionList({ project: projSlug.value }),
+      issueStore.fetchCategoryList(projSlug.value),
+      // status__closed='' 로 진행중/완료 통합 전체 로드 (최대 1000개)
+      issueStore.fetchAllIssueList(projSlug.value, ''),
+    ])
+  } else {
+    await issueStore.fetchAllIssueList('', '')
+  }
 })
 
 // 전체 이슈 목록 캐싱
@@ -33,9 +43,7 @@ const allIssues = computed(() => issueStore.allIssueList || [])
 const trackerReport = computed(() => {
   const currentProjectPk = workStore.currentProject?.pk
   const filteredTrackers = currentProjectPk
-    ? issueStore.trackerList.filter(t =>
-        t.projects?.map((p: any) => p.pk).includes(currentProjectPk),
-      )
+    ? issueStore.trackerList.filter(t => t.projects?.some(p => p.pk === currentProjectPk))
     : issueStore.trackerList
 
   return filteredTrackers.map(t => {
@@ -58,28 +66,19 @@ const priorityReport = computed(() => {
 
 // 3. 담당자별 (Assignee)
 const assigneeReport = computed(() => {
-  const assigneesMap = new Map()
+  const assigneesMap = new Map<number, SimpleUser | number>()
   allIssues.value.forEach(i => {
-    if (i.assigned_to) {
-      const key =
-        typeof i.assigned_to === 'object' && i.assigned_to !== null
-          ? (i.assigned_to as any).pk
-          : i.assigned_to
-      assigneesMap.set(key, i.assigned_to)
+    const key = getPk(i.assigned_to as number | SimpleUser | null | undefined)
+    if (key !== undefined && i.assigned_to) {
+      assigneesMap.set(key, i.assigned_to as SimpleUser | number)
     }
   })
-  const assignees = Array.from(assigneesMap.values())
 
-  const report = assignees.map(a => {
-    const aPk = typeof a === 'object' && a !== null ? (a as any).pk : a
-    const aName = typeof a === 'object' && a !== null ? (a as any).username : `User #${a}`
-    const list = allIssues.value.filter(i => {
-      const val =
-        typeof i.assigned_to === 'object' && i.assigned_to !== null
-          ? (i.assigned_to as any).pk
-          : i.assigned_to
-      return val === aPk
-    })
+  const report = Array.from(assigneesMap.entries()).map(([aPk, a]) => {
+    const aName = typeof a === 'object' && a !== null ? a.username : `User #${a}`
+    const list = allIssues.value.filter(
+      i => getPk(i.assigned_to as number | SimpleUser | null | undefined) === aPk,
+    )
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
     return { name: aName, open, closed, total: open + closed }
@@ -98,23 +97,18 @@ const assigneeReport = computed(() => {
 
 // 4. 작성자/생성자별 (Author)
 const creatorReport = computed(() => {
-  const creatorsMap = new Map()
+  const creatorsMap = new Map<number, SimpleUser | number>()
   allIssues.value.forEach(i => {
-    if (i.creator) {
-      const key =
-        typeof i.creator === 'object' && i.creator !== null ? (i.creator as any).pk : i.creator
-      creatorsMap.set(key, i.creator)
+    const key = getPk(i.creator as number | SimpleUser | null | undefined)
+    if (key !== undefined && i.creator) {
+      creatorsMap.set(key, i.creator as SimpleUser | number)
     }
   })
-  const creators = Array.from(creatorsMap.values())
-  return creators.map(c => {
-    const cPk = typeof c === 'object' && c !== null ? (c as any).pk : c
-    const cName = typeof c === 'object' && c !== null ? (c as any).username : `User #${c}`
-    const list = allIssues.value.filter(i => {
-      const val =
-        typeof i.creator === 'object' && i.creator !== null ? (i.creator as any).pk : i.creator
-      return val === cPk
-    })
+  return Array.from(creatorsMap.entries()).map(([cPk, c]) => {
+    const cName = typeof c === 'object' && c !== null ? c.username : `User #${c}`
+    const list = allIssues.value.filter(
+      i => getPk(i.creator as number | SimpleUser | null | undefined) === cPk,
+    )
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
     return { name: cName, open, closed, total: open + closed }
@@ -125,13 +119,9 @@ const creatorReport = computed(() => {
 const versionReport = computed(() => {
   const versions = workStore.versionList || []
   const report = versions.map(v => {
-    const list = allIssues.value.filter(i => {
-      const val =
-        typeof i.fixed_version === 'object' && i.fixed_version !== null
-          ? (i.fixed_version as any)?.pk
-          : i.fixed_version
-      return val === v.pk
-    })
+    const list = allIssues.value.filter(
+      i => getPk(i.fixed_version as number | { pk: number } | null | undefined) === v.pk,
+    )
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
     return { name: v.name, open, closed, total: open + closed }
@@ -151,11 +141,9 @@ const versionReport = computed(() => {
 const categoryReport = computed(() => {
   const categories = issueStore.categoryList || []
   const report = categories.map(c => {
-    const list = allIssues.value.filter(i => {
-      const val =
-        typeof i.category === 'object' && i.category !== null ? (i.category as any)?.pk : i.category
-      return val === c.pk
-    })
+    const list = allIssues.value.filter(
+      i => getPk(i.category as number | { pk: number } | null | undefined) === c.pk,
+    )
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
     return { name: c.name, open, closed, total: open + closed }
@@ -180,8 +168,8 @@ const totalAll = computed(() => allIssues.value.length)
 <template>
   <CRow class="py-2 mb-3 align-items-center">
     <CCol>
-      <h5 class="mb-0 font-weight-bold">
-        <v-icon icon="mdi-chart-bar" color="green-darken-1" class="mr-2" size="24" />
+      <h5 class="mb-0 fw-bold">
+        <v-icon icon="mdi-chart-bar" color="green-darken-1" class="me-2" size="24" />
         업무 보고서
       </h5>
     </CCol>
@@ -195,7 +183,7 @@ const totalAll = computed(() => allIssues.value.length)
           <div class="d-flex justify-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">진행중인 업무</span>
-              <h3 class="text-h3 font-weight-bold text-success mt-1">{{ totalOpen }}</h3>
+              <h3 class="text-h3 fw-bold text-success mt-1">{{ totalOpen }}</h3>
             </div>
             <v-icon icon="mdi-folder-open-outline" size="48" color="success" class="opacity-30" />
           </div>
@@ -206,7 +194,7 @@ const totalAll = computed(() => allIssues.value.length)
           <div class="d-flex justify-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">완료된 업무</span>
-              <h3 class="text-h3 font-weight-bold text-blue mt-1">{{ totalClosed }}</h3>
+              <h3 class="text-h3 fw-bold text-blue mt-1">{{ totalClosed }}</h3>
             </div>
             <v-icon icon="mdi-check-circle-outline" size="48" color="blue" class="opacity-30" />
           </div>
@@ -217,7 +205,7 @@ const totalAll = computed(() => allIssues.value.length)
           <div class="d-flex justify-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">전체 업무 수</span>
-              <h3 class="text-h3 font-weight-bold text-secondary mt-1">{{ totalAll }}</h3>
+              <h3 class="text-h3 fw-bold text-secondary mt-1">{{ totalAll }}</h3>
             </div>
             <v-icon icon="mdi-library-shelves" size="48" color="secondary" class="opacity-30" />
           </div>
@@ -231,24 +219,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-tag-multiple" color="amber" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">유형별 요약</span>
+            <v-icon icon="mdi-tag-multiple" color="amber" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">유형별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">유형</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">유형</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in trackerReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!trackerReport.length">
                 <td colspan="4" class="text-center text-grey py-3">유형별 데이터가 없습니다.</td>
@@ -262,24 +250,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-alert-circle-outline" color="red" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">우선순위별 요약</span>
+            <v-icon icon="mdi-alert-circle-outline" color="red" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">우선순위별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">우선순위</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">우선순위</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in priorityReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!priorityReport.length">
                 <td colspan="4" class="text-center text-grey py-3">
@@ -295,24 +283,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-account-cowboy-hat" color="blue" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">담당자별 요약</span>
+            <v-icon icon="mdi-account-cowboy-hat" color="blue" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">담당자별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">담당자</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">담당자</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in assigneeReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!assigneeReport.length">
                 <td colspan="4" class="text-center text-grey py-3">
@@ -328,24 +316,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-account-edit" color="teal" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">업무 생성자별 요약</span>
+            <v-icon icon="mdi-account-edit" color="teal" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">업무 생성자별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">생성자</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">생성자</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in creatorReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!creatorReport.length">
                 <td colspan="4" class="text-center text-grey py-3">생성자별 데이터가 없습니다.</td>
@@ -359,24 +347,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-git-branch" color="indigo" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">단계별 요약</span>
+            <v-icon icon="mdi-git-branch" color="indigo" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">단계별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">단계</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">단계</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in versionReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!versionReport.length">
                 <td colspan="4" class="text-center text-grey py-3">지정된 단계가 없습니다.</td>
@@ -390,24 +378,24 @@ const totalAll = computed(() => allIssues.value.length)
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
-            <v-icon icon="mdi-folder-grid-outline" color="purple" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">범주별 요약</span>
+            <v-icon icon="mdi-folder-grid-outline" color="purple" class="me-2" size="20" />
+            <span class="text-subtitle-1 fw-bold">범주별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">범주</th>
-                <th class="text-right font-weight-bold text-success">진행중</th>
-                <th class="text-right font-weight-bold text-blue">완료됨</th>
-                <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
+                <th class="text-start fw-bold text-grey-darken-2">범주</th>
+                <th class="text-end fw-bold text-success">진행중</th>
+                <th class="text-end fw-bold text-blue">완료됨</th>
+                <th class="text-end fw-bold text-grey-darken-3">합계</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in categoryReport" :key="item.name" class="hover-row">
-                <td class="font-weight-medium">{{ item.name }}</td>
-                <td class="text-right text-success font-weight-medium">{{ item.open }}</td>
-                <td class="text-right text-blue font-weight-medium">{{ item.closed }}</td>
-                <td class="text-right font-weight-bold">{{ item.total }}</td>
+                <td class="fw-medium">{{ item.name }}</td>
+                <td class="text-end text-success fw-medium">{{ item.open }}</td>
+                <td class="text-end text-blue fw-medium">{{ item.closed }}</td>
+                <td class="text-end fw-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!categoryReport.length">
                 <td colspan="4" class="text-center text-grey py-3">지정된 범주가 없습니다.</td>

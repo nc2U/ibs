@@ -86,7 +86,7 @@ const fallbackCopy = (text: string) => {
   try {
     document.execCommand('copy')
     message('success', '복사 완료', '업무 상세 링크가 클립보드에 복사되었습니다.')
-  } catch (err) {
+  } catch {
     message('danger', '오류!', '링크 복사에 실패했습니다.')
   }
   document.body.removeChild(textArea)
@@ -109,7 +109,7 @@ const callDeleteIssue = () => emit('call-delete-issue')
 </script>
 
 <template>
-  <CCol class="text-right form-text">
+  <CCol class="text-end form-text">
     <span v-if="showEditButton">
       <TextButton name="편집" icon="mdi-pencil" icon-color="amber" @click="callEditForm" />
     </span>
@@ -141,11 +141,11 @@ const callDeleteIssue = () => emit('call-delete-issue')
         </CDropdownToggle>
         <CDropdownMenu>
           <CDropdownItem class="form-text pointer" @click="issueLinkCopy">
-            <v-icon icon="mdi-link-plus" color="grey" size="sm" class="mr-1" />
+            <v-icon icon="mdi-link-plus" color="grey" size="sm" class="me-1" />
             링크 복사
           </CDropdownItem>
           <CDropdownItem v-if="showDeleteButton" class="form-text pointer" @click="callDeleteIssue">
-            <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="mr-1" />
+            <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
             업무 삭제
           </CDropdownItem>
         </CDropdownMenu>

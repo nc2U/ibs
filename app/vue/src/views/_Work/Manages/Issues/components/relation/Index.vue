@@ -74,24 +74,24 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       </span>
     </CCol>
 
-    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
-      <span class="mr-3">{{ rel.issue.status }}</span>
-      <span class="mr-3" v-if="rel.issue.assigned_to">
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-end pt-1">
+      <span class="me-3">{{ rel.issue.status }}</span>
+      <span class="me-3" v-if="rel.issue.assigned_to">
         담당자 :
         <router-link :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }">
           {{ cutString(rel.issue.assigned_to?.username, 9) }}
         </router-link>
       </span>
-      <span class="mr-3">{{ rel.issue.start_date }}</span>
+      <span class="me-3">{{ rel.issue.start_date }}</span>
       <span
-        class="mr-3"
+        class="me-3"
         :class="{ 'text-danger': rel.issue.due_date && diffDate(rel.issue.due_date) > 0 }"
       >
         {{ rel.issue.due_date }}
       </span>
     </CCol>
 
-    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right">
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-end">
       <span v-if="rel.issue">
         <CProgress
           color="green-lighten-3"

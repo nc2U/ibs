@@ -57,11 +57,25 @@ const memberList = computed(() =>
 
 watch(
   () => memberList.value,
-  nVal => (addMembers.value = nVal ?? []),
+  nVal => {
+    const base = nVal ?? []
+    const external = addMembers.value.filter(
+      am =>
+        !members.value?.some(m => m.pk === am.pk) &&
+        !props.watchers.some(w => w.pk === am.pk),
+    )
+    const seen = new Set<number>()
+    addMembers.value = [...base, ...external].filter(item => {
+      if (seen.has(item.pk)) return false
+      seen.add(item.pk)
+      return true
+    })
+  },
 )
 
 const callModal = () => {
   addUsers.value = []
+  addUser.value = null
   refConfirmModal.value?.callModal()
 }
 defineExpose({ callModal })
@@ -86,7 +100,7 @@ onBeforeMount(() => {
       <Multiselect v-model="addUser" :options="getUsers" searchable placeholder="사용자 찾기" />
 
       <CRow v-if="addUser">
-        <CCol class="text-right pt-3 mr-2">
+        <CCol class="text-end pt-3 me-2">
           <v-btn color="info" size="small" @click="userAdding">목록추가</v-btn>
         </CCol>
       </CRow>

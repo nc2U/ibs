@@ -10,19 +10,21 @@ import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import IssueItem from './IssueItem.vue'
 
-const props = defineProps({
+defineProps({
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
   columns: {
     type: Array as PropType<string[]>,
     default: () => DEFAULT_ISSUE_COLUMNS,
   },
+  page: { type: Number, default: 1 },
 })
 
 const emit = defineEmits(['page-select'])
 
 const selectedRow = ref<number | null>(null)
-const handleClickOutside = (event: any) => {
-  if (!event.target.closest('.table-row')) selectedRow.value = null
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (!target?.closest('.table-row')) selectedRow.value = null
 }
 
 watchEffect(() => {
@@ -52,7 +54,7 @@ const pageSelect = (page: number) => emit('page-select', page)
             <CTableHeaderCell
               scope="col"
               :class="{
-                'text-left': colKey === 'status' || colKey === 'title',
+                'text-start': colKey === 'status' || colKey === 'subject',
               }"
             >
               {{ ISSUE_COLUMN_LABEL_MAP[colKey] || colKey }}
@@ -76,7 +78,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CTable>
 
     <Pagination
-      :active-page="1"
+      :active-page="page"
       :limit="8"
       :pages="issuePages(20)"
       @active-page-change="pageSelect"

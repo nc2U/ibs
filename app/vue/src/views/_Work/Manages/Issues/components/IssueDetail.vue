@@ -167,11 +167,10 @@ const deleteIssue = () => {
   )
 }
 
-const confirmDelete = () => {
-  issueStore.deleteIssue(props.issue?.pk as number)
+const confirmDelete = async () => {
+  await issueStore.deleteIssue(props.issue?.pk as number)
   refDelModal.value?.close()
-  if (route.params.projId) router.push({ name: '(업무)' })
-  else router.push({ name: '업무' })
+  await router.push({ name: listRouteName.value, params: getListParams() })
 }
 
 const [route, router] = [useRoute(), useRouter()]
@@ -187,6 +186,16 @@ const getLinkParams = (id: number) =>
   projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
 
 const getListParams = () => (projId.value ? { projId: projId.value } : {})
+
+const currentIssueIndex = computed(() => issueNums.value.indexOf(props.issue.pk))
+const categoryName = computed(() => {
+  if (!props.issue.category) return ''
+  return (
+    props.currentProject?.categories?.find(c => c.pk === props.issue.category)?.name ||
+    issueStore.categoryList.find(c => c.pk === props.issue.category)?.name ||
+    String(props.issue.category)
+  )
+})
 
 const relatedIssues = computed(() => {
   const list: any[] = []
@@ -217,7 +226,7 @@ onBeforeMount(async () => {
           :content="isClosed ? '완료됨' : '진행중'"
           inline
           rounded="1"
-          class="ml-2"
+          class="ms-2"
         />
         <v-badge v-if="issue.is_private" color="danger" content="비공개" inline rounded="1" />
       </h5>
@@ -240,27 +249,29 @@ onBeforeMount(async () => {
           <span class="sub-title">{{ issue.subject }}</span>
         </CCol>
 
-        <CCol class="text-right form-text">
-          <span v-if="issue.pk === issueNums[0]">« 뒤로</span>
+        <CCol class="text-end form-text">
+          <span v-if="currentIssueIndex <= 0">« 뒤로</span>
           <router-link
             v-else
             :to="{
               name: detailRouteName,
-              params: getLinkParams(issueNums[issueNums.indexOf(issue.pk) - 1]),
+              params: getLinkParams(issueNums[currentIssueIndex - 1]),
             }"
             >« 뒤로
           </router-link>
           <span class="mx-2">|</span>
           <router-link :to="{ name: listRouteName, params: getListParams() }">
-            {{ issueNums.indexOf(issue.pk) + 1 }}/{{ issueNums.length }}
+            {{ currentIssueIndex >= 0 ? currentIssueIndex + 1 : '-' }}/{{ issueNums.length }}
           </router-link>
           <span class="mx-2">|</span>
-          <span v-if="issue.pk === issueNums[issueNums.length - 1]">다음 »</span>
+          <span v-if="currentIssueIndex < 0 || currentIssueIndex >= issueNums.length - 1">
+            다음 »
+          </span>
           <router-link
             v-else
             :to="{
               name: detailRouteName,
-              params: getLinkParams(issueNums[issueNums.indexOf(issue.pk) + 1]),
+              params: getLinkParams(issueNums[currentIssueIndex + 1]),
             }"
           >
             다음 »
@@ -338,9 +349,9 @@ onBeforeMount(async () => {
             </CCol>
           </CRow>
 
-          <CRow v-if="currentProject?.categories?.length">
+          <CRow v-if="currentProject?.categories?.length || issue.category">
             <CCol class="title">범주 :</CCol>
-            <CCol>{{ issue.category }}</CCol>
+            <CCol>{{ categoryName }}</CCol>
           </CRow>
 
           <CRow v-if="issue.fixed_version">
@@ -389,7 +400,7 @@ onBeforeMount(async () => {
                   style="width: 110px; float: left; margin-top: 2px"
                   height="12"
                 />
-                <span class="ml-2 pt-0">{{ (doneRatio ?? 0).toFixed(2) }}%</span>
+                <span class="ms-2 pt-0">{{ (doneRatio ?? 0).toFixed(2) }}%</span>
               </div>
             </CCol>
           </CRow>
@@ -406,14 +417,16 @@ onBeforeMount(async () => {
 
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
-        <CCol v-if="canCommentCreate" class="text-right form-text">
-          <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="mr-2" />
-          <a href="javascript:void(0)" @click="callComment">댓글달기</a>
+        <CCol v-if="canCommentCreate" class="text-end form-text">
+          <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="me-2" />
+          <a href="#" @click.prevent="callComment">댓글달기</a>
         </CCol>
       </CRow>
 
-      <CRow class="pl-4">
-        <CCol v-html="markdownRender(issue.description)" />
+      <CRow class="ps-4">
+        <CCol>
+          <div v-html="markdownRender(issue.description)" />
+        </CCol>
       </CRow>
 
       <v-divider v-if="currentProject?.status !== '9' || issue.files.length" />
@@ -428,7 +441,7 @@ onBeforeMount(async () => {
       <CRow v-if="issue.links?.length" class="mb-3">
         <CCol class="col-12">
           <div class="title mb-1">외부 링크</div>
-          <ul class="pl-4 mb-0">
+          <ul class="ps-4 mb-0">
             <li
               v-for="(link, i) in issue.links"
               :key="typeof link === 'object' && link.pk ? link.pk : i"
@@ -439,7 +452,7 @@ onBeforeMount(async () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                <v-icon icon="mdi-link-variant" size="14" class="me-1" />
                 {{ typeof link === 'object' ? link.name || link.link : link }}
               </a>
             </li>
@@ -449,7 +462,7 @@ onBeforeMount(async () => {
 
       <CRow v-if="currentProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
-          <span class="title mr-2">하위 업무</span>
+          <span class="title me-2">하위 업무</span>
           <SubSummary
             v-if="issue.sub_issues.length"
             :issue-pk="issue.pk"
@@ -458,10 +471,14 @@ onBeforeMount(async () => {
         </CCol>
         <CCol
           v-if="currentProject?.status === '1' && can(PERM.ISSUE_SUB_MANAGE)"
-          class="text-right form-text"
+          class="text-end form-text"
         >
           <router-link
-            :to="{ name: '(업무) - 추가', query: { parent: issue.pk, tracker: issue.tracker.pk } }"
+            :to="{
+              name: '(업무) - 추가',
+              params: { projId: projId || issue.project.slug },
+              query: { parent: issue.pk, tracker: issue.tracker.pk },
+            }"
           >
             추가
           </router-link>
@@ -476,18 +493,20 @@ onBeforeMount(async () => {
 
       <CRow v-if="currentProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
-          <span class="title mr-2">연결된 업무</span>
+          <span class="title me-2">연결된 업무</span>
           <RelSummary
             v-if="issue?.outgoing_relations.length || issue?.incoming_relation"
             :issue-pk="issue.pk"
             :relations="relatedIssues"
+            :has-outgoing="issue.outgoing_relations.length > 0"
+            :has-incoming="!!issue.incoming_relation"
           />
         </CCol>
         <CCol
           v-if="currentProject?.status === '1' && can(PERM.ISSUE_REL_MANAGE)"
-          class="text-right form-text"
+          class="text-end form-text"
         >
-          <a href="javascript:void(0)" @click="addRIssue = !addRIssue">추가</a>
+          <a href="#" @click.prevent="addRIssue = !addRIssue">추가</a>
         </CCol>
       </CRow>
 
@@ -517,8 +536,8 @@ onBeforeMount(async () => {
 
       <CRow v-if="issue.meeting_desc">
         <CCol>
-          <span class="title mr-2">관련 회의</span>
-          <a href="javascript:void(0)" @click="goMeeting">
+          <span class="title me-2">관련 회의</span>
+          <a href="#" @click.prevent="goMeeting">
             {{ issue.meeting_desc?.title }}
           </a>
         </CCol>
@@ -527,8 +546,13 @@ onBeforeMount(async () => {
   </CCard>
 
   <CRow>
-    <CCol class="text-right my-2">
-      <v-btn size="small" color="light" flat @click="router.push({ name: '(업무)' })">
+    <CCol class="text-end my-2">
+      <v-btn
+        size="small"
+        color="light"
+        flat
+        @click="router.push({ name: listRouteName, params: getListParams() })"
+      >
         목록으로
       </v-btn>
     </CCol>

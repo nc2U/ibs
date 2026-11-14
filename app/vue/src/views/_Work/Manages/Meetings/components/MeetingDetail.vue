@@ -12,6 +12,7 @@ import { markNotificationReadByTarget } from '@/utils/notification'
 import type { SimpleIssueInMeeting } from '@/store/types/work_meeting'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import { CCard } from '@coreui/vue'
@@ -174,7 +175,7 @@ const parsedActionItems = computed<ParsedActionItem[]>(() => {
       text.match(/(\d{4}[-.]\d{2}[-.]\d{2})/)
     if (dateMatch) dueDate = dateMatch[1].replace(/\./g, '-')
 
-    let cleanTitle = text
+    const cleanTitle = text
       .replace(/\((?:담당(?:자)?|기한|마감|완료|일자)[^)]*\)/gi, '')
       .replace(/@([a-zA-Z0-9가-힣]+)/g, '')
       .trim()
@@ -215,18 +216,20 @@ const openNormalIssueModal = () => {
   refIssueModal.value?.callModal()
 }
 
+const refAlertModal = ref<InstanceType<typeof AlertModal>>()
+const alertMessage = ref('')
+
 const createRelatedIssue = async (payload: any) => {
-  if (meeting.value) {
-    const { pk, ...getData } = payload
+  if (!meeting.value) return
+  try {
     const formData = new FormData()
+    const payloadData = { ...payload, meeting: meeting.value.pk }
 
-    getData.meeting = meeting.value.pk
-
-    for (const key in getData) {
-      const val = getData[key]
+    for (const key in payloadData) {
+      if (key === 'pk') continue
+      const val = payloadData[key]
       if (val === null || val === undefined) continue
 
-      // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
       const fkFields = [
         'project',
         'tracker',
@@ -239,27 +242,36 @@ const createRelatedIssue = async (payload: any) => {
       ]
       if (fkFields.includes(key) && val === '') continue
 
-      if (key === 'watchers' || key === 'files')
-        val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
-      else if (key === 'newFiles') {
+      if (key === 'watchers' || key === 'files' || key === 'links') {
+        val?.forEach((v: any) => formData.append(key, JSON.stringify(v)))
+      } else if (key === 'newFiles') {
         val.forEach((v: any) => {
           formData.append('new_files', v.file as string | Blob)
           formData.append('descriptions', v.description ?? '')
         })
+      } else if (key === 'newLinks') {
+        val.forEach((v: any) => {
+          if (v.link && v.link.trim()) {
+            formData.append('newLinks', v.link.trim())
+            formData.append('newLinkNames', v.name ?? '')
+          }
+        })
+      } else if (key === 'project' && !val) {
+        const projectSlug =
+          meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
+        if (projectSlug) formData.append(key, projectSlug)
       } else {
-        if (key === 'project' && !val) {
-          const projectSlug =
-            meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
-          if (projectSlug) formData.append(key, projectSlug)
-        } else {
-          formData.append(key, val as string)
-        }
+        formData.append(key, val as string)
       }
     }
 
     await issueStore.createIssue(formData)
     await meetingStore.fetchMeeting(meeting.value.pk)
     refIssueModal.value?.close()
+  } catch (err) {
+    console.error('Failed to create related issue:', err)
+    alertMessage.value = '후속 조치 업무 등록 중 오류가 발생했습니다.'
+    refAlertModal.value?.callModal()
   }
 }
 
@@ -335,21 +347,21 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
     <CRow class="mb-2">
       <CCol>
         <h5>
-          <v-icon icon="mdi-account-group" class="mr-2" />
+          <v-icon icon="mdi-account-group" class="me-2" />
           <span>회의록 #{{ meeting.pk }}</span>
           <v-badge
             :color="statusColor"
             :content="meeting.status_display"
             inline
             rounded="1"
-            class="ml-2"
+            class="ms-2"
           />
         </h5>
       </CCol>
 
-      <CCol class="text-right">
-        <v-btn color="primary" size="small" class="ml-2" @click="downloadPdf">
-          <v-icon icon="mdi-file-pdf-box" size="small" class="mr-1" /> PDF 출력
+      <CCol class="text-end">
+        <v-btn color="primary" size="small" class="ms-2" @click="downloadPdf">
+          <v-icon icon="mdi-file-pdf-box" size="small" class="me-1" /> PDF 출력
         </v-btn>
       </CCol>
     </CRow>
@@ -424,7 +436,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   :color="confirmAlertColor"
                   size="x-small"
                   variant="flat"
-                  class="ml-1"
+                  class="ms-1"
                 >
                   확정 필요
                 </v-chip>
@@ -433,7 +445,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   color="primary"
                   size="x-small"
                   variant="flat"
-                  class="ml-1"
+                  class="ms-1"
                 >
                   확정
                 </v-chip>
@@ -516,7 +528,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.agenda" class="mb-5">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="mr-1" />
+            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="me-1" />
             회의 의제
           </h6>
           <div
@@ -527,7 +539,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.content" class="mb-5">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-text-box-outline" color="text-primary" size="small" class="mr-1" />
+            <v-icon icon="mdi-text-box-outline" color="text-primary" size="small" class="me-1" />
             회의 내용
           </h6>
           <div
@@ -540,7 +552,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
           <CCol md="6" v-if="meeting.decisions">
             <CCallout color="success" class="mb-4 border-start-4">
               <div class="d-flex align-items-center mb-2">
-                <v-icon color="success" icon="mdi-check-circle" size="small" class="mr-1" />
+                <v-icon color="success" icon="mdi-check-circle" size="small" class="me-1" />
                 <span class="fw-bold text-success">주요 결정 사항</span>
               </div>
               <div
@@ -557,7 +569,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                     icon="mdi-clipboard-list-outline"
                     color="warning"
                     size="small"
-                    class="mr-1"
+                    class="me-1"
                   />
                   <span class="fw-bold text-warning">후속 조치 사항</span>
                 </div>
@@ -567,7 +579,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   size="x-small"
                   @click="openIssueModalForActionItem"
                 >
-                  <v-icon icon="mdi-plus" size="12" class="mr-1" /> 전체를 업무로 등록
+                  <v-icon icon="mdi-plus" size="12" class="me-1" /> 전체를 업무로 등록
                 </v-btn>
               </div>
               <div
@@ -581,7 +593,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   class="small fw-bold text-muted mb-2 d-flex align-items-center justify-content-between"
                 >
                   <span>
-                    <v-icon icon="mdi-format-list-checks" size="14" class="mr-1 text-warning" />
+                    <v-icon icon="mdi-format-list-checks" size="14" class="me-1 text-warning" />
                     세부 후속 조치 업무 ({{ parsedActionItems.length }}건)
                   </span>
                   <span class="text-muted" style="font-size: 11px">
@@ -595,7 +607,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   :key="idx"
                   class="d-flex align-items-center justify-content-between p-2 mb-1 rounded bg-light border"
                 >
-                  <div class="d-flex align-items-center flex-grow-1 mr-2 text-truncate">
+                  <div class="d-flex align-items-center flex-grow-1 me-2 text-truncate">
                     <v-icon
                       :icon="
                         item.linkedIssue
@@ -612,18 +624,18 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                           : 'grey'
                       "
                       size="16"
-                      class="mr-2 flex-shrink-0"
+                      class="me-2 flex-shrink-0"
                     />
-                    <span class="small font-weight-medium text-truncate">{{ item.title }}</span>
+                    <span class="small fw-medium text-truncate">{{ item.title }}</span>
                     <span
                       v-if="item.assignedName"
-                      class="badge bg-secondary-subtle text-secondary ml-2 small flex-shrink-0"
+                      class="badge bg-secondary-subtle text-secondary ms-2 small flex-shrink-0"
                     >
                       {{ item.assignedName }}
                     </span>
                     <span
                       v-if="item.dueDate"
-                      class="badge bg-info-subtle text-info ml-1 small flex-shrink-0"
+                      class="badge bg-info-subtle text-info ms-1 small flex-shrink-0"
                     >
                       {{ item.dueDate }}
                     </span>
@@ -653,7 +665,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                       variant="flat"
                       @click="openIssueModalForSpecificItem(item)"
                     >
-                      <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무 발행
+                      <v-icon icon="mdi-plus" size="12" class="me-1" /> 업무 발행
                     </v-btn>
                   </div>
                 </div>
@@ -664,7 +676,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.files.length" class="my-5">
           <h6 class="title mb-3">
-            <v-icon icon="mdi-paperclip" color="blue-grey-lighten-1" size="small" class="mr-1" />
+            <v-icon icon="mdi-paperclip" color="blue-grey-lighten-1" size="small" class="me-1" />
             첨부 파일 ({{ meeting.files.length }}건)
           </h6>
           <CRow>
@@ -682,10 +694,10 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.links?.length" class="my-4">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-link-variant" color="primary" size="small" class="mr-1" />
+            <v-icon icon="mdi-link-variant" color="primary" size="small" class="me-1" />
             외부 링크 ({{ meeting.links.length }}건)
           </h6>
-          <ul class="pl-4 mb-0">
+          <ul class="ps-4 mb-0">
             <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
               <a :href="link.link" target="_blank" rel="noopener noreferrer">
                 {{ link.name ? link.name : link.link }}
@@ -704,20 +716,20 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   icon="mdi-checkbox-marked-circle-outline"
                   color="success"
                   size="small"
-                  class="mr-1"
+                  class="me-1"
                 />
                 관련 업무
                 {{ meeting.issues?.length ? `(${meeting.issues.length}건)` : '' }}
               </h6>
             </CCol>
-            <CCol class="text-right">
+            <CCol class="text-end">
               <v-btn
                 v-if="canIssueCreate"
                 color="success"
                 size="x-small"
                 @click="openNormalIssueModal"
               >
-                <v-icon icon="mdi-plus" size="12" class="mr-1" /> 관련 업무 추가
+                <v-icon icon="mdi-plus" size="12" class="me-1" /> 관련 업무 추가
               </v-btn>
             </CCol>
           </CRow>
@@ -768,7 +780,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
     </CCard>
 
     <CRow class="mb-2">
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn
           v-if="canMeetingConfirm"
           :color="meeting.is_confirmed ? 'secondary' : 'primary'"
@@ -821,4 +833,8 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
       />
     </template>
   </FormModal>
+
+  <AlertModal ref="refAlertModal">
+    <template #default>{{ alertMessage }}</template>
+  </AlertModal>
 </template>

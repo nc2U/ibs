@@ -85,8 +85,19 @@ const onSubmit = async (payload: any) => {
   const { pk, ...getData } = payload
   const form = new FormData()
 
+  const nullableClearable = [
+    'parent',
+    'assigned_to',
+    'fixed_version',
+    'category',
+    'due_date',
+    'expected_duration',
+  ]
+
   for (const key in getData) {
-    if (key === 'watchers' || key === 'files' || key === 'links')
+    if (pk && nullableClearable.includes(key) && (getData[key] === null || getData[key] === '')) {
+      form.append(key, '')
+    } else if (key === 'watchers' || key === 'files' || key === 'links')
       getData[key]?.forEach((val: any) => form.append(key, JSON.stringify(val)))
     else if (key === 'newFiles') {
       getData[key].forEach((val: any) => {
@@ -142,13 +153,16 @@ const projId = computed(() => (route.params.projId as string) ?? '')
 const issueId = computed(() => (route.params.issueId as string) ?? '')
 
 const listFilter = ref<IssueFilter>(issueFilterStore.buildFilterPayload(projId.value))
+const page = ref(1)
 
 const filterSubmit = (payload: IssueFilter) => {
+  page.value = 1
   listFilter.value = payload
   issueStore.fetchIssueList(payload)
 }
-const pageSelect = (page: number) => {
-  listFilter.value.page = page
+const pageSelect = (p: number) => {
+  page.value = p
+  listFilter.value.page = p
   issueStore.fetchIssueList(listFilter.value)
 }
 
@@ -156,6 +170,7 @@ watch(
   () => projId.value,
   nVal => {
     if (nVal && nVal.length > 0) {
+      page.value = 1
       const payload = issueFilterStore.resetFilter(nVal as string)
       listFilter.value = payload
       issueStore.fetchIssueList(payload)
@@ -248,6 +263,7 @@ onBeforeMount(async () => {
         v-if="route.name === '(업무)' && viewMode === 'list'"
         :issue-list="issueList as Issue[]"
         :columns="selectedColumns"
+        :page="page"
         @page-select="pageSelect"
       />
 

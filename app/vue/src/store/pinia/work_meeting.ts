@@ -15,6 +15,7 @@ export const useMeeting = defineStore('meeting', () => {
   const fetchMeetingList = async (payload: MeetingFilter) => {
     let url = `/meeting/?page=${payload.page ?? 1}`
     if (payload.project) url += `&project__slug=${payload.project}`
+    if (payload.project__exclude) url += `&project__exclude=${payload.project__exclude}`
     if (payload.project__my_project !== undefined)
       url += `&project__my_project=${payload.project__my_project}`
     if (payload.project__bookmark !== undefined)
@@ -46,7 +47,7 @@ export const useMeeting = defineStore('meeting', () => {
         meetingList.value = res.data.results
         meetingCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
   }
 
   const meetingPages = (limit: number) => Math.ceil(meetingCount.value / limit)
@@ -55,19 +56,19 @@ export const useMeeting = defineStore('meeting', () => {
     await api
       .get(`/meeting/${pk}/`)
       .then(res => (meeting.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
   const createMeeting = async (payload: any) =>
     await api
       .post(`/meeting/`, payload, config_headers)
-      .then(res => {
-        fetchMeetingList({ page: 1 })
+      .then(async res => {
+        await fetchMeetingList({ page: 1, project: res.data.project_desc?.slug })
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const updateMeeting = async (pk: number, payload: FormData) =>
     await api
@@ -77,7 +78,7 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const patchMeeting = async (pk: number, payload: FormData) =>
     await api
@@ -87,16 +88,16 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const deleteMeeting = async (pk: number, project?: string) =>
     await api
       .delete(`/meeting/${pk}/`)
-      .then(() => {
-        fetchMeetingList({ page: 1, project })
+      .then(async () => {
+        await fetchMeetingList({ page: 1, project })
         message('warning', '알림!', '해당 회의록이 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const fetchCategoryList = async (project?: string) => {
     let url = `/meeting-category/`
@@ -104,17 +105,18 @@ export const useMeeting = defineStore('meeting', () => {
     return await api
       .get(url)
       .then(res => (categoryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
   }
 
   const createCategory = async (payload: MeetingCategory) =>
     await api
       .post(`/meeting-category/`, payload)
-      .then(res => {
-        fetchCategoryList(res.data.project_slug)
+      .then(async res => {
+        await fetchCategoryList(res.data.project_slug)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const generatePdf = (pk: number) => {
     const url = `/pdf/work/meeting/${pk}/`
@@ -132,7 +134,7 @@ export const useMeeting = defineStore('meeting', () => {
           `회의가 ${res.data.is_confirmed ? '확정' : '확정 취소'}되었습니다.`,
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err.response?.data || err.message))
 
   const aiSummarizeMeeting = async (audioBlob: Blob, filename = 'recording.webm') => {
     const formData = new FormData()

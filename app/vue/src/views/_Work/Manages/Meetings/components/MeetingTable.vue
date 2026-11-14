@@ -7,7 +7,7 @@ import type { Meeting, MeetingCategory } from '@/store/types/work_meeting'
 import Pagination from '@/components/Pagination'
 import MeetingItem from './MeetingItem.vue'
 
-const props = defineProps({
+defineProps({
   meetingList: { type: Array as PropType<Meeting[]>, default: () => [] },
   categories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
   columns: {
@@ -61,7 +61,7 @@ const pageSelect = (page: number) => emit('page-select', page)
             <CTableHeaderCell
               scope="col"
               :class="{
-                'text-left': colKey === 'status' || colKey === 'title',
+                'text-start': colKey === 'status' || colKey === 'title',
               }"
             >
               {{ MEETING_COLUMN_LABEL_MAP[colKey] || colKey }}

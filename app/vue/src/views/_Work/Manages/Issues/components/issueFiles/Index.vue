@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useIssue } from '@/store/pinia/work_issue'
+import { downloadFile } from '@/utils/helper'
 import type { IssueFile } from '@/store/types/work_issue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
@@ -31,19 +32,25 @@ const loadFile = (event: Event, i: number) => {
 }
 
 const removeFile = (filePk: number, i: number) => {
-  const file_form = document.getElementById(`issue-file-${filePk}`) as HTMLInputElement
-  file_form.value = ''
+  const file_form = document.getElementById(`issue-file-${filePk}`) as HTMLInputElement | null
+  if (file_form) file_form.value = ''
   editFiles.value[i].cngFile = null
   editFiles.value[i].edit = false
 }
 
-const editFileSubmit = (payload: IssueFile) => {
+const editFileSubmit = async (payload: IssueFile) => {
   const form = new FormData()
   form.append('edit_file', JSON.stringify(payload.pk))
   if (payload.cngFile) form.append('cng_file', payload.cngFile)
   form.append('edit_file_desc', payload.description)
-  fileControl(form)
+  await fileControl(form)
   editMode.value = false
+}
+
+const downloadAllFiles = async () => {
+  for (const file of props.issueFiles) {
+    await downloadFile(file.file, file.file_name)
+  }
 }
 
 const deleteFile = (pk: number) => {
@@ -66,13 +73,13 @@ onBeforeMount(async () => {
       <CRow v-for="(file, i) in issueFiles" :key="file.pk">
         <FileDisplay :file="file" @delete-file="deleteFile" />
 
-        <CCol v-if="i === 0" class="text-right form-text col-2">
-          <span v-if="projStatus !== '9'" class="mr-2 pointer" @click="editMode = !editMode">
+        <CCol v-if="i === 0" class="text-end form-text col-2">
+          <span v-if="projStatus !== '9'" class="me-2 pointer" @click="editMode = !editMode">
             <v-icon icon="mdi-pencil" color="amber" size="18" />
             <v-tooltip activator="parent" location="top">첨부파일 편집</v-tooltip>
           </span>
 
-          <span v-if="issueFiles.length > 1" class="mr-2 pointer">
+          <span v-if="issueFiles.length > 1" class="me-2 pointer" @click="downloadAllFiles">
             <v-icon icon="mdi-download-box" color="secondary" size="18" />
             <v-tooltip activator="parent" location="top">전체 다운로드</v-tooltip>
           </span>

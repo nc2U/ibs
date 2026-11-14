@@ -124,7 +124,7 @@ const comment = ref({
   is_private: false,
 })
 
-const newFiles = ref<{ file: File; description: string }[]>([])
+const newFiles = ref<{ id: string; file: File; description: string }[]>([])
 
 // 파일 용량 제한 관련 설정 (Nginx / Backend 100MB)
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 단일 파일 최대 100MB
@@ -145,7 +145,7 @@ const formatBytes = (bytes: number, decimals = 1) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
-const loadFile = (event: Event, index: number) => {
+const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
   fileErrorMessage.value = ''
 
@@ -161,10 +161,7 @@ const loadFile = (event: Event, index: number) => {
     }
 
     // 2. 전체 총용량 체크
-    const currentTotal = newFiles.value.reduce(
-      (acc, item, idx) => acc + (idx === index ? 0 : item.file?.size || 0),
-      0,
-    )
+    const currentTotal = newFiles.value.reduce((acc, item) => acc + (item.file?.size || 0), 0)
     const addedTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0)
     if (currentTotal + addedTotal > MAX_TOTAL_SIZE) {
       fileErrorMessage.value = `총 첨부파일 용량이 제한(${formatBytes(MAX_TOTAL_SIZE)})을 초과하여 추가할 수 없습니다.`
@@ -172,17 +169,18 @@ const loadFile = (event: Event, index: number) => {
       return
     }
 
-    if (newFiles.value[index]) {
-      newFiles.value[index].file = selectedFiles[0]
-    } else {
-      newFiles.value.push({ file: selectedFiles[0], description: '' })
-    }
+    selectedFiles.forEach(file => {
+      newFiles.value.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        description: '',
+      })
+    })
+    el.value = ''
   }
 }
 
 const removeFile = (index: number) => {
-  const input = document.getElementById(`file-${index}`) as HTMLInputElement
-  if (input) input.value = ''
   newFiles.value.splice(index, 1)
   fileErrorMessage.value = ''
 }
@@ -197,23 +195,28 @@ const formsCheck = computed(() => {
     const d = form.value.subject === props.issue.subject
     const e = form.value.description === props.issue.description
     const f = form.value.status === props.issue.status.pk
-    const g = form.value.parent === props.issue.parent
+    const g = form.value.parent === (props.issue.parent?.pk ?? null)
     const h = form.value.priority === props.issue.priority.pk
-    const i = form.value.start_date === props.issue.start_date
-    const j = form.value.assigned_to === props.issue.assigned_to?.pk
-    const k = form.value.due_date === props.issue.due_date
-    const l = form.value.category === props.issue.category
-    const m = form.value.expected_duration === props.issue.expected_duration
-    const n = form.value.fixed_version === props.issue.fixed_version?.pk
+    const i = form.value.start_date === dateFormat(props.issue.start_date)
+    const j = form.value.assigned_to === (props.issue.assigned_to?.pk ?? null)
+    const k = form.value.due_date === (props.issue.due_date ? dateFormat(props.issue.due_date) : null)
+    const l = (form.value.category || null) === (props.issue.category ?? null)
+    const m = form.value.expected_duration === (props.issue.expected_duration ?? '')
+    const n = (form.value.fixed_version || null) === (props.issue.fixed_version?.pk ?? null)
     const o = form.value.done_ratio === props.issue.done_ratio
-    const p = !form.value.files?.map(f => f.del).some(f => f === true)
+    const p = !form.value.files?.some(f => f.del === true)
     const q = !newFiles.value.length
-    const r = !form.value.links?.map(l => l.del).some(l => l === true)
+    const r = !form.value.links?.some(l => l.del === true)
     const s = !newLinks.value.length
+    const origWatchers = [...(props.issue.watchers ?? [])].map(w => w.pk).sort((x, y) => x - y)
+    const currWatchers = [...form.value.watchers].sort((x, y) => x - y)
+    const t =
+      origWatchers.length === currWatchers.length &&
+      origWatchers.every((v, idx) => v === currWatchers[idx])
     const u = !comment.value.content
 
     const first = a && b && c && d && e && f && g && h && i
-    const second = j && k && l && m && n && o && p && q && r && s && u
+    const second = j && k && l && m && n && o && p && q && r && s && t && u
     return first && second
   }
   return false
@@ -339,9 +342,21 @@ const newIssueStatusList = computed(() => {
   return props.statusList // 수정 모드일 때는 모든 상태 반환
 })
 
-const categories = computed(() => (props.currentProject?.categories as SimpleCategory[]) ?? [])
+const categories = computed(() => {
+  const slug = form.value.project || props.currentProject?.slug
+  const storeCats = (issueStore.categoryList as any[]).filter(
+    c => !slug || c.project?.slug === slug,
+  ) as SimpleCategory[]
+  if (storeCats.length) return storeCats
+  return (props.currentProject?.categories as SimpleCategory[]) ?? []
+})
 const versions = computed(() => {
-  const allVers = props.currentProject?.versions ?? []
+  const projVers = props.currentProject?.versions ?? []
+  const extra =
+    form.value.fixed_version && !projVers.some(v => v.pk === form.value.fixed_version)
+      ? (workStore.versionList as any[]).filter(v => v.pk === form.value.fixed_version)
+      : []
+  const allVers = projVers.length || extra.length ? [...projVers, ...extra] : (workStore.versionList as any[])
   return allVers.filter(v => {
     // status: '1' (열림/진행) 버전만 지정 가능
     if (v.status === '1') return true
@@ -427,8 +442,18 @@ const RefCategoryModal = ref<InstanceType<typeof FormModal> | null>(null)
 const RefVersionModal = ref<InstanceType<typeof FormModal> | null>(null)
 const refWatcherAdd = ref<InstanceType<typeof WatcherAdd> | null>(null)
 
-const createCategory = (payload: any) => issueStore.createCategory(payload)
-const createVersion = (payload: any) => workStore.createVersion(payload)
+const createCategory = async (payload: any) => {
+  const projectSlug = form.value.project || projId.value || props.currentProject?.slug
+  if (!projectSlug) return
+  const newPk = await issueStore.createCategory({ ...payload, project: projectSlug })
+  if (newPk) form.value.category = newPk
+}
+const createVersion = async (payload: any) => {
+  const projectSlug = form.value.project || projId.value || props.currentProject?.slug
+  if (!projectSlug) return
+  const newPk = await workStore.createVersion({ ...payload, project: projectSlug })
+  if (newPk) form.value.fixed_version = newPk
+}
 
 const projId = computed(() => route.params.projId as string | undefined)
 watch(projId, newVal => {
@@ -492,7 +517,7 @@ onBeforeMount(async () => {
     if (projId.value) form.value.project = projId.value
     if (route.query.parent) {
       form.value.parent = Number(route.query.parent)
-      form.value.tracker = Number(route.query.tracker)
+      if (route.query.tracker) form.value.tracker = Number(route.query.tracker)
     }
   }
 })
@@ -502,7 +527,7 @@ defineExpose({ callComment, callReply })
 
 <template>
   <CRow v-if="!issue?.pk" class="py-2">
-    <CCol :class="btnSize === 'small' ? 'pl-4' : ''">
+    <CCol :class="btnSize === 'small' ? 'ps-4' : ''">
       <h5>업무</h5>
     </CCol>
   </CRow>
@@ -514,7 +539,7 @@ defineExpose({ callComment, callReply })
           <CRow class="mb-3">
             <CCol md="8">
               <CRow class="mb-3">
-                <CFormLabel for="tracker" class="col-sm-2 col-form-label text-right required">
+                <CFormLabel for="tracker" class="col-sm-2 col-form-label text-end required">
                   유형
                 </CFormLabel>
                 <CCol sm="4">
@@ -531,7 +556,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="subject" class="col-sm-2 col-form-label text-right required">
+                <CFormLabel for="subject" class="col-sm-2 col-form-label text-end required">
                   제목
                 </CFormLabel>
                 <CCol sm="10">
@@ -545,7 +570,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="description" class="col-sm-2 col-form-label text-right">
+                <CFormLabel for="description" class="col-sm-2 col-form-label text-end">
                   설명
                 </CFormLabel>
                 <CCol sm="10">
@@ -560,7 +585,7 @@ defineExpose({ callComment, callReply })
               <CRow class="mt-3">
                 <!-- Existing Files (Edit Mode) -->
                 <CCol v-if="issue && form.files?.length" sm="10" class="offset-sm-2 mb-2">
-                  <div class="small font-weight-bold text-muted mb-1">등록된 첨부 파일</div>
+                  <div class="small fw-bold text-muted mb-1">등록된 첨부 파일</div>
                   <CTable small striped hover>
                     <CTableBody>
                       <CTableRow v-for="(file, index) in form.files" :key="file.pk">
@@ -570,7 +595,7 @@ defineExpose({ callComment, callReply })
                             label="삭제"
                             v-model="file.del"
                             inline
-                            class="ml-2"
+                            class="ms-2"
                             :id="`issue-file-del-${index}`"
                           />
                         </CTableDataCell>
@@ -581,7 +606,7 @@ defineExpose({ callComment, callReply })
 
                 <!-- Existing Links (Edit Mode) -->
                 <CCol v-if="issue && form.links?.length" sm="10" class="offset-sm-2 mb-2">
-                  <div class="small font-weight-bold text-muted mb-1">
+                  <div class="small fw-bold text-muted mb-1">
                     등록된 외부 클라우드 링크
                   </div>
                   <CTable small striped hover>
@@ -593,7 +618,7 @@ defineExpose({ callComment, callReply })
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                            <v-icon icon="mdi-link-variant" size="14" class="me-1" />
                             {{
                               typeof linkItem === 'object'
                                 ? linkItem.name || linkItem.link
@@ -604,7 +629,7 @@ defineExpose({ callComment, callReply })
                             label="삭제"
                             v-model="linkItem.del"
                             inline
-                            class="ml-2"
+                            class="ms-2"
                             :id="`issue-link-del-${index}`"
                           />
                         </CTableDataCell>
@@ -616,44 +641,52 @@ defineExpose({ callComment, callReply })
                 <CCol sm="10" class="offset-sm-2 mb-2">
                   <div class="d-flex align-items-center justify-content-between text-muted small">
                     <span>
-                      <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
+                      <v-icon icon="mdi-paperclip" size="14" class="me-1" />
                       첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
                     </span>
                     <span
-                      :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }"
+                      :class="{ 'text-danger fw-bold': totalFileSize > MAX_TOTAL_SIZE }"
                     >
                       {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
                     </span>
                   </div>
 
                   <div v-if="fileErrorMessage" class="text-danger small mt-1">
-                    <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+                    <v-icon icon="mdi-alert-circle" size="14" class="me-1" />
                     {{ fileErrorMessage }}
-                    <span class="ml-2 font-weight-bold text-body">
+                    <span class="ms-2 fw-bold text-body">
                       💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google
                       Drive 등)를 직접 추가하여 공유할 수 있습니다.
                     </span>
                   </div>
                 </CCol>
 
-                <div v-for="(f, i) in newFiles.length + 1" :key="i" class="w-100">
-                  <CRow :id="`row-fn-${i + 1}`" class="mb-2">
-                    <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                      <span v-if="i === 0">파일 추가</span>
+                <div class="w-100">
+                  <CRow v-for="(f, i) in newFiles" :key="f.id" class="mb-2">
+                    <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-end">
+                      <span v-if="i === 0">첨부 파일</span>
                     </CFormLabel>
                     <CCol sm="5">
-                      <CFormInput :id="`file-${i}`" type="file" @change="loadFile($event, i)" />
+                      <CFormInput :id="`file-${i + 1}`" type="text" :value="f.file.name" disabled />
+                      <div class="text-muted extra-small mt-1">
+                        용량: {{ formatBytes(f.file.size) }}
+                      </div>
                     </CCol>
-                    <CCol v-if="newFiles[i]?.file" sm="5">
+                    <CCol sm="5">
                       <CInputGroup>
-                        <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
+                        <CFormInput v-model="f.description" placeholder="부가적인 설명" />
                         <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
                           <v-icon icon="mdi-trash-can-outline" size="16" />
                         </CInputGroupText>
                       </CInputGroup>
-                      <div class="text-muted extra-small mt-1">
-                        용량: {{ formatBytes(newFiles[i].file.size) }}
-                      </div>
+                    </CCol>
+                  </CRow>
+                  <CRow class="mb-2">
+                    <CFormLabel for="file-add" class="col-sm-2 col-form-label text-end">
+                      <span v-if="!newFiles.length">파일 추가</span>
+                    </CFormLabel>
+                    <CCol sm="5">
+                      <CFormInput id="file-add" type="file" multiple @change="loadFile" />
                     </CCol>
                   </CRow>
                 </div>
@@ -661,7 +694,7 @@ defineExpose({ callComment, callReply })
                 <!-- 외부 클라우드 링크 섹션 -->
                 <div class="w-100 mt-2">
                   <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
-                    <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-right">
+                    <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end">
                       <span v-if="i === 0">외부 링크</span>
                     </CFormLabel>
                     <CCol sm="5">
@@ -689,15 +722,15 @@ defineExpose({ callComment, callReply })
                     </CCol>
                   </CRow>
                   <CRow class="mb-2">
-                    <CFormLabel v-if="!newLinks.length" class="col-sm-2 col-form-label text-right">
+                    <CFormLabel v-if="!newLinks.length" class="col-sm-2 col-form-label text-end">
                       외부 링크
                     </CFormLabel>
                     <CCol
                       :class="newLinks.length ? 'offset-sm-2 col-sm-10' : 'col-sm-10'"
                       class="form-text pt-2"
                     >
-                      <v-icon icon="mdi-link-plus" color="primary" size="sm" class="mr-1" />
-                      <a href="javascript:void(0)" @click="addLink">
+                      <v-icon icon="mdi-link-plus" color="primary" size="sm" class="me-1" />
+                      <a href="#" @click.prevent="addLink">
                         외부 클라우드 링크 추가 (OneDrive, Google Drive 등)
                       </a>
                     </CCol>
@@ -705,11 +738,11 @@ defineExpose({ callComment, callReply })
                 </div>
 
                 <CRow v-if="workManager" class="mb-3">
-                  <CFormLabel for="watcher" class="col-sm-2 col-form-label text-right">
+                  <CFormLabel for="watcher" class="col-sm-2 col-form-label text-end">
                     업무 관람자
                   </CFormLabel>
                   <CCol sm="10" style="padding-top: 8px">
-                    <span v-for="user in filteredWatcherList" :key="user.pk" class="mr-3">
+                    <span v-for="user in filteredWatcherList" :key="user.pk" class="me-3">
                       <input
                         v-model="form.watchers"
                         :id="`user-${user.pk}`"
@@ -717,15 +750,15 @@ defineExpose({ callComment, callReply })
                         type="checkbox"
                         class="form-check-input"
                       />
-                      <label :for="`user-${user.pk}`" class="form-label form-check-label ml-2">
+                      <label :for="`user-${user.pk}`" class="form-label form-check-label ms-2">
                         {{ user.username }}
                       </label>
                     </span>
                   </CCol>
                   <CCol class="col-sm-2"></CCol>
                   <CCol class="form-text">
-                    <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />
-                    <a href="javascript:void(0)" @click="refWatcherAdd?.callModal()">
+                    <v-icon icon="mdi-plus-circle" color="success" size="sm" class="me-2" />
+                    <a href="#" @click.prevent="refWatcherAdd?.callModal()">
                       추가할 업무 관람자 검색
                     </a>
                   </CCol>
@@ -735,7 +768,7 @@ defineExpose({ callComment, callReply })
 
             <CCol md="4" class="bg-more-light p-4">
               <CRow class="mb-3">
-                <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-right required">
+                <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-end required">
                   프로젝트
                 </CFormLabel>
                 <CCol sm="8">
@@ -747,9 +780,9 @@ defineExpose({ callComment, callReply })
                   >
                     <option value="">---------</option>
                     <option v-for="proj in myProjects" :key="proj.pk" :value="proj.slug">
-                      <span v-if="!!proj.depth && proj.parent_visible">
-                        {{ '&nbsp;'.repeat(proj.depth) }} »
-                      </span>
+                      <template v-if="!!proj.depth && proj.parent_visible">
+                        {{ '\u00A0'.repeat(proj.depth) }} »
+                      </template>
                       {{ proj.label }}
                     </option>
                   </CFormSelect>
@@ -757,7 +790,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="status" class="col-sm-4 col-form-label text-right required">
+                <CFormLabel for="status" class="col-sm-4 col-form-label text-end required">
                   상태
                 </CFormLabel>
                 <CCol sm="8">
@@ -790,7 +823,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3 mt-3">
-                <CFormLabel for="priority" class="col-sm-4 col-form-label text-right required">
+                <CFormLabel for="priority" class="col-sm-4 col-form-label text-end required">
                   우선순위
                 </CFormLabel>
                 <CCol sm="8">
@@ -803,7 +836,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="assigned_to" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="assigned_to" class="col-sm-4 col-form-label text-end">
                   담당자
                 </CFormLabel>
                 <CCol sm="8">
@@ -831,7 +864,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="parent" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="parent" class="col-sm-4 col-form-label text-end">
                   상위업무
                 </CFormLabel>
                 <CCol sm="8">
@@ -847,7 +880,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="fixed_version" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="fixed_version" class="col-sm-4 col-form-label text-end">
                   목표단계
                 </CFormLabel>
                 <CCol sm="8">
@@ -870,7 +903,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="category" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="category" class="col-sm-4 col-form-label text-end">
                   범주
                 </CFormLabel>
                 <CCol sm="8">
@@ -893,7 +926,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="start_date" class="col-sm-4 col-form-label text-right required">
+                <CFormLabel for="start_date" class="col-sm-4 col-form-label text-end required">
                   시작일자
                 </CFormLabel>
                 <CCol sm="8">
@@ -902,18 +935,18 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="due_date" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="due_date" class="col-sm-4 col-form-label text-end">
                   완료기한
                 </CFormLabel>
                 <CCol sm="8">
                   <DatePicker v-model="form.due_date" id="due_date" />
                   <div class="mt-1 d-flex flex-wrap align-items-center">
-                    <span class="text-muted extra-small mr-1">빠른 선택:</span>
+                    <span class="text-muted extra-small me-1">빠른 선택:</span>
                     <v-chip
                       size="x-small"
                       variant="outlined"
                       color="primary"
-                      class="mr-1 my-1 cursor-pointer"
+                      class="me-1 my-1 cursor-pointer"
                       @click="setQuickDueDate('today')"
                     >
                       오늘
@@ -922,7 +955,7 @@ defineExpose({ callComment, callReply })
                       size="x-small"
                       variant="outlined"
                       color="primary"
-                      class="mr-1 my-1 cursor-pointer"
+                      class="me-1 my-1 cursor-pointer"
                       @click="setQuickDueDate(3)"
                     >
                       3일 뒤
@@ -931,7 +964,7 @@ defineExpose({ callComment, callReply })
                       size="x-small"
                       variant="outlined"
                       color="primary"
-                      class="mr-1 my-1 cursor-pointer"
+                      class="me-1 my-1 cursor-pointer"
                       @click="setQuickDueDate(7)"
                     >
                       1주일 뒤
@@ -940,7 +973,7 @@ defineExpose({ callComment, callReply })
                       size="x-small"
                       variant="outlined"
                       color="primary"
-                      class="mr-1 my-1 cursor-pointer"
+                      class="me-1 my-1 cursor-pointer"
                       @click="setQuickDueDate(14)"
                     >
                       2주일 뒤
@@ -961,7 +994,7 @@ defineExpose({ callComment, callReply })
               <CRow class="mb-3">
                 <CFormLabel
                   for="expected_duration"
-                  class="col-sm-4 col-form-label text-right"
+                  class="col-sm-4 col-form-label text-end"
                   :class="{ required: form.status !== 1 }"
                 >
                   예상 처리기간
@@ -981,7 +1014,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="done_ratio" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="done_ratio" class="col-sm-4 col-form-label text-end">
                   진척도
                 </CFormLabel>
                 <CCol sm="8">
@@ -1030,7 +1063,7 @@ defineExpose({ callComment, callReply })
         </div>
 
         <CRow>
-          <CCol class="text-right">
+          <CCol class="text-end">
             <v-btn
               type="submit"
               :size="btnSize"

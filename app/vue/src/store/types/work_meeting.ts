@@ -75,6 +75,7 @@ export interface MeetingFile {
 
 export interface MeetingFilter {
   project?: string
+  project__exclude?: string
   category?: number
   category__exclude?: number
   status?: string

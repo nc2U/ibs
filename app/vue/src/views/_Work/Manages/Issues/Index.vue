@@ -58,12 +58,15 @@ provide('query', route?.query)
 
 const issueFilterStore = useIssueFilter()
 const listFilter = ref<IssueFilter>(issueFilterStore.buildFilterPayload())
+const page = ref(1)
 const filterSubmit = (payload: IssueFilter) => {
+  page.value = 1
   listFilter.value = payload
   issueStore.fetchIssueList(payload)
 }
-const pageSelect = (page: number) => {
-  listFilter.value.page = page
+const pageSelect = (p: number) => {
+  page.value = p
+  listFilter.value.page = p
   issueStore.fetchIssueList(listFilter.value)
 }
 
@@ -136,6 +139,7 @@ onBeforeMount(async () => {
         v-if="viewMode === 'list'"
         :issue-list="issueList as Issue[]"
         :columns="selectedColumns"
+        :page="page"
         @page-select="pageSelect"
       />
 
