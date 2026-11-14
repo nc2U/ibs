@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 테마별 색상 시스템 (ThemeExtension)
 /// 라이트 모드와 다크 모드에 대응하는 색상 팔레트

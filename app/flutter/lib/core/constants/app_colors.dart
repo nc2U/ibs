@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// IBS 워크스페이스 브랜드 컬러 시스템
 /// 웹(Vue) 다크 테마와 동일한 팔레트를 모바일에 적용

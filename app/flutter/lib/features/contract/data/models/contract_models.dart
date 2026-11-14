@@ -1,7 +1,7 @@
 /// 계약 관리 데이터 모델 (Contract Models)
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 
 int _parseInt(dynamic val) {

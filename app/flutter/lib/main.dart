@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -97,9 +96,16 @@ class IBSApp extends ConsumerWidget {
       title: 'IBS 웍스',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      builder: (context, child) => OfflineBanner(
-        child: ShareIntentListener(child: child ?? const SizedBox.shrink()),
-      ),
+      builder: (context, child) {
+        // go_router(14.x), flutter_markdown_plus, flutter_widget_from_html 등
+        // 아직 material_ui로 전환되지 않은 서드파티 위젯에 Theme/Localizations 전달
+        // ignore: deprecated_member_use
+        return MaterialUiCompatibilityBridge(
+          child: OfflineBanner(
+            child: ShareIntentListener(child: child ?? const SizedBox.shrink()),
+          ),
+        );
+      },
 
       // ── 한국어 로케일 설정 ──────────────────────────────────────────
       locale: const Locale('ko', 'KR'),
@@ -107,11 +113,7 @@ class IBSApp extends ConsumerWidget {
         Locale('ko', 'KR'),
         Locale('en', 'US'),
       ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
 
       // ── 3-Way 테마 시스템 (라이트 / 다크 / 기기설정) ────────────────
       themeMode: themeMode.themeMode,

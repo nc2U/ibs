@@ -20,6 +20,7 @@ version: 1.0.0+3
 
 environment:
   sdk: '>=3.9.2 <4.0.0'
+  flutter: '>=3.47.0'
 
 dependencies:
   flutter:
@@ -45,12 +46,10 @@ dependencies:
 
   # UI
   flutter_svg: ^2.0.10+1
-  google_fonts: ^6.2.1
-  shimmer: ^3.0.0
-  cached_network_image: ^3.4.1
+  google_fonts: ^9.0.0
+  shimmer: ^4.0.0
+  cached_network_image: ^4.0.7
 
-  flutter_localizations:
-    sdk: flutter
   intl: ^0.20.2
 
   # Image / file picker & Audio record
@@ -82,6 +81,7 @@ dependencies:
   app_badge_plus: ^1.1.5
   flutter_markdown_plus: ^1.0.12
   connectivity_plus: ^6.1.4
+  material_ui: ^1.11.0
 
 dev_dependencies:
   flutter_test:
