@@ -58,3 +58,17 @@ class ChatMessageAdmin(admin.ModelAdmin):
             tag = '1:1 비밀 대화' if obj.room.room_type == 'direct' else '나와의 채팅 메모'
             return format_html('<span style="color: #888; font-style: italic;">🔒 [{}] (사생활 보호 마스킹 처리됨)</span>', tag)
         return obj.content[:50]
+
+    def has_change_permission(self, request, obj=None):
+        """메시지 무결성 및 사생활 보호를 위해 어드민에서 메시지 임의 수정 차단"""
+        return False
+
+    def get_fields(self, request, obj=None):
+        """1:1 DM 및 나와의 채팅 상세 조회 시에도 원문/첨부파일 대신 마스킹 필드만 노출"""
+        if obj and obj.room and obj.room.room_type in ['direct', 'self']:
+            return ('id', 'room', 'sender', 'message_type', 'masked_content', 'is_deleted', 'created')
+        return ('id', 'room', 'sender', 'message_type', 'content', 'file', 'file_name', 'file_size',
+                'ref_id', 'ref_title', 'ref_sub', 'reply_to', 'is_deleted', 'created')
+
+    def get_readonly_fields(self, request, obj=None):
+        return self.get_fields(request, obj=obj)

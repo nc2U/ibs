@@ -36,10 +36,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     def _base_queryset_with_prefetch(self, qs):
         """
-        공통 prefetch 적용: memberships
+        공통 select_related / prefetch 적용: project, memberships
         - serializer의 to_representation 및 멤버 목록에서 추가 쿼리 없이 캐시 활용
         """
-        return qs.prefetch_related(
+        return qs.select_related('project').prefetch_related(
             Prefetch('memberships', queryset=ChatRoomMember.objects.select_related('user__profile')),
         )
 
@@ -216,7 +216,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             if latest_msg_ids:
                 latest_messages = {
                     msg.room_id: msg
-                    for msg in ChatMessage.objects.filter(id__in=latest_msg_ids).select_related('sender')
+                    for msg in ChatMessage.objects.filter(id__in=latest_msg_ids).select_related('sender', 'sender__profile')
                 }
 
         serializer = self.get_serializer(
@@ -353,6 +353,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             target_read_id = int(last_message_id)
         except (ValueError, TypeError):
             return Response({'error': '잘못된 last_message_id 형식입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 해당 대화방의 실제 최신 메시지 ID를 상한선으로 클램핑 (비정상 미래 ID로 인한 영구 읽음 고착 방지)
+        max_msg_id = room.messages.order_by('-id').values_list('id', flat=True).first() or 0
+        target_read_id = max(0, min(target_read_id, max_msg_id))
 
         membership, _ = ChatRoomMember.objects.get_or_create(
             room=room,
@@ -678,15 +682,16 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                 }
 
             room = msg.room
+            sender_pk = msg.sender_id or 0
             if room.room_type == 'self':
                 unread_cnt = 0
             elif room.room_type == 'direct':
-                unread_cnt = 1
+                unread_cnt = max(0, room.memberships.exclude(user_id=sender_pk).count())
             elif room.room_type == 'channel' and room.project:
-                from work.models.project import Member as ProjectMember
-                unread_cnt = max(0, ProjectMember.objects.filter(project=room.project).exclude(user=msg.sender).count())
+                all_mems = room.project.all_members()
+                unread_cnt = len({m['user']['pk'] for m in all_mems if m['user']['pk'] != sender_pk})
             else:
-                unread_cnt = max(0, room.memberships.exclude(user=msg.sender).count() if msg.sender else 0)
+                unread_cnt = max(0, room.memberships.exclude(user_id=sender_pk).count() if msg.sender else 0)
 
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(

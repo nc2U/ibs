@@ -31,15 +31,26 @@ class JWTAuthMiddleware(BaseMiddleware):
             token = query_params.get('token', [None])[0]
 
         # 2. Header 파싱 (Authorization: Bearer <token> 또는 Sec-WebSocket-Protocol)
+        selected_subprotocol = None
         if not token:
             headers = dict(scope.get('headers', []))
             auth_header = headers.get(b'authorization', b'').decode('utf-8')
             if auth_header.startswith('Bearer '):
                 token = auth_header.split('Bearer ', 1)[1].strip()
             elif b'sec-websocket-protocol' in headers:
-                protocols = [p.strip() for p in headers[b'sec-websocket-protocol'].decode('utf-8').split(',')]
+                protocols = [p.strip() for p in headers[b'sec-websocket-protocol'].decode('utf-8').split(',') if p.strip()]
                 if protocols:
-                    token = protocols[0]
+                    selected_subprotocol = protocols[0]
+                    # ['Bearer', '<jwt>'] 또는 ['<jwt>'] 형태 모두 지원
+                    for candidate in reversed(protocols):
+                        if candidate.lower() not in ('bearer', 'jwt', 'chat', 'token'):
+                            token = candidate
+                            break
+                    if not token:
+                        token = protocols[0]
+
+        if selected_subprotocol:
+            scope['selected_subprotocol'] = selected_subprotocol
 
         if token:
             scope['user'] = await get_user_from_jwt(token)

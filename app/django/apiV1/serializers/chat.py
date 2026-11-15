@@ -38,6 +38,11 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         file = attrs.get('file')
         if file and getattr(file, 'size', 0) > 50 * 1024 * 1024:
             raise serializers.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
+        content = str(attrs.get('content') or '').strip()
+        ref_id = attrs.get('ref_id')
+        ref_title = str(attrs.get('ref_title') or '').strip()
+        if not content and not file and not ref_id and not ref_title:
+            raise serializers.ValidationError({'content': '메시지 내용 또는 첨부파일이 필요합니다.'})
         return attrs
 
     def get_reply_to_detail(self, obj):
@@ -64,7 +69,9 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             return 0
 
         # 방별 (전체 멤버 user_id 집합, 멤버별 last_read_message_id 딕셔너리) 캐싱
-        cached_info = getattr(room, '_cached_room_read_info', None)
+        # select_related('room') 시 메시지마다 새 ChatRoom 인스턴스가 생성되므로 context 내 딕셔너리도 함께 활용
+        context_cache = self.context.setdefault('_room_read_cache', {}) if isinstance(self.context, dict) else {}
+        cached_info = getattr(room, '_cached_room_read_info', None) or context_cache.get(room.id)
         if cached_info is None:
             context_read_info = self.context.get('room_read_info', {}).get(room.id) if self.context else None
             if context_read_info is not None:
@@ -79,6 +86,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
                 last_reads = dict(room.memberships.values_list('user_id', 'last_read_message_id'))
                 cached_info = (all_member_ids, last_reads)
             room._cached_room_read_info = cached_info
+            context_cache[room.id] = cached_info
 
         all_member_ids, last_reads = cached_info
 
@@ -160,9 +168,14 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
 
         if not msg:
             return None
+        sender_name = (
+            msg.sender.profile.name
+            if (msg.sender and hasattr(msg.sender, 'profile') and msg.sender.profile.name)
+            else (msg.sender.username if msg.sender else '시스템')
+        )
         return {
             'id': msg.id,
-            'sender_name': msg.sender.username if msg.sender else '시스템',
+            'sender_name': sender_name,
             'message_type': msg.message_type,
             'content': '삭제된 메시지입니다.' if msg.is_deleted else (msg.content if msg.message_type == 'text' else (msg.ref_title or f"[{msg.get_message_type_display()}]")),
             'created': msg.created,

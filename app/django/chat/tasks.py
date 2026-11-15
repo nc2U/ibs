@@ -16,7 +16,10 @@ def send_chat_push_notification(self, message_id):
     - 알림 끄기(is_muted=True) 한 멤버는 제외
     """
     try:
-        msg = ChatMessage.objects.select_related('room', 'sender__profile').get(pk=message_id)
+        msg = ChatMessage.objects.select_related('room', 'room__project', 'sender__profile').get(pk=message_id)
+        if msg.is_deleted:
+            return f"Deleted chat message #{message_id} push notification skipped"
+
         room = msg.room
         sender = msg.sender
         sender_name = sender.profile.name if (sender and hasattr(sender, 'profile') and sender.profile.name) else (sender.username if sender else '알 수 없음')
@@ -25,26 +28,39 @@ def send_chat_push_notification(self, message_id):
         if room.room_type == 'self':
             return f"Self chat push notification skipped for message #{message_id}"
 
-        # 알림 수신 대상자 (발신자 제외 & 알림 켜진 멤버)
+        # 비활성화된 공용 채널은 푸시 발송 생략
+        if room.room_type == 'channel' and (not room.project or not room.project.chat_channel_enabled):
+            return f"Disabled channel push notification skipped for message #{message_id}"
+
+        # 알림 수신 대상자 (발신자 제외 & 알림 켜진 활성 멤버)
         if room.room_type == 'direct':
-            target_memberships = room.memberships.exclude(user=sender).filter(is_muted=False)
+            target_memberships = room.memberships.exclude(user=sender).filter(
+                is_muted=False, user__is_active=True, user__is_system=False
+            )
             target_user_ids = list(target_memberships.values_list('user_id', flat=True))
             title = f"{sender_name}"
         elif room.room_type == 'channel':
             # 워크스페이스 채널인 경우 워크스페이스 소속 멤버들 중 발신자 제외
             if room.project:
-                # 워크스페이스 전체 멤버 ID (하위 상속 포함)
+                # 워크스페이스 전체 멤버 ID (상위 상속 포함)
                 all_mems = room.project.all_members()
                 pjt_member_ids = [m['user']['pk'] for m in all_mems]
                 # 알림 끈 멤버 제외
-                muted_user_ids = list(room.memberships.filter(is_muted=True).values_list('user_id', flat=True))
-                target_user_ids = [uid for uid in set(pjt_member_ids) if uid != (sender.pk if sender else 0) and uid not in muted_user_ids]
+                muted_user_ids = set(room.memberships.filter(is_muted=True).values_list('user_id', flat=True))
+                candidate_ids = [uid for uid in set(pjt_member_ids) if uid != (sender.pk if sender else 0) and uid not in muted_user_ids]
+                target_user_ids = list(
+                    User.objects.filter(pk__in=candidate_ids, is_active=True, is_system=False).values_list('pk', flat=True)
+                )
             else:
-                target_memberships = room.memberships.exclude(user=sender).filter(is_muted=False)
+                target_memberships = room.memberships.exclude(user=sender).filter(
+                    is_muted=False, user__is_active=True, user__is_system=False
+                )
                 target_user_ids = list(target_memberships.values_list('user_id', flat=True))
             title = f"#{room.project.name if room.project else room.title} ({sender_name})"
         else:
-            target_memberships = room.memberships.exclude(user=sender).filter(is_muted=False)
+            target_memberships = room.memberships.exclude(user=sender).filter(
+                is_muted=False, user__is_active=True, user__is_system=False
+            )
             target_user_ids = list(target_memberships.values_list('user_id', flat=True))
             title = f"{room.title or '그룹 채팅'} ({sender_name})"
 

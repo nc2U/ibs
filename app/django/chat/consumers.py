@@ -39,7 +39,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-        await self.accept()
+        subprotocol = self.scope.get('selected_subprotocol')
+        if subprotocol:
+            await self.accept(subprotocol=subprotocol)
+        else:
+            await self.accept()
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):
@@ -69,12 +73,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }))
                 return
             message_type = raw_message_type
-            ref_id = data.get('ref_id')
+            raw_ref_id = data.get('ref_id')
+            try:
+                ref_id = int(raw_ref_id) if raw_ref_id not in (None, '') else None
+                if ref_id is not None and ref_id <= 0:
+                    ref_id = None
+            except (ValueError, TypeError):
+                ref_id = None
+
             ref_title = str(data.get('ref_title') or '')[:255]
             ref_sub = str(data.get('ref_sub') or '')[:100]
-            reply_to_id = data.get('reply_to_id') or data.get('reply_to')
 
-            if not content and message_type == 'text':
+            raw_reply_to = data.get('reply_to_id') or data.get('reply_to')
+            try:
+                reply_to_id = int(raw_reply_to) if raw_reply_to not in (None, '') else None
+                if reply_to_id is not None and reply_to_id <= 0:
+                    reply_to_id = None
+            except (ValueError, TypeError):
+                reply_to_id = None
+
+            if not content and not ref_id and not ref_title:
                 return
 
             # DB에 메시지 저장
@@ -89,10 +107,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     ref_sub=ref_sub,
                     reply_to_id=reply_to_id,
                 )
-            except Exception as e:
+            except PermissionError as e:
                 await self.send(text_data=json.dumps({
                     'type': 'error',
-                    'message': f'메시지 저장 실패: {str(e)}',
+                    'message': str(e),
+                }))
+                return
+            except Exception:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': '메시지 저장 중 오류가 발생했습니다.',
                 }))
                 return
 
@@ -250,14 +274,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception:
             sender_name = user.username
         # 새 메시지 생성 직후의 안 읽은 인원수 (발신자 본인 제외)
-        # channel: all_members()의 계층 조회 비용 제거 → ProjectMember 기반 단순 COUNT로 대체
         if room.room_type == 'self':
             unread_cnt = 0
         elif room.room_type == 'direct':
-            unread_cnt = 1
+            unread_cnt = max(0, room.memberships.exclude(user=user).count())
         elif room.room_type == 'channel' and room.project:
-            from work.models.project import Member as ProjectMember
-            unread_cnt = max(0, ProjectMember.objects.filter(project=room.project).exclude(user=user).count())
+            all_mems = room.project.all_members()
+            unread_cnt = len({m['user']['pk'] for m in all_mems if m['user']['pk'] != user.pk})
         else:
             unread_cnt = max(0, room.memberships.exclude(user=user).count())
 
@@ -296,6 +319,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         room = ChatRoom.objects.select_related('project').filter(pk=room_id).first()
         if not self._has_room_access_sync(room, user):
+            return 0
+
+        # 해당 대화방의 실제 최신 메시지 ID를 상한선으로 클램핑 (비정상 미래 ID로 인한 영구 읽음 고착 방지)
+        max_msg_id = room.messages.order_by('-id').values_list('id', flat=True).first() or 0
+        target_id = min(target_id, max_msg_id)
+        if target_id <= 0:
             return 0
 
         membership, _ = ChatRoomMember.objects.get_or_create(room=room, user=user)

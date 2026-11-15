@@ -397,6 +397,40 @@ class ChatMessageAPITests(APITestCase):
         self.assertNotIn('비밀번호는 123456입니다', rendered)
         self.assertIn('사생활 보호 마스킹 처리됨', rendered)
 
+        # 상세 화면(changeform) 필드에서도 content/file 원문이 제외되고 수정이 차단되는지 검증
+        detail_fields = admin_inst.get_fields(None, obj=secret_msg)
+        self.assertIn('masked_content', detail_fields)
+        self.assertNotIn('content', detail_fields)
+        self.assertNotIn('file', detail_fields)
+        self.assertFalse(admin_inst.has_change_permission(None, obj=secret_msg))
+
+    def test_mark_as_read_clamps_future_message_id_and_empty_message_rejected(self):
+        """비정상 미래 last_message_id 클램핑 방어 및 빈 메시지 전송 차단 검증"""
+        from chat.models import ChatRoomMember, ChatMessage
+
+        self.client.force_authenticate(user=self.user2)
+
+        # 1) 방의 실제 최신 메시지 ID(self.msg2.id)보다 훨씬 큰 값(999999999) 전송 시 최신 메시지 ID로 클램핑
+        res_read = self.client.post(f'/api/v1/chat-room/{self.room.id}/read/', {'last_message_id': 999999999})
+        self.assertEqual(res_read.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_read.data['last_read_message_id'], self.msg2.id)
+
+        m2 = ChatRoomMember.objects.get(room=self.room, user=self.user2)
+        self.assertEqual(m2.last_read_message_id, self.msg2.id)
+
+        # 이후 새 메시지가 도착하면 정상적으로 미읽음(unread=1)으로 집계되어야 함
+        ChatMessage.objects.create(room=self.room, sender=self.user1, content='새로 도착한 메시지')
+        res_unread = self.client.get('/api/v1/chat-room/total-unread/')
+        self.assertEqual(res_unread.data['total_unread'], 1)
+
+        # 2) 내용과 첨부파일이 모두 비어 있는 메시지 전송 시 400 차단
+        res_empty = self.client.post('/api/v1/chat-message/', {
+            'room': self.room.id,
+            'content': '   ',
+            'message_type': 'text',
+        })
+        self.assertEqual(res_empty.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_chat_room_destroy_and_update_permissions(self):
         """공용 채널/DM 임의 삭제 차단 및 그룹방 관리자 권한 검증"""
         from chat.models import ChatRoom
@@ -569,3 +603,26 @@ class ChatWebSocketAPITests(APITransactionTestCase):
         middleware = JWTAuthMiddleware(dummy_app)
         user = async_to_sync(middleware)(scope, None, None)
         self.assertEqual(user, self.user1)
+
+        # Sec-WebSocket-Protocol: Bearer, <token> 서브프로토콜 인증 및 update_last_read 클램핑 검증
+        scope_subproto = {
+            'type': 'websocket',
+            'query_string': b'',
+            'headers': [
+                (b'sec-websocket-protocol', f'Bearer, {access_token}'.encode('utf-8'))
+            ],
+        }
+        user_sub = async_to_sync(middleware)(scope_subproto, None, None)
+        self.assertEqual(user_sub, self.user1)
+        self.assertEqual(scope_subproto.get('selected_subprotocol'), 'Bearer')
+
+        from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+        from chat.consumers import ChatConsumer
+        dm_room = ChatRoom.objects.create(room_type='direct', created_by=self.user1)
+        ChatRoomMember.objects.create(room=dm_room, user=self.user1)
+        ChatRoomMember.objects.create(room=dm_room, user=self.user2)
+        msg = ChatMessage.objects.create(room=dm_room, sender=self.user1, content='테스트')
+
+        consumer = ChatConsumer()
+        clamped_id = async_to_sync(consumer.update_last_read)(dm_room.id, self.user2, 999999999)
+        self.assertEqual(clamped_id, msg.id)
