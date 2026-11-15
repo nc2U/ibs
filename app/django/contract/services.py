@@ -198,7 +198,9 @@ class ContractPriceBulkUpdateService:
         return Contract.objects.filter(
             project=self.project,
             is_active=True
-        ).select_related('unit_type', 'order_group', 'contractor')
+        ).select_related(
+            'unit_type', 'order_group', 'contractor', 'contractprice', 'key_unit__houseunit'
+        )
 
     def validate_project(self):
         """
@@ -624,10 +626,9 @@ class FileManagementService:
         change_file = data.get('cngFile')
         if edit_file_pk and change_file:
             try:
-                file_to_edit = ContractFile.objects.get(pk=edit_file_pk)
-                old_file_path = file_to_edit.file.path
-                if os.path.isfile(old_file_path):
-                    os.remove(old_file_path)
+                file_to_edit = ContractFile.objects.get(pk=edit_file_pk, contractor=contractor)
+                if file_to_edit.file:
+                    file_to_edit.file.delete(save=False)
                 file_to_edit.file = change_file
                 file_to_edit.save()
             except ContractFile.DoesNotExist:
@@ -642,7 +643,9 @@ class FileManagementService:
         del_file_pk = data.get('delFile')
         if del_file_pk:
             try:
-                file_to_delete = ContractFile.objects.get(pk=del_file_pk)
+                file_to_delete = ContractFile.objects.get(pk=del_file_pk, contractor=contractor)
+                if file_to_delete.file:
+                    file_to_delete.file.delete(save=False)
                 file_to_delete.delete()
             except ContractFile.DoesNotExist:
                 raise serializers.ValidationError(f"File with ID {del_file_pk} does not exist.")

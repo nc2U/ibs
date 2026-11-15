@@ -350,17 +350,24 @@ class ContractPrice(models.Model):
             # 근린생활시설의 경우 InstallmentPaymentOrder가 없으면 기본 납부회차 적용
             if not payment_amounts and self.house_unit.unit_type.name == '근린생활시설':
                 # 기본 납부회차: 잔금 100%
-                # 잔금(pay_sort='3')에 해당하는 pay_time 찾기
-                try:
-                    final_payment_order = InstallmentPaymentOrder.objects.get(
+                # 잔금(pay_sort='3')에 해당하는 pay_time 찾기 (동일 type_sort 우선, 다중 회차 시 마지막 회차 적용)
+                final_payment_order = (
+                    InstallmentPaymentOrder.objects.filter(
                         project=project,
-                        pay_sort='3'  # 잔금
-                    )
+                        type_sort=self.house_unit.unit_type.sort,
+                        pay_sort='3',
+                    ).order_by('-pay_time').first()
+                    or InstallmentPaymentOrder.objects.filter(
+                        project=project,
+                        pay_sort='3',
+                    ).order_by('-pay_time').first()
+                )
+                if final_payment_order:
                     final_pay_time = str(final_payment_order.pay_time)
                     payment_amounts = {
                         final_pay_time: self.price  # 잔금 100%
                     }
-                except InstallmentPaymentOrder.DoesNotExist:
+                else:
                     # 잔금 InstallmentPaymentOrder가 없으면 기본적으로 "10" 사용
                     payment_amounts = {
                         "10": self.price  # 잔금 100%

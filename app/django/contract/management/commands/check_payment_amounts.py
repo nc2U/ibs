@@ -23,14 +23,17 @@ class Command(BaseCommand):
         contract_id = options.get('contract_id')
         limit = options['limit']
 
+        base_qs = Contract.objects.filter(is_active=True).select_related(
+            'project', 'unit_type', 'contractprice'
+        )
         if contract_id:
             try:
-                contracts = [Contract.objects.get(id=contract_id, is_active=True)]
+                contracts = [base_qs.get(id=contract_id)]
             except Contract.DoesNotExist:
                 self.stdout.write(f'Contract {contract_id} not found or not active')
                 return
         else:
-            contracts = Contract.objects.filter(is_active=True)[:limit]
+            contracts = list(base_qs[:limit])
 
         self.stdout.write(f"=== ContractPrice payment_amounts 상태 확인 ===")
         self.stdout.write(f"확인 시간: {timezone.now()}")
@@ -43,7 +46,7 @@ class Command(BaseCommand):
             self.stdout.write(f"    유닛타입: {contract.unit_type.name if contract.unit_type else 'None'}")
 
             try:
-                contract_price = ContractPrice.objects.get(contract=contract)
+                contract_price = contract.contractprice
                 self.stdout.write(f"    ContractPrice ID: {contract_price.id}")
                 self.stdout.write(f"    분양가격: {contract_price.price:,}원")
                 self.stdout.write(f"    캐시 유효성: {contract_price.is_cache_valid}")

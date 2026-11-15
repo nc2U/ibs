@@ -790,7 +790,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
             # 매수인 상태 복원 (비활성화 계약종결)
             buyer.contract = None
             buyer.status = '4'  # 계약종결
-            buyer.change_type = '3'  # 승계신청
+            buyer.change_type = None
             buyer.is_active = False
             buyer.qualification = qua_false
         else:  # 신청접수(1) 또는 변경인가대기(2) 상태 (대기 상태)
@@ -832,6 +832,18 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'contractor', 'request_date', '__str__', 'release_type', 'status',
                   'refund_amount', 'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
                   'refund_completion_date', 'completion_date', 'note', 'updator')
+
+    def validate(self, attrs):
+        project = attrs.get('project') or getattr(self.instance, 'project', None)
+        contractor = attrs.get('contractor') or getattr(self.instance, 'contractor', None)
+        if project and contractor:
+            c_rel = contractor.contract or contractor.prev_contract
+            c_proj_id = getattr(c_rel, 'project_id', None)
+            if c_proj_id and c_proj_id != project.pk:
+                raise serializers.ValidationError({
+                    'contractor': '해지 대상 계약자의 소속 프로젝트와 해지 요청 프로젝트가 일치하지 않습니다.'
+                })
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):

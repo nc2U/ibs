@@ -8,6 +8,7 @@ from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanF
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -40,6 +41,19 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
 def get_accessible_project_ids(user, required_perm: str = 'contract.read'):
     """[RLS] 사용자가 특정 권한(기본: contract.read)을 보유한 프로젝트 ID 목록 반환"""
     return get_project_ids_with_permission(user, required_perm)
+
+
+def ensure_contractor_project_access(user, contractor, required_perm: str):
+    """[RLS] 대상 계약자(contractor)의 소속 프로젝트에 대해 요청 사용자의 권한 검증"""
+    if user.is_superuser or getattr(user, 'work_manager', False):
+        return
+    if not contractor:
+        return
+    c_rel = contractor.contract or contractor.prev_contract
+    project_id = getattr(c_rel, 'project_id', None)
+    allowed_ids = get_accessible_project_ids(user, required_perm)
+    if not project_id or project_id not in allowed_ids:
+        raise PermissionDenied('해당 프로젝트의 계약자 데이터를 변경할 권한이 없습니다.')
 
 
 
@@ -639,9 +653,10 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
         )
 
 
-class SubsSummaryViewSet(viewsets.ModelViewSet):
+class SubsSummaryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SubsSummarySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    required_permission = 'contract.read'
     filterset_fields = ('project',)
 
     def get_queryset(self):
@@ -660,9 +675,10 @@ class ContSumFilter(FilterSet):
         fields = ('project', 'to_contract_date')
 
 
-class ContSummaryViewSet(viewsets.ModelViewSet):
+class ContSummaryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ContSummarySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    required_permission = 'contract.read'
     filterset_class = ContSumFilter
 
     def get_queryset(self):
@@ -677,7 +693,8 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
 
 
 class ContractAggreateView(APIView):
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    required_permission = 'contract.read'
 
     def get(self, request, project_id):
         try:
@@ -815,10 +832,14 @@ class ContractFileViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        contractor = serializer.validated_data.get('contractor')
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.create')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
         # 파일 업데이트 시 creator는 유지하고 기타 필요한 로직 수행
+        contractor = serializer.validated_data.get('contractor') or getattr(serializer.instance, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.update')
         serializer.save()
 
     @action(detail=False, methods=['post'], url_path='upload/(?P<contractor_id>[^/.]+)')
@@ -895,10 +916,24 @@ class ContractDocumentViewSet(viewsets.ModelViewSet):
             )
         return queryset
 
+    def _validate_document_contractor(self, serializer, perm_code: str):
+        contractor = serializer.validated_data.get('contractor') or getattr(serializer.instance, 'contractor', None)
+        req_doc = serializer.validated_data.get('required_document') or getattr(serializer.instance, 'required_document', None)
+        ensure_contractor_project_access(self.request.user, contractor, perm_code)
+        if contractor and req_doc:
+            c_rel = contractor.contract or contractor.prev_contract
+            c_proj_id = getattr(c_rel, 'project_id', None)
+            if c_proj_id and req_doc.project_id != c_proj_id:
+                raise serializers.ValidationError({
+                    'required_document': '계약자의 소속 프로젝트와 구비서류의 프로젝트가 일치하지 않습니다.'
+                })
+
     def perform_create(self, serializer):
+        self._validate_document_contractor(serializer, self.required_permission or 'contract.create')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
+        self._validate_document_contractor(serializer, self.required_permission or 'contract.update')
         serializer.save(updator=self.request.user)
 
 
@@ -936,7 +971,16 @@ class ContractDocumentFileViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        doc = serializer.validated_data.get('contract_document')
+        contractor = getattr(doc, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.create')
         serializer.save(uploader=self.request.user)
+
+    def perform_update(self, serializer):
+        doc = serializer.validated_data.get('contract_document') or getattr(serializer.instance, 'contract_document', None)
+        contractor = getattr(doc, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.update')
+        serializer.save()
 
     @action(detail=False, methods=['post'], url_path='upload/(?P<contract_document_id>[^/.]+)')
     def upload_file(self, request, contract_document_id=None):
@@ -1015,10 +1059,14 @@ class ContAddressViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        contractor = serializer.validated_data.get('contractor')
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.create')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
         # 업데이트 시 최초 등록자(creator) 정보 유지
+        contractor = serializer.validated_data.get('contractor') or getattr(serializer.instance, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.update')
         serializer.save()
 
 
@@ -1052,10 +1100,14 @@ class ContContactViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        contractor = serializer.validated_data.get('contractor')
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.create')
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
         # 업데이트 시 최초 등록자(creator) 정보 유지
+        contractor = serializer.validated_data.get('contractor') or getattr(serializer.instance, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.update')
         serializer.save()
 
 
@@ -1098,9 +1150,13 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        contractor = serializer.validated_data.get('contractor')
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.create')
         serializer.save(creator=self.request.user, consultant=self.request.user)
 
     def perform_update(self, serializer):
+        contractor = serializer.validated_data.get('contractor') or getattr(serializer.instance, 'contractor', None)
+        ensure_contractor_project_access(self.request.user, contractor, self.required_permission or 'contract.update')
         serializer.save(updator=self.request.user)
 
 
@@ -1138,7 +1194,13 @@ class SuccessionViewSet(viewsets.ModelViewSet):
 
 
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        contract = serializer.validated_data.get('contract')
+        user = self.request.user
+        if contract and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            allowed_ids = get_accessible_project_ids(user, self.required_permission or 'contract.succession')
+            if contract.project_id not in allowed_ids:
+                raise PermissionDenied('해당 프로젝트의 권리의무승계를 등록할 권한이 없습니다.')
+        serializer.save(creator=user)
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -1146,31 +1208,11 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         old_status = instance.status
         new_status = serializer.validated_data.get('status', old_status)
 
-        # 1. 완료건(status='3')을 취소(status='9')로 직접 변경 불가 안내
+        # 완료건(status='3')을 취소(status='9')로 직접 변경 불가 안내
         if old_status == '3' and new_status == '9':
             raise serializers.ValidationError({'detail': '이미 변경인가(승계 완료)가 처리된 건은 직접 취소할 수 없습니다.'})
 
-        # 2. 신청/심사 중('1', '2')에서 취소('9')로 변경 시 양도인 복구 및 양수인 비활성화(방안 A)
-        if old_status in ('1', '2') and new_status == '9':
-            seller = instance.seller
-            buyer = instance.buyer
-
-            # seller (양도인) 원상복구
-            if seller:
-                seller.contract = instance.contract
-                seller.prev_contract = None
-                seller.status = '2'  # 정상 계약자
-                seller.change_type = None
-                seller.is_active = True
-                seller.save()
-
-            # buyer (양수인) 비활성화 (이력 보관: status='4'[계약종결], is_active=False)
-            if buyer:
-                buyer.status = '4'  # 계약종결
-                buyer.change_type = None
-                buyer.is_active = False
-                buyer.save()
-
+        # 취소('9') 상태 전이 시 양도인 복구 및 양수인 비활성화는 SuccessionSerializer.update()에서 일괄 처리됨
         serializer.save(updator=self.request.user)
 
     @transaction.atomic

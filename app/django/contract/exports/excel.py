@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Max, OuterRef, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
+from django.utils import timezone
 
 from _excel.mixins import ExcelExportMixin
 from apiV1.permissions._utils import get_project_ids_with_permission
@@ -17,7 +18,9 @@ from contract.models import ContractorAddress
 from items.models import HouseUnit, BuildingUnit
 from project.models import Project
 
-TODAY = datetime.date.today().strftime('%Y-%m-%d')
+
+def get_today_str() -> str:
+    return timezone.localdate().strftime('%Y-%m-%d')
 
 
 class ContractExportMixin(ExcelExportMixin):
@@ -91,9 +94,10 @@ class ExportContracts(ContractExportMixin):
         worksheet.merge_range(row_num, 0, row_num, len(cols), str(project) + f' {t_name}자 리스트', title_format)
 
         # 2. Pre Header - Date
+        today_str = get_today_str()
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(cols), TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, len(cols), today_str + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header
         row_num = 2
@@ -191,8 +195,6 @@ class ExportContracts(ContractExportMixin):
                                            is_active=True,
                                            **base_status_filter).select_related(
             'contractor'
-        ).prefetch_related(
-            'contractor__addresses'
         ).order_by('contractor__contract_date')
 
         queryset = queryset.filter(order_group=group) if group else queryset
@@ -209,7 +211,7 @@ class ExportContracts(ContractExportMixin):
             Q(serial_number__icontains=q) |
             Q(contractor__name__icontains=q) |
             Q(contractor__note__icontains=q) |
-            Q(contractor__contractorcontact__cell_phone__icontains=q)) if q else queryset
+            Q(contractor__contractorcontact__cell_phone__icontains=q)).distinct() if q else queryset
 
         order_qry = request.GET.get('order')
         order_list = ['-created', 'created', '-contractor__contract_date',
@@ -340,7 +342,7 @@ class ExportContracts(ContractExportMixin):
 
         # Set up the Http response.
         filename = request.GET.get('filename') or 'contracts'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
 
 
@@ -381,9 +383,10 @@ class ExportSuccessions(ContractExportMixin):
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, str(project) + ' 권리의무승계 목록', title_format)
 
         # 2. Pre Header - Date
+        today_str = get_today_str()
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, len(header_src) - 1, today_str + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header - 1
         row_num = 2
@@ -455,7 +458,7 @@ class ExportSuccessions(ContractExportMixin):
 
         # Set up the Http response.
         filename = request.GET.get('filename') or 'successions'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
 
 
@@ -499,9 +502,10 @@ class ExportReleases(ContractExportMixin):
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, str(project) + ' 해지자 리스트', title_format)
 
         # 2. Pre Header - Date
+        today_str = get_today_str()
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, len(header_src) - 1, today_str + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header - 1
         row_num = 2
@@ -588,7 +592,7 @@ class ExportReleases(ContractExportMixin):
 
         # Set up the Http response.
         filename = request.GET.get('filename') or 'releases'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
 
 
@@ -682,7 +686,8 @@ class ExportUnitStatus(ContractExportMixin):
             lines = dong_lines_sorted.get(dong['name'], [])
             max_col += len(lines) + 1
 
-        worksheet.write(row_num, max_col, TODAY + ' 현재', workbook.add_format({'align': 'right', 'font_size': '9'}))
+        today_str = get_today_str()
+        worksheet.write(row_num, max_col, today_str + ' 현재', workbook.add_format({'align': 'right', 'font_size': '9'}))
 
         # 3. Unit status board
         row_num = 3
@@ -750,5 +755,5 @@ class ExportUnitStatus(ContractExportMixin):
 
         # Set up the Http response.
         filename = request.GET.get('filename') or 'unit-status-board'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)

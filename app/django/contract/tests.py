@@ -1429,5 +1429,178 @@ class ContractAndPaymentSecurityTests(APITestCase):
         res_prev_bad = self.client.get('/api/v1/contract-price-update-preview/?project=invalid-id')
         self.assertEqual(res_prev_bad.status_code, http_status.HTTP_400_BAD_REQUEST)
 
+    def test_contractor_admin_inline_and_cross_contractor_save_model_defense(self):
+        """ContactorAdmin 상세 폼(ContractDocumentInline) 렌더링 오류 방지 및 save_model 타 계약자 서류/파일 변조 차단 검증"""
+        from django.contrib.admin.sites import AdminSite
+        from django.test import RequestFactory
+        from contract.admin import ContactorAdmin
+        from contract.models import DocumentType, RequiredDocument, ContractDocument
+
+        doc_type = DocumentType.objects.create(name='주민등록등본')
+        req_doc_b = RequiredDocument.objects.create(project=self.project_b, document_type=doc_type, sort='proof')
+        doc_b = ContractDocument.objects.create(
+            contractor=self.contractor_b,
+            required_document=req_doc_b,
+            submitted_quantity=1
+        )
+
+        admin_obj = ContactorAdmin(Contractor, AdminSite())
+        factory = RequestFactory()
+
+        # 1. ContractDocumentInline formset 생성 시 FieldError('submission_date') 없이 정상 생성되는지 검증
+        req_get = factory.get(f'/admin/contract/contractor/{self.contractor_a.pk}/change/')
+        req_get.user = self.admin_user
+        formsets, _ = admin_obj._create_formsets(req_get, self.contractor_a, change=True)
+        self.assertTrue(len(formsets) > 0)
+
+        # 2. contractor_a 저장 시 POST에 contractor_b의 doc_id가 주입되어도 doc_b 수량이 변조되지 않는지 검증
+        req_post = factory.post(
+            f'/admin/contract/contractor/{self.contractor_a.pk}/change/',
+            data={f'submitted_quantity_{doc_b.pk}': '99'}
+        )
+        req_post.user = self.admin_user
+        ModelForm = admin_obj.get_form(req_post, self.contractor_a, change=True)
+        form = ModelForm(instance=self.contractor_a)
+        admin_obj.save_model(req_post, self.contractor_a, form, change=True)
+
+        doc_b.refresh_from_db()
+        self.assertEqual(doc_b.submitted_quantity, 1)
+
+    def test_file_management_service_cross_contractor_idor_blocked(self):
+        """FileManagementService.handle_file_operations에서 타 계약자 파일 수정/삭제(IDOR) 차단 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from rest_framework import serializers
+        from contract.models import ContractFile
+        from contract.services import FileManagementService
+
+        file_b = ContractFile.objects.create(
+            contractor=self.contractor_b,
+            file=SimpleUploadedFile('b_contract.pdf', b'%PDF-1.4 content_b', content_type='application/pdf'),
+            creator=self.admin_user
+        )
+
+        # contractor_a 컨텍스트에서 contractor_b의 파일 삭제 시도 -> ValidationError 및 파일 보존
+        with self.assertRaises(serializers.ValidationError):
+            FileManagementService.handle_file_operations(
+                data={'delFile': file_b.pk},
+                contractor=self.contractor_a,
+                user=self.admin_user
+            )
+        self.assertTrue(ContractFile.objects.filter(pk=file_b.pk).exists())
+
+        # contractor_a 컨텍스트에서 contractor_b의 파일 교체 시도 -> ValidationError
+        replacement = SimpleUploadedFile('hacked.pdf', b'%PDF-1.4 hacked', content_type='application/pdf')
+        with self.assertRaises(serializers.ValidationError):
+            FileManagementService.handle_file_operations(
+                data={'editFile': file_b.pk, 'cngFile': replacement},
+                contractor=self.contractor_a,
+                user=self.admin_user
+            )
+
+    def test_sub_viewsets_cross_project_create_and_release_mismatch_blocked(self):
+        """프로젝트 A 담당자(user_a)가 하위 ViewSet 생성 및 해지 등록 시 타 프로젝트(B) 계약자 지정 차단 검증"""
+        from contract.models import DocumentType, RequiredDocument
+
+        # user_a에게 contract.release 및 contract.succession 권한 추가 부여 (프로젝트 A 한정)
+        perm_rel, _ = Permission.objects.get_or_create(
+            code='contract.release', defaults={'name': '계약 해지', 'module': 'contract'}
+        )
+        perm_succ, _ = Permission.objects.get_or_create(
+            code='contract.succession', defaults={'name': '권리의무승계', 'module': 'contract'}
+        )
+        self.role_staff.permissions.add(perm_rel, perm_succ)
+
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 프로젝트 B 계약자에 주소/연락처/상담내역 생성 시도 -> 403 Forbidden 차단
+        res_addr = self.client.post('/api/v1/contractor-address/', {
+            'contractor': self.contractor_b.pk,
+            'id_zipcode': '11111',
+            'id_address1': '무단주소등록'
+        }, format='json')
+        self.assertEqual(res_addr.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_contact = self.client.post('/api/v1/contractor-contact/', {
+            'contractor': self.contractor_b.pk,
+            'cell_phone': '010-0000-0000'
+        }, format='json')
+        self.assertEqual(res_contact.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        res_consult = self.client.post('/api/v1/contractor-consultations/', {
+            'contractor': self.contractor_b.pk,
+            'consultation_date': '2026-02-01',
+            'channel': '1',
+            'category': '1',
+            'content': '타 프로젝트 상담 등록 시도'
+        }, format='json')
+        self.assertEqual(res_consult.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. 프로젝트 A 계약자에 프로젝트 B의 구비서류(RequiredDocument) 연결 시도 -> 400 Bad Request 차단
+        doc_type = DocumentType.objects.create(name='인감증명서')
+        req_doc_b = RequiredDocument.objects.create(project=self.project_b, document_type=doc_type, sort='proof')
+        res_doc_mismatch = self.client.post('/api/v1/contract-docs/', {
+            'contractor': self.contractor_a.pk,
+            'required_document': req_doc_b.pk,
+            'submitted_quantity': 1
+        }, format='json')
+        self.assertEqual(res_doc_mismatch.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        # 3. 해지 등록 시 project=A, contractor=B(교차 프로젝트) 주입 시도 -> 400 ValidationError 차단
+        res_rel_mismatch = self.client.post('/api/v1/contractor-release/', {
+            'project': self.project_a.pk,
+            'contractor': self.contractor_b.pk,
+            'request_date': '2026-02-15',
+            'release_type': '1',
+            'status': '1',
+            'refund_amount': 0,
+            'refund_account_bank': '국민',
+            'refund_account_number': '111',
+            'refund_account_depositor': '이순신',
+        }, format='json')
+        self.assertEqual(res_rel_mismatch.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        # 4. 승계 등록 시 프로젝트 B의 contract 지정 시도 -> 403 Forbidden 차단
+        res_succ_cross = self.client.post('/api/v1/succession/', {
+            'contract': self.contract_b.pk,
+            'name': '무단양수인',
+            'gender': 'M',
+            'apply_date': '2026-02-15',
+            'trading_date': '2026-02-15',
+        }, format='json')
+        self.assertEqual(res_succ_cross.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_summary_viewsets_readonly_and_uncontracted_commercial_multiple_remain_orders(self):
+        """요약 ViewSet의 ReadOnly(POST 405) 보장 및 근린생활시설 다중 잔금 회차 시 MultipleObjectsReturned 방어 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 1. SubsSummaryViewSet 및 ContSummaryViewSet에 POST 요청 시 슈퍼유저라도 405 Method Not Allowed
+        res_subs_post = self.client.post('/api/v1/subs-sum/', {}, format='json')
+        self.assertEqual(res_subs_post.status_code, http_status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        res_cont_post = self.client.post('/api/v1/cont-sum/', {}, format='json')
+        self.assertEqual(res_cont_post.status_code, http_status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # 2. 프로젝트 A에 추가 잔금 회차(type_sort='2', pay_sort='3')가 있어도 근린생활시설 미계약 계산이 정상 동작하는지 검증
+        InstallmentPaymentOrder.objects.create(
+            project=self.project_a, type_sort='2', pay_sort='3', pay_code=20, pay_time=20,
+            pay_name='오피스텔 잔금', pay_ratio=100.0
+        )
+        ut_comm = UnitType.objects.create(
+            project=self.project_a, name='근린생활시설', sort='5', color='#0000FF', average_price=400000000, num_unit=5
+        )
+        ku_comm = KeyUnit.objects.create(project=self.project_a, unit_type=ut_comm, unit_code='C-101')
+        hu_comm = HouseUnit.objects.create(
+            unit_type=ut_comm,
+            building_unit=self.cp_a.house_unit.building_unit,
+            key_unit=ku_comm,
+            name='103호',
+            bldg_line=1,
+            floor_no=1
+        )
+        cp_comm = ContractPrice.objects.create(contract=None, house_unit=hu_comm, price=400000000)
+        self.assertTrue(cp_comm.is_cache_valid)
+        self.assertEqual(sum(cp_comm.payment_amounts.values()), 400000000)
+
+
 
 

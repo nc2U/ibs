@@ -25,7 +25,13 @@ class Command(BaseCommand):
 
         # 쿼리셋 준비
         queryset = ContractPrice.objects.select_related(
-            'contract', 'contract__project').filter(contract__is_active=True)
+            'contract',
+            'contract__project',
+            'contract__order_group',
+            'contract__unit_type',
+            'contract__key_unit__houseunit',
+            'house_unit__unit_type',
+        ).filter(contract__is_active=True).order_by('id')
 
         if project_id:
             queryset = queryset.filter(contract__project_id=project_id)

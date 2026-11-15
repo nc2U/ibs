@@ -166,8 +166,8 @@ class ContractDocumentInline(admin.TabularInline):
     """계약 서류 Inline (1줄로 간단히 관리)"""
     model = ContractDocument
     extra = 0
-    fields = ['required_document', 'submitted_qty', 'submission_date', 'is_complete_display', 'files_info']
-    readonly_fields = ['submitted_qty', 'is_complete_display', 'files_info']
+    fields = ['required_document', 'submitted_qty', 'created', 'is_complete_display', 'files_info']
+    readonly_fields = ['submitted_qty', 'created', 'is_complete_display', 'files_info']
 
     def submitted_qty(self, obj):
         """제출 수량"""
@@ -251,7 +251,7 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
             if key.startswith('submitted_quantity_'):
                 doc_id = key.split('_')[-1]
                 try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc = ContractDocument.objects.get(pk=doc_id, contractor=obj)
                     doc.submitted_quantity = int(value)
                     doc.save()
                 except (ContractDocument.DoesNotExist, ValueError):
@@ -262,9 +262,12 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
             if key.startswith('delete_file_') and value == '1':
                 file_id = key.split('_')[-1]
                 try:
-                    file_obj = ContractDocumentFile.objects.get(pk=file_id)
+                    file_obj = ContractDocumentFile.objects.get(
+                        pk=file_id,
+                        contract_document__contractor=obj
+                    )
                     file_obj.delete()
-                except ContractDocumentFile.DoesNotExist:
+                except (ContractDocumentFile.DoesNotExist, ValueError):
                     pass
 
         # 파일 업로드 처리
@@ -272,14 +275,14 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
             if key.startswith('upload_file_'):
                 doc_id = key.split('_')[-1]
                 try:
-                    doc = ContractDocument.objects.get(pk=doc_id)
+                    doc = ContractDocument.objects.get(pk=doc_id, contractor=obj)
                     for uploaded_file in file_list:
                         ContractDocumentFile.objects.create(
                             contract_document=doc,
                             file=uploaded_file,
                             uploader=request.user
                         )
-                except ContractDocument.DoesNotExist:
+                except (ContractDocument.DoesNotExist, ValueError):
                     pass
 
 
