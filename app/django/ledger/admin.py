@@ -89,11 +89,17 @@ class BaseAccountAdmin(ImportExportMixin, admin.ModelAdmin):
             'revenue': '#FF9800',  # 주황 - 수익
             'expense': '#9C27B0',  # 보라 - 비용
             'transfer': '#607D8B',  # 회색 - 대체
+            'cancel': '#795548',  # 갈색 - 취소
         }
         color = colors.get(obj.category, '#000000')
         return format_html(
             '<span style="color: {}; font-weight: bold;">●</span> {}',
             color, obj.get_category_display()
+        )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('parent').prefetch_related(
+            'children', 'children__children'
         )
 
     @admin.display(description='거래방향')

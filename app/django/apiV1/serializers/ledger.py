@@ -532,7 +532,11 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 dict(instance.accounting_entries.values_list('pk', 'amount'))
                 if is_update else {}
             )
-            final_entry_amounts = dict(existing_amounts_map) if (is_update and self.partial) else {}
+            final_entry_amounts = (
+                dict(existing_amounts_map)
+                if (is_update and (self.partial or entries_data is None))
+                else {}
+            )
 
             new_entry_total = 0
             for entry_data in incoming_entries:
@@ -556,8 +560,21 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                 })
 
         # 계정 필수 조건 (requires_affiliate 등) 검증
+        existing_entries_by_pk = {}
+        if is_update and incoming_entries:
+            existing_entries_by_pk = {
+                e.pk: e for e in instance.accounting_entries.select_related('account')
+            }
+
         for entry_data in incoming_entries:
-            account_id = entry_data.get('account')
+            pk = entry_data.get('pk')
+            existing_entry = existing_entries_by_pk.get(pk) if pk else None
+            account_id = entry_data.get('account', existing_entry.account_id if existing_entry else None)
+            affiliate_id = (
+                entry_data.get('affiliate')
+                if 'affiliate' in entry_data
+                else (existing_entry.affiliate_id if existing_entry else None)
+            )
             if account_id:
                 try:
                     from ledger.models import CompanyAccount
@@ -570,7 +587,7 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
                         raise serializers.ValidationError({
                             'accounting_entries': f'"{account_obj.name}"는 비활성 계정이므로 사용할 수 없습니다.'
                         })
-                    if getattr(account_obj, 'requires_affiliate', False) and not entry_data.get('affiliate'):
+                    if getattr(account_obj, 'requires_affiliate', False) and not affiliate_id:
                         raise serializers.ValidationError({
                             'accounting_entries': f'"{account_obj.name}" 계정은 관계회사/프로젝트 선택이 필수입니다.'
                         })
@@ -877,9 +894,13 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                 ).values_list('pk', 'amount'))
                 if is_update else {}
             )
-            # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 기본 포함하고,
+            # PATCH 요청(부분 업데이트) 또는 entries_data 미전달 시 기존 분개 목록을 기본 포함하고,
             # PUT 요청(전체 교체)일 때는 incoming_entries에 포함된 항목만으로 합계를 계산
-            final_entry_amounts = dict(existing_amounts_map) if (is_update and self.partial) else {}
+            final_entry_amounts = (
+                dict(existing_amounts_map)
+                if (is_update and (self.partial or entries_data is None))
+                else {}
+            )
 
             new_entry_total = 0
             for entry_data in incoming_entries:
@@ -961,6 +982,22 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                     contract_payment_totals[contract_id] = contract_payment_totals.get(contract_id, 0) + entry_amount
 
         if contract_payment_totals:
+            # PATCH(부분 수정) 시 payload에 포함되지 않은 동일 거래 내 기존 수납 분개 금액도 합산
+            if is_update and self.partial:
+                incoming_pks = {e.get('pk') for e in incoming_entries if e.get('pk')}
+                for existing_pk, existing_entry in existing_entries_by_pk.items():
+                    if existing_pk in incoming_pks:
+                        continue
+                    c_id = existing_entry.contract_id
+                    if (
+                        c_id in contract_payment_totals
+                        and sort_value == 1
+                        and existing_entry.account
+                        and existing_entry.account.is_payment
+                        and (existing_entry.amount or 0) > 0
+                    ):
+                        contract_payment_totals[c_id] += existing_entry.amount
+
             from payment.models import ContractPayment
             from django.db.models import Sum as _Sum
             for contract_id, tx_contract_amount in contract_payment_totals.items():

@@ -246,18 +246,22 @@ def async_export_ledger_account(self, queryset_ids: list, user_id: int, resource
         file_format = 'xlsx'
         export_data = dataset.export(file_format)
 
-        # 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_format}', mode='wb') as tmp_file:
-            tmp_file.write(export_data)
-            tmp_file_path = tmp_file.name
+        # 임시 파일로 저장 후 스토리지 업로드 (예외 발생 시에도 임시 파일 정리 보장)
+        tmp_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_format}', mode='wb') as tmp_file:
+                tmp_file.write(export_data)
+                tmp_file_path = tmp_file.name
 
-        # 스토리지에 업로드
-        with open(tmp_file_path, 'rb') as file:
-            file_name = f'exports/{model_name.lower()}_{user_id}_{self.request.id}.{file_format}'
-            saved_path = default_storage.save(file_name, file)
-
-        # 임시 파일 삭제
-        os.unlink(tmp_file_path)
+            with open(tmp_file_path, 'rb') as file:
+                file_name = f'exports/{model_name.lower()}_{user_id}_{self.request.id}.{file_format}'
+                saved_path = default_storage.save(file_name, file)
+        finally:
+            if tmp_file_path and os.path.exists(tmp_file_path):
+                try:
+                    os.unlink(tmp_file_path)
+                except OSError:
+                    pass
 
         export_result = {
             'success': True,

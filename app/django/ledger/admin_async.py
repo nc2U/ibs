@@ -158,8 +158,8 @@ class AsyncImportExportMixin(ImportExportMixin):
             task_result = AsyncResult(job.task_id)
 
             if task_result.state == 'SUCCESS':
-                result = task_result.result
-                if result and result.get('success'):
+                result = task_result.result if isinstance(task_result.result, dict) else {}
+                if result.get('success'):
                     job.status = ImportJob.COMPLETED
                     job.total_records = result.get('total_rows', 0)
                     job.processed_records = result.get('new_records', 0) + result.get('updated_records', 0)

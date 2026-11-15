@@ -1737,6 +1737,189 @@ class AdminHtmlRenderingTests(LedgerTestBase):
         self.assertNotIn('<img ', detail_html)
         self.assertIn('&lt;img src=x onerror=alert(1)&gt;', detail_html)
 
+    def test_account_ordering_and_non_numeric_parent_code_generation(self):
+        """계정 과목 정렬 파라미터(?ordering=created_at 등) 500 에러 방어 및 비숫자 상위 계정 코드 폴백 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        res_com = self.client.get('/api/v1/ledger/company-account/?ordering=created_at')
+        self.assertEqual(res_com.status_code, http_status.HTTP_200_OK)
+
+        res_proj = self.client.get('/api/v1/ledger/project-account/?ordering=-depth')
+        self.assertEqual(res_proj.status_code, http_status.HTTP_200_OK)
+
+        manual_parent = CompanyAccount.objects.create(
+            code='A100', name='수동코드대분류', category='asset', direction='deposit', is_category_only=True
+        )
+        child1 = CompanyAccount.objects.create(
+            name='자동하위1', parent=manual_parent, category='asset', direction='deposit'
+        )
+        child2 = CompanyAccount.objects.create(
+            name='자동하위2', parent=manual_parent, category='asset', direction='deposit'
+        )
+        self.assertEqual(child1.code, 'A100-01')
+        self.assertEqual(child2.code, 'A100-02')
+
+    def test_accounting_entry_rls_and_cross_entity_validation(self):
+        """회계 분개 생성/수정 시 타 프로젝트·타 회사 거래 연결 및 권한 외 접근 차단 검증"""
+        tx_b = ProjectBankTransaction.objects.create(
+            project=self.project_b,
+            bank_account=self.bank_acc_b,
+            deal_date=date(2026, 8, 5),
+            sort=self.sort_deposit,
+            amount=100000,
+            content='프로젝트B 입금',
+        )
+
+        # 1. user_a(프로젝트 A 권한만 보유)가 프로젝트 B 소속 분개 생성 시도 -> 403 차단
+        self.client.force_authenticate(user=self.user_a)
+        res_forbidden = self.client.post(
+            '/api/v1/ledger/project-accounting-entry/',
+            data={
+                'project': self.project_b.pk,
+                'transaction_id': str(tx_b.transaction_id),
+                'account': self.account_deposit.pk,
+                'amount': 100000,
+            },
+            format='json',
+        )
+        self.assertEqual(res_forbidden.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. 프로젝트 A 분개를 생성하면서 프로젝트 B의 transaction_id 연결 시도 -> 400 차단
+        res_cross_tx = self.client.post(
+            '/api/v1/ledger/project-accounting-entry/',
+            data={
+                'project': self.project_a.pk,
+                'transaction_id': str(tx_b.transaction_id),
+                'account': self.account_deposit.pk,
+                'amount': 100000,
+            },
+            format='json',
+        )
+        self.assertEqual(res_cross_tx.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('transaction_id', res_cross_tx.data)
+
+    def test_composite_patch_split_overpayment_and_requires_affiliate_validation(self):
+        """복합 거래 PATCH 시 분할 수납 합산 초과 차단 및 본사 계정 requires_affiliate 부분 수정 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 계약 총액 5억인 contract_a에 대해 3억 + 2억 = 5억 분할 수납 생성
+        create_res = self.client.post(
+            '/api/v1/ledger/project-composite-transaction/',
+            data={
+                'project': self.project_a.pk,
+                'bank_account': self.bank_acc_a.pk,
+                'deal_date': '2026-08-25',
+                'amount': 500000000,
+                'sort': 1,
+                'content': '분할 완납 거래',
+                'accounting_entries': [
+                    {
+                        'account': self.account_sales.pk,
+                        'amount': 300000000,
+                        'contract': self.contract_a.pk,
+                        'contractor': self.contractor_a.pk,
+                        'trader': '홍길동',
+                    },
+                    {
+                        'account': self.account_sales.pk,
+                        'amount': 200000000,
+                        'contract': self.contract_a.pk,
+                        'contractor': self.contractor_a.pk,
+                        'trader': '홍길동',
+                    },
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(create_res.status_code, http_status.HTTP_201_CREATED)
+        tx_pk = create_res.data['bank_transaction']['pk']
+        second_entry_pk = create_res.data['accounting_entries'][1]['pk']
+
+        # PATCH로 두 번째 분개만 2억 -> 3억으로 증액 시도 (첫 번째 분개 3억은 payload 미포함, 합계 6억 > 5억) -> 400 차단
+        patch_overpay_res = self.client.patch(
+            f'/api/v1/ledger/project-composite-transaction/{tx_pk}/',
+            data={
+                'amount': 600000000,
+                'accounting_entries': [
+                    {'pk': second_entry_pk, 'amount': 300000000},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(patch_overpay_res.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('잔여 미납액', str(patch_overpay_res.data))
+
+        # 2. 본사 requires_affiliate=True 계정의 PATCH 시 affiliate 누락/해제 차단 검증
+        self.client.force_authenticate(user=self.admin_user)
+        aff_acc = CompanyAccount.objects.create(
+            code='1350',
+            name='관계사대여금',
+            category='asset',
+            direction='withdraw',
+            requires_affiliate=True,
+            is_active=True,
+        )
+        aff = Affiliate.objects.create(sort='project', project=self.project_a)
+        com_bank = CompanyBankAccount.objects.create(
+            company=self.company, bankcode=self.bank_code, alias_name='본사주계좌', number='900-100-200'
+        )
+        com_create_res = self.client.post(
+            '/api/v1/ledger/company-composite-transaction/',
+            data={
+                'company': self.company.pk,
+                'bank_account': com_bank.pk,
+                'deal_date': '2026-08-26',
+                'sort': 2,
+                'amount': 1000000,
+                'content': '관계사 대여',
+                'accounting_entries': [
+                    {'account': aff_acc.pk, 'amount': 1000000, 'affiliate': aff.pk, 'trader': '관계사'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(com_create_res.status_code, http_status.HTTP_201_CREATED)
+        com_tx_pk = com_create_res.data['bank_transaction']['pk']
+        com_entry_pk = com_create_res.data['accounting_entries'][0]['pk']
+
+        # PATCH로 affiliate만 None으로 해제 시도 -> 400 차단
+        com_patch_res = self.client.patch(
+            f'/api/v1/ledger/company-composite-transaction/{com_tx_pk}/',
+            data={
+                'accounting_entries': [
+                    {'pk': com_entry_pk, 'affiliate': None},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(com_patch_res.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertIn('관계회사/프로젝트 선택이 필수', str(com_patch_res.data))
+
+    def test_import_job_display_and_bank_transaction_resource_uuid_generation(self):
+        """ImportJob 리소스 표시명 및 BankTransactionResource 빈 id/transaction_id 행 UUID 자동 생성 검증"""
+        from ledger.models import ImportJob
+        from ledger.resources import CompanyBankTransactionResource, ProjectBankTransactionResource
+
+        job = ImportJob(
+            job_type='import',
+            resource_type='company_bank_transaction',
+            status=ImportJob.COMPLETED,
+        )
+        self.assertIn('CompanyBankTransaction', str(job))
+
+        com_res = CompanyBankTransactionResource()
+        row_com = {'id': '', 'transaction_id': ''}
+        com_res.before_import_row(row_com)
+        self.assertIsNone(row_com['id'])
+        self.assertTrue(bool(row_com['transaction_id']))
+
+        proj_res = ProjectBankTransactionResource()
+        row_proj = {'id': '   ', 'transaction_id': None}
+        proj_res.before_import_row(row_proj)
+        self.assertIsNone(row_proj['id'])
+        self.assertTrue(bool(row_proj['transaction_id']))
+
+
 
 
 

@@ -202,8 +202,6 @@ class Account(models.Model):
                 increment += 1
 
         # 하위 계정: 부모 코드 + (순서 * 깊이별 간격)
-        parent_code = int(self.parent.code)
-
         all_codes = set(
             self.__class__.objects.exclude(pk=self.pk or 0).values_list('code', flat=True)
         )
@@ -213,11 +211,21 @@ class Account(models.Model):
             .values_list('code', flat=True)
         )
         siblings_count = len(existing_codes)
+        sibling_order = siblings_count + 1
+
+        try:
+            parent_code = int(self.parent.code)
+        except (ValueError, TypeError):
+            # 상위 계정이 수동 문자열 코드(예: 'A100')인 경우 접두어 기반 순번 코드 생성
+            while True:
+                test_code = f'{self.parent.code}-{sibling_order:02d}'
+                if test_code not in all_codes:
+                    return test_code
+                sibling_order += 1
 
         # 깊이별 간격 (depth 4 이상은 1로 고정)
         step = self.DEPTH_STEPS.get(self.depth, 1)
 
-        sibling_order = siblings_count + 1
         while True:
             test_code = str(parent_code + (sibling_order * step))
             if test_code not in all_codes:
@@ -284,9 +292,14 @@ class Account(models.Model):
             # 거래 계정인 경우 실제 direction 반환
             return self.direction
 
-        # 분류 전용 계정인 경우 하위 계정들의 direction 분석
+        # 분류 전용 계정인 경우 하위 계정들의 direction 분석 (prefetch 캐시 우선 활용)
         child_directions = set()
-        for child in self.children.filter(is_active=True):
+        if hasattr(self, '_prefetched_objects_cache') and 'children' in self._prefetched_objects_cache:
+            active_children = [c for c in self.children.all() if c.is_active]
+        else:
+            active_children = self.children.filter(is_active=True)
+
+        for child in active_children:
             child_direction = child.get_computed_direction()
             if child_direction == 'both':
                 # 하위에 'both'가 있으면 즉시 'both' 반환
@@ -1028,8 +1041,18 @@ class ImportJob(models.Model):
         verbose_name = '12. 가져오기/내보내기 작업'
         verbose_name_plural = '12. 가져오기/내보내기 작업'
 
+    RESOURCE_TYPE_DISPLAY_MAP = {
+        'company_account': 'CompanyAccount',
+        'project_account': 'ProjectAccount',
+        'company_bank_transaction': 'CompanyBankTransaction',
+        'project_bank_transaction': 'ProjectBankTransaction',
+        'company_accounting_entry': 'CompanyAccountingEntry',
+        'project_accounting_entry': 'ProjectAccountingEntry',
+    }
+
     def __str__(self):
-        return f'{self.get_job_type_display()} - {self.get_resource_type_display()} ({self.get_status_display()})'
+        resource_label = self.RESOURCE_TYPE_DISPLAY_MAP.get(self.resource_type, self.get_resource_type_display())
+        return f'{self.get_job_type_display()} - {resource_label} ({self.get_status_display()})'
 
     @property
     def progress(self):

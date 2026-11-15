@@ -190,7 +190,9 @@ class CompanyAccountFilter(FilterSet):
 
 class CompanyAccountViewSet(viewsets.ModelViewSet):
     """본사 계정 과목 ViewSet"""
-    queryset = CompanyAccount.objects.select_related('parent').annotate(
+    queryset = CompanyAccount.objects.select_related('parent').prefetch_related(
+        'children', 'children__children'
+    ).annotate(
         children_count_annotated=Count('children', filter=Q(children__is_active=True))
     ).all()
     serializer_class = CompanyAccountSerializer
@@ -198,7 +200,7 @@ class CompanyAccountViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationThreeHundred
     filterset_class = CompanyAccountFilter
     search_fields = ('code', 'name', 'description')
-    ordering_fields = ('code', 'name', 'order', 'created_at')
+    ordering_fields = ('code', 'name', 'order', 'depth')
     ordering = ('code', 'order')
 
     @property
@@ -323,7 +325,9 @@ class ProjectAccountFilter(FilterSet):
 
 class ProjectAccountViewSet(viewsets.ModelViewSet):
     """프로젝트 계정 과목 ViewSet"""
-    queryset = ProjectAccount.objects.select_related('parent').annotate(
+    queryset = ProjectAccount.objects.select_related('parent').prefetch_related(
+        'children', 'children__children'
+    ).annotate(
         children_count_annotated=Count('children', filter=Q(children__is_active=True))
     ).all()
     serializer_class = ProjectAccountSerializer
@@ -331,7 +335,7 @@ class ProjectAccountViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationThreeHundred
     filterset_class = ProjectAccountFilter
     search_fields = ('code', 'name', 'description')
-    ordering_fields = ('code', 'name', 'order', 'created_at')
+    ordering_fields = ('code', 'name', 'order', 'depth')
     ordering = ('code', 'order')
 
     @action(detail=False, methods=['get'])
@@ -1003,19 +1007,39 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         except CompanyLedgerCalculation.DoesNotExist:
             pass
 
+    def _validate_company_access_and_tx(self, company_id, tx_id):
+        user = self.request.user
+        if company_id and not user.is_superuser:
+            if company_id not in get_accessible_company_ids(user):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('해당 회사의 회계 분개를 생성/수정할 권한이 없습니다.')
+        tx = CompanyBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        if tx and company_id and tx.company_id != company_id:
+            raise serializers.ValidationError({
+                'transaction_id': '지정된 은행 거래의 소속 회사와 회계 분개의 소속 회사가 일치하지 않습니다.'
+            })
+        return tx
+
     def perform_create(self, serializer):
         company = serializer.validated_data.get('company')
         company_id = company.pk if hasattr(company, 'pk') else company
         tx_id = serializer.validated_data.get('transaction_id')
-        tx = CompanyBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        tx = self._validate_company_access_and_tx(company_id, tx_id)
         deal_date = tx.deal_date if tx else None
         self._check_company_entry_settlement_lock(company_id, deal_date, '생성')
         serializer.save()
 
     def perform_update(self, serializer):
         instance = serializer.instance
-        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
         vdata = serializer.validated_data
+        target_company = vdata.get('company', instance.company)
+        target_company_id = target_company.pk if hasattr(target_company, 'pk') else target_company
+        target_tx_id = vdata.get('transaction_id', instance.transaction_id)
+        target_tx = self._validate_company_access_and_tx(target_company_id, target_tx_id)
+
+        old_deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        new_deal_date = target_tx.deal_date if target_tx else old_deal_date
+
         important_changed = any(
             (k in vdata and getattr(instance, k) != vdata[k])
             for k in ('amount', 'trader', 'evidence_type', 'affiliate', 'transaction_id', 'company')
@@ -1023,8 +1047,12 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         account_changed = 'account' in vdata and instance.account != vdata['account']
         is_only_account_change = (not important_changed) and account_changed
         self._check_company_entry_settlement_lock(
-            instance.company_id, deal_date, '수정', is_only_account_change=is_only_account_change
+            instance.company_id, old_deal_date, '수정', is_only_account_change=is_only_account_change
         )
+        if (target_company_id, new_deal_date) != (instance.company_id, old_deal_date):
+            self._check_company_entry_settlement_lock(
+                target_company_id, new_deal_date, '수정', is_only_account_change=is_only_account_change
+            )
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -1096,19 +1124,39 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         except ProjectLedgerCalculation.DoesNotExist:
             pass
 
+    def _validate_project_access_and_tx(self, project_id, tx_id):
+        user = self.request.user
+        if project_id and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if project_id not in get_accessible_project_ids(user):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('해당 프로젝트의 회계 분개를 생성/수정할 권한이 없습니다.')
+        tx = ProjectBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        if tx and project_id and tx.project_id != project_id:
+            raise serializers.ValidationError({
+                'transaction_id': '지정된 은행 거래의 소속 프로젝트와 회계 분개의 소속 프로젝트가 일치하지 않습니다.'
+            })
+        return tx
+
     def perform_create(self, serializer):
         project = serializer.validated_data.get('project')
         project_id = project.pk if hasattr(project, 'pk') else project
         tx_id = serializer.validated_data.get('transaction_id')
-        tx = ProjectBankTransaction.objects.filter(transaction_id=tx_id).first() if tx_id else None
+        tx = self._validate_project_access_and_tx(project_id, tx_id)
         deal_date = tx.deal_date if tx else None
         self._check_project_entry_settlement_lock(project_id, deal_date, '생성')
         serializer.save()
 
     def perform_update(self, serializer):
         instance = serializer.instance
-        deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
         vdata = serializer.validated_data
+        target_project = vdata.get('project', instance.project)
+        target_project_id = target_project.pk if hasattr(target_project, 'pk') else target_project
+        target_tx_id = vdata.get('transaction_id', instance.transaction_id)
+        target_tx = self._validate_project_access_and_tx(target_project_id, target_tx_id)
+
+        old_deal_date = instance.related_transaction.deal_date if instance.related_transaction else None
+        new_deal_date = target_tx.deal_date if target_tx else old_deal_date
+
         important_changed = any(
             (k in vdata and getattr(instance, k) != vdata[k])
             for k in ('amount', 'trader', 'evidence_type', 'contract', 'contractor', 'transaction_id', 'project')
@@ -1116,8 +1164,12 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         account_changed = 'account' in vdata and instance.account != vdata['account']
         is_only_account_change = (not important_changed) and account_changed
         self._check_project_entry_settlement_lock(
-            instance.project_id, deal_date, '수정', is_only_account_change=is_only_account_change
+            instance.project_id, old_deal_date, '수정', is_only_account_change=is_only_account_change
         )
+        if (target_project_id, new_deal_date) != (instance.project_id, old_deal_date):
+            self._check_project_entry_settlement_lock(
+                target_project_id, new_deal_date, '수정', is_only_account_change=is_only_account_change
+            )
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -1253,7 +1305,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
                 if not has_manage_perm:
                     from apiV1.permissions.ibs_perms import HqProjectModulePermission
                     user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
-                    if 'hq.ledger.manage' in user_perms:
+                    if 'hq.ledger.manage' in user_perms or 'ledger.com_manage' in user_perms:
                         has_manage_perm = True
 
                 if not has_manage_perm:

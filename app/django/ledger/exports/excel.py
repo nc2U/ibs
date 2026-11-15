@@ -27,6 +27,18 @@ from ledger.services.project_transaction import get_project_transactions, prefet
 from project.models import Project, ProjectOutBudget
 
 
+def _get_today_str():
+    return datetime.date.today().strftime('%Y-%m-%d')
+
+
+def _write_or_merge_range(worksheet, first_row, first_col, last_row, last_col, data, cell_format):
+    """단일 셀 범위일 경우 write, 2개 이상 셀 범위일 경우 merge_range를 호출합니다."""
+    if first_row == last_row and first_col == last_col:
+        worksheet.write(first_row, first_col, data, cell_format)
+    else:
+        worksheet.merge_range(first_row, first_col, last_row, last_col, data, cell_format)
+
+
 def _get_authorized_company(request):
     """요청 사용자의 본사 원장 조회 권한 및 소속 회사 접근 권한(RLS)을 검증하고 Company를 반환합니다."""
     user = getattr(request, 'user', None)
@@ -65,7 +77,7 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
         # 권한 및 대상 회사 검증
         company = _get_authorized_company(request)
         com_name = company.name.replace('주식회사 ', '(주)')
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
 
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('본사_계좌별_자금현황')
@@ -140,7 +152,10 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
         # Turn off the warnings:
         worksheet.ignore_errors({'number_stored_as_text': 'B:C'})
 
-        for row, balance in enumerate(balance_set):
+        balance_list = list(balance_set)
+        balance_count = len(balance_list)
+
+        for row, balance in enumerate(balance_list):
             row_num += 1
             inc_sum = balance['inc_sum'] if balance['inc_sum'] else 0
             out_sum = balance['out_sum'] if balance['out_sum'] else 0
@@ -156,7 +171,7 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
                 if col == 0 and row == 0:
                     worksheet.write(row_num, col, '현금', center_format)
                 if col == 0 and row == 1:
-                    worksheet.merge_range(row_num, col, balance_set.count() + 2, col, '보통예금', center_format)
+                    _write_or_merge_range(worksheet, row_num, col, balance_count + 2, col, '보통예금', center_format)
                 if col == 1:
                     worksheet.write(row_num, col, balance['bank_acc'], left_format)
                 if col == 2:
@@ -193,7 +208,7 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
         # 권한 및 대상 회사 검증
         company = _get_authorized_company(request)
         com_name = company.name.replace('주식회사 ', '(주)')
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
 
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('당일_입출금내역')
@@ -351,7 +366,7 @@ def export_com_transaction_xls(request):
     com_name = company.name.replace('주식회사 ', '(주)')
 
     raw_filename = request.GET.get('filename')
-    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'cashbook-{TODAY}'
+    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'cashbook-{_get_today_str()}'
     if clean_name.lower().endswith('.xls'):
         clean_name = clean_name[:-4]
 
@@ -492,7 +507,7 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
     def get(self, request):
         # 데이터 및 권한 조회
         project = _get_authorized_project(request)
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
         directpay = request.GET.get('bank_account__directpay', '0')
         is_balance = request.GET.get('is_balance', '')
 
@@ -553,7 +568,9 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
 
             # 첫 행에만 '보통예금' 병합
             if row_idx == 0:
-                worksheet.merge_range(row_num, 0, row_num + len(balance_list) - 1, 0, '보통예금', center_format)
+                _write_or_merge_range(
+                    worksheet, row_num, 0, row_num + len(balance_list) - 1, 0, '보통예금', center_format
+                )
 
             worksheet.write(row_num, 1, balance['bank_acc'], left_format)
             worksheet.write(row_num, 2, balance['bank_num'], left_format)
@@ -616,7 +633,7 @@ class ExportProjectLedgerDateCashbook(ExcelExportMixin):
     def get(self, request):
         # 권한 및 대상 프로젝트 검증
         project = _get_authorized_project(request)
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
 
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('당일_입출금내역')
@@ -775,7 +792,7 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
     def get(self, request):
         # 권한 및 대상 프로젝트 검증
         project = _get_authorized_project(request)
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
 
@@ -908,16 +925,16 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
 
             for col in range(9):
                 if col == 0 and row == 0:
-                    worksheet.merge_range(row_num, col, budget_count + 2, col, '사업비', center_format)
+                    _write_or_merge_range(worksheet, row_num, col, budget_count + 2, col, '사업비', center_format)
                 if col == 1:
                     # ledger 기반: account.parent별 병합
                     if parent_pk and parent_pk not in parent_first_seen:
                         parent_first_seen.add(parent_pk)
                         parent_count = parent_budget_counts.get(parent_pk, 1)
                         parent_name = budget.account.parent.name if budget.account.parent else ''
-                        worksheet.merge_range(row_num, col,
-                                              row_num + parent_count - 1,
-                                              col, parent_name, center_format)
+                        _write_or_merge_range(
+                            worksheet, row_num, col, row_num + parent_count - 1, col, parent_name, center_format
+                        )
                 if col == 2:
                     if budget.account_opt:
                         # account_opt별 첫 번째 예산인지 확인
@@ -925,8 +942,9 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
                         if opt_key not in opt_first_seen:
                             opt_first_seen[opt_key] = True
                             opt_count = opt_budget_counts.get(opt_key, 1)
-                            worksheet.merge_range(row_num, col, row_num + opt_count - 1,
-                                                  col, budget.account_opt, left_format)
+                            _write_or_merge_range(
+                                worksheet, row_num, col, row_num + opt_count - 1, col, budget.account_opt, left_format
+                            )
                     else:
                         # ledger 기반: account.name 사용
                         account_name = budget.account.name if budget.account else ''
@@ -989,7 +1007,7 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
     def get(self, request):
         # 권한 및 대상 프로젝트 검증
         project = _get_authorized_project(request)
-        date = request.GET.get('date') or str(TODAY)
+        date = request.GET.get('date') or _get_today_str()
         revised = request.GET.get('revised')
         is_revised = int(revised) if revised in ('0', '1') else 0
 
@@ -1154,8 +1172,10 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         total_monthly = [0] * len(months)
 
         # 중분류별 하위 예산 개수 계산 (ledger 기반: account.parent별 그룹)
+        budgets_list = list(budgets)
+        budget_count = len(budgets_list)
         parent_budget_counts = {}
-        for budget in budgets:
+        for budget in budgets_list:
             parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
             if parent_pk:
                 parent_budget_counts[parent_pk] = parent_budget_counts.get(parent_pk, 0) + 1
@@ -1163,7 +1183,7 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
         # 중분류별 첫 번째 예산 여부 추적
         parent_first_seen = set()
 
-        for row_idx, budget in enumerate(budgets):
+        for row_idx, budget in enumerate(budgets_list):
             row_num += 1
 
             # 예산액
@@ -1185,7 +1205,7 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
 
             # 대분류 (첫 행에만 병합)
             if row_idx == 0:
-                worksheet.merge_range(row_num, 0, row_num + budgets.count() - 1, 0, '사업비', center_format)
+                _write_or_merge_range(worksheet, row_num, 0, row_num + budget_count - 1, 0, '사업비', center_format)
 
             # 중분류 (account.parent별 병합) - ledger 기반
             parent_pk = budget.account.parent_id if budget.account and budget.account.parent else None
@@ -1193,9 +1213,9 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
                 parent_first_seen.add(parent_pk)
                 parent_count = parent_budget_counts.get(parent_pk, 1)
                 parent_name = budget.account.parent.name if budget.account.parent else ''
-                worksheet.merge_range(row_num, 1,
-                                      row_num + parent_count - 1,
-                                      1, parent_name, center_format)
+                _write_or_merge_range(
+                    worksheet, row_num, 1, row_num + parent_count - 1, 1, parent_name, center_format
+                )
 
             # 소분류 (account) - ledger 기반
             worksheet.write(row_num, 2, budget.account.name if budget.account else '', left_format)
@@ -1282,7 +1302,7 @@ def export_pro_transaction_xls(request):
     pro_name = project.name
 
     raw_filename = request.GET.get('filename')
-    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'pro_transaction-{TODAY}'
+    clean_name = re.sub(r'["\r\n]', '', str(raw_filename)).strip() if raw_filename else f'pro_transaction-{_get_today_str()}'
     if clean_name.lower().endswith('.xls'):
         clean_name = clean_name[:-4]
 

@@ -1,3 +1,4 @@
+import uuid
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from import_export import resources, fields, widgets
@@ -128,11 +129,21 @@ class BaseTransactionResource(resources.ModelResource):
                     all(c in ' \t\n\r\xa0' for c in id_value)):
                 row['id'] = None
 
+        if 'transaction_id' in row:
+            tx_val = str(row['transaction_id']).strip() if row['transaction_id'] is not None else ''
+            if not tx_val or tx_val.lower() in ['none', 'null', 'nan'] or tx_val == '-':
+                row['transaction_id'] = None
+
         return super().before_import_row(row, **kwargs)
 
 
 class CompanyBankTransactionResource(BaseTransactionResource):
     """Resource for CompanyBankTransaction with bulk operations"""
+
+    def before_import_row(self, row, **kwargs):
+        super().before_import_row(row, **kwargs)
+        if not row.get('id') and not row.get('transaction_id'):
+            row['transaction_id'] = str(uuid.uuid4())
 
     # 외래키 필드 정의 - ID로 매핑
     company = fields.Field(
@@ -183,6 +194,11 @@ class CompanyBankTransactionResource(BaseTransactionResource):
 
 class ProjectBankTransactionResource(BaseTransactionResource):
     """Resource for ProjectBankTransaction with bulk operations"""
+
+    def before_import_row(self, row, **kwargs):
+        super().before_import_row(row, **kwargs)
+        if not row.get('id') and not row.get('transaction_id'):
+            row['transaction_id'] = str(uuid.uuid4())
 
     class Meta:
         model = ProjectBankTransaction
