@@ -34,6 +34,8 @@ class CompanyExportMixin(ExcelExportMixin):
             return None, HttpResponse("존재하지 않거나 유효하지 않은 회사 ID입니다.", status=404, content_type='text/plain; charset=utf-8')
 
         user = getattr(request, 'user', None)
+        if user is not None and not user.is_authenticated:
+            return None, HttpResponse("로그인이 필요합니다.", status=401, content_type='text/plain; charset=utf-8')
         if user and user.is_authenticated and not user.is_superuser:
             user_company_ids = set()
             staff = getattr(user, 'staff', None)
@@ -134,17 +136,24 @@ class ExportStaffs(CompanyExportMixin):
         status = request.GET.get('status')
         search = request.GET.get('search')
 
+        user = getattr(request, 'user', None)
+        is_admin = user and (user.is_superuser or getattr(user, 'work_manager', False))
+
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
         obj_list = obj_list.filter(assignments__department_id=department) if department else obj_list
         obj_list = obj_list.filter(grade_id=grade) if grade else obj_list
         obj_list = obj_list.filter(position_id=position) if position else obj_list
         obj_list = obj_list.filter(assignments__duty_id=duty) if duty else obj_list
         obj_list = obj_list.filter(status=status) if status else obj_list
-        obj_list = obj_list.filter(
-            Q(name__icontains=search) |
-            Q(id_number__icontains=search) |
-            Q(personal_phone__icontains=search) |
-            Q(email__icontains=search)).distinct() if search else obj_list
+        if search:
+            search_q = (
+                Q(name__icontains=search) |
+                Q(personal_phone__icontains=search) |
+                Q(email__icontains=search)
+            )
+            if is_admin:
+                search_q |= Q(id_number__icontains=search)
+            obj_list = obj_list.filter(search_q).distinct()
 
         format_date = workbook.add_format({
             'border': True,
@@ -165,8 +174,6 @@ class ExportStaffs(CompanyExportMixin):
         # Write body
         sort_map = dict(Staff.SORT_CHOICES)
         status_map = dict(Staff.STATUS_CHOICES)
-        user = getattr(request, 'user', None)
-        is_admin = user and (user.is_superuser or getattr(user, 'work_manager', False))
 
         for i, s in enumerate(obj_list):
             row_num += 1
@@ -186,7 +193,7 @@ class ExportStaffs(CompanyExportMixin):
                 s.personal_phone,
                 s.email or '',
                 s.department.name if s.department else '',
-                s.grade.name if s.grade else '',
+                s.grade.code if s.grade else '',
                 s.position.name if s.position else '',
                 s.duty.name if s.duty else '',
                 s.date_join,
@@ -574,7 +581,6 @@ class ExportGrades(CompanyExportMixin):
         obj_list = JobGrade.objects.filter(company=company)
         obj_list = obj_list.filter(
             Q(code__icontains=search) |
-            Q(name__icontains=search) |
             Q(role__icontains=search) |
             Q(min_promotion_years__icontains=search) |
             Q(positions__name__icontains=search) |
@@ -659,7 +665,7 @@ class ExportExecutiveRanks(CompanyExportMixin):
 
         # title_list
         header_src = [[],
-                      ['서열 순서', 'rank_order', 12],
+                      ['서열 순서', 'sort_order', 12],
                       ['직위 코드', 'code', 15],
                       ['임원 직위명', 'name', 20],
                       ['역할/관장 설명', 'role_desc', 45]]
@@ -1312,14 +1318,19 @@ class ExportStaffLeaveQuotas(CompanyExportMixin):
         for col_num, title in enumerate(titles):
             worksheet.write(row_num, col_num, title, h_format)
 
-        obj_list = StaffLeaveQuota.objects.filter(company=company).select_related('staff')
+        obj_list = StaffLeaveQuota.objects.filter(company=company).select_related(
+            'staff'
+        ).prefetch_related('staff__leave_usages')
         staff = request.GET.get('staff')
         year = request.GET.get('year')
         search = request.GET.get('search')
         if staff:
             obj_list = obj_list.filter(staff_id=staff)
         if year:
-            obj_list = obj_list.filter(year=year)
+            try:
+                obj_list = obj_list.filter(year=int(year))
+            except (ValueError, TypeError):
+                pass
         if search:
             obj_list = obj_list.filter(
                 Q(staff__name__icontains=search) |
@@ -1475,7 +1486,10 @@ class ExportStaffAttendanceStatus(CompanyExportMixin):
         if err_res:
             return err_res
         com_name = company.name.replace('주식회사 ', '(주)')
-        year = int(request.GET.get('year') or datetime.date.today().year)
+        try:
+            year = int(request.GET.get('year') or datetime.date.today().year)
+        except (ValueError, TypeError):
+            year = datetime.date.today().year
 
         title_format = self.create_title_format(workbook)
         h_format = self.create_header_format(workbook)
@@ -1529,7 +1543,12 @@ class ExportStaffAttendanceStatus(CompanyExportMixin):
         if search:
             staff_list = staff_list.filter(Q(name__icontains=search) | Q(personal_phone__icontains=search))
 
-        quota_map = {q.staff_id: q for q in StaffLeaveQuota.objects.filter(company=company, year=year)}
+        quota_map = {
+            q.staff_id: q
+            for q in StaffLeaveQuota.objects.filter(company=company, year=year).select_related(
+                'staff'
+            ).prefetch_related('staff__leave_usages')
+        }
 
         fmt_num_right = workbook.add_format({'border': True, 'align': 'right', 'valign': 'vcenter', 'num_format': '#,##0.00'})
         fmt_text_right = workbook.add_format({'border': True, 'align': 'right', 'valign': 'vcenter', 'num_format': '@'})

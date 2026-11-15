@@ -335,8 +335,26 @@ class StaffLeaveQuota(models.Model):
 
     @property
     def used_days(self):
-        """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계 (인스턴스 캐싱 적용)"""
+        """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계 (인스턴스 캐싱 및 prefetch 캐시 활용)"""
         if hasattr(self, '_cached_used_days') and self._cached_used_days is not None:
+            return self._cached_used_days
+
+        if (
+            self.staff_id
+            and hasattr(self.staff, '_prefetched_objects_cache')
+            and 'leave_usages' in self.staff._prefetched_objects_cache
+        ):
+            total = Decimal('0.00')
+            for u in self.staff.leave_usages.all():
+                if u.is_cancelled or not u.deduction_days or u.deduction_days <= 0:
+                    continue
+                if self.valid_start and self.valid_end:
+                    if not (self.valid_start <= u.start_date <= self.valid_end):
+                        continue
+                elif u.start_date.year != self.year:
+                    continue
+                total += u.deduction_days
+            self._cached_used_days = total
             return self._cached_used_days
 
         qs = self.staff.leave_usages.filter(

@@ -428,10 +428,23 @@ class CompanyBugFixRegressionTests(APITestCase):
         res = ExportPositions().get(req)
         self.assertEqual(res.status_code, 200)
 
-        # 3. ExportGrades
-        req = factory.get(f'/company/export/grades/?company={self.company.pk}')
+        # 3. ExportGrades (검색어 포함 시에도 FieldError 없이 200 반환 검증)
+        req = factory.get(f'/company/export/grades/?company={self.company.pk}&search=G1')
         res = ExportGrades().get(req)
         self.assertEqual(res.status_code, 200)
+
+        # 4. ExportStaffs에 직급(grade) 보유 직원이 있을 때 AttributeError 없이 200 반환 및 ExportExecutiveRanks sort_order 검증
+        from company.exports.excel import ExportStaffs, ExportExecutiveRanks
+        self.staff.grade = grade
+        self.staff.position = pos
+        self.staff.save()
+        req_staff = factory.get(f'/company/export/staffs/?company={self.company.pk}')
+        res_staff = ExportStaffs().get(req_staff)
+        self.assertEqual(res_staff.status_code, 200)
+
+        req_er = factory.get(f'/company/export/executive-ranks/?company={self.company.pk}')
+        res_er = ExportExecutiveRanks().get(req_er)
+        self.assertEqual(res_er.status_code, 200)
 
 
 class CompanySecurityAndOptimizationTests(APITestCase):
@@ -565,4 +578,38 @@ class CompanySecurityAndOptimizationTests(APITestCase):
         Staff.objects.create(company=self.company_1, name='홍대표', date_join='2019-01-01')
         rep_1_after = self.company_1.get_representative_staff_name()
         self.assertEqual(rep_1_after, '홍대표')
+
+    def test_duplicate_position_and_grade_names_across_companies_no_500(self):
+        """다중 회사에 동일한 직위명/직급 코드가 존재할 때 MultipleObjectsReturned 없이 자사 직위/직급으로 매핑되는지 검증"""
+        from company.models import JobGrade
+        pos_c1 = Position.objects.create(company=self.company_1, name='공통과장')
+        pos_c2 = Position.objects.create(company=self.company_2, name='공통과장')
+        grade_c1 = JobGrade.objects.create(company=self.company_1, code='G1')
+        grade_c2 = JobGrade.objects.create(company=self.company_2, code='G1')
+
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.patch(f'/api/v1/staff/{self.staff_1.pk}/', {
+            'company': self.company_1.name,
+            'position': '공통과장',
+            'grade': 'G1',
+        })
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.staff_1.refresh_from_db()
+        self.assertEqual(self.staff_1.position_id, pos_c1.pk)
+        self.assertNotEqual(self.staff_1.position_id, pos_c2.pk)
+        self.assertEqual(self.staff_1.grade_id, grade_c1.pk)
+        self.assertNotEqual(self.staff_1.grade_id, grade_c2.pk)
+
+    def test_unauthenticated_excel_export_returns_401(self):
+        """미인증 사용자(AnonymousUser)가 엑셀 다운로드 요청 시 401 차단 검증"""
+        from django.contrib.auth.models import AnonymousUser
+        from django.test import RequestFactory
+        from company.exports.excel import ExportStaffs
+
+        factory = RequestFactory()
+        req = factory.get(f'/company/export/staffs/?company={self.company_1.pk}')
+        req.user = AnonymousUser()
+        res = ExportStaffs().get(req)
+        self.assertEqual(res.status_code, 401)
+
 

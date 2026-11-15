@@ -86,7 +86,9 @@ class CompanyDataFilterMixin:
 
 # Company --------------------------------------------------------------------------
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.all().prefetch_related('departments', 'ranks')
+    queryset = Company.objects.all().prefetch_related(
+        'departments', 'ranks', 'executives__staff', 'executives__rank'
+    )
     serializer_class = CompanySerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperUserOrReadOnly)
     ordering = ['id']
@@ -139,7 +141,7 @@ class DepartmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class JobGradeViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = JobGrade.objects.all()
+    queryset = JobGrade.objects.all().select_related('company').prefetch_related('positions')
     serializer_class = JobGradeSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -155,7 +157,7 @@ class JobGradeViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class PositionViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = Position.objects.all()
+    queryset = Position.objects.all().select_related('company').prefetch_related('grades')
     serializer_class = PositionSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -171,7 +173,7 @@ class PositionViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class DutyTitleViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = DutyTitle.objects.all()
+    queryset = DutyTitle.objects.all().select_related('company')
     serializer_class = DutyTitleSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -187,7 +189,7 @@ class DutyTitleViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class ExecutiveRankViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = ExecutiveRank.objects.all()
+    queryset = ExecutiveRank.objects.all().select_related('company')
     serializer_class = ExecutiveRankSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
@@ -238,7 +240,16 @@ class StaffViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
     filterset_class = StaffFilter
-    search_fields = ('name', 'id_number', 'personal_phone', 'email')
+    search_fields = ('name', 'personal_phone', 'email')
+
+    def filter_queryset(self, queryset):
+        # 관리자(superuser / work_manager)만 주민등록번호(id_number) 검색 허용 (블라인드 유추 방지)
+        user = getattr(self.request, 'user', None)
+        if user and (user.is_superuser or getattr(user, 'work_manager', False)):
+            self.search_fields = ('name', 'id_number', 'personal_phone', 'email')
+        else:
+            self.search_fields = ('name', 'personal_phone', 'email')
+        return super().filter_queryset(queryset)
 
     @property
     def required_permission(self):
@@ -330,7 +341,9 @@ class StaffRewardPunishmentViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet
 
 
 class StaffLeaveQuotaViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
-    queryset = StaffLeaveQuota.objects.all().select_related('company', 'staff')
+    queryset = StaffLeaveQuota.objects.all().select_related(
+        'company', 'staff'
+    ).prefetch_related('staff__leave_usages')
     serializer_class = StaffLeaveQuotaSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand

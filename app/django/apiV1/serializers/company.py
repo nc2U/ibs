@@ -75,6 +75,26 @@ class CompanySealSerializer(serializers.ModelSerializer):
                 return pos.name
         return ''
 
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        internal_manager = attrs.get(
+            'internal_manager', getattr(self.instance, 'internal_manager', None) if self.instance else None
+        )
+        final_duty = attrs.get(
+            'final_approval_duty', getattr(self.instance, 'final_approval_duty', None) if self.instance else None
+        )
+        valid_from = attrs.get('valid_from', getattr(self.instance, 'valid_from', None) if self.instance else None)
+        valid_until = attrs.get('valid_until', getattr(self.instance, 'valid_until', None) if self.instance else None)
+
+        if company:
+            if internal_manager and internal_manager.company_id != company.pk:
+                raise serializers.ValidationError({'internal_manager': '사내 총괄 관리책임자의 소속 회사가 일치하지 않습니다.'})
+            if final_duty and final_duty.company_id != company.pk:
+                raise serializers.ValidationError({'final_approval_duty': '전결 직책 자격의 소속 회사가 일치하지 않습니다.'})
+        if valid_from and valid_until and valid_from > valid_until:
+            raise serializers.ValidationError({'valid_until': '교부 만료일은 시작일 이후여야 합니다.'})
+        return attrs
+
 
 class StaffsInDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -128,6 +148,15 @@ class JobGradeSerializer(serializers.ModelSerializer):
         model = JobGrade
         fields = ('pk', 'company', 'code', 'role', 'min_promotion_years', 'promotion_criteria', 'positions')
 
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        positions = attrs.get('positions')
+        if company and positions:
+            for pos in positions:
+                if pos.company_id != company.pk:
+                    raise serializers.ValidationError({'positions': '허용 직위의 소속 회사가 일치하지 않습니다.'})
+        return attrs
+
 
 class GradesInPositionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -141,6 +170,15 @@ class PositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
         fields = ('pk', 'company', 'name', 'grades', 'desc')
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        grades = attrs.get('grades')
+        if company and grades:
+            for grade in grades:
+                if grade.company_id != company.pk:
+                    raise serializers.ValidationError({'grades': '직급의 소속 회사가 일치하지 않습니다.'})
+        return attrs
 
 
 class DutyTitleSerializer(serializers.ModelSerializer):
@@ -250,6 +288,10 @@ class PersonnelOrderSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         company = attrs.get('company') or getattr(self.instance, 'company', None)
         staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        prev_dept = attrs.get('prev_department', getattr(self.instance, 'prev_department', None) if self.instance else None)
+        prev_grade = attrs.get('prev_grade', getattr(self.instance, 'prev_grade', None) if self.instance else None)
+        prev_pos = attrs.get('prev_position', getattr(self.instance, 'prev_position', None) if self.instance else None)
+        prev_duty = attrs.get('prev_duty', getattr(self.instance, 'prev_duty', None) if self.instance else None)
         new_dept = attrs.get('new_department', getattr(self.instance, 'new_department', None) if self.instance else None)
         new_grade = attrs.get('new_grade', getattr(self.instance, 'new_grade', None) if self.instance else None)
         new_pos = attrs.get('new_position', getattr(self.instance, 'new_position', None) if self.instance else None)
@@ -258,6 +300,14 @@ class PersonnelOrderSerializer(serializers.ModelSerializer):
         if company:
             if staff and staff.company_id != company.pk:
                 raise serializers.ValidationError({'staff': '발령 대상 직원의 소속 회사와 발령 정보의 소속 회사가 일치하지 않습니다.'})
+            if prev_dept and prev_dept.company_id != company.pk:
+                raise serializers.ValidationError({'prev_department': '이전 부서의 소속 회사가 일치하지 않습니다.'})
+            if prev_grade and prev_grade.company_id != company.pk:
+                raise serializers.ValidationError({'prev_grade': '이전 직급의 소속 회사가 일치하지 않습니다.'})
+            if prev_pos and prev_pos.company_id != company.pk:
+                raise serializers.ValidationError({'prev_position': '이전 직위의 소속 회사가 일치하지 않습니다.'})
+            if prev_duty and prev_duty.company_id != company.pk:
+                raise serializers.ValidationError({'prev_duty': '이전 직책의 소속 회사가 일치하지 않습니다.'})
             if new_dept and new_dept.company_id != company.pk:
                 raise serializers.ValidationError({'new_department': '발령 부서의 소속 회사가 일치하지 않습니다.'})
             if new_grade and new_grade.company_id != company.pk:
@@ -279,6 +329,17 @@ class StaffCareerSerializer(serializers.ModelSerializer):
         fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'company_name', 'department_name',
                   'position_title', 'assigned_tasks', 'start_date', 'end_date', 'recognized_ratio', 'note')
 
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None) if self.instance else None)
+        end_date = attrs.get('end_date', getattr(self.instance, 'end_date', None) if self.instance else None)
+        if company and staff and staff.company_id != company.pk:
+            raise serializers.ValidationError({'staff': '직원의 소속 회사와 경력 사항의 소속 회사가 일치하지 않습니다.'})
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({'end_date': '종료일은 시작일 이후여야 합니다.'})
+        return attrs
+
 
 class StaffCertificateSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
@@ -289,6 +350,17 @@ class StaffCertificateSerializer(serializers.ModelSerializer):
         model = StaffCertificate
         fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'name', 'grade',
                   'cert_number', 'issuer', 'acquired_date', 'expire_date', 'has_allowance', 'note')
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        acquired_date = attrs.get('acquired_date', getattr(self.instance, 'acquired_date', None) if self.instance else None)
+        expire_date = attrs.get('expire_date', getattr(self.instance, 'expire_date', None) if self.instance else None)
+        if company and staff and staff.company_id != company.pk:
+            raise serializers.ValidationError({'staff': '직원의 소속 회사와 자격/면허의 소속 회사가 일치하지 않습니다.'})
+        if acquired_date and expire_date and acquired_date > expire_date:
+            raise serializers.ValidationError({'expire_date': '만료/갱신일자는 취득일자 이후여야 합니다.'})
+        return attrs
 
 
 class StaffRewardPunishmentSerializer(serializers.ModelSerializer):
@@ -301,6 +373,13 @@ class StaffRewardPunishmentSerializer(serializers.ModelSerializer):
         model = StaffRewardPunishment
         fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'sort', 'sort_desc',
                   'type_name', 'action_date', 'expire_date', 'reason', 'organization', 'note')
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        if company and staff and staff.company_id != company.pk:
+            raise serializers.ValidationError({'staff': '직원의 소속 회사와 상벌 이력의 소속 회사가 일치하지 않습니다.'})
+        return attrs
 
 
 class StaffLeaveQuotaSerializer(serializers.ModelSerializer):
@@ -321,8 +400,12 @@ class StaffLeaveQuotaSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         company = attrs.get('company') or getattr(self.instance, 'company', None)
         staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        valid_start = attrs.get('valid_start', getattr(self.instance, 'valid_start', None) if self.instance else None)
+        valid_end = attrs.get('valid_end', getattr(self.instance, 'valid_end', None) if self.instance else None)
         if company and staff and staff.company_id != company.pk:
             raise serializers.ValidationError({'staff': '직원의 소속 회사와 연차 관리의 소속 회사가 일치하지 않습니다.'})
+        if valid_start and valid_end and valid_start > valid_end:
+            raise serializers.ValidationError({'valid_end': '사용 가능 만료일은 시작일 이후여야 합니다.'})
         return attrs
 
 
@@ -341,9 +424,46 @@ class StaffLeaveUsageSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         company = attrs.get('company') or getattr(self.instance, 'company', None)
         staff = attrs.get('staff', getattr(self.instance, 'staff', None) if self.instance else None)
+        start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None) if self.instance else None)
+        end_date = attrs.get('end_date', getattr(self.instance, 'end_date', None) if self.instance else None)
         if company and staff and staff.company_id != company.pk:
             raise serializers.ValidationError({'staff': '직원의 소속 회사와 휴가 사용의 소속 회사가 일치하지 않습니다.'})
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({'end_date': '종료일은 시작일 이후여야 합니다.'})
         return attrs
+
+
+class CompanyScopedSlugRelatedField(serializers.SlugRelatedField):
+    """
+    멀티테넌트 환경에서 회사별로 중복될 수 있는 이름/코드(직위명, 직급 코드 등)를
+    대상 회사의 스코프 내에서 안전하게 조회하는 SlugRelatedField (MultipleObjectsReturned 방지)
+    """
+    def to_internal_value(self, data):
+        qs = self.get_queryset()
+        parent = self.parent
+        company = None
+        if parent is not None:
+            initial = getattr(parent, 'initial_data', None) or {}
+            comp_val = initial.get('company') if isinstance(initial, dict) else None
+            if comp_val:
+                if isinstance(comp_val, int) or (isinstance(comp_val, str) and comp_val.isdigit()):
+                    company = Company.objects.filter(pk=int(comp_val)).first()
+                elif isinstance(comp_val, str):
+                    company = Company.objects.filter(name=comp_val).first()
+            if not company and getattr(parent, 'instance', None) is not None:
+                company = getattr(parent.instance, 'company', None)
+        try:
+            if company is not None:
+                obj = qs.filter(company=company, **{self.slug_field: data}).first()
+                if obj is not None:
+                    return obj
+                self.fail('does_not_exist', slug_name=self.slug_field, value=str(data))
+            obj = qs.filter(**{self.slug_field: data}).first()
+            if obj is not None:
+                return obj
+            self.fail('does_not_exist', slug_name=self.slug_field, value=str(data))
+        except (TypeError, ValueError):
+            self.fail('invalid')
 
 
 class StaffSerializer(serializers.ModelSerializer):
@@ -352,14 +472,14 @@ class StaffSerializer(serializers.ModelSerializer):
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
     employment_type_desc = serializers.CharField(source='get_employment_type_display', read_only=True)
     department = serializers.CharField(source='department.name', read_only=True, allow_null=True)
-    position = serializers.SlugRelatedField(queryset=Position.objects.all(), slug_field='name', allow_null=True,
-                                            required=False)
+    position = CompanyScopedSlugRelatedField(queryset=Position.objects.all(), slug_field='name', allow_null=True,
+                                             required=False)
     duty = serializers.CharField(source='duty.name', read_only=True, allow_null=True)
     department_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     position_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     duty_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
-    grade = serializers.SlugRelatedField(queryset=JobGrade.objects.all(), slug_field='code', allow_null=True,
-                                         required=False)
+    grade = CompanyScopedSlugRelatedField(queryset=JobGrade.objects.all(), slug_field='code', allow_null=True,
+                                          required=False)
     status = serializers.ChoiceField(choices=Staff.STATUS_CHOICES)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     assignments = StaffAssignmentSerializer(many=True, read_only=True)
@@ -372,6 +492,17 @@ class StaffSerializer(serializers.ModelSerializer):
                   'personal_phone', 'email', 'department', 'position', 'duty', 'department_name', 'position_name',
                   'duty_name', 'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
                   'assignments', 'executive')
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        position = attrs.get('position', getattr(self.instance, 'position', None) if self.instance else None)
+        grade = attrs.get('grade', getattr(self.instance, 'grade', None) if self.instance else None)
+        if company:
+            if position and position.company_id != company.pk:
+                raise serializers.ValidationError({'position': '직위의 소속 회사가 직원의 소속 회사와 일치하지 않습니다.'})
+            if grade and grade.company_id != company.pk:
+                raise serializers.ValidationError({'grade': '직급의 소속 회사가 직원의 소속 회사와 일치하지 않습니다.'})
+        return attrs
 
     def to_representation(self, instance):
         """[H-2] 본인 또는 관리자(슈퍼유저)가 아닌 경우 주민등록번호 마스킹 처리"""
@@ -461,6 +592,19 @@ class PromotionPolicySerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'current_grade', 'current_grade_code', 'target_grade', 'target_grade_code',
                   'min_years', 'min_avg_grade_point', 'required_eval_grade', 'required_credentials',
                   'disqualification_conditions', 'description', 'is_active')
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        current_grade = attrs.get('current_grade', getattr(self.instance, 'current_grade', None) if self.instance else None)
+        target_grade = attrs.get('target_grade', getattr(self.instance, 'target_grade', None) if self.instance else None)
+        if company:
+            if current_grade and current_grade.company_id != company.pk:
+                raise serializers.ValidationError({'current_grade': '현재 직급의 소속 회사가 일치하지 않습니다.'})
+            if target_grade and target_grade.company_id != company.pk:
+                raise serializers.ValidationError({'target_grade': '승급 대상 직급의 소속 회사가 일치하지 않습니다.'})
+        if current_grade and target_grade and current_grade.pk == target_grade.pk:
+            raise serializers.ValidationError({'target_grade': '현재 직급과 승급 대상 직급이 동일할 수 없습니다.'})
+        return attrs
 
 
 class StaffEvaluationSerializer(serializers.ModelSerializer):

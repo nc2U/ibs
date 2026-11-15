@@ -218,7 +218,7 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
             elif step == 'save':
                 company_id = request.POST.get('company_id')
                 try:
-                    seal_count = int(request.POST.get('seal_count', 0))
+                    seal_count = min(50, max(0, int(request.POST.get('seal_count', 0))))
                 except (TypeError, ValueError):
                     seal_count = 0
 
@@ -228,12 +228,15 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
                     messages.error(request, '선택한 회사가 존재하지 않습니다.')
                     return redirect('admin:company_companyseal_changelist')
 
+                valid_seal_types = dict(CompanySeal.SEAL_TYPE_CHOICES)
                 try:
                     saved_count = 0
                     with transaction.atomic():
                         for i in range(seal_count):
                             name = request.POST.get(f'name_{i}', '').strip()
                             seal_type = request.POST.get(f'seal_type_{i}', 'USAGE_SEAL')
+                            if seal_type not in valid_seal_types:
+                                seal_type = 'USAGE_SEAL'
                             manager = request.POST.get(f'manager_{i}', '').strip()
                             final_duty_id = request.POST.get(f'final_duty_{i}')
                             b64_data = request.POST.get(f'seal_b64_{i}', '')
@@ -246,7 +249,10 @@ class CompanySealAdmin(ImportExportMixin, admin.ModelAdmin):
                                 b64_data = b64_data.split(',', 1)[1]
                             png_bytes = base64.b64decode(b64_data)
 
-                            duty_obj = DutyTitle.objects.filter(pk=final_duty_id).first() if final_duty_id else None
+                            duty_obj = (
+                                DutyTitle.objects.filter(pk=final_duty_id, company=target_company).first()
+                                if final_duty_id else None
+                            )
 
                             # CompanySeal 생성 및 저장
                             seal = CompanySeal(
@@ -449,6 +455,11 @@ class StaffLeaveQuotaAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('company', 'year')
     search_fields = ('staff__name', 'note')
     raw_id_fields = ('staff',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'company', 'staff'
+        ).prefetch_related('staff__leave_usages')
 
     @admin.display(description='총 부여(일)')
     def get_total_granted(self, obj):
