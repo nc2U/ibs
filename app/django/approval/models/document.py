@@ -191,15 +191,19 @@ class ApprovalDocument(models.Model):
         if not self.security_level and self.doc_type_id:
             self.security_level = self.doc_type.default_security_level
 
-        # 2. 임시저장(draft) → 상신(pending) 전환 시 content_hash 자동 갱신
+        # 2. 임시저장(draft) / 반려(rejected) → 상신(pending) 전환 시 content_hash 자동 갱신
         #    update_fields에 'status'가 포함된 경우에만 이전 상태를 SELECT하여 불필요한 쿼리 방지
         update_fields = kwargs.get('update_fields')
         status_may_change = update_fields is None or 'status' in update_fields
         if status_may_change and self.pk and self.status == self.STATUS_PENDING:
             try:
                 prev_status = ApprovalDocument.objects.filter(pk=self.pk).values_list('status', flat=True).first()
-                if prev_status == self.STATUS_DRAFT and not self.content_hash:
+                if prev_status in (self.STATUS_DRAFT, self.STATUS_REJECTED) and (
+                    not self.content_hash or prev_status == self.STATUS_REJECTED
+                ):
                     self.content_hash = self.compute_hash()
+                    if update_fields is not None and 'content_hash' not in update_fields:
+                        kwargs['update_fields'] = [*update_fields, 'content_hash']
             except Exception:
                 pass
 

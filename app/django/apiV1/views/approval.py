@@ -32,6 +32,15 @@ from company.models import Staff, StaffAssignment
 logger = logging.getLogger(__name__)
 
 
+def _safe_int_pk(val):
+    if val is None or isinstance(val, bool):
+        return None
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return None
+
+
 def get_active_delegator_ids(user):
     """현재 날짜 기준으로 해당 사용자에게 결재 권한을 위임한 위임자(원 결재자) ID 목록"""
     today = timezone.localdate()
@@ -207,16 +216,21 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if getattr(self, 'swagger_fake_view', False):
             return ApprovalDocument.objects.none()
         user = self.request.user
+        is_list_action = self.action in (
+            'list', 'my_pending', 'my_drafted', 'my_approved', 'my_observed', 'all_documents'
+        )
         qs = ApprovalDocument.objects.select_related(
             'doc_type', 'doc_type__category', 'doc_type__target_doc_category', 'drafter', 'drafter__profile',
             'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__staff__position',
             'workspace', 'related_inbound_letter'
-        ).prefetch_related(
-            'attachments__creator__profile',
-            'observers__profile',
-            'steps__approvers__profile', 'steps__actions__approver__profile',
-            'steps__actions__delegated_from__profile',
         )
+        if not is_list_action:
+            qs = qs.prefetch_related(
+                'attachments__creator__profile',
+                'observers__profile',
+                'steps__approvers__profile', 'steps__actions__approver__profile',
+                'steps__actions__delegated_from__profile',
+            )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             # 1. 직접 접근 권한: 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서
             delegator_ids = get_active_delegator_ids(user)
@@ -243,7 +257,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
             qs = qs.filter(direct_access_q | public_q | dept_q).distinct()
 
-        if self.action in ('list', 'my_pending', 'my_drafted', 'my_approved', 'my_observed', 'all_documents'):
+        if is_list_action:
             qs = qs.annotate(
                 attachment_count=Count('attachments', distinct=True),
                 observer_count=Count('observers', distinct=True)
@@ -273,9 +287,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             status=ApprovalDocument.STATUS_DRAFT
         )
         inbound = doc.related_inbound_letter
-        if not inbound and (doc.content or {}).get('inbound_letter_id'):
+        inbound_id = _safe_int_pk((doc.content or {}).get('inbound_letter_id'))
+        if not inbound and inbound_id:
             from docs.models import InboundLetter
-            inbound = InboundLetter.objects.filter(pk=doc.content['inbound_letter_id']).first()
+            inbound = InboundLetter.objects.filter(pk=inbound_id).first()
             if inbound:
                 doc.related_inbound_letter = inbound
                 doc.save(update_fields=['related_inbound_letter'])
@@ -328,9 +343,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         doc = serializer.save()
         inbound = doc.related_inbound_letter
-        if not inbound and (doc.content or {}).get('inbound_letter_id'):
+        inbound_id = _safe_int_pk((doc.content or {}).get('inbound_letter_id'))
+        if not inbound and inbound_id:
             from docs.models import InboundLetter
-            inbound = InboundLetter.objects.filter(pk=doc.content['inbound_letter_id']).first()
+            inbound = InboundLetter.objects.filter(pk=inbound_id).first()
             if inbound:
                 doc.related_inbound_letter = inbound
                 doc.save(update_fields=['related_inbound_letter'])
@@ -368,12 +384,23 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         assignment = None
         if assignment_id:
-            assignment = StaffAssignment.objects.filter(pk=assignment_id).select_related(
+            assign_qs = StaffAssignment.objects.filter(pk=_safe_int_pk(assignment_id))
+            if not request.user.is_superuser:
+                assign_qs = assign_qs.filter(staff__user=request.user)
+            assignment = assign_qs.select_related(
                 'company', 'department', 'staff__position', 'duty'
             ).first()
 
+        seal = None
+        seal_id = _safe_int_pk(request.query_params.get('seal'))
+        if seal_id:
+            from company.models import CompanySeal
+            seal = CompanySeal.objects.select_related(
+                'final_approval_duty', 'route_template__doc_type'
+            ).filter(pk=seal_id).first()
+
         content = {'amount': amount} if amount else None
-        steps_data = build_dynamic_approval_route(doc_type, request.user, assignment, content)
+        steps_data = build_dynamic_approval_route(doc_type, request.user, assignment, content, seal=seal)
         serializer = RoutePreviewStepSerializer(steps_data, many=True)
         return Response(serializer.data)
 
@@ -409,25 +436,30 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 document.drafter_assignment = assignment
                 document.save(update_fields=['drafter_assignment'])
 
-        # 동적 결재선 단계 목록 산출 (금액/내용 포함)
+        # 연동된 공문이 있는 경우 공문 및 인장(seal), 단독 결재(is_solo_approval) 여부 확인
+        official_letter_id = _safe_int_pk((document.content or {}).get('official_letter_id'))
+        official_letter = None
+        seal = None
+        is_letter_solo = False
+        if official_letter_id:
+            from docs.models import OfficialLetter
+            official_letter = OfficialLetter.objects.select_related(
+                'seal__final_approval_duty', 'seal__route_template__doc_type'
+            ).filter(pk=official_letter_id).first()
+            if official_letter:
+                seal = official_letter.seal
+                if official_letter.is_solo_approval:
+                    is_letter_solo = True
+
+        # 동적 결재선 단계 목록 산출 (금액/내용 및 공문 인장 기준 포함)
         route_steps = build_dynamic_approval_route(
-            document.doc_type, document.drafter, assignment, document.content
+            document.doc_type, document.drafter, assignment, document.content, seal=seal
         )
 
         if not route_steps:
-            # 연동된 공문이 있는 경우 공문의 is_solo_approval 여부 확인
-            official_letter_id = (document.content or {}).get('official_letter_id')
-            official_letter = None
-            is_letter_solo = False
-            if official_letter_id:
-                from docs.models import OfficialLetter
-                official_letter = OfficialLetter.objects.filter(pk=official_letter_id).first()
-                if official_letter and official_letter.is_solo_approval:
-                    is_letter_solo = True
-
-            # 단독/각자 대표이사 또는 금액별 조건부 정책(ApprovalPolicyRule)을 포함한 최종 전결권자 직접 기안 판별
+            # 단독/각자 대표이사 또는 금액별 조건부 정책(ApprovalPolicyRule)·인장을 포함한 최종 전결권자 직접 기안 판별
             is_auto, auto_role_label = check_drafter_auto_approval(
-                document.doc_type, request.user, assignment, document.content
+                document.doc_type, request.user, assignment, document.content, seal=seal
             )
 
             if is_auto or is_letter_solo:
@@ -454,11 +486,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 # finalize_approval을 통해 채번, 자료실 자동 아카이빙, 휴가 연차 차감(sync_leave_approval) 일원화 처리
                 finalize_approval(document)
 
-                # 연동 수신공문 동기화
+                # 연동 수신공문 동기화 (단순 접수/공람인 경우 즉시 종결)
                 if document.related_inbound_letter:
                     inbound = document.related_inbound_letter
                     inbound.approval_document = document
-                    inbound.status = 'in_progress'
+                    action_type = (document.content or {}).get('action_type')
+                    inbound.status = 'closed' if action_type == 'RECEIPT_ONLY' else 'in_progress'
                     inbound.save(update_fields=['approval_document', 'status'])
 
                 # 연동 공문 동기화 및 PDF 생성
@@ -591,8 +624,33 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                     pass
             return Response({'detail': '결재 의견이 성공적으로 등록되었습니다.'})
 
+        # 승인/반려 행동 시 결재자(및 위임자)의 해당 문서 미확인 결재 요청 알림 읽음 처리
+        from accounts.models import Notification
+        read_user_ids = {request.user.id}
+        if target_approver:
+            read_user_ids.add(target_approver.id)
+
         # AND/OR 조건 처리
         completed, approved = current_step.is_completed()
+        if completed:
+            step_app_ids = list(current_step.approvers.values_list('id', flat=True))
+            today = timezone.localdate()
+            step_del_ids = list(ApprovalDelegation.objects.filter(
+                delegator_id__in=step_app_ids,
+                is_active=True,
+                start_date__lte=today,
+                end_date__gte=today,
+            ).values_list('delegatee_id', flat=True))
+            read_user_ids.update(step_app_ids)
+            read_user_ids.update(step_del_ids)
+
+        Notification.objects.filter(
+            user_id__in=read_user_ids,
+            target_type='approval_document',
+            target_id=str(document.pk),
+            is_read=False,
+        ).update(is_read=True)
+
         if not completed:
             return Response({'detail': '결재가 처리되었습니다. 다른 결재자의 결재를 기다리고 있습니다.'})
 
@@ -604,7 +662,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             document.save(update_fields=['status'])
 
             # 연동된 공문(OfficialLetter) 상태 동기화
-            official_letter_id = (document.content or {}).get('official_letter_id')
+            official_letter_id = _safe_int_pk((document.content or {}).get('official_letter_id'))
             if official_letter_id:
                 from docs.models import OfficialLetter
                 OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='rejected')
@@ -649,8 +707,15 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         # 최종 승인 — finalize_approval 서비스로 위임 (원자적 채번 + 상태 전이)
         finalize_approval(document)
 
+        # 연동 수신공문 상태 동기화 (단순 접수/공람인 경우 최종 승인 시 종결 처리)
+        if document.related_inbound_letter:
+            action_type = (document.content or {}).get('action_type')
+            if action_type == 'RECEIPT_ONLY' and document.related_inbound_letter.status != 'closed':
+                document.related_inbound_letter.status = 'closed'
+                document.related_inbound_letter.save(update_fields=['status'])
+
         # 연동된 공문(OfficialLetter) 상태 동기화 및 최종 승인 공문 PDF 자동 생성
-        official_letter_id = (document.content or {}).get('official_letter_id')
+        official_letter_id = _safe_int_pk((document.content or {}).get('official_letter_id'))
         if official_letter_id:
             from docs.models import OfficialLetter
             from docs.utils import generate_official_letter_pdf
@@ -705,11 +770,21 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1차 결재자 및 결재선 결재자 ID 추출 (회수 알림 및 이전 알림 정리용)
-        # M2M JOIN 결과에 결재자 없는 단계가 있으면 None이 포함될 수 있으므로 필터링
-        approver_ids = list(filter(None,
-            ApprovalStep.objects.filter(document=document).values_list('approvers__id', flat=True)
+        # 1차 결재자(및 활성 대결자) ID 추출 (회수 알림 및 이전 요청 알림 정리용)
+        active_step_order = document.current_step or 1
+        step_approver_ids = list(filter(None,
+            ApprovalStep.objects.filter(
+                document=document, step_order__lte=active_step_order
+            ).values_list('approvers__id', flat=True)
         ))
+        today = timezone.localdate()
+        delegation_ids = list(ApprovalDelegation.objects.filter(
+            delegator_id__in=step_approver_ids,
+            is_active=True,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).values_list('delegatee_id', flat=True))
+        approver_ids = list(set(step_approver_ids + delegation_ids))
 
         # 기존 결재선 단계 초기화 후 임시저장(DRAFT) 상태로 복귀
         document.steps.all().delete()
@@ -719,7 +794,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         document.save(update_fields=['status', 'current_step', 'submitted_at'])
 
         # 연동된 공문(OfficialLetter) 상태 동기화 (기안 회수 시 미상신/임시 상태로 복귀)
-        official_letter_id = (document.content or {}).get('official_letter_id')
+        official_letter_id = _safe_int_pk((document.content or {}).get('official_letter_id'))
         if official_letter_id:
             from docs.models import OfficialLetter
             OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='none')
@@ -792,18 +867,34 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── GET /approval-document/my_pending/ ───────────────────
     @action(detail=False, methods=['get'])
     def my_pending(self, request):
-        """현재 사용자가 결재해야 할 대기 문서 목록 (대결 권한 포함)"""
+        """현재 사용자가 결재해야 할 대기 문서 목록 (대결 권한 포함, 순번 미도래 및 기승인 건 제외)"""
         from django.db.models import F
-        delegator_ids = get_active_delegator_ids(request.user)
-        approver_q = Q(steps__approvers=request.user)
+        delegator_ids = set(get_active_delegator_ids(request.user))
+        step_approver_q = Q(approvers=request.user)
         if delegator_ids:
-            approver_q |= Q(steps__approvers__in=delegator_ids)
+            step_approver_q |= Q(approvers__in=delegator_ids)
 
-        qs = self.filter_queryset(self.get_queryset()).filter(
-            status=ApprovalDocument.STATUS_PENDING,
-            steps__status=ApprovalStep.STATUS_PENDING,
-            steps__step_order=F('current_step'),
-        ).filter(approver_q).distinct()
+        candidate_steps = ApprovalStep.objects.filter(
+            document__status=ApprovalDocument.STATUS_PENDING,
+            status=ApprovalStep.STATUS_PENDING,
+            step_order=F('document__current_step'),
+        ).filter(step_approver_q).distinct().prefetch_related('approvers', 'actions')
+
+        pending_doc_ids = []
+        user_id = request.user.id
+        for step in candidate_steps:
+            acted_target_ids = {
+                a.delegated_from_id or a.approver_id
+                for a in step.actions.all()
+                if a.action in (ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED)
+            }
+            step_approver_ids = {u.id for u in step.approvers.all()}
+            can_act_directly = user_id in step_approver_ids and user_id not in acted_target_ids
+            can_act_as_delegate = bool((delegator_ids & step_approver_ids) - acted_target_ids)
+            if can_act_directly or can_act_as_delegate:
+                pending_doc_ids.append(step.document_id)
+
+        qs = self.filter_queryset(self.get_queryset()).filter(pk__in=pending_doc_ids)
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)

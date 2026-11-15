@@ -146,13 +146,20 @@ class ApprovalPolicyRule(models.Model):
     )
     priority = models.PositiveSmallIntegerField('우선순위', default=1, help_text='숫자가 작을수록 우선 평가')
 
-    def is_matched(self, amount: float | int | None) -> bool:
+    def is_matched(self, amount) -> bool:
         """주어진 금액이 이 정책 규칙의 구간에 일치하는지 판별"""
         if amount is None:
             return False
-        if self.min_amount is not None and amount < self.min_amount:
+        from decimal import Decimal, InvalidOperation
+        try:
+            dec_amount = amount if isinstance(amount, Decimal) else Decimal(str(amount))
+            if not dec_amount.is_finite():
+                return False
+        except (InvalidOperation, ValueError, TypeError):
             return False
-        if self.max_amount is not None and amount > self.max_amount:
+        if self.min_amount is not None and dec_amount < self.min_amount:
+            return False
+        if self.max_amount is not None and dec_amount > self.max_amount:
             return False
         return True
 

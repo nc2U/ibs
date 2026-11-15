@@ -948,3 +948,179 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         }, format='json')
         self.assertEqual(res_dept.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('doc_type', res_dept.data)
+
+        # 3. 직위 제한(allowed_positions) 서식을 사원(pos_staff)이 기안 시도 -> 500 AttributeError 없이 400 차단, 팀장(pos_leader)은 201 허용
+        leader_pos_type = DocumentType.objects.create(
+            category=self.category,
+            code='LEADER-POS-ONLY',
+            name='팀장 직위 전용 품의서',
+        )
+        leader_pos_type.allowed_positions.add(self.pos_leader)
+
+        res_pos_blocked = self.client.post('/api/v1/approval-document/', {
+            'doc_type': leader_pos_type.id,
+            'title': '사원이 팀장 직위 서식 기안 시도',
+            'content': {},
+        }, format='json')
+        self.assertEqual(res_pos_blocked.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('doc_type', res_pos_blocked.data)
+
+        self.client.force_authenticate(user=self.user_leader)
+        res_pos_ok = self.client.post('/api/v1/approval-document/', {
+            'doc_type': leader_pos_type.id,
+            'title': '팀장이 팀장 직위 서식 기안',
+            'content': {},
+        }, format='json')
+        self.assertEqual(res_pos_ok.status_code, status.HTTP_201_CREATED)
+
+    def test_my_pending_excludes_future_step_and_already_acted_approvers(self):
+        """my_pending 조회 시 순번 미도래 결재자, 이전 단계 기승인자, 동일 AND 단계 기승인자가 오노출되지 않는지 검증"""
+        doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='다단계 대기함 검증 문서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step1 = ApprovalStep.objects.create(
+            document=doc, step_order=1, role_label='1단계 합의', condition=ApprovalStep.CONDITION_AND
+        )
+        step1.approvers.set([self.user_leader, self.user_delegate])
+        step2 = ApprovalStep.objects.create(
+            document=doc, step_order=2, role_label='2단계 최종', condition=ApprovalStep.CONDITION_AND
+        )
+        step2.approvers.set([self.user_ceo])
+
+        # 1. current_step=1일 때 2단계 결재자(user_ceo)의 my_pending에는 노출되지 않아야 함
+        self.client.force_authenticate(user=self.user_ceo)
+        res_ceo_early = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertNotIn(doc.id, [d['id'] for d in res_ceo_early.data])
+
+        # 2. 1단계 합의자 중 user_leader가 먼저 승인 -> 아직 step1은 PENDING이지만 user_leader의 my_pending에서는 제외되어야 함
+        self.client.force_authenticate(user=self.user_leader)
+        res_leader_pending = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertIn(doc.id, [d['id'] for d in res_leader_pending.data])
+
+        self.client.post(f'/api/v1/approval-document/{doc.id}/act/', {'action': 'approved'})
+        res_leader_after = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertNotIn(doc.id, [d['id'] for d in res_leader_after.data])
+
+        # 3. 다른 1단계 합의자(user_delegate)의 my_pending에는 여전히 노출되며 승인 시 current_step=2로 이동
+        self.client.force_authenticate(user=self.user_delegate)
+        res_del_pending = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertIn(doc.id, [d['id'] for d in res_del_pending.data])
+
+        self.client.post(f'/api/v1/approval-document/{doc.id}/act/', {'action': 'approved'})
+
+        # 4. current_step=2일 때 1단계 결재자들의 my_pending에는 미노출, 2단계 결재자(user_ceo)에게만 노출
+        res_del_after = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertNotIn(doc.id, [d['id'] for d in res_del_after.data])
+
+        self.client.force_authenticate(user=self.user_ceo)
+        res_ceo_now = self.client.get('/api/v1/approval-document/my_pending/')
+        self.assertIn(doc.id, [d['id'] for d in res_ceo_now.data])
+
+    def test_archive_to_docs_security_level_mapping_and_allowed_users(self):
+        """archive_to_docs 시 보안등급 매핑(3등급 전사공개 -> Document 4등급 전사공개) 및 1등급 비공개 문서의 결재자/참조자 열람 권한 부여 검증"""
+        from docs.models import Category as DocsCategory, Document as DocsDocument
+        from work.models.project import IssueProject
+        from approval.services.document_service import archive_to_docs
+
+        workspace = IssueProject.objects.create(
+            company=self.company, type='1', name='본사 워크스페이스', slug='hq-ws', creator=self.user_ceo
+        )
+        target_cat = DocsCategory.objects.create(name='결재완료문서함', doc_type='1')
+        self.doc_type.target_doc_category = target_cat
+        self.doc_type.save(update_fields=['target_doc_category'])
+
+        # 1) 3등급(전사공개) 결재 문서 아카이빙 -> DocsDocument.SECURITY_COMPANY('4') 매핑 확인
+        pub_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='전사공개 아카이빙 문서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            workspace=workspace,
+            security_level=ApprovalDocument.SECURITY_PUBLIC,
+            status=ApprovalDocument.STATUS_APPROVED,
+            doc_number='BIZ-2026-9001',
+        )
+        archived_pub = archive_to_docs(pub_doc)
+        self.assertEqual(archived_pub.security_level, DocsDocument.SECURITY_COMPANY)
+
+        # 2) 1등급(비공개) 결재 문서 아카이빙 -> 결재자(user_leader)와 참조자(user_outsider) 열람 가능 확인
+        sec_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='1등급 비공개 아카이빙 문서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            workspace=workspace,
+            security_level=ApprovalDocument.SECURITY_SECRET,
+            status=ApprovalDocument.STATUS_APPROVED,
+            doc_number='BIZ-2026-9002',
+        )
+        sec_step = ApprovalStep.objects.create(document=sec_doc, step_order=1, role_label='팀장 승인', status=ApprovalStep.STATUS_APPROVED)
+        sec_step.approvers.set([self.user_leader])
+        sec_doc.observers.set([self.user_outsider])
+
+        archived_sec = archive_to_docs(sec_doc)
+        self.assertEqual(archived_sec.security_level, DocsDocument.SECURITY_PRIVATE)
+        self.assertTrue(archived_sec.is_visible_to(self.user_leader))
+        self.assertTrue(archived_sec.is_visible_to(self.user_outsider))
+
+    @patch('approval.tasks.generate_approval_pdf_task.delay')
+    @patch('approval.tasks.notify_drafter_task.delay')
+    def test_inbound_letter_receipt_only_closed_on_final_approval(self, mock_notify, mock_pdf):
+        """수신공문 연동 결재에서 action_type='RECEIPT_ONLY'는 최종 승인 시 'closed'로 전환되고 'INTERNAL_ACTION'은 'in_progress'를 유지하는지 검증"""
+        from docs.models import InboundLetter
+
+        inbound_receipt = InboundLetter.objects.create(
+            company=self.company,
+            document_number='EXT-2026-01',
+            sender_name='국토교통부',
+            title='단순 공람 수신공문',
+            status='in_progress',
+        )
+        doc_receipt = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='단순 공람 보고',
+            content={'action_type': 'RECEIPT_ONLY'},
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            related_inbound_letter=inbound_receipt,
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step_r = ApprovalStep.objects.create(document=doc_receipt, step_order=1, role_label='팀장 승인')
+        step_r.approvers.set([self.user_leader])
+
+        self.client.force_authenticate(user=self.user_leader)
+        res_r = self.client.post(f'/api/v1/approval-document/{doc_receipt.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_r.status_code, status.HTTP_200_OK)
+        inbound_receipt.refresh_from_db()
+        self.assertEqual(inbound_receipt.status, 'closed')
+
+        inbound_internal = InboundLetter.objects.create(
+            company=self.company,
+            document_number='EXT-2026-02',
+            sender_name='시청',
+            title='내부 조치 필요 수신공문',
+            status='in_progress',
+        )
+        doc_internal = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='내부 조치 계획 보고',
+            content={'action_type': 'INTERNAL_ACTION'},
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            related_inbound_letter=inbound_internal,
+            status=ApprovalDocument.STATUS_PENDING,
+            current_step=1,
+        )
+        step_i = ApprovalStep.objects.create(document=doc_internal, step_order=1, role_label='팀장 승인')
+        step_i.approvers.set([self.user_leader])
+
+        res_i = self.client.post(f'/api/v1/approval-document/{doc_internal.id}/act/', {'action': 'approved'})
+        self.assertEqual(res_i.status_code, status.HTTP_200_OK)
+        inbound_internal.refresh_from_db()
+        self.assertEqual(inbound_internal.status, 'in_progress')

@@ -373,9 +373,10 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError(
                             {'doc_type': '현재 직책에서 기안할 수 없는 결재 서식입니다.'}
                         )
+                    staff_position_id = assignment.staff.position_id if assignment.staff else None
                     if doc_type.allowed_positions.exists() and (
-                        not assignment.position_id
-                        or not doc_type.allowed_positions.filter(pk=assignment.position_id).exists()
+                        not staff_position_id
+                        or not doc_type.allowed_positions.filter(pk=staff_position_id).exists()
                     ):
                         raise serializers.ValidationError(
                             {'doc_type': '현재 직급에서 기안할 수 없는 결재 서식입니다.'}

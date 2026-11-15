@@ -288,6 +288,13 @@ def archive_to_docs(document: ApprovalDocument):
 
     execution_date = document.completed_at.date() if document.completed_at else timezone.localdate()
 
+    sec_map = {
+        ApprovalDocument.SECURITY_SECRET: Document.SECURITY_PRIVATE,
+        ApprovalDocument.SECURITY_DEPT: Document.SECURITY_TEAM,
+        ApprovalDocument.SECURITY_PUBLIC: Document.SECURITY_COMPANY,
+    }
+    mapped_security = sec_map.get(getattr(document, 'security_level', None), Document.SECURITY_COMPANY)
+
     doc_record = Document.objects.create(
         issue_project=workspace,
         category=target_category,
@@ -296,8 +303,20 @@ def archive_to_docs(document: ApprovalDocument):
         execution_date=execution_date,
         description=f"{identifier} {document.doc_number or ''} {document.title}"[:255],
         creator=document.drafter,
-        security_level=document.security_level if hasattr(document, 'security_level') else Document.SECURITY_COMPANY,
+        security_level=mapped_security,
     )
+
+    # 결재선 참여자(결재자/대결자) 및 참조자에게 아카이빙 문서 열람 권한 부여
+    step_approver_ids = set(
+        document.steps.values_list('approvers__id', flat=True)
+    ) | set(
+        document.steps.values_list('actions__approver_id', flat=True)
+    ) | set(
+        document.observers.values_list('id', flat=True)
+    )
+    allowed_user_ids = {uid for uid in step_approver_ids if uid and uid != document.drafter_id}
+    if allowed_user_ids:
+        doc_record.allowed_users.set(allowed_user_ids)
 
     # 1. 승인된 PDF 파일 등록 (생성되어 있을 경우)
     if document.pdf_file and document.pdf_file.name:

@@ -25,7 +25,10 @@ def extract_amount_from_content(content: dict | None) -> float | None:
     """기안 문서 내용에서 금액 성격의 필드 값을 자동 추출"""
     if not content or not isinstance(content, dict):
         return None
-    for key in ('amount', 'estimated_amount', 'total_amount', 'price', 'cost', 'expense_amount', 'payment_amount'):
+    for key in (
+        'amount', 'estimated_amount', 'total_amount', 'contract_amount',
+        'price', 'cost', 'expense_amount', 'payment_amount', 'action_budget',
+    ):
         val = content.get(key)
         if val is not None and val != '':
             try:
