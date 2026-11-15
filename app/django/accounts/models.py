@@ -6,9 +6,6 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from _utils.file_cleanup import file_cleanup_signals
-from docs.models import Document
-from forum.models import Post, Comment
-from work.models.project import IssueProject, Member
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -55,6 +52,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.email = self.__class__.objects.normalize_email(self.email)
 
     def work_projects(self):
+        from work.models.project import IssueProject, Member
+
         # 1. Get project IDs where the user is directly a member
         direct_project_ids = list(
             Member.objects.filter(user=self, project__status='1').values_list('project_id', flat=True))
@@ -104,10 +103,10 @@ class Profile(models.Model):
     meeting_created_notification = models.BooleanField('회의록 등록 시 알림 수신', default=True)
     meeting_confirmed_notification = models.BooleanField('회의록 확정 시 알림 수신', default=True)
     #
-    like_posts = models.ManyToManyField(Post, blank=True, related_name='post_likes')
-    like_comments = models.ManyToManyField(Comment, blank=True, related_name='comment_likes')
-    blame_posts = models.ManyToManyField(Post, blank=True, related_name='post_blames')
-    blame_comments = models.ManyToManyField(Comment, blank=True, related_name='comment_blames')
+    like_posts = models.ManyToManyField('forum.Post', blank=True, related_name='post_likes')
+    like_comments = models.ManyToManyField('forum.Comment', blank=True, related_name='comment_likes')
+    blame_posts = models.ManyToManyField('forum.Post', blank=True, related_name='post_blames')
+    blame_comments = models.ManyToManyField('forum.Comment', blank=True, related_name='comment_blames')
 
     def __str__(self):
         return self.name
@@ -123,7 +122,7 @@ file_cleanup_signals(Profile)  # 첨부파일 삭제
 
 class DocScrape(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    docs = models.ForeignKey(Document, on_delete=models.CASCADE)
+    docs = models.ForeignKey('docs.Document', on_delete=models.CASCADE)
     title = models.CharField('스크랩 타이틀', max_length=50, blank=True, default='')
     created = models.DateTimeField('보관일', auto_now_add=True)
 
@@ -137,7 +136,7 @@ class DocScrape(models.Model):
 
 class PostScrape(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey('forum.Post', on_delete=models.CASCADE)
     title = models.CharField('스크랩 타이틀', max_length=50, blank=True, default='')
     created = models.DateTimeField('보관일', auto_now_add=True)
 
@@ -176,9 +175,10 @@ class PasswordResetToken(models.Model):
     updated = models.DateTimeField('편집일시', auto_now=True)
 
     def is_expired(self):
-        # Check if 10 minutes have passed since creation
+        # Check if expiration time (default 600s = 10 minutes) has passed since creation
         time_diff = timezone.now() - self.created
-        return time_diff.total_seconds() >= self.expired
+        expired_seconds = 600 if self.expired is None else self.expired
+        return time_diff.total_seconds() >= expired_seconds
 
     class Meta:
         ordering = ('-updated',)

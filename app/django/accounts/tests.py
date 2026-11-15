@@ -114,6 +114,68 @@ class AccountsSecurityAndIsolationTests(APITestCase):
         })
         self.assertEqual(res_put.status_code, status.HTTP_403_FORBIDDEN)
 
+        # 4. work_manager가 본인 또는 일반 사용자에게 is_superuser/is_staff/is_system 권한 상승 시도 차단
+        res_self_escalate = self.client.patch(f'/api/v1/user/{wm_user.pk}/', {
+            'is_superuser': True,
+            'is_staff': True,
+            'is_system': True,
+        })
+        self.assertEqual(res_self_escalate.status_code, status.HTTP_200_OK)
+        wm_user.refresh_from_db()
+        self.assertFalse(wm_user.is_superuser)
+        self.assertFalse(wm_user.is_staff)
+        self.assertFalse(wm_user.is_system)
+
+        res_put_staff = self.client.put('/api/v1/admin-create-user/', {
+            'email': self.user_a.email,
+            'is_staff': True,
+        })
+        self.assertEqual(res_put_staff.status_code, status.HTTP_200_OK)
+        self.user_a.refresh_from_db()
+        self.assertFalse(self.user_a.is_staff)
+
+    def test_profile_list_isolation_for_normal_user(self):
+        """일반 사용자가 GET /api/v1/profile/ 조회 시 본인 프로필만 반환되고 타인 프로필 노출 차단"""
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/v1/profile/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        results = res.data['results'] if 'results' in res.data else res.data
+        returned_pks = [item['pk'] for item in results]
+        self.assertEqual(returned_pks, [self.profile_a.pk])
+
+    def test_public_user_registration_missing_password_returns_400(self):
+        """회원가입(POST /api/v1/user/) 시 password 누락/빈 문자열은 500 KeyError 대신 400 반환"""
+        for payload in (
+            {'username': 'nopassuser', 'email': 'nopass@test.com'},
+            {'username': 'blankpassuser', 'email': 'blankpass@test.com', 'password': ''},
+        ):
+            res = self.client.post('/api/v1/user/', payload)
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_doc_scrape_search_and_invalid_docs_validation(self):
+        """DocScrape 검색 시 FieldError(500) 없이 200 반환 및 존재하지 않는 docs 스크랩 시 400 반환"""
+        self.client.force_authenticate(user=self.user_a)
+        res_search = self.client.get('/api/v1/doc-scrape/?search=키워드')
+        self.assertEqual(res_search.status_code, status.HTTP_200_OK)
+
+        res_invalid = self.client.post('/api/v1/doc-scrape/', {'docs': 999999})
+        self.assertEqual(res_invalid.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_create_user_mail_sending_false_does_not_send_email(self):
+        """AdminManageUserView.post에서 mail_sending=False일 때 메일이 발송되지 않음"""
+        self.client.force_authenticate(user=self.admin)
+        with patch('apiV1.views.accounts.send_mail') as mock_send:
+            res = self.client.post('/api/v1/admin-create-user/', {
+                'email': 'nomail@test.com',
+                'username': 'nomailuser',
+                'password': 'password123',
+                'mail_sending': False,
+                'send_option': '1',
+                'expired': 24,
+            })
+            self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+            mock_send.assert_not_called()
+
     def test_admin_can_modify_other_user(self):
         """관리자(슈퍼유저)는 타 사용자 권한 필드 수정 가능"""
         self.client.force_authenticate(user=self.admin)
@@ -379,6 +441,14 @@ class InstallViewsRegressionTests(APITestCase):
         # 이미 슈퍼유저가 존재하므로 리다이렉트되어 새 유저 생성 안 됨
         self.assertEqual(res.status_code, status.HTTP_302_FOUND)
         self.assertFalse(User.objects.filter(email='attacker@test.com').exists())
+
+    def test_create_project_post_blocked_when_company_missing(self):
+        """회사가 생성되지 않은 상태에서 POST /install/create/project/ 요청 시 500 에러 없이 리다이렉트"""
+        res = self.client.post('/install/create/project/', {
+            'name': '무단생성프로젝트',
+        })
+        self.assertEqual(res.status_code, status.HTTP_302_FOUND)
+        self.assertEqual(res.url, '/install/create/company/')
 
 
 class PasswordAndAuthSecurityTests(APITestCase):

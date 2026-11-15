@@ -113,10 +113,14 @@ class UserSerializer(serializers.ModelSerializer):
         return hasattr(obj, 'staff') and obj.staff is not None
 
     def create(self, validated_data):
+        password = validated_data.get('password')
+        if not password:
+            raise serializers.ValidationError({'password': ['비밀번호를 입력해 주세요.']})
+
         user = User(email=validated_data['email'],
                     username=validated_data['username'])
-        password = validated_data['password']
         user.set_password(password)
+        user.save()
 
         try:
             # 회원가입 환영 메일 보내기
@@ -144,15 +148,22 @@ class UserSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"회원가입 환영/알림 메일 발송 실패: {e}")
 
-        user.save()
         return user
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        is_admin = request and (request.user.is_superuser or getattr(request.user, 'work_manager', False))
+        is_superuser = bool(request and request.user.is_authenticated and request.user.is_superuser)
+        is_admin = bool(
+            request and request.user.is_authenticated and (
+                request.user.is_superuser or getattr(request.user, 'work_manager', False)
+            )
+        )
+        if not is_superuser:
+            for super_restricted in ('is_superuser', 'is_staff', 'is_system'):
+                validated_data.pop(super_restricted, None)
         if not is_admin:
-            for restricted in ('is_superuser', 'is_staff', 'work_manager', 'is_active', 'is_system'):
-                validated_data.pop(restricted, None)
+            for admin_restricted in ('work_manager', 'is_active'):
+                validated_data.pop(admin_restricted, None)
 
         password = validated_data.pop('password', None)
 
@@ -221,7 +232,9 @@ class DocsInScrapeSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type_name(obj):
-        return obj.doc_type.get_type_display()
+        if hasattr(obj, 'get_doc_type_display'):
+            return obj.get_doc_type_display()
+        return getattr(obj.doc_type, 'get_type_display', lambda: '')()
 
     @staticmethod
     def get_proj_sort(obj):
@@ -236,9 +249,16 @@ class DocScrapeSerializer(serializers.ModelSerializer):
         fields = ('pk', 'user', 'docs', 'title', 'created')
 
     def create(self, validated_data):
-        docs = self.initial_data.get('docs')
+        docs_id = self.initial_data.get('docs')
+        doc = Document.objects.filter(pk=docs_id).first() if docs_id else None
+        if not doc:
+            raise serializers.ValidationError({'docs': ['유효하지 않은 문서입니다.']})
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated and not doc.is_visible_to(request.user):
+            raise serializers.ValidationError({'docs': ['해당 문서에 접근 권한이 없습니다.']})
         user = validated_data.get('user')
-        scrape = DocScrape(docs_id=docs, user=user)
+        title = validated_data.get('title', '')
+        scrape = DocScrape(docs=doc, user=user, title=title)
         scrape.save()
         return scrape
 
@@ -259,9 +279,12 @@ class PostScrapeSerializer(serializers.ModelSerializer):
         fields = ('pk', 'user', 'post', 'title', 'created')
 
     def create(self, validated_data):
-        post = self.initial_data.get('post')
+        post_id = self.initial_data.get('post')
+        if not post_id or not Post.objects.filter(pk=post_id).exists():
+            raise serializers.ValidationError({'post': ['유효하지 않은 게시글입니다.']})
         user = validated_data.get('user')
-        scrape = PostScrape(post_id=post, user=user)
+        title = validated_data.get('title', '')
+        scrape = PostScrape(post_id=post_id, user=user, title=title)
         scrape.save()
         return scrape
 

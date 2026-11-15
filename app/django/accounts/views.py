@@ -87,14 +87,21 @@ def load_seed_data():
     try:
         # Use Django's call_command instead of subprocess for better reliability
         call_command('loaddata', 'ibs/fixtures/seeds-data.json')
-    except Exception as e:
-        # Fallback to subprocess if needed
-        cmd = 'python manage.py loaddata ibs/fixtures/seeds-data.json'
-        subprocess.call(cmd, shell=True, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    except Exception:
+        # Fallback to subprocess without shell=True if needed
+        subprocess.call(
+            ['python', 'manage.py', 'loaddata', 'ibs/fixtures/seeds-data.json'],
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        )
 
 
 def create_project(request):
     d3 = ProjectAccountD3.objects.exists()
+    if d3 or Project.objects.exists():
+        return redirect('/')
+    if not Company.objects.exists():
+        return redirect('/install/create/company/')
+
     if not d3:
         load_seed_data()
 
@@ -110,6 +117,10 @@ def create_project(request):
         area_usage = request.POST.get('area_usage')
         build_size = request.POST.get('build_size')
 
+        if not company or not name or not kind:
+            companies = Company.objects.all()
+            return render(request, 'install/create_project.html', {'companies': companies})
+
         kind_name = {'1': '공동주택(아파트)',
                      '2': '공동주택(타운하우스)',
                      '3': '주상복합(아파트)',
@@ -117,7 +128,7 @@ def create_project(request):
                      '5': '근린생활시설',
                      '6': '생활형숙박시설',
                      '7': '지식산업센터',
-                     '8': '기타'}[kind]
+                     '8': '기타'}.get(kind, '기타')
 
         creator = User.objects.filter(is_superuser=True).first()
         creator_id = creator.id if creator else 1
@@ -156,14 +167,8 @@ def create_project(request):
         project.save()
         return redirect('/')
     else:
-        if d3:
-            return redirect('/')
-        is_company = Company.objects.all().exists()
-        if not is_company:
-            return redirect('/install/create/company/')
-        else:
-            companies = Company.objects.all()
-            return render(request, 'install/create_project.html', {'companies': companies})
+        companies = Company.objects.all()
+        return render(request, 'install/create_project.html', {'companies': companies})
 
 
 def pass_create_project(request):

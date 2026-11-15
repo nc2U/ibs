@@ -119,7 +119,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     best_user_visible = role.user_visible
 
         # 소속 프로젝트가 없는 경우에만 비회원 역할(pk=2) 조회 (불필요한 DB 쿼리 방지)
-        if not user_members.exists():
+        if not user_members:
             try:
                 non_member_role = Role.objects.get(pk=2)
                 best_user_visible = non_member_role.user_visible
@@ -146,6 +146,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     permission_classes = (IsAuthenticated, IsOwnerOnly)
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Profile.objects.none()
+        qs = Profile.objects.select_related('user')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(user=user)
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -155,15 +164,19 @@ class DocScrapeViewSet(viewsets.ModelViewSet):
     serializer_class = DocScrapeSerializer
     permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user',)
-    search_fields = ('title', 'post__title', 'post__content')
+    search_fields = ('title', 'docs__title', 'docs__description')
 
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
             return DocScrape.objects.none()
+        qs = DocScrape.objects.select_related('docs__issue_project').order_by('-id')
         if user.is_superuser:
-            return DocScrape.objects.all()
-        return DocScrape.objects.filter(user=user)
+            return qs
+        return qs.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class PostScrapeViewSet(viewsets.ModelViewSet):
@@ -177,9 +190,13 @@ class PostScrapeViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return PostScrape.objects.none()
+        qs = PostScrape.objects.select_related('post__forum').order_by('-id')
         if user.is_superuser:
-            return PostScrape.objects.all()
-        return PostScrape.objects.filter(user=user)
+            return qs
+        return qs.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class TodoViewSet(viewsets.ModelViewSet):
@@ -234,7 +251,10 @@ class TodoViewSet(viewsets.ModelViewSet):
         tracker_id = request.data.get('tracker')
         tracker = None
         if tracker_id:
-            tracker = Tracker.objects.filter(pk=tracker_id).first()
+            if issue_project.trackers.exists():
+                tracker = issue_project.trackers.filter(pk=tracker_id).first()
+            else:
+                tracker = Tracker.objects.filter(pk=tracker_id).first()
         if not tracker:
             tracker = issue_project.trackers.first() or Tracker.objects.first()
 
@@ -539,7 +559,7 @@ class AdminManageUserView(APIView):
                 # Find the user with the given email
                 mail_sending = serializer.validated_data.get('mail_sending')
 
-                if mail_sending is not None:
+                if mail_sending:
                     scheme = 'http' if settings.DEBUG else 'https'
                     curr_host = request.get_host()
 
@@ -637,15 +657,17 @@ IBS 워크스페이스'''
         # 요청 데이터에 해당 필드가 있을 때만 업데이트합니다.
         for field in ['is_active', 'is_staff', 'work_manager']:
             if field in request.data:
-                setattr(user, field, request.data[field])
+                if field == 'is_staff' and not request.user.is_superuser:
+                    continue
+                setattr(user, field, bool(request.data[field]))
 
         # 2. 비밀번호 변경 (비밀번호 정보가 명시적으로 들어올 때만)
         password = request.data.get('password')
-        mail_sending = request.data.get('mail_sending', False)
+        mail_sending = bool(request.data.get('mail_sending', False))
         send_option = request.data.get('send_option', '1')  # '1': 리셋 링크, '2': 새 비밀번호 정보
 
-        # 비밀번호 직접 변경 로직 (send_option '2'일 때)
-        if password and send_option == '2':
+        # 비밀번호 직접 변경 로직 (send_option '2'이거나 메일 발송 없이 직접 변경할 때)
+        if password and (send_option == '2' or not mail_sending):
             user.set_password(password)
 
         # 3. 데이터 저장 및 메일 발송 (트랜잭션으로 원자적 처리)
