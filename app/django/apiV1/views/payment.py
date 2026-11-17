@@ -39,9 +39,32 @@ def get_today_str():
     return datetime.today().strftime('%Y-%m-%d')
 
 
+def _normalize_date_str(date_val, default_today: bool = False):
+    """날짜 쿼리 파라미터 정규화 ('null', 'undefined', 빈 문자열 및 잘못된 형식 방어)"""
+    if date_val is not None:
+        s = str(date_val).strip()
+        if s and s.lower() not in ('null', 'none', 'undefined'):
+            try:
+                datetime.strptime(s, '%Y-%m-%d')
+                return s
+            except ValueError:
+                pass
+    return get_today_str() if default_today else None
+
+
 def get_accessible_project_ids(user, required_perm: str = 'payment.read'):
     """[RLS] 사용자가 특정 권한(기본: payment.read)을 보유한 프로젝트 ID 목록 반환"""
     return get_project_ids_with_permission(user, required_perm)
+
+
+def _check_project_write_access(user, project_obj_or_id, perm: str):
+    """생성/수정 시 대상 프로젝트에 대한 권한(RLS)을 검증합니다."""
+    if not project_obj_or_id or user.is_superuser or getattr(user, 'work_manager', False):
+        return
+    project_id = project_obj_or_id.pk if hasattr(project_obj_or_id, 'pk') else int(project_obj_or_id)
+    if project_id not in get_accessible_project_ids(user, perm):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied('해당 프로젝트에 대한 작업 권한이 없습니다.')
 
 
 # Payment --------------------------------------------------------------------------
@@ -88,6 +111,15 @@ class InstallmentOrderViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        _check_project_write_access(self.request.user, serializer.validated_data.get('project'), 'payment.create')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_project_write_access(self.request.user, target_proj, 'payment.update')
+        serializer.save()
+
 
 class SalesPriceViewSet(viewsets.ModelViewSet):
     queryset = SalesPriceByGT.objects.select_related('project', 'order_group', 'unit_type', 'unit_floor_type').all()
@@ -107,6 +139,15 @@ class SalesPriceViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_create(self, serializer):
+        _check_project_write_access(self.request.user, serializer.validated_data.get('project'), 'payment.create')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_project_write_access(self.request.user, target_proj, 'payment.update')
+        serializer.save()
 
 
 class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
@@ -135,6 +176,16 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(sales_price__project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        sales_price = serializer.validated_data.get('sales_price')
+        _check_project_write_access(self.request.user, getattr(sales_price, 'project_id', None), 'payment.create')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        sales_price = serializer.validated_data.get('sales_price', serializer.instance.sales_price)
+        _check_project_write_access(self.request.user, getattr(sales_price, 'project_id', None), 'payment.update')
+        serializer.save()
+
 
 class DownPaymentViewSet(viewsets.ModelViewSet):
     queryset = DownPayment.objects.select_related('project', 'order_group', 'unit_type').all()
@@ -155,6 +206,15 @@ class DownPaymentViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        _check_project_write_access(self.request.user, serializer.validated_data.get('project'), 'payment.create')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_project_write_access(self.request.user, target_proj, 'payment.update')
+        serializer.save()
+
 
 class OverDueRuleViewSet(viewsets.ModelViewSet):
     queryset = OverDueRule.objects.select_related('project').all()
@@ -173,18 +233,29 @@ class OverDueRuleViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        _check_project_write_access(self.request.user, serializer.validated_data.get('project'), 'payment.create')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_project_write_access(self.request.user, target_proj, 'payment.update')
+        serializer.save()
+
 
 # Helper Functions for Unit Type Payment status calculations -----------------------
 
-def get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id):
+def get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id, project=None, default_og=None):
     """ContractPrice 테이블의 유효한 모든 가격정보 합계 (계약 있는 것 + 계약 없는 것)"""
     try:
         with connection.cursor() as cursor:
-            project = Project.objects.get(pk=project_id)
-            default_og = OrderGroup.get_default_for_project(project)
+            if project is None:
+                project = Project.objects.get(pk=project_id)
+            if default_og is None:
+                default_og = OrderGroup.get_default_for_project(project)
 
             contract_query = """
-                             SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as contract_amount
+                             SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as contract_amount
                              FROM contract_contractprice cp
                                       CROSS JOIN jsonb_each_text(cp.payment_amounts)
                                       INNER JOIN contract_contract c ON cp.contract_id = c.id
@@ -203,7 +274,7 @@ def get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id):
             non_contract_amount = 0
             if default_og and order_group_id == default_og.pk:
                 non_contract_query = """
-                                     SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
+                                     SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as non_contract_amount
                                      FROM contract_contractprice cp
                                               CROSS JOIN jsonb_each_text(cp.payment_amounts)
                                               INNER JOIN items_houseunit hu ON cp.house_unit_id = hu.id
@@ -301,16 +372,17 @@ def get_contract_data_by_unit_type(project_id, order_group_id, unit_type_id):
 def get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date, use_ledger_join=False):
     """order_group과 unit_type별 실수납금액 계산"""
     try:
+        normalized_date = _normalize_date_str(date, default_today=False)
         with connection.cursor() as cursor:
             date_filter = ""
             params = [project_id, order_group_id, unit_type_id]
 
-            if date:
+            if normalized_date:
                 if use_ledger_join:
                     date_filter = "AND pbt.deal_date <= %s"
                 else:
                     date_filter = "AND cp.deal_date <= %s"
-                params.append(date)
+                params.append(normalized_date)
 
             if use_ledger_join:
                 query = f"""
@@ -376,7 +448,7 @@ def get_non_contract_amount_by_unit_type(project_id, order_group_id, unit_type_i
         if order_group_id == default_og.pk:
             with connection.cursor() as cursor:
                 query = """
-                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as non_contract_amount
+                        SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as non_contract_amount
                         FROM contract_contractprice cp, jsonb_each_text(cp.payment_amounts)
                         WHERE cp.contract_id IS NULL
                           AND cp.house_unit_id IN (SELECT hu.id
@@ -503,7 +575,9 @@ def calculate_payment_status_by_unit_type_core(project_id, date=None, use_ledger
         unit_type_sort = row[8]
 
         # 매출액 계산
-        total_sales_amount = get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id)
+        total_sales_amount = get_sales_amount_by_unit_type(
+            project_id, order_group_id, unit_type_id, project=project, default_og=default_og
+        )
 
         # [H-3] 근린생활시설 특별 처리 — 루프 전 캐시된 데이터 사용
         if total_budget == 0 and total_sales_amount > 0 and unit_type_sort == '5':
@@ -564,7 +638,8 @@ def calculate_payment_status_by_unit_type_core(project_id, date=None, use_ledger
 
 def is_due_period(order, date_str):
     """납부 회차의 기간도래 여부 판단"""
-    current_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    normalized = _normalize_date_str(date_str, default_today=True)
+    current_date = datetime.strptime(normalized, '%Y-%m-%d').date()
 
     if order.pay_sort == '1':  # 계약금
         # 계약금은 pay_due_date가 None이면 항상 기간도래
@@ -692,7 +767,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     def list(self, request):
         project_id = request.query_params.get('project')
-        date = request.query_params.get('date', get_today_str())
+        date = _normalize_date_str(request.query_params.get('date'), default_today=True)
 
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
@@ -773,10 +848,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 전체 미수금 계산 (모든 회차의 총 미수금 합계)
         total_overall_unpaid = sum(order['total_unpaid'] for order in result_pay_orders)
 
-        # 전체 계약금액 계산 (모든 회차)
-        total_all_contract_amount = sum(
-            payment_amounts_cache.get(order.pay_time, 0) for order in pay_orders
-        )
+        # 전체 계약금액 계산 (모든 회차 - 동일 pay_time 중복 합산 방지)
+        total_all_contract_amount = sum(payment_amounts_cache.values())
 
         # 전체 미수율 계산
         total_overall_unpaid_rate = (
@@ -806,7 +879,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             # PostgreSQL JSON 집계를 사용한 효율적인 계산 (보안 개선된 parameterized query)
             with connection.cursor() as cursor:
                 query = """
-                        SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                        SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as total_amount
                         FROM contract_contractprice, jsonb_each_text(payment_amounts)
                         WHERE contract_id IN (SELECT id
                                               FROM contract_contract
@@ -899,7 +972,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 # pay_time별로 개별 금액을 집계 (보안 개선된 parameterized query)
                 for pay_time in sorted(pay_times):
                     query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount,
+                            SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as total_amount,
                                    COUNT(*)                                 as contract_count
                             FROM contract_contractprice, jsonb_each_text(payment_amounts)
                             WHERE contract_id IN (SELECT id
@@ -945,7 +1018,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                 # pay_time별로 미계약 세대의 개별 금액을 집계
                 for pay_time in sorted(pay_times):
                     query = """
-                            SELECT COALESCE(SUM(CAST(value AS INTEGER)), 0) as total_amount
+                            SELECT COALESCE(SUM(CAST(value AS BIGINT)), 0) as total_amount
                             FROM contract_contractprice, jsonb_each_text(payment_amounts)
                             WHERE contract_id IS NULL
                               AND house_unit_id IN (SELECT hu.id
@@ -1304,28 +1377,8 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
     @staticmethod
     def _is_due_period(order, date_str):
-        """납부 회차의 기간도래 여부 판단
-
-        Args:
-            order: InstallmentPaymentOrder 인스턴스
-            date_str: 기준 날짜 문자열 (YYYY-MM-DD)
-
-        Returns:
-            bool: 기간도래 여부
-        """
-        # 날짜 문자열을 datetime.date 객체로 변환
-        current_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-
-        if order.pay_sort == '1':  # 계약금
-            # 계약금은 pay_due_date가 None이면 항상 기간도래
-            if order.pay_due_date is None:
-                return True
-            return order.pay_due_date <= current_date
-        else:  # 기타 항목 (중도금, 잔금 등)
-            # 기타 항목은 pay_due_date가 None이면 항상 기간미도래
-            if order.pay_due_date is None:
-                return False
-            return order.pay_due_date <= current_date
+        """납부 회차의 기간도래 여부 판단"""
+        return is_due_period(order, date_str)
 
     @staticmethod
     def _get_not_due_unpaid(order, project_id, date):
@@ -1356,7 +1409,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         conts_num = Contract.objects.filter(
             project_id=project_id,
             is_active=True,
-            contractor__status=2
+            contractor__status='2'
         ).count()
 
         # 전체 세대수 (KeyUnit 기준)
@@ -1477,8 +1530,9 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     """
     ContractPayment 기본 CRUD ViewSet (구버전 ProjectCashBook 호환)
 
-    계약별 납부 내역 조회, 생성, 수정, 삭제
+    계약별 납부 내역 조회, 수정 (생성과 삭제는 ProjectAccountingEntry를 통해 자동 동기화됨)
     """
+    http_method_names = ['get', 'put', 'patch', 'head', 'options']
     queryset = ContractPayment.objects.select_related(
         'accounting_entry',
         'accounting_entry__account',
@@ -1759,7 +1813,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
 
     def list(self, request):
         project_id = request.query_params.get('project')
-        date = request.query_params.get('date', get_today_str())
+        date = _normalize_date_str(request.query_params.get('date'), default_today=True)
 
         if not project_id:
             return Response({'error': 'project parameter is required'}, status=400)
@@ -1840,10 +1894,8 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         # 전체 미수금 계산
         total_overall_unpaid = sum(order['total_unpaid'] for order in result_pay_orders)
 
-        # 전체 계약금액 계산
-        total_all_contract_amount = sum(
-            payment_amounts_cache.get(order.pay_time, 0) for order in pay_orders
-        )
+        # 전체 계약금액 계산 (동일 pay_time 중복 합산 방지)
+        total_all_contract_amount = sum(payment_amounts_cache.values())
 
         # 전체 미수율 계산
         total_overall_unpaid_rate = (
@@ -2172,7 +2224,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         conts_num = Contract.objects.filter(
             project_id=project_id,
             is_active=True,
-            contractor__status=2
+            contractor__status='2'
         ).count()
 
         # 전체 세대수 (KeyUnit 기준)

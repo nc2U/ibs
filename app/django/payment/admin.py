@@ -117,17 +117,25 @@ class PaymentPerInstallmentAdmin(ImportExportMixin, admin.ModelAdmin):
     get_sales_price_info.short_description = '기준 공급가격 정보'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        is_admin = request.user.is_superuser or getattr(request.user, 'work_manager', False)
+        accessible_projects = None if is_admin else get_project_ids_with_permission(request.user, 'payment.read')
         if db_field.name == "pay_order":
             # 중도금(2)과 잔금(3)을 제외한 항목만 선택 가능
             # 계약금(1), 계약금 정산(4), 발코니 확장비(5), 기타 옵션비(6), 제세 공과금(7), 후불 이자(8), 업무 대행비(9) 허용
-            kwargs["queryset"] = db_field.related_model.objects.filter(
+            qs = db_field.related_model.objects.filter(
                 pay_sort__in=['1', '4', '5', '6', '7', '8', '9']
             )
+            if accessible_projects is not None:
+                qs = qs.filter(project_id__in=accessible_projects)
+            kwargs["queryset"] = qs
         elif db_field.name == "sales_price":
             # SalesPriceByGT를 선택할 때 프로젝트별로 구분해서 표시
-            kwargs["queryset"] = db_field.related_model.objects.select_related(
+            qs = db_field.related_model.objects.select_related(
                 'project', 'order_group', 'unit_type'
             )
+            if accessible_projects is not None:
+                qs = qs.filter(project_id__in=accessible_projects)
+            kwargs["queryset"] = qs
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 

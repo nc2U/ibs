@@ -99,6 +99,9 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
         if hasattr(self, 'unit_type') and self.unit_type_id and self.project_id:
             if self.unit_type.project_id != self.project_id:
                 raise ValidationError({'unit_type': '타입의 프로젝트와 기준 공급가격의 프로젝트가 일치해야 합니다.'})
+        if hasattr(self, 'unit_floor_type') and self.unit_floor_type_id and self.project_id:
+            if self.unit_floor_type.project_id != self.project_id:
+                raise ValidationError({'unit_floor_type': '층별타입의 프로젝트와 기준 공급가격의 프로젝트가 일치해야 합니다.'})
 
     def save(self, *args, **kwargs):
         self.clean()

@@ -41,6 +41,17 @@ class InstallmentOrderSerializer(serializers.ModelSerializer):
     def get_str_display(obj):
         return str(obj)
 
+    def validate(self, attrs):
+        project = attrs.get('project', getattr(self.instance, 'project', None))
+        excluded_ogs = attrs.get('excluded_order_groups')
+        if project and excluded_ogs:
+            for og in excluded_ogs:
+                if og.project_id != project.id:
+                    raise serializers.ValidationError({
+                        'excluded_order_groups': '제외 차수의 프로젝트와 납입회차의 프로젝트가 일치해야 합니다.'
+                    })
+        return attrs
+
 
 class SalesPriceSerializer(serializers.ModelSerializer):
     price_setting = serializers.SerializerMethodField(read_only=True)
@@ -58,11 +69,14 @@ class SalesPriceSerializer(serializers.ModelSerializer):
         project = attrs.get('project', getattr(self.instance, 'project', None))
         order_group = attrs.get('order_group', getattr(self.instance, 'order_group', None))
         unit_type = attrs.get('unit_type', getattr(self.instance, 'unit_type', None))
+        unit_floor_type = attrs.get('unit_floor_type', getattr(self.instance, 'unit_floor_type', None))
         if project:
             if order_group and order_group.project_id != project.id:
                 raise serializers.ValidationError({'order_group': '차수의 프로젝트와 기준 공급가격의 프로젝트가 일치해야 합니다.'})
             if unit_type and unit_type.project_id != project.id:
                 raise serializers.ValidationError({'unit_type': '타입의 프로젝트와 기준 공급가격의 프로젝트가 일치해야 합니다.'})
+            if unit_floor_type and unit_floor_type.project_id != project.id:
+                raise serializers.ValidationError({'unit_floor_type': '층별타입의 프로젝트와 기준 공급가격의 프로젝트가 일치해야 합니다.'})
         return attrs
 
 
@@ -309,13 +323,30 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context.get('request')
         if request and hasattr(request, 'data') and self.instance:
-            # 1. 회계 정산 마감일 검증
+            # 1. 회계 정산 마감일 검증 (슈퍼유저, work_manager, ledger.manage / payment.manage 권한자는 허용)
             if self.instance.project_id and self.instance.deal_date:
                 calc = ProjectLedgerCalculation.objects.filter(project_id=self.instance.project_id).first()
                 if calc and calc.calculated and self.instance.deal_date <= calc.calculated:
-                    raise serializers.ValidationError(
-                        f'해당 기간({calc.calculated} 이전)은 회계 정산이 완료되어 수납 정보를 수정할 수 없습니다.'
+                    user = getattr(request, 'user', None)
+                    has_manage_perm = bool(
+                        user and user.is_authenticated and (
+                            user.is_superuser or getattr(user, 'work_manager', False)
+                        )
                     )
+                    if not has_manage_perm and user and user.is_authenticated:
+                        try:
+                            from project.models import Project
+                            prj = Project.objects.select_related('issue_project').get(pk=self.instance.project_id)
+                            if getattr(prj, 'issue_project', None):
+                                user_perms = set(prj.issue_project.get_user_permissions(user))
+                                if 'ledger.manage' in user_perms or 'payment.manage' in user_perms:
+                                    has_manage_perm = True
+                        except Exception:
+                            pass
+                    if not has_manage_perm:
+                        raise serializers.ValidationError(
+                            f'해당 기간({calc.calculated} 이전)은 회계 정산이 완료되어 수납 정보를 수정할 수 없습니다.'
+                        )
 
             # 2. 계약(contract) 유효성 및 프로젝트/초과납부 검증
             if 'contract' in request.data:

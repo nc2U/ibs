@@ -721,28 +721,27 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
             same_order_group_items = [d for d in api_data if d['order_group_id'] == item['order_group_id']]
             return same_order_group_items[0]['unit_type_id'] == item['unit_type_id']
 
-        # 개별 차수×타입별 실수납 금액을 표준화된 방식으로 재계산 (Ledger 기반)
+        # 개별 차수×타입별 실수납 금액을 표준화된 방식으로 단일 배치 쿼리로 집계 (N+1 제거)
+        paid_base_qs = ContractPayment.objects.filter(
+            project=project,
+            contract__isnull=False,
+            contract__is_active=True,
+            is_payment_mismatch=False,
+        )
+        if date and date != 'null':
+            paid_base_qs = paid_base_qs.filter(deal_date__lte=date)
+
+        paid_by_og_ut = {
+            (row['contract__order_group_id'], row['contract__unit_type_id']): (row['total'] or 0)
+            for row in paid_base_qs.values('contract__order_group_id', 'contract__unit_type_id').annotate(
+                total=Sum('accounting_entry__amount')
+            )
+        }
 
         for item in api_data:
-            # 해당 차수×타입에 대한 표준화된 실수납 금액 계산 (ContractPayment 사용)
-            queryset = (
-                ContractPayment.objects
-                .filter(
-                    project=project,
-                    contract__isnull=False,
-                    contract__is_active=True,
-                    contract__order_group_id=item['order_group_id'],
-                    contract__unit_type_id=item['unit_type_id'],
-                    is_payment_mismatch=False
-                )
+            standardized_item_paid = paid_by_og_ut.get(
+                (item['order_group_id'], item['unit_type_id']), 0
             )
-
-            if date and date != 'null':
-                queryset = queryset.filter(deal_date__lte=date)
-
-            standardized_item_paid = queryset.aggregate(
-                total=Sum('accounting_entry__amount')
-            )['total'] or 0
 
             # API 데이터의 paid_amount를 표준화된 값으로 교체
             item['paid_amount'] = standardized_item_paid
@@ -868,7 +867,7 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
                 worksheet.write(row_num, col_num, totals['total_budget'], h2format)
 
         # Create a response using mixin
-        filename = request.GET.get('filename')
+        filename = request.GET.get('filename') or 'paid-status'
         filename = f'{filename}-{date}'
         return self.create_response(output, workbook, filename)
 
@@ -1055,12 +1054,26 @@ class ExportLedgerOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         })
         worksheet.merge_range(row_num, 0, row_num + 4, 0, '수납', collection_format)
 
-        # 수납액 - Ledger 기반 표준화된 집계 방식 사용 (회차별, 합계 모두 표준화)
+        # 수납액 - Ledger 기반 표준화된 집계 방식 사용 (단일 배치 쿼리로 회차별/합계 사전 집계)
         worksheet.write(row_num, 1, '수납액', center_format)
         standardized_collected_amount = get_ledger_standardized_payment_sum(project, date)
-        # 회차별로도 표준화된 계산 사용
+        order_ids = [order['pk'] for order in pay_orders if order.get('pk')]
+        order_collected_map = {}
+        if order_ids:
+            order_qs = ContractPayment.objects.filter(
+                project=project,
+                installment_order_id__in=order_ids,
+                contract__isnull=False,
+                contract__is_active=True,
+                is_payment_mismatch=False,
+                deal_date__lte=date,
+            ).values('installment_order_id').annotate(total=Sum('accounting_entry__amount'))
+            order_collected_map = {
+                row['installment_order_id']: (row['total'] or 0) for row in order_qs
+            }
+
         for i, order in enumerate(pay_orders):
-            standardized_order_collected = get_ledger_standardized_payment_sum_by_order(project, date, order['pk'])
+            standardized_order_collected = order_collected_map.get(order['pk'], 0)
             worksheet.write(row_num, 2 + i, standardized_order_collected, body_format)
         worksheet.write(row_num, col_count - 1, standardized_collected_amount, body_format)
 
@@ -1080,24 +1093,22 @@ class ExportLedgerOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             worksheet.write(row_num, 2 + i, order['collection']['overdue_fee'], body_format)
         worksheet.write(row_num, col_count - 1, total_overdue_fee, body_format)
 
-        # 실수납액 - Ledger 기반 표준화된 집계 방식 사용 (회차별, 합계 모두 표준화)
+        # 실수납액 - Ledger 기반 표준화된 집계 방식 사용 (사전 집계 값 재사용)
         row_num += 1
         worksheet.write(row_num, 1, '실수납액', center_format)
-        standardized_actual_collected = get_ledger_standardized_payment_sum(project, date)
-        # 회차별로도 표준화된 계산 사용 (할인료, 연체료 미구현으로 수납액과 동일)
+        standardized_actual_collected = standardized_collected_amount
         for i, order in enumerate(pay_orders):
-            standardized_order_actual = get_ledger_standardized_payment_sum_by_order(project, date, order['pk'])
+            standardized_order_actual = order_collected_map.get(order['pk'], 0)
             worksheet.write(row_num, 2 + i, standardized_order_actual, body_format)
         worksheet.write(row_num, col_count - 1, standardized_actual_collected, body_format)
 
-        # 수납율 - Ledger 기반 표준화된 집계 기반으로 계산 (회차별, 합계 모두 표준화)
+        # 수납율 - Ledger 기반 표준화된 집계 기반으로 계산 (사전 집계 값 재사용)
         row_num += 1
         worksheet.write(row_num, 1, '수납율', center_format)
         total_collection_rate = (
                 standardized_actual_collected / total_contract_amount * 100) if total_contract_amount > 0 else 0
-        # 회차별 수납율도 표준화된 계산으로 수정
         for i, order in enumerate(pay_orders):
-            standardized_order_actual = get_ledger_standardized_payment_sum_by_order(project, date, order['pk'])
+            standardized_order_actual = order_collected_map.get(order['pk'], 0)
             order_contract_amount = order['contract_amount']
             order_collection_rate = (
                     standardized_order_actual / order_contract_amount * 100) if order_contract_amount > 0 else 0

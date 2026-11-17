@@ -24,6 +24,17 @@ def get_today():
     return date.today()
 
 
+def _parse_pub_date(raw_date):
+    if raw_date:
+        s = str(raw_date).strip()
+        if s and s.lower() not in ('null', 'none', 'undefined'):
+            try:
+                return datetime.strptime(s, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+    return get_today()
+
+
 class PdfExportLedgerPayment(PdfExportMixin, View):
     """납부 확인서 (Ledger 기반)"""
 
@@ -48,8 +59,7 @@ class PdfExportLedgerPayment(PdfExportMixin, View):
         context['is_calc'] = calc = True if request.GET.get('is_calc') else False  # 1 = 일반용(할인가산 포함) / '' = 확인용
 
         # 발행일자
-        pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
+        pub_date = _parse_pub_date(request.GET.get('pub_date', None))
         context['pub_date'] = pub_date
 
         try:
@@ -152,9 +162,10 @@ class PdfExportLedgerPayment(PdfExportMixin, View):
         ).order_by('deal_date', 'id')
 
         # 3. 표시할 회차 결정 (조정된 날짜 기준)
+        type_sort = contract.unit_type.sort if getattr(contract, 'unit_type', None) else '1'
         all_installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
-            type_sort=contract.unit_type.sort
+            type_sort=type_sort
         ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
 
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
@@ -315,8 +326,7 @@ class PdfExportLedgerDailyLateFee(PdfExportMixin, View):
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         # 발행일자
-        pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
+        pub_date = _parse_pub_date(request.GET.get('pub_date', None))
         context['pub_date'] = pub_date
 
         try:
@@ -421,7 +431,7 @@ class PdfExportLedgerDailyLateFee(PdfExportMixin, View):
 
         for inst_id, status in all_status.items():
             if not status['is_fully_paid'] and status['remaining_amount'] > 0:
-                installment = InstallmentPaymentOrder.objects.get(pk=inst_id)
+                installment = status.get('installment_order') or InstallmentPaymentOrder.objects.get(pk=inst_id)
 
                 # 기한 도래 여부 확인 (조정된 날짜 기준)
                 due_date = status['due_date']
@@ -535,14 +545,14 @@ class PdfExportLedgerCalculation(PdfExportMixin, View):
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         # 발행일자
-        pub_date = request.GET.get('pub_date', None)
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else get_today()
+        pub_date = _parse_pub_date(request.GET.get('pub_date', None))
         context['pub_date'] = pub_date
 
         # 납부 회차 정보 (조정된 날짜 반영을 위해 필터링)
+        type_sort = contract.unit_type.sort if getattr(contract, 'unit_type', None) else '1'
         payment_orders = InstallmentPaymentOrder.objects.filter(
             project=project or contract.project_id,
-            type_sort=contract.unit_type.sort
+            type_sort=type_sort
         ).exclude(excluded_order_groups=contract.order_group)
 
         try:

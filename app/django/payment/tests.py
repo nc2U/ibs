@@ -912,14 +912,19 @@ class PaymentAuditFixRegressionTests(PaymentTestCaseBase):
         res_overpay = self.client.patch(unmatched_url, {'contract': self.contract.pk}, format='json')
         self.assertEqual(res_overpay.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # 4. 회계 정산 마감일(calculated) 이전 거래 수정 차단
+        # 4. 회계 정산 마감일(calculated) 이전 거래 수정 차단 (일반 담당자 user_a는 차단, 관리자 self.user는 허용)
         ProjectLedgerCalculation.objects.create(
             project=self.project,
             calculated=date(2026, 1, 15),
             creator=self.user
         )
+        self.client.force_authenticate(user=self.user_a)
         res_locked = self.client.patch(detail_url, {'installment_order': self.pay_order_down.pk}, format='json')
         self.assertEqual(res_locked.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.client.force_authenticate(user=self.user)
+        res_admin_allowed = self.client.patch(detail_url, {'installment_order': self.pay_order_down.pk}, format='json')
+        self.assertEqual(res_admin_allowed.status_code, status.HTTP_200_OK)
 
     def test_ledger_overall_summary_excludes_unmatched_and_falls_back_on_invalid_cache(self):
         """ContractPaymentOverallSummaryViewSet에서 미계약 수납건 제외 및 캐시 무효 시 동적 계산 폴백 검증"""
@@ -987,4 +992,70 @@ class PaymentAuditFixRegressionTests(PaymentTestCaseBase):
         url_by_cont = reverse('excel:ledger-paid-by-cont')
         res_by_cont = self.client.get(url_by_cont, {'project': self.project.pk})
         self.assertEqual(res_by_cont.status_code, 200)
+
+    def test_contract_payment_direct_create_destroy_disallowed(self):
+        """ContractPaymentViewSet 직접 POST/DELETE 시 405 Method Not Allowed 반환 검증 (원장 정합성 보호)"""
+        self.client.force_authenticate(user=self.user)
+        cp = ContractPayment.objects.first()
+
+        list_url = reverse('api:ledger-payment-list')
+        detail_url = reverse('api:ledger-payment-detail', args=[cp.pk])
+
+        self.assertEqual(self.client.post(list_url, {}).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(self.client.delete(detail_url).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_cross_project_floor_type_and_excluded_order_groups_validation(self):
+        """SalesPriceByGT 층별타입 및 InstallmentPaymentOrder 제외차수 교차 프로젝트 검증"""
+        from apiV1.serializers.payment import InstallmentOrderSerializer
+
+        other_floor = UnitFloorType.objects.create(
+            project=self.project_b, start_floor=1, end_floor=10, alias_name='타프로젝트층'
+        )
+        sp_serializer = SalesPriceSerializer(data={
+            'project': self.project.pk,
+            'order_group': self.order_group.pk,
+            'unit_type': self.unit_type.pk,
+            'unit_floor_type': other_floor.pk,
+            'price': 300000000,
+        })
+        self.assertFalse(sp_serializer.is_valid())
+        self.assertIn('unit_floor_type', sp_serializer.errors)
+
+        other_og = OrderGroup.objects.create(
+            project=self.project_b, order_number=1, sort='1', name='타프로젝트차수'
+        )
+        ipo_serializer = InstallmentOrderSerializer(data={
+            'project': self.project.pk,
+            'type_sort': '1',
+            'pay_sort': '2',
+            'pay_code': 5,
+            'pay_time': 5,
+            'pay_name': '중도금1차',
+            'excluded_order_groups': [other_og.pk],
+        })
+        self.assertFalse(ipo_serializer.is_valid())
+        self.assertIn('excluded_order_groups', ipo_serializer.errors)
+
+    def test_null_date_and_large_bigint_payment_amounts_aggregation(self):
+        """date='null' 전달 시 수납액 정상 집계 및 21억 초과(BIGINT) 회차 금액 오버플로우 방어 검증"""
+        self.client.force_authenticate(user=self.user)
+
+        # 1. JSON payment_amounts에 21.47억(32비트 INTEGER 상한) 초과 금액 설정
+        ContractPrice.objects.filter(pk=self.contract_price.pk).update(
+            payment_amounts={"1": 30000000, "10": 2970000000}
+        )
+
+        # 2. date='null' 파라미터로 호출 시 DataError/ValueError 없이 수납액(30,000,000)과 총매출액(3,000,000,000) 정상 반환
+        status_url = reverse('api:ledger-payment-status-by-unit-type-list')
+        res_status = self.client.get(status_url, {'project': self.project.pk, 'date': 'null'})
+        self.assertEqual(res_status.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_status.data[0]['total_sales_amount'], 3000000000)
+        self.assertEqual(res_status.data[0]['paid_amount'], 30000000)
+
+        overall_url = reverse('api:ledger-overall-summary-list')
+        res_overall = self.client.get(overall_url, {'project': self.project.pk, 'date': 'null'})
+        self.assertEqual(res_overall.status_code, status.HTTP_200_OK)
+        remain_order = next(o for o in res_overall.data['pay_orders'] if o['pk'] == self.pay_order_remain.pk)
+        self.assertEqual(remain_order['contract_amount'], 2970000000)
+
 
