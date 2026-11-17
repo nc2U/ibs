@@ -665,11 +665,10 @@ def recalculate_period_totals(period: SettlementPeriod) -> SettlementPeriod:
     period.total_tax_amount = direct_payouts.aggregate(s=Sum('total_tax'))['s'] or 0
     period.total_net_amount = direct_payouts.aggregate(s=Sum('net_amount'))['s'] or 0
 
-    supply_sum = agency_payouts.aggregate(s=Sum('agency_fee_sum'))['s']
-    if supply_sum is not None:
-        period.billing_supply_price = supply_sum
-        period.billing_vat = int(period.billing_supply_price * 0.1 // 10 * 10)
-        period.billing_total_amount = period.billing_supply_price + period.billing_vat
+    supply_sum = agency_payouts.aggregate(s=Sum('agency_fee_sum'))['s'] or 0
+    period.billing_supply_price = supply_sum
+    period.billing_vat = int(period.billing_supply_price * 0.1 // 10 * 10)
+    period.billing_total_amount = period.billing_supply_price + period.billing_vat
 
     period.save(update_fields=[
         'total_gross_amount', 'total_tax_amount', 'total_net_amount',

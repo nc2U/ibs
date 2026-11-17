@@ -95,7 +95,7 @@ class ContractSalesAgentAdmin(admin.ModelAdmin):
     list_display = ('id', 'contract', 'agency', 'sales_person', 'team', 'contract_date', 'mgm_name', 'mgm_fee')
     list_filter = ('agency__project', 'agency', 'team')
     search_fields = ('contract__serial_number', 'agency__name', 'sales_person__name', 'mgm_name')
-    list_select_related = ('contract', 'agency', 'sales_person', 'team')
+    list_select_related = ('contract', 'agency', 'sales_person', 'team', 'policy', 'approved_by')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -153,7 +153,7 @@ class CommissionPayoutAdmin(admin.ModelAdmin):
 @admin.register(PayoutContractDetail)
 class PayoutContractDetailAdmin(admin.ModelAdmin):
     list_display = ('id', 'payout', 'contract', 'role_type', 'unit_fee')
-    list_filter = ('role_type',)
+    list_filter = ('payout__period__project', 'role_type')
     list_select_related = ('payout', 'contract')
 
     def get_queryset(self, request):
@@ -167,7 +167,7 @@ class PayoutContractDetailAdmin(admin.ModelAdmin):
 @admin.register(CommissionClawback)
 class CommissionClawbackAdmin(admin.ModelAdmin):
     list_display = ('id', 'sales_person', 'contract', 'amount', 'is_settled', 'settled_payout', 'created_at')
-    list_filter = ('is_settled',)
+    list_filter = ('contract__project', 'is_settled')
     search_fields = ('sales_person__name', 'contract__serial_number')
     list_select_related = ('sales_person', 'contract', 'settled_payout')
 
@@ -197,6 +197,7 @@ class AgencyPayoutAdmin(admin.ModelAdmin):
 @admin.register(AgencyPayoutContractDetail)
 class AgencyPayoutContractDetailAdmin(admin.ModelAdmin):
     list_display = ('id', 'payout', 'contract', 'unit_fee')
+    list_filter = ('payout__period__project',)
     list_select_related = ('payout', 'contract')
 
     def get_queryset(self, request):

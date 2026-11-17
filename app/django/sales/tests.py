@@ -2010,6 +2010,120 @@ class SalesImprovementTests(APITestCase):
         self.assertFalse(cb_ser.is_valid())
         self.assertIn('sales_person', cb_ser.errors)
 
+    def test_payout_or_period_delete_restores_settled_clawbacks_and_resets_agency_billing(self):
+        """지급 명세 또는 회차 삭제 시 상계 환수금 자동 복원 및 대행사 명세 전체 삭제 시 청구금액 0원 초기화 검증"""
+        from sales.services import generate_period_payouts
+
+        CommissionPolicy.objects.create(
+            project=self.project1,
+            name='환수복원정책',
+            agent_fee=1000000,
+            agency_fee=500000,
+            start_date=date(2026, 9, 1),
+        )
+        ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 5),
+            is_settlement_approved=True,
+        )
+        clawback = CommissionClawback.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            amount=200000,
+            reason='해지 환수',
+        )
+        period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='환수 복원 검증 회차',
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+        )
+        generate_period_payouts(period)
+        clawback.refresh_from_db()
+        self.assertTrue(clawback.is_settled)
+        self.assertIsNotNone(clawback.settled_payout_id)
+
+        # 1. 대행사 지급 명세 삭제 시 billing_supply_price, billing_vat, billing_total_amount가 0으로 초기화되는지 검증
+        self.client.force_authenticate(user=self.admin_user)
+        ap = period.agency_payouts.first()
+        self.assertGreater(period.billing_supply_price, 0)
+        res_del_ap = self.client.delete(f'/api/v1/sales-agency-payout/{ap.id}/')
+        self.assertEqual(res_del_ap.status_code, http_status.HTTP_204_NO_CONTENT)
+        period.refresh_from_db()
+        self.assertEqual(period.billing_supply_price, 0)
+        self.assertEqual(period.billing_vat, 0)
+        self.assertEqual(period.billing_total_amount, 0)
+
+        # 2. 정산 회차 삭제 시 상계되었던 clawback이 미상계(is_settled=False, settled_payout=None)로 자동 복원되는지 검증
+        res_del_period = self.client.delete(f'/api/v1/sales-settlement-period/{period.id}/')
+        self.assertEqual(res_del_period.status_code, http_status.HTTP_204_NO_CONTENT)
+        clawback.refresh_from_db()
+        self.assertFalse(clawback.is_settled)
+        self.assertIsNone(clawback.settled_payout)
+
+    def test_confirmed_period_locks_and_cross_project_injection_and_toggle_approval_string(self):
+        """확정 회차 수정/명세 추가 409 차단, 쿼리파라미터 우회 타 프로젝트 생성 403 차단, toggle-approval 문자열 'false' 파싱 검증"""
+        # 1. 확정 회차(status='2') 수정 및 신규 명세 추가 차단
+        self.client.force_authenticate(user=self.admin_user)
+        confirmed_period = SettlementPeriod.objects.create(
+            project=self.project1,
+            title='확정잠금회차',
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+            status='2',
+        )
+        res_patch_period = self.client.patch(
+            f'/api/v1/sales-settlement-period/{confirmed_period.id}/',
+            {'title': '변조시도'},
+            format='json',
+        )
+        self.assertEqual(res_patch_period.status_code, http_status.HTTP_409_CONFLICT)
+
+        res_create_payout = self.client.post(
+            '/api/v1/sales-payout/',
+            {'period': confirmed_period.id, 'sales_person': self.person1.id, 'commission_amount': 1000000},
+            format='json',
+        )
+        self.assertEqual(res_create_payout.status_code, http_status.HTTP_409_CONFLICT)
+
+        res_create_ap = self.client.post(
+            '/api/v1/sales-agency-payout/',
+            {'period': confirmed_period.id, 'agency': self.agency1.id, 'agency_fee_sum': 1000000},
+            format='json',
+        )
+        self.assertEqual(res_create_ap.status_code, http_status.HTTP_409_CONFLICT)
+
+        # 2. 프로젝트 1 권한만 있는 normal_user가 ?project=project1_id 쿼리파라미터를 붙여 프로젝트 2 소속 대행사에 팀 생성 시도 -> 403 차단
+        self.client.force_authenticate(user=self.normal_user)
+        res_inject = self.client.post(
+            f'/api/v1/sales-team/?project={self.project1.id}',
+            {'agency': self.agency2.id, 'name': '우회생성팀'},
+            format='json',
+        )
+        self.assertEqual(res_inject.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 3. toggle-approval에 문자열 'false' 전달 시 보류(False)로 정확히 전환되고 approved_by가 초기화되는지 검증
+        mapping = ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            is_settlement_approved=True,
+            approved_by=self.admin_user,
+            approved_at=timezone.now(),
+        )
+        res_toggle = self.client.post(
+            f'/api/v1/sales-contract-agent/{mapping.id}/toggle-approval/',
+            {'is_settlement_approved': 'false', 'approval_note': '계약금 미완납'},
+            format='json',
+        )
+        self.assertEqual(res_toggle.status_code, http_status.HTTP_200_OK)
+        mapping.refresh_from_db()
+        self.assertFalse(mapping.is_settlement_approved)
+        self.assertIsNone(mapping.approved_by)
+        self.assertIsNone(mapping.approved_at)
+        self.assertEqual(mapping.approval_note, '계약금 미완납')
+
+
 
 
 

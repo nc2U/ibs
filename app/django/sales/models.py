@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_upload_path, populate_file_meta
@@ -281,6 +283,9 @@ class ContractSalesAgent(models.Model):
             if self.sales_person and hasattr(self.sales_person, 'team'):
                 if self.sales_person.team.agency.project_id != contract_proj_id:
                     raise ValidationError({'sales_person': '영업직원 소속 대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
+            if self.team and hasattr(self.team, 'agency'):
+                if self.team.agency.project_id != contract_proj_id:
+                    raise ValidationError({'team': '소속 팀 대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
             if self.policy and self.policy.project_id != contract_proj_id:
                 raise ValidationError({'policy': '수수료 정책의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
 
@@ -293,6 +298,8 @@ class ContractSalesAgent(models.Model):
         elif self.agency_id:
             self.team = None
             self.sales_person = None
+        else:
+            self.team = None
 
         # 3. 영업 성과 인정일(contract_date) 미입력 시 계약자의 계약일로 자동 보완
         if not self.contract_date and self.contract_id:
@@ -693,3 +700,13 @@ class SalesPersonDocument(models.Model):
 
 
 file_cleanup_signals(SalesPersonDocument)
+
+
+@receiver(pre_delete, sender=CommissionPayout)
+def _restore_settled_clawbacks_on_payout_delete(sender, instance, **kwargs):
+    """정산 지급 명세(또는 상위 정산 회차) 삭제 시 상계되었던 환수금을 미상계 상태로 자동 복원"""
+    CommissionClawback.objects.filter(settled_payout=instance).update(
+        is_settled=False,
+        settled_payout=None,
+    )
+

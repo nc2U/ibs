@@ -178,11 +178,13 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
             'is_settled', 'settled_period_title',
             'created_at', 'updated_at'
         )
+        read_only_fields = ('approved_by', 'approved_at', 'created_at', 'updated_at')
 
     def validate(self, attrs):
         contract = attrs.get('contract') or (self.instance.contract if self.instance else None)
         agency = attrs.get('agency') or (self.instance.agency if self.instance else None)
         sales_person = attrs.get('sales_person') or (self.instance.sales_person if self.instance else None)
+        team = attrs.get('team') if 'team' in attrs else (self.instance.team if self.instance else None)
         policy = attrs.get('policy') if 'policy' in attrs else (self.instance.policy if self.instance else None)
 
         if not agency and not sales_person:
@@ -194,6 +196,9 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
             if sales_person and hasattr(sales_person, 'team') and hasattr(sales_person.team, 'agency'):
                 if sales_person.team.agency.project_id != contract.project_id:
                     raise serializers.ValidationError({'sales_person': '영업직원 소속 대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
+            if team and hasattr(team, 'agency'):
+                if team.agency.project_id != contract.project_id:
+                    raise serializers.ValidationError({'team': '소속 팀 대행사의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
             if policy and policy.project_id != contract.project_id:
                 raise serializers.ValidationError({'policy': '수수료 정책의 프로젝트와 계약의 프로젝트가 일치해야 합니다.'})
         return attrs
@@ -263,6 +268,10 @@ class CommissionPayoutSerializer(serializers.ModelSerializer):
             'paid_date', 'bank_name', 'account_number', 'account_holder',
             'note', 'contract_details', 'created_at', 'updated_at'
         )
+        read_only_fields = (
+            'gross_amount', 'income_tax', 'local_income_tax', 'total_tax',
+            'net_amount', 'created_at', 'updated_at'
+        )
 
     def validate(self, attrs):
         period = attrs.get('period') or (self.instance.period if self.instance else None)
@@ -288,6 +297,11 @@ class SettlementPeriodSerializer(serializers.ModelSerializer):
             'total_gross_amount', 'total_tax_amount', 'total_net_amount',
             'agency_fee_total', 'billing_supply_price', 'billing_vat', 'billing_total_amount',
             'payout_count', 'agency_payout_count', 'created_by', 'created_at', 'updated_at'
+        )
+        read_only_fields = (
+            'status', 'total_contracts', 'total_gross_amount', 'total_tax_amount',
+            'total_net_amount', 'agency_fee_total', 'billing_supply_price',
+            'billing_vat', 'billing_total_amount', 'created_by', 'created_at', 'updated_at'
         )
 
     def validate(self, attrs):
@@ -357,6 +371,7 @@ class AgencyPayoutSerializer(serializers.ModelSerializer):
             'business_number', 'bank_name', 'account_number', 'account_holder',
             'note', 'contract_details', 'created_at', 'updated_at'
         )
+        read_only_fields = ('vat_amount', 'total_amount', 'created_at', 'updated_at')
 
     def validate(self, attrs):
         period = attrs.get('period') or (self.instance.period if self.instance else None)

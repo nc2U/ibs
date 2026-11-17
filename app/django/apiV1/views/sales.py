@@ -31,6 +31,16 @@ def get_accessible_project_ids(user, required_perm: str = 'sales.read'):
     return get_project_ids_with_permission(user, required_perm)
 
 
+def _check_sales_project_access(user, project_obj_or_id, required_perm: str):
+    """생성/수정 시 실제 대상 객체의 소속 프로젝트에 대한 권한(RLS)을 검증합니다."""
+    if not project_obj_or_id or user.is_superuser or getattr(user, 'work_manager', False):
+        return
+    project_id = project_obj_or_id.pk if hasattr(project_obj_or_id, 'pk') else int(project_obj_or_id)
+    if project_id not in get_project_ids_with_permission(user, required_perm):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied('해당 프로젝트에 대한 작업 권한이 없습니다.')
+
+
 def _sync_period_status(period: SettlementPeriod) -> None:
     """
     직영(CommissionPayout) 및 외주(AgencyPayout) 전체 지급 상태를 확인하여
@@ -84,6 +94,15 @@ class SalesAgencyViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.manage'
 
+    def perform_create(self, serializer):
+        _check_sales_project_access(self.request.user, serializer.validated_data.get('project'), 'sales.manage')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_sales_project_access(self.request.user, target_proj, 'sales.manage')
+        serializer.save()
+
 
 class SalesTeamViewSet(viewsets.ModelViewSet):
     """영업 조직 (본부/팀) ViewSet"""
@@ -110,6 +129,16 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return 'sales.read'
         return 'sales.manage'
+
+    def perform_create(self, serializer):
+        agency = serializer.validated_data.get('agency')
+        _check_sales_project_access(self.request.user, getattr(agency, 'project_id', None), 'sales.manage')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        agency = serializer.validated_data.get('agency', serializer.instance.agency)
+        _check_sales_project_access(self.request.user, getattr(agency, 'project_id', None), 'sales.manage')
+        serializer.save()
 
 
 class SalesPersonViewSet(viewsets.ModelViewSet):
@@ -138,6 +167,18 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.manage'
 
+    def perform_create(self, serializer):
+        team = serializer.validated_data.get('team')
+        proj_id = team.agency.project_id if (team and getattr(team, 'agency', None)) else None
+        _check_sales_project_access(self.request.user, proj_id, 'sales.manage')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        team = serializer.validated_data.get('team', serializer.instance.team)
+        proj_id = team.agency.project_id if (team and getattr(team, 'agency', None)) else None
+        _check_sales_project_access(self.request.user, proj_id, 'sales.manage')
+        serializer.save()
+
 
 class CommissionPolicyViewSet(viewsets.ModelViewSet):
     """수수료 정책 ViewSet"""
@@ -164,6 +205,15 @@ class CommissionPolicyViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return 'sales.read'
         return 'sales.policy'
+
+    def perform_create(self, serializer):
+        _check_sales_project_access(self.request.user, serializer.validated_data.get('project'), 'sales.policy')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_sales_project_access(self.request.user, target_proj, 'sales.policy')
+        serializer.save()
 
 
 class ContractSalesAgentViewSet(viewsets.ModelViewSet):
@@ -202,13 +252,26 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.manage'
 
+    def perform_create(self, serializer):
+        contract = serializer.validated_data.get('contract')
+        _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.manage')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        contract = serializer.validated_data.get('contract', serializer.instance.contract)
+        _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.manage')
+        serializer.save()
+
     @action(detail=True, methods=['post'], url_path='toggle-approval')
     def toggle_approval(self, request, pk=None):
         """수수료 정산 승인 / 보류 토글 또는 지정 액션"""
         agent_mapping = self.get_object()
         explicit_state = request.data.get('is_settlement_approved')
         if explicit_state is not None:
-            new_state = bool(explicit_state)
+            if isinstance(explicit_state, str):
+                new_state = explicit_state.strip().lower() in ('true', '1', 'yes')
+            else:
+                new_state = bool(explicit_state)
         else:
             new_state = not agent_mapping.is_settlement_approved
 
@@ -217,6 +280,8 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
             agent_mapping.approved_by = request.user
             agent_mapping.approved_at = timezone.now()
         else:
+            agent_mapping.approved_by = None
+            agent_mapping.approved_at = None
             note = request.data.get('approval_note')
             if note is not None:
                 agent_mapping.approval_note = note.strip()
@@ -260,7 +325,22 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         return 'sales.settle'
 
     def perform_create(self, serializer):
+        _check_sales_project_access(self.request.user, serializer.validated_data.get('project'), 'sales.settle')
         serializer.save(created_by=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        period = self.get_object()
+        if period.status in ('2', '3'):
+            return Response(
+                {'detail': f'[{period.title}] 이미 확정되거나 지급 완료된 정산 회차는 수정할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_sales_project_access(self.request.user, target_proj, 'sales.settle')
+        serializer.save()
 
     @action(detail=True, methods=['post'], url_path='generate-payouts')
     def generate_payouts(self, request, pk=None):
@@ -405,7 +485,20 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.settle'
 
+    def create(self, request, *args, **kwargs):
+        period_id = request.data.get('period')
+        if period_id:
+            period_obj = SettlementPeriod.objects.filter(pk=period_id).first()
+            if period_obj and period_obj.status in ('2', '3'):
+                return Response(
+                    {'detail': '확정되거나 지급 완료된 정산 회차에는 지급 명세를 추가할 수 없습니다.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
+        period = serializer.validated_data.get('period')
+        _check_sales_project_access(self.request.user, getattr(period, 'project_id', None), 'sales.settle')
         instance = serializer.save()
         recalculate_period_totals(instance.period)
 
@@ -419,6 +512,8 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
+        period = serializer.validated_data.get('period', serializer.instance.period)
+        _check_sales_project_access(self.request.user, getattr(period, 'project_id', None), 'sales.settle')
         instance = serializer.save()
         recalculate_period_totals(instance.period)
 
@@ -485,6 +580,16 @@ class CommissionClawbackViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.settle'
 
+    def perform_create(self, serializer):
+        contract = serializer.validated_data.get('contract')
+        _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.settle')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        contract = serializer.validated_data.get('contract', serializer.instance.contract)
+        _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.settle')
+        serializer.save()
+
 
 class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
     """영업 인력 제출 서류 ViewSet"""
@@ -518,7 +623,16 @@ class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
         return 'sales.manage'
 
     def perform_create(self, serializer):
+        sp = serializer.validated_data.get('sales_person')
+        proj_id = sp.team.agency.project_id if (sp and getattr(sp, 'team', None) and getattr(sp.team, 'agency', None)) else None
+        _check_sales_project_access(self.request.user, proj_id, 'sales.manage')
         serializer.save(uploader=self.request.user)
+
+    def perform_update(self, serializer):
+        sp = serializer.validated_data.get('sales_person', serializer.instance.sales_person)
+        proj_id = sp.team.agency.project_id if (sp and getattr(sp, 'team', None) and getattr(sp.team, 'agency', None)) else None
+        _check_sales_project_access(self.request.user, proj_id, 'sales.manage')
+        serializer.save()
 
     @action(detail=True, methods=['post'], url_path='verify')
     def verify_document(self, request, pk=None):
@@ -576,7 +690,20 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
             return 'sales.read'
         return 'sales.settle'
 
+    def create(self, request, *args, **kwargs):
+        period_id = request.data.get('period')
+        if period_id:
+            period_obj = SettlementPeriod.objects.filter(pk=period_id).first()
+            if period_obj and period_obj.status in ('2', '3'):
+                return Response(
+                    {'detail': '확정되거나 지급 완료된 정산 회차에는 지급 명세를 추가할 수 없습니다.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
+        period = serializer.validated_data.get('period')
+        _check_sales_project_access(self.request.user, getattr(period, 'project_id', None), 'sales.settle')
         instance = serializer.save()
         recalculate_period_totals(instance.period)
 
@@ -590,6 +717,8 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
+        period = serializer.validated_data.get('period', serializer.instance.period)
+        _check_sales_project_access(self.request.user, getattr(period, 'project_id', None), 'sales.settle')
         instance = serializer.save()
         recalculate_period_totals(instance.period)
 
