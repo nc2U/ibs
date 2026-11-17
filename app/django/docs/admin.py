@@ -1,11 +1,17 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
+from apiV1.permissions._utils import get_company_ids_with_permission
+from work.models.project import IssueProject
 from .models import (
     Category, LawsuitCase, Document, Link, File, Image,
     LetterSequence, OfficialLetter, OfficialLetterAttachment,
     InboundSequence, InboundLetter, InboundLetterAttachment
 )
+
+
+def _is_admin_user(user):
+    return bool(user and (user.is_superuser or getattr(user, 'work_manager', False)))
 
 
 @admin.register(Category)
@@ -44,17 +50,28 @@ class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (LinkInline, FileInline, ImageInline)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('issue_project', 'category')
+        qs = super().get_queryset(request).select_related('issue_project', 'category')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(issue_project__in=accessible_projects)
 
 
 @admin.register(LawsuitCase)
 class LawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'issue_project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
     list_display_links = ('__str__',)
-    list_select_related = ('issue_project',)
+    list_select_related = ('issue_project', 'related_case', 'creator')
     list_editable = ('issue_project', 'sort', 'level', 'case_start_date',)
     list_filter = ('issue_project', 'sort', 'level')
     search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('issue_project', 'related_case', 'creator')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(issue_project__in=accessible_projects)
 
 
 @admin.register(LetterSequence)
@@ -64,6 +81,13 @@ class LetterSequenceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('company',)
     list_filter = ('company', 'year')
     search_fields = ('company__name',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('company')
+        if _is_admin_user(request.user):
+            return qs
+        company_ids = get_company_ids_with_permission(request.user, 'docs.read')
+        return qs.filter(company_id__in=company_ids)
 
 
 class OfficialLetterAttachmentInline(admin.TabularInline):
@@ -104,7 +128,11 @@ class OfficialLetterAdmin(ImportExportMixin, admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('company', 'creator')
+        qs = super().get_queryset(request).select_related('company', 'creator')
+        if _is_admin_user(request.user):
+            return qs
+        company_ids = get_company_ids_with_permission(request.user, 'docs.read')
+        return qs.filter(company_id__in=company_ids)
 
 
 @admin.register(InboundSequence)
@@ -114,6 +142,13 @@ class InboundSequenceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('company',)
     list_filter = ('company', 'year')
     search_fields = ('company__name',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('company')
+        if _is_admin_user(request.user):
+            return qs
+        company_ids = get_company_ids_with_permission(request.user, 'docs.read')
+        return qs.filter(company_id__in=company_ids)
 
 
 class InboundLetterAttachmentInline(admin.TabularInline):
@@ -133,4 +168,8 @@ class InboundLetterAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (InboundLetterAttachmentInline,)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('company', 'recipient_dept', 'recipient_manager')
+        qs = super().get_queryset(request).select_related('company', 'recipient_dept', 'recipient_manager')
+        if _is_admin_user(request.user):
+            return qs
+        company_ids = get_company_ids_with_permission(request.user, 'docs.read')
+        return qs.filter(company_id__in=company_ids)

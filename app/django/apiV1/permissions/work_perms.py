@@ -680,10 +680,28 @@ class DocumentPermission(ProjectPermission):
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
 
-        # 6. 수정/삭제 요청인 경우: 작성자 본인이거나 프로젝트 관리자 권한 확인
-        creator = getattr(obj, 'creator', None)
-        if creator and creator == request.user:
-            return True
+        # 6. 수정/삭제 요청인 경우: 전체 권한(docs.update/delete) 또는 본인 작성 권한(docs.own_update/own_delete) 확인
+        if view.action in ['update', 'partial_update', 'destroy']:
+            project = self.extract_project(obj)
+            if not project:
+                return False
+            user_perms = project.get_user_permissions(request.user)
+            is_owner = (
+                getattr(obj, 'creator', None) == request.user
+                or (doc is not None and getattr(doc, 'creator', None) == request.user)
+            )
+            if view.action in ['update', 'partial_update']:
+                if 'docs.update' in user_perms:
+                    return True
+                if 'docs.own_update' in user_perms and is_owner:
+                    return True
+                return False
+            if view.action == 'destroy':
+                if 'docs.delete' in user_perms:
+                    return True
+                if 'docs.own_delete' in user_perms and is_owner:
+                    return True
+                return False
 
         return True
 

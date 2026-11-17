@@ -98,7 +98,7 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(issue_project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         # 사용자가 멤버로 속한 워크스페이스의 소송 데이터만 반환
@@ -126,7 +126,7 @@ class AllLawSuitCaseViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(issue_project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         accessible_projects = IssueProject.objects.filter(members__user=user)
@@ -449,29 +449,54 @@ class DocsInTrashViewSet(DocumentViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = Document.all_objects.filter(
+            deleted__isnull=False
+        ).exclude(issue_project__status='9').select_related('category', 'issue_project', 'creator')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
         from work.models import IssueProject
+        from company.models import StaffAssignment
         accessible_projects = IssueProject.objects.filter(members__user=user)
+        user_dept_ids = StaffAssignment.objects.filter(
+            staff__user=user, department__isnull=False
+        ).values_list('department_id', flat=True)
 
         return queryset.filter(
             issue_project__in=accessible_projects
         ).filter(
             Q(security_level=Document.SECURITY_COMPANY)
             | Q(security_level=Document.SECURITY_PROJECT)
+            | (Q(security_level=Document.SECURITY_TEAM)
+               & Q(creator__staff__assignments__department_id__in=user_dept_ids))
             | Q(creator=user)
             | Q(allowed_users=user)
-        ).distinct()
+        ).filter(is_blind=False).distinct()
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
+    def create(self, request, *args, **kwargs):
+        return Response(
+            {'detail': '휴지통에서는 문서를 직접 생성할 수 없습니다.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def _can_manage_trash_item(self, request, instance):
         user = request.user
         is_admin = user.is_superuser or getattr(user, 'work_manager', False)
         is_creator = instance.creator == user
+        return is_admin or is_creator
 
-        if not (is_admin or is_creator):
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not self._can_manage_trash_item(request, instance):
+            return Response(
+                {'detail': '휴지통의 문서를 복원할 권한이 없습니다. 관리자 또는 작성자 본인만 가능합니다.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not self._can_manage_trash_item(request, instance):
             return Response(
                 {'detail': '휴지통의 문서를 영구 삭제할 권한이 없습니다. 관리자 또는 작성자 본인만 가능합니다.'},
                 status=status.HTTP_403_FORBIDDEN,
@@ -988,7 +1013,43 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
+        letter = self.get_object()
+        validated_data = serializer.validated_data
+        is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
+
+        # 배부/처리 상태 등 사후 관리 필드 목록 (수신 공문 원본 내용이 아닌 처리 대장 필드)
+        management_fields = {
+            'status', 'recipient_dept', 'recipient_manager',
+            'reply_due_date', 'sender_contact',
+        }
+        requested_fields = set(validated_data.keys())
+        is_management_only = bool(requested_fields) and requested_fields.issubset(management_fields)
+
+        if letter.status == 'closed' and not is_manager:
+            raise ValidationError('이미 종결 처리된 수신 공문은 수정할 수 없습니다.')
+
+        if letter.approval_document:
+            app_status = letter.approval_document.status
+            if app_status == 'pending' and not is_management_only:
+                raise ValidationError('전자결재가 진행 중인 수신 공문의 본문 내용은 수정할 수 없습니다.')
+            if app_status == 'approved' and not is_manager and not is_management_only:
+                raise PermissionDenied('최종 결재 승인된 수신 공문의 본문 내용은 관리자만 수정할 수 있습니다.')
+
         serializer.save(updator=self.request.user)
+
+    def perform_destroy(self, instance):
+        if instance.status == 'closed':
+            raise ValidationError('이미 종결 처리된 수신 공문은 법적 증빙 문서로 삭제할 수 없습니다.')
+
+        is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
+        if instance.approval_document:
+            app_status = instance.approval_document.status
+            if app_status == 'pending':
+                raise ValidationError('전자결재가 진행 중인 수신 공문은 삭제할 수 없습니다.')
+            if app_status == 'approved' and not is_manager:
+                raise PermissionDenied('최종 결재 승인된 수신 공문은 관리자만 삭제할 수 있습니다.')
+
+        instance.delete()
 
     @action(detail=False, methods=['get'])
     def next_receipt_number(self, request):
@@ -1046,10 +1107,16 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             return Response({'detail': '사용 가능한 전자결재 문서 유형이 없습니다.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # 기안자 보직 조회
-        assignment = StaffAssignment.objects.filter(staff__user=request.user, is_primary=True).first()
-        if not assignment:
-            assignment = StaffAssignment.objects.filter(staff__user=request.user).first()
+        # 기안자 보직 조회 (수신 공문 회사와 일치하는 보직 우선 탐색)
+        assignment = StaffAssignment.objects.filter(
+            staff__user=request.user, company=letter.company, is_primary=True
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user, company=letter.company
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user, is_primary=True
+        ).first() or StaffAssignment.objects.filter(
+            staff__user=request.user
+        ).first()
 
         # 클라이언트에서 전송한 추가 품의 정보 (선택사항)
         req_data = request.data if isinstance(request.data, dict) else {}

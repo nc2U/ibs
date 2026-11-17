@@ -26,6 +26,24 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 상위 카테고리로 지정할 수 없습니다.'})
+            visited = {self.pk} if self.pk else set()
+            curr = self.parent
+            while curr is not None:
+                if curr.pk in visited:
+                    raise ValidationError({'parent': '상위 카테고리 지정에 순환 참조가 발생합니다.'})
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.parent
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['order', 'id']
         verbose_name = '01. 카테고리'
@@ -46,7 +64,7 @@ class BaseModel(models.Model):
     def restore(self):
         """Restore a soft-deleted instance."""
         self.deleted = None
-        self.save()
+        self.save(update_fields=['deleted'])
 
 
 class SoftDeleteManager(models.Manager):
@@ -278,6 +296,20 @@ class LawsuitCase(models.Model):
                 raise ValidationError({
                     'related_case': '관련 사건의 프로젝트가 현재 소송 사건의 프로젝트와 일치하지 않습니다.'
                 })
+            visited = {self.pk} if self.pk else set()
+            curr = self.related_case
+            while curr is not None:
+                if curr.pk in visited:
+                    raise ValidationError({
+                        'related_case': '관련 사건 지정에 순환 참조가 발생합니다.'
+                    })
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.related_case
+        if self.case_start_date and self.case_end_date and self.case_start_date > self.case_end_date:
+            raise ValidationError({
+                'case_end_date': '사건종결일은 사건개시일보다 빠를 수 없습니다.'
+            })
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -714,6 +746,13 @@ class InboundLetter(models.Model):
             if self.recipient_manager and self.recipient_manager.company_id != self.company_id:
                 raise ValidationError({
                     'recipient_manager': '처리 담당자의 소속 회사가 수신 공문 회사와 일치하지 않습니다.'
+                })
+        if self.received_date and self.reply_due_date:
+            rec_date = getattr(self.received_date, 'date', lambda: self.received_date)()
+            due_date = getattr(self.reply_due_date, 'date', lambda: self.reply_due_date)()
+            if rec_date > due_date:
+                raise ValidationError({
+                    'reply_due_date': '회신 기한은 접수일자보다 빠를 수 없습니다.'
                 })
 
     def save(self, *args, **kwargs):

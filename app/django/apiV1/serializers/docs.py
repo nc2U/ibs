@@ -336,8 +336,8 @@ class DocumentSerializer(serializers.ModelSerializer):
         if issue_project and str(issue_project).isdigit():
             validated_data['issue_project_id'] = int(issue_project)
 
-        validated_data['ip'] = request.META.get('REMOTE_ADDR')
-        validated_data['device'] = request.META.get('HTTP_USER_AGENT')
+        validated_data['ip'] = request.META.get('REMOTE_ADDR') or None
+        validated_data['device'] = request.META.get('HTTP_USER_AGENT') or ''
 
         if hasattr(request, 'user') and request.user:
             instance.updator = request.user
@@ -361,10 +361,10 @@ class DocumentSerializer(serializers.ModelSerializer):
             try:
                 link = json.loads(json_link) if isinstance(json_link, str) else json_link
                 if isinstance(link, dict):
-                    link_object = Link.objects.get(pk=link.get('pk'))
+                    link_object = Link.objects.get(pk=link.get('pk'), docs=instance)
                     if link.get('del'):
                         link_object.delete()
-                    else:
+                    elif link.get('link'):
                         link_object.link = validate_link(link.get('link'))
                         link_object.save()
             except (json.JSONDecodeError, Link.DoesNotExist):

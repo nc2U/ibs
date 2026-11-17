@@ -783,3 +783,153 @@ class DocsAppSecurityTests(TestCase):
         res_num = self.client.get(f'/api/v1/inbound-letter/next_receipt_number/?company={self.company_a.pk}')
         self.assertEqual(res_num.status_code, 200)
         self.assertIn('next_receipt_number', res_num.data)
+
+    def test_document_link_update_idor_blocked(self):
+        """문서 수정 시 타 문서 소속 Link PK를 전달해 변조/삭제 시도할 경우 IDOR 차단 검증"""
+        from docs.models import Link
+
+        target_link = Link.objects.create(
+            docs=self.doc_company,
+            link='https://safe-original.com',
+            creator=self.author_user,
+        )
+        my_doc = Document.objects.create(
+            issue_project=self.workspace,
+            category=self.category,
+            title='내 문서',
+            security_level=Document.SECURITY_COMPANY,
+            creator=self.team_user,
+        )
+
+        self.client.force_authenticate(user=self.team_user)
+        # 본인 문서(my_doc)를 수정하면서 타 문서(doc_company)의 링크 삭제/변조 시도
+        res = self.client.patch(
+            f'/api/v1/docs/{my_doc.pk}/',
+            {
+                'title': '내 문서 수정',
+                'links': [
+                    {'pk': target_link.pk, 'link': 'https://hacked.example.com'},
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        target_link.refresh_from_db()
+        self.assertEqual(target_link.link, 'https://safe-original.com')
+
+    def test_document_own_update_and_delete_permissions(self):
+        """docs.own_update / docs.own_delete 권한만 보유한 경우 본인 문서만 수정/삭제 가능하고 타인 문서는 403 차단 검증"""
+        perm_own_up = Permission.objects.create(module='docs', code='docs.own_update', name='본인 문서 수정')
+        perm_own_del = Permission.objects.create(module='docs', code='docs.own_delete', name='본인 문서 삭제')
+        role_own_only = Role.objects.create(name='본인문서전용역할', creator=self.admin_user)
+        role_own_only.permissions.add(self.perm_read, self.perm_create, perm_own_up, perm_own_del)
+
+        own_user = User.objects.create_user(username='own_only_user', email='own@test.com', password='password123')
+        m = Member.objects.create(project=self.workspace, user=own_user)
+        m.roles.add(role_own_only)
+
+        own_doc = Document.objects.create(
+            issue_project=self.workspace,
+            category=self.category,
+            title='본인 작성 문서',
+            security_level=Document.SECURITY_COMPANY,
+            creator=own_user,
+        )
+
+        self.client.force_authenticate(user=own_user)
+        # 1. 타인(author_user)이 작성한 문서 수정/삭제 시도 -> 403 Forbidden
+        res_other_up = self.client.patch(f'/api/v1/docs/{self.doc_company.pk}/', {'title': '타인문서변조'}, format='json')
+        self.assertEqual(res_other_up.status_code, status.HTTP_403_FORBIDDEN)
+        res_other_del = self.client.delete(f'/api/v1/docs/{self.doc_company.pk}/')
+        self.assertEqual(res_other_del.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 본인(own_user)이 작성한 문서 수정/삭제 시도 -> 200 OK / 204 No Content
+        res_own_up = self.client.patch(f'/api/v1/docs/{own_doc.pk}/', {'title': '본인문서정상수정'}, format='json')
+        self.assertEqual(res_own_up.status_code, status.HTTP_200_OK)
+        res_own_del = self.client.delete(f'/api/v1/docs/{own_doc.pk}/')
+        self.assertEqual(res_own_del.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_trash_document_restore_and_create_restrictions(self):
+        """휴지통 직접 생성(POST) 405 차단 및 복원(PATCH) 시 작성자/관리자만 허용 검증"""
+        trashed_doc = Document.objects.create(
+            issue_project=self.workspace,
+            category=self.category,
+            title='복원 테스트 문서',
+            security_level=Document.SECURITY_COMPANY,
+            creator=self.author_user,
+        )
+        trashed_doc.soft_delete()
+
+        # 1. 휴지통 POST 생성 시도 -> 405 Method Not Allowed
+        self.client.force_authenticate(user=self.admin_user)
+        res_create = self.client.post('/api/v1/docs-trash-can/', {'title': '불법생성'}, format='json')
+        self.assertEqual(res_create.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # 2. 작성자가 아닌 일반 멤버(sales_user)가 복원 시도 -> 403 Forbidden
+        self.client.force_authenticate(user=self.sales_user)
+        res_restore_denied = self.client.patch(f'/api/v1/docs-trash-can/{trashed_doc.pk}/', {}, format='json')
+        self.assertEqual(res_restore_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. 작성자 본인(author_user)이 복원 시도 -> 200 OK 및 정상 복구
+        self.client.force_authenticate(user=self.author_user)
+        res_restore_ok = self.client.patch(f'/api/v1/docs-trash-can/{trashed_doc.pk}/', {}, format='json')
+        self.assertEqual(res_restore_ok.status_code, status.HTTP_200_OK)
+        self.assertTrue(Document.objects.filter(pk=trashed_doc.pk).exists())
+
+    def test_inbound_letter_closed_and_approval_restrictions(self):
+        """종결 처리된 수신 공문의 수정/삭제 차단 검증"""
+        from docs.models import InboundLetter
+
+        closed_inbound = InboundLetter.objects.create(
+            company=self.company_a,
+            document_number='IN-CLOSE-99',
+            sender_name='서울시청',
+            title='종결된 수신 공문',
+            status='closed',
+            creator=self.author_user,
+        )
+
+        # 일반 사용자: 종결된 수신 공문 수정/삭제 모두 400 차단
+        self.client.force_authenticate(user=self.author_user)
+        res_up = self.client.patch(f'/api/v1/inbound-letter/{closed_inbound.pk}/', {'title': '임의변조'}, format='json')
+        self.assertEqual(res_up.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_del = self.client.delete(f'/api/v1/inbound-letter/{closed_inbound.pk}/')
+        self.assertEqual(res_del.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_model_cycle_and_date_inversion_validations(self):
+        """Category/LawsuitCase 순환 참조 및 LawsuitCase/InboundLetter 일자 역전 검증"""
+        from django.core.exceptions import ValidationError
+        from docs.models import LawsuitCase, InboundLetter
+
+        # 1. Category 순환 참조 (A -> B -> A)
+        cat_a = Category.objects.create(name='상위카테고리')
+        cat_b = Category.objects.create(name='하위카테고리', parent=cat_a)
+        cat_a.parent = cat_b
+        with self.assertRaises(ValidationError):
+            cat_a.clean()
+
+        # 2. LawsuitCase 일자 역전 (case_start_date > case_end_date)
+        with self.assertRaises(ValidationError):
+            bad_case = LawsuitCase(
+                issue_project=self.workspace,
+                sort='1',
+                level='1',
+                case_number='2026가합0001',
+                case_name='일자역전사건',
+                defendant='피고',
+                case_start_date=date(2026, 5, 10),
+                case_end_date=date(2026, 5, 1),
+            )
+            bad_case.clean()
+
+        # 3. InboundLetter 일자 역전 (received_date > reply_due_date)
+        with self.assertRaises(ValidationError):
+            bad_inbound = InboundLetter(
+                company=self.company_a,
+                sender_name='발신처',
+                title='일자역전공문',
+                received_date=date(2026, 5, 10),
+                reply_due_date=date(2026, 5, 1),
+            )
+            bad_inbound.clean()

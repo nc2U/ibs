@@ -19,17 +19,13 @@ def notify_lawsuitcase_change(sender, instance, created, raw=False, **kwargs):
     send_slack_notification(instance, action, user)
 
 
-# Document의 이전 상태를 저장하는 딕셔너리
-_document_pre_save_state = {}
-
-
 @receiver(pre_save, sender=Document, dispatch_uid="document_pre_save_state")
 def store_document_pre_save_state(sender, instance, **kwargs):
-    """Document 저장 전 상태 저장"""
+    """Document 저장 전 상태 저장 (인스턴스 속성 바인딩으로 동시성 보장)"""
     if instance.pk:
         try:
-            old_instance = Document.objects.get(pk=instance.pk)
-            _document_pre_save_state[instance.pk] = {
+            old_instance = Document.all_objects.get(pk=instance.pk)
+            instance._pre_save_state = {
                 'title': old_instance.title,
                 'description': old_instance.description,
                 'doc_type': old_instance.doc_type,
@@ -38,10 +34,11 @@ def store_document_pre_save_state(sender, instance, **kwargs):
                 'execution_date': old_instance.execution_date,
                 'security_level': old_instance.security_level,
                 'is_blind': old_instance.is_blind,
+                'deleted': old_instance.deleted,
                 'hit': old_instance.hit,
             }
         except Document.DoesNotExist:
-            pass
+            instance._pre_save_state = None
 
 
 @receiver(post_save, sender=Document, dispatch_uid="document_slack_notification")
@@ -51,21 +48,18 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
         return
 
     try:
-        # 등록이 아닌 경우 hit만 변경되었는지 확인
-        if not created and instance.pk in _document_pre_save_state:
-            old_state = _document_pre_save_state[instance.pk]
-
-            # hit를 제외한 필드들이 변경되었는지 확인
+        old_state = getattr(instance, '_pre_save_state', None)
+        # 등록이 아닌 경우 hit 또는 소프트 삭제/복원(deleted)만 변경되었는지 확인
+        if not created and old_state is not None:
             meaningful_fields = ['title', 'description', 'doc_type', 'category_id',
                                  'lawsuit_id', 'execution_date', 'security_level', 'is_blind']
 
-            has_meaningful_change = False
-            for field in meaningful_fields:
-                if old_state.get(field) != getattr(instance, field):
-                    has_meaningful_change = True
-                    break
+            has_meaningful_change = any(
+                old_state.get(field) != getattr(instance, field)
+                for field in meaningful_fields
+            )
 
-            # hit만 변경되고 다른 중요한 필드는 변경되지 않았으면 알림 제외
+            # hit나 deleted만 변경되고 다른 중요한 필드는 변경되지 않았으면 알림 제외
             if not has_meaningful_change:
                 return
 
@@ -75,8 +69,8 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
 
     finally:
         # 저장된 상태 정리
-        if instance.pk in _document_pre_save_state:
-            del _document_pre_save_state[instance.pk]
+        if hasattr(instance, '_pre_save_state'):
+            delattr(instance, '_pre_save_state')
 
 
 @receiver(post_delete, sender=LawsuitCase, dispatch_uid="lawsuitcase_slack_delete_notification")

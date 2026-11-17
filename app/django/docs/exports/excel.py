@@ -1,8 +1,7 @@
-import datetime
-
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from _excel.mixins import ExcelExportMixin
 from company.models import Company
@@ -10,13 +9,12 @@ from docs.courts import COURT_CHOICES
 from docs.models import LawsuitCase
 from project.models import Project
 
-TODAY = datetime.date.today().strftime('%Y-%m-%d')
-
 
 class ExportSuitCases(ExcelExportMixin):
     """프로젝트 소송 사건 목록"""
 
     def get(self, request):
+        today_str = timezone.localdate().strftime('%Y-%m-%d')
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('소송_목록')
 
@@ -108,7 +106,7 @@ class ExportSuitCases(ExcelExportMixin):
         # 2. Pre Header - Date
         row_num = 1
         worksheet.set_row(row_num, 18)
-        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+        worksheet.write(row_num, len(header_src) - 1, today_str + ' 현재', workbook.add_format({'align': 'right'}))
 
         # 3. Header - 1
         row_num = 2
@@ -124,11 +122,12 @@ class ExportSuitCases(ExcelExportMixin):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
+        base_qs = LawsuitCase.objects.exclude(issue_project__status='9')
         if is_admin:
-            obj_list = LawsuitCase.objects.all()
+            obj_list = base_qs
         else:
             accessible_projects = IssueProject.objects.filter(members__user=user)
-            obj_list = LawsuitCase.objects.filter(issue_project__in=accessible_projects)
+            obj_list = base_qs.filter(issue_project__in=accessible_projects)
 
         if company:
             obj_list = obj_list.filter(issue_project__company=company)
@@ -139,8 +138,12 @@ class ExportSuitCases(ExcelExportMixin):
         court = request.GET.get('court')
         in_progress = request.GET.get('in_progress')
 
-        obj_list = obj_list.filter(issue_project__project__isnull=True) if is_real_dev == 'false' else obj_list
-        obj_list = obj_list.filter(issue_project__project=project) if project and is_real_dev == 'true' else obj_list
+        if is_real_dev == 'false':
+            obj_list = obj_list.filter(issue_project__project__isnull=True)
+        elif project:
+            obj_list = obj_list.filter(issue_project__project=project)
+        elif is_real_dev == 'true':
+            obj_list = obj_list.filter(issue_project__project__isnull=False)
         obj_list = obj_list.filter(case_end_date__isnull=True) if in_progress == 'true' else obj_list
         obj_list = obj_list.filter(case_end_date__isnull=False) if in_progress == 'false' else obj_list
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
@@ -198,15 +201,9 @@ class ExportSuitCases(ExcelExportMixin):
 
         # data finish -------------------------------------------- #
 
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
         # Set up the Http response.
         filename = request.GET.get('filename') or 'lawsuit_cases'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
 
 
@@ -214,6 +211,7 @@ class ExportSuitCase(ExcelExportMixin):
     """프로젝트 소송 사건 디테일"""
 
     def get(self, request):
+        today_str = timezone.localdate().strftime('%Y-%m-%d')
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('소송_사건', False, 25)
 
@@ -223,12 +221,18 @@ class ExportSuitCase(ExcelExportMixin):
             return HttpResponse('인증이 필요합니다.', status=401)
 
         is_admin = user.is_superuser or getattr(user, 'work_manager', False)
-        obj = get_object_or_404(LawsuitCase, pk=request.GET.get('pk'))
+        obj = get_object_or_404(
+            LawsuitCase.objects.select_related('issue_project', 'related_case'),
+            pk=request.GET.get('pk')
+        )
+
+        if obj.issue_project and obj.issue_project.status == '9':
+            return HttpResponse('잠금 보관된 프로젝트의 소송 사건은 열람할 수 없습니다.', status=403)
 
         # RLS 권한 제어: 관리자가 아닌 경우 해당 사건의 워크스페이스 멤버십 확인
         if not is_admin:
             from work.models.project import IssueProject
-            if not IssueProject.objects.filter(pk=obj.issue_project_id, members__user=user).exists():
+            if not IssueProject.objects.exclude(status='9').filter(pk=obj.issue_project_id, members__user=user).exists():
                 return HttpResponse('해당 소송 사건을 열람할 권한이 없습니다.', status=403)
 
         # 포맷 생성
@@ -324,13 +328,7 @@ class ExportSuitCase(ExcelExportMixin):
 
         # data finish -------------------------------------------- #
 
-        # Close the workbook before sending the data.
-        workbook.close()
-
-        # Rewind the buffer.
-        output.seek(0)
-
         # Set up the Http response.
         filename = request.GET.get('filename') or 'lawsuit_case'
-        filename = f'{filename}-{TODAY}'
+        filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
