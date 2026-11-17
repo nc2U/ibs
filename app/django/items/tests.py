@@ -777,6 +777,101 @@ class ItemsIsolationAndPermissionTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data['opt_balance'], 9000000)
 
+    def test_contracted_or_bound_key_unit_cannot_change_unit_type_or_code(self):
+        """계약 체결 또는 세대 배정된 KeyUnit의 타입·코드 변조 차단 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        unit_type_a2 = UnitType.objects.create(
+            project=self.project_a, name='114A', color='#123123', sort='1', num_unit=20
+        )
+
+        # 1. 세대(house_a)에 배정된 key_unit_a의 unit_type을 다른 타입으로 변경 시도 -> 400 차단
+        self.house_a.key_unit = self.key_unit_a
+        self.house_a.save()
+
+        res_bound = self.client.patch(f'/api/v1/key-unit/{self.key_unit_a.pk}/', {
+            'unit_type': unit_type_a2.pk
+        }, format='json')
+        self.assertEqual(res_bound.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_type', res_bound.data)
+
+        # 2. 계약 체결 후 unit_code 변경 시도 -> 400 차단
+        order_group = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, name='일반분양'
+        )
+        Contract.objects.create(
+            project=self.project_a, order_group=order_group, serial_number='CONT-KU-LOCK',
+            key_unit=self.key_unit_a, creator=self.admin_user
+        )
+        res_code = self.client.patch(f'/api/v1/key-unit/{self.key_unit_a.pk}/', {
+            'unit_code': 'KU-MOD'
+        }, format='json')
+        self.assertEqual(res_code.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('unit_code', res_code.data)
+
+    def test_cross_project_injection_and_null_unbind_and_invalid_query_params(self):
+        """쿼리파라미터 우회 타 프로젝트 생성 차단, key_unit null 해제 후 타입 변경 허용, available-house-unit null 파라미터 방어 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. ?project=project_a 쿼리파라미터를 붙여 project_b 동수에 호수 생성 시도 -> 403 차단
+        res_inject = self.client.post(
+            f'/api/v1/house-unit/?project={self.project_a.pk}',
+            {
+                'building_unit': self.bldg_b.pk,
+                'unit_type': self.unit_type_b.pk,
+                'bldg_line': 5,
+                'floor_no': 5,
+                'name': '505',
+            },
+            format='json',
+        )
+        self.assertEqual(res_inject.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 미계약 세대에 배정된 key_unit을 null로 해제하면서 동시에 unit_type을 변경하는 PATCH 요청 -> 200 성공
+        self.house_a.key_unit = self.key_unit_a
+        self.house_a.save()
+        unit_type_a2 = UnitType.objects.create(
+            project=self.project_a, name='114B', color='#456456', sort='1', num_unit=20
+        )
+        res_unbind = self.client.patch(
+            f'/api/v1/house-unit/{self.house_a.pk}/',
+            {'key_unit': None, 'unit_type': unit_type_a2.pk},
+            format='json',
+        )
+        self.assertEqual(res_unbind.status_code, status.HTTP_200_OK)
+        self.house_a.refresh_from_db()
+        self.assertIsNone(self.house_a.key_unit)
+        self.assertEqual(self.house_a.unit_type, unit_type_a2)
+
+        # 3. available-house-unit에 contract=null 또는 비정수 파라미터 전달 시 500 에러 없이 200 반환
+        res_avail_null = self.client.get(
+            f'/api/v1/available-house-unit/?project={self.project_a.pk}&contract=null'
+        )
+        self.assertEqual(res_avail_null.status_code, status.HTTP_200_OK)
+        res_avail_bad = self.client.get(
+            f'/api/v1/available-house-unit/?project={self.project_a.pk}&contract=invalid'
+        )
+        self.assertEqual(res_avail_bad.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_avail_bad.data['count'], 0)
+
+        # 4. Admin get_queryset RLS 필터링 검증 (user_a는 project_a 데이터만 조회)
+        from django.contrib.admin.sites import AdminSite
+        from django.test import RequestFactory
+        from items.admin import UnitTypeAdmin, HouseUnitAdmin
+
+        factory = RequestFactory()
+        req = factory.get('/admin/items/')
+        req.user = self.user_a
+        site = AdminSite()
+
+        ut_admin = UnitTypeAdmin(UnitType, site)
+        self.assertIn(self.unit_type_a, ut_admin.get_queryset(req))
+        self.assertNotIn(self.unit_type_b, ut_admin.get_queryset(req))
+
+        hu_admin = HouseUnitAdmin(HouseUnit, site)
+        self.assertIn(self.house_a, hu_admin.get_queryset(req))
+        self.assertNotIn(self.house_b, hu_admin.get_queryset(req))
+
 
 
 class ItemsAdminQueryOptimizationTest(TestCase):

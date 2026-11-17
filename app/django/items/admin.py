@@ -3,7 +3,16 @@ from django.contrib.admin import SimpleListFilter
 from django.utils.html import format_html
 from import_export.admin import ImportExportMixin
 
+from apiV1.permissions._utils import get_project_ids_with_permission
 from .models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
+
+
+def _filter_items_admin_queryset(qs, request, project_lookup: str = 'project_id'):
+    user = getattr(request, 'user', None)
+    if not user or user.is_superuser or getattr(user, 'work_manager', False):
+        return qs
+    accessible_ids = get_project_ids_with_permission(user, 'contract.read')
+    return qs.filter(**{f'{project_lookup}__in': accessible_ids})
 
 
 class UnitTypeAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -19,7 +28,8 @@ class UnitTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('project',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project')
+        qs = super().get_queryset(request).select_related('project')
+        return _filter_items_admin_queryset(qs, request)
 
     def styled_color(self, obj):
         return format_html('<div style="width:15px; background:{};">&nbsp;</div>', obj.color)
@@ -36,7 +46,8 @@ class UnitFloorTypeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('project',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project')
+        qs = super().get_queryset(request).select_related('project')
+        return _filter_items_admin_queryset(qs, request)
 
 
 class HasContractFilter(SimpleListFilter):
@@ -66,7 +77,8 @@ class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('project', 'unit_type', 'contract')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project', 'unit_type', 'contract')
+        qs = super().get_queryset(request).select_related('project', 'unit_type', 'contract')
+        return _filter_items_admin_queryset(qs, request)
 
 
 class BuildingUnitAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -78,7 +90,8 @@ class BuildingUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('project',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project')
+        qs = super().get_queryset(request).select_related('project')
+        return _filter_items_admin_queryset(qs, request)
 
 
 class HouseUnitAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -91,9 +104,10 @@ class HouseUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('building_unit__project', 'unit_type', 'building_unit', 'floor_type', 'key_unit')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
+        qs = super().get_queryset(request).select_related(
             'building_unit__project', 'unit_type', 'building_unit', 'floor_type', 'key_unit'
         )
+        return _filter_items_admin_queryset(qs, request, project_lookup='building_unit__project_id')
 
 
 class OptionItemAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -107,7 +121,8 @@ class OptionItemAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ('project',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project').prefetch_related('types')
+        qs = super().get_queryset(request).select_related('project').prefetch_related('types')
+        return _filter_items_admin_queryset(qs, request)
 
 
 admin.site.register(UnitType, UnitTypeAdmin)

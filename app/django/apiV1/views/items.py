@@ -23,6 +23,28 @@ def get_accessible_project_ids(user, required_perm: str = 'contract.read'):
     return get_project_ids_with_permission(user, required_perm)
 
 
+def _check_items_project_access(user, project_obj_or_id, required_perm: str = 'contract.update'):
+    """생성/수정 시 실제 대상 객체의 소속 프로젝트에 대한 권한(RLS)을 검증합니다."""
+    if not project_obj_or_id or user.is_superuser or getattr(user, 'work_manager', False):
+        return
+    project_id = project_obj_or_id.pk if hasattr(project_obj_or_id, 'pk') else int(project_obj_or_id)
+    if project_id not in get_project_ids_with_permission(user, required_perm):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied('해당 프로젝트에 대한 수정 권한이 없습니다.')
+
+
+def _parse_positive_int(val):
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s or s.lower() in ('null', 'none', 'undefined'):
+        return None
+    try:
+        return int(s)
+    except (ValueError, TypeError):
+        return -1
+
+
 # Items --------------------------------------------------------------------------
 class UnitTypeViewSet(viewsets.ModelViewSet):
     queryset = UnitType.objects.select_related('project').all()
@@ -46,6 +68,15 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_create(self, serializer):
+        _check_items_project_access(self.request.user, serializer.validated_data.get('project'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_items_project_access(self.request.user, target_proj)
+        serializer.save()
 
     def perform_destroy(self, instance):
         try:
@@ -76,6 +107,15 @@ class UnitFloorTypeViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_create(self, serializer):
+        _check_items_project_access(self.request.user, serializer.validated_data.get('project'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_items_project_access(self.request.user, target_proj)
+        serializer.save()
 
 
 class KeyUnitListFilterSet(FilterSet):
@@ -111,6 +151,15 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        _check_items_project_access(self.request.user, serializer.validated_data.get('project'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_items_project_access(self.request.user, target_proj)
+        serializer.save()
+
     def perform_destroy(self, instance):
         if hasattr(instance, 'contract') and instance.contract is not None:
             raise serializers.ValidationError('계약이 체결된 계약 유닛은 삭제할 수 없습니다.')
@@ -139,6 +188,15 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    def perform_create(self, serializer):
+        _check_items_project_access(self.request.user, serializer.validated_data.get('project'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_items_project_access(self.request.user, target_proj)
+        serializer.save()
 
     def perform_destroy(self, instance):
         try:
@@ -182,6 +240,16 @@ class HouseUnitViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(building_unit__project_id__in=get_accessible_project_ids(user))
 
+    def perform_create(self, serializer):
+        bldg = serializer.validated_data.get('building_unit')
+        _check_items_project_access(self.request.user, getattr(bldg, 'project_id', None))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        bldg = serializer.validated_data.get('building_unit', serializer.instance.building_unit)
+        _check_items_project_access(self.request.user, getattr(bldg, 'project_id', None))
+        serializer.save()
+
     def perform_destroy(self, instance):
         if instance.key_unit and hasattr(instance.key_unit, 'contract') and instance.key_unit.contract is not None:
             raise serializers.ValidationError('계약이 체결된 세대(호수)는 삭제할 수 없습니다.')
@@ -206,16 +274,22 @@ class AvailableHouseUnitViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset()
-        project = self.request.query_params.get('project', None)
-        unit_type = self.request.query_params.get('unit_type', None)
+        project = _parse_positive_int(self.request.query_params.get('project', None))
+        unit_type = _parse_positive_int(self.request.query_params.get('unit_type', None))
+        contract = _parse_positive_int(self.request.query_params.get('contract', None))
 
-        if project:
+        if project is not None:
+            if project < 0:
+                return queryset.none()
             queryset = queryset.filter(building_unit__project_id=project)
-        if unit_type:
+        if unit_type is not None:
+            if unit_type < 0:
+                return queryset.none()
             queryset = queryset.filter(unit_type_id=unit_type)
 
-        contract = self.request.query_params.get('contract', None)
-        if contract:
+        if contract is not None:
+            if contract < 0:
+                return queryset.none()
             queryset = queryset.filter(
                 Q(key_unit__isnull=True) | Q(key_unit__contract=contract)
             )
@@ -294,3 +368,12 @@ class OptionItemViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs.distinct()
         return qs.filter(project_id__in=get_accessible_project_ids(user)).distinct()
+
+    def perform_create(self, serializer):
+        _check_items_project_access(self.request.user, serializer.validated_data.get('project'))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        target_proj = serializer.validated_data.get('project', serializer.instance.project)
+        _check_items_project_access(self.request.user, target_proj)
+        serializer.save()

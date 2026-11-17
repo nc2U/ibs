@@ -28,6 +28,17 @@ class UnitType(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+        if self.actual_area is not None and self.supply_area is not None and self.actual_area > self.supply_area:
+            raise ValidationError({'supply_area': '공급면적은 전용면적보다 크거나 같아야 합니다.'})
+        if self.supply_area is not None and self.contract_area is not None and self.supply_area > self.contract_area:
+            raise ValidationError({'contract_area': '계약면적은 공급면적보다 크거나 같아야 합니다.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['id']
         verbose_name = '01. 타입 정보'
@@ -72,6 +83,22 @@ class KeyUnit(models.Model):
     def clean(self):
         if self.project_id and self.unit_type_id and self.project_id != self.unit_type.project_id:
             raise ValidationError({'unit_type': '계약 유닛의 프로젝트와 타입의 프로젝트가 일치하지 않습니다.'})
+        if self.pk:
+            has_contract = hasattr(self, 'contract') and self.contract is not None
+            if has_contract:
+                orig = KeyUnit.objects.filter(pk=self.pk).values('project_id', 'unit_type_id', 'unit_code').first()
+                if orig:
+                    if self.project_id != orig['project_id']:
+                        raise ValidationError({'project': '이미 계약이 체결된 계약 유닛의 프로젝트는 변경할 수 없습니다.'})
+                    if self.unit_type_id != orig['unit_type_id']:
+                        raise ValidationError({'unit_type': '이미 계약이 체결된 계약 유닛의 타입은 변경할 수 없습니다.'})
+                    if self.unit_code != orig['unit_code']:
+                        raise ValidationError({'unit_code': '이미 계약이 체결된 계약 유닛의 코드는 변경할 수 없습니다.'})
+            if hasattr(self, 'houseunit') and self.houseunit is not None:
+                if self.houseunit.unit_type_id != self.unit_type_id:
+                    raise ValidationError({'unit_type': '배정된 세대(호수)의 타입과 계약 유닛의 타입이 일치하지 않습니다.'})
+                if self.houseunit.building_unit.project_id != self.project_id:
+                    raise ValidationError({'project': '배정된 세대(호수)의 프로젝트와 계약 유닛의 프로젝트가 일치하지 않습니다.'})
 
     def save(self, *args, **kwargs):
         self.clean()

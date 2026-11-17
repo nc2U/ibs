@@ -88,6 +88,20 @@ class KeyUnitSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'unit_type': '계약 유닛의 프로젝트와 타입의 프로젝트가 일치하지 않습니다.'}
             )
+        if self.instance is not None:
+            has_contract = hasattr(self.instance, 'contract') and self.instance.contract is not None
+            if has_contract:
+                if 'project' in attrs and attrs['project'] != self.instance.project:
+                    raise serializers.ValidationError({'project': '이미 계약이 체결된 계약 유닛의 프로젝트는 변경할 수 없습니다.'})
+                if 'unit_type' in attrs and attrs['unit_type'] != self.instance.unit_type:
+                    raise serializers.ValidationError({'unit_type': '이미 계약이 체결된 계약 유닛의 타입은 변경할 수 없습니다.'})
+                if 'unit_code' in attrs and attrs['unit_code'] != self.instance.unit_code:
+                    raise serializers.ValidationError({'unit_code': '이미 계약이 체결된 계약 유닛의 코드는 변경할 수 없습니다.'})
+            if hasattr(self.instance, 'houseunit') and self.instance.houseunit is not None:
+                if unit_type and self.instance.houseunit.unit_type_id != unit_type.id:
+                    raise serializers.ValidationError({'unit_type': '배정된 세대(호수)의 타입과 계약 유닛의 타입이 일치하지 않습니다.'})
+                if project and self.instance.houseunit.building_unit.project_id != project.id:
+                    raise serializers.ValidationError({'project': '배정된 세대(호수)의 프로젝트와 계약 유닛의 프로젝트가 일치하지 않습니다.'})
         return attrs
 
 
@@ -102,10 +116,10 @@ class HouseUnitSerializer(serializers.ModelSerializer):
         read_only_fields = ('__str__',)
 
     def validate(self, attrs):
-        building_unit = attrs.get('building_unit') or (self.instance.building_unit if self.instance else None)
-        unit_type = attrs.get('unit_type') or (self.instance.unit_type if self.instance else None)
-        floor_type = attrs.get('floor_type') or (self.instance.floor_type if self.instance else None)
-        key_unit = attrs.get('key_unit') or (self.instance.key_unit if self.instance else None)
+        building_unit = attrs.get('building_unit') if 'building_unit' in attrs else (self.instance.building_unit if self.instance else None)
+        unit_type = attrs.get('unit_type') if 'unit_type' in attrs else (self.instance.unit_type if self.instance else None)
+        floor_type = attrs.get('floor_type') if 'floor_type' in attrs else (self.instance.floor_type if self.instance else None)
+        key_unit = attrs.get('key_unit') if 'key_unit' in attrs else (self.instance.key_unit if self.instance else None)
 
         errors = {}
 
