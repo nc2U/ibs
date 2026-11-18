@@ -37,11 +37,31 @@ class PdfExportBill(PdfExportMixin, View):
             if p_id_int not in accessible_projects:
                 return HttpResponse('해당 프로젝트의 고지서 출력 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
-        pub_date = request.GET.get('date')
-        pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else date.today()
-        bill_info = SalesBillIssue.objects.filter(project_id=project).first()
+        pub_date_raw = request.GET.get('date')
+        if pub_date_raw:
+            try:
+                pub_date = datetime.strptime(pub_date_raw, '%Y-%m-%d').date()
+            except ValueError:
+                return HttpResponse('유효하지 않은 날짜 형식입니다. (YYYY-MM-DD)', status=400, content_type='text/plain; charset=utf-8')
+        else:
+            pub_date = date.today()
+
+        try:
+            proj_pk = int(project) if project else None
+        except (ValueError, TypeError):
+            proj_pk = None
+        bill_info = (
+            SalesBillIssue.objects.select_related('project__issue_project', 'now_payment_order')
+            .filter(project_id=proj_pk)
+            .first()
+            if proj_pk is not None else None
+        )
         if not bill_info:
             return HttpResponse('고지서 발행 정보가 존재하지 않습니다.', status=404, content_type='text/plain; charset=utf-8')
+
+        issue_project = getattr(getattr(bill_info, 'project', None), 'issue_project', None)
+        if issue_project and issue_project.status == '9':
+            return HttpResponse('잠금 보관된 프로젝트의 고지서는 출력할 수 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         np = True if request.GET.get('np') else False
         nl = True if request.GET.get('nl') else False
@@ -50,7 +70,7 @@ class PdfExportBill(PdfExportMixin, View):
             'pub_date': pub_date,
             'bill_info': bill_info
         }  # 전체 데이터 딕셔너리
-        payment_orders = InstallmentPaymentOrder.objects.filter(project_id=project)  # 전체 납부회차 리스트
+        payment_orders = InstallmentPaymentOrder.objects.filter(project_id=proj_pk)  # 전체 납부회차 리스트
         now_due_order = bill_info.now_payment_order.pay_code if bill_info.now_payment_order else 2  # 당회 납부 회차
 
         contractor_list = [c for c in request.GET.get('seq', '').split('-') if c]  # 계약 건 ID 리스트
@@ -70,7 +90,7 @@ class PdfExportBill(PdfExportMixin, View):
         context['data_list'] = data_list
 
         filename = request.GET.get('filename', 'payment_bill')
-        filename = f'{filename}({len(contractor_list)}건)' if contractor_list else filename
+        filename = f'{filename}({len(data_list)}건)' if data_list else filename
         return self.create_pdf_response('pdf/bill_control.html', context, filename)
 
     def get_bill_data(self, cont_id, payment_orders, now_due_order, pub_date, np, nl):
@@ -87,7 +107,18 @@ class PdfExportBill(PdfExportMixin, View):
         bill_data = {}  # 현재 계약 정보 딕셔너리
 
         # 계약 건 객체
-        bill_data['contract'] = contract = get_contract(cont_id)
+        try:
+            contract = get_contract(cont_id)
+        except (ObjectDoesNotExist, ValueError, TypeError):
+            return None
+        bill_data['contract'] = contract
+        if not contract or not getattr(contract, 'unit_type', None):
+            return None
+        try:
+            if not contract.contractor:
+                return None
+        except ObjectDoesNotExist:
+            return None
 
         # 해당 계약의 차수 제외 설정을 반영하여 payment_orders 필터링
         payment_orders = payment_orders.filter(
@@ -151,10 +182,11 @@ class PdfExportBill(PdfExportMixin, View):
         bill_data['pay_method'] = (bill_data['this_pay_sum']['amount_total'], pm_cost_sum)
 
         # ■ 납부약정 및 납입내역 -------------------------------------------
-        # 기 도래한 약정 회차 내역
+        # 기 도래한 약정 회차 내역 (이미 조회한 paid_list를 전달하여 중복 집계 쿼리 방지)
         bill_data['due_orders'] = self.get_due_orders(contract, orders_info,
                                                       payment_orders, now_due_order,
-                                                      paid_code, pub_date, late_fee_data)
+                                                      paid_code, pub_date, late_fee_data,
+                                                      payment_by_order=paid_list)
 
         # 미 도래한 약정 회차 내역
         bill_data['remain_orders'] = self.get_remain_orders(contract, orders_info,
@@ -319,6 +351,7 @@ class PdfExportBill(PdfExportMixin, View):
             sum_amount: 납부금액)):
         """
         payment_list = []
+        orders_info_map = {o['order']: o for o in orders_info}
 
         # 완납했지만 연체료가 발생한 회차를 먼저 추가
         # (선납 할인은 각 회차의 discount 필드에 포함되므로 별도 행 불필요)
@@ -330,8 +363,6 @@ class PdfExportBill(PdfExportMixin, View):
 
                 # 완납된 회차(paid_code 이하) 중 연체료가 있는 경우
                 if installment.pay_code <= paid_code and penalty > 0:
-                    ord_info = list(filter(lambda o: o['order'] == installment, orders_info))[0]
-
                     payment_list.append({
                         'order': installment,
                         'due_date': get_due_date_per_order(contract, installment, payment_orders),
@@ -362,7 +393,7 @@ class PdfExportBill(PdfExportMixin, View):
                                               pay_code__lte=now_due_order)  # 최종 기납부회차 이후부터 납부지정회차 까지 회차그룹
 
         for order in unpaid_orders:
-            ord_info = list(filter(lambda o: o['order'] == order, orders_info))[0]
+            ord_info = orders_info_map[order]
 
             amount = ord_info['pay_amount']
             unpaid = ord_info['unpaid_amount']
@@ -387,7 +418,8 @@ class PdfExportBill(PdfExportMixin, View):
 
     def get_due_orders(self, contract, orders_info,
                        payment_orders, now_due_order,
-                       paid_code, pub_date, late_fee_details=None):
+                       paid_code, pub_date, late_fee_details=None,
+                       payment_by_order=None):
         """
         :: ■ 납부약정 및 납입내역 - 납입내역
         :param contract: 계약 건
@@ -397,6 +429,7 @@ class PdfExportBill(PdfExportMixin, View):
         :param paid_code: 완납회차
         :param pub_date: 발행일자
         :param late_fee_details: 연체료 및 할인 상세 정보 (calculate_late_fees_standardized 결과)
+        :param payment_by_order: 사전 조회된 회차별 납부 내역 (중복 쿼리 방지)
         :return list(paid_list: 완납 회차 목록):
         """
 
@@ -415,8 +448,11 @@ class PdfExportBill(PdfExportMixin, View):
                     'effective_late_days': detail.get('effective_late_days')  # 가중평균 지연일수
                 }
 
-        # 회차별 납부 내역 조회
-        payment_by_order, _ = self.get_paid(contract)
+        # 회차별 납부 내역 조회 (전달된 캐시가 없을 때만 쿼리)
+        if payment_by_order is None:
+            payment_by_order, _ = self.get_paid(contract)
+
+        orders_info_map = {o['order']: o for o in orders_info}
 
         # 전체 리턴 데이터 목록
         paid_amt_list = []
@@ -424,7 +460,7 @@ class PdfExportBill(PdfExportMixin, View):
 
         for order in due_orders:
             due_date = get_due_date_per_order(contract, order, due_orders)  # 납부기한
-            ord_info = list(filter(lambda o: o['order'] == order, orders_info))[0]  # 금 회차 orders_info
+            ord_info = orders_info_map[order]  # 금 회차 orders_info
             amount = ord_info['pay_amount']  # 금 회차 납부 약정액
 
             # 회차별 납부 정보 조회 (없으면 0, '')
@@ -538,10 +574,11 @@ class PdfExportBill(PdfExportMixin, View):
         :return list(dict(remain_amt_list)): 잔여 회차(dict) 목록:
         """
         remain_amt_list = []
+        orders_info_map = {o['order']: o for o in orders_info}
         remain_orders = payment_orders.filter(pay_code__gt=now_due_order)
 
         for order in remain_orders:
-            ord_info = list(filter(lambda o: o['order'] == order, orders_info))[0]
+            ord_info = orders_info_map[order]
             amount = ord_info['pay_amount']
 
             paid_dict = {

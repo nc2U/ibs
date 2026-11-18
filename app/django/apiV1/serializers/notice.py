@@ -74,11 +74,17 @@ class MessageTemplateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"메시지 타입은 {', '.join(valid_types)} 중 하나여야 합니다.")
         return value
 
+    @staticmethod
+    def validate_variables(value):
+        if value is not None and not isinstance(value, list):
+            raise serializers.ValidationError('변수 목록(variables)은 배열(list) 형식이어야 합니다.')
+        return value
+
     def validate(self, data):
-        """카카오 알림톡 템플릿의 경우 template_code 필수 검사"""
-        message_type = data.get('message_type')
-        template_code = data.get('template_code')
-        if message_type == 'KAKAO' and not template_code:
+        """카카오 알림톡 템플릿의 경우 template_code 필수 검사 (PATCH 부분 수정 포함)"""
+        message_type = data.get('message_type', getattr(self.instance, 'message_type', 'SMS'))
+        template_code = data.get('template_code', getattr(self.instance, 'template_code', ''))
+        if message_type == 'KAKAO' and not (template_code and str(template_code).strip()):
             raise serializers.ValidationError({'template_code': '카카오 알림톡 템플릿은 승인된 템플릿 코드가 필수입니다.'})
         return data
 

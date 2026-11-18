@@ -65,6 +65,15 @@ class BillIssueViewSet(viewsets.ModelViewSet):
                 raise permissions.exceptions.PermissionDenied('해당 프로젝트의 고지서 생성 권한이 없습니다.')
         serializer.save(creator=user)
 
+    def perform_update(self, serializer):
+        user = self.request.user
+        project = serializer.validated_data.get('project')
+        if project and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible = get_accessible_project_ids(user, 'notice.update')
+            if project.id not in accessible:
+                raise permissions.exceptions.PermissionDenied('해당 프로젝트의 고지서 수정 권한이 없습니다.')
+        serializer.save()
+
 
 class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
     """등록된 발신번호 관리 ViewSet"""
@@ -733,14 +742,17 @@ class MessageSendHistoryViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(project_id__in=accessible_projects) | Q(project__isnull=True, sent_by=user)
             )
 
-        # 날짜 범위 필터
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
+        # 날짜 범위 필터 (유효하지 않은 날짜 문자열로 인한 500 ValidationError 방지)
+        from django.utils.dateparse import parse_date
+        start_date_raw = self.request.query_params.get('start_date')
+        end_date_raw = self.request.query_params.get('end_date')
 
-        if start_date:
-            queryset = queryset.filter(sent_at__date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(sent_at__date__lte=end_date)
+        if start_date_raw:
+            parsed_start = parse_date(str(start_date_raw))
+            queryset = queryset.filter(sent_at__date__gte=parsed_start) if parsed_start else queryset.none()
+        if end_date_raw:
+            parsed_end = parse_date(str(end_date_raw))
+            queryset = queryset.filter(sent_at__date__lte=parsed_end) if parsed_end else queryset.none()
 
         return queryset
 
@@ -772,25 +784,43 @@ class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
             accessible_projects = get_accessible_project_ids(user)
             queryset = queryset.filter(contractor__contract__project_id__in=accessible_projects)
 
+        def _parse_int_param(raw_val):
+            try:
+                return int(raw_val)
+            except (ValueError, TypeError):
+                return None
+
         # 프로젝트 필터
         project_id = self.request.query_params.get('project')
         if project_id:
-            queryset = queryset.filter(contractor__contract__project_id=project_id)
+            p_int = _parse_int_param(project_id)
+            if p_int is None:
+                return queryset.none()
+            queryset = queryset.filter(contractor__contract__project_id=p_int)
 
         # 차수 필터
         order_group = self.request.query_params.get('order_group')
         if order_group:
-            queryset = queryset.filter(contractor__contract__order_group_id=order_group)
+            og_int = _parse_int_param(order_group)
+            if og_int is None:
+                return queryset.none()
+            queryset = queryset.filter(contractor__contract__order_group_id=og_int)
 
         # 동 필터
         building = self.request.query_params.get('building')
         if building:
-            queryset = queryset.filter(contractor__contract__key_unit__houseunit__building_unit_id=building)
+            b_int = _parse_int_param(building)
+            if b_int is None:
+                return queryset.none()
+            queryset = queryset.filter(contractor__contract__key_unit__houseunit__building_unit_id=b_int)
 
         # 타입 필터
         unit_type = self.request.query_params.get('unit_type')
         if unit_type:
-            queryset = queryset.filter(contractor__contract__unit_type_id=unit_type)
+            ut_int = _parse_int_param(unit_type)
+            if ut_int is None:
+                return queryset.none()
+            queryset = queryset.filter(contractor__contract__unit_type_id=ut_int)
 
         # 검색어 필터 (계약자명, 동호수, 우편번호, 주소)
         search = self.request.query_params.get('search')
@@ -813,8 +843,8 @@ class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
         return 'notice.read'
 
 
-class EmailNoticeViewSet(viewsets.ModelViewSet):
-    """이메일 발송 관리 ViewSet"""
+class EmailNoticeViewSet(viewsets.ReadOnlyModelViewSet):
+    """이메일 발송 관리 ViewSet (조회 및 커스텀 발송 액션 전용)"""
     queryset = EmailNotice.objects.select_related('project', 'sent_by').all()
     serializer_class = EmailNoticeSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
@@ -960,10 +990,20 @@ class EmailNoticeViewSet(viewsets.ModelViewSet):
                 ):
                     contractor_id_map[c.id] = c
 
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            from django.core.validators import validate_email
+
             for r in custom_recipients:
                 email = (r.get('email') or '').strip()
                 name = (r.get('name') or '').strip()
                 if email and name:
+                    try:
+                        validate_email(email)
+                    except DjangoValidationError:
+                        return Response(
+                            {'error': f'유효하지 않은 이메일 주소 형식입니다: {email}'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
                     c_obj = contractor_id_map.get(r.get('contractor_id'))
                     valid_recipients.append({
                         'contractor': c_obj,

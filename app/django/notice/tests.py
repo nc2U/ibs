@@ -521,3 +521,97 @@ class NoticeAppSecurityTests(TestCase):
         qs_msg_a = msg_admin.get_queryset(req_a)
         self.assertIn(self.history_a, qs_msg_a)
         self.assertNotIn(self.history_b, qs_msg_a)
+
+    @patch('weasyprint.HTML.write_pdf')
+    def test_pdf_export_bill_invalid_inputs_and_locked_project(self, mock_write_pdf):
+        """고지서 PDF 내보내기에서 비존재 계약 ID, 잘못된 날짜 포맷 및 잠금 프로젝트 방어 검증"""
+        mock_write_pdf.return_value = b'%PDF-1.4 dummy pdf'
+        self.client.force_login(self.admin_user)
+
+        # 1. 존재하지 않는 계약 ID 전달 시 500 AttributeError 없이 400 반환
+        url_bad_seq = reverse('pdf:bill') + f'?project={self.project_a.pk}&seq=99999999'
+        res_bad_seq = self.client.get(url_bad_seq)
+        self.assertEqual(res_bad_seq.status_code, 400)
+
+        # 2. 잘못된 date 포맷 전달 시 500 ValueError 없이 400 반환
+        url_bad_date = reverse('pdf:bill') + f'?project={self.project_a.pk}&seq={self.contract_a.pk}&date=invalid-date'
+        res_bad_date = self.client.get(url_bad_date)
+        self.assertEqual(res_bad_date.status_code, 400)
+
+        # 3. 잠금보관(status='9') 워크스페이스의 고지서 출력 시 403 차단
+        self.issue_proj_a.status = '9'
+        self.issue_proj_a.save(update_fields=['status'])
+        url_locked = reverse('pdf:bill') + f'?project={self.project_a.pk}&seq={self.contract_a.pk}'
+        res_locked = self.client.get(url_locked)
+        self.assertEqual(res_locked.status_code, 403)
+
+    @patch('notice.tasks.send_mass_email_task.delay')
+    def test_email_notice_readonly_and_email_validation(self, mock_email_task):
+        """EmailNoticeViewSet 직접 생성/수정/삭제 405 차단 및 custom_recipients 이메일 형식 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+
+        notice = EmailNotice.objects.create(
+            project=self.project_a,
+            title='발송 이력 공지',
+            content='<p>내용</p>',
+            sent_by=self.admin_user,
+        )
+
+        # 1. 직접 POST / PATCH / DELETE 시도 시 405 Method Not Allowed 차단
+        self.assertEqual(
+            self.client.post('/api/v1/email-notices/', {'project': self.project_a.pk, 'title': '빈공지', 'content': 'c'}).status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+        self.assertEqual(
+            self.client.patch(f'/api/v1/email-notices/{notice.pk}/', {'title': '변조'}).status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+        self.assertEqual(
+            self.client.delete(f'/api/v1/email-notices/{notice.pk}/').status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        # 2. custom_recipients에 잘못된 이메일 주소 포함 시 400 Bad Request 차단
+        bad_payload = {
+            'project': self.project_a.pk,
+            'title': '공지',
+            'content': '본문',
+            'custom_recipients': [{'name': '홍길동', 'email': 'not-an-email'}],
+        }
+        res_bad_email = self.client.post('/api/v1/email-notices/send-email/', bad_payload, format='json')
+        self.assertEqual(res_bad_email.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_message_template_patch_validation(self):
+        """MessageTemplate PATCH 시 KAKAO 템플릿 코드 누락 및 variables 타입 불일치 400 차단 검증"""
+        self.client.force_authenticate(user=self.admin_user)
+        tmpl = MessageTemplate.objects.create(
+            title='단문 템플릿', message_type='SMS', content='안녕하세요', created_by=self.admin_user
+        )
+
+        # 1. template_code 없이 KAKAO 타입으로 PATCH 변경 시도 -> 400 Bad Request
+        res_kakao_no_code = self.client.patch(
+            f'/api/v1/message-templates/{tmpl.pk}/',
+            {'message_type': 'KAKAO'},
+            format='json',
+        )
+        self.assertEqual(res_kakao_no_code.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('template_code', res_kakao_no_code.data)
+
+        # 2. variables에 배열(list)이 아닌 dict 전달 시도 -> 400 Bad Request
+        res_bad_vars = self.client.patch(
+            f'/api/v1/message-templates/{tmpl.pk}/',
+            {'variables': {'invalid': 'dict'}},
+            format='json',
+        )
+        self.assertEqual(res_bad_vars.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_history_and_post_label_invalid_query_params(self):
+        """MessageSendHistory 및 PostLabel 조회 시 잘못된 날짜/정수 파라미터에 대한 500 크래시 방어 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        res_hist = self.client.get('/api/v1/message-send-history/?start_date=not-a-date')
+        self.assertEqual(res_hist.status_code, status.HTTP_200_OK)
+
+        res_label = self.client.get(f'/api/v1/post-labels/?project={self.project_a.pk}&order_group=invalid')
+        self.assertEqual(res_label.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_label.data.get('results', res_label.data)), 0)

@@ -66,7 +66,7 @@ def send_mass_email_task(self, email_notice_id: int):
                 'project': project_name,
             }
 
-            rendered_title = _render_template(notice.title, context)
+            rendered_title = ' '.join(_render_template(notice.title, context).splitlines()).strip()
             rendered_html = _render_template(notice.content, context)
             text_content = strip_tags(rendered_html)
 
