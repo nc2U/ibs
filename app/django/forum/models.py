@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.contrib.postgres.indexes import GinIndex
@@ -23,6 +24,22 @@ class Forum(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 상위 게시판으로 지정할 수 없습니다.'})
+            if self.project_id and self.parent.project_id != self.project_id:
+                raise ValidationError({'parent': '상위 게시판의 프로젝트가 현재 게시판의 프로젝트와 일치하지 않습니다.'})
+            visited = {self.pk} if self.pk else set()
+            curr = self.parent
+            while curr is not None:
+                if curr.pk in visited:
+                    raise ValidationError({'parent': '상위 게시판 지정에 순환 참조가 발생합니다.'})
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.parent
+
     class Meta:
         ordering = ['id']
         verbose_name = '01. 게시판 관리'
@@ -39,6 +56,22 @@ class PostCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 상위 카테고리로 지정할 수 없습니다.'})
+            if self.forum_id and self.parent.forum_id != self.forum_id:
+                raise ValidationError({'parent': '상위 카테고리의 게시판이 현재 카테고리의 게시판과 일치하지 않습니다.'})
+            visited = {self.pk} if self.pk else set()
+            curr = self.parent
+            while curr is not None:
+                if curr.pk in visited:
+                    raise ValidationError({'parent': '상위 카테고리 지정에 순환 참조가 발생합니다.'})
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.parent
 
     class Meta:
         ordering = ['-is_manager_only', 'order', 'id']
@@ -69,6 +102,12 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        if self.category_id and self.forum_id:
+            if self.category.forum_id != self.forum_id:
+                raise ValidationError({'category': '선택한 카테고리가 해당 게시판에 속하지 않습니다.'})
 
     @property
     def is_new(self):
@@ -152,6 +191,22 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.post} -> {self.content}"
+
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '자기 자신을 상위 댓글로 지정할 수 없습니다.'})
+            if self.post_id and self.parent.post_id != self.post_id:
+                raise ValidationError({'parent': '상위 댓글이 속한 게시물과 현재 댓글의 게시물이 일치하지 않습니다.'})
+            visited = {self.pk} if self.pk else set()
+            curr = self.parent
+            while curr is not None:
+                if curr.pk in visited:
+                    raise ValidationError({'parent': '상위 댓글 지정에 순환 참조가 발생합니다.'})
+                if curr.pk:
+                    visited.add(curr.pk)
+                curr = curr.parent
 
     class Meta:
         ordering = ['-created']

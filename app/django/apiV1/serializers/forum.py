@@ -12,6 +12,14 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from forum.models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
 
 
+def _is_forum_manager(forum, user):
+    if not forum or not user or not user.is_authenticated:
+        return False
+    if hasattr(forum, '_prefetched_objects_cache') and 'manager' in forum._prefetched_objects_cache:
+        return any(m.pk == user.pk for m in forum.manager.all())
+    return forum.manager.filter(pk=user.pk).exists()
+
+
 # Forum --------------------------------------------------------------------------
 class ForumSerializer(serializers.ModelSerializer):
     post_count = serializers.SerializerMethodField(read_only=True)
@@ -53,7 +61,7 @@ class ForumSerializer(serializers.ModelSerializer):
                         is_authorized = True
                     elif last_post.creator_id and last_post.creator_id == user.pk:
                         is_authorized = True
-                    elif obj.manager.filter(pk=user.pk).exists():
+                    elif _is_forum_manager(obj, user):
                         is_authorized = True
                 if not is_authorized:
                     title = '비밀글입니다.' if last_post.is_secret else '블라인드 처리된 게시물입니다.'
@@ -108,6 +116,7 @@ class PostSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get('request')
         user = request.user if request else None
+        is_mgr = _is_forum_manager(instance.forum, user)
 
         # 비밀글(is_secret) 본문 및 파일 마스킹
         if instance.is_secret:
@@ -117,7 +126,7 @@ class PostSerializer(serializers.ModelSerializer):
                     is_authorized = True
                 elif instance.creator_id and instance.creator_id == user.pk:
                     is_authorized = True
-                elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+                elif is_mgr:
                     is_authorized = True
 
             if not is_authorized:
@@ -130,7 +139,7 @@ class PostSerializer(serializers.ModelSerializer):
             if user and user.is_authenticated:
                 if user.is_superuser or getattr(user, 'work_manager', False):
                     is_manager = True
-                elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+                elif is_mgr:
                     is_manager = True
             if not is_manager:
                 data['title'] = '블라인드 처리된 게시물입니다.'
@@ -144,7 +153,7 @@ class PostSerializer(serializers.ModelSerializer):
                 is_admin_or_author = True
             elif instance.creator_id and instance.creator_id == user.pk:
                 is_admin_or_author = True
-            elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+            elif is_mgr:
                 is_admin_or_author = True
         if not is_admin_or_author:
             data.pop('ip', None)
@@ -424,6 +433,8 @@ class CommentSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get('request')
         user = request.user if request else None
+        forum_obj = instance.post.forum if instance.post else None
+        is_mgr = _is_forum_manager(forum_obj, user)
 
         # 비밀 댓글(secret=True) 혹은 비밀글의 댓글 마스킹
         is_post_secret = bool(instance.post and getattr(instance.post, 'is_secret', False))
@@ -436,8 +447,7 @@ class CommentSerializer(serializers.ModelSerializer):
                     is_authorized = True
                 elif instance.post and instance.post.creator_id and instance.post.creator_id == user.pk:
                     is_authorized = True
-                elif (instance.post and instance.post.forum and
-                      instance.post.forum.manager.filter(pk=user.pk).exists()):
+                elif is_mgr:
                     is_authorized = True
 
             if not is_authorized:
@@ -450,8 +460,7 @@ class CommentSerializer(serializers.ModelSerializer):
                 is_admin_or_author = True
             elif instance.creator_id and instance.creator_id == user.pk:
                 is_admin_or_author = True
-            elif (instance.post and instance.post.forum and
-                  instance.post.forum.manager.filter(pk=user.pk).exists()):
+            elif is_mgr:
                 is_admin_or_author = True
         if not is_admin_or_author:
             data.pop('ip', None)
@@ -493,20 +502,57 @@ class CommentSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user if request else None
         post_id = self.initial_data.get('post')
         # 개선: post_id 데이터 부재 시 500 에러 방지를 위한 밸리데이션 추가
         if not post_id:
             raise serializers.ValidationError({'post': '게시글 정보가 누락되었습니다.'})
-        validated_data['post_id'] = post_id
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
+        try:
+            post_obj = Post.objects.select_related('forum').prefetch_related('forum__manager').get(
+                pk=post_id, deleted=None
+            )
+        except (Post.DoesNotExist, ValueError, TypeError):
+            raise serializers.ValidationError({'post': '유효하지 않거나 삭제된 게시물입니다.'})
+
+        if post_obj.is_blind and not (
+            user and user.is_authenticated and (
+                user.is_superuser or getattr(user, 'work_manager', False) or _is_forum_manager(post_obj.forum, user)
+            )
+        ):
+            raise serializers.ValidationError({'post': '블라인드 처리된 게시물에는 댓글을 작성할 수 없습니다.'})
+
+        if post_obj.is_secret and not (
+            user and user.is_authenticated and (
+                user.is_superuser
+                or getattr(user, 'work_manager', False)
+                or post_obj.creator_id == user.pk
+                or _is_forum_manager(post_obj.forum, user)
+            )
+        ):
+            raise serializers.ValidationError({'post': '비밀글에는 작성자 또는 관리자만 댓글을 작성할 수 있습니다.'})
+
+        parent = validated_data.get('parent')
+        if parent and parent.post_id != post_obj.pk:
+            raise serializers.ValidationError({'parent': '상위 댓글이 속한 게시물과 일치하지 않습니다.'})
+
+        validated_data['post'] = post_obj
+        validated_data['ip'] = request.META.get('REMOTE_ADDR') if request else None
+        validated_data['device'] = (request.META.get('HTTP_USER_AGENT') if request else None) or ''
         comment = Comment.objects.create(**validated_data)
         return comment
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
+        request = self.context.get('request')
+        parent = validated_data.get('parent')
+        if parent:
+            if parent.pk == instance.pk:
+                raise serializers.ValidationError({'parent': '자기 자신을 상위 댓글로 지정할 수 없습니다.'})
+            if parent.post_id != instance.post_id:
+                raise serializers.ValidationError({'parent': '상위 댓글이 속한 게시물과 일치하지 않습니다.'})
+        validated_data['ip'] = request.META.get('REMOTE_ADDR') if request else None
+        validated_data['device'] = (request.META.get('HTTP_USER_AGENT') if request else None) or ''
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -560,6 +606,17 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ('pk', 'forum', 'name', 'post')
 
+    def validate(self, attrs):
+        forum = attrs.get('forum') or (self.instance.forum if self.instance else None)
+        posts = attrs.get('post')
+        if forum and posts:
+            for post_obj in posts:
+                if post_obj.forum_id != forum.pk:
+                    raise serializers.ValidationError({
+                        'post': '태그의 게시판과 일치하지 않는 게시물이 포함되어 있습니다.'
+                    })
+        return attrs
+
 
 class PostInTrashSerializer(serializers.ModelSerializer):
     forum_name = serializers.SlugField(source='forum', read_only=True)
@@ -569,6 +626,38 @@ class PostInTrashSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('pk', 'forum_name', 'cate_name', 'title', 'content', 'creator', 'created', 'deleted')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = request.user if request else None
+        is_mgr = _is_forum_manager(instance.forum, user)
+
+        if instance.is_secret:
+            is_authorized = bool(
+                user and user.is_authenticated and (
+                    user.is_superuser
+                    or getattr(user, 'work_manager', False)
+                    or (instance.creator_id and instance.creator_id == user.pk)
+                    or is_mgr
+                )
+            )
+            if not is_authorized:
+                data['content'] = '비밀글입니다.'
+
+        if instance.is_blind:
+            is_manager = bool(
+                user and user.is_authenticated and (
+                    user.is_superuser
+                    or getattr(user, 'work_manager', False)
+                    or is_mgr
+                )
+            )
+            if not is_manager:
+                data['title'] = '블라인드 처리된 게시물입니다.'
+                data['content'] = '블라인드 처리된 게시물입니다.'
+
+        return data
 
     def update(self, instance, validated_data):
         instance.restore()

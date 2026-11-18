@@ -1,7 +1,12 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
+from work.models.project import IssueProject
 from .models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
+
+
+def _is_admin_user(user):
+    return bool(user and (user.is_superuser or getattr(user, 'work_manager', False)))
 
 
 class CategoryInline(admin.TabularInline):
@@ -20,7 +25,11 @@ class ForumAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (CategoryInline,)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('project')
+        qs = super().get_queryset(request).select_related('project')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(project__in=accessible_projects)
 
 
 @admin.register(PostCategory)
@@ -33,7 +42,11 @@ class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('forum',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('forum', 'parent')
+        qs = super().get_queryset(request).select_related('forum', 'parent')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(forum__project__in=accessible_projects)
 
 
 class FileInline(admin.TabularInline):
@@ -63,7 +76,11 @@ class PostAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (FileInline, ImageInline, CommentInline)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('forum', 'category', 'creator')
+        qs = super().get_queryset(request).select_related('forum', 'category', 'creator')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(forum__project__in=accessible_projects)
 
 
 @admin.register(Comment)
@@ -75,7 +92,11 @@ class CommentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('created', 'secret')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('post', 'creator')
+        qs = super().get_queryset(request).select_related('post', 'creator')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(post__forum__project__in=accessible_projects)
 
 
 @admin.register(Tag)
@@ -88,4 +109,8 @@ class TagAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('forum',)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('forum')
+        qs = super().get_queryset(request).select_related('forum')
+        if _is_admin_user(request.user):
+            return qs
+        accessible_projects = IssueProject.objects.filter(members__user=request.user)
+        return qs.filter(forum__project__in=accessible_projects)

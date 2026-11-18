@@ -4,6 +4,7 @@ from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apiV1.permissions.auth_perms import permissions
@@ -36,7 +37,7 @@ class ForumViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset().annotate(
+        queryset = super().get_queryset().exclude(project__status='9').annotate(
             annotated_post_count=Count(
                 'post',
                 filter=Q(post__deleted=None, post__is_faq=False),
@@ -81,7 +82,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset.select_related('forum')
         # 행 보안: 사용자가 속한 워크스페이스의 게시판 카테고리 혹은 공개 워크스페이스의 카테고리만 노출
@@ -99,7 +100,7 @@ class PostFilterSet(FilterSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.filter(deleted=None).select_related(
         'forum', 'category', 'creator__profile'
-    ).prefetch_related('files')
+    ).prefetch_related('files', 'forum__manager')
     serializer_class = PostSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     filterset_class = PostFilterSet
@@ -121,7 +122,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset().annotate(
+        queryset = super().get_queryset().exclude(forum__project__status='9').annotate(
             scrape_count=Count('postscrape', distinct=True)
         )
         if user.is_superuser or getattr(user, 'work_manager', False):
@@ -143,6 +144,22 @@ class PostViewSet(viewsets.ModelViewSet):
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 원본 행을 self.get_object()로 조회 (RLS 및 권한 필터를 거쳐 IDOR 차단)
         org_instance = self.get_object()
+        user = request.user
+        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
+        is_origin_manager = bool(org_instance.forum and org_instance.forum.manager.filter(pk=user.pk).exists())
+
+        # 비밀글/블라인드 글 원문 탈취 방지: 열람 권한자만 복사 허용
+        if org_instance.is_blind and not (is_admin or is_origin_manager):
+            return Response(
+                {'detail': '블라인드 처리된 게시물은 복사할 수 없습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if org_instance.is_secret and not (is_admin or is_origin_manager or org_instance.creator_id == user.pk):
+            return Response(
+                {'detail': '비밀글은 작성자 본인 또는 관리자만 복사할 수 없습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         target_forum_id = request.data.get('forum')
         if not target_forum_id:
             return Response({'detail': '대상 게시판 정보가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -151,9 +168,14 @@ class PostViewSet(viewsets.ModelViewSet):
         if not target_forum:
             return Response({'detail': '대상 게시판을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if target_forum.project and target_forum.project.status in ['2', '9']:
+            return Response(
+                {'detail': '닫힘 또는 잠금 상태의 워크스페이스에는 게시물을 복사할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # 대상 프로젝트에 대한 글쓰기 권한 검증 (교차 프로젝트 무인가 복사 차단)
-        user = request.user
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+        if not is_admin:
             target_project = target_forum.project
             user_perms = target_project.get_user_permissions(user)
             if 'forum.create' not in user_perms:
@@ -188,7 +210,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
 
 class PostLikeViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.filter(deleted=None)
     serializer_class = PostLikeSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     http_method_names = ['put', 'patch', 'head', 'options']
@@ -199,15 +221,16 @@ class PostLikeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.queryset.exclude(forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return self.queryset
-        return self.queryset.filter(
+            return qs
+        return qs.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct()
 
 
 class PostBlameViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.filter(deleted=None)
     serializer_class = PostBlameSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     http_method_names = ['put', 'patch', 'head', 'options']
@@ -218,9 +241,10 @@ class PostBlameViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.queryset.exclude(forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return self.queryset
-        return self.queryset.filter(
+            return qs
+        return qs.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct()
 
@@ -236,16 +260,16 @@ class PostFileViewSet(viewsets.ModelViewSet):
             'list': 'forum.read',
             'retrieve': 'forum.read',
             'hit': 'forum.read',
-            'create': 'forum.update',
+            'create': 'forum.create',
             'update': 'forum.update',
             'partial_update': 'forum.update',
-            'destroy': 'forum.update'
+            'destroy': 'forum.delete'
         }
         return mapping.get(self.action, None)
 
     def get_queryset(self):
         user = self.request.user
-        qs = self.queryset.select_related('post__forum__project', 'post__creator')
+        qs = self.queryset.exclude(post__forum__project__status='9').select_related('post__forum__project', 'post__creator')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs.order_by('id')
         # RLS 및 비밀글/블라인드 파일 접근 통제
@@ -256,6 +280,17 @@ class PostFileViewSet(viewsets.ModelViewSet):
             Q(post__forum__manager=user)
         )
         return qs.filter(accessible_workspace & accessible_secret).distinct().order_by('id')
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        post = serializer.validated_data.get('post')
+        if post and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            project = post.forum.project
+            user_perms = project.get_user_permissions(user)
+            is_mgr = post.forum.manager.filter(pk=user.pk).exists()
+            if 'forum.update' not in user_perms and not is_mgr and post.creator_id != user.pk:
+                raise PermissionDenied('본인이 작성한 게시물에만 파일을 첨부할 수 있습니다.')
+        serializer.save()
 
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
@@ -275,16 +310,16 @@ class PostImageViewSet(viewsets.ModelViewSet):
         mapping = {
             'list': 'forum.read',
             'retrieve': 'forum.read',
-            'create': 'forum.update',
+            'create': 'forum.create',
             'update': 'forum.update',
             'partial_update': 'forum.update',
-            'destroy': 'forum.update'
+            'destroy': 'forum.delete'
         }
         return mapping.get(self.action, None)
 
     def get_queryset(self):
         user = self.request.user
-        qs = self.queryset.select_related('post__forum__project', 'post__creator')
+        qs = self.queryset.exclude(post__forum__project__status='9').select_related('post__forum__project', 'post__creator')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs.order_by('id')
         # RLS 및 비밀글/블라인드 이미지 접근 통제
@@ -295,6 +330,17 @@ class PostImageViewSet(viewsets.ModelViewSet):
             Q(post__forum__manager=user)
         )
         return qs.filter(accessible_workspace & accessible_secret).distinct().order_by('id')
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        post = serializer.validated_data.get('post')
+        if post and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            project = post.forum.project
+            user_perms = project.get_user_permissions(user)
+            is_mgr = post.forum.manager.filter(pk=user.pk).exists()
+            if 'forum.update' not in user_perms and not is_mgr and post.creator_id != user.pk:
+                raise PermissionDenied('본인이 작성한 게시물에만 이미지를 첨부할 수 있습니다.')
+        serializer.save()
 
 
 class CommentFilterSet(FilterSet):
@@ -307,9 +353,9 @@ class CommentFilterSet(FilterSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     # 개선: N+1 쿼리 방지를 위한 select_related 및 prefetch_related 적용
-    queryset = Comment.objects.all().select_related(
+    queryset = Comment.objects.filter(post__deleted=None).select_related(
         'creator__profile', 'post__forum__project', 'post__creator'
-    ).prefetch_related('replies__creator__profile')
+    ).prefetch_related('replies__creator__profile', 'post__forum__manager')
     serializer_class = CommentSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     filterset_class = CommentFilterSet
@@ -328,7 +374,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(post__forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         # 행 보안: 사용자가 권한을 가진 워크스페이스의 게시판 댓글만 조회
@@ -345,7 +391,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class CommentLikeViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
+    queryset = Comment.objects.filter(post__deleted=None)
     serializer_class = CommentLikeSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     http_method_names = ['put', 'patch', 'head', 'options']
@@ -356,15 +402,16 @@ class CommentLikeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.queryset.exclude(post__forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return self.queryset
-        return self.queryset.filter(
+            return qs
+        return qs.filter(
             Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
         ).distinct()
 
 
 class CommentBlameViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
+    queryset = Comment.objects.filter(post__deleted=None)
     serializer_class = CommentBlameSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     http_method_names = ['put', 'patch', 'head', 'options']
@@ -375,9 +422,10 @@ class CommentBlameViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.queryset.exclude(post__forum__project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return self.queryset
-        return self.queryset.filter(
+            return qs
+        return qs.filter(
             Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
         ).distinct()
 
@@ -401,7 +449,7 @@ class TagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = self.queryset.select_related('forum__project')
+        qs = self.queryset.exclude(forum__project__status='9').select_related('forum__project')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs.order_by('id')
         return qs.filter(
@@ -411,6 +459,12 @@ class TagViewSet(viewsets.ModelViewSet):
 
 class PostInTrashViewSet(PostViewSet):
     serializer_class = PostInTrashSerializer
+
+    def create(self, request, *args, **kwargs):
+        return Response(
+            {'detail': '휴지통에서는 게시물을 직접 생성할 수 없습니다.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     # 휴지통 내에서는 hit 및 복사 액션 비활성화
     @action(detail=True, methods=['post'], url_path='hit')
@@ -423,15 +477,43 @@ class PostInTrashViewSet(PostViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Post.objects.filter(deleted__isnull=False).select_related('forum', 'category', 'creator')
+        queryset = Post.objects.filter(
+            deleted__isnull=False
+        ).exclude(
+            forum__project__status='9'
+        ).select_related('forum', 'category', 'creator').prefetch_related('forum__manager')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         return queryset.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct()
 
+    def _can_manage_trash_post(self, request, instance):
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+        if instance.creator_id and instance.creator_id == user.pk:
+            return True
+        if instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+            return True
+        return False
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not self._can_manage_trash_post(request, instance):
+            return Response(
+                {'detail': '휴지통의 게시물을 복원할 권한이 없습니다. 관리자 또는 작성자 본인만 가능합니다.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().update(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        if not self._can_manage_trash_post(request, instance):
+            return Response(
+                {'detail': '휴지통의 게시물을 영구 삭제할 권한이 없습니다. 관리자 또는 작성자 본인만 가능합니다.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # [H-2] 휴지통에서 삭제 시 모델 기본 delete()의 소프트 삭제 대신 실제 DB 레코드 영구 삭제 수행
         Post.objects.filter(pk=instance.pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

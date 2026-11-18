@@ -740,11 +740,13 @@ class ForumPermission(ProjectPermission):
 
         # manager_only 포럼인 경우 포럼 매니저 또는 superuser만 수정/삭제 가능
         from forum.models import Forum
-        forum = getattr(obj, 'forum', None)
+        post_obj = getattr(obj, 'post', None)
+        forum = getattr(obj, 'forum', None) or (getattr(post_obj, 'forum', None) if post_obj is not None and hasattr(post_obj, 'forum') else None)
         if isinstance(obj, Forum):
             forum = obj
+        is_forum_manager = bool(forum and forum.manager.filter(pk=user.pk).exists())
         if forum and getattr(forum, 'manager_only', False):
-            if not forum.manager.filter(pk=user.pk).exists():
+            if not is_forum_manager:
                 return False
 
         project = self.extract_project(obj)
@@ -763,24 +765,28 @@ class ForumPermission(ProjectPermission):
             required_perm = getattr(view, 'required_permission', 'forum.read') or 'forum.read'
             return required_perm in user_perms
 
+        creator = (
+            getattr(obj, 'creator', None)
+            or getattr(obj, 'author', None)
+            or (getattr(post_obj, 'creator', None) if post_obj is not None and hasattr(post_obj, 'creator') else None)
+        )
+
         # 3. 수정 권한 제어
         if view.action in ['update', 'partial_update']:
-            if 'forum.update' in user_perms:
+            if 'forum.update' in user_perms or is_forum_manager:
                 return True
             if 'forum.own_update' in user_perms:
                 # 본인의 글(Post/Comment/첨부물)인지 확인
-                creator = getattr(obj, 'creator', None) or getattr(obj, 'author', None)
                 if creator == user:
                     return True
             return False
 
         # 4. 삭제 권한 제어
         if view.action == 'destroy':
-            if 'forum.delete' in user_perms:
+            if 'forum.delete' in user_perms or is_forum_manager:
                 return True
             if 'forum.own_delete' in user_perms:
                 # 본인의 글(Post/Comment/첨부물)인지 확인
-                creator = getattr(obj, 'creator', None) or getattr(obj, 'author', None)
                 if creator == user:
                     return True
             return False

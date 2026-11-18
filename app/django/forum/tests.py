@@ -480,3 +480,186 @@ class ForumAppSecurityTests(TestCase):
         self.assertEqual(res_other.status_code, status.HTTP_200_OK)
         other_tag_ids = [item['pk'] for item in res_other.data.get('results', res_other.data)]
         self.assertNotIn(tag.pk, other_tag_ids)
+
+    def test_secret_and_blind_post_copy_blocked(self):
+        """제3자 멤버가 비밀글 또는 블라인드 글을 복사(/copy/)하여 원문을 탈취하려는 시도 403 차단 검증"""
+        another_member = User.objects.create_user(
+            username='copy_intruder', email='copy_in@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        self.client.force_authenticate(user=another_member)
+        # 1. 제3자의 비밀글 복사 시도 -> 403 Forbidden
+        res_secret = self.client.post(
+            f'/api/v1/post/{self.secret_post.pk}/copy/',
+            {'forum': self.general_forum.pk},
+            format='json',
+        )
+        self.assertEqual(res_secret.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 일반 멤버의 블라인드 글 복사 시도 -> 403 Forbidden
+        res_blind = self.client.post(
+            f'/api/v1/post/{self.blind_post.pk}/copy/',
+            {'forum': self.general_forum.pk},
+            format='json',
+        )
+        self.assertEqual(res_blind.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. 비밀글 작성자 본인은 복사 가능 -> 201 Created
+        self.client.force_authenticate(user=self.member_user)
+        res_author = self.client.post(
+            f'/api/v1/post/{self.secret_post.pk}/copy/',
+            {'forum': self.general_forum.pk},
+            format='json',
+        )
+        self.assertEqual(res_author.status_code, status.HTTP_201_CREATED)
+
+    def test_post_trash_masking_and_restore_restrictions(self):
+        """휴지통 내 비밀글 마스킹, POST 직접 생성 405 차단 및 작성자/관리자 외 복원/영구삭제 403 차단 검증"""
+        self.secret_post.delete()
+
+        another_member = User.objects.create_user(
+            username='trash_intruder', email='trash_in@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        # 1. 휴지통 직접 생성(POST) -> 405 Method Not Allowed
+        self.client.force_authenticate(user=self.admin_user)
+        res_create = self.client.post('/api/v1/post-trash-can/', {'title': '불법생성'}, format='json')
+        self.assertEqual(res_create.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # 2. 제3자 멤버가 휴지통 목록 조회 시 비밀글 본문 마스킹 확인 및 복원/영구삭제 403 차단
+        self.client.force_authenticate(user=another_member)
+        res_list = self.client.get('/api/v1/post-trash-can/')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        items = res_list.data.get('results', res_list.data)
+        secret_item = next((i for i in items if i['pk'] == self.secret_post.pk), None)
+        self.assertIsNotNone(secret_item)
+        self.assertEqual(secret_item['content'], '비밀글입니다.')
+
+        res_restore_denied = self.client.patch(f'/api/v1/post-trash-can/{self.secret_post.pk}/', {}, format='json')
+        self.assertEqual(res_restore_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        res_del_denied = self.client.delete(f'/api/v1/post-trash-can/{self.secret_post.pk}/')
+        self.assertEqual(res_del_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. 작성자 본인은 복원 가능 -> 200 OK
+        self.client.force_authenticate(user=self.member_user)
+        res_restore_ok = self.client.patch(f'/api/v1/post-trash-can/{self.secret_post.pk}/', {}, format='json')
+        self.assertEqual(res_restore_ok.status_code, status.HTTP_200_OK)
+        self.secret_post.refresh_from_db()
+        self.assertIsNone(self.secret_post.deleted)
+
+    def test_comment_creation_validations_and_device_fallback(self):
+        """User-Agent 없는 댓글 생성/수정 정상 동작, 비밀글 제3자 댓글 차단 및 교차 게시글 대댓글 오염 차단 검증"""
+        another_member = User.objects.create_user(
+            username='cmt_tester', email='cmt_t@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        other_post = Post.objects.create(
+            forum=self.general_forum,
+            title='다른 게시글',
+            content='본문',
+            creator=self.member_user,
+        )
+        other_comment = Comment.objects.create(
+            post=other_post,
+            content='다른 글의 댓글',
+            creator=self.member_user,
+        )
+
+        self.client.force_authenticate(user=another_member)
+        # 1. 제3자가 비밀글에 댓글 작성 시도 -> 400 Bad Request
+        res_secret_cmt = self.client.post(
+            '/api/v1/comment/',
+            {'post': self.secret_post.pk, 'content': '비밀글 침투 댓글'},
+            format='json',
+        )
+        self.assertEqual(res_secret_cmt.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 2. 타 게시글의 댓글을 parent로 지정해 대댓글 작성 시도 -> 400 Bad Request
+        res_cross_parent = self.client.post(
+            '/api/v1/comment/',
+            {'post': self.normal_post.pk, 'parent': other_comment.pk, 'content': '교차 대댓글'},
+            format='json',
+        )
+        self.assertEqual(res_cross_parent.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 3. 일반 글에 정상 댓글 생성 및 수정 (HTTP_USER_AGENT 미전달 시에도 500 에러 없이 201/200)
+        res_ok = self.client.post(
+            '/api/v1/comment/',
+            {'post': self.normal_post.pk, 'content': '정상 댓글'},
+            format='json',
+        )
+        self.assertEqual(res_ok.status_code, status.HTTP_201_CREATED)
+        cmt_pk = res_ok.data['pk']
+
+        res_patch = self.client.patch(
+            f'/api/v1/comment/{cmt_pk}/',
+            {'content': '수정된 댓글'},
+            format='json',
+        )
+        self.assertEqual(res_patch.status_code, status.HTTP_200_OK)
+
+    def test_post_file_own_permissions_and_tag_cross_forum_validation(self):
+        """본인 게시글 첨부파일 삭제(own_delete) 허용, 타인 게시글 첨부 차단 및 태그 교차 포럼 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        my_file = PostFile.objects.create(
+            post=self.normal_post,
+            file=SimpleUploadedFile("my.txt", b"hello"),
+            file_name="my.txt",
+        )
+
+        another_member = User.objects.create_user(
+            username='file_tester', email='ft@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.private_project, user=another_member)
+        m.roles.add(self.role_member)
+
+        # 1. 제3자(own_delete만 보유)가 타인 게시글 첨부파일 삭제 시도 -> 403 Forbidden
+        self.client.force_authenticate(user=another_member)
+        res_del_denied = self.client.delete(f'/api/v1/post-file/{my_file.pk}/')
+        self.assertEqual(res_del_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 게시글 작성자 본인(member_user, own_delete 보유)은 첨부파일 삭제 가능 -> 204 No Content
+        self.client.force_authenticate(user=self.member_user)
+        res_del_ok = self.client.delete(f'/api/v1/post-file/{my_file.pk}/')
+        self.assertEqual(res_del_ok.status_code, status.HTTP_204_NO_CONTENT)
+
+        # 3. TagSerializer에서 타 포럼의 게시글 연결 시도 시 400 차단
+        self.client.force_authenticate(user=self.admin_user)
+        res_tag_cross = self.client.post(
+            '/api/v1/tag/',
+            {'forum': self.notice_forum.pk, 'name': '교차태그', 'post': [self.normal_post.pk]},
+            format='json',
+        )
+        self.assertEqual(res_tag_cross.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_forum_model_clean_validations(self):
+        """Forum/PostCategory/Comment 순환 참조 및 교차 소속 clean() 검증"""
+        from django.core.exceptions import ValidationError
+
+        # 1. Forum 순환 참조 (A -> B -> A)
+        f_a = Forum.objects.create(project=self.private_project, name='상위포럼')
+        f_b = Forum.objects.create(project=self.private_project, name='하위포럼', parent=f_a)
+        f_a.parent = f_b
+        with self.assertRaises(ValidationError):
+            f_a.clean()
+
+        # 2. PostCategory 타 포럼 상위 카테고리 지정 차단
+        cat_general = PostCategory.objects.create(forum=self.general_forum, name='자유카테고리')
+        cat_notice = PostCategory(forum=self.notice_forum, name='공지하위', parent=cat_general)
+        with self.assertRaises(ValidationError):
+            cat_notice.clean()
+
+        # 3. Comment 타 게시글 상위 댓글 지정 차단
+        post_2 = Post.objects.create(forum=self.general_forum, title='글2', content='내용', creator=self.member_user)
+        cmt_1 = Comment.objects.create(post=self.normal_post, content='댓글1', creator=self.member_user)
+        cmt_bad = Comment(post=post_2, parent=cmt_1, content='교차댓글', creator=self.member_user)
+        with self.assertRaises(ValidationError):
+            cmt_bad.clean()
