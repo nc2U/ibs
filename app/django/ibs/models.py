@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class AccountSort(models.Model):
@@ -126,21 +128,35 @@ class CalendarSchedule(models.Model):
     def __str__(self):
         return self.title
 
-    def save(self, *args, **kwargs):
+    @staticmethod
+    def _extract_local_date(dt_or_str):
         from django.utils.dateparse import parse_datetime, parse_date
+        if hasattr(dt_or_str, 'date'):
+            if timezone.is_aware(dt_or_str):
+                return timezone.localtime(dt_or_str).date()
+            return dt_or_str.date()
+        if isinstance(dt_or_str, str):
+            parsed = parse_datetime(dt_or_str)
+            if parsed:
+                if timezone.is_aware(parsed):
+                    return timezone.localtime(parsed).date()
+                return parsed.date()
+            return parse_date(dt_or_str[:10])
+        return None
+
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError({'end_date': '종료 일자는 시작 일자 이후여야 합니다.'})
+        if not self.all_day and self.start_time and self.end_time and self.start_time > self.end_time:
+            raise ValidationError({'end_time': '종료 시간은 시작 시간 이후여야 합니다.'})
+
+    def save(self, *args, **kwargs):
         if not self.start_date and self.start_time:
-            if hasattr(self.start_time, 'date'):
-                self.start_date = self.start_time.date()
-            elif isinstance(self.start_time, str):
-                parsed = parse_datetime(self.start_time)
-                self.start_date = parsed.date() if parsed else parse_date(self.start_time[:10])
+            self.start_date = self._extract_local_date(self.start_time)
 
         if not self.end_date and self.end_time:
-            if hasattr(self.end_time, 'date'):
-                self.end_date = self.end_time.date()
-            elif isinstance(self.end_time, str):
-                parsed = parse_datetime(self.end_time)
-                self.end_date = parsed.date() if parsed else parse_date(self.end_time[:10])
+            self.end_date = self._extract_local_date(self.end_time)
 
         super().save(*args, **kwargs)
 

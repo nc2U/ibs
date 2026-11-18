@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from django_filters import DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from ibs.models import (
@@ -75,6 +76,15 @@ class AccountSubD3ViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwoHundred
     filterset_fields = ('sort', 'd2__d1', 'd2', 'is_hide', 'is_special')
     http_method_names = ['get', 'patch', 'head', 'options']
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from apiV1.permissions.ibs_perms import HqProjectModulePermission
+            hq_perms = HqProjectModulePermission._get_all_hq_user_permissions(user, self.request)
+            if 'ledger.com_update' not in hq_perms:
+                raise PermissionDenied('본사 회계 계정을 수정할 권한(ledger.com_update)이 없습니다.')
+        serializer.save()
 
 
 class ProjectAccountD2ViewSet(viewsets.ReadOnlyModelViewSet):

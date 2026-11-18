@@ -505,3 +505,129 @@ class IbsAdminQueryOptimizationTest(TestCase):
         with self.assertNumQueries(0):
             item = cal_qs[0]
             _ = item.creator.username
+
+    def test_ibs_admin_search_fields_and_rls(self):
+        """UserWidgetConfigAdmin 및 CalendarScheduleAdmin 검색 시 FieldError가 발생하지 않고 비관리자 RLS가 동작하는지 검증"""
+        from django.contrib.admin.sites import AdminSite
+        from django.test import RequestFactory
+        from ibs.admin import UserWidgetConfigAdmin, CalendarScheduleAdmin
+
+        other_user = User.objects.create_user(
+            username='other_opt', email='other@opt.com', password='password123'
+        )
+        UserWidgetConfig.objects.create(user=self.admin, layouts={}, visible_widgets=[])
+        UserWidgetConfig.objects.create(user=other_user, layouts={}, visible_widgets=[])
+
+        factory = RequestFactory()
+        req_other = factory.get('/admin/')
+        req_other.user = other_user
+
+        # 1. UserWidgetConfigAdmin 검색 및 RLS
+        cfg_admin = UserWidgetConfigAdmin(UserWidgetConfig, AdminSite())
+        qs_other = cfg_admin.get_queryset(req_other)
+        self.assertEqual(qs_other.count(), 1)
+        searched_qs, _ = cfg_admin.get_search_results(req_other, UserWidgetConfig.objects.all(), 'admin_opt')
+        self.assertEqual(searched_qs.count(), 1)
+
+        # 2. CalendarScheduleAdmin 검색 및 RLS
+        cal_admin = CalendarScheduleAdmin(CalendarSchedule, AdminSite())
+        cal_qs_other = cal_admin.get_queryset(req_other)
+        self.assertEqual(cal_qs_other.count(), 0)
+        cal_searched, _ = cal_admin.get_search_results(req_other, CalendarSchedule.objects.all(), '공정회의')
+        self.assertGreaterEqual(cal_searched.count(), 1)
+
+    def test_account_sub_d3_master_fields_protected_and_staff_blocked(self):
+        """본사 세부계정(AccountSubD3) PATCH 시 권한 없는 일반 직원 차단 및 마스터 필드(code/name) 변조 방지 검증"""
+        client = APIClient()
+        company = Company.objects.create(name='회계테스트사')
+        staff_no_perm = User.objects.create_user(
+            username='staff_noperm', email='noperm@acc.com', password='password123'
+        )
+        Staff.objects.create(
+            company=company, user=staff_no_perm, name='일반사원',
+            id_number='900101-1234567', personal_phone='010-1111-2222', date_join='2024-01-01'
+        )
+
+        # 1. 회계 권한(ledger.com_update) 없는 일반 사원이 PATCH 시도 -> 403 차단
+        client.force_authenticate(user=staff_no_perm)
+        res_denied = client.patch(f'/api/v1/account-depth3/{self.d3.pk}/', {'is_hide': True}, format='json')
+        self.assertEqual(res_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. 관리자가 PATCH로 is_hide와 함께 code, name 변조 시도 -> is_hide만 반영되고 code/name은 보호됨
+        client.force_authenticate(user=self.admin)
+        res_admin = client.patch(
+            f'/api/v1/account-depth3/{self.d3.pk}/',
+            {'is_hide': True, 'code': '999', 'name': '변조된계정명'},
+            format='json',
+        )
+        self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
+        self.d3.refresh_from_db()
+        self.assertTrue(self.d3.is_hide)
+        self.assertEqual(self.d3.code, '211')
+        self.assertEqual(self.d3.name, '외상매입금')
+
+    def test_schedule_kst_midnight_date_extraction_and_clean(self):
+        """한국 시간(UTC+9) 오전 01:00 시간제 일정의 start_date가 UTC 전날로 밀리지 않고 당일로 저장되는지 검증"""
+        from datetime import datetime, timezone as dt_tz
+        from django.core.exceptions import ValidationError
+
+        # 2026-11-04 01:00:00 KST == 2026-11-03 16:00:00 UTC
+        utc_dt = datetime(2026, 11, 3, 16, 0, 0, tzinfo=dt_tz.utc)
+        sched = CalendarSchedule.objects.create(
+            title='심야 점검 일정',
+            all_day=False,
+            start_time=utc_dt,
+            end_time=utc_dt,
+            creator=self.admin,
+        )
+        self.assertEqual(str(sched.start_date), '2026-11-04')
+        self.assertEqual(str(sched.end_date), '2026-11-04')
+
+        # clean() 일자 역전 검증
+        bad_sched = CalendarSchedule(
+            title='역전 일정',
+            all_day=True,
+            start_date='2026-11-10',
+            end_date='2026-11-01',
+        )
+        with self.assertRaises(ValidationError):
+            bad_sched.clean()
+
+    def test_user_widget_config_json_type_validation(self):
+        """UserWidgetConfigSerializer에서 layouts(dict) 및 visible_widgets(list) 타입 불일치 시 400 차단 검증"""
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+
+        res_bad_layout = client.post(
+            '/api/v1/user-widget-config/',
+            {'layouts': 'invalid-string', 'visible_widgets': ['w1']},
+            format='json',
+        )
+        self.assertEqual(res_bad_layout.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_bad_widgets = client.post(
+            '/api/v1/user-widget-config/',
+            {'layouts': {}, 'visible_widgets': {'not': 'a-list'}},
+            format='json',
+        )
+        self.assertEqual(res_bad_widgets.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_hq_permission_excludes_locked_workspace(self):
+        """잠금보관(status='9')된 본사 워크스페이스의 권한이 HqProjectModulePermission에서 제외되는지 검증"""
+        from apiV1.permissions.ibs_perms import HqProjectModulePermission
+        from work.models.project import Role, Permission
+
+        company = Company.objects.create(name='잠금본사테스트')
+        user = User.objects.create_user(username='locked_hq_user', email='lhq@test.com', password='password123')
+        perm = Permission.objects.create(module='ledger', code='ledger.com_update', name='본사회계수정')
+        role = Role.objects.create(name='본사회계담당', creator=self.admin)
+        role.permissions.add(perm)
+
+        hq_proj = IssueProject.objects.create(
+            company=company, name='잠긴본사워크스페이스', slug='locked-hq-ws', type='1', status='9', creator=self.admin
+        )
+        m = Member.objects.create(project=hq_proj, user=user)
+        m.roles.add(role)
+
+        perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
+        self.assertNotIn('ledger.com_update', perms)

@@ -38,22 +38,28 @@ class HqProjectModulePermission(permissions.BasePermission):
 
     @classmethod
     def _is_hq_member_or_staff(cls, user):
-        """사용자가 본사 워크스페이스(type='1')의 멤버이거나 소속 회사 Staff인지 확인"""
+        """사용자가 본사 워크스페이스(type='1', 비잠금)의 멤버이거나 소속 회사 Staff인지 확인"""
         if getattr(user, 'staff', None) is not None:
             return True
         from work.models.project import Member
-        return Member.objects.filter(user=user, project__type='1').exists()
+        return Member.objects.filter(user=user, project__type='1').exclude(project__status='9').exists()
 
     @classmethod
-    def _get_all_hq_user_permissions(cls, user):
-        """모든 type='1' 본사업무 워크스페이스의 권한을 합집합으로 반환"""
+    def _get_all_hq_user_permissions(cls, user, request=None):
+        """모든 활성(비잠금) type='1' 본사업무 워크스페이스의 권한을 합집합으로 반환 (요청 단위 캐싱)"""
+        if request is not None and hasattr(request, '_cached_all_hq_perms'):
+            return request._cached_all_hq_perms
+
         from work.models.project import IssueProject
-        all_hq_ips = IssueProject.objects.filter(type='1')
+        all_hq_ips = IssueProject.objects.filter(type='1').exclude(status='9')
 
         all_perms = set()
         for hq_ip in all_hq_ips:
             # 각 워크스페이스의 권한을 수집
             all_perms.update(set(hq_ip.get_user_permissions(user)))
+
+        if request is not None:
+            request._cached_all_hq_perms = all_perms
         return all_perms
 
     def has_permission(self, request, view) -> bool:
@@ -93,13 +99,17 @@ class HqProjectModulePermission(permissions.BasePermission):
                 filter_kwargs['company__name'] = str(req_company)
             target_hq_ip = IssueProject.objects.filter(**filter_kwargs).first()
             if target_hq_ip:
+                if is_project_locked(target_hq_ip):
+                    return False
+                if is_project_closed(target_hq_ip) and request.method not in permissions.SAFE_METHODS:
+                    return False
                 user_perms = set(target_hq_ip.get_user_permissions(request.user))
             else:
-                user_perms = self._get_all_hq_user_permissions(request.user)
+                user_perms = self._get_all_hq_user_permissions(request.user, request)
         elif issue_project:
             user_perms = set(issue_project.get_user_permissions(request.user))
         else:
-            user_perms = self._get_all_hq_user_permissions(request.user)
+            user_perms = self._get_all_hq_user_permissions(request.user, request)
 
         # 3. 조회 요청 (SAFE_METHODS: GET, HEAD, OPTIONS)
         # [M-5] required_perm이 명시된 경우 반드시 해당 권한을 보유해야 허용.
@@ -147,13 +157,17 @@ class HqProjectModulePermission(permissions.BasePermission):
             from work.models.project import IssueProject
             target_hq_ip = IssueProject.objects.filter(type='1', company_id=obj_company_id).first()
             if target_hq_ip:
+                if is_project_locked(target_hq_ip):
+                    return False
+                if is_project_closed(target_hq_ip) and request.method not in permissions.SAFE_METHODS:
+                    return False
                 user_perms = set(target_hq_ip.get_user_permissions(request.user))
             else:
-                user_perms = self._get_all_hq_user_permissions(request.user)
+                user_perms = self._get_all_hq_user_permissions(request.user, request)
         elif issue_project:
             user_perms = set(issue_project.get_user_permissions(request.user))
         else:
-            user_perms = self._get_all_hq_user_permissions(request.user)
+            user_perms = self._get_all_hq_user_permissions(request.user, request)
 
         # 3. 조회 요청 (SAFE_METHODS)
         # [M-5] required_perm이 명시된 경우 반드시 해당 객체 권한 보유 여부 검증

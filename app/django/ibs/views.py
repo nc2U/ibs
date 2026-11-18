@@ -7,7 +7,14 @@ from ibs.models import ProjectAccountD3
 from project.models import Project
 
 
+_INSTALLATION_COMPLETE = False
+
+
 def install_check(request):
+    global _INSTALLATION_COMPLETE
+    if _INSTALLATION_COMPLETE:
+        return render(request, 'base-vue.html')
+
     # Check if basic installation data exists (more comprehensive check)
     has_superuser = User.objects.filter(is_superuser=True).exists()
     has_company = Company.objects.exists()
@@ -18,6 +25,7 @@ def install_check(request):
     installation_complete = has_superuser and has_company and (has_project or is_d3)
 
     if installation_complete:
+        _INSTALLATION_COMPLETE = True
         return render(request, 'base-vue.html')
     else:
         return redirect('/install/')

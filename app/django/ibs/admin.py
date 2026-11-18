@@ -91,10 +91,13 @@ class UserWidgetConfigAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'version', 'created', 'updated')
     list_display_links = ('user',)
     list_select_related = ('user',)
-    search_fields = ('user__username', 'user__name')
+    search_fields = ('user__username', 'user__email', 'user__profile__name')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user')
+        qs = super().get_queryset(request).select_related('user')
+        if request.user and (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            return qs
+        return qs.filter(user=request.user)
 
 
 @admin.register(CalendarSchedule)
@@ -103,10 +106,13 @@ class CalendarScheduleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('title',)
     list_select_related = ('creator',)
     list_filter = ('all_day', 'start_date', 'created')
-    search_fields = ('title', 'creator__username', 'creator__name')
+    search_fields = ('title', 'creator__username', 'creator__email', 'creator__profile__name')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('creator')
+        qs = super().get_queryset(request).select_related('creator')
+        if request.user and (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            return qs
+        return qs.filter(creator=request.user)
 
 
 @admin.register(WiseSaying)

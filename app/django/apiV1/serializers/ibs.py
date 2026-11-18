@@ -29,6 +29,7 @@ class AccountSubD3Serializer(serializers.ModelSerializer):
     class Meta:
         model = AccountSubD3
         fields = ('pk', 'sort', 'd2', 'code', 'name', 'description', 'is_hide', 'is_special')
+        read_only_fields = ('sort', 'd2', 'code', 'name', 'description', 'is_special')
 
 
 class ProjectAccountD2Serializer(serializers.ModelSerializer):
@@ -49,6 +50,18 @@ class UserWidgetConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserWidgetConfig
         fields = ('pk', 'layouts', 'visible_widgets', 'version')
+
+    @staticmethod
+    def validate_layouts(value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError('레이아웃 설정(layouts)은 객체(dict) 형식이어야 합니다.')
+        return value
+
+    @staticmethod
+    def validate_visible_widgets(value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError('표시 위젯 목록(visible_widgets)은 배열(list) 형식이어야 합니다.')
+        return value
 
 
 class CalendarScheduleSerializer(serializers.ModelSerializer):
