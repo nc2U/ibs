@@ -140,20 +140,51 @@ class IssueSerializer(serializers.ModelSerializer):
                   'expected_duration', 'expected_duration_display', 'start_date', 'due_date',
                   'done_ratio', 'closed', 'files', 'links', 'sub_issues', 'outgoing_relations', 'incoming_relation',
                   'creator', 'updater', 'created', 'updated', 'meeting', 'meeting_desc')
+        extra_kwargs = {
+            'start_date': {'required': False},
+        }
 
     @staticmethod
-    def get_sub_issues(obj):
-        return IssueInIssueSerializer(obj.issue_set.all().order_by('id'), many=True, read_only=True).data
+    def _extract_initial_list(initial_data, key):
+        if hasattr(initial_data, 'getlist'):
+            return initial_data.getlist(key, [])
+        val = initial_data.get(key, []) if isinstance(initial_data, dict) else []
+        if val is None:
+            return []
+        return list(val) if isinstance(val, (list, tuple)) else [val]
 
-    @staticmethod
-    def get_outgoing_relations(obj):
-        return IssueRelationInIssueSerializer(obj.outgoing_relations.all().order_by('id'), many=True,
-                                              read_only=True).data
+    def _get_visible_issue_qs(self, base_qs):
+        request = self.context.get('request') if hasattr(self, 'context') and self.context else None
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from apiV1.views.work.issue import build_issue_queryset
+            return build_issue_queryset(user, base_qs)
+        return base_qs
 
-    @staticmethod
-    def get_incoming_relation(obj):
-        if hasattr(obj, 'incoming_relation'):
-            return IssueRelationIncomingSerializer(obj.incoming_relation, read_only=True).data
+    def get_sub_issues(self, obj):
+        qs = self._get_visible_issue_qs(obj.issue_set.all()).order_by('id')
+        return IssueInIssueSerializer(qs, many=True, read_only=True).data
+
+    def get_outgoing_relations(self, obj):
+        qs = obj.outgoing_relations.all().order_by('id')
+        request = self.context.get('request') if hasattr(self, 'context') and self.context else None
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from apiV1.views.work.issue import build_issue_queryset
+            visible_issues = build_issue_queryset(user)
+            qs = qs.filter(target__in=visible_issues)
+        return IssueRelationInIssueSerializer(qs, many=True, read_only=True).data
+
+    def get_incoming_relation(self, obj):
+        if hasattr(obj, 'incoming_relation') and obj.incoming_relation is not None:
+            rel = obj.incoming_relation
+            request = self.context.get('request') if hasattr(self, 'context') and self.context else None
+            user = getattr(request, 'user', None)
+            if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+                from apiV1.views.work.issue import build_issue_queryset
+                if not build_issue_queryset(user).filter(pk=rel.source_id).exists():
+                    return None
+            return IssueRelationIncomingSerializer(rel, read_only=True).data
         return None
 
     def to_representation(self, instance):
@@ -361,7 +392,11 @@ class IssueSerializer(serializers.ModelSerializer):
             except (IssueStatus.DoesNotExist, ValueError, TypeError):
                 raise serializers.ValidationError({'status': '존재하지 않는 업무 상태입니다.'})
         else:
-            status = IssueStatus.objects.filter(default=True).first() or IssueStatus.objects.first()
+            status = (
+                tracker.default_status
+                if (tracker and getattr(tracker, 'default_status_id', None))
+                else IssueStatus.objects.first()
+            )
 
         priority_pk = self.initial_data.get('priority', None)
         if priority_pk:
@@ -445,15 +480,14 @@ class IssueSerializer(serializers.ModelSerializer):
         )
 
         # Link 처리
-        if hasattr(self.initial_data, 'getlist'):
-            new_links = self.initial_data.getlist('newLinks', [])
-            new_link_names = self.initial_data.getlist('newLinkNames', [])
-            if not new_link_names:
-                new_link_names = self.initial_data.getlist('newLinkDescs', [])
-            for i, link in enumerate(new_links):
-                if link and str(link).strip():
-                    name_val = new_link_names[i] if i < len(new_link_names) else ''
-                    IssueLink.objects.create(issue=issue, link=str(link).strip(), name=name_val, creator=creator)
+        new_links = self._extract_initial_list(self.initial_data, 'newLinks')
+        new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
+        if not new_link_names:
+            new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
+        for i, link in enumerate(new_links):
+            if link and str(link).strip():
+                name_val = new_link_names[i] if i < len(new_link_names) else ''
+                IssueLink.objects.create(issue=issue, link=str(link).strip(), name=name_val, creator=creator)
 
         return issue
 
@@ -532,35 +566,34 @@ class IssueSerializer(serializers.ModelSerializer):
         )
 
         # Link 처리 (기존 수정/삭제 & 신규 추가)
-        if hasattr(self.initial_data, 'getlist'):
-            links_data = self.initial_data.getlist('links', [])
-            for link_str in links_data:
-                try:
-                    import json
-                    link_data = json.loads(link_str) if isinstance(link_str, str) else link_str
-                    link_pk = link_data.get('pk')
-                    if link_data.get('del'):
-                        IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
-                    else:
-                        link_obj = IssueLink.objects.get(pk=link_pk, issue=instance)
-                        if 'link' in link_data:
-                            link_obj.link = link_data['link']
-                        if 'name' in link_data:
-                            link_obj.name = link_data['name']
-                        elif 'description' in link_data:
-                            link_obj.name = link_data['description']
-                        link_obj.save()
-                except Exception as e:
-                    logger.error(f"IssueLink 처리 중 오류: {e}")
+        links_data = self._extract_initial_list(self.initial_data, 'links')
+        for link_str in links_data:
+            try:
+                import json
+                link_data = json.loads(link_str) if isinstance(link_str, str) else link_str
+                link_pk = link_data.get('pk')
+                if link_data.get('del'):
+                    IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
+                else:
+                    link_obj = IssueLink.objects.get(pk=link_pk, issue=instance)
+                    if 'link' in link_data:
+                        link_obj.link = link_data['link']
+                    if 'name' in link_data:
+                        link_obj.name = link_data['name']
+                    elif 'description' in link_data:
+                        link_obj.name = link_data['description']
+                    link_obj.save()
+            except Exception as e:
+                logger.error(f"IssueLink 처리 중 오류: {e}")
 
-            new_links = self.initial_data.getlist('newLinks', [])
-            new_link_names = self.initial_data.getlist('newLinkNames', [])
-            if not new_link_names:
-                new_link_names = self.initial_data.getlist('newLinkDescs', [])
-            for i, link in enumerate(new_links):
-                if link and str(link).strip():
-                    name_val = new_link_names[i] if i < len(new_link_names) else ''
-                    IssueLink.objects.create(issue=instance, link=str(link).strip(), name=name_val, creator=creator)
+        new_links = self._extract_initial_list(self.initial_data, 'newLinks')
+        new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
+        if not new_link_names:
+            new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
+        for i, link in enumerate(new_links):
+            if link and str(link).strip():
+                name_val = new_link_names[i] if i < len(new_link_names) else ''
+                IssueLink.objects.create(issue=instance, link=str(link).strip(), name=name_val, creator=creator)
 
         try:
             instance.save()

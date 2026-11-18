@@ -105,6 +105,15 @@ class MeetingSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+    @staticmethod
+    def _extract_initial_list(initial_data, key):
+        if hasattr(initial_data, 'getlist'):
+            return initial_data.getlist(key, [])
+        val = initial_data.get(key, []) if isinstance(initial_data, dict) else []
+        if val is None:
+            return []
+        return list(val) if isinstance(val, (list, tuple)) else [val]
+
     @transaction.atomic
     def create(self, validated_data):
         attendees = validated_data.pop('attendees', [])
@@ -122,15 +131,14 @@ class MeetingSerializer(serializers.ModelSerializer):
         )
 
         # Link 처리
-        if hasattr(self.initial_data, 'getlist'):
-            new_links = self.initial_data.getlist('newLinks', [])
-            new_link_names = self.initial_data.getlist('newLinkNames', [])
-            if not new_link_names:
-                new_link_names = self.initial_data.getlist('newLinkDescs', [])
-            for i, link in enumerate(new_links):
-                if link and str(link).strip():
-                    name_val = new_link_names[i] if i < len(new_link_names) else ''
-                    MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), name=name_val, creator=creator)
+        new_links = self._extract_initial_list(self.initial_data, 'newLinks')
+        new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
+        if not new_link_names:
+            new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
+        for i, link in enumerate(new_links):
+            if link and str(link).strip():
+                name_val = new_link_names[i] if i < len(new_link_names) else ''
+                MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), name=name_val, creator=creator)
 
         return meeting
 
@@ -152,35 +160,34 @@ class MeetingSerializer(serializers.ModelSerializer):
         )
 
         # Link 처리
-        if hasattr(self.initial_data, 'getlist'):
-            old_links = self.initial_data.getlist('links', [])
-            for json_link in old_links:
-                if not json_link or not str(json_link).strip():
-                    continue
-                try:
-                    link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
-                    link_pk = link_data.get('pk')
-                    if link_data.get('del'):
-                        MeetingLink.objects.filter(pk=link_pk, meeting=instance).delete()
-                    else:
-                        link_obj = MeetingLink.objects.get(pk=link_pk, meeting=instance)
-                        if 'link' in link_data:
-                            link_obj.link = link_data['link']
-                        if 'name' in link_data:
-                            link_obj.name = link_data['name']
-                        elif 'description' in link_data:
-                            link_obj.name = link_data['description']
-                        link_obj.save()
-                except Exception as e:
-                    logger.error(f"MeetingLink 처리 중 오류: {e}")
+        old_links = self._extract_initial_list(self.initial_data, 'links')
+        for json_link in old_links:
+            if not json_link or not str(json_link).strip():
+                continue
+            try:
+                link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
+                link_pk = link_data.get('pk')
+                if link_data.get('del'):
+                    MeetingLink.objects.filter(pk=link_pk, meeting=instance).delete()
+                else:
+                    link_obj = MeetingLink.objects.get(pk=link_pk, meeting=instance)
+                    if 'link' in link_data:
+                        link_obj.link = link_data['link']
+                    if 'name' in link_data:
+                        link_obj.name = link_data['name']
+                    elif 'description' in link_data:
+                        link_obj.name = link_data['description']
+                    link_obj.save()
+            except Exception as e:
+                logger.error(f"MeetingLink 처리 중 오류: {e}")
 
-            new_links = self.initial_data.getlist('newLinks', [])
-            new_link_names = self.initial_data.getlist('newLinkNames', [])
-            if not new_link_names:
-                new_link_names = self.initial_data.getlist('newLinkDescs', [])
-            for i, link in enumerate(new_links):
-                if link and str(link).strip():
-                    name_val = new_link_names[i] if i < len(new_link_names) else ''
-                    MeetingLink.objects.create(meeting=instance, link=str(link).strip(), name=name_val, creator=creator)
+        new_links = self._extract_initial_list(self.initial_data, 'newLinks')
+        new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
+        if not new_link_names:
+            new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
+        for i, link in enumerate(new_links):
+            if link and str(link).strip():
+                name_val = new_link_names[i] if i < len(new_link_names) else ''
+                MeetingLink.objects.create(meeting=instance, link=str(link).strip(), name=name_val, creator=creator)
 
         return instance

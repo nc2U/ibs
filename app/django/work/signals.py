@@ -1,7 +1,7 @@
 import html
 from django.core.cache import cache
 from django.utils.html import strip_tags
-from django.db.models.signals import pre_save, post_save, pre_delete
+from django.db.models.signals import pre_save, post_save, pre_delete, post_delete
 from django.dispatch import receiver
 
 from work.models.inform import News
@@ -38,6 +38,7 @@ def issue_project_clear_tree_cache_on_save(sender, instance, **kwargs):
 
 
 @receiver(pre_delete, sender=IssueProject)
+@receiver(post_delete, sender=IssueProject)
 def issue_project_clear_tree_cache_on_delete(sender, instance, **kwargs):
     _invalidate_project_tree_cache(instance)
 

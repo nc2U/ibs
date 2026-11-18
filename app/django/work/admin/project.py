@@ -83,6 +83,13 @@ class ModuleAdmin(admin.ModelAdmin):
     list_editable = ('meeting', 'issue', 'news', 'document', 'forum', 'calendar')
     list_select_related = ('project',)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(Q(project__is_public=True) | Q(project__members__user=user)).distinct()
+
 
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):

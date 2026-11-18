@@ -179,7 +179,7 @@ def send_news_push_task(news_pk):
         project = instance.project
 
         # 1. 수신 대상자 구성
-        if getattr(project, 'is_public', False) or getattr(project, 'kind', '') == '1':
+        if getattr(project, 'is_public', False) or getattr(project, 'type', '') == '1':
             # 전체 공개 워크스페이스 또는 본사 공지 ➔ 전체 활성 사용자 대상
             recipient_ids = set(User.objects.filter(is_active=True).values_list('id', flat=True))
         else:

@@ -2054,4 +2054,151 @@ class WorkDeepInspectionRegressionTests(APITestCase):
         self.assertEqual(ver_data['closed_num'], 1)
         self.assertEqual(ver_data['done_ratio'], 50.0)
 
+    def test_8_issue_create_without_status_and_news_push_hq_type(self):
+        """8. status 생략 업무 생성 시 tracker.default_status 폴백 및 send_news_push_task type='1' 참조 검증"""
+        from work.tasks import send_news_push_task
+        self.client.force_authenticate(user=self.admin_user)
+
+        res = self.client.post('/api/v1/issue/', {
+            'project': self.public_ws.slug,
+            'tracker': self.tracker_bug.pk,
+            'priority': self.priority.pk,
+            'subject': '상태 생략 생성 업무',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['status']['pk'], self.status_open.pk)
+
+        hq_private_ws = IssueProject.objects.create(
+            company=self.company, name='본사 비공개 워크스페이스', slug='hq-private-ws',
+            type='1', is_public=False, creator=self.admin_user
+        )
+        hq_news = News.objects.create(project=hq_private_ws, title='본사 공지', author=self.admin_user)
+        with patch('work.tasks.send_push_notification') as mock_push:
+            send_news_push_task(hq_news.pk)
+            mock_push.assert_called_once()
+            pushed_user_ids = set(mock_push.call_args.kwargs['user_ids'])
+            self.assertIn(self.outsider_user.pk, pushed_user_ids)
+
+    def test_9_private_comment_rls_in_activity_log_and_search(self):
+        """9. 비공개 댓글의 활동 로그(ActivityLogEntry) 은닉 및 private_comment_read 권한자 통합검색 허용 검증"""
+        pub_issue = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='비공개댓글테스트업무',
+            start_date=timezone.now().date(), creator=self.admin_user
+        )
+        priv_comment = IssueComment.objects.create(
+            issue=pub_issue, content='기밀의견내용노출금지키워드', is_private=True, creator=self.admin_user
+        )
+
+        # 비인가 사용자(outsider)는 활동 로그 및 통합 검색에서 비공개 댓글을 볼 수 없어야 함
+        self.client.force_authenticate(user=self.outsider_user)
+        res_act = self.client.get('/api/v1/act-entry/?sort=2')
+        self.assertEqual(res_act.status_code, status.HTTP_200_OK)
+        act_items = res_act.data.get('results', res_act.data)
+        self.assertFalse(any(item['target_id'] == priv_comment.pk for item in act_items))
+
+        # private_comment_read 권한을 부여받은 멤버는 활동 로그와 통합 검색 모두에서 조회 가능해야 함
+        perm_priv_comment, _ = Permission.objects.get_or_create(
+            code='issue.private_comment_read', defaults={'name': '비공개 댓글 조회', 'module': 'issue'}
+        )
+        self.role_member.permissions.add(perm_priv_comment)
+        self.client.force_authenticate(user=self.member_user)
+
+        res_act_mem = self.client.get('/api/v1/act-entry/?sort=2')
+        act_mem_items = res_act_mem.data.get('results', res_act_mem.data)
+        self.assertTrue(any(item['target_id'] == priv_comment.pk for item in act_mem_items))
+
+        res_search_mem = self.client.get('/api/v1/issue-search/run/?q=기밀의견내용노출금지키워드&t=comments')
+        self.assertEqual(res_search_mem.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_search_mem.data['comments']), 1)
+
+    def test_10_nested_private_issue_filtering_and_json_links_and_version_default_unset(self):
+        """10. 중첩 시리얼라이저 비공개 업무 은닉, JSON 요청 링크 생성/수정/삭제, 버전 기본값 해제 검증"""
+        ver = Version.objects.create(project=self.public_ws, name='v3.0')
+        self.public_ws.default_version = ver
+        self.public_ws.save()
+
+        parent_issue = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='상위 공개 업무', fixed_version=ver,
+            start_date=timezone.now().date(), creator=self.admin_user
+        )
+        priv_sub = Issue.objects.create(
+            project=self.public_ws, tracker=self.tracker_bug, status=self.status_open,
+            priority=self.priority, subject='하위 비공개 업무', parent=parent_issue,
+            fixed_version=ver, is_private=True,
+            start_date=timezone.now().date(), creator=self.admin_user
+        )
+        IssueRelation.objects.create(source=parent_issue, target=priv_sub, creator=self.admin_user)
+
+        # 비인가 사용자(outsider) 조회 시 하위 비공개 업무 및 연결 업무, 버전 내 비공개 업무가 은닉되어야 함
+        self.client.force_authenticate(user=self.outsider_user)
+        res_parent = self.client.get(f'/api/v1/issue/{parent_issue.pk}/')
+        self.assertEqual(res_parent.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_parent.data['sub_issues']), 0)
+        self.assertEqual(len(res_parent.data['outgoing_relations']), 0)
+
+        res_ver = self.client.get(f'/api/v1/version/{ver.pk}/')
+        self.assertEqual(res_ver.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_ver.data['total_num'], 1)
+        self.assertFalse(any(i['pk'] == priv_sub.pk for i in res_ver.data['issues']))
+
+        # JSON 요청으로 회의록 생성 시 newLinks 처리 및 버전 is_default=False 해제 검증
+        self.client.force_authenticate(user=self.admin_user)
+        res_meet = self.client.post('/api/v1/meeting/', {
+            'project': self.public_ws.pk,
+            'title': 'JSON 링크 회의',
+            'newLinks': ['https://example.com/doc'],
+            'newLinkNames': ['예시 문서']
+        }, format='json')
+        self.assertEqual(res_meet.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(res_meet.data['links']), 1)
+        self.assertEqual(res_meet.data['links'][0]['link'], 'https://example.com/doc')
+
+        res_ver_unset = self.client.patch(f'/api/v1/version/{ver.pk}/', {
+            'is_default': False
+        }, format='json')
+        self.assertEqual(res_ver_unset.status_code, status.HTTP_200_OK)
+        self.public_ws.refresh_from_db()
+        self.assertIsNone(self.public_ws.default_version)
+
+    def test_11_bookmark_subscription_rls_and_module_admin_rls(self):
+        """11. 비인가/미존재 워크스페이스 북마크·구독 차단 및 ModuleAdmin 스태프 RLS 검증"""
+        from django.test import RequestFactory
+        from django.contrib.admin.sites import AdminSite
+        from work.models import Module
+        from work.admin.project import ModuleAdmin
+
+        self.client.force_authenticate(user=self.outsider_user)
+
+        # 비인가 비공개 워크스페이스 북마크 시도 -> 404 차단
+        res_bm = self.client.post('/api/v1/project-bookmark/toggle/', {
+            'project': self.private_ws.pk
+        }, format='json')
+        self.assertEqual(res_bm.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 비인가 비공개 워크스페이스 구독 일괄 업데이트 시도 -> 무시됨
+        res_sub = self.client.post('/api/v1/project-subscription/bulk-update/', {
+            'project_ids': [self.private_ws.pk, self.public_ws.pk]
+        }, format='json')
+        self.assertEqual(res_sub.status_code, status.HTTP_200_OK)
+        sub_pids = [item['project'] for item in res_sub.data]
+        self.assertIn(self.public_ws.pk, sub_pids)
+        self.assertNotIn(self.private_ws.pk, sub_pids)
+
+        # ModuleAdmin 스태프 RLS 검증
+        mod_priv, _ = Module.objects.get_or_create(project=self.private_ws)
+        mod_pub, _ = Module.objects.get_or_create(project=self.public_ws)
+        staff_user = User.objects.create_user(
+            username='mod_staff', email='mod_staff@test.com', password='pw', is_staff=True
+        )
+        rf = RequestFactory()
+        req = rf.get('/admin/')
+        req.user = staff_user
+        mod_admin = ModuleAdmin(Module, AdminSite())
+        mod_qs = mod_admin.get_queryset(req)
+        self.assertIn(mod_pub, mod_qs)
+        self.assertNotIn(mod_priv, mod_qs)
+
+
 

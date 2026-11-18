@@ -712,6 +712,49 @@ class IssueFileViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
+def build_issue_comment_queryset(user, base_qs=None):
+    """
+    사용자 권한 및 비공개 업무/비공개 댓글 가시성에 따른 IssueComment 쿼리셋 빌더.
+    IssueCommentViewSet, IssueLogEntryViewSet, ActivityLogEntryViewSet, SearchViewSet에서 공통 사용.
+    """
+    if base_qs is None:
+        base_qs = IssueComment.objects.all()
+
+    base_qs = base_qs.exclude(issue__project__status='9')
+
+    if getattr(user, 'work_manager', False) or user.is_superuser:
+        return base_qs
+
+    accessible_issues = build_issue_queryset(user)
+
+    user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
+    private_comment_read_pids = [
+        member.project_id
+        for member in user_members
+        if any(
+            perm.code == 'issue.private_comment_read'
+            for role in member.roles.all()
+            for perm in role.permissions.all()
+        )
+    ]
+
+    try:
+        non_member_role = Role.objects.prefetch_related('permissions').get(pk=2)
+        non_member_private_read = any(
+            perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all()
+        )
+    except Role.DoesNotExist:
+        non_member_private_read = False
+
+    comment_q = Q(is_private=False) | Q(creator=user)
+    if private_comment_read_pids:
+        comment_q |= Q(issue__project_id__in=private_comment_read_pids)
+    if non_member_private_read:
+        comment_q |= Q(issue__project__is_public=True)
+
+    return base_qs.filter(issue__in=accessible_issues).filter(comment_q).distinct()
+
+
 class IssueCommentViewSet(viewsets.ModelViewSet):
     queryset = IssueComment.objects.all()
     serializer_class = IssueCommentSerializer
@@ -732,43 +775,8 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
         return mapping.get(self.action, None)
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = IssueComment.objects.exclude(issue__project__status='9').select_related('issue__project', 'creator')
-
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return queryset
-
-        # 1. 부모 업무(Issue) 가시성 필터링 (build_issue_queryset 재사용으로 완벽한 일관성 보장)
-        accessible_issues = build_issue_queryset(user)
-
-        # 2. 비공개 댓글 가시성에 따른 필터 조건 (comment_q)
-        from work.models.project import Member, Role
-        user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
-        private_comment_read_pids = [
-            member.project_id
-            for member in user_members
-            if any(
-                perm.code == 'issue.private_comment_read'
-                for role in member.roles.all()
-                for perm in role.permissions.all()
-            )
-        ]
-
-        try:
-            non_member_role = Role.objects.prefetch_related('permissions').get(pk=2)
-            non_member_private_read = any(
-                perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all()
-            )
-        except Role.DoesNotExist:
-            non_member_private_read = False
-
-        comment_q = Q(is_private=False) | Q(creator=user)
-        if private_comment_read_pids:
-            comment_q |= Q(issue__project_id__in=private_comment_read_pids)
-        if non_member_private_read:
-            comment_q |= Q(issue__project__is_public=True)
-
-        return queryset.filter(issue__in=accessible_issues).filter(comment_q).distinct()
+        base_qs = IssueComment.objects.select_related('issue__project', 'creator')
+        return build_issue_comment_queryset(self.request.user, base_qs)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

@@ -89,13 +89,19 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         base_filter = Q(project__is_public=True) | Q(project_id__in=member_all_project_ids)
 
         # 3. 업무(sort='1') 및 의견(sort='2') 로그에 대한 비공개/가시성 접근 제한
-        from apiV1.views.work.issue import build_issue_queryset
+        from apiV1.views.work.issue import build_issue_queryset, build_issue_comment_queryset
+        from work.models.issue import IssueComment
         accessible_issue_ids = build_issue_queryset(user).values_list('pk', flat=True)
+        hidden_private_comment_ids = IssueComment.objects.filter(
+            is_private=True
+        ).exclude(
+            pk__in=build_issue_comment_queryset(user)
+        ).values_list('pk', flat=True)
 
         final_qs = queryset.filter(base_filter).filter(
             ~Q(sort__in=['1', '2']) |
             (Q(sort='1') & Q(target_id__in=accessible_issue_ids)) |
-            (Q(sort='2') & Q(parent_id__in=accessible_issue_ids))
+            (Q(sort='2') & Q(parent_id__in=accessible_issue_ids) & ~Q(target_id__in=hidden_private_comment_ids))
         )
 
         return final_qs.select_related('project', 'creator')
@@ -109,32 +115,17 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('issue', 'creator')
 
     def get_queryset(self):
-        """IssueLogEntry 필터링: 해당 사용자가 접근 권한이 있는 업무의 로그만 조회 가능"""
+        """IssueLogEntry 필터링: 해당 사용자가 접근 권한이 있는 업무 및 비공개 댓글의 로그만 조회 가능"""
         user = self.request.user
         queryset = self.queryset.exclude(issue__project__status='9').select_related('issue__project', 'comment', 'creator')
 
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        from apiV1.views.work.issue import build_issue_queryset
+        from apiV1.views.work.issue import build_issue_queryset, build_issue_comment_queryset
         accessible_issues = build_issue_queryset(user)
+        accessible_comments = build_issue_comment_queryset(user)
 
-        user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
-        private_comment_read_pids = [
-            m.project_id
-            for m in user_members
-            if any(
-                perm.code == 'issue.private_comment_read'
-                for role in m.roles.all()
-                for perm in role.permissions.all()
-            )
-        ]
-
-        # 비공개 댓글 열람 가드 조건 빌드 (Method D)
-        comment_visibility_filter = (Q(comment__isnull=True)
-                                     | Q(comment__is_private=False)
-                                     | Q(comment__creator=user))
-        if private_comment_read_pids:
-            comment_visibility_filter |= Q(issue__project_id__in=private_comment_read_pids)
-
-        return queryset.filter(issue__in=accessible_issues).filter(comment_visibility_filter).distinct()
+        return queryset.filter(issue__in=accessible_issues).filter(
+            Q(comment__isnull=True) | Q(comment__in=accessible_comments)
+        ).distinct()

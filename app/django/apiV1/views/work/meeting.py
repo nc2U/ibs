@@ -154,15 +154,20 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 | Q(attendees=user)
             ).distinct()
 
-        # 3. 성능 최적화: 목록 조회 시 필수 관계만, 상세 조회 시 파일/링크/연계업무까지 prefetch
+        # 3. 성능 최적화: 목록 조회 시 필수 관계만, 상세 조회 시 파일/링크/연계업무까지 prefetch (비공개 연계업무 RLS 적용)
+        from django.db.models import Prefetch
+        from apiV1.views.work.issue import build_issue_queryset
+        from work.models.issue import Issue
+
+        visible_issues_qs = build_issue_queryset(
+            user, Issue.objects.select_related('assigned_to', 'project', 'status')
+        )
+        issues_prefetch = Prefetch('issues', queryset=visible_issues_qs)
+
         base_qs = base_qs.select_related('project', 'category', 'creator', 'updater')
         if self.action == 'list':
-            return base_qs.prefetch_related(
-                'attendees', 'issues__assigned_to', 'issues__project', 'issues__status'
-            )
-        return base_qs.prefetch_related(
-            'attendees', 'files', 'links', 'issues__assigned_to', 'issues__project'
-        )
+            return base_qs.prefetch_related('attendees', issues_prefetch)
+        return base_qs.prefetch_related('attendees', 'files', 'links', issues_prefetch)
 
     @property
     def required_permission(self):

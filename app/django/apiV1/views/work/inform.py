@@ -229,20 +229,17 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_comments(user, q, scope, slug):
-        from apiV1.views.work.issue import build_issue_queryset
+        from apiV1.views.work.issue import build_issue_comment_queryset
 
-        qs = IssueComment.objects.filter(
+        base_qs = IssueComment.objects.filter(
             content__icontains=q,
             issue__project__status='1',
         ).select_related('issue__project', 'creator')
 
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            accessible_issues = build_issue_queryset(user)
-            qs = qs.filter(issue__in=accessible_issues).filter(
-                Q(is_private=False) | Q(creator=user)
-            ).distinct()
+            qs = build_issue_comment_queryset(user, base_qs)
         else:
-            qs = qs.filter(Q(is_private=False) | Q(creator=user))
+            qs = base_qs.filter(Q(is_private=False) | Q(creator=user))
 
         if scope == 'project' and slug:
             qs = qs.filter(issue__project__slug=slug)

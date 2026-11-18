@@ -626,10 +626,17 @@ class VersionListSerializer(serializers.ModelSerializer):
         else:
             return round(closed_num / total_num * 100, 2)
 
-    @staticmethod
     @extend_schema_field(SimpleIssueSerializer(many=True))
-    def get_recent_issues(obj):
-        return SimpleIssueSerializer(obj.issues.all().order_by('-id')[:5], many=True, read_only=True).data
+    def get_recent_issues(self, obj):
+        if 'issues' in getattr(obj, '_prefetched_objects_cache', {}):
+            return SimpleIssueSerializer(list(obj.issues.all())[:5], many=True, read_only=True).data
+        request = self.context.get('request') if hasattr(self, 'context') and self.context else None
+        user = getattr(request, 'user', None)
+        qs = obj.issues.all()
+        if user and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from apiV1.views.work.issue import build_issue_queryset
+            qs = build_issue_queryset(user, qs)
+        return SimpleIssueSerializer(qs.order_by('-id')[:5], many=True, read_only=True).data
 
 
 class VersionSerializer(VersionListSerializer):
@@ -665,14 +672,21 @@ class VersionSerializer(VersionListSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        is_default = self.initial_data.get('is_default', False)
-        if isinstance(is_default, str):
-            is_default = is_default.lower() in ['true', '1']
+        raw_is_default = self.initial_data.get('is_default', None)
         project = validated_data.get('project', instance.project)
 
-        if is_default:
-            project.default_version = instance
-            project.save()
+        if raw_is_default is not None:
+            if isinstance(raw_is_default, str):
+                is_default = raw_is_default.lower() in ['true', '1']
+            else:
+                is_default = bool(raw_is_default)
+
+            if is_default:
+                project.default_version = instance
+                project.save(update_fields=['default_version'])
+            elif project.default_version_id == instance.pk:
+                project.default_version = None
+                project.save(update_fields=['default_version'])
 
         return super().update(instance, validated_data)
 

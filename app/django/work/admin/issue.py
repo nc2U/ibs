@@ -45,9 +45,8 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
         user = request.user
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        return qs.filter(
-            Q(project__is_public=True) | Q(project__members__user=user) | Q(creator=user) | Q(assigned_to=user)
-        ).distinct()
+        from apiV1.views.work.issue import build_issue_queryset
+        return build_issue_queryset(user, qs)
 
 
 @admin.register(Tracker)

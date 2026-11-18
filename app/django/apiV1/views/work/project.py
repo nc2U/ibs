@@ -472,7 +472,13 @@ class ProjectSubscriptionViewSet(viewsets.ModelViewSet):
             existing_subs = ProjectSubscription.objects.filter(user=target_user)
             existing_project_ids = set(existing_subs.values_list('project_id', flat=True))
 
-            target_project_ids = set(int(pid) for pid in project_ids if str(pid).isdigit())
+            raw_project_ids = set(int(pid) for pid in project_ids if str(pid).isdigit())
+            accessible_qs = IssueProject.objects.exclude(status='9').filter(pk__in=raw_project_ids)
+            if not (target_user.is_superuser or getattr(target_user, 'work_manager', False)):
+                accessible_qs = accessible_qs.filter(
+                    Q(is_public=True) | Q(members__user=target_user)
+                ).distinct()
+            target_project_ids = set(accessible_qs.values_list('pk', flat=True))
 
             # 삭제 처리
             to_delete = existing_project_ids - target_project_ids
@@ -543,13 +549,24 @@ class VersionViewSet(viewsets.ModelViewSet):
                     Q(project__is_public=True) | Q(project__members__user=user)
                 ).distinct()
 
-        # 3. 성능 최적화 (Count annotation으로 버전별 N+1 쿼리 제거)
+        # 3. 성능 최적화 (Count annotation으로 버전별 N+1 쿼리 제거 및 비공개 이슈 가시성 격리)
         from django.db.models import Count
+        from apiV1.views.work.issue import build_issue_queryset
+        from work.models.issue import Issue
+
+        visible_issues_qs = build_issue_queryset(
+            user, Issue.objects.select_related('tracker', 'project', 'status')
+        ).order_by('-id')
+        issue_filter = (
+            Q()
+            if (user.is_superuser or getattr(user, 'work_manager', False))
+            else Q(issues__in=build_issue_queryset(user))
+        )
         return base_qs.select_related('project').annotate(
-            annotated_total_num=Count('issues', distinct=True),
-            annotated_open_num=Count('issues', filter=Q(issues__status__closed=False), distinct=True),
-            annotated_closed_num=Count('issues', filter=Q(issues__status__closed=True), distinct=True),
-        ).prefetch_related('issues__tracker', 'issues__project').order_by('-effective_date', '-id')
+            annotated_total_num=Count('issues', filter=issue_filter, distinct=True),
+            annotated_open_num=Count('issues', filter=issue_filter & Q(issues__status__closed=False), distinct=True),
+            annotated_closed_num=Count('issues', filter=issue_filter & Q(issues__status__closed=True), distinct=True),
+        ).prefetch_related(Prefetch('issues', queryset=visible_issues_qs)).order_by('-effective_date', '-id')
 
     @property
     def required_permission(self):
@@ -575,13 +592,22 @@ class ProjectBookmarkViewSet(viewsets.ModelViewSet):
     def toggle(self, request):
         """단일 워크스페이스 북마크 토글 (추가/제거)"""
         project_id = request.data.get('project')
-        if not project_id:
+        if not project_id or not str(project_id).isdigit():
             return Response({'detail': 'project 필드가 필요합니다.'}, status=400)
+        project_id = int(project_id)
         try:
             bm = ProjectBookmark.objects.get(user=request.user, project_id=project_id)
             bm.delete()
             return Response({'bookmarked': False})
         except ProjectBookmark.DoesNotExist:
+            accessible_qs = IssueProject.objects.exclude(status='9').filter(pk=project_id)
+            if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+                accessible_qs = accessible_qs.filter(
+                    Q(is_public=True) | Q(members__user=request.user)
+                ).distinct()
+            if not accessible_qs.exists():
+                return Response({'detail': '존재하지 않거나 접근 권한이 없는 워크스페이스입니다.'}, status=404)
+
             count = ProjectBookmark.objects.filter(user=request.user).count()
             bm = ProjectBookmark.objects.create(
                 user=request.user, project_id=project_id, order=count
