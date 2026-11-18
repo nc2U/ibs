@@ -406,6 +406,17 @@ class IbsModulePermission(ProjectPermission):
                     if period is not None:
                         project_pk = getattr(period, 'project_id', None)
 
+            # project.Site 및 SiteOwner 관계를 경유하는 모델 (SiteOwnshipRelationship, SiteOwnerConsultationLogs 등) 역추적
+            if project_pk is None and hasattr(obj, 'site'):
+                site = getattr(obj, 'site', None)
+                if site is not None:
+                    project_pk = getattr(site, 'project_id', None)
+
+            if project_pk is None and hasattr(obj, 'site_owner'):
+                so = getattr(obj, 'site_owner', None)
+                if so is not None:
+                    project_pk = getattr(so, 'project_id', None)
+
         if project_pk is not None:
             try:
                 project_pk = int(project_pk)

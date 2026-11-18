@@ -1,7 +1,6 @@
-import datetime
-
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.utils import timezone
 
 from _excel.mixins import ExcelExportMixin, AdvancedExcelMixin
 from apiV1.permissions._utils import get_project_ids_with_permission
@@ -9,7 +8,7 @@ from project.models import Project, Site, SiteOwner, SiteContract
 
 
 def get_today():
-    return datetime.date.today().strftime('%Y-%m-%d')
+    return timezone.localdate().strftime('%Y-%m-%d')
 
 
 class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
@@ -21,9 +20,12 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
             return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
 
         try:
-            project = Project.objects.get(pk=project_id)
+            project = Project.objects.select_related('issue_project').get(pk=project_id)
         except (Project.DoesNotExist, ValueError):
             return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        if project.issue_project and project.issue_project.status == '9':
+            return HttpResponse('잠금 보관된 프로젝트의 데이터는 열람할 수 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -232,9 +234,12 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
             return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
 
         try:
-            project = Project.objects.get(pk=project_id)
+            project = Project.objects.select_related('issue_project').get(pk=project_id)
         except (Project.DoesNotExist, ValueError):
             return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        if project.issue_project and project.issue_project.status == '9':
+            return HttpResponse('잠금 보관된 프로젝트의 데이터는 열람할 수 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -451,9 +456,12 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
             return HttpResponseBadRequest('프로젝트 ID가 필요합니다.')
 
         try:
-            project = Project.objects.get(pk=project_id)
+            project = Project.objects.select_related('issue_project').get(pk=project_id)
         except (Project.DoesNotExist, ValueError):
             return HttpResponseBadRequest('유효하지 않은 프로젝트 ID입니다.')
+
+        if project.issue_project and project.issue_project.status == '9':
+            return HttpResponse('잠금 보관된 프로젝트의 데이터는 열람할 수 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):

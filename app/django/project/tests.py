@@ -741,3 +741,128 @@ class ProjectPermissionTestCase(ProjectTestCaseBase):
         res = self.client.get(f'/api/v1/project/{self.project_a.pk}/')
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_site_owner_partial_update_preserves_sites(self):
+        """SiteOwner PATCH 부분 수정(sites 미전달) 시 기존 소유부지 관계 및 지분 정보가 삭제되지 않고 보존되는지 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. sites 없이 phone1만 PATCH 수정
+        res = self.client.patch(
+            reverse('api:siteowner-detail', args=[self.owner_a.pk]),
+            {'phone1': '010-9999-0000'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(SiteOwnshipRelationship.objects.filter(site_owner=self.owner_a).count(), 1)
+        rel = SiteOwnshipRelationship.objects.get(site_owner=self.owner_a)
+        self.assertEqual(str(rel.ownership_ratio), '100.0000000')
+
+        # 2. sites에 문자열 PK 전달 시에도 기존 관계의 지분율이 유실되지 않고 보존되는지 확인
+        res_str_pk = self.client.patch(
+            reverse('api:siteowner-detail', args=[self.owner_a.pk]),
+            {'sites': [str(self.site_a.pk)]},
+            format='json',
+        )
+        self.assertEqual(res_str_pk.status_code, status.HTTP_200_OK)
+        rel.refresh_from_db()
+        self.assertEqual(str(rel.ownership_ratio), '100.0000000')
+
+    def test_site_relation_and_consultation_logs_non_superuser_crud(self):
+        """비슈퍼유저(user_a)가 권한 있는 프로젝트의 소유관계 및 상담일지를 생성/수정/삭제할 수 있고 타 프로젝트는 차단되는지 검증"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 상담일지 생성 (POST) 및 수정 (PATCH) -> 201 / 200
+        res_log_create = self.client.post(
+            reverse('api:siteownerconsultationlogs-list'),
+            {
+                'site_owner': self.owner_a.pk,
+                'consultation_date': '2026-03-10',
+                'channel': 'phone',
+                'title': '실무자 상담 등록',
+                'content': '정상 등록되어야 함',
+            },
+            format='json',
+        )
+        self.assertEqual(res_log_create.status_code, status.HTTP_201_CREATED)
+        log_pk = res_log_create.data['pk']
+
+        res_log_patch = self.client.patch(
+            reverse('api:siteownerconsultationlogs-detail', args=[log_pk]),
+            {'title': '실무자 상담 수정'},
+            format='json',
+        )
+        self.assertEqual(res_log_patch.status_code, status.HTTP_200_OK)
+
+        # 2. 타 프로젝트(owner_b)에 상담일지 생성 시도 -> 403 Forbidden
+        res_log_forbidden = self.client.post(
+            reverse('api:siteownerconsultationlogs-list'),
+            {
+                'site_owner': self.owner_b.pk,
+                'consultation_date': '2026-03-10',
+                'channel': 'phone',
+                'title': '타 프로젝트 침투',
+            },
+            format='json',
+        )
+        self.assertEqual(res_log_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. 소유관계(SiteOwnshipRelationship) 단건 수정 (PATCH) -> 200 OK
+        res_rel_patch = self.client.patch(
+            reverse('api:siteownshiprelationship-detail', args=[self.relation_a.pk]),
+            {'ownership_ratio': '50.0000000'},
+            format='json',
+        )
+        self.assertEqual(res_rel_patch.status_code, status.HTTP_200_OK)
+
+    def test_project_serializer_slug_duplicate_and_immutable_issue_project(self):
+        """ProjectSerializer 생성 시 기본 슬러그 중복 방어 및 수정 시 issue_project 교체 무시 검증"""
+        from apiV1.serializers.project import ProjectSerializer
+
+        # 1. 이미 존재하는 슬러그('workspace-a')와 동일한 name으로 slug 미지정 생성 시 ValidationError
+        dup_serializer = ProjectSerializer(data={
+            'name': 'workspace-a',
+            'kind': '1',
+            'start_year': 2026,
+            'monthly_aggr_start_date': '2026-01-01',
+            'construction_start_date': '2026-06-01',
+            'construction_period_months': 24,
+        })
+        self.assertTrue(dup_serializer.is_valid())
+        with self.assertRaises(DRFValidationError) as ctx:
+            dup_serializer.save()
+        self.assertIn('slug', ctx.exception.detail)
+
+        # 2. 프로젝트 수정 시 issue_project를 다른 워크스페이스로 바꾸려 해도 기존 워크스페이스 유지
+        other_ip = IssueProject.objects.create(
+            company=self.company, name='여분워크스페이스', slug='extra-ws', type='2', creator=self.admin_user
+        )
+        up_serializer = ProjectSerializer(
+            instance=self.project_a,
+            data={'name': '프로젝트 A 변경', 'issue_project': other_ip.pk},
+            partial=True,
+        )
+        self.assertTrue(up_serializer.is_valid())
+        updated_proj = up_serializer.save()
+        self.assertEqual(updated_proj.issue_project_id, self.issue_project_a.pk)
+
+    def test_excel_exports_blocked_for_locked_project(self):
+        """잠금보관(status='9') 프로젝트에 대한 엑셀 내보내기 3종 모두 403 차단 검증"""
+        self.issue_project_a.status = '9'
+        self.issue_project_a.save(update_fields=['status'])
+
+        for url_name in ['excel:sites', 'excel:sites-by-owner', 'excel:sites-contracts']:
+            url = reverse(url_name) + f'?project={self.project_a.pk}'
+            res = self.client.get(url)
+            self.assertEqual(res.status_code, 403)
+
+    def test_consultation_log_clean_date_inversion(self):
+        """SiteOwnerConsultationLogs clean() 시 상담일자보다 빠른 처리완료일 차단 검증"""
+        bad_log = SiteOwnerConsultationLogs(
+            site_owner=self.owner_a,
+            consultation_date=date(2026, 5, 10),
+            completion_date=date(2026, 5, 1),
+            channel='visit',
+            title='일자 역전 상담',
+        )
+        with self.assertRaises(ValidationError):
+            bad_log.clean()
+

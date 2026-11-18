@@ -77,7 +77,7 @@ class ProjectIncBudget(models.Model):
     revised_budget = models.PositiveBigIntegerField(verbose_name='현황(변경) 수입 예산', null=True, blank=True)
 
     def __str__(self):
-        return self.item_name
+        return self.item_name or f'수입예산 #{self.pk}'
 
     def clean(self):
         super().clean()
@@ -255,6 +255,11 @@ class SiteOwnerConsultationLogs(models.Model):
 
     def __str__(self):
         return f'[{self.consultation_date}] {self.site_owner.owner} - {self.title}'
+
+    def clean(self):
+        super().clean()
+        if self.consultation_date and self.completion_date and self.completion_date < self.consultation_date:
+            raise ValidationError({'completion_date': '처리완료일은 상담일자보다 빠를 수 없습니다.'})
 
     class Meta:
         ordering = ['-consultation_date', '-created']

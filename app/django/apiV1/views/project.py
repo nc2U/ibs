@@ -167,20 +167,20 @@ class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
             account__depth=2,
             account__is_category_only=False,
             account__category='expense',
-        ).select_related('account')
+        ).exclude(project__issue_project__status='9').select_related('account')
 
         # 출금 거래만 (sort_id=2)
         valid_transactions = ProjectBankTransaction.objects.filter(
             sort_id=2,
             deal_date__lte=date
-        )
+        ).exclude(project__issue_project__status='9')
 
         # 당월 거래 ID
         month_transactions = ProjectBankTransaction.objects.filter(
             sort_id=2,
             deal_date__gte=month_first,
             deal_date__lte=date
-        )
+        ).exclude(project__issue_project__status='9')
 
         # RLS: 비관리자일 경우 접근 권한 있는 프로젝트로 필터링
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -190,9 +190,13 @@ class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
             month_transactions = month_transactions.filter(project_id__in=accessible_pids)
 
         if project:
-            queryset = queryset.filter(project_id=project)
-            valid_transactions = valid_transactions.filter(project_id=project)
-            month_transactions = month_transactions.filter(project_id=project)
+            try:
+                proj_int = int(project)
+            except (ValueError, TypeError):
+                return queryset.none()
+            queryset = queryset.filter(project_id=proj_int)
+            valid_transactions = valid_transactions.filter(project_id=proj_int)
+            month_transactions = month_transactions.filter(project_id=proj_int)
 
         valid_transaction_ids = valid_transactions.values_list('transaction_id', flat=True)
         queryset = queryset.filter(transaction_id__in=valid_transaction_ids)
@@ -214,7 +218,7 @@ class TotalSiteAreaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Site.objects.all()
+        qs = Site.objects.exclude(project__issue_project__status='9')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(project_id__in=get_accessible_project_ids(user, 'site.read'))
         return qs.values('project') \
@@ -258,7 +262,7 @@ class SiteViewSet(viewsets.ModelViewSet):
 
 
 class AllSiteViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Site.objects.all().select_related('project')
+    queryset = Site.objects.exclude(project__issue_project__status='9').select_related('project')
     serializer_class = AllSiteSerializer
     pagination_class = PageNumberPaginationOneThousand
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
@@ -279,7 +283,7 @@ class TotalOwnerAreaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Site.objects.all()
+        qs = Site.objects.exclude(project__issue_project__status='9')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(project_id__in=get_accessible_project_ids(user, 'site.read'))
         return qs.values('project') \
@@ -362,7 +366,7 @@ class SiteOwnerViewSet(FindPageMixin, viewsets.ModelViewSet):
 
 class AllOwnerViewSet(viewsets.ReadOnlyModelViewSet):
     """조회 전용 ViewSet: 드롭다운 등 단순 목록 조회 용도로 쓰기 엔드포인트 미노출"""
-    queryset = SiteOwner.objects.all().order_by('id')
+    queryset = SiteOwner.objects.exclude(project__issue_project__status='9').order_by('id')
     serializer_class = AllOwnerSerializer
     pagination_class = PageNumberPaginationOneThousand
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
@@ -400,7 +404,7 @@ class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = SiteContract.objects.all()
+        qs = SiteContract.objects.exclude(project__issue_project__status='9')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(project_id__in=get_accessible_project_ids(user, 'site.read'))
         return qs.values('project') \

@@ -198,14 +198,15 @@ class ProjectSerializer(serializers.ModelSerializer):
             # 2. IssueProject 생성 및 기본값 세팅
             creator = self.context.get('request').user if self.context.get('request') else None
 
-            if slug and IssueProject.objects.filter(slug=slug).exists():
+            effective_slug = slug or validated_data.get('name')
+            if effective_slug and IssueProject.objects.filter(slug=effective_slug).exists():
                 raise serializers.ValidationError({"slug": "이미 존재하는 식별자(Slug)입니다."})
 
             issue_project = IssueProject.objects.create(
                 company=company,
                 type='2',  # 부동산개발
                 name=sub_name or validated_data.get('name'),
-                slug=slug or validated_data.get('name'),
+                slug=effective_slug,
                 description=desc,
                 is_public=True,
                 slack_notifications_enabled=slack_notifications_enabled,
@@ -237,7 +238,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """프로젝트 업데이트 시 연동된 IssueProject는 변경하지 않고 Project 정보 및 필요 서류 매핑"""
-        # 생성 전용 write_only 필드들은 수정 시 유입되더라도 제외
+        # 생성 전용 write_only 필드 및 연동 워크스페이스(issue_project)는 수정 시 유입되더라도 제외
+        validated_data.pop('issue_project', None)
         validated_data.pop('sub_name', None)
         validated_data.pop('slug', None)
         validated_data.pop('desc', None)
@@ -509,9 +511,25 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
                   'own_sort', 'own_sort_desc', 'sites', 'consultation_logs', 'note',
                   'creator', 'updator', 'created', 'updated')
 
+    @staticmethod
+    def _extract_site_pks(initial_data):
+        if hasattr(initial_data, 'getlist'):
+            raw_sites = initial_data.getlist('sites')
+        else:
+            raw_sites = initial_data.get('sites', [])
+        if not isinstance(raw_sites, (list, tuple, set)):
+            raw_sites = [raw_sites] if raw_sites else []
+        pks = []
+        for s in raw_sites:
+            try:
+                pks.append(int(s))
+            except (ValueError, TypeError):
+                raise serializers.ValidationError({"sites": f"유효하지 않은 부지 ID 형식입니다: {s}"})
+        return pks
+
     @transaction.atomic
     def create(self, validated_data):
-        sites = self.initial_data.get('sites', [])
+        sites = self._extract_site_pks(self.initial_data) if 'sites' in self.initial_data else []
         site_owner = SiteOwner.objects.create(**validated_data)
 
         for site_pk in sites:
@@ -527,27 +545,32 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        sites = self.initial_data.get('sites', [])
-        existing_relations = SiteOwnshipRelationship.objects.filter(site_owner=instance)
+        if 'sites' in self.initial_data:
+            sites = self._extract_site_pks(self.initial_data)
+            existing_relations = SiteOwnshipRelationship.objects.filter(site_owner=instance)
 
-        existing_site_pks = set(r.site_id for r in existing_relations)
-        incoming_site_pks = set(sites)
+            existing_site_pks = set(r.site_id for r in existing_relations)
+            incoming_site_pks = set(sites)
 
-        # 삭제할 관계
-        for relation in existing_relations:
-            if relation.site_id not in incoming_site_pks:
-                relation.delete()
+            # 삭제할 관계
+            for relation in existing_relations:
+                if relation.site_id not in incoming_site_pks:
+                    relation.delete()
 
-        # 새로 추가할 관계
-        target_project_id = validated_data.get('project', instance.project).pk if hasattr(validated_data.get('project', instance.project), 'pk') else (validated_data.get('project') or instance.project_id)
-        for site_pk in incoming_site_pks - existing_site_pks:
-            try:
-                site = Site.objects.get(pk=site_pk)
-            except Site.DoesNotExist:
-                raise serializers.ValidationError({"sites": f"Site with ID {site_pk} does not exist."})
-            if site.project_id != target_project_id:
-                raise serializers.ValidationError({"sites": f"부지 #{site_pk}의 프로젝트가 소유자의 프로젝트와 일치하지 않습니다."})
-            SiteOwnshipRelationship.objects.create(site=site, site_owner=instance)
+            # 새로 추가할 관계
+            target_project_id = (
+                validated_data.get('project', instance.project).pk
+                if hasattr(validated_data.get('project', instance.project), 'pk')
+                else (validated_data.get('project') or instance.project_id)
+            )
+            for site_pk in incoming_site_pks - existing_site_pks:
+                try:
+                    site = Site.objects.get(pk=site_pk)
+                except Site.DoesNotExist:
+                    raise serializers.ValidationError({"sites": f"Site with ID {site_pk} does not exist."})
+                if site.project_id != target_project_id:
+                    raise serializers.ValidationError({"sites": f"부지 #{site_pk}의 프로젝트가 소유자의 프로젝트와 일치하지 않습니다."})
+                SiteOwnshipRelationship.objects.create(site=site, site_owner=instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

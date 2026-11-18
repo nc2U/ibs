@@ -154,6 +154,31 @@ def get_project_pk_from_request(request, view):
         except Exception:
             pass
 
+    # project.Site 기반 프로젝트 ID 역추적 (SiteOwnshipRelationship 등)
+    site_pk = (
+        (data.get('site') if isinstance(data, dict) else None)
+        or query_params.get('site')
+    )
+    if site_pk is not None:
+        try:
+            from project.models import Site
+            return Site.objects.filter(pk=int(site_pk)).values_list('project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # project.SiteOwner 기반 프로젝트 ID 역추적 (SiteOwnshipRelationship, SiteOwnerConsultationLogs 등)
+    site_owner_pk = (
+        (data.get('site_owner') if isinstance(data, dict) else None)
+        or (data.get('owner') if isinstance(data, dict) else None)
+        or query_params.get('site_owner')
+    )
+    if site_owner_pk is not None:
+        try:
+            from project.models import SiteOwner
+            return SiteOwner.objects.filter(pk=int(site_owner_pk)).values_list('project_id', flat=True).first()
+        except Exception:
+            pass
+
     return None
 
 
@@ -207,11 +232,11 @@ def get_project_ids_with_permission(user, required_perm: str):
         return []
 
     from work.models.project import IssueProject as _IssueProject
-    # 소속 IssueProject 중 IBS project가 연결된 것만 조회
+    # 소속 IssueProject 중 IBS project가 연결된 활성(비잠금) 프로젝트만 조회
     candidate_ips = _IssueProject.objects.filter(
         members__user=user,
         project__isnull=False,
-    ).select_related('project')
+    ).exclude(status='9').select_related('project')
 
     allowed_ids = []
     for ip in candidate_ips:
