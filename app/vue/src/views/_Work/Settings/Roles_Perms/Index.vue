@@ -112,12 +112,22 @@ onBeforeMount(async () => {
         <CCol>
           <CNav variant="tabs" class="mb-3">
             <CNavItem>
-              <CNavLink href="#" :active="activeTab === 0" @click.prevent="activeTab = 0">
+              <CNavLink
+                component="button"
+                type="button"
+                :active="activeTab === 0"
+                @click="activeTab = 0"
+              >
                 역할
               </CNavLink>
             </CNavItem>
             <CNavItem>
-              <CNavLink href="#" :active="activeTab === 1" @click.prevent="activeTab = 1">
+              <CNavLink
+                component="button"
+                type="button"
+                :active="activeTab === 1"
+                @click="activeTab = 1"
+              >
                 권한 보고서
               </CNavLink>
             </CNavItem>

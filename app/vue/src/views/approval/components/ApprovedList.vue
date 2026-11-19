@@ -65,9 +65,10 @@ onMounted(() => {
   <CNav variant="tabs" class="mb-3">
     <CNavItem>
       <CNavLink
-        href="#"
+        component="button"
+        type="button"
         :active="activeTab === 'approved'"
-        @click.prevent="activeTab = 'approved'"
+        @click="activeTab = 'approved'"
       >
         <CIcon name="cilCheckCircle" class="me-1 text-success" />
         결재 완료 문서
@@ -78,9 +79,10 @@ onMounted(() => {
     </CNavItem>
     <CNavItem>
       <CNavLink
-        href="#"
+        component="button"
+        type="button"
         :active="activeTab === 'observed'"
-        @click.prevent="activeTab = 'observed'"
+        @click="activeTab = 'observed'"
       >
         <CIcon name="cilUserFollow" class="me-1 text-info" />
         참조 / 공람 문서

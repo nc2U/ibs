@@ -26,27 +26,30 @@ onBeforeMount(() => {
   <CNav variant="tabs">
     <CNavItem>
       <CNavLink
-        href="#"
+        component="button"
+        type="button"
         :active="tabPaneActiveKey === 1"
-        @click.prevent="tabPaneActiveKey = 1"
+        @click="tabPaneActiveKey = 1"
       >
         전체로그
       </CNavLink>
     </CNavItem>
     <CNavItem v-if="issueLogList.filter(l => l.comment).length">
       <CNavLink
-        href="#"
+        component="button"
+        type="button"
         :active="tabPaneActiveKey === 2"
-        @click.prevent="tabPaneActiveKey = 2"
+        @click="tabPaneActiveKey = 2"
       >
         댓글
       </CNavLink>
     </CNavItem>
     <CNavItem v-if="issueLogList.filter(l => !l.comment).length">
       <CNavLink
-        href="#"
+        component="button"
+        type="button"
         :active="tabPaneActiveKey === 3"
-        @click.prevent="tabPaneActiveKey = 3"
+        @click="tabPaneActiveKey = 3"
       >
         항목 변경이력
       </CNavLink>
