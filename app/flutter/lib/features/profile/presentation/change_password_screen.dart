@@ -71,7 +71,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (e.response?.data is Map) {
         final data = e.response!.data as Map;
         if (data['detail'] != null) {
-          errorMsg = data['detail'].toString();
+          errorMsg = (data['detail'] is List)
+              ? (data['detail'] as List).join('\n')
+              : data['detail'].toString();
         } else if (data['old_password'] != null) {
           errorMsg = (data['old_password'] is List)
               ? (data['old_password'] as List).join('\n')
@@ -445,8 +447,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   if (val == null || val.isEmpty) {
                     return '새 비밀번호를 입력해주세요.';
                   }
-                  if (val.length < 6) {
-                    return '비밀번호는 최소 6자 이상이어야 합니다.';
+                  if (val.length < 8) {
+                    return '비밀번호는 최소 8자 이상이어야 합니다.';
                   }
                   if (val == _oldPasswordController.text) {
                     return '현재 비밀번호와 다른 비밀번호를 설정해주세요.';

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/services/share_helper.dart';
@@ -27,13 +28,29 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.text = ref.read(inboundLetterSearchQueryProvider);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _quickViewScanPdf(InboundLetterModel letter) async {
-    if (letter.scanFile == null || letter.scanFile!.isEmpty) {
+    final repo = ref.read(inboundLetterRepositoryProvider);
+    var scanUrl = letter.scanFile;
+    if ((scanUrl == null || scanUrl.isEmpty) && letter.hasScan) {
+      try {
+        final detail = await repo.fetchInboundLetterDetail(letter.id);
+        scanUrl = detail.scanFile;
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    if (scanUrl == null || scanUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('등록된 원본 스캔본 파일이 없습니다.')),
       );
@@ -41,7 +58,11 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
     }
 
     if (kIsWeb) {
-      final uri = Uri.tryParse(letter.scanFile!);
+      final fullUrl =
+          (scanUrl.startsWith('http://') || scanUrl.startsWith('https://'))
+              ? scanUrl
+              : '$appBaseUrl${scanUrl.startsWith('/') ? '' : '/'}$scanUrl';
+      final uri = Uri.tryParse(fullUrl);
       if (uri != null) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
@@ -49,11 +70,10 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
     }
 
     try {
-      final repo = ref.read(inboundLetterRepositoryProvider);
       final filePath = await repo.downloadScanPdf(
         letter.id,
         letter.receiptNumber,
-        scanUrl: letter.scanFile,
+        scanUrl: scanUrl,
       );
 
       if (!mounted) return;
@@ -244,6 +264,7 @@ class _InboundLetterTabViewState extends ConsumerState<InboundLetterTabView> {
                             letter: item,
                             onTap: () async {
                               await context.push('${AppRoutes.approval}/letters/inbound/${item.id}');
+                              if (!mounted) return;
                               ref.invalidate(inboundLettersProvider);
                             },
                             onPdfTap: item.hasScan ? () => _quickViewScanPdf(item) : null,

@@ -59,9 +59,14 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
         context.push('/work/issues/${n.targetId}');
       } else if (n.targetType == 'meeting' && n.targetId.isNotEmpty) {
         context.push('/work/meetings/${n.targetId}');
-      } else if (n.category == 'notice') {
+      } else if (n.category == 'notice' || n.targetType == 'news') {
         context.go('/channel?section=0&tab=0');
-      } else if (n.category == 'approval') {
+      } else if (n.category == 'docs' || n.targetType == 'doc') {
+        context.go('/docs');
+      } else if (n.category == 'approval' ||
+          n.targetType == 'approval_document' ||
+          n.targetType == 'approval_doc' ||
+          n.targetType == 'approval') {
         final docId = int.tryParse(n.targetId) ?? 0;
         if (docId > 0) {
           ref.invalidate(approvalDetailProvider(docId));

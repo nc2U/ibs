@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../data/issue_repository.dart';
 import '../data/models/issue_model.dart';
 
@@ -6,6 +7,7 @@ import '../data/models/issue_model.dart';
 
 /// 현재 적용된 필터 상태
 final issueFilterProvider = StateProvider<IssueFilterModel>((ref) {
+  ref.watch(authSessionVersionProvider);
   return const IssueFilterModel();
 });
 
@@ -14,6 +16,7 @@ final issueFilterProvider = StateProvider<IssueFilterModel>((ref) {
 class IssueListNotifier extends AsyncNotifier<IssueListState> {
   @override
   Future<IssueListState> build() async {
+    ref.watch(authSessionVersionProvider);
     final filter = ref.watch(issueFilterProvider);
     // 필터가 바뀌면 1페이지부터 다시 로드
     final resp = await ref.read(issueRepositoryProvider).fetchIssues(
@@ -259,15 +262,15 @@ class IssueCommentNotifier
     extends AutoDisposeFamilyAsyncNotifier<List<IssueCommentModel>, int> {
   @override
   Future<List<IssueCommentModel>> build(int issueId) async {
-    return ref.read(issueRepositoryProvider).fetchComments(issueId);
+    // 상세 UI는 issueLogProvider(/api/v1/log-entry/?issue=id)로 통합 조회하며,
+    // 백엔드 IssueCommentViewSet은 ?issue= 필터를 미지원하므로 불필요한 전체 댓글 조회 생략
+    return const [];
   }
 
   Future<void> addComment(String content, {bool isPrivate = false}) async {
     await ref
         .read(issueRepositoryProvider)
         .addComment(arg, content, isPrivate: isPrivate);
-    // 댓글 추가 후 댓글 목록, 변경 로그, 상세 화면 동기화
-    ref.invalidateSelf();
     ref.invalidate(issueLogProvider(arg));
     ref.invalidate(issueDetailProvider(arg));
   }
@@ -309,17 +312,20 @@ final issueLogProvider = AsyncNotifierProvider.autoDispose
 
 final issueStatusListProvider =
     FutureProvider<List<IssueStatusModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   return ref.watch(issueRepositoryProvider).fetchStatuses();
 });
 
 final issuePriorityListProvider =
     FutureProvider<List<IssuePriorityModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   return ref.watch(issueRepositoryProvider).fetchPriorities();
 });
 
 /// 특정 프로젝트의 상위 업무 후보 목록 조회 (필터 무관 전체 목록)
 final projectIssuesProvider =
     FutureProvider.family<List<IssueModel>, String>((ref, projectSlug) async {
+  ref.watch(authSessionVersionProvider);
   if (projectSlug.isEmpty) return const [];
   final repo = ref.watch(issueRepositoryProvider);
   final res = await repo.fetchIssues(

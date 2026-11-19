@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/models/project_model.dart';
@@ -61,6 +62,7 @@ List<ProjectModel> toFlattenedTree(List<ProjectModel> projects) {
 
 // ── 프로젝트 전체 목록 프로바이더 (트리 평탄화 정렬 적용) ─────────────────────────
 final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final raw = await ref.watch(projectRepositoryProvider).fetchProjects();
   return toFlattenedTree(raw);
 });
@@ -68,12 +70,14 @@ final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
 // ── 전역 활성 워크스페이스 목록 프로바이더 (Vue Header의 allActiveProjects와 100% 동일) ──
 /// 상태가 활성(status == '1')이고 가시성(visible == true)이 있는 프로젝트 목록
 final activeWorkspaceListProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final all = await ref.watch(projectListProvider.future);
   return all.where((p) => p.status == '1' && p.visible).toList();
 });
 
 // ── 내 워크스페이스 목록 프로바이더 (/api/v1/issue-project/my_projects/) ─────────────
 final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final raw = await ref.watch(projectRepositoryProvider).fetchMyProjects();
   return toFlattenedTree(raw);
 });
@@ -81,6 +85,7 @@ final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
 // ── 업무(Issue) 등록 폼 주입용 워크스페이스 목록 프로바이더 ────────────────────────────
 /// Vue의 `myActiveProjects.filter(pjt => pjt.module?.issue)`와 100% 동일
 final issueFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final myProjects = await ref.watch(myProjectsProvider.future);
   // 활성 상태(status == '1')이고 이슈 모듈이 활성화된(module?.issue != false) 프로젝트만 주입
   final filtered = myProjects
@@ -95,6 +100,7 @@ final issueFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async
 // ── 회의(Meeting) 등록 폼 주입용 워크스페이스 목록 프로바이더 ──────────────────────────
 /// Vue의 `myActiveProjects.filter(pjt => pjt.module?.meeting)`와 100% 동일
 final meetingFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final myProjects = await ref.watch(myProjectsProvider.future);
   // 활성 상태(status == '1')이고 회의 모듈이 활성화된(module?.meeting != false) 프로젝트만 주입
   final filtered = myProjects
@@ -111,6 +117,7 @@ final meetingFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) asy
 /// - 프로젝트 메뉴(DocsScopeType.project): 부동산 개발 타입(type == '2') 내 프로젝트만 주입
 /// - 업무 메뉴(DocsScopeType.all / workspace): 전체 내 활성 프로젝트(myProjects) 주입
 final docFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final docsContext = ref.watch(docsContextProvider);
   final isProjectMenu = docsContext.scopeType == DocsScopeType.project;
 
@@ -133,6 +140,7 @@ final docFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
 // ── 공지(News) 등록 폼 주입용 워크스페이스 목록 프로바이더 ───────────────────────────
 /// Vue의 `myActiveProjects.filter(pjt => pjt.module?.news)`와 100% 동일
 final newsFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final myProjects = await ref.watch(myProjectsProvider.future);
   final filtered = myProjects
       .where((p) => p.status == '1' && p.visible && (p.module?.news ?? true))
@@ -145,6 +153,7 @@ final newsFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async 
 // ── 프로젝트 상세 프로바이더 (members, versions, categories 포함) ─────────────────
 final projectDetailProvider =
     FutureProvider.family<ProjectModel, String>((ref, slug) async {
+  ref.watch(authSessionVersionProvider);
   return ref.watch(projectRepositoryProvider).fetchProjectDetail(slug);
 });
 
@@ -152,12 +161,14 @@ final projectDetailProvider =
 /// Vue의 `getDevProjects`와 100% 동일 (myProjects 기반으로 type == '2' 필터링)
 /// 계약/수납/자금 등 민감 정보를 다루므로 멤버로 속한 프로젝트(myProjects) 중에서만 주입
 final realEstateProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final myProjects = await ref.watch(myProjectsProvider.future);
   return myProjects.where((p) => p.type == '2' && p.status == '1' && p.visible).toList();
 });
 
 /// 🏢 현재 선택된 부동산 개발 프로젝트의 상세 개요 및 설정 정보 프로바이더
 final realEstateProjectDetailProvider = FutureProvider<RealEstateProjectDetailModel?>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selected = ref.watch(selectedRealEstateProjectProvider);
   if (selected == null) return null;
   final repo = ref.watch(projectRepositoryProvider);

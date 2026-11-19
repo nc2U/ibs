@@ -174,6 +174,8 @@ class ChatReplyDetail {
 }
 
 /// 개별 채팅 메시지 모델
+const Object _chatMsgUnset = Object();
+
 class ChatMessageModel {
   final int id;
   final int roomId;
@@ -214,17 +216,17 @@ class ChatMessageModel {
   ChatMessageModel copyWith({
     int? id,
     int? roomId,
-    SimpleUserModel? sender,
+    Object? sender = _chatMsgUnset,
     ChatMessageType? messageType,
     String? content,
-    String? file,
+    Object? file = _chatMsgUnset,
     String? fileName,
     int? fileSize,
-    int? refId,
+    Object? refId = _chatMsgUnset,
     String? refTitle,
     String? refSub,
-    int? replyTo,
-    ChatReplyDetail? replyToDetail,
+    Object? replyTo = _chatMsgUnset,
+    Object? replyToDetail = _chatMsgUnset,
     bool? isDeleted,
     int? unreadCount,
     DateTime? created,
@@ -232,17 +234,21 @@ class ChatMessageModel {
     return ChatMessageModel(
       id: id ?? this.id,
       roomId: roomId ?? this.roomId,
-      sender: sender ?? this.sender,
+      sender: identical(sender, _chatMsgUnset)
+          ? this.sender
+          : sender as SimpleUserModel?,
       messageType: messageType ?? this.messageType,
       content: content ?? this.content,
-      file: file ?? this.file,
+      file: identical(file, _chatMsgUnset) ? this.file : file as String?,
       fileName: fileName ?? this.fileName,
       fileSize: fileSize ?? this.fileSize,
-      refId: refId ?? this.refId,
+      refId: identical(refId, _chatMsgUnset) ? this.refId : refId as int?,
       refTitle: refTitle ?? this.refTitle,
       refSub: refSub ?? this.refSub,
-      replyTo: replyTo ?? this.replyTo,
-      replyToDetail: replyToDetail ?? this.replyToDetail,
+      replyTo: identical(replyTo, _chatMsgUnset) ? this.replyTo : replyTo as int?,
+      replyToDetail: identical(replyToDetail, _chatMsgUnset)
+          ? this.replyToDetail
+          : replyToDetail as ChatReplyDetail?,
       isDeleted: isDeleted ?? this.isDeleted,
       unreadCount: unreadCount ?? this.unreadCount,
       created: created ?? this.created,

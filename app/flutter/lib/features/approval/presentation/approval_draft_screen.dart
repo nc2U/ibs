@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +32,10 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   String _securityLevel = '2';
   List<SimpleUserModel> _selectedObservers = [];
   List<ApprovalAttachmentModel> _existingAttachments = [];
-  final List<String> _attachedFilePaths = [];
+  final List<PlatformFile> _attachedFiles = [];
+  int? _savedDocId;
+  Timer? _previewDebounce;
+  int _previewSeq = 0;
   bool _isSubmitting = false;
   bool _didInitRoutePreview = false;
 
@@ -281,6 +286,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['itinerary'] != null) _itineraryController.text = c['itinerary'].toString();
 
     // 5. 연장근무
+    if (c['reason'] != null && _generalContentController.text.isEmpty) {
+      _generalContentController.text = c['reason'].toString();
+    }
     if (c['work_type'] != null) _workType = c['work_type'].toString();
     if (c['work_date'] != null) _workDate = DateTime.tryParse(c['work_date'].toString());
     if (c['start_time'] != null) _startTimeController.text = c['start_time'].toString();
@@ -305,6 +313,13 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
 
     // 7. 인사 관련 신청
     if (c['request_type'] != null) _hrRequestType = c['request_type'].toString();
+    if (c['receive_method'] != null) _receiveMethod = c['receive_method'].toString();
+    if (c['reason'] != null && _generalContentController.text.isEmpty) {
+      _generalContentController.text = c['reason'].toString();
+    }
+    if (c['leave_start_date'] != null) _startDate = DateTime.tryParse(c['leave_start_date'].toString());
+    if (c['leave_end_date'] != null) _endDate = DateTime.tryParse(c['leave_end_date'].toString());
+    if (c['reinstatement_date'] != null) _startDate = DateTime.tryParse(c['reinstatement_date'].toString());
     if (c['cert_type'] != null) _certType = c['cert_type'].toString();
     if (c['cert_language'] != null) _certLanguage = c['cert_language'].toString();
     if (c['cert_count'] != null) _certCountController.text = c['cert_count'].toString();
@@ -338,6 +353,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['settlement_promise'] != null) _settlementPromise = c['settlement_promise'] == true;
 
     // 11. 계약 체결
+    if (c['purpose_reason'] != null && _purposeController.text.isEmpty) {
+      _purposeController.text = c['purpose_reason'].toString();
+    }
     if (c['contract_type'] != null) _contractType = c['contract_type'].toString();
     if (c['contract_kind'] != null) _contractKind = c['contract_kind'].toString();
     if (c['contract_name'] != null) _contractNameController.text = c['contract_name'].toString();
@@ -353,6 +371,10 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['special_terms'] != null) _specialTermsController.text = c['special_terms'].toString();
 
     // 12. 계약 변경 / 해지
+    if (c['final_end_date'] != null && _endDate == null) _endDate = DateTime.tryParse(c['final_end_date'].toString());
+    if (c['change_reason'] != null && _purposeController.text.isEmpty) {
+      _purposeController.text = c['change_reason'].toString();
+    }
     if (c['change_type'] != null) _contractChangeType = c['change_type'].toString();
     if (c['original_contract_name'] != null) _origContractNameController.text = c['original_contract_name'].toString();
     if (c['original_contract_no'] != null) _origContractNoController.text = c['original_contract_no'].toString();
@@ -367,6 +389,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['subsequent_plan'] != null) _subsequentPlanController.text = c['subsequent_plan'].toString();
 
     // 13. 법무 검토
+    if (c['background'] != null && _generalContentController.text.isEmpty) {
+      _generalContentController.text = c['background'].toString();
+    }
     if (c['review_type'] != null) _legalReviewType = c['review_type'].toString();
     if (c['urgency'] != null) _legalUrgency = c['urgency'].toString();
     if (c['case_title'] != null) _contractNameController.text = c['case_title'].toString();
@@ -374,6 +399,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['key_issues'] != null) _keyIssuesController.text = c['key_issues'].toString();
 
     // 14. 사업검토
+    if (c['project_name'] != null && _contractNameController.text.isEmpty) {
+      _contractNameController.text = c['project_name'].toString();
+    }
     if (c['biz_type'] != null) _bizType = c['biz_type'].toString();
     if (c['location'] != null) _locationController.text = c['location'].toString();
     if (c['building_scale'] != null) _buildingScaleController.text = c['building_scale'].toString();
@@ -438,6 +466,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
 
   @override
   void dispose() {
+    _previewDebounce?.cancel();
     _titleController.dispose();
     _leaveDaysController.dispose();
     _leaveReasonController.dispose();
@@ -537,45 +566,62 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   }
 
   Future<void> _updateRoutePreview() async {
-    if (_selectedDocType == null) {
-      setState(() => _previewSteps = []);
+    _previewDebounce?.cancel();
+    final selectedType = _selectedDocType;
+    if (selectedType == null) {
+      ++_previewSeq;
+      if (mounted) {
+        setState(() {
+          _previewSteps = [];
+          _isPreviewLoading = false;
+        });
+      }
       return;
     }
 
-    setState(() => _isPreviewLoading = true);
-    try {
-      final amount = num.tryParse(_amountController.text.replaceAll(',', '').trim());
-      final repo = ref.read(approvalRepositoryProvider);
-      final steps = await repo.fetchRoutePreview(
-        docTypeId: _selectedDocType!.id,
-        assignmentId: _selectedAssignment?.id,
-        amount: amount,
-      );
-      if (mounted) {
+    _previewDebounce = Timer(const Duration(milliseconds: 250), () async {
+      final reqSeq = ++_previewSeq;
+      if (!mounted) return;
+      setState(() => _isPreviewLoading = true);
+      try {
+        final amount = num.tryParse(_amountController.text.replaceAll(',', '').trim());
+        final repo = ref.read(approvalRepositoryProvider);
+        final steps = await repo.fetchRoutePreview(
+          docTypeId: selectedType.id,
+          assignmentId: _selectedAssignment?.id,
+          amount: amount,
+        );
+        if (!mounted || reqSeq != _previewSeq || _selectedDocType?.id != selectedType.id) {
+          return;
+        }
         setState(() {
           _previewSteps = steps;
           _isPreviewLoading = false;
         });
+      } catch (_) {
+        if (mounted && reqSeq == _previewSeq) {
+          setState(() => _isPreviewLoading = false);
+        }
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isPreviewLoading = false);
-      }
-    }
+    });
   }
 
   Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result != null && result.paths.isNotEmpty) {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: kIsWeb,
+    );
+    if (!mounted) return;
+    if (result != null && result.files.isNotEmpty) {
       setState(() {
-        _attachedFilePaths.addAll(result.paths.whereType<String>());
+        _attachedFiles.addAll(result.files);
       });
     }
   }
 
   void _removeFile(int index) {
     setState(() {
-      _attachedFilePaths.removeAt(index);
+      _attachedFiles.removeAt(index);
     });
   }
 
@@ -1100,31 +1146,38 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
         'content': content,
       };
 
+      final existingId = widget.editDoc?.id ?? _savedDocId;
       final ApprovalDocumentModel doc;
-      if (widget.editDoc != null) {
+      if (existingId != null) {
         doc = await repo.updateDocument(
-          widget.editDoc!.id,
+          existingId,
           payload,
-          filePaths: _attachedFilePaths.isNotEmpty ? _attachedFilePaths : null,
+          files: _attachedFiles.isNotEmpty ? _attachedFiles : null,
         );
       } else {
         doc = await repo.createDocument(
           payload,
-          filePaths: _attachedFilePaths.isNotEmpty ? _attachedFilePaths : null,
+          files: _attachedFiles.isNotEmpty ? _attachedFiles : null,
         );
+        _savedDocId = doc.id;
+        if (mounted) {
+          ref.invalidate(draftedApprovalsProvider);
+        }
       }
 
       if (isDirectSubmit) {
         await repo.submitDocument(doc.id);
       }
 
+      if (!mounted) return;
+
       ref.invalidate(pendingApprovalsProvider);
       ref.invalidate(draftedApprovalsProvider);
       ref.invalidate(approvedApprovalsProvider);
       ref.invalidate(observedApprovalsProvider);
       ref.invalidate(allApprovalsProvider);
-      if (widget.editDoc != null) {
-        ref.invalidate(approvalDetailProvider(widget.editDoc!.id));
+      if (existingId != null) {
+        ref.invalidate(approvalDetailProvider(existingId));
       }
 
       if (mounted) {
@@ -1317,7 +1370,8 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
               child: docTypesAsync.when(
                 data: (docTypes) {
                   if (_selectedDocType == null && widget.editDoc != null) {
-                    _selectedDocType = docTypes.where((dt) => dt.id == widget.editDoc!.docType).firstOrNull;
+                    _selectedDocType = docTypes.where((dt) => dt.id == widget.editDoc!.docType).firstOrNull ??
+                        widget.editDoc!.docTypeDetail;
                     if (_selectedDocType != null && !_didInitRoutePreview) {
                       _didInitRoutePreview = true;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1325,16 +1379,24 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                       });
                     }
                   }
+                  final effectiveDocTypes = (_selectedDocType != null &&
+                          !docTypes.any((dt) => dt.id == _selectedDocType!.id))
+                      ? [_selectedDocType!, ...docTypes]
+                      : docTypes;
+                  final dropdownDocType = _selectedDocType == null
+                      ? null
+                      : (effectiveDocTypes.where((dt) => dt.id == _selectedDocType!.id).firstOrNull ??
+                          _selectedDocType);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 자주 쓰는 4대 양식 빠른 선택 칩
                       _buildQuickDocTypeChips(context, docTypes),
                       DropdownButtonFormField<DocumentTypeModel>(
-                        key: ValueKey('doctype_${_selectedDocType?.id}'),
-                        initialValue: _selectedDocType,
+                        key: ValueKey('doctype_${dropdownDocType?.id}'),
+                        initialValue: dropdownDocType,
                         decoration: _inputDecoration(context, '문서 유형 선택'),
-                        items: docTypes.map((dt) {
+                        items: effectiveDocTypes.map((dt) {
                           final cat = dt.categoryName != null ? '[${dt.categoryName}] ' : '';
                           return DropdownMenuItem(
                             value: dt,
@@ -1498,7 +1560,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
               ),
               child: Column(
                 children: [
-                  if (_existingAttachments.isEmpty && _attachedFilePaths.isEmpty)
+                  if (_existingAttachments.isEmpty && _attachedFiles.isEmpty)
                     Text('첨부된 파일이 없습니다.', style: TextStyle(fontSize: 12, color: context.colors.textMuted))
                   else ...[
                     for (final att in _existingAttachments)
@@ -1529,7 +1591,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                           ],
                         ),
                       ),
-                    for (int i = 0; i < _attachedFilePaths.length; i++)
+                    for (int i = 0; i < _attachedFiles.length; i++)
                       Container(
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1540,7 +1602,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _attachedFilePaths[i].split(RegExp(r'[/\\]')).last,
+                                _attachedFiles[i].name,
                                 style: const TextStyle(fontSize: 12),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -2739,6 +2801,82 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
           TextFormField(
             controller: _supportItemsController,
             decoration: _inputDecoration(context, '물품 지원 요청 (예: 축하화환 1점, 상조용품)'),
+          ),
+          const SizedBox(height: 10),
+        ] else if (_hrRequestType == 'LEAVE_OF_ABSENCE') ...[
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _startDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (d != null && mounted) setState(() => _startDate = d);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    side: BorderSide(color: context.colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    _startDate != null ? '휴직 시작: ${_startDate!.toIso8601String().split('T').first}' : '휴직 시작일 선택',
+                    style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _endDate ?? (_startDate ?? DateTime.now()).add(const Duration(days: 30)),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (d != null && mounted) setState(() => _endDate = d);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    side: BorderSide(color: context.colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    _endDate != null ? '휴직 종료: ${_endDate!.toIso8601String().split('T').first}' : '휴직 종료일 선택',
+                    style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ] else if (_hrRequestType == 'REINSTATEMENT') ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: _startDate ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2035),
+                );
+                if (d != null && mounted) setState(() => _startDate = d);
+              },
+              style: OutlinedButton.styleFrom(
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                side: BorderSide(color: context.colors.border),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: Text(
+                _startDate != null ? '복직 예정일: ${_startDate!.toIso8601String().split('T').first}' : '복직 예정일 선택',
+                style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+              ),
+            ),
           ),
           const SizedBox(height: 10),
         ],

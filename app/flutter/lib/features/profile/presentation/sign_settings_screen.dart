@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/dio_provider.dart';
@@ -64,6 +65,7 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
       );
       if (picked != null) {
         final bytes = await picked.readAsBytes();
+        if (!mounted) return;
         setState(() {
           _newSignBytes = bytes;
           _newSignFileName = picked.name;
@@ -484,7 +486,9 @@ class _SignSettingsScreenState extends ConsumerState<SignSettingsScreen> {
                         )
                       else if (_serverSignImageUrl != null && _serverSignImageUrl!.isNotEmpty)
                         CachedNetworkImage(
-                          imageUrl: _serverSignImageUrl!,
+                          imageUrl: _serverSignImageUrl!.startsWith('/')
+                              ? '$appBaseUrl${_serverSignImageUrl!}'
+                              : _serverSignImageUrl!,
                           width: 150,
                           height: 150,
                           fit: BoxFit.contain,
@@ -673,16 +677,23 @@ class _SignPadBottomSheetState extends State<_SignPadBottomSheet> {
         }
       }
 
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(outWidth.ceil(), outHeight.ceil());
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      ui.Picture? picture;
+      ui.Image? img;
+      try {
+        picture = recorder.endRecording();
+        img = await picture.toImage(outWidth.ceil(), outHeight.ceil());
+        final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
 
-      if (byteData == null) throw Exception('이미지 변환 실패');
+        if (byteData == null) throw Exception('이미지 변환 실패');
 
-      final buffer = byteData.buffer.asUint8List();
+        final buffer = byteData.buffer.asUint8List();
 
-      if (mounted) {
-        Navigator.of(context).pop(buffer);
+        if (mounted) {
+          Navigator.of(context).pop(buffer);
+        }
+      } finally {
+        img?.dispose();
+        picture?.dispose();
       }
     } catch (e) {
       if (mounted) {

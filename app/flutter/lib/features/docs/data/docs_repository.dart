@@ -50,7 +50,7 @@ class DocsRepository {
   /// 카테고리 목록 조회
   Future<List<DocCategoryModel>> fetchCategories({String? docType, bool activeOnly = true}) async {
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{'limit': 200};
       if (docType != null && docType.isNotEmpty) {
         queryParams['doc_type'] = docType;
       }

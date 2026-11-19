@@ -7,6 +7,7 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../../../project/providers/project_provider.dart';
 import '../../data/models/forum_model.dart';
 import '../../data/forum_repository.dart';
 import '../../providers/forum_provider.dart';
@@ -139,13 +140,35 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     final isEdit = widget.post != null;
+    final allForums = ref.read(allForumsProvider).valueOrNull ??
+        ref.read(forumListProvider).valueOrNull ??
+        [];
+    final targetForum =
+        allForums.where((f) => f.pk == _selectedForumPk).firstOrNull;
+    final allProjects = ref.read(projectListProvider).valueOrNull ?? [];
     final selectedProject = ref.read(selectedWorkspaceProvider);
+    final targetSlug = targetForum?.project != null
+        ? (allProjects
+                .where((p) => p.pk == targetForum!.project)
+                .map((p) => p.slug)
+                .firstOrNull ??
+            selectedProject?.slug)
+        : selectedProject?.slug;
+
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final isAuthor = currentUser != null &&
+        widget.post?.creator != null &&
+        (currentUser.pk == widget.post!.creator!.pk ||
+            currentUser.username == widget.post!.creator!.username);
+    final isForumManager = (currentUser?.isSuperuser ?? false) ||
+        (targetForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
+
     final canAction = isEdit
-        ? ref.can(Perm.forumUpdate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumOwnUpdate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)
-        : ref.can(Perm.forumCreate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
+        ? (ref.canOnce(Perm.forumUpdate, projectSlug: targetSlug) ||
+            (isAuthor &&
+                ref.canOnce(Perm.forumOwnUpdate, projectSlug: targetSlug)) ||
+            isForumManager)
+        : ref.canOnce(Perm.forumCreate, projectSlug: targetSlug);
 
     if (!canAction) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -227,9 +250,25 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   Widget build(BuildContext context) {
     final isEdit = widget.post != null;
     final forumsAsync = ref.watch(forumListProvider);
+    final allForums = ref.watch(allForumsProvider).valueOrNull ??
+        forumsAsync.valueOrNull ??
+        [];
+    final selectedForum =
+        allForums.where((f) => f.pk == _selectedForumPk).firstOrNull;
+    final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
     final selectedProject = ref.watch(selectedWorkspaceProvider);
+    final targetSlug = selectedForum?.project != null
+        ? (allProjects
+                .where((p) => p.pk == selectedForum!.project)
+                .map((p) => p.slug)
+                .firstOrNull ??
+            selectedProject?.slug)
+        : selectedProject?.slug;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    final isForumManager = (currentUser?.isSuperuser ?? false) ||
+        (selectedForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
     final canManageForum =
-        ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
+        ref.can(Perm.forumManage, projectSlug: targetSlug) || isForumManager;
 
     return Container(
       constraints: BoxConstraints(
@@ -371,7 +410,13 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                       Text('카테고리', style: AppTextStyles.label.copyWith(color: context.colors.textSecond)),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int?>(
-                        initialValue: _selectedCategoryPk,
+                        key: ValueKey(
+                          'post_cat_${_selectedForumPk}_${_selectedCategoryPk}_${_availableCategories.length}',
+                        ),
+                        initialValue: _availableCategories
+                                .any((c) => c.pk == _selectedCategoryPk)
+                            ? _selectedCategoryPk
+                            : null,
                         dropdownColor: context.colors.bgCard,
                         style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                         decoration: InputDecoration(
@@ -492,32 +537,34 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: context.colors.bgSurface,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: context.colors.border, width: 0.8),
+                      if (isForumManager) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: context.colors.bgSurface,
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(color: context.colors.border, width: 0.8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.help_outline_rounded,
+                                  size: 18, color: context.colors.accentApproval),
+                              const SizedBox(width: 8),
+                              Text('FAQ (자주 묻는 질문)으로 등록',
+                                  style: AppTextStyles.bodySm.copyWith(
+                                      fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                              const Spacer(),
+                              Switch(
+                                value: _isFaq,
+                                activeThumbColor: context.colors.accentApproval,
+                                onChanged: (v) => setState(() => _isFaq = v),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.help_outline_rounded,
-                                size: 18, color: context.colors.accentApproval),
-                            const SizedBox(width: 8),
-                            Text('FAQ (자주 묻는 질문)으로 등록',
-                                style: AppTextStyles.bodySm.copyWith(
-                                    fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
-                            const Spacer(),
-                            Switch(
-                              value: _isFaq,
-                              activeThumbColor: context.colors.accentApproval,
-                              onChanged: (v) => setState(() => _isFaq = v),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                       const SizedBox(height: 16),
                     ],
 

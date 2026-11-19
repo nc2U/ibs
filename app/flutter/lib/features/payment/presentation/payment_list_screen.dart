@@ -11,8 +11,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../project/providers/project_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/services/share_helper.dart';
 import '../../../core/theme/app_colors_extension.dart';
@@ -49,8 +51,9 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     // ── 화면 진입 시 검색/필터 초기화 및 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        final hasPreSelected = ref.read(selectedContractForPaymentProvider) != null;
         _resetFiltersAndSearch();
-        _refreshAll(resetSelection: true);
+        _refreshAll(resetSelection: !hasPreSelected);
       }
     });
   }
@@ -1262,19 +1265,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
           Divider(color: context.colors.border, height: 1),
 
           // ── 헤더 아래 전체를 CustomScrollView로 스크롤 가능하게 구성 ──────────────
-          if (!canRead)
-            const Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: ErrorView.empty(
-                    message: '대금 수납 내역을 조회할 권한이 없습니다.',
-                    subMessage: '관리자에게 [수납 조회] 권한(payment.read)을 요청해 주세요.',
-                  ),
-                ),
-              ),
-            )
-          else if (selectedProject == null)
+          if (selectedProject == null)
             Expanded(
               child: Center(
                 child: Column(
@@ -1303,6 +1294,32 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   ],
                 ),
               ),
+            )
+          else if (!canRead)
+            Builder(
+              builder: (context) {
+                final isLoadingPerms =
+                    (!ref.watch(currentUserProvider).hasValue &&
+                        ref.watch(currentUserProvider).isLoading) ||
+                    (!ref.watch(myProjectsProvider).hasValue &&
+                        ref.watch(myProjectsProvider).isLoading);
+                if (isLoadingPerms) {
+                  return const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return const Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: ErrorView.empty(
+                        message: '대금 수납 내역을 조회할 권한이 없습니다.',
+                        subMessage: '관리자에게 [수납 조회] 권한(payment.read)을 요청해 주세요.',
+                      ),
+                    ),
+                  ),
+                );
+              },
             )
           else
             Expanded(
@@ -2736,32 +2753,41 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                                       ),
                                     ),
                                   ),
-                                  const Spacer(),
-                                  InkWell(
-                                    onTap: () => _showEditNowPaymentOrderDialog(
-                                      billIssue: billIssue,
-                                      installmentOrders: installList,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.tune_rounded,
-                                          size: 12,
-                                          color: context.colors.accentProject,
-                                        ),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          '기준 변경',
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.bold,
+                                  if (ref.can(
+                                        Perm.paymentUpdate,
+                                        projectSlug: selectedProject?.slug,
+                                      ) ||
+                                      ref.can(
+                                        Perm.noticeUpdate,
+                                        projectSlug: selectedProject?.slug,
+                                      )) ...[
+                                    const Spacer(),
+                                    InkWell(
+                                      onTap: () => _showEditNowPaymentOrderDialog(
+                                        billIssue: billIssue,
+                                        installmentOrders: installList,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.tune_rounded,
+                                            size: 12,
                                             color: context.colors.accentProject,
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            '기준 변경',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: context.colors.accentProject,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ],

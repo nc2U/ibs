@@ -154,6 +154,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
           }
         });
 
+        if (!mounted) return;
         setState(() {});
       } else {
         if (mounted) {
@@ -212,6 +213,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
         final f = File(_currentRecordingPath!);
         if (f.existsSync()) await f.delete();
       }
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         _recordingSeconds = 0;
@@ -295,25 +297,20 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
       if (mounted) {
         setState(() {
-          if (aiData['title'] != null && (aiData['title'] as String).isNotEmpty) {
-            _titleController.text = aiData['title'];
-          }
-          if (aiData['agenda'] != null && (aiData['agenda'] as String).isNotEmpty) {
-            _agendaController.text = aiData['agenda'];
-          }
-          if (aiData['content'] != null && (aiData['content'] as String).isNotEmpty) {
-            _contentController.text = aiData['content'];
-          }
-          if (aiData['decisions'] != null && (aiData['decisions'] as String).isNotEmpty) {
-            _decisionsController.text = aiData['decisions'];
-          }
-          if (aiData['action_items'] != null && (aiData['action_items'] as String).isNotEmpty) {
-            _actionItemsController.text = aiData['action_items'];
-          }
+          final title = aiData['title']?.toString() ?? '';
+          if (title.isNotEmpty) _titleController.text = title;
+          final agenda = aiData['agenda']?.toString() ?? '';
+          if (agenda.isNotEmpty) _agendaController.text = agenda;
+          final content = aiData['content']?.toString() ?? '';
+          if (content.isNotEmpty) _contentController.text = content;
+          final decisions = aiData['decisions']?.toString() ?? '';
+          if (decisions.isNotEmpty) _decisionsController.text = decisions;
+          final actionItems = aiData['action_items']?.toString() ?? '';
+          if (actionItems.isNotEmpty) _actionItemsController.text = actionItems;
         });
 
         // 카테고리 자동 매핑
-        final catName = aiData['category_name'] as String?;
+        final catName = aiData['category_name']?.toString();
         if (catName != null && catName.isNotEmpty) {
           final cats = ref.read(meetingCategoriesProvider(_selectedProjectPk)).valueOrNull ?? [];
           final match = cats.where((c) => c.name.contains(catName) || catName.contains(c.name)).firstOrNull;
@@ -398,78 +395,83 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     final textController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    final createdCategory = await showDialog<MeetingCategoryModel?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          '새 회의 카테고리 추가',
-          style: AppTextStyles.titleSm.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _selectedProjectPk != null
-                    ? '현재 워크스페이스 전용 카테고리로 등록됩니다.'
-                    : '전체 공용 카테고리로 등록됩니다.',
-                style: TextStyle(fontSize: 11, color: context.colors.textMuted),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: textController,
-                autofocus: true,
-                style: TextStyle(color: context.colors.textPrimary),
-                decoration: _inputDecoration('카테고리명 입력 (예: 설계/인허가, 분양)'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? '카테고리명을 입력해 주세요.' : null,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.accentWork,
-              foregroundColor: Colors.white,
+    MeetingCategoryModel? createdCategory;
+    try {
+      createdCategory = await showDialog<MeetingCategoryModel?>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            '새 회의 카테고리 추가',
+            style: AppTextStyles.titleSm.copyWith(
+              fontWeight: FontWeight.bold,
+              color: context.colors.textPrimary,
             ),
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              try {
-                final newCat = await ref.read(meetingRepositoryProvider).createCategory(
-                  name: textController.text.trim(),
-                  projectPk: _selectedProjectPk,
-                );
-                if (ctx.mounted) Navigator.pop(ctx, newCat);
-              } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text('카테고리 생성 실패: ${getDioErrorMessage(e)}'),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('추가'),
           ),
-        ],
-      ),
-    );
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _selectedProjectPk != null
+                      ? '현재 워크스페이스 전용 카테고리로 등록됩니다.'
+                      : '전체 공용 카테고리로 등록됩니다.',
+                  style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: textController,
+                  autofocus: true,
+                  style: TextStyle(color: context.colors.textPrimary),
+                  decoration: _inputDecoration('카테고리명 입력 (예: 설계/인허가, 분양)'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? '카테고리명을 입력해 주세요.' : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.colors.accentWork,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                try {
+                  final newCat = await ref.read(meetingRepositoryProvider).createCategory(
+                    name: textController.text.trim(),
+                    projectPk: _selectedProjectPk,
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx, newCat);
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text('카테고리 생성 실패: ${getDioErrorMessage(e)}'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      textController.dispose();
+    }
 
     if (createdCategory != null && mounted) {
       ref.invalidate(meetingCategoriesProvider(_selectedProjectPk));
-      setState(() => _selectedCategoryPk = createdCategory.pk);
+      setState(() => _selectedCategoryPk = createdCategory!.pk);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("'${createdCategory.name}' 카테고리가 추가되어 선택되었습니다."),
@@ -485,7 +487,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     if (widget.initialMeeting == null && _selectedProjectPk == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('프로젝트를 먼저 선택해 주세요.'),
+          content: const Text('워크스페이스를 먼저 선택해 주세요.'),
           backgroundColor: context.colors.error,
         ),
       );
@@ -495,10 +497,21 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     setState(() => _isSaving = true);
 
     final meetingDateText = _meetingDateController.text.trim();
+    final formSlug = widget.initialMeeting?.projectDesc.slug ??
+        ref.read(meetingFormProjectsProvider).valueOrNull
+            ?.where((p) => p.pk == _selectedProjectPk)
+            .firstOrNull
+            ?.slug;
+    final canConfirm = formSlug != null
+        ? ref.can(Perm.meetingConfirm, projectSlug: formSlug)
+        : ref.can(Perm.meetingConfirm);
+    // 서버 제약: 종료 상태('2')가 아니면 확정 불가
+    final effectiveConfirmed = (_status == '2') ? _isConfirmed : false;
+
     final payload = <String, dynamic>{
       'title': _titleController.text.trim(),
       'status': _status,
-      'is_confirmed': _isConfirmed,
+      if (canConfirm) 'is_confirmed': effectiveConfirmed,
       'category': _selectedCategoryPk,
       'location': _locationController.text.trim(),
       'attendees': _selectedAttendeePks,
@@ -523,9 +536,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
         await ref
             .read(meetingRepositoryProvider)
             .updateMeeting(widget.initialMeeting!.pk, payload);
+        if (!mounted) return;
         ref.invalidate(meetingDetailProvider(widget.initialMeeting!.pk));
       } else {
         await ref.read(meetingRepositoryProvider).createMeeting(payload);
+        if (!mounted) return;
       }
       ref.invalidate(meetingListProvider);
 
@@ -559,6 +574,14 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.initialMeeting != null;
     final projectsAsync = ref.watch(meetingFormProjectsProvider);
+    final formProjectSlug = widget.initialMeeting?.projectDesc.slug ??
+        projectsAsync.valueOrNull
+            ?.where((p) => p.pk == _selectedProjectPk)
+            .firstOrNull
+            ?.slug;
+    final canAddCategory = formProjectSlug != null
+        ? ref.can(Perm.projectUpdate, projectSlug: formProjectSlug)
+        : false;
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -725,9 +748,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 ),
               ],
 
-              // 프로젝트 선택 (신규 등록 시)
+              // 워크스페이스 선택 (신규 등록 시)
               if (!isEdit) ...[
-                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                Text('워크스페이스 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                 const SizedBox(height: 6),
                 projectsAsync.when(
                   loading: () => SizedBox(
@@ -736,7 +759,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: context.colors.accentWork)),
                   ),
-                  error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
+                  error: (e, _) => Text('워크스페이스 목록을 불러올 수 없습니다.',
                       style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                   data: (projects) {
                     final validProjectPk = (_selectedProjectPk != null &&
@@ -744,7 +767,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         ? _selectedProjectPk
                         : (projects.isNotEmpty ? projects.first.pk : null);
 
-                    // 만약 _selectedProjectPk가 설정되지 않았고 유효한 프로젝트가 존재하면 상태 변수에 명시적으로 바인딩
+                    // 만약 _selectedProjectPk가 설정되지 않았고 유효한 워크스페이스가 존재하면 상태 변수에 명시적으로 바인딩
                     if (_selectedProjectPk == null && validProjectPk != null) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted && _selectedProjectPk == null) {
@@ -759,7 +782,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                       isExpanded: true,
                       style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                       dropdownColor: context.colors.bgCard,
-                      decoration: _inputDecoration('프로젝트 선택'),
+                      decoration: _inputDecoration('워크스페이스 선택'),
                       items: projects
                           .map((p) => DropdownMenuItem(
                                 value: p.pk,
@@ -774,7 +797,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                           _selectedAttendeePks = [];
                         });
                       },
-                      validator: (v) => v == null ? '프로젝트를 선택해 주세요.' : null,
+                      validator: (v) => v == null ? '워크스페이스를 선택해 주세요.' : null,
                     );
                   },
                 ),
@@ -861,8 +884,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('카테고리 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
-                  if (ref.can(Perm.projectUpdate,
-                      projectSlug: ref.watch(selectedProjectProvider)?.slug))
+                  if (canAddCategory)
                     InkWell(
                       onTap: _showAddCategoryDialog,
                       borderRadius: BorderRadius.zero,
@@ -1138,7 +1160,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     final tempSelected = List<int>.from(_selectedAttendeePks);
     String searchQuery = '';
 
-    await showModalBottomSheet<void>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.bgCard,
@@ -1210,7 +1232,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                               ),
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => Navigator.pop(context, true),
                               child: const Text('완료', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ),
                           ],
@@ -1314,9 +1336,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       },
     );
 
-    setState(() {
-      _selectedAttendeePks = tempSelected;
-    });
+    if (confirmed == true && mounted) {
+      setState(() {
+        _selectedAttendeePks = tempSelected;
+      });
+    }
   }
 
   InputDecoration _inputDecoration(String hint) {

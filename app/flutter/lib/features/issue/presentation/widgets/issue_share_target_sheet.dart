@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
-import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/share_payload_provider.dart';
 import '../../../../core/router/app_router.dart';
@@ -131,23 +130,24 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
 
   bool _canAttach(IssueModel issue) {
     if (issue.status.closed) return false;
-    final currentUser = ref.read(currentUserProvider).valueOrNull;
-    final isCreator = currentUser != null && currentUser.pk == issue.creator?.pk;
-    final isAssignee = currentUser != null && currentUser.pk == issue.assignedTo?.pk;
-    return ref.can(Perm.issueUpdate, projectSlug: issue.project.slug) ||
-        (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) && (isCreator || isAssignee));
+    // Django IssueFileViewSet.create는 issue.update 권한 필수
+    return ref.can(Perm.issueUpdate, projectSlug: issue.project.slug);
   }
 
   Future<void> _handleIssueTap(IssueModel issue) async {
     if (!_canAttach(issue)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(issue.status.closed
-              ? '완료(종결)된 업무에는 파일을 첨부할 수 없습니다.'
-              : '해당 업무에 파일을 첨부할 권한이 없습니다.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      final msg = issue.status.closed
+          ? '완료(종결)된 업무에는 파일을 첨부할 수 없습니다.'
+          : '해당 업무에 파일을 첨부할 권한(issue.update)이 없습니다.';
+      final navCtx = rootNavigatorKey.currentContext ?? context;
+      if (navCtx.mounted) {
+        ScaffoldMessenger.of(navCtx).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       return;
     }
     await _attachFilesToIssue(issue);
@@ -182,7 +182,7 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     setState(() {
       _isUploading = true;
@@ -194,6 +194,7 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
 
     try {
       for (int i = 0; i < widget.payload.files.length; i++) {
+        if (!mounted) break;
         final file = widget.payload.files[i];
         setState(() {
           _uploadProgressText = '파일 업로드 중 (${i + 1}/${widget.payload.files.length})...';
@@ -210,8 +211,8 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
 
       if (!mounted) return;
 
-      Navigator.pop(context); // 시트 닫기
       ref.read(pendingSharePayloadProvider.notifier).clear();
+      Navigator.pop(context); // 시트 닫기
 
       final currentCtx = rootNavigatorKey.currentContext;
       if (currentCtx != null && currentCtx.mounted) {
@@ -260,7 +261,13 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
   Widget build(BuildContext context) {
     final totalSize = widget.payload.files.fold<int>(0, (sum, f) => sum + f.size);
 
-    return Container(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          ref.read(pendingSharePayloadProvider.notifier).clear();
+        }
+      },
+      child: Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
@@ -323,7 +330,10 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
                     ),
                     IconButton(
                       icon: Icon(Icons.close_rounded, color: context.colors.textMuted),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        ref.read(pendingSharePayloadProvider.notifier).clear();
+                        Navigator.pop(context);
+                      },
                     ),
                   ],
                 ),
@@ -487,6 +497,7 @@ class _IssueShareTargetSheetState extends ConsumerState<IssueShareTargetSheet> {
             ),
         ],
       ),
+    ),
     );
   }
 }

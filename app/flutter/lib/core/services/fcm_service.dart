@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/api_endpoints.dart';
 import '../router/app_router.dart';
 import 'app_badge_service.dart';
 
@@ -62,7 +63,7 @@ class FcmService {
   /// 로그아웃 시 서버 측 기기 토큰 비활성화 및 로컬 알림 상태 리셋
   static Future<void> deactivateTokenOnLogout(Dio dio) async {
     try {
-      if (Firebase.apps.isNotEmpty) {
+      if (!kIsWeb && Firebase.apps.isNotEmpty) {
         final fcmToken = await _messaging
             .getToken()
             .timeout(const Duration(seconds: 3), onTimeout: () => null);
@@ -74,9 +75,14 @@ class FcmService {
     } catch (e) {
       debugPrint('⚠️ [FCM] 로그아웃 토큰 비활성화 건너뜀: $e');
     } finally {
-      _isInitialized = false;
-      await AppBadgeService.removeBadge();
+      await resetLocalStateOnLogout();
     }
+  }
+
+  /// 네트워크 요청 없이 로컬 푸시/뱃지 상태만 초기화 (세션 만료 등)
+  static Future<void> resetLocalStateOnLogout() async {
+    _isInitialized = false;
+    await AppBadgeService.removeBadge();
   }
 
   /// 최초 푸시 권한 모달 안내를 표시했는지 여부
@@ -93,7 +99,7 @@ class FcmService {
   /// OS 기기 설정 화면으로 바로 이동 (알림 권한 거부 상태 시 사용)
   static Future<void> openNotificationSettings() async {
     try {
-      if (Platform.isIOS) {
+      if (!kIsWeb && Platform.isIOS) {
         final uri = Uri.parse('app-settings:');
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri);
@@ -138,7 +144,7 @@ class FcmService {
 
         // 2. iOS/Android 시스템 알림 권한 요청 (팝업 허용 유도)
         try {
-          if (Platform.isIOS) {
+          if (!kIsWeb && Platform.isIOS) {
             final iosPlugin = kLocalNotificationsPlugin
                 .resolvePlatformSpecificImplementation<
                     IOSFlutterLocalNotificationsPlugin>();
@@ -270,7 +276,7 @@ class FcmService {
         debugPrint('🔔 [FCM] 푸시 알림 권한 승인됨: ${settings.authorizationStatus}');
 
         // 4. APNs 토큰 대기 (iOS인 경우)
-        if (Platform.isIOS) {
+        if (!kIsWeb && Platform.isIOS) {
           String? apnsToken;
           int retryCount = 0;
           while (apnsToken == null && retryCount < 10) {
@@ -405,7 +411,10 @@ class FcmService {
       }
 
       // 2. 전자결재 알림
-      if (category == 'approval' || targetType == 'approval_doc' || targetType == 'approval') {
+      if (category == 'approval' ||
+          targetType == 'approval_document' ||
+          targetType == 'approval_doc' ||
+          targetType == 'approval') {
         if (targetId.isNotEmpty) {
           navContext.push('/approval/$targetId');
           return;
@@ -434,7 +443,13 @@ class FcmService {
         return;
       }
 
-      // 5. 공용문서 알림
+      // 5. 공지/채널 알림
+      if (category == 'notice' || targetType == 'news') {
+        navContext.go('/channel?section=0&tab=0');
+        return;
+      }
+
+      // 6. 공용문서 알림
       if (category == 'docs' || targetType == 'doc') {
         navContext.push('/docs');
         return;
@@ -447,18 +462,21 @@ class FcmService {
   /// 백엔드 (/api/v1/fcm-device/)에 기기 토큰 등록/갱신
   static Future<void> _registerTokenToServer(Dio dio, String token, {bool isActive = true}) async {
     try {
-      final deviceType = Platform.isIOS
-          ? 'ios'
-          : (Platform.isAndroid ? 'android' : 'web');
+      final deviceType = kIsWeb
+          ? 'web'
+          : (Platform.isIOS
+              ? 'ios'
+              : (Platform.isAndroid ? 'android' : 'web'));
 
       await dio.post(
-        '/api/v1/fcm-device/',
+        ApiEndpoints.fcmDevice,
         data: {
           'registration_id': token,
           'platform': deviceType,
           'device_type': deviceType,
           'is_active': isActive,
         },
+        options: !isActive ? Options(extra: {'skipAuthRefresh': true}) : null,
       );
       debugPrint('✅ [FCM] 백엔드에 기기 토큰 등록 성공 ($deviceType, is_active: $isActive)');
     } on DioException catch (e) {

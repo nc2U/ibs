@@ -4,9 +4,13 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/user_model.dart';
 import '../services/fcm_service.dart';
 import 'dio_provider.dart';
+import 'docs_context_provider.dart';
 import 'project_provider.dart';
 
 part 'auth_provider.freezed.dart';
+
+/// 세션 변경 식별자 (로그아웃 또는 로그인 시마다 증가하여 세션 종속 프로바이더 자동 초기화)
+final authSessionVersionProvider = StateProvider<int>((ref) => 0);
 
 // ── 인증 상태 모델 ─────────────────────────────────────────────────────────────
 @freezed
@@ -18,6 +22,8 @@ class AuthState with _$AuthState {
 
 // ── AuthNotifier ───────────────────────────────────────────────────────────────
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  bool _isLoggingOut = false;
+
   @override
   Future<AuthState> build() async {
     final tokenStorage = ref.read(tokenStorageProvider);
@@ -28,18 +34,39 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return const AuthState.unauthenticated();
   }
 
-  Future<void> logout() async {
-    final dio = ref.read(dioProvider);
-    final tokenStorage = ref.read(tokenStorageProvider);
-    await FcmService.deactivateTokenOnLogout(dio);
-    await tokenStorage.clearTokens();
-    ref.invalidate(currentUserProvider);
-    ref.read(selectedWorkspaceProvider.notifier).state = null;
-    ref.read(selectedRealEstateProjectProvider.notifier).state = null;
-    state = const AsyncData(AuthState.unauthenticated());
+  Future<void> logout({bool isSessionExpired = false}) async {
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    try {
+      final dio = ref.read(dioProvider);
+      final tokenStorage = ref.read(tokenStorageProvider);
+      final accessToken = await tokenStorage.getAccessToken();
+
+      // 유효 토큰이 살아있는 능동 로그아웃일 때만 서버에 FCM 비활성화 요청 (세션 만료 시 401 재귀 방지)
+      if (!isSessionExpired && accessToken != null && accessToken.isNotEmpty) {
+        await FcmService.deactivateTokenOnLogout(dio);
+      } else {
+        await FcmService.resetLocalStateOnLogout();
+      }
+
+      await tokenStorage.clearTokens();
+      ref.invalidate(currentUserProvider);
+      ref.read(selectedWorkspaceProvider.notifier).state = null;
+      ref.read(selectedRealEstateProjectProvider.notifier).state = null;
+      ref.read(docsContextProvider.notifier).state = DocsContext.all();
+      ref.read(authSessionVersionProvider.notifier).state++;
+      state = const AsyncData(AuthState.unauthenticated());
+    } finally {
+      _isLoggingOut = false;
+    }
   }
 
   void setAuthenticated(String accessToken) {
+    ref.read(selectedWorkspaceProvider.notifier).state = null;
+    ref.read(selectedRealEstateProjectProvider.notifier).state = null;
+    ref.read(docsContextProvider.notifier).state = DocsContext.all();
+    ref.invalidate(currentUserProvider);
+    ref.read(authSessionVersionProvider.notifier).state++;
     state = AsyncData(AuthState.authenticated(accessToken: accessToken));
   }
 }
@@ -147,6 +174,8 @@ final currentUserIdProvider = Provider<int?>((ref) {
 
 /// 전체 사용자/직원 목록 프로바이더 (대결자 지정, 업무 담당자 지정 등)
 final usersListProvider = FutureProvider<List<UserModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
+  if (!ref.watch(isAuthenticatedProvider)) return [];
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/api/v1/user/');
   final list = (res.data is List)

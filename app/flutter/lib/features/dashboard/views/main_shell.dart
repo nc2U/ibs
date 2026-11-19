@@ -11,6 +11,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/providers/badge_provider.dart';
 import '../../../core/providers/dio_provider.dart';
+import '../../../core/services/app_badge_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/services/sse_notification_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
@@ -47,6 +48,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   bool _fcmInitialized = false;
   DateTime? _lastBackPressTime;
   DateTime? _lastSyncTime;
+  int? _lastSyncedBadge;
 
   @override
   void initState() {
@@ -209,9 +211,19 @@ class _MainShellState extends ConsumerState<MainShell> {
     final currentIdx = matchedIdx ?? 0;
     final isOnMainTab = matchedIdx != null;
 
-    // 모바일 OS 앱 아이콘 알림 뱃지 자동 동기화 (미확인 알림 + 미결 결재)
-    ref.watch(totalAppBadgeCountProvider);
+    // 모바일 OS 앱 아이콘 알림 뱃지 자동 동기화 (build 내 부수효과 방지를 위해 ref.listen + 변경 감지만 사용)
+    ref.listen<int>(totalAppBadgeCountProvider, (_, total) {
+      if (_lastSyncedBadge != total) {
+        _lastSyncedBadge = total;
+        AppBadgeService.updateBadgeCount(total);
+      }
+    });
+    final totalBadge = ref.watch(totalAppBadgeCountProvider);
     final pendingCount = ref.watch(pendingApprovalCountProvider);
+    if (_lastSyncedBadge != totalBadge) {
+      _lastSyncedBadge = totalBadge;
+      Future.microtask(() => AppBadgeService.updateBadgeCount(totalBadge));
+    }
 
     // 실시간 SSE 알림 스트림 연결 유지 (웹과 동일한 0.1초 즉시 동기화)
     ref.watch(sseNotificationServiceProvider);

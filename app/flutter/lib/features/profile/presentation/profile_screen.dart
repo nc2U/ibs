@@ -322,6 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 );
                                 if (picked != null) {
                                   final bytes = await picked.readAsBytes();
+                                  if (!modalCtx.mounted) return;
                                   setModalState(() {
                                     newAvatarBytes = bytes;
                                     newAvatarFileName = picked.name;
@@ -392,7 +393,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               firstDate: DateTime(1920),
                               lastDate: DateTime.now(),
                             );
-                            if (picked != null) {
+                            if (picked != null && modalCtx.mounted) {
                               birthDateController.text =
                                   '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                             }
@@ -446,7 +447,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       filename: newAvatarFileName ?? 'avatar.jpg',
                                     );
                                     if (birthDateText.isEmpty) {
-                                      mapData.remove('birth_date');
+                                      mapData['birth_date'] = '';
                                     }
                                     requestData = FormData.fromMap(mapData);
                                   } else {

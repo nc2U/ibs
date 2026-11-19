@@ -1,40 +1,59 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/docs_context_provider.dart';
 import '../data/docs_repository.dart';
 import '../data/models/docs_model.dart';
 
 /// 카테고리 목록 프로바이더 (현재 선택된 docType에 맞춰 자동 연동)
 final docCategoriesProvider = FutureProvider<List<DocCategoryModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final docType = ref.watch(docTypeFilterProvider);
   return ref.watch(docCategoriesByTypeProvider(docType).future);
 });
 
 /// 문서 구분별 카테고리 목록 프로바이더 (폼 내부에서 docType 전환 시 즉시 연동)
 final docCategoriesByTypeProvider = FutureProvider.family<List<DocCategoryModel>, String?>((ref, docType) async {
+  ref.watch(authSessionVersionProvider);
   final repo = ref.watch(docsRepositoryProvider);
   return repo.fetchCategories(docType: docType);
 });
 
 /// 소송 사건 목록 옵션 프로바이더 (프로젝트 ID별)
 final suitCaseOptionsProvider = FutureProvider.family<List<SuitCaseOptionModel>, int?>((ref, issueProject) async {
+  ref.watch(authSessionVersionProvider);
   final repo = ref.watch(docsRepositoryProvider);
   return repo.fetchSuitCases(issueProject: issueProject);
 });
 
 /// 문서 검색어 StateProvider
-final docsSearchProvider = StateProvider<String>((ref) => '');
+final docsSearchProvider = StateProvider<String>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return '';
+});
 
 /// 문서 유형 필터 StateProvider ('1': 일반문서, '2': 소송기록, 기본값 '1')
-final docTypeFilterProvider = StateProvider<String?>((ref) => '1');
+final docTypeFilterProvider = StateProvider<String?>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return '1';
+});
 
 /// 문서 카테고리 필터 StateProvider (null: 전체)
-final docCategoryFilterProvider = StateProvider<int?>((ref) => null);
+final docCategoryFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return null;
+});
 
 /// 문서 추가 페이지 로딩 상태 StateProvider
-final docsLoadingMoreProvider = StateProvider<bool>((ref) => false);
+final docsLoadingMoreProvider = StateProvider<bool>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return false;
+});
 
 /// 문서 추가 페이지 로딩 실패 상태 StateProvider
-final docsLoadMoreFailedProvider = StateProvider<bool>((ref) => false);
+final docsLoadMoreFailedProvider = StateProvider<bool>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return false;
+});
 
 /// 문서 목록 Notifier
 final docsListProvider = AsyncNotifierProvider<DocsListNotifier, DocumentListResponseModel>(
@@ -47,6 +66,7 @@ class DocsListNotifier extends AsyncNotifier<DocumentListResponseModel> {
 
   @override
   Future<DocumentListResponseModel> build() async {
+    ref.watch(authSessionVersionProvider);
     final ctx = ref.watch(docsContextProvider);
     final search = ref.watch(docsSearchProvider);
     final docType = ref.watch(docTypeFilterProvider);

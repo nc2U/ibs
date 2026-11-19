@@ -412,10 +412,17 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           ),
                           const SizedBox(width: 6),
                           _ScopeChip(
-                            label: '📎 첨부파일 포함',
+                            label: '📎 본문+첨부',
                             selected: attachMode == '2',
                             onTap: () => ref.read(searchAttachModeProvider.notifier).state =
                                 attachMode == '2' ? '1' : '2',
+                          ),
+                          const SizedBox(width: 6),
+                          _ScopeChip(
+                            label: '📎 첨부파일만',
+                            selected: attachMode == '3',
+                            onTap: () => ref.read(searchAttachModeProvider.notifier).state =
+                                attachMode == '3' ? '1' : '3',
                           ),
                         ],
                       ),
@@ -827,7 +834,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       color: context.colors.accentWork,
       onRefresh: () async {
         ref.invalidate(searchResultsProvider);
-        await ref.read(searchResultsProvider.future);
+        try {
+          await ref.read(searchResultsProvider.future);
+        } catch (_) {}
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),

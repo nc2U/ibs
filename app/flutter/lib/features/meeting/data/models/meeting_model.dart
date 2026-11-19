@@ -89,7 +89,7 @@ class MeetingModel with _$MeetingModel {
     @Default('') String content,
     @Default('') String decisions,
     @Default('') String actionItems,
-    required String meetingDate,
+    @Default('') String meetingDate,
     @Default('') String location,
     @Default([]) List<int> attendees,
     @Default([]) List<SimpleUserModel> attendeesDesc,

@@ -7,6 +7,7 @@ class AppBadgeService {
 
   /// 기기에서 앱 아이콘 뱃지를 지원하는지 여부 확인
   static Future<bool> isSupported() async {
+    if (kIsWeb) return false;
     if (_isSupportedCache != null) return _isSupportedCache!;
     try {
       _isSupportedCache = await AppBadgePlus.isSupported();
@@ -19,6 +20,7 @@ class AppBadgeService {
 
   /// 뱃지 숫자 갱신 (0 이하면 뱃지 제거)
   static Future<void> updateBadgeCount(int count) async {
+    if (kIsWeb) return;
     try {
       if (count > 0) {
         await AppBadgePlus.updateBadge(count);
@@ -34,6 +36,7 @@ class AppBadgeService {
 
   /// 뱃지 완전 제거
   static Future<void> removeBadge() async {
+    if (kIsWeb) return;
     try {
       await AppBadgePlus.updateBadge(0);
       debugPrint('🏷️ [AppBadge] 뱃지 제거 완료');

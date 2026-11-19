@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/notification_model.dart';
+import 'auth_provider.dart';
 import 'dio_provider.dart';
 
 /// 사용자 알림 목록 노티파이어
@@ -8,8 +9,11 @@ class NotificationListNotifier
     extends StateNotifier<AsyncValue<List<NotificationModel>>> {
   final Dio _dio;
 
-  NotificationListNotifier(this._dio) : super(const AsyncValue.loading()) {
-    fetchNotifications();
+  NotificationListNotifier(this._dio, {bool autoFetch = true})
+      : super(autoFetch ? const AsyncValue.loading() : const AsyncValue.data([])) {
+    if (autoFetch) {
+      fetchNotifications();
+    }
   }
 
   Future<void> fetchNotifications() async {
@@ -86,8 +90,10 @@ class NotificationListNotifier
 
 final notificationListProvider = StateNotifierProvider.autoDispose<
     NotificationListNotifier, AsyncValue<List<NotificationModel>>>((ref) {
+  ref.watch(authSessionVersionProvider);
+  final isAuth = ref.watch(isAuthenticatedProvider);
   final dio = ref.watch(dioProvider);
-  return NotificationListNotifier(dio);
+  return NotificationListNotifier(dio, autoFetch: isAuth);
 });
 
 /// 미확인 알림 수 Provider

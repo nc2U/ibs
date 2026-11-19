@@ -152,7 +152,8 @@ class UnitMatrixView extends ConsumerWidget {
           name: fileName,
         );
         final box = context.findRenderObject() as RenderBox?;
-        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        final origin =
+            (box != null && box.hasSize) ? box.localToGlobal(Offset.zero) & box.size : null;
         await AppShareHelper.shareXFiles(
           [xfile],
           subject: '${selectedProject.name} 동호수 현황표 ($typeLabel)',
@@ -221,7 +222,8 @@ class UnitMatrixView extends ConsumerWidget {
                   subtitle: const Text('본사 보고 또는 관계자에게 파일 전송', style: TextStyle(fontSize: 11.5)),
                   onTap: () async {
                     final box = context.findRenderObject() as RenderBox?;
-                    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+                    final origin =
+                        (box != null && box.hasSize) ? box.localToGlobal(Offset.zero) & box.size : null;
                     Navigator.pop(dialogCtx);
                     await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
@@ -709,6 +711,11 @@ class UnitMatrixView extends ConsumerWidget {
                   ref.invalidate(allHouseUnitsProvider);
                   ref.invalidate(buildingUnitsProvider);
                   ref.invalidate(unitTypesProvider);
+                  await Future.wait([
+                    ref.read(allHouseUnitsProvider.future),
+                    ref.read(buildingUnitsProvider.future),
+                    ref.read(unitTypesProvider.future),
+                  ]);
                 },
                 color: const Color(0xFF38BDF8),
                 child: SingleChildScrollView(

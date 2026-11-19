@@ -6,6 +6,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/models/common_models.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/docs_repository.dart';
@@ -69,7 +70,9 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
       try {
         final repo = ref.read(docsRepositoryProvider);
         await repo.deleteDocument(doc.pk);
+        if (mounted) {
         ref.read(docsListProvider.notifier).refresh();
+      }
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +152,15 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
       fullUrl = '$normalizedBase$normalizedPath';
     }
     try {
-      final uri = Uri.parse(fullUrl);
+      final uri = Uri.tryParse(fullUrl);
+      if (uri == null || (!uri.hasScheme)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('올바른 파일 URL이 아닙니다.')),
+          );
+        }
+        return;
+      }
       final launched =
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched && context.mounted) {
@@ -173,7 +184,15 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
       fullUrl = 'https://$fullUrl';
     }
     try {
-      final uri = Uri.parse(fullUrl);
+      final uri = Uri.tryParse(fullUrl);
+      if (uri == null || (!uri.hasScheme)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('올바른 파일 URL이 아닙니다.')),
+          );
+        }
+        return;
+      }
       final launched =
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched && context.mounted) {
@@ -324,7 +343,12 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
                           ),
                         ],
                         const Spacer(),
-                        if (ref.can(Perm.docsUpdate, projectSlug: doc.project?.slug))
+                        if (ref.can(Perm.docsUpdate, projectSlug: doc.project?.slug) ||
+                            (ref.watch(currentUserProvider).valueOrNull?.pk != null &&
+                                ref.watch(currentUserProvider).valueOrNull?.pk ==
+                                    doc.creator?.pk &&
+                                ref.can(Perm.docsOwnUpdate,
+                                    projectSlug: doc.project?.slug)))
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 20),
                             color: context.colors.textSecond,
@@ -338,7 +362,12 @@ class _DocumentDetailSheetState extends ConsumerState<DocumentDetailSheet> {
                               );
                             },
                           ),
-                        if (ref.can(Perm.docsDelete, projectSlug: doc.project?.slug))
+                        if (ref.can(Perm.docsDelete, projectSlug: doc.project?.slug) ||
+                            (ref.watch(currentUserProvider).valueOrNull?.pk != null &&
+                                ref.watch(currentUserProvider).valueOrNull?.pk ==
+                                    doc.creator?.pk &&
+                                ref.can(Perm.docsOwnDelete,
+                                    projectSlug: doc.project?.slug)))
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, size: 20),
                             color: context.colors.error,

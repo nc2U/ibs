@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -126,7 +127,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         );
       },
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _dateController.text =
             "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
@@ -141,7 +142,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         type: FileType.any,
         withData: true,
       );
-      if (result != null && result.files.isNotEmpty) {
+      if (result != null && result.files.isNotEmpty && mounted) {
         setState(() {
           _newFiles.addAll(result.files);
         });
@@ -345,7 +346,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         initialSelectedPk: _selectedLawsuit,
       ),
     );
-    if (selected != null) {
+    if (selected != null && mounted) {
       setState(() {
         _selectedLawsuit = selected.pk;
       });
@@ -379,8 +380,11 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
             ?.slug;
       }
     }
+    final currentUserId = ref.read(currentUserIdProvider);
+    final isOwner = currentUserId != null && currentUserId == widget.doc?.creator?.pk;
     final canPerform = isEdit
-        ? ref.can(Perm.docsUpdate, projectSlug: targetSlug)
+        ? (ref.can(Perm.docsUpdate, projectSlug: targetSlug) ||
+            (isOwner && ref.can(Perm.docsOwnUpdate, projectSlug: targetSlug)))
         : ref.can(Perm.docsCreate, projectSlug: targetSlug);
     if (!canPerform) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -436,7 +440,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         );
       }
 
-      ref.read(docsListProvider.notifier).refresh();
+      if (mounted) {
+        ref.read(docsListProvider.notifier).refresh();
+      }
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -462,10 +468,10 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
   Widget build(BuildContext context) {
     final isEdit = widget.doc != null;
     final docsContext = ref.watch(docsContextProvider);
-    final currentSelectedProj = ref.watch(selectedProjectProvider);
+    final currentRealEstateProj = ref.watch(selectedRealEstateProjectProvider);
 
     // 상단 프로젝트 변경 실시간 리스너 (소송 사건 자동 초기화)
-    ref.listen<SelectedProject?>(selectedProjectProvider, (prev, next) {
+    ref.listen<SelectedProject?>(selectedRealEstateProjectProvider, (prev, next) {
       if (next != null && !isEdit && docsContext.scopeType == DocsScopeType.project) {
         setState(() {
           _selectedProjectPk = next.pk;
@@ -481,7 +487,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     final effectiveProjectPk = isEdit
         ? (widget.doc?.project?.pk ?? _selectedProjectPk)
         : (isProjectScope
-            ? (currentSelectedProj?.pk ?? docsContext.project?.pk ?? _selectedProjectPk)
+            ? (docsContext.project?.pk ?? currentRealEstateProj?.pk ?? _selectedProjectPk)
             : (isWorkspaceScope
                 ? (docsContext.project?.pk ?? _selectedProjectPk)
                 : _selectedProjectPk));
@@ -489,7 +495,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     final fixedProjectName = isEdit
         ? widget.doc?.project?.name
         : (isProjectScope
-            ? (currentSelectedProj?.name ?? docsContext.project?.name)
+            ? (docsContext.project?.name ?? currentRealEstateProj?.name)
             : (isWorkspaceScope ? docsContext.project?.name : null));
 
     final categoriesAsync = ref.watch(docCategoriesByTypeProvider(_selectedDocType));

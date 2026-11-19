@@ -5,6 +5,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -12,9 +13,11 @@ import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../../../project/providers/project_provider.dart';
 import '../../data/models/forum_model.dart';
 import '../../data/forum_repository.dart';
 import '../../providers/forum_provider.dart';
+import 'channel_ui_helpers.dart';
 import 'post_form_sheet.dart';
 
 /// 게시글 상세 보기 바텀시트 (radius = 0)
@@ -248,7 +251,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     try {
       final dio = ref.read(dioProvider);
       final tempDir = await getTemporaryDirectory();
-      final savePath = '${tempDir.path}/${file.fileName}';
+      final safeName = sanitizeChannelFileName(file.fileName);
+      final savePath = '${tempDir.path}/$safeName';
 
       await dio.download(url, savePath);
 
@@ -282,30 +286,41 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final post = detailAsync.value ?? widget.post;
     final commentsAsync = ref.watch(postCommentsProvider(widget.post.pk));
     final selectedProject = ref.watch(selectedWorkspaceProvider);
+    final allForums = ref.watch(allForumsProvider).valueOrNull ?? const <ForumModel>[];
+    final postForum = post.forum != null
+        ? allForums.where((f) => f.pk == post.forum).firstOrNull
+        : null;
+    final allProjects = ref.watch(projectListProvider).valueOrNull ?? const [];
+    final postProjectSlug = postForum?.project != null
+        ? allProjects
+            .where((p) => p.pk == postForum!.project)
+            .map((p) => p.slug)
+            .firstOrNull
+        : null;
+    final targetSlug = postProjectSlug ?? selectedProject?.slug;
 
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isAuthor = currentUser != null &&
         post.creator != null &&
         (currentUser.pk == post.creator!.pk ||
             currentUser.username == post.creator!.username);
+    final isForumManager = (currentUser?.isSuperuser ?? false) ||
+        (postForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
 
     final canUpdate = isAuthor
-        ? ref.can(Perm.forumOwnUpdate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumUpdate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)
-        : ref.can(Perm.forumUpdate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
+        ? ref.can(Perm.forumOwnUpdate, projectSlug: targetSlug) ||
+            ref.can(Perm.forumUpdate, projectSlug: targetSlug) ||
+            isForumManager
+        : ref.can(Perm.forumUpdate, projectSlug: targetSlug) || isForumManager;
 
     final canDelete = isAuthor
-        ? ref.can(Perm.forumOwnDelete, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumDelete, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)
-        : ref.can(Perm.forumDelete, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug);
+        ? ref.can(Perm.forumOwnDelete, projectSlug: targetSlug) ||
+            ref.can(Perm.forumDelete, projectSlug: targetSlug) ||
+            isForumManager
+        : ref.can(Perm.forumDelete, projectSlug: targetSlug) || isForumManager;
 
     final canComment = !post.isHideComment &&
-        (ref.can(Perm.forumCreate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug));
+        ref.can(Perm.forumCreate, projectSlug: targetSlug);
 
     return Container(
       constraints: BoxConstraints(
@@ -390,9 +405,11 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     color: context.colors.textSecond,
                     onPressed: () {
+                      final rootCtx =
+                          Navigator.of(context, rootNavigator: true).context;
                       Navigator.pop(context);
                       showModalBottomSheet(
-                        context: context,
+                        context: rootCtx,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (ctx) => PostFormSheet(post: post),
@@ -432,7 +449,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           size: 15, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        post.creator?.username ?? '익명',
+                        resolveUserDisplayName(post.creator),
                         style: AppTextStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w600,
                           color: context.colors.textPrimary,
@@ -443,8 +460,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        post.created?.substring(0, 16).replaceAll('T', ' ') ??
-                            '',
+                        formatChannelDateTime(post.created),
                         style: AppTextStyles.caption
                             .copyWith(color: context.colors.textMuted),
                       ),
@@ -471,13 +487,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     child: post.content.isNotEmpty
                         ? HtmlWidget(
                             post.content,
-                            onTapUrl: (url) async {
-                              final uri = Uri.tryParse(url);
-                              if (uri != null && await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
-                              return true;
-                            },
+                            baseUrl: Uri.tryParse(appBaseUrl),
+                            onTapUrl: launchChannelHtmlUrl,
                             textStyle: AppTextStyles.bodyMd.copyWith(
                               color: context.colors.textPrimary,
                               height: 1.5,
@@ -823,15 +834,30 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
 
   Widget _buildCommentTile(PostCommentModel c, dynamic currentUser,
       {bool isReply = false}) {
-    final selectedProject = ref.read(selectedWorkspaceProvider);
+    final selectedProject = ref.watch(selectedWorkspaceProvider);
+    final postForumPk = widget.post.forum;
+    final allForums = ref.watch(allForumsProvider).valueOrNull ?? const <ForumModel>[];
+    final postForum = postForumPk != null
+        ? allForums.where((f) => f.pk == postForumPk).firstOrNull
+        : null;
+    final allProjects = ref.watch(projectListProvider).valueOrNull ?? const [];
+    final postProjectSlug = postForum?.project != null
+        ? allProjects
+            .where((p) => p.pk == postForum!.project)
+            .map((p) => p.slug)
+            .firstOrNull
+        : null;
+    final targetSlug = postProjectSlug ?? selectedProject?.slug;
+    final isForumManager = (currentUser?.isSuperuser == true) ||
+        (postForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
     final isCommentAuthor = currentUser != null &&
         c.creator != null &&
         (currentUser.pk == c.creator!.pk ||
             currentUser.username == c.creator!.username);
     final canDeleteThisComment =
-        ref.can(Perm.forumDelete, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug) ||
-            (ref.can(Perm.forumOwnDelete, projectSlug: selectedProject?.slug) &&
+        ref.can(Perm.forumDelete, projectSlug: targetSlug) ||
+            isForumManager ||
+            (ref.can(Perm.forumOwnDelete, projectSlug: targetSlug) &&
                 isCommentAuthor);
 
     return Column(
@@ -861,7 +887,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     const SizedBox(width: 4),
                   ],
                   Text(
-                    c.creator?.username ?? '사용자',
+                    resolveUserDisplayName(c.creator, fallback: '사용자'),
                     style: AppTextStyles.label.copyWith(
                       fontWeight: FontWeight.bold,
                       color: context.colors.textPrimary,
@@ -869,7 +895,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    c.created?.substring(0, 16).replaceAll('T', ' ') ?? '',
+                    formatChannelDateTime(c.created),
                     style: AppTextStyles.caption
                         .copyWith(color: context.colors.textMuted),
                   ),

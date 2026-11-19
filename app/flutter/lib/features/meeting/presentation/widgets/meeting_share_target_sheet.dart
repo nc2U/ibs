@@ -168,7 +168,7 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     setState(() {
       _isUploading = true;
@@ -180,6 +180,7 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
 
     try {
       for (int i = 0; i < widget.payload.files.length; i++) {
+        if (!mounted) break;
         final file = widget.payload.files[i];
         setState(() {
           _uploadProgressText = '파일 업로드 중 (${i + 1}/${widget.payload.files.length})...';
@@ -196,8 +197,8 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
 
       if (!mounted) return;
 
-      Navigator.pop(context); // 시트 닫기
       ref.read(pendingSharePayloadProvider.notifier).clear();
+      Navigator.pop(context); // 시트 닫기
 
       final currentCtx = rootNavigatorKey.currentContext;
       if (currentCtx != null && currentCtx.mounted) {
@@ -246,7 +247,13 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
   Widget build(BuildContext context) {
     final totalSize = widget.payload.files.fold<int>(0, (sum, f) => sum + f.size);
 
-    return Container(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          ref.read(pendingSharePayloadProvider.notifier).clear();
+        }
+      },
+      child: Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: context.colors.bgSurface,
@@ -309,7 +316,10 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
                     ),
                     IconButton(
                       icon: Icon(Icons.close_rounded, color: context.colors.textMuted),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        ref.read(pendingSharePayloadProvider.notifier).clear();
+                        Navigator.pop(context);
+                      },
                     ),
                   ],
                 ),
@@ -434,14 +444,19 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
                                     meeting: meeting,
                                     onTap: canAttach
                                         ? () => _attachFilesToMeeting(meeting)
-                                        : () => ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                        : () {
+                                            final navCtx =
+                                                rootNavigatorKey.currentContext ?? context;
+                                            if (!navCtx.mounted) return;
+                                            ScaffoldMessenger.of(navCtx).showSnackBar(
                                               SnackBar(
                                                 content: Text(meeting.isConfirmed
                                                     ? '확정된 회의록은 수정 권한이 있어야 파일을 첨부할 수 있습니다.'
-                                                    : '이 회의록에 파일을 첨부할 권한이 없습니다.'),
+                                                    : '이 회의록에 파일을 첨부할 권한(meeting.update)이 없습니다.'),
+                                                behavior: SnackBarBehavior.floating,
                                               ),
-                                            ),
+                                            );
+                                          },
                                   ),
                                 );
                               },
@@ -481,6 +496,7 @@ class _MeetingShareTargetSheetState extends ConsumerState<MeetingShareTargetShee
             ),
         ],
       ),
+    ),
     );
   }
 }

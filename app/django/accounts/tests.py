@@ -371,6 +371,17 @@ class FCMDeviceAndNotificationTests(APITestCase):
 
         device.refresh_from_db()
         self.assertEqual(device.user, self.user2)
+        self.assertTrue(device.is_active)
+
+        # 푸시 비활성화(is_active=False) 반영 검증
+        res3 = self.client.post('/api/v1/fcm-device/', {
+            'registration_id': 'unique_fcm_token_12345',
+            'platform': 'android',
+            'is_active': False,
+        }, format='json')
+        self.assertEqual(res3.status_code, status.HTTP_200_OK)
+        device.refresh_from_db()
+        self.assertFalse(device.is_active)
 
     def test_notification_list_and_read_actions(self):
         """인앱 알림 조회, 읽음 처리, 일괄 읽음 및 채팅 알림 제외 검증"""

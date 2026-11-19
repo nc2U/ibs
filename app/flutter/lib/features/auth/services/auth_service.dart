@@ -114,6 +114,7 @@ class AuthService {
 
       final data = response.data as Map<String, dynamic>;
       final accessToken = data['access'] as String;
+      await _tokenStorage.clearUserData();
       await _tokenStorage.saveAccessToken(accessToken);
 
       // ROTATE_REFRESH_TOKENS=False 인 경우에도 일반 세션 REFRESH_TOKEN을 복원해야

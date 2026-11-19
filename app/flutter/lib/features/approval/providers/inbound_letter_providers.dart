@@ -1,12 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../data/inbound_letter_repository.dart';
 import '../data/models/inbound_letter_model.dart';
 
 /// 수신 공문 목록 필터 상태 (상태: 전체, 접수, 처리중, 회신완료, 종결)
-final inboundLetterFilterStatusProvider = StateProvider<String?>((ref) => null);
+final inboundLetterFilterStatusProvider = StateProvider<String?>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return null;
+});
 
 /// 수신 공문 검색어 상태
-final inboundLetterSearchQueryProvider = StateProvider<String>((ref) => '');
+final inboundLetterSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return '';
+});
 
 /// 수신 공문 페이지 번호 상태
 final inboundLetterPageProvider = StateProvider.autoDispose<int>((ref) => 1);

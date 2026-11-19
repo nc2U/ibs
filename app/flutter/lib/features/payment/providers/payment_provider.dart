@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../contract/data/contract_repository.dart';
 import '../../contract/data/models/contract_models.dart';
 import '../../contract/providers/contract_provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/models/payment_models.dart';
 import '../data/payment_repository.dart';
@@ -18,8 +19,11 @@ final paymentCurrentSubTabProvider = StateProvider<PaymentSubTab>(
   (ref) => PaymentSubTab.transactions,
 );
 
-/// 검색어 상태 프로바이더
-final paymentSearchQueryProvider = StateProvider<String>((ref) => '');
+/// 검색어 상태 프로바이더 (프로젝트 전환 시 자동 초기화)
+final paymentSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 매칭 상태 필터 enum (전체, 계약 미매칭, 회차 미매칭)
 enum PaymentMatchFilter {
@@ -28,19 +32,22 @@ enum PaymentMatchFilter {
   noInstall, // 회차 미매칭
 }
 
-/// 현재 선택된 매칭 필터 프로바이더
-final paymentMatchFilterProvider = StateProvider<PaymentMatchFilter>(
-  (ref) => PaymentMatchFilter.all,
-);
+/// 현재 선택된 매칭 필터 프로바이더 (프로젝트 전환 시 자동 초기화)
+final paymentMatchFilterProvider = StateProvider<PaymentMatchFilter>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return PaymentMatchFilter.all;
+});
 
-/// 계약건별 납부 탭에서 현재 선택된 계약건 프로바이더
-final selectedContractForPaymentProvider = StateProvider<ContractItemModel?>(
-  (ref) => null,
-);
+/// 계약건별 납부 탭에서 현재 선택된 계약건 프로바이더 (프로젝트 전환 시 자동 초기화)
+final selectedContractForPaymentProvider = StateProvider<ContractItemModel?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 선택된 계약건의 전체 수납 내역 조회 프로바이더
 final paymentsByContractProvider =
     FutureProvider.autoDispose<List<PaymentTransactionItemModel>>((ref) async {
+      ref.watch(authSessionVersionProvider);
       final selectedProject = ref.watch(selectedRealEstateProjectProvider);
       final selectedContract = ref.watch(selectedContractForPaymentProvider);
 
@@ -58,6 +65,7 @@ final paymentsByContractProvider =
 /// 수납 총괄 KPI 집계 프로바이더
 final paymentOverallAggregateProvider =
     FutureProvider<PaymentOverallAggregateModel?>((ref) async {
+      ref.watch(authSessionVersionProvider);
       final selectedProject = ref.watch(selectedRealEstateProjectProvider);
       if (selectedProject == null) return null;
 
@@ -68,6 +76,7 @@ final paymentOverallAggregateProvider =
 /// 📑 프로젝트 고지서 발행 설정 프로바이더
 final salesBillIssueProvider = FutureProvider.autoDispose<SalesBillIssueModel?>(
   (ref) async {
+    ref.watch(authSessionVersionProvider);
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     if (selectedProject == null) return null;
     final repository = ref.watch(paymentRepositoryProvider);
@@ -115,6 +124,7 @@ class PaymentTransactionsState {
 class PaymentTransactionsNotifier
     extends StateNotifier<PaymentTransactionsState> {
   final Ref ref;
+  int _generation = 0;
 
   PaymentTransactionsNotifier(this.ref)
     : super(const PaymentTransactionsState()) {
@@ -124,12 +134,16 @@ class PaymentTransactionsNotifier
   Future<void> fetchInitial() async {
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) {
+      _generation++;
+      if (!mounted) return;
       state = const PaymentTransactionsState(items: [], hasMore: false);
       return;
     }
 
+    final gen = ++_generation;
     state = state.copyWith(
       isLoading: true,
+      isFetchingNextPage: false,
       page: 1,
       items: [],
       hasMore: true,
@@ -141,7 +155,7 @@ class PaymentTransactionsNotifier
     final repository = ref.read(paymentRepositoryProvider);
 
     try {
-      final items = await repository.fetchPaymentTransactions(
+      final result = await repository.fetchPaymentTransactions(
         projectId: selectedProject.realProjectId,
         search: search,
         noContract: matchFilter == PaymentMatchFilter.noContract ? true : null,
@@ -149,14 +163,16 @@ class PaymentTransactionsNotifier
         page: 1,
         limit: 10,
       );
+      if (!mounted || gen != _generation) return;
 
       state = state.copyWith(
         isLoading: false,
-        items: items,
+        items: result.items,
         page: 1,
-        hasMore: items.length >= 10,
+        hasMore: result.hasMore,
       );
     } catch (e) {
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -167,6 +183,7 @@ class PaymentTransactionsNotifier
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
+    final gen = _generation;
     state = state.copyWith(isFetchingNextPage: true);
 
     final nextPage = state.page + 1;
@@ -175,7 +192,7 @@ class PaymentTransactionsNotifier
     final repository = ref.read(paymentRepositoryProvider);
 
     try {
-      final newItems = await repository.fetchPaymentTransactions(
+      final result = await repository.fetchPaymentTransactions(
         projectId: selectedProject.realProjectId,
         search: search,
         noContract: matchFilter == PaymentMatchFilter.noContract ? true : null,
@@ -183,15 +200,17 @@ class PaymentTransactionsNotifier
         page: nextPage,
         limit: 10,
       );
+      if (!mounted || gen != _generation) return;
 
       state = state.copyWith(
         isFetchingNextPage: false,
-        items: [...state.items, ...newItems],
+        items: [...state.items, ...result.items],
         page: nextPage,
-        hasMore: newItems.length >= 10,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false, hasMore: false);
+      if (!mounted || gen != _generation) return;
+      state = state.copyWith(isFetchingNextPage: false);
     }
   }
 
@@ -212,7 +231,7 @@ class PaymentTransactionsNotifier
       accountingEntryId: accountingEntryId,
     );
 
-    if (success) {
+    if (success && mounted) {
       // 목록 및 집계 갱신
       fetchInitial();
       ref.read(paymentContractListProvider.notifier).fetchInitial();
@@ -227,7 +246,7 @@ class PaymentTransactionsNotifier
         final updatedContract = await ref
             .read(contractRepositoryProvider)
             .fetchContractDetail(selectedContract.pk);
-        if (updatedContract != null) {
+        if (updatedContract != null && mounted) {
           ref.read(selectedContractForPaymentProvider.notifier).state =
               updatedContract;
         }
@@ -241,12 +260,16 @@ final paymentTransactionsProvider =
     StateNotifierProvider<
       PaymentTransactionsNotifier,
       PaymentTransactionsState
-    >((ref) => PaymentTransactionsNotifier(ref));
+    >((ref) {
+      ref.watch(authSessionVersionProvider);
+      return PaymentTransactionsNotifier(ref);
+    });
 
 /// ── 1-2. 수납 관리 전용 유효 계약 검색 목록 Notifier (계약 관리 화면과 검색 상태 격리) ──
 class PaymentContractListNotifier
     extends StateNotifier<ContractPaginationState<ContractItemModel>> {
   final Ref ref;
+  int _generation = 0;
 
   PaymentContractListNotifier(this.ref)
     : super(const ContractPaginationState()) {
@@ -256,39 +279,48 @@ class PaymentContractListNotifier
   Future<void> fetchInitial() async {
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) {
+      _generation++;
+      if (!mounted) return;
       state = const ContractPaginationState(items: [], hasMore: false);
       return;
     }
 
+    final gen = ++_generation;
     state = state.copyWith(
       isLoading: true,
+      isFetchingNextPage: false,
       page: 1,
       items: [],
       hasMore: true,
       error: null,
+      isNextPageError: false,
     );
 
     final search = ref.read(paymentSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
 
     try {
-      final items = await repository.fetchContracts(
+      final result = await repository.fetchContracts(
         projectId: selectedProject.realProjectId,
         search: search,
         page: 1,
         limit: 10,
       );
+      if (!mounted || gen != _generation) return;
 
       state = state.copyWith(
         isLoading: false,
-        items: items,
+        items: result.items,
         page: 1,
-        hasMore: items.length >= 10,
+        hasMore: result.hasMore,
+        isNextPageError: false,
       );
     } catch (e) {
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
         isLoading: false,
         error: ContractRepository.extractErrorMessage(e, '계약 목록을 불러오지 못했습니다.'),
+        isNextPageError: false,
       );
     }
   }
@@ -299,28 +331,32 @@ class PaymentContractListNotifier
     final selectedProject = ref.read(selectedRealEstateProjectProvider);
     if (selectedProject == null) return;
 
-    state = state.copyWith(isFetchingNextPage: true);
+    final gen = _generation;
+    state = state.copyWith(isFetchingNextPage: true, isNextPageError: false);
 
     final nextPage = state.page + 1;
     final search = ref.read(paymentSearchQueryProvider);
     final repository = ref.read(contractRepositoryProvider);
 
     try {
-      final newItems = await repository.fetchContracts(
+      final result = await repository.fetchContracts(
         projectId: selectedProject.realProjectId,
         search: search,
         page: nextPage,
         limit: 10,
       );
+      if (!mounted || gen != _generation) return;
 
       state = state.copyWith(
         isFetchingNextPage: false,
-        items: [...state.items, ...newItems],
+        isNextPageError: false,
+        items: [...state.items, ...result.items],
         page: nextPage,
-        hasMore: newItems.length >= 10,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false, hasMore: false);
+      if (!mounted || gen != _generation) return;
+      state = state.copyWith(isFetchingNextPage: false, isNextPageError: true);
     }
   }
 }
@@ -329,11 +365,15 @@ final paymentContractListProvider =
     StateNotifierProvider<
       PaymentContractListNotifier,
       ContractPaginationState<ContractItemModel>
-    >((ref) => PaymentContractListNotifier(ref));
+    >((ref) {
+      ref.watch(authSessionVersionProvider);
+      return PaymentContractListNotifier(ref);
+    });
 
 /// ── 2. 회차별 수납 현황 목록 프로바이더 ─────────────────────────────────────
 final installmentStatusListProvider =
     FutureProvider<List<InstallmentStatusItemModel>>((ref) async {
+      ref.watch(authSessionVersionProvider);
       final selectedProject = ref.watch(selectedRealEstateProjectProvider);
       if (selectedProject == null) return [];
 

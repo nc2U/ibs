@@ -100,8 +100,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
         ref.can(Perm.newsManage, projectSlug: selectedProject?.slug);
     final canCreatePost = !isForumDisabled &&
         hasForums &&
-        (ref.can(Perm.forumCreate, projectSlug: selectedProject?.slug) ||
-            ref.can(Perm.forumManage, projectSlug: selectedProject?.slug)) &&
+        ref.can(Perm.forumCreate, projectSlug: selectedProject?.slug) &&
         ((activeForum?.managerOnly ?? false) ? isForumMgr : true);
 
     return Scaffold(

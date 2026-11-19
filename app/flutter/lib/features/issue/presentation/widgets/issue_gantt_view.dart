@@ -99,6 +99,11 @@ class _IssueGanttViewState extends State<IssueGanttView> {
       }
       if (due != null && due.isAfter(maxDate)) {
         maxDate = due;
+      } else if (due == null && start != null) {
+        final fallbackEnd = start.add(const Duration(days: 7));
+        if (fallbackEnd.isAfter(maxDate)) {
+          maxDate = fallbackEnd;
+        }
       }
     }
 

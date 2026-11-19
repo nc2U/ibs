@@ -67,11 +67,7 @@ class InboundLetterRepository {
         .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
     final tempDir = await getTemporaryDirectory();
     final targetPath = '${tempDir.path}/${sanitizedNumber}_scan.pdf';
-
     final targetFile = File(targetPath);
-    if (await targetFile.exists() && (await targetFile.length()) > 0) {
-      return targetPath;
-    }
 
     try {
       final res = await _dio.get<List<int>>(
@@ -82,8 +78,9 @@ class InboundLetterRepository {
         ),
       );
 
+      final ct = res.headers.value('content-type')?.toLowerCase() ?? '';
       final bytes = res.data;
-      if (bytes == null || bytes.isEmpty) {
+      if (ct.contains('text/html') || bytes == null || bytes.isEmpty) {
         throw Exception('스캔 파일 데이터를 읽을 수 없습니다.');
       }
 

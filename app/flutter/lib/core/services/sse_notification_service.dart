@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_provider.dart';
 import '../providers/dio_provider.dart';
 import '../providers/notification_provider.dart';
 import '../../features/approval/providers/approval_providers.dart';
@@ -38,6 +39,10 @@ class SseNotificationService {
 
   Future<void> _listenStream() async {
     while (_isRunning && !_isDisposed) {
+      if (!_ref.read(isAuthenticatedProvider)) {
+        _isRunning = false;
+        break;
+      }
       try {
         _cancelToken = CancelToken();
         debugPrint('📡 [SSE] 실시간 알림 스트림 연결 시도...');
@@ -79,6 +84,19 @@ class SseNotificationService {
             }
           }
         }
+      } on DioException catch (e) {
+        if (_cancelToken?.isCancelled ?? false) {
+          debugPrint('📡 [SSE] 스트림이 정상적으로 취소됨');
+          break;
+        }
+        final code = e.response?.statusCode;
+        // 토큰 갱신 이후에도 인증 거부(401/403)라면 무한 루프 방지
+        if (code == 401 || code == 403 || !_ref.read(isAuthenticatedProvider)) {
+          debugPrint('🛑 [SSE] 인증 만료/거부로 스트림 종료 (status=$code)');
+          _isRunning = false;
+          break;
+        }
+        debugPrint('⚠️ [SSE] 스트림 연결 끊김 / 오류 ($e), 3초 후 재연결...');
       } catch (e) {
         if (_cancelToken?.isCancelled ?? false) {
           debugPrint('📡 [SSE] 스트림이 정상적으로 취소됨');
@@ -87,8 +105,10 @@ class SseNotificationService {
         debugPrint('⚠️ [SSE] 스트림 연결 끊김 / 오류 ($e), 3초 후 재연결...');
       }
 
-      if (_isRunning && !_isDisposed) {
+      if (_isRunning && !_isDisposed && _ref.read(isAuthenticatedProvider)) {
         await Future.delayed(const Duration(seconds: 3));
+      } else {
+        break;
       }
     }
   }
@@ -131,9 +151,13 @@ class SseNotificationService {
 }
 
 final sseNotificationServiceProvider = Provider.autoDispose<SseNotificationService>((ref) {
+  ref.watch(authSessionVersionProvider);
   final dio = ref.watch(dioProvider);
+  final isAuth = ref.watch(isAuthenticatedProvider);
   final service = SseNotificationService(dio, ref);
-  service.start();
+  if (isAuth) {
+    service.start();
+  }
 
   ref.onDispose(() {
     service.dispose();

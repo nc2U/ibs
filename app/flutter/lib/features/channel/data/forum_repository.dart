@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/providers/dio_provider.dart';
 import 'models/forum_model.dart';
 
@@ -27,8 +28,13 @@ class ForumRepository {
       final list = (response.data['results'] ?? response.data) as List<dynamic>;
       return list.map((e) => ForumModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시판 목록을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '게시판 목록을 불러오지 못했습니다.'));
     }
+  }
+
+  String _extractError(DioException e, String fallback) {
+    final msg = getDioErrorMessage(e);
+    return msg.isNotEmpty ? msg : fallback;
   }
 
   /// 카테고리 목록 조회
@@ -38,7 +44,7 @@ class ForumRepository {
       final list = (response.data['results'] ?? response.data) as List<dynamic>;
       return list.map((e) => PostCategoryModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '카테고리 목록을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '카테고리 목록을 불러오지 못했습니다.'));
     }
   }
 
@@ -81,7 +87,7 @@ class ForumRepository {
       final response = await _dio.get('/api/v1/post/', queryParameters: queryParams);
       return PostListResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시글 목록을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '게시글 목록을 불러오지 못했습니다.'));
     }
   }
 
@@ -91,7 +97,7 @@ class ForumRepository {
       final response = await _dio.get('/api/v1/post/$id/');
       return PostModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시글을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '게시글을 불러오지 못했습니다.'));
     }
   }
 
@@ -107,7 +113,7 @@ class ForumRepository {
     try {
       await _dio.patch('/api/v1/post-like/$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '좋아요 처리에 실패했습니다.');
+      throw Exception(_extractError(e, '좋아요 처리에 실패했습니다.'));
     }
   }
 
@@ -116,7 +122,7 @@ class ForumRepository {
     try {
       await _dio.patch('/api/v1/post-blame/$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '비추천 처리에 실패했습니다.');
+      throw Exception(_extractError(e, '비추천 처리에 실패했습니다.'));
     }
   }
 
@@ -179,7 +185,7 @@ class ForumRepository {
       );
       return PostModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시글 등록에 실패했습니다.');
+      throw Exception(_extractError(e, '게시글 등록에 실패했습니다.'));
     }
   }
 
@@ -239,7 +245,7 @@ class ForumRepository {
       );
       return PostModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시글 수정에 실패했습니다.');
+      throw Exception(_extractError(e, '게시글 수정에 실패했습니다.'));
     }
   }
 
@@ -248,7 +254,7 @@ class ForumRepository {
     try {
       await _dio.delete('/api/v1/post/$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '게시글 삭제에 실패했습니다.');
+      throw Exception(_extractError(e, '게시글 삭제에 실패했습니다.'));
     }
   }
 
@@ -272,7 +278,7 @@ class ForumRepository {
           .map((e) => PostCommentModel.fromJson(e))
           .toList();
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '댓글 목록을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '댓글 목록을 불러오지 못했습니다.'));
     }
   }
 
@@ -303,7 +309,7 @@ class ForumRepository {
       );
       return PostCommentModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '댓글 등록에 실패했습니다.');
+      throw Exception(_extractError(e, '댓글 등록에 실패했습니다.'));
     }
   }
 
@@ -312,7 +318,7 @@ class ForumRepository {
     try {
       await _dio.delete('/api/v1/comment/$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '댓글 삭제에 실패했습니다.');
+      throw Exception(_extractError(e, '댓글 삭제에 실패했습니다.'));
     }
   }
 }

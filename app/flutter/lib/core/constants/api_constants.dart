@@ -1,13 +1,8 @@
-import 'dart:io';
+import '../api/api_client.dart';
 
 class ApiConstants {
-  // 로컬 개발 환경용 서버 URL (Android 에뮬레이터에서는 10.0.2.2가 PC의 localhost입니다)
-  static String get baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2'; // Docker Nginx 포트 (80)
-    }
-    return 'http://localhost';
-  }
+  // api_client.dart의 appBaseUrl과 단일화 (Web/Release/BASE_URL 환경 대응)
+  static String get baseUrl => appBaseUrl;
 
   // API Endpoint 경로들 (Django _config/urls.py 정의 기준)
   static const String jwtCreate = '/api/v1/token/';

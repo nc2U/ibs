@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../data/issue_repository.dart';
@@ -186,7 +188,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       lastDate: lastDate,
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       final str =
           "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       setState(() => controller.text = str);
@@ -199,7 +201,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     if (_selectedProjectSlug == null || _selectedProjectSlug!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('워크스페이스(프로젝트)를 선택해 주세요.'),
+          content: const Text('워크스페이스를 선택해 주세요.'),
           backgroundColor: context.colors.error,
         ),
       );
@@ -225,6 +227,11 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     setState(() => _isSaving = true);
 
     final isEdit = widget.initialIssue != null;
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final isOwner = !isEdit || currentUser?.pk == widget.initialIssue?.creator?.pk;
+    final canSetPrivate = ref.can(Perm.issuePrivate, projectSlug: _selectedProjectSlug) ||
+        (isOwner && ref.can(Perm.issueOwnPrivate, projectSlug: _selectedProjectSlug));
+
     final payload = <String, dynamic>{
       'subject': _subjectController.text.trim(),
       'description': _descriptionController.text.trim(),
@@ -232,7 +239,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       'status': _statusId,
       'priority': _priorityId,
       'done_ratio': _doneRatio,
-      'is_private': _isPrivate,
+      if (canSetPrivate) 'is_private': _isPrivate,
       'start_date': _startDateController.text.trim().isNotEmpty
           ? _startDateController.text.trim()
           : null,
@@ -240,7 +247,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
     if (isEdit) {
       payload['assigned_to'] = _assignedToId;
-      payload['parent'] = _parentIssueId;
+      // 상위업무 변경 시에만 'parent' 전송 (미변경 시 issue.sub_manage 권한 오검출 403 방지)
+      if (_parentIssueId != widget.initialIssue?.parent?.pk) {
+        payload['parent'] = _parentIssueId;
+      }
       payload['fixed_version'] = _fixedVersionId;
       payload['category'] = _categoryId;
       payload['expected_duration'] =
@@ -273,11 +283,16 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
         await ref
             .read(issueRepositoryProvider)
             .updateIssue(widget.initialIssue!.pk, payload);
+        if (!mounted) return;
         ref.invalidate(issueDetailProvider(widget.initialIssue!.pk));
       } else {
         await ref.read(issueRepositoryProvider).createIssue(payload);
+        if (!mounted) return;
       }
       ref.invalidate(issueListProvider);
+      if (_selectedProjectSlug != null && _selectedProjectSlug!.isNotEmpty) {
+        ref.invalidate(projectIssuesProvider(_selectedProjectSlug!));
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -356,7 +371,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!isEdit) ...[
-                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                Text('워크스페이스 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                 const SizedBox(height: 6),
                 projectsAsync.when(
                   loading: () => SizedBox(
@@ -365,7 +380,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: context.colors.accentWork)),
                   ),
-                  error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
+                  error: (e, _) => Text('워크스페이스 목록을 불러올 수 없습니다.',
                       style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                   data: (projects) {
                     final validSlug = (_selectedProjectSlug != null &&
@@ -373,7 +388,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                         ? _selectedProjectSlug
                         : (projects.isNotEmpty ? projects.first.slug : null);
 
-                    // 만약 _selectedProjectSlug가 설정되지 않았고 유효한 프로젝트가 존재하면 상태 변수에 명시적으로 바인딩
+                    // 만약 _selectedProjectSlug가 설정되지 않았고 유효한 워크스페이스가 존재하면 상태 변수에 명시적으로 바인딩
                     if (_selectedProjectSlug == null && validSlug != null) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted && _selectedProjectSlug == null) {
@@ -388,7 +403,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                       isExpanded: true,
                       style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                       dropdownColor: context.colors.bgCard,
-                      decoration: _inputDecoration('프로젝트 선택'),
+                      decoration: _inputDecoration('워크스페이스 선택'),
                       items: projects
                           .map((p) => DropdownMenuItem(
                                 value: p.slug,
@@ -406,7 +421,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                         });
                       },
                       validator: (v) =>
-                          (v == null || v.isEmpty) ? '프로젝트를 선택해 주세요.' : null,
+                          (v == null || v.isEmpty) ? '워크스페이스를 선택해 주세요.' : null,
                     );
                   },
                 ),
@@ -487,6 +502,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                               !trackerList.any((t) => t.pk == _trackerId))
                                           ? trackerList.first.pk
                                           : _trackerId;
+                                      if (hasTrackers && currentTrackerId != _trackerId) {
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          if (mounted) {
+                                            setState(() => _trackerId = currentTrackerId);
+                                          }
+                                        });
+                                      }
 
                                       return DropdownButtonFormField<int>(
                                         key: ValueKey('tracker_${_selectedProjectSlug}_$currentTrackerId'),
@@ -570,6 +592,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           !priorityList.any((p) => p.pk == _priorityId))
                                       ? priorityList.first.pk
                                       : _priorityId;
+                                  if (hasPriorities && currentPriorityId != _priorityId) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      if (mounted) {
+                                        setState(() => _priorityId = currentPriorityId);
+                                      }
+                                    });
+                                  }
 
                                   return DropdownButtonFormField<int>(
                                     key: ValueKey('priority_$currentPriorityId'),
@@ -661,6 +690,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                               !memberList.any((m) => m.user.pk == _assignedToId))
                                           ? null
                                           : _assignedToId;
+                                      if (_assignedToId != null && currentAssignedId == null) {
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          if (mounted) {
+                                            setState(() => _assignedToId = null);
+                                          }
+                                        });
+                                      }
 
                                       return DropdownButtonFormField<int?>(
                                         key: ValueKey('assigned_${_selectedProjectSlug}_$currentAssignedId'),
@@ -766,6 +802,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           !availableStatuses.any((s) => s.pk == _statusId))
                                       ? availableStatuses.first.pk
                                       : _statusId;
+                                  if (hasStatuses && currentStatusId != _statusId) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      if (mounted) {
+                                        setState(() => _statusId = currentStatusId);
+                                      }
+                                    });
+                                  }
 
                                   return DropdownButtonFormField<int>(
                                     key: ValueKey('status_$currentStatusId'),
@@ -1286,18 +1329,24 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                           _buildParentIssueSelector(const []),
                       const SizedBox(height: 14),
 
-                      // ── Row 4: 비공개 업무 토글 (100% 전체 폭 및 상세 설명) ──
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('비공개 업무', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
-                        subtitle: Text(
-                          '본인 및 담당자, 권한 있는 관리자에게만 공개됩니다.',
-                          style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                      // ── Row 4: 비공개 업무 토글 (권한 보유 시에만 표시) ──
+                      if (ref.can(Perm.issuePrivate, projectSlug: _selectedProjectSlug) ||
+                          ((widget.initialIssue == null ||
+                                  ref.watch(currentUserProvider).valueOrNull?.pk ==
+                                      widget.initialIssue?.creator?.pk) &&
+                              ref.can(Perm.issueOwnPrivate,
+                                  projectSlug: _selectedProjectSlug)))
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('비공개 업무', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                          subtitle: Text(
+                            '본인 및 담당자, 권한 있는 관리자에게만 공개됩니다.',
+                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                          ),
+                          value: _isPrivate,
+                          activeThumbColor: context.colors.accentWork,
+                          onChanged: (v) => setState(() => _isPrivate = v),
                         ),
-                        value: _isPrivate,
-                        activeThumbColor: context.colors.accentWork,
-                        onChanged: (v) => setState(() => _isPrivate = v),
-                      ),
                     ],
                   ),
                 ),

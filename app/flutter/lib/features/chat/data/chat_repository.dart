@@ -166,16 +166,15 @@ class ChatRepository {
         replyToId: replyToId,
       );
     }
-    // dart:io File 또는 duck-typed 파일 객체
+    // dart:io File 객체 처리
     final bytes = await (file.readAsBytes() as Future<List<int>>);
     String fileName = 'file';
     try {
-      fileName = file.name as String;
-    } catch (_) {
-      try {
-        fileName = (file.path as String).split(RegExp(r'[/\\]')).last;
-      } catch (_) {}
-    }
+      final path = (file as dynamic).path?.toString() ?? '';
+      if (path.isNotEmpty) {
+        fileName = path.split(RegExp(r'[/\\]')).last;
+      }
+    } catch (_) {}
     int? size;
     try {
       size = await (file.length() as Future<int>);

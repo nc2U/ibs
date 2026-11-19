@@ -41,8 +41,28 @@ class ContractRepository {
     return ContractAggregateModel.fromJson(response.data);
   }
 
+  Future<({List<T> items, bool hasMore})> _fetchPaged<T>(
+    String path, {
+    required Map<String, dynamic> queryParams,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final response = await dio.get(path, queryParameters: queryParams);
+    final data = response.data;
+    final List<dynamic> results =
+        data is Map && data.containsKey('results')
+            ? (data['results'] as List<dynamic>? ?? const [])
+            : (data is List ? data : const []);
+    final hasMore = data is Map && data['next'] != null;
+    return (
+      items: results
+          .map((json) => fromJson(json as Map<String, dynamic>))
+          .toList(),
+      hasMore: hasMore,
+    );
+  }
+
   /// 2. 유효 계약 목록 조회 (/api/v1/contract-set/?project={projectId}&is_active=true&is_contract=true)
-  Future<List<ContractItemModel>> fetchContracts({
+  Future<({List<ContractItemModel> items, bool hasMore})> fetchContracts({
     required int projectId,
     String? search,
     int? orderGroup,
@@ -67,17 +87,11 @@ class ContractRepository {
       queryParams['unit_type'] = unitType;
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/contract-set/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: ContractItemModel.fromJson,
     );
-
-    final List<dynamic> results =
-        response.data is Map && response.data.containsKey('results')
-            ? response.data['results']
-            : (response.data is List ? response.data : []);
-
-    return results.map((json) => ContractItemModel.fromJson(json)).toList();
   }
 
   /// 2-2. 계약 단건 상세 조회 (/api/v1/contract-set/{contractId}/)
@@ -94,7 +108,7 @@ class ContractRepository {
   }
 
   /// 3. 권리의무 승계 목록 조회 (/api/v1/succession/?contract__project={projectId})
-  Future<List<SuccessionItemModel>> fetchSuccessions({
+  Future<({List<SuccessionItemModel> items, bool hasMore})> fetchSuccessions({
     required int projectId,
     String? search,
     int page = 1,
@@ -109,21 +123,15 @@ class ContractRepository {
       queryParams['search'] = search.trim();
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/succession/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: SuccessionItemModel.fromJson,
     );
-
-    final List<dynamic> results =
-        response.data is Map && response.data.containsKey('results')
-            ? response.data['results']
-            : (response.data is List ? response.data : []);
-
-    return results.map((json) => SuccessionItemModel.fromJson(json)).toList();
   }
 
   /// 4. 계약 해약/해지 목록 조회 (/api/v1/contractor-release/?project={projectId})
-  Future<List<ContractorReleaseItemModel>> fetchReleases({
+  Future<({List<ContractorReleaseItemModel> items, bool hasMore})> fetchReleases({
     required int projectId,
     String? search,
     int page = 1,
@@ -138,19 +146,27 @@ class ContractRepository {
       queryParams['search'] = search.trim();
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/contractor-release/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: ContractorReleaseItemModel.fromJson,
     );
+  }
 
-    final List<dynamic> results =
-        response.data is Map && response.data.containsKey('results')
-            ? response.data['results']
-            : (response.data is List ? response.data : []);
-
-    return results
-        .map((json) => ContractorReleaseItemModel.fromJson(json))
-        .toList();
+  static Uint8List? _extractBinaryBytes(Response<dynamic> response) {
+    final contentType =
+        response.headers.value('content-type')?.toLowerCase() ?? '';
+    if (contentType.contains('text/html')) return null;
+    if (response.statusCode == 200 && response.data != null) {
+      if (response.data is Uint8List) {
+        return response.data as Uint8List;
+      } else if (response.data is List<int>) {
+        return Uint8List.fromList(response.data as List<int>);
+      } else if (response.data is List) {
+        return Uint8List.fromList((response.data as List).cast<int>());
+      }
+    }
+    return null;
   }
 
   /// 5. 분양대금 납부확인서 PDF 다운로드 (/pdf/ledger/payment/?project={projectId}&contract={contractId}&pub_date={date}&is_calc=1)
@@ -180,16 +196,7 @@ class ContractRepository {
         ),
       );
 
-      if (response.statusCode == 200 && response.data != null) {
-        if (response.data is Uint8List) {
-          return response.data as Uint8List;
-        } else if (response.data is List<int>) {
-          return Uint8List.fromList(response.data as List<int>);
-        } else if (response.data is List) {
-          return Uint8List.fromList((response.data as List).cast<int>());
-        }
-      }
-      return null;
+      return _extractBinaryBytes(response);
     } catch (e) {
       return null;
     }
@@ -390,16 +397,7 @@ class ContractRepository {
         ),
       );
 
-      if (response.statusCode == 200 && response.data != null) {
-        if (response.data is Uint8List) {
-          return response.data as Uint8List;
-        } else if (response.data is List<int>) {
-          return Uint8List.fromList(response.data as List<int>);
-        } else if (response.data is List) {
-          return Uint8List.fromList((response.data as List).cast<int>());
-        }
-      }
-      return null;
+      return _extractBinaryBytes(response);
     } catch (e) {
       return null;
     }

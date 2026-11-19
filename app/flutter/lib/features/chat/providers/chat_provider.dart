@@ -13,18 +13,21 @@ import '../data/models/chat_model.dart';
 
 /// 1. 대화방 목록 프로바이더
 final chatRoomsProvider = FutureProvider.autoDispose<List<ChatRoomModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final repo = ref.watch(chatRepositoryProvider);
   return repo.fetchChatRooms();
 });
 
 /// 2. 전체 미확인 메시지 총합 프로바이더 (상단 앱바 💬 배지용)
 final totalUnreadChatCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final repo = ref.watch(chatRepositoryProvider);
   return repo.fetchTotalUnread();
 });
 
 /// 2-1. 1:1 DM 가능 대상자 목록 프로바이더 (본사 재직 스태프 + 활성 워크스페이스 멤버 전체)
 final allMembersProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/api/v1/chat-room/available-users/');
   final dynamic data = res.data;
@@ -57,6 +60,8 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
   bool _isConnected = false;
   bool _isDisposed = false;
   bool _hasConnectedOnce = false;
+  bool _needsTokenRefreshOnReconnect = false;
+  final Map<int, int> _lastReadByUser = {};
 
   // 📜 커서 페이지네이션 상태
   bool _hasMoreOlder = false;
@@ -107,6 +112,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
       if (_isDisposed) return;
       _hasMoreOlder = page.hasMore;
       _atLatest = true;
+      _lastReadByUser.clear();
       state = AsyncValue.data(page.messages);
 
       // 2) 읽음 처리 - 실패해도 이미 불러온 메시지/WebSocket 연결에는 영향 없도록 분리
@@ -149,6 +155,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
       final firstId = fetched.first.id;
       final kept = _current.where((m) => m.id < firstId).toList();
       if (kept.isEmpty) _hasMoreOlder = page.hasMore;
+      _lastReadByUser.clear();
       state = AsyncValue.data([...kept, ...fetched]);
       await _markLatestAsRead(fetched);
     } catch (_) {}
@@ -256,26 +263,53 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
     } catch (_) {}
   }
 
+  Future<void> _markIncomingAsRead(int messageId) async {
+    try {
+      await _repo.markAsRead(roomId, lastMessageId: messageId);
+      if (_isDisposed) return;
+      _ref.invalidate(totalUnreadChatCountProvider);
+      _ref.invalidate(chatRoomsProvider);
+    } catch (_) {}
+  }
+
   Future<void> _connectWebSocket() async {
     if (_isDisposed || _isConnected) return;
 
     final tokenStorage = _ref.read(tokenStorageProvider);
-    final token = await tokenStorage.getAccessToken();
-    if (token == null) return;
+    if (_needsTokenRefreshOnReconnect) {
+      _needsTokenRefreshOnReconnect = false;
+      final authInterceptors =
+          _ref.read(dioProvider).interceptors.whereType<AuthInterceptor>();
+      final refreshed = authInterceptors.isNotEmpty
+          ? await authInterceptors.first.refreshSessionToken()
+          : false;
+      if (_isDisposed) return;
+      if (!refreshed) {
+        await tokenStorage.clearTokens();
+        _ref.read(authProvider.notifier).logout(isSessionExpired: true);
+        return;
+      }
+    }
 
-    // WebSocket URL 생성 (ws:// 또는 wss://)
+    final token = await tokenStorage.getAccessToken();
+    if (_isDisposed || token == null || token.isEmpty) return;
+
+    // WebSocket URL 생성 (JWT는 URL 쿼리가 아닌 Sec-WebSocket-Protocol 헤더로 전달)
     final baseHttp = appBaseUrl;
     final wsBase = baseHttp.startsWith('https://')
         ? baseHttp.replaceFirst('https://', 'wss://')
         : baseHttp.replaceFirst('http://', 'ws://');
 
-    final wsUri = Uri.parse('$wsBase/ws/chat/$roomId/?token=$token');
+    final wsUri = Uri.parse('$wsBase/ws/chat/$roomId/');
 
     try {
       _sub?.cancel();
       _channel?.sink.close();
 
-      final channel = WebSocketChannel.connect(wsUri);
+      final channel = WebSocketChannel.connect(
+        wsUri,
+        protocols: ['Bearer', token],
+      );
       _channel = channel;
 
       _sub = channel.stream.listen(
@@ -290,6 +324,14 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
         onDone: () {
           if (!identical(_channel, channel)) return;
           _isConnected = false;
+          final closeCode = channel.closeCode;
+          if (closeCode == 4003) {
+            // 방 접근 권한이 없는 경우 재연결 중단
+            return;
+          }
+          if (closeCode == 4001) {
+            _needsTokenRefreshOnReconnect = true;
+          }
           _scheduleReconnect();
         },
         cancelOnError: false,
@@ -357,10 +399,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
 
         // 상대방이 보낸 메시지인 경우에만 수신 즉시 읽음 처리 전송
         if (!isMe) {
-          _repo.markAsRead(roomId, lastMessageId: newMsg.id).then((_) {
-            _ref.invalidate(totalUnreadChatCountProvider);
-            _ref.invalidate(chatRoomsProvider);
-          });
+          unawaited(_markIncomingAsRead(newMsg.id));
           if (_channel != null && _isConnected) {
             try {
               _channel!.sink.add(jsonEncode({
@@ -401,11 +440,14 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
         final readUserId = json['user_id'] as int?;
         final lastReadId = json['last_message_id'] as int?;
 
-        // 다른 사용자가 읽은 경우에만 내가 보낸 메시지의 unreadCount를 차감
+        // 다른 사용자가 읽은 경우에만 사용자별 중복 차감 없이 unreadCount 차감
         if (readUserId != null && _myUserId > 0 && readUserId != _myUserId && lastReadId != null) {
+          final prevMaxReadId = _lastReadByUser[readUserId] ?? 0;
+          if (lastReadId <= prevMaxReadId) return;
+          _lastReadByUser[readUserId] = lastReadId;
           state = state.whenData((msgs) {
             return msgs.map((m) {
-              if (m.id <= lastReadId && m.unreadCount > 0) {
+              if (m.id > prevMaxReadId && m.id <= lastReadId && m.unreadCount > 0) {
                 return m.copyWith(unreadCount: (m.unreadCount - 1).clamp(0, 999));
               }
               return m;
@@ -568,6 +610,7 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
 
 /// 4. 대화방별 실시간 StateNotifierProvider
 final chatRoomNotifierProvider = StateNotifierProvider.autoDispose.family<ChatRoomNotifier, AsyncValue<List<ChatMessageModel>>, int>((ref, roomId) {
+  ref.watch(authSessionVersionProvider);
   final repo = ref.watch(chatRepositoryProvider);
   return ChatRoomNotifier(roomId, repo, ref);
 });

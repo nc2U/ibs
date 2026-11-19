@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -14,6 +15,7 @@ import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/notice_model.dart';
 import '../../data/notice_repository.dart';
 import '../../providers/notice_provider.dart';
+import 'channel_ui_helpers.dart';
 import 'notice_form_sheet.dart';
 
 /// 공지사항 상세 보기 바텀시트 (radius = 0)
@@ -196,7 +198,8 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
     try {
       final dio = ref.read(dioProvider);
       final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/${file.fileName}';
+      final safeName = sanitizeChannelFileName(file.fileName);
+      final savePath = '${dir.path}/$safeName';
 
       await dio.download(url, savePath);
       final result = await OpenFilex.open(savePath);
@@ -305,9 +308,11 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     color: context.colors.textSecond,
                     onPressed: () {
+                      final rootCtx =
+                          Navigator.of(context, rootNavigator: true).context;
                       Navigator.pop(context);
                       showModalBottomSheet(
-                        context: context,
+                        context: rootCtx,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (ctx) => NoticeFormSheet(notice: notice),
@@ -347,7 +352,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           size: 14, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        notice.author?.username ?? '작성자 미상',
+                        resolveUserDisplayName(notice.author, fallback: '작성자 미상'),
                         style: AppTextStyles.caption
                             .copyWith(color: context.colors.textSecond),
                       ),
@@ -356,8 +361,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           size: 14, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        notice.created?.substring(0, 16).replaceAll('T', ' ') ??
-                            '',
+                        formatChannelDateTime(notice.created),
                         style: AppTextStyles.caption
                             .copyWith(color: context.colors.textMuted),
                       ),
@@ -398,13 +402,8 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     child: notice.content.isNotEmpty
                         ? HtmlWidget(
                             notice.content,
-                            onTapUrl: (url) async {
-                              final uri = Uri.tryParse(url);
-                              if (uri != null && await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
-                              return true;
-                            },
+                            baseUrl: Uri.tryParse(appBaseUrl),
+                            onTapUrl: launchChannelHtmlUrl,
                             textStyle: AppTextStyles.bodyMd.copyWith(
                               color: context.colors.textPrimary,
                               height: 1.5,
@@ -533,7 +532,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                               Row(
                                 children: [
                                   Text(
-                                    c.creator?.username ?? '사용자',
+                                    resolveUserDisplayName(c.creator, fallback: '사용자'),
                                     style: AppTextStyles.label.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: context.colors.textPrimary,
@@ -541,8 +540,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    c.created?.substring(0, 16).replaceAll('T', ' ') ??
-                                        '',
+                                    formatChannelDateTime(c.created),
                                     style: AppTextStyles.caption
                                         .copyWith(color: context.colors.textMuted),
                                   ),

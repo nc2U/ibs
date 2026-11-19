@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref
           .read(notificationListProvider.notifier)
           .markReadByTarget('issue', widget.issueId.toString());
@@ -64,6 +66,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
       await ref
           .read(issueCommentProvider(widget.issueId).notifier)
           .addComment(content, isPrivate: _isPrivateComment);
+      if (!mounted) return;
       ref.invalidate(issueLogProvider(widget.issueId));
       ref.invalidate(issueDetailProvider(widget.issueId));
       _commentController.clear();
@@ -161,16 +164,15 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
           .read(issueRepositoryProvider)
           .uploadFile(widget.issueId, picked);
 
+      if (!mounted) return;
       ref.invalidate(issueDetailProvider(widget.issueId));
       ref.invalidate(issueLogProvider(widget.issueId));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('사진이 첨부되었습니다.'),
             backgroundColor: context.colors.success,
           ),
         );
-      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -206,16 +208,15 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
           .read(issueRepositoryProvider)
           .uploadFileBytes(widget.issueId, bytes, file.name);
 
+      if (!mounted) return;
       ref.invalidate(issueDetailProvider(widget.issueId));
       ref.invalidate(issueLogProvider(widget.issueId));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${file.name} 파일이 첨부되었습니다.'),
-            backgroundColor: context.colors.success,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${file.name} 파일이 첨부되었습니다.'),
+          backgroundColor: context.colors.success,
+        ),
+      );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,17 +262,24 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
         actions: [
           detailState.maybeWhen(
             data: (issue) {
+              final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+              final project = allProjects
+                  .where((p) => p.slug == issue.project.slug)
+                  .firstOrNull;
+              final isClosed =
+                  issue.project.status == '2' || project?.status == '2';
+
               final currentUser = ref.watch(currentUserProvider).valueOrNull;
               final isCreator =
                   currentUser != null && currentUser.pk == issue.creator?.pk;
               final isAssignee = currentUser != null &&
                   currentUser.pk == issue.assignedTo?.pk;
 
-              final canUpdate = ref.can(Perm.issueUpdate,
-                      projectSlug: issue.project.slug) ||
-                  (ref.can(Perm.issueOwnUpdate,
-                          projectSlug: issue.project.slug) &&
-                      (isCreator || isAssignee));
+              final canUpdate = !isClosed &&
+                  (ref.can(Perm.issueUpdate, projectSlug: issue.project.slug) ||
+                      (ref.can(Perm.issueOwnUpdate,
+                              projectSlug: issue.project.slug) &&
+                          (isCreator || isAssignee)));
 
               final isMyWatching = currentUser != null &&
                   issue.watchers.any((w) => w.pk == currentUser.pk);
@@ -279,52 +287,53 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      isMyWatching
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
-                      color: isMyWatching
-                          ? context.colors.warning
-                          : context.colors.textMuted,
-                      size: 24,
+                  if (!isClosed)
+                    IconButton(
+                      icon: Icon(
+                        isMyWatching
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: isMyWatching
+                            ? context.colors.warning
+                            : context.colors.textMuted,
+                        size: 24,
+                      ),
+                      tooltip: isMyWatching ? '관심끄기' : '지켜보기',
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(issueDetailProvider(widget.issueId).notifier)
+                              .toggleWatch();
+                          if (context.mounted) {
+                            final currentIssue = ref
+                                .read(issueDetailProvider(widget.issueId))
+                                .valueOrNull;
+                            final nowWatching = currentUser != null &&
+                                (currentIssue?.watchers
+                                        .any((w) => w.pk == currentUser.pk) ??
+                                    false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(nowWatching
+                                    ? '이 업무를 지켜봅니다.'
+                                    : '관심을 껐습니다.'),
+                                backgroundColor: context.colors.accentWork,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('지켜보기 설정 변경에 실패했습니다.'),
+                                backgroundColor: context.colors.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
                     ),
-                    tooltip: isMyWatching ? '관심끄기' : '지켜보기',
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(issueDetailProvider(widget.issueId).notifier)
-                            .toggleWatch();
-                        if (context.mounted) {
-                          final currentIssue = ref
-                              .read(issueDetailProvider(widget.issueId))
-                              .valueOrNull;
-                          final nowWatching = currentUser != null &&
-                              (currentIssue?.watchers
-                                      .any((w) => w.pk == currentUser.pk) ??
-                                  false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(nowWatching
-                                  ? '이 업무를 지켜봅니다.'
-                                  : '관심을 껐습니다.'),
-                              backgroundColor: context.colors.accentWork,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      } catch (_) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('지켜보기 설정 변경에 실패했습니다.'),
-                              backgroundColor: context.colors.error,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                  ),
                   if (canUpdate)
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 22),
@@ -359,11 +368,12 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
   }
 
   Widget _buildBody(IssueModel issue) {
-    final myProjects = ref.watch(myProjectsProvider).valueOrNull ?? [];
-    final project = myProjects
+    final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+    final project = allProjects
         .where((p) => p.slug == issue.project.slug)
         .firstOrNull;
-    final isClosed = project?.status == '2';
+    final isClosed =
+        issue.project.status == '2' || project?.status == '2';
 
     return Column(
       children: [
@@ -402,7 +412,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                   ),
 
                 // ── 핵심 정보 카드 ──────────────────────────────────────────
-                _InfoSection(issue: issue, ref: ref),
+                _InfoSection(issue: issue, isClosed: isClosed),
                 const SizedBox(height: 12),
 
                 // ── 설명 ────────────────────────────────────────────────────
@@ -482,8 +492,9 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
           ),
         ),
 
-        // ── 하단 댓글 입력창 (고정) ─────────────────────────────────────────
-        if (ref.can(Perm.issueCommentCreate, projectSlug: issue.project.slug))
+        // ── 하단 댓글 입력창 (고정, 닫힌 워크스페이스 제외) ────────────────────
+        if (!isClosed &&
+            ref.can(Perm.issueCommentCreate, projectSlug: issue.project.slug))
           _CommentInputBar(
             controller: _commentController,
             focusNode: _commentFocus,
@@ -494,7 +505,10 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
             onTogglePrivate: () =>
                 setState(() => _isPrivateComment = !_isPrivateComment),
             onSend: _sendComment,
-            onAttachPhoto: _showAttachmentMenu,
+            onAttachPhoto:
+                ref.can(Perm.issueUpdate, projectSlug: issue.project.slug)
+                    ? _showAttachmentMenu
+                    : null,
           ),
       ],
     );
@@ -502,22 +516,22 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
 }
 
 // ── 핵심 정보 섹션 ──────────────────────────────────────────────────────────────
-class _InfoSection extends StatelessWidget {
+class _InfoSection extends ConsumerWidget {
   final IssueModel issue;
-  final WidgetRef ref;
-  const _InfoSection({required this.issue, required this.ref});
+  final bool isClosed;
+  const _InfoSection({required this.issue, required this.isClosed});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isCreator =
         currentUser != null && currentUser.pk == issue.creator?.pk;
     final isAssignee =
         currentUser != null && currentUser.pk == issue.assignedTo?.pk;
-    final canUpdate = ref.can(Perm.issueUpdate,
-            projectSlug: issue.project.slug) ||
-        (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) &&
-            (isCreator || isAssignee));
+    final canUpdate = !isClosed &&
+        (ref.can(Perm.issueUpdate, projectSlug: issue.project.slug) ||
+            (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) &&
+                (isCreator || isAssignee)));
 
     final doneColor =
         issue.doneRatio == 100 ? context.colors.success : context.colors.accentWork;
@@ -576,7 +590,6 @@ class _InfoSection extends StatelessWidget {
             onTap: canUpdate
                 ? () => showDoneRatioBottomSheet(
                       context: context,
-                      ref: ref,
                       issueId: issue.pk,
                       currentRatio: issue.doneRatio,
                     )
@@ -917,9 +930,21 @@ class _FileRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
         onTap: () async {
-          final uri = Uri.parse(file.file);
-          if (await canLaunchUrl(uri)) {
+          final uri = Uri.tryParse(file.file);
+          if (uri == null) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('유효하지 않은 파일 주소입니다.')),
+              );
+            }
+            return;
+          }
+          if (kIsWeb || await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('첨부 파일을 열 수 있는 앱을 찾을 수 없습니다.')),
+            );
           }
         },
         child: Container(
@@ -1120,7 +1145,7 @@ class _CommentInputBar extends StatelessWidget {
   final bool canSetPrivate;
   final VoidCallback onTogglePrivate;
   final VoidCallback onSend;
-  final VoidCallback onAttachPhoto;
+  final VoidCallback? onAttachPhoto;
 
   const _CommentInputBar({
     required this.controller,
@@ -1165,15 +1190,16 @@ class _CommentInputBar extends StatelessWidget {
             ),
           Row(
             children: [
-              // 카메라/사진 첨부 버튼
-              IconButton(
-                icon: Icon(Icons.attach_file_rounded,
-                    color: context.colors.textMuted, size: 20),
-                tooltip: '파일/사진 첨부',
-                onPressed: onAttachPhoto,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
+              // 카메라/사진 첨부 버튼 (권한 있을 때만)
+              if (onAttachPhoto != null)
+                IconButton(
+                  icon: Icon(Icons.attach_file_rounded,
+                      color: context.colors.textMuted, size: 20),
+                  tooltip: '파일/사진 첨부',
+                  onPressed: onAttachPhoto,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
               // 비밀 댓글 토글 (권한이 있는 경우)
               if (canSetPrivate)
                 IconButton(

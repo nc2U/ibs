@@ -688,7 +688,7 @@ class SimpleInboundLetterSerializer(serializers.ModelSerializer):
             'recipient_dept', 'recipient_dept_name',
             'recipient_manager', 'recipient_manager_name',
             'status', 'status_desc',
-            'has_scan', 'has_attachments',
+            'scan_file', 'has_scan', 'has_attachments',
             'approval_document', 'creator', 'created',
         )
 

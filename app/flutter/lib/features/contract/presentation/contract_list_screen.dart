@@ -39,6 +39,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.text = ref.read(contractSearchQueryProvider);
     _scrollController.addListener(_onScroll);
 
     // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
@@ -117,6 +118,9 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
     // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트가 변경되면 선택된 동 초기화 및 3대 탭 목록·종합 집계를 즉시 자동 갱신 ──
     ref.listen(selectedRealEstateProjectProvider, (previous, next) {
       if (previous?.realProjectId != next?.realProjectId) {
+        _debounceTimer?.cancel();
+        _searchController.clear();
+        ref.read(contractSearchQueryProvider.notifier).state = '';
         ref.read(selectedBuildingUnitIdProvider.notifier).state = null;
         _refreshAllData();
       }

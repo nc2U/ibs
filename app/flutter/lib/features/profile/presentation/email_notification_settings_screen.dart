@@ -81,8 +81,22 @@ class _EmailNotificationSettingsScreenState
   }
 
   Future<void> _saveSettings() async {
-    final user = ref.read(currentUserProvider).valueOrNull;
-    if (user == null) return;
+    var user = ref.read(currentUserProvider).valueOrNull;
+    if (user == null) {
+      try {
+        final asyncUser = ref.read(currentUserProvider);
+        user = asyncUser.isLoading
+            ? await ref.read(currentUserProvider.future)
+            : await ref.refresh(currentUserProvider.future);
+      } catch (_) {}
+      if (!mounted) return;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사용자 정보를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.')),
+        );
+        return;
+      }
+    }
 
     setState(() => _isSaving = true);
     final dio = ref.read(dioProvider);
@@ -272,7 +286,8 @@ class _EmailNotificationSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
-    final activeWorkspaces = ref.watch(activeWorkspaceListProvider).valueOrNull ?? [];
+    final activeWorkspacesAsync = ref.watch(activeWorkspaceListProvider);
+    final activeWorkspaces = activeWorkspacesAsync.valueOrNull ?? [];
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -402,7 +417,36 @@ class _EmailNotificationSettingsScreenState
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              onPressed: () => _openProjectSelectBottomSheet(activeWorkspaces),
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                var list = activeWorkspaces;
+                                if (list.isEmpty) {
+                                  try {
+                                    list = activeWorkspacesAsync.isLoading
+                                        ? await ref.read(activeWorkspaceListProvider.future)
+                                        : await ref.refresh(activeWorkspaceListProvider.future);
+                                  } catch (_) {
+                                    if (mounted) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('워크스페이스 목록을 불러오지 못했습니다.'),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                }
+                                if (!context.mounted) return;
+                                if (list.isEmpty) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('선택 가능한 워크스페이스가 없습니다.'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                _openProjectSelectBottomSheet(list);
+                              },
                               icon: const Icon(Icons.edit_outlined, size: 13),
                               label: const Text('워크스페이스 선택', style: TextStyle(fontSize: 11.5)),
                             ),

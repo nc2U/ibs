@@ -1,13 +1,20 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
+import '../../../project/data/models/project_model.dart';
+import '../../../project/providers/project_provider.dart';
 import '../../data/forum_repository.dart';
 import '../../data/models/forum_model.dart';
 import '../../providers/forum_provider.dart';
+import 'channel_ui_helpers.dart';
 
 /// 신입사원 FAQ (아코디언) & 기술지원 탭 뷰 (본사 1번 포럼 is_faq=true 실시간 API 연동)
 class FaqSupportTabView extends ConsumerStatefulWidget {
@@ -74,6 +81,38 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
   }
 
   Future<void> _submitTechSupport() async {
+    final forums = ref.read(allForumsProvider).valueOrNull ??
+        await ref.read(allForumsProvider.future).catchError((_) => <ForumModel>[]);
+    final techForum =
+        forums.where((f) => f.pk == kTechSupportForumId).firstOrNull;
+    final projects = ref.read(projectListProvider).valueOrNull ??
+        await ref.read(projectListProvider.future).catchError((_) => <ProjectModel>[]);
+    final targetSlug = techForum?.project != null
+        ? projects
+            .where((p) => p.pk == techForum!.project)
+            .map((p) => p.slug)
+            .firstOrNull
+        : null;
+    final currentUser = ref.read(currentUserProvider).valueOrNull;
+    final isManager = (currentUser?.isSuperuser ?? false) ||
+        (techForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
+    final canCreate = (targetSlug == null ||
+            ref.canOnce(Perm.forumCreate, projectSlug: targetSlug)) &&
+        (!(techForum?.managerOnly ?? false) || isManager);
+    if (!canCreate) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('기술지원 문의 등록 권한(forum.create)이 없습니다.'),
+            backgroundColor: context.colors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
 
@@ -376,6 +415,8 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
               child: faq.content.isNotEmpty
                   ? HtmlWidget(
                       faq.content,
+                      baseUrl: Uri.tryParse(appBaseUrl),
+                      onTapUrl: launchChannelHtmlUrl,
                       textStyle: AppTextStyles.bodySecond.copyWith(
                         color: context.colors.textSecond,
                         height: 1.45,
@@ -460,6 +501,8 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                       const SizedBox(height: 8),
                       HtmlWidget(
                         notice.content,
+                        baseUrl: Uri.tryParse(appBaseUrl),
+                        onTapUrl: launchChannelHtmlUrl,
                         textStyle: AppTextStyles.caption.copyWith(
                           color: context.colors.textSecond,
                           height: 1.45,

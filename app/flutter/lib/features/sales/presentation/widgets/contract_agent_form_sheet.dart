@@ -401,7 +401,9 @@ class _ContractAgentFormSheetState
                       )
                     else
                       DropdownButtonFormField<int>(
-                        initialValue: _selectedContractId,
+                        initialValue: contracts.any((c) => c.value == _selectedContractId)
+                            ? _selectedContractId
+                            : null,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -511,7 +513,9 @@ class _ContractAgentFormSheetState
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int>(
-                        initialValue: _selectedAgencyId,
+                        initialValue: outsourcedAgencies.any((a) => a.id == _selectedAgencyId)
+                            ? _selectedAgencyId
+                            : null,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -545,7 +549,9 @@ class _ContractAgentFormSheetState
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int>(
-                        initialValue: _selectedSalesPersonId,
+                        initialValue: persons.any((p) => p.id == _selectedSalesPersonId)
+                            ? _selectedSalesPersonId
+                            : null,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -599,7 +605,10 @@ class _ContractAgentFormSheetState
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<int?>(
-                      initialValue: _selectedPolicyId,
+                      initialValue: (_selectedPolicyId == null ||
+                              policies.any((pol) => pol.id == _selectedPolicyId))
+                          ? _selectedPolicyId
+                          : null,
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),

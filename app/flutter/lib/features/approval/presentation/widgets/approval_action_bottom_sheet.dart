@@ -107,13 +107,25 @@ class _ApprovalActionBottomSheetState extends State<ApprovalActionBottomSheet> {
       final bioResult = await BiometricService.authenticate(
         reason: '결재 문서 승인을 위해 본인 인증을 진행합니다.',
       );
-      if (bioResult == BiometricAuthResult.failed || bioResult == BiometricAuthResult.lockedOut) {
+      if (bioResult != BiometricAuthResult.success) {
         if (mounted) {
+          String errMsg;
+          switch (bioResult) {
+            case BiometricAuthResult.canceled:
+              errMsg = '생체 인증이 취소되어 승인을 진행할 수 없습니다.';
+              break;
+            case BiometricAuthResult.lockedOut:
+              errMsg = '생체 인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.';
+              break;
+            case BiometricAuthResult.notAvailable:
+              errMsg = '기기에서 생체 인증을 사용할 수 없어 승인을 진행할 수 없습니다.';
+              break;
+            default:
+              errMsg = '본인 인증(생체 인증)에 실패했습니다.';
+          }
           setState(() {
             _isLoading = false;
-            _errorText = bioResult == BiometricAuthResult.lockedOut
-                ? '생체 인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.'
-                : '본인 인증(생체 인증)이 취소되었거나 실패했습니다.';
+            _errorText = errMsg;
           });
         }
         return;

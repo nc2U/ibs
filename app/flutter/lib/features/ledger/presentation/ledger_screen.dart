@@ -193,10 +193,13 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
     // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트가 변경되면 출납 내역 및 자금 집계, 계좌 목록을 즉시 자동 갱신 ──
     ref.listen(selectedRealEstateProjectProvider, (previous, next) {
       if (previous?.realProjectId != next?.realProjectId) {
+        _debounceTimer?.cancel();
+        _searchController.clear();
         ref.invalidate(ledgerOverallAggregateProvider);
         ref.invalidate(monthlyCashflowChartProvider);
         ref.invalidate(projectBankAccountsProvider);
         ref.invalidate(ledgerBalanceByAccountProvider);
+        ref.read(ledgerSearchQueryProvider.notifier).state = '';
         ref.read(ledgerSelectedBankAccFilterProvider.notifier).state = null;
         ref.read(projectTransactionsProvider.notifier).fetchInitial();
       }

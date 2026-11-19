@@ -5,6 +5,15 @@ from apiV1.permissions._utils import (get_project_pk_from_request, resolve_issue
 from apiV1.permissions.work_perms import ProjectPermission
 
 
+def _has_required_perm(required_perm, user_perms):
+    """단일 권한 문자열 또는 복수 허용 권한 시퀀스를 통합 검사합니다."""
+    if not required_perm:
+        return True
+    if isinstance(required_perm, (tuple, list, set, frozenset)):
+        return any(perm in user_perms for perm in required_perm)
+    return required_perm in user_perms
+
+
 class HqProjectModulePermission(permissions.BasePermission):
     """
     본사 업무 워크스페이스(IssueProject type='1') 전용 권한 클래스.
@@ -116,11 +125,11 @@ class HqProjectModulePermission(permissions.BasePermission):
         # required_perm이 지정되지 않은 일반 조회에서만 본사 워크스페이스 멤버 또는 Staff 허용.
         if request.method in permissions.SAFE_METHODS:
             if required_perm:
-                return required_perm in user_perms
+                return _has_required_perm(required_perm, user_perms)
             return self._is_hq_member_or_staff(request.user) or bool(user_perms)
 
         # 4. 쓰기 요청 (Write: POST, PUT, PATCH, DELETE) — 본사 기능 권한(Role/Permission) 검증
-        if required_perm and required_perm not in user_perms:
+        if required_perm and not _has_required_perm(required_perm, user_perms):
             raise exceptions.PermissionDenied("해당 본사 업무를 수행할 수 있는 권한이 없습니다.")
 
         return True
@@ -173,11 +182,11 @@ class HqProjectModulePermission(permissions.BasePermission):
         # [M-5] required_perm이 명시된 경우 반드시 해당 객체 권한 보유 여부 검증
         if request.method in permissions.SAFE_METHODS:
             if required_perm:
-                return required_perm in user_perms
+                return _has_required_perm(required_perm, user_perms)
             return self._is_hq_member_or_staff(request.user) or bool(user_perms)
 
         # 4. 쓰기 요청 (Write) — 본사 기능 권한(Role/Permission) 검증
-        if required_perm and required_perm not in user_perms:
+        if required_perm and not _has_required_perm(required_perm, user_perms):
             raise exceptions.PermissionDenied("해당 객체를 수정·삭제할 본사 권한이 없습니다.")
 
         return True
@@ -287,7 +296,7 @@ class IbsModulePermission(ProjectPermission):
 
         # 8. 권한 코드 검사
         user_perms = set(issue_project.get_user_permissions(request.user))
-        return required_perm in user_perms
+        return _has_required_perm(required_perm, user_perms)
 
     def has_object_permission(self, request, view, obj):
         issue_project = None
@@ -453,4 +462,4 @@ class IbsModulePermission(ProjectPermission):
         if not required_perm:
             return request.method in permissions.SAFE_METHODS
 
-        return required_perm in user_perms
+        return _has_required_perm(required_perm, user_perms)

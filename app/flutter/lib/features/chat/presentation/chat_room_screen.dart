@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -70,19 +71,19 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     _scrollController.addListener(_onScroll);
     _textController.addListener(_onInputTextChanged);
 
-    // 대화방 진입 즉시 최신 메시지 동기화 & 읽음 처리 & 전역 배지 갱신
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // 대화방 진입 시 점프 대상 메시지 이동 (기본 읽음/최신 동기화는 ChatRoomNotifier 초기화에서 수행)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       if (widget.initialMessageId != null) {
-        _jumpToTargetMessage(widget.initialMessageId!);
-      } else {
-        ref.read(chatRoomNotifierProvider(widget.roomId).notifier).refreshMessages();
+        await _jumpToTargetMessage(widget.initialMessageId!);
+        try {
+          await ref.read(chatRepositoryProvider).markAsRead(widget.roomId);
+          if (mounted) {
+            ref.invalidate(totalUnreadChatCountProvider);
+            ref.invalidate(chatRoomsProvider);
+          }
+        } catch (_) {}
       }
-      ref.read(chatRepositoryProvider).markAsRead(widget.roomId).then((_) {
-        if (mounted) {
-          ref.invalidate(totalUnreadChatCountProvider);
-          ref.invalidate(chatRoomsProvider);
-        }
-      });
     });
   }
 
@@ -632,7 +633,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picked = await _picker.pickImage(source: source, imageQuality: 85);
-      if (picked == null) return;
+      if (!mounted || picked == null) return;
 
       setState(() => _isUploading = true);
 
@@ -663,7 +664,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   Future<void> _pickDocument() async {
     try {
       final result = await FilePicker.platform.pickFiles(withData: true);
-      if (result == null || result.files.isEmpty) return;
+      if (!mounted || result == null || result.files.isEmpty) return;
 
       final pickedFile = result.files.single;
       XFile xFile;
@@ -675,6 +676,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
         return;
       }
 
+      if (!mounted) return;
       setState(() => _isUploading = true);
 
       await ref.read(chatRoomNotifierProvider(widget.roomId).notifier).sendFile(
@@ -1115,6 +1117,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                           ? '${member.name} (${member.username})'
                           : member.username;
 
+                      final memberNameLabel = member.name.isNotEmpty
+                          ? member.name
+                          : member.username;
                       return ListTile(
                         leading: CircleAvatar(
                           radius: 18,
@@ -1122,7 +1127,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                               ? context.colors.accentWork.withAlpha(40)
                               : context.colors.accentCorp.withAlpha(40),
                           child: Text(
-                            (member.name.isNotEmpty ? member.name : member.username).substring(0, 1).toUpperCase(),
+                            memberNameLabel.isNotEmpty
+                                ? memberNameLabel.substring(0, 1).toUpperCase()
+                                : '?',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -1256,7 +1263,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${_replyTarget!.sender?.username ?? "상대방"}님에게 답장',
+                  '${(_replyTarget!.sender?.name.isNotEmpty == true ? _replyTarget!.sender!.name : _replyTarget!.sender?.username) ?? "상대방"}님에게 답장',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent),
                 ),
                 Text(
@@ -1290,7 +1297,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 4),
               child: Text(
-                msg.sender!.username,
+                msg.sender!.name.isNotEmpty
+                    ? msg.sender!.name
+                    : msg.sender!.username,
                 style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.bold,
                   color: context.colors.textSecond,
@@ -1507,10 +1516,25 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
     // 📎 일반 파일 / 도면 첨부 렌더링
     if (msg.messageType == ChatMessageType.file) {
-      final fileUrl = msg.fileUrl;
+      final rawFileUrl = msg.fileUrl.trim();
+      final resolvedFileUrl = rawFileUrl.startsWith('/')
+          ? '$appBaseUrl$rawFileUrl'
+          : rawFileUrl;
       return InkWell(
-        onTap: () {
-          if (fileUrl.isNotEmpty) launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication);
+        onTap: () async {
+          if (resolvedFileUrl.isEmpty) return;
+          final uri = Uri.tryParse(resolvedFileUrl);
+          if (uri == null || !uri.hasScheme) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('올바른 첨부파일 URL이 아닙니다.')),
+              );
+            }
+            return;
+          }
+          try {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (_) {}
         },
         onLongPress: () => _showMessageActionMenu(msg),
         child: Column(

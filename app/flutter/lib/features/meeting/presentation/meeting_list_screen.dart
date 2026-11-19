@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -143,6 +144,14 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen>
 
     final canRead = ref.can(Perm.meetingRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
+      final isLoadingPerms =
+          (!ref.watch(currentUserProvider).hasValue &&
+              ref.watch(currentUserProvider).isLoading) ||
+          (!ref.watch(myProjectsProvider).hasValue &&
+              ref.watch(myProjectsProvider).isLoading);
+      if (isLoadingPerms) {
+        return const LoadingShimmer(itemCount: 4, itemHeight: 110);
+      }
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24.0),
@@ -259,7 +268,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen>
                         height: constraints.maxHeight,
                         child: const ErrorView.empty(
                           message: '등록된 회의가 없습니다.',
-                          subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                          subMessage: '워크스페이스를 선택하거나 필터를 변경해 보세요.',
                         ),
                       ),
                     ),

@@ -23,9 +23,11 @@ class ShareActionChoiceSheet extends ConsumerStatefulWidget {
   });
 
   static bool _isShowing = false;
+  static bool _isTargetShowing = false;
+  static bool get isAnyShareSheetOpen => _isShowing || _isTargetShowing;
 
   static Future<void> show(BuildContext context, SharePayload payload) async {
-    if (_isShowing) return;
+    if (isAnyShareSheetOpen) return;
     _isShowing = true;
     try {
       await showModalBottomSheet(
@@ -37,6 +39,24 @@ class ShareActionChoiceSheet extends ConsumerStatefulWidget {
       );
     } finally {
       _isShowing = false;
+    }
+  }
+
+  /// 후속 타겟 시트 열기 헬퍼: 타겟 시트가 열려 있는 동안 중복 선택 시트 재호출을 막고, 종료 시 잔여 페이로드 정리
+  static Future<void> _launchTargetSheet(
+    BuildContext navContext,
+    Future<void> Function() openSheet,
+  ) async {
+    _isTargetShowing = true;
+    try {
+      await openSheet();
+    } finally {
+      _isTargetShowing = false;
+      if (navContext.mounted) {
+        ProviderScope.containerOf(navContext, listen: false)
+            .read(pendingSharePayloadProvider.notifier)
+            .clear();
+      }
     }
   }
 
@@ -257,8 +277,12 @@ class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet>
                 bgColor: context.colors.accentWork.withAlpha(15),
                 onTap: () {
                   final navContext = rootNavigatorKey.currentContext ?? context;
+                  ShareActionChoiceSheet._isTargetShowing = true;
                   Navigator.pop(context, 'handover');
-                  ChatShareTargetSheet.show(navContext, payload);
+                  ShareActionChoiceSheet._launchTargetSheet(
+                    navContext,
+                    () => ChatShareTargetSheet.show(navContext, payload),
+                  );
                 },
               ),
               const SizedBox(height: 10),
@@ -323,11 +347,11 @@ class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet>
                   final navContext = rootNavigatorKey.currentContext ?? context;
                   Navigator.pop(context, 'handover');
 
-                  // 회의 수정/첨부 권한 검증
-                  if (!ref.can(Perm.meetingUpdate) && !ref.can(Perm.meetingOwnUpdate)) {
+                  // 회의 파일 첨부(create) 권한 검증 (MeetingFileViewSet.create는 meeting.update 필수)
+                  if (!ref.can(Perm.meetingUpdate)) {
                     ScaffoldMessenger.of(navContext).showSnackBar(
                       const SnackBar(
-                        content: Text('회의록 수정/첨부 권한이 없어 파일을 첨부할 수 없습니다.'),
+                        content: Text('회의록 파일 첨부 권한(meeting.update)이 없어 파일을 첨부할 수 없습니다.'),
                         backgroundColor: Colors.redAccent,
                       ),
                     );
@@ -335,7 +359,11 @@ class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet>
                     return;
                   }
 
-                  MeetingShareTargetSheet.show(navContext, payload);
+                  ShareActionChoiceSheet._isTargetShowing = true;
+                  ShareActionChoiceSheet._launchTargetSheet(
+                    navContext,
+                    () => MeetingShareTargetSheet.show(navContext, payload),
+                  );
                 },
               ),
               const SizedBox(height: 10),
@@ -357,11 +385,11 @@ class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet>
                   final navContext = rootNavigatorKey.currentContext ?? context;
                   Navigator.pop(context, 'handover');
 
-                  // 업무 수정/첨부 권한 검증
-                  if (!ref.can(Perm.issueUpdate) && !ref.can(Perm.issueOwnUpdate)) {
+                  // 업무 파일 첨부(create) 권한 검증 (IssueFileViewSet.create는 issue.update 필수)
+                  if (!ref.can(Perm.issueUpdate)) {
                     ScaffoldMessenger.of(navContext).showSnackBar(
                       const SnackBar(
-                        content: Text('업무 수정/첨부 권한이 없어 파일을 첨부할 수 없습니다.'),
+                        content: Text('업무 파일 첨부 권한(issue.update)이 없어 파일을 첨부할 수 없습니다.'),
                         backgroundColor: Colors.redAccent,
                       ),
                     );
@@ -369,7 +397,11 @@ class _ShareActionChoiceSheetState extends ConsumerState<ShareActionChoiceSheet>
                     return;
                   }
 
-                  IssueShareTargetSheet.show(navContext, payload);
+                  ShareActionChoiceSheet._isTargetShowing = true;
+                  ShareActionChoiceSheet._launchTargetSheet(
+                    navContext,
+                    () => IssueShareTargetSheet.show(navContext, payload),
+                  );
                 },
               ),
             ],

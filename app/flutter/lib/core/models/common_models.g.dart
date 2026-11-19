@@ -32,6 +32,7 @@ _$SimpleProjectModelImpl _$$SimpleProjectModelImplFromJson(
   pk: (_readPk(json, 'pk') as num).toInt(),
   name: json['name'] as String? ?? '',
   slug: json['slug'] as String? ?? '',
+  status: json['status'] as String? ?? '1',
 );
 
 Map<String, dynamic> _$$SimpleProjectModelImplToJson(
@@ -40,4 +41,5 @@ Map<String, dynamic> _$$SimpleProjectModelImplToJson(
   'pk': instance.pk,
   'name': instance.name,
   'slug': instance.slug,
+  'status': instance.status,
 };

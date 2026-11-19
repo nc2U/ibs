@@ -371,6 +371,8 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
         throw Exception('전송 대상이 지정되지 않았습니다.');
       }
 
+      int sentCount = 0;
+
       // 2. 파일 전송
       if (widget.payload.files.isNotEmpty) {
         for (int i = 0; i < widget.payload.files.length; i++) {
@@ -378,7 +380,7 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
           final ext = pFile.name.split('.').last.toLowerCase();
           final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext);
           // 첫 파일에 코멘트 실어서 전송
-          final content = (i == 0 && comment.isNotEmpty) ? comment : null;
+          final content = (sentCount == 0 && comment.isNotEmpty) ? comment : null;
 
           if (pFile.bytes != null) {
             await repo.sendFileBytesMessage(
@@ -389,6 +391,7 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
               content: content,
               fileSize: pFile.size,
             );
+            sentCount++;
           } else if (pFile.path != null) {
             final file = File(pFile.path!);
             if (!file.existsSync()) continue;
@@ -398,6 +401,7 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
               messageType: isImage ? 'image' : 'file',
               content: content,
             );
+            sentCount++;
           }
         }
       }
@@ -405,22 +409,36 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
       // 3. 링크 전송
       if (widget.payload.links.isNotEmpty) {
         for (final link in widget.payload.links) {
-          final msgContent = (widget.payload.files.isEmpty && comment.isNotEmpty)
+          final msgContent = (sentCount == 0 && comment.isNotEmpty)
               ? '$link\n$comment'
               : link;
           await repo.sendTextMessage(
             roomId: targetRoom.id,
             content: msgContent,
           );
+          sentCount++;
         }
       }
 
       // 파일과 링크가 모두 없고 코멘트만 있던 경우 대비
-      if (widget.payload.files.isEmpty && widget.payload.links.isEmpty && comment.isNotEmpty) {
+      if (sentCount == 0 && comment.isNotEmpty) {
         await repo.sendTextMessage(
           roomId: targetRoom.id,
           content: comment,
         );
+        sentCount++;
+      }
+
+      if (sentCount == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('전송할 수 있는 파일이나 내용이 없습니다. (원본 파일이 삭제되었거나 접근할 수 없습니다)'),
+              backgroundColor: context.colors.error,
+            ),
+          );
+        }
+        return;
       }
 
       // 4. 완료 처리
@@ -429,9 +447,9 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
       ref.invalidate(totalUnreadChatCountProvider);
 
       if (mounted) {
-        final nav = Navigator.of(context);
-        final messenger = ScaffoldMessenger.of(context);
-        nav.pop(); // ChatShareTargetSheet 닫기
+        final rootNav = Navigator.of(context, rootNavigator: true);
+        final messenger = ScaffoldMessenger.of(rootNav.context);
+        Navigator.of(context).pop(); // ChatShareTargetSheet 닫기
         messenger.showSnackBar(
           const SnackBar(
             content: Text('메신저로 공유되었습니다.'),
@@ -439,7 +457,7 @@ class _ChatShareTargetSheetState extends ConsumerState<ChatShareTargetSheet>
             behavior: SnackBarBehavior.floating,
           ),
         );
-        nav.context.push('/chat/${targetRoom.id}', extra: targetRoom);
+        rootNav.context.push('/chat/${targetRoom.id}', extra: targetRoom);
       }
     } catch (e) {
       if (mounted) {

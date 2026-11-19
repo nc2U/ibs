@@ -372,7 +372,7 @@ class IssueFilterModel {
     if (statusClosed != null) params['status__closed'] = statusClosed! ? '1' : '0';
     if (search != null && search!.isNotEmpty) params['any_searchable'] = search;
     if (subject != null && subject!.isNotEmpty) params['subject'] = subject;
-    if (pageSize != null) params['page_size'] = pageSize;
+    if (pageSize != null) params['limit'] = pageSize;
     return params;
   }
 

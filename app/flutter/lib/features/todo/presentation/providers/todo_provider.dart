@@ -15,13 +15,18 @@ enum TodoFilter {
   completed,
 }
 
-final todoFilterProvider = StateProvider<TodoFilter>((ref) => TodoFilter.all);
+final todoFilterProvider = StateProvider<TodoFilter>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return TodoFilter.all;
+});
 
 class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
   @override
   Future<List<TodoItem>> build() async {
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-    return _fetchTodos(currentUser?.pk);
+    ref.watch(authSessionVersionProvider);
+    final userId = ref.watch(currentUserIdProvider);
+    if (userId == null) return const [];
+    return _fetchTodos(userId);
   }
 
   Future<List<TodoItem>> _fetchTodos(int? userId) async {
@@ -33,13 +38,14 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
   }
 
   Future<void> refresh({bool showLoading = false}) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
     final hasExistingData = state.hasValue;
     if (showLoading || !hasExistingData) {
       state = const AsyncLoading();
     }
-    final currentUser = ref.read(currentUserProvider).valueOrNull;
     try {
-      final list = await _fetchTodos(currentUser?.pk);
+      final list = await _fetchTodos(userId);
       state = AsyncData(list);
     } catch (e, st) {
       if (!hasExistingData || showLoading) {
@@ -53,14 +59,14 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
     final trimmed = title.trim();
     if (trimmed.isEmpty) return false;
 
-    final currentUser = ref.read(currentUserProvider).valueOrNull;
-    if (currentUser == null) return false;
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return false;
 
     final repo = ref.read(todoRepositoryProvider);
     try {
       final newItem = await repo.createTodo(
         title: trimmed,
-        userId: currentUser.pk,
+        userId: userId,
       );
       final currentList = state.valueOrNull ?? [];
       state = AsyncData([newItem, ...currentList]);
@@ -180,6 +186,8 @@ class TodoListNotifier extends AsyncNotifier<List<TodoItem>> {
       return true;
     } catch (_) {
       state = AsyncData(previousList);
+      // 일부만 성공하고 나머지가 실패한 경우 서버와 상태 재동기화
+      await refresh();
       return false;
     }
   }

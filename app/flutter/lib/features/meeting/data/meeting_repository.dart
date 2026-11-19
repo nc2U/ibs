@@ -97,7 +97,7 @@ class MeetingRepository {
 
   /// 회의 카테고리 목록 조회
   Future<List<MeetingCategoryModel>> fetchCategories({int? projectPk}) async {
-    final params = <String, dynamic>{};
+    final params = <String, dynamic>{'limit': 200};
     if (projectPk != null) params['project'] = projectPk;
     final response = await _dio.get(
       ApiEndpoints.meetingCategories,

@@ -74,8 +74,9 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
     final result = await showConvertTodoSheet(context, item);
     if (result == null || !mounted) return;
 
-    // 업무 목록 프로바이더 무효화하여 업무 목록 화면과 상태 동기화
+    // 업무 목록/상위업무 후보 프로바이더 무효화하여 업무 화면과 상태 동기화
     ref.invalidate(issueListProvider);
+    ref.invalidate(projectIssuesProvider);
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()

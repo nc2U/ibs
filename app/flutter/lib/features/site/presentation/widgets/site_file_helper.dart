@@ -18,6 +18,30 @@ import '../../providers/site_provider.dart';
 class SiteFileHelper {
   SiteFileHelper._();
 
+  static String _mimeTypeForExt(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'txt':
+        return 'text/plain';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
   /// 1. 현재 탭별 Excel 다운로드 및 모바일/웹 열람 및 공유
   static Future<void> downloadAndShareCurrentTabExcel({
     required BuildContext context,
@@ -198,7 +222,7 @@ class SiteFileHelper {
       final ext = regFile.fileName.contains('.') ? regFile.fileName.split('.').last : 'pdf';
       final cleanLot = lotName.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
       final fileName = '등기부등본_$cleanLot.$ext';
-      const mimeType = 'application/pdf';
+      final mimeType = _mimeTypeForExt(ext);
 
       if (!context.mounted) return;
 
@@ -291,7 +315,7 @@ class SiteFileHelper {
       final ext = contFile.fileName.contains('.') ? contFile.fileName.split('.').last : 'pdf';
       final cleanOwner = item.ownerName.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
       final fileName = '매매계약서_$cleanOwner.$ext';
-      const mimeType = 'application/pdf';
+      final mimeType = _mimeTypeForExt(ext);
 
       if (!context.mounted) return;
 
@@ -442,6 +466,10 @@ class SiteFileHelper {
                 title: Text(openViewerLabel),
                 subtitle: Text(openViewerSubtitle, style: const TextStyle(fontSize: 11.5)),
                 onTap: () async {
+                  final box = dialogCtx.findRenderObject() as RenderBox?;
+                  final origin = (box != null && box.hasSize)
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : null;
                   Navigator.pop(dialogCtx);
                   if (kIsWeb) {
                     // 웹 환경에서는 브라우저 공유/다운로드 실행
@@ -449,6 +477,7 @@ class SiteFileHelper {
                       [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
                       text: shareText,
                       subject: shareSubject,
+                      sharePositionOrigin: origin,
                     );
                   } else {
                     // 모바일/데스크톱에서는 로컬 캐시에 저장 후 기본 뷰어 오픈
@@ -462,6 +491,7 @@ class SiteFileHelper {
                         [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
                         text: shareText,
                         subject: shareSubject,
+                        sharePositionOrigin: origin,
                       );
                     }
                   }
@@ -472,11 +502,16 @@ class SiteFileHelper {
                 title: Text(shareLabel),
                 subtitle: Text(shareSubtitle, style: const TextStyle(fontSize: 11.5)),
                 onTap: () async {
+                  final box = dialogCtx.findRenderObject() as RenderBox?;
+                  final origin = (box != null && box.hasSize)
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : null;
                   Navigator.pop(dialogCtx);
                   await AppShareHelper.shareXFiles(
                     [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
                     text: shareText,
                     subject: shareSubject,
+                    sharePositionOrigin: origin,
                   );
                 },
               ),

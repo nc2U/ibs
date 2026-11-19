@@ -34,7 +34,7 @@ String get appBaseUrl {
   }
 
   // 로컬 개발 디버그 모드 (flutter run)
-  if (Platform.isAndroid) return 'http://10.0.2.2';
+  if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2';
   return 'http://localhost';
 }
 
@@ -131,6 +131,7 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
 
   // 동시 401 발생 시 중복 리프레시 요청 방지 (Lock)
   Completer<bool>? _refreshCompleter;
+  bool _isNotifyingSessionExpired = false;
 
   // QueuedInterceptorsWrapper 내부 데드락 방지를 위한 인터셉터 없는 독립 retry 전용 Dio
   late final Dio _retryDio;
@@ -174,6 +175,12 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     handler.next(options);
   }
 
+  void _notifySessionExpired() {
+    if (_isNotifyingSessionExpired) return;
+    _isNotifyingSessionExpired = true;
+    onSessionExpired?.call();
+  }
+
   @override
   Future<void> onError(
     DioException err,
@@ -181,8 +188,13 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
   ) async {
     final isAuthEndpoint = err.requestOptions.path.contains(ApiEndpoints.jwtCreate) ||
         err.requestOptions.path.contains(ApiEndpoints.jwtRefresh);
+    final skipAuthRefresh = err.requestOptions.extra['skipAuthRefresh'] == true;
+    final statusCode = err.response?.statusCode;
+    // SSE(/api/v1/notifications/stream/)는 토큰 만료 시 403을 반환하므로 401과 동일하게 갱신 대상으로 취급
+    final isSseAuthFailure =
+        statusCode == 403 && err.requestOptions.path.contains('/notifications/stream');
 
-    if (!isAuthEndpoint && err.response?.statusCode == 401) {
+    if (!isAuthEndpoint && !skipAuthRefresh && (statusCode == 401 || isSseAuthFailure)) {
       // 1. 현재 저장된 최신 토큰 및 요청 시 전송했던 토큰 확인
       final currentToken = await tokenStorage.getAccessToken();
       final sentToken = err.requestOptions.headers['Authorization']
@@ -190,12 +202,15 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
           .replaceFirst('Bearer ', '')
           .trim();
 
+      // 이미 토큰이 비워진 상태에서 호출된 경우 중복 세션만료/로그아웃 루프 방지
+      if (sentToken == null || sentToken.isEmpty) {
+        return handler.next(err);
+      }
+
       bool refreshed = false;
       // 다른 동시 요청이나 로그인으로 인해 이미 최신 토큰으로 갱신된 상태라면 재갱신 불필요
       if (currentToken != null &&
           currentToken.isNotEmpty &&
-          sentToken != null &&
-          sentToken.isNotEmpty &&
           sentToken != currentToken) {
         refreshed = true;
       } else {
@@ -214,10 +229,11 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
             final retryResponse = await _retryDio.fetch<dynamic>(retryOptions);
             return handler.resolve(retryResponse);
           } on DioException catch (retryErr) {
-            // 재시도한 요청마저 401인 경우에만 최종 세션 만료로 처리
-            if (retryErr.response?.statusCode == 401) {
+            // 재시도한 요청마저 인증 실패인 경우에만 최종 세션 만료로 처리
+            final retryCode = retryErr.response?.statusCode;
+            if (retryCode == 401 || (isSseAuthFailure && retryCode == 403)) {
               await tokenStorage.clearTokens();
-              onSessionExpired?.call();
+              _notifySessionExpired();
             }
             return handler.reject(retryErr);
           } catch (e) {
@@ -233,12 +249,14 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
 
       // 리프레시 토큰까지 만료되어 갱신에 최종 실패한 경우에만 토큰 정리 및 세션 만료
       await tokenStorage.clearTokens();
-      onSessionExpired?.call();
+      _notifySessionExpired();
       return handler.next(err);
     }
 
     handler.next(err);
   }
+
+  Future<bool> refreshSessionToken() => _synchronizedRefresh();
 
   Future<bool> _synchronizedRefresh() async {
     if (_refreshCompleter != null) {
@@ -278,6 +296,7 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
       );
       final newAccess = response.data['access'] as String?;
       if (newAccess != null && newAccess.isNotEmpty) {
+        _isNotifyingSessionExpired = false;
         await tokenStorage.saveAccessToken(newAccess);
 
         // 토큰 로테이션이 켜져 있는 경우 새로 발급된 refresh 토큰도 저장

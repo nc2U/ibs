@@ -137,7 +137,6 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
 
     showDoneRatioBottomSheet(
       context: context,
-      ref: ref,
       issueId: issue.pk,
       currentRatio: issue.doneRatio,
     );
@@ -175,6 +174,14 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
 
     final canRead = ref.can(Perm.issueRead, projectSlug: selectedProject?.slug);
     if (!canRead) {
+      final isLoadingPerms =
+          (!ref.watch(currentUserProvider).hasValue &&
+              ref.watch(currentUserProvider).isLoading) ||
+          (!ref.watch(myProjectsProvider).hasValue &&
+              ref.watch(myProjectsProvider).isLoading);
+      if (isLoadingPerms) {
+        return const LoadingShimmer(itemCount: 4, itemHeight: 110);
+      }
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24.0),
@@ -291,7 +298,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen>
                         child: Center(
                           child: ErrorView.empty(
                             message: emptyMsg,
-                            subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
+                            subMessage: '워크스페이스를 선택하거나 필터를 변경해 보세요.',
                           ),
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/models/sales_models.dart';
 import '../data/sales_repository.dart';
@@ -7,7 +8,10 @@ import '../data/sales_repository.dart';
 enum SalesMappingStatusFilter { all, mapped, unmapped, approved, pending }
 
 final salesMappingStatusFilterProvider =
-    StateProvider<SalesMappingStatusFilter>((ref) => SalesMappingStatusFilter.all);
+    StateProvider<SalesMappingStatusFilter>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return SalesMappingStatusFilter.all;
+});
 
 final salesTeamFilterProvider = StateProvider<int?>((ref) {
   ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
@@ -19,13 +23,16 @@ final salesPersonFilterProvider = StateProvider<int?>((ref) {
   return null;
 });
 
-final salesSearchQueryProvider = StateProvider<String>((ref) => '');
+final salesSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// ── 참조 데이터 비동기 프로바이더 ─────────────────────────────
 
 /// 영업 팀 목록 프로바이더
 final salesTeamsProvider = FutureProvider<List<SalesTeamModel>>((ref) async {
-
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -35,6 +42,7 @@ final salesTeamsProvider = FutureProvider<List<SalesTeamModel>>((ref) async {
 
 /// 영업 인력 (상담사) 목록 프로바이더
 final salesPersonsProvider = FutureProvider<List<SalesPersonModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -44,6 +52,7 @@ final salesPersonsProvider = FutureProvider<List<SalesPersonModel>>((ref) async 
 
 /// 수수료 정책 목록 프로바이더
 final salesPoliciesProvider = FutureProvider<List<CommissionPolicyModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -53,6 +62,7 @@ final salesPoliciesProvider = FutureProvider<List<CommissionPolicyModel>>((ref) 
 
 /// 프로젝트 전체 계약 목록 프로바이더 (/api/v1/simple-contract/)
 final simpleContractsProvider = FutureProvider<List<SimpleContractOption>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -63,6 +73,7 @@ final simpleContractsProvider = FutureProvider<List<SimpleContractOption>>((ref)
 /// 계약별 영업 매핑 데이터 프로바이더 (/api/v1/sales-contract-agent/)
 final rawContractSalesAgentsProvider =
     FutureProvider<List<ContractSalesAgentModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -239,6 +250,7 @@ final filteredContractPerformanceProvider =
 
 /// 분양 대행사 목록 프로바이더 (/api/v1/sales-agency/)
 final salesAgenciesProvider = FutureProvider<List<SalesAgencyModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -255,9 +267,15 @@ final orgTeamFilterProvider = StateProvider<int?>((ref) {
   ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
   return null;
 });
-final orgDutyFilterProvider = StateProvider<String>((ref) => ''); // '': 전체
+final orgDutyFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+}); // '': 전체
 final orgStatusFilterProvider = StateProvider<String>((ref) => '1'); // '1': 재직 우선
-final orgSearchQueryProvider = StateProvider<String>((ref) => '');
+final orgSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// ── 영업 조직 요약 지표 모델 & 프로바이더 ───────────────────────
 class SalesOrganizationSummary {
@@ -346,6 +364,7 @@ final filteredOrgPersonsProvider = Provider<List<SalesPersonModel>>((ref) {
 
 /// 공급 차수 목록 프로바이더 (/api/v1/order-group/)
 final orderGroupsProvider = FutureProvider<List<OrderGroupOption>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -355,6 +374,7 @@ final orderGroupsProvider = FutureProvider<List<OrderGroupOption>>((ref) async {
 
 /// 유니트 타입 목록 프로바이더 (/api/v1/type/)
 final unitTypesProvider = FutureProvider<List<UnitTypeOption>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -372,7 +392,10 @@ final policyUnitTypeFilterProvider = StateProvider<int?>((ref) {
   return null;
 });
 final policyActiveFilterProvider = StateProvider<String>((ref) => 'true'); // 'true': 활성, '': 전체, 'false': 비활성
-final policySearchQueryProvider = StateProvider<String>((ref) => '');
+final policySearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// ── 수수료 정책 요약 지표 모델 & 프로바이더 ───────────────────────
 class SalesPolicySummary {
@@ -456,6 +479,7 @@ final filteredSalesPoliciesProvider = Provider<List<CommissionPolicyModel>>((ref
 /// 수수료 정산 회차 목록 프로바이더 (/api/v1/sales-settlement-period/)
 final settlementPeriodsProvider =
     FutureProvider<List<SettlementPeriodModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -484,6 +508,7 @@ final currentSettlementPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
 /// 선택된 회차의 개인별 수수료 지급 명세 목록 프로바이더 (/api/v1/sales-payout/)
 final commissionPayoutsProvider =
     FutureProvider<List<CommissionPayoutModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final currentPeriod = ref.watch(currentSettlementPeriodProvider);
   if (currentPeriod == null) return [];
 
@@ -494,6 +519,7 @@ final commissionPayoutsProvider =
 /// 선택된 회차의 대행사 수수료 지급 명세 목록 프로바이더 (/api/v1/sales-agency-payout/)
 final agencyPayoutsProvider =
     FutureProvider<List<AgencyPayoutModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final currentPeriod = ref.watch(currentSettlementPeriodProvider);
   if (currentPeriod == null) return [];
 
@@ -502,9 +528,18 @@ final agencyPayoutsProvider =
 });
 
 /// ── 수수료 정산 명세 필터 프로바이더 ──────────────────────────────
-final settlementSearchQueryProvider = StateProvider<String>((ref) => '');
-final settlementDutyFilterProvider = StateProvider<String>((ref) => '');
-final settlementPayStatusFilterProvider = StateProvider<String>((ref) => '');
+final settlementSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
+final settlementDutyFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
+final settlementPayStatusFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// ── 필터링된 개인별 수수료 지급 명세 목록 프로바이더 ─────────────────
 final filteredCommissionPayoutsProvider =
@@ -564,6 +599,7 @@ final currentPayoutPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
 /// 지급 관리 탭의 개인별 수수료 지급 명세 목록 프로바이더
 final payoutTabPayoutsProvider =
     FutureProvider<List<CommissionPayoutModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final currentPeriod = ref.watch(currentPayoutPeriodProvider);
   if (currentPeriod == null) return [];
 
@@ -572,8 +608,14 @@ final payoutTabPayoutsProvider =
 });
 
 /// ── 지급 관리 필터 및 검색 프로바이더 ─────────────────────────────
-final payoutTabSearchQueryProvider = StateProvider<String>((ref) => '');
-final payoutTabStatusFilterProvider = StateProvider<String>((ref) => '');
+final payoutTabSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
+final payoutTabStatusFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// ── 다중 선택된 지급 명세 ID 세트 프로바이더 ───────────────────────
 final payoutTabSelectedIdsProvider = StateProvider<Set<int>>((ref) {
@@ -670,6 +712,7 @@ final payoutTabFilteredListProvider =
 /// 영업 인력별 제출 증빙 서류 목록 프로바이더 (/api/v1/sales-person-document/)
 final salesPersonDocumentsProvider =
     FutureProvider.family<List<SalesPersonDocumentModel>, int>((ref, personId) async {
+  ref.watch(authSessionVersionProvider);
   final repository = ref.watch(salesRepositoryProvider);
   return repository.fetchSalesPersonDocuments(salesPersonId: personId);
 });
@@ -677,6 +720,7 @@ final salesPersonDocumentsProvider =
 /// ── 지급 탭 전용 대행사 지급 명세 프로바이더 ────────────────────────
 final payoutTabAgencyPayoutsProvider =
     FutureProvider<List<AgencyPayoutModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final currentPeriod = ref.watch(currentPayoutPeriodProvider);
   if (currentPeriod == null) return [];
 
@@ -688,10 +732,16 @@ final payoutTabAgencyPayoutsProvider =
 final payoutTabModeProvider = StateProvider<String>((ref) => 'person');
 
 /// 지급 탭 대행사 상태 필터
-final payoutTabAgencyStatusFilterProvider = StateProvider<String>((ref) => '');
+final payoutTabAgencyStatusFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 지급 탭 대행사 검색어 필터
-final payoutTabAgencySearchQueryProvider = StateProvider<String>((ref) => '');
+final payoutTabAgencySearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 지급 탭 필터링된 대행사 지급 목록
 final payoutTabFilteredAgencyPayoutsProvider =
@@ -762,6 +812,7 @@ final payoutTabAgencySummaryProvider = Provider<AgencyPayoutSummaryModel>((ref) 
 /// 프로젝트별 수수료 환수 목록 프로바이더
 final projectClawbacksProvider =
     FutureProvider<List<CommissionClawbackModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 

@@ -368,7 +368,11 @@ class _SalesPerformanceTabViewState extends ConsumerState<SalesPerformanceTabVie
                             children: [
                               Text(
                                 selectedTeamId != null
-                                    ? teams.firstWhere((t) => t.id == selectedTeamId).name
+                                    ? (teams
+                                            .where((t) => t.id == selectedTeamId)
+                                            .map((t) => t.name)
+                                            .firstOrNull ??
+                                        '팀 필터')
                                     : '팀 필터',
                                 style: TextStyle(
                                   fontSize: 11,

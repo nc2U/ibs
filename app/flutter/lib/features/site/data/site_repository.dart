@@ -82,8 +82,28 @@ class SiteRepository {
     );
   }
 
+  Future<({List<T> items, bool hasMore})> _fetchPaged<T>(
+    String path, {
+    required Map<String, dynamic> queryParams,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final response = await dio.get(path, queryParameters: queryParams);
+    final data = response.data;
+    final List<dynamic> results =
+        data is Map && data.containsKey('results')
+            ? (data['results'] as List<dynamic>? ?? const [])
+            : (data is List ? data : const []);
+    final hasMore = data is Map && data['next'] != null;
+    return (
+      items: results
+          .map((json) => fromJson(json as Map<String, dynamic>))
+          .toList(),
+      hasMore: hasMore,
+    );
+  }
+
   /// 1. 지번별 토지 목록 조회 (/api/v1/site/?project={projectId})
-  Future<List<SiteItemModel>> fetchSites({
+  Future<({List<SiteItemModel> items, bool hasMore})> fetchSites({
     required int projectId,
     String? search,
     int page = 1,
@@ -98,20 +118,15 @@ class SiteRepository {
       queryParams['search'] = search.trim();
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/site/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: SiteItemModel.fromJson,
     );
-
-    final List<dynamic> results = response.data is Map && response.data.containsKey('results')
-        ? response.data['results']
-        : (response.data is List ? response.data : []);
-
-    return results.map((json) => SiteItemModel.fromJson(json)).toList();
   }
 
   /// 2. 소유자별 토지 목록 조회 (/api/v1/site-owner/?project={projectId})
-  Future<List<SiteOwnerItemModel>> fetchSiteOwners({
+  Future<({List<SiteOwnerItemModel> items, bool hasMore})> fetchSiteOwners({
     required int projectId,
     String? search,
     String? ownSort,
@@ -134,20 +149,15 @@ class SiteRepository {
       queryParams['use_consent'] = useConsent;
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/site-owner/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: SiteOwnerItemModel.fromJson,
     );
-
-    final List<dynamic> results = response.data is Map && response.data.containsKey('results')
-        ? response.data['results']
-        : (response.data is List ? response.data : []);
-
-    return results.map((json) => SiteOwnerItemModel.fromJson(json)).toList();
   }
 
   /// 3. 사업부지 매입 계약 목록 조회 (/api/v1/site-contract/?project={projectId})
-  Future<List<SiteContractItemModel>> fetchSiteContracts({
+  Future<({List<SiteContractItemModel> items, bool hasMore})> fetchSiteContracts({
     required int projectId,
     String? search,
     String? ownSort,
@@ -166,16 +176,11 @@ class SiteRepository {
       queryParams['owner__own_sort'] = ownSort;
     }
 
-    final response = await dio.get(
+    return _fetchPaged(
       '/api/v1/site-contract/',
-      queryParameters: queryParams,
+      queryParams: queryParams,
+      fromJson: SiteContractItemModel.fromJson,
     );
-
-    final List<dynamic> results = response.data is Map && response.data.containsKey('results')
-        ? response.data['results']
-        : (response.data is List ? response.data : []);
-
-    return results.map((json) => SiteContractItemModel.fromJson(json)).toList();
   }
 
   /// 바이너리 응답(Excel/PDF)의 Content-Type이 HTML 로그인 페이지가 아닌지 검증

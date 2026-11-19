@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,7 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref
           .read(notificationListProvider.notifier)
           .markReadByTarget('meeting', widget.meetingId.toString());
@@ -60,11 +62,12 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           detailState.maybeWhen(
             data: (meeting) {
               final projectSlug = meeting.projectDesc.slug;
-              final myProjects = ref.watch(myProjectsProvider).valueOrNull ?? [];
-              final project = myProjects
+              final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+              final project = allProjects
                   .where((p) => p.slug == projectSlug)
                   .firstOrNull;
-              final isClosed = project?.status == '2';
+              final isClosed =
+                  meeting.projectDesc.status == '2' || project?.status == '2';
 
               final currentUser = ref.watch(currentUserProvider).valueOrNull;
               final isCreator = currentUser != null &&
@@ -149,7 +152,13 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           onRetry: () => ref.invalidate(meetingDetailProvider(widget.meetingId)),
         ),
         data: (meeting) {
-          final canRead = ref.can(Perm.meetingRead, projectSlug: meeting.projectDesc.slug);
+          final currentUser = ref.watch(currentUserProvider).valueOrNull;
+          final isCreatorOrAttendee = currentUser != null &&
+              (currentUser.pk == meeting.creator?.pk ||
+                  meeting.attendees.contains(currentUser.pk));
+          final canRead =
+              ref.can(Perm.meetingRead, projectSlug: meeting.projectDesc.slug) ||
+                  isCreatorOrAttendee;
           if (!canRead) {
             return const Center(
               child: Padding(
@@ -277,7 +286,9 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         await ref
             .read(meetingRepositoryProvider)
             .deleteMeeting(meeting.pk);
-        ref.invalidate(meetingListProvider);
+        if (mounted) {
+          ref.invalidate(meetingListProvider);
+        }
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -303,11 +314,12 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref, MeetingModel meeting) {
-    final myProjects = ref.watch(myProjectsProvider).valueOrNull ?? [];
-    final project = myProjects
+    final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+    final project = allProjects
         .where((p) => p.slug == meeting.projectDesc.slug)
         .firstOrNull;
-    final isClosed = project?.status == '2';
+    final isClosed =
+        meeting.projectDesc.status == '2' || project?.status == '2';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -839,8 +851,22 @@ class _MeetingFileTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
         onTap: () async {
-          final uri = Uri.parse(file.file);
-          if (await canLaunchUrl(uri)) launchUrl(uri);
+          final uri = Uri.tryParse(file.file);
+          if (uri == null) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('유효하지 않은 파일 주소입니다.')),
+              );
+            }
+            return;
+          }
+          if (kIsWeb || await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('첨부 파일을 열 수 있는 앱을 찾을 수 없습니다.')),
+            );
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -879,8 +905,22 @@ class _MeetingLinkTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
         onTap: () async {
-          final uri = Uri.parse(link.link);
-          if (await canLaunchUrl(uri)) launchUrl(uri);
+          final uri = Uri.tryParse(link.link);
+          if (uri == null) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('유효하지 않은 링크 주소입니다.')),
+              );
+            }
+            return;
+          }
+          if (kIsWeb || await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('링크를 열 수 있는 앱을 찾을 수 없습니다.')),
+            );
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

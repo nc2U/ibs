@@ -136,6 +136,7 @@ class _ProjectSelectorContent extends ConsumerWidget {
   void _refreshProviders(WidgetRef ref) {
     final ws = ref.read(selectedWorkspaceProvider);
 
+    // IssueListScreen / MeetingListScreen 미마운트 상태에서도 필터 동기화 (기존 필터 옵션은 보존)
     final issueFilter = ref.read(issueFilterProvider);
     ref.read(issueFilterProvider.notifier).state = issueFilter.copyWith(
       projectSlug: ws?.slug,

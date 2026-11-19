@@ -22,6 +22,12 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
   final TextEditingController _outboundSearchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _outboundSearchController.text = ref.read(letterSearchQueryProvider);
+  }
+
+  @override
   void dispose() {
     _outboundSearchController.dispose();
     super.dispose();
@@ -284,6 +290,7 @@ class _OfficialLetterTabViewState extends ConsumerState<OfficialLetterTabView> {
                             letter: letter,
                             onTap: () async {
                               await context.push('${AppRoutes.approval}/letters/${letter.id}');
+                              if (!mounted) return;
                               ref.invalidate(officialLettersProvider);
                             },
                           );

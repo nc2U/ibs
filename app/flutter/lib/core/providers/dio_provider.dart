@@ -15,7 +15,7 @@ final dioProvider = Provider<Dio>((ref) {
   return createDio(
     tokenStorage,
     onSessionExpired: () {
-      ref.read(authProvider.notifier).logout();
+      ref.read(authProvider.notifier).logout(isSessionExpired: true);
     },
   );
 });

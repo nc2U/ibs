@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/ledger_repository.dart';
 import '../data/models/ledger_models.dart';
@@ -14,11 +15,17 @@ enum LedgerSubTab {
 final ledgerCurrentSubTabProvider =
     StateProvider<LedgerSubTab>((ref) => LedgerSubTab.transactions);
 
-/// 검색어 상태
-final ledgerSearchQueryProvider = StateProvider<String>((ref) => '');
+/// 검색어 상태 (프로젝트 전환 시 자동 초기화)
+final ledgerSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 거래 구분 필터 (전체 '', '1': 수입, '2': 지출, '3': 대체)
-final ledgerSortFilterProvider = StateProvider<String>((ref) => '');
+final ledgerSortFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 날짜 범위 프리셋 (전체, 오늘, 이번달, 지난달, 최근3개월, 올해, 직접입력)
 enum LedgerDatePreset {
@@ -32,21 +39,33 @@ enum LedgerDatePreset {
 }
 
 /// 날짜 프리셋 상태
-final ledgerDatePresetProvider =
-    StateProvider<LedgerDatePreset>((ref) => LedgerDatePreset.all);
+final ledgerDatePresetProvider = StateProvider<LedgerDatePreset>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return LedgerDatePreset.all;
+});
 
 /// 시작일자 필터 (YYYY-MM-DD)
-final ledgerFromDateFilterProvider = StateProvider<String?>((ref) => null);
+final ledgerFromDateFilterProvider = StateProvider<String?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 종료일자 필터 (YYYY-MM-DD)
-final ledgerToDateFilterProvider = StateProvider<String?>((ref) => null);
+final ledgerToDateFilterProvider = StateProvider<String?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 계좌 필터 (선택된 계좌 ID)
-final ledgerSelectedBankAccFilterProvider = StateProvider<int?>((ref) => null);
+final ledgerSelectedBankAccFilterProvider = StateProvider<int?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 프로젝트 은행 계좌 목록 프로바이더
 final projectBankAccountsProvider =
     FutureProvider<List<ProjectBankAccountModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -57,6 +76,7 @@ final projectBankAccountsProvider =
 /// 자금 총괄 KPI 집계 프로바이더
 final ledgerOverallAggregateProvider =
     FutureProvider<LedgerOverallAggregateModel?>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return null;
 
@@ -67,6 +87,7 @@ final ledgerOverallAggregateProvider =
 /// 계좌별 잔액 현황 목록 프로바이더
 final ledgerBalanceByAccountProvider =
     FutureProvider<List<ProjectBalanceByAccountModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 
@@ -290,13 +311,15 @@ class ProjectTransactionsNotifier
 }
 
 final projectTransactionsProvider = StateNotifierProvider<
-    ProjectTransactionsNotifier, ProjectTransactionsState>(
-  (ref) => ProjectTransactionsNotifier(ref),
-);
+    ProjectTransactionsNotifier, ProjectTransactionsState>((ref) {
+  ref.watch(authSessionVersionProvider);
+  return ProjectTransactionsNotifier(ref);
+});
 
 /// 📊 최근 6개월 월별 캐시플로우(수입/지출/수지차) 집계 프로바이더
 final monthlyCashflowChartProvider =
     FutureProvider<List<MonthlyCashflowItemModel>>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
 

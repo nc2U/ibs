@@ -122,7 +122,7 @@ _$MeetingModelImpl _$$MeetingModelImplFromJson(
   content: json['content'] as String? ?? '',
   decisions: json['decisions'] as String? ?? '',
   actionItems: json['action_items'] as String? ?? '',
-  meetingDate: json['meeting_date'] as String,
+  meetingDate: json['meeting_date'] as String? ?? '',
   location: json['location'] as String? ?? '',
   attendees:
       (json['attendees'] as List<dynamic>?)

@@ -34,6 +34,7 @@ class SimpleProjectModel with _$SimpleProjectModel {
     @JsonKey(readValue: _readPk) required int pk,
     @Default('') String name,
     @Default('') String slug,
+    @Default('1') String status,
   }) = _SimpleProjectModel;
 
   factory SimpleProjectModel.fromJson(Map<String, dynamic> json) =>

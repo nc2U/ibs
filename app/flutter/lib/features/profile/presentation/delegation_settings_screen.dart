@@ -48,9 +48,26 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
       } catch (_) {}
     }
     // 1. 활성 계정(is_active=True), 2. 실제 임직원(has_staff=True 또는 is_superuser=True), 3. 본인 제외 필터링
+    //    수정 모드에서 기존 대결자가 비활성/조회제한 대상인 경우에도 드롭다운 표출이 깨지지 않도록 병합 보존
     final eligibleUsers = allUsers
         .where((u) => u.pk != myUser?.pk && u.isActive && (u.hasStaff || u.isSuperuser))
         .toList();
+    final editDelegatee = editItem?.delegatee;
+    if (editDelegatee != null &&
+        editDelegatee.pk != myUser?.pk &&
+        !eligibleUsers.any((u) => u.pk == editDelegatee.pk)) {
+      eligibleUsers.insert(
+        0,
+        UserModel(
+          pk: editDelegatee.pk,
+          username: editDelegatee.username,
+          email: editDelegatee.email,
+          profile: editDelegatee.name.trim().isNotEmpty
+              ? ProfileModel(name: editDelegatee.name.trim())
+              : null,
+        ),
+      );
+    }
 
     if (!mounted) return;
 
@@ -113,7 +130,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     const SizedBox(height: 8),
                     Builder(
                       builder: (builderCtx) {
-                        final currentSelectedUser = allUsers
+                        final currentSelectedUser = eligibleUsers
                             .where((u) => u.pk == selectedDelegateeId)
                             .firstOrNull;
 
@@ -156,16 +173,17 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                                           ),
                                         ),
                                         const Divider(height: 1),
-                                        if (eligibleUsers.isEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.all(32),
-                                            child: Center(
-                                              child: Text(
-                                                '선택 가능한 임직원이 없습니다.',
-                                                style: TextStyle(color: context.colors.textMuted),
+                                          if (eligibleUsers.isEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.all(32),
+                                              child: Center(
+                                                child: Text(
+                                                  '선택 가능한 임직원이 없습니다.\n(권한 설정에 따라 조회 가능한 사용자가 제한될 수 있습니다.)',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(color: context.colors.textMuted),
+                                                ),
                                               ),
-                                            ),
-                                          )
+                                            )
                                         else
                                           Expanded(
                                             child: ListView.separated(
@@ -278,13 +296,18 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () async {
+                              final firstBound = DateTime(2020);
+                              final lastBound = DateTime(2035, 12, 31);
+                              final initialStart = startDate.isBefore(firstBound)
+                                  ? firstBound
+                                  : (startDate.isAfter(lastBound) ? lastBound : startDate);
                               final picked = await showDatePicker(
                                 context: ctx,
-                                initialDate: startDate,
-                                firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                initialDate: initialStart,
+                                firstDate: firstBound,
+                                lastDate: lastBound,
                               );
-                              if (picked != null) {
+                              if (picked != null && ctx.mounted) {
                                 setModalState(() {
                                   startDate = picked;
                                   if (endDate.isBefore(startDate)) {
@@ -307,14 +330,18 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () async {
-                              final initialEnd = endDate.isBefore(startDate) ? startDate : endDate;
+                              final lastBound = startDate.isAfter(DateTime(2035, 12, 31))
+                                  ? startDate.add(const Duration(days: 365))
+                                  : DateTime(2035, 12, 31);
+                              final rawEnd = endDate.isBefore(startDate) ? startDate : endDate;
+                              final initialEnd = rawEnd.isAfter(lastBound) ? lastBound : rawEnd;
                               final picked = await showDatePicker(
                                 context: ctx,
                                 initialDate: initialEnd,
                                 firstDate: startDate,
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                lastDate: lastBound,
                               );
-                              if (picked != null) {
+                              if (picked != null && ctx.mounted) {
                                 setModalState(() => endDate = picked);
                               }
                             },

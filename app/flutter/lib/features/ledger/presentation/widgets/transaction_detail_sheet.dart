@@ -275,11 +275,15 @@ class TransactionDetailSheet extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onPressed: () async {
+                        final container = ProviderScope.containerOf(
+                          Navigator.of(context, rootNavigator: true).context,
+                          listen: false,
+                        );
                         Navigator.pop(context);
                         final contractEntry = item.paymentContractEntry!;
 
                         // 해당 계약건 Provider에 세팅
-                        final contractsState = ref.read(validContractListProvider);
+                        final contractsState = container.read(validContractListProvider);
                         ContractItemModel? targetContract;
                         for (final c in contractsState.items) {
                           if (c.pk == contractEntry.contractId) {
@@ -289,18 +293,18 @@ class TransactionDetailSheet extends ConsumerWidget {
                         }
 
                         if (targetContract == null && contractEntry.contractId != null) {
-                          final contractRepo = ref.read(contractRepositoryProvider);
+                          final contractRepo = container.read(contractRepositoryProvider);
                           targetContract = await contractRepo.fetchContractDetail(contractEntry.contractId!);
                         }
 
                         if (targetContract != null) {
-                          ref.read(selectedContractForPaymentProvider.notifier).state = targetContract;
+                          container.read(selectedContractForPaymentProvider.notifier).state = targetContract;
                         }
 
                         // 수납 관리 서브모듈로 즉시 전환
-                        ref.read(paymentCurrentSubTabProvider.notifier).state =
+                        container.read(paymentCurrentSubTabProvider.notifier).state =
                             PaymentSubTab.byContract;
-                        ref.read(projectActiveModuleProvider.notifier).state =
+                        container.read(projectActiveModuleProvider.notifier).state =
                             ProjectActiveModule.payment;
                       },
                       icon: const Icon(Icons.receipt_long_outlined, size: 16),

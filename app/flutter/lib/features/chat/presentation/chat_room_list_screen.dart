@@ -274,12 +274,17 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
     );
   }
 
+  void _openChatRoom(BuildContext context, String location, {Object? extra}) {
+    context.push(location, extra: extra).then((_) {
+      if (!mounted) return;
+      ref.invalidate(chatRoomsProvider);
+      ref.invalidate(totalUnreadChatCountProvider);
+    });
+  }
+
   Future<void> _enterSelfChat(BuildContext context, ChatRoomModel? selfRoom) async {
     if (selfRoom != null) {
-      context.push('/chat/${selfRoom.id}', extra: selfRoom).then((_) {
-        ref.invalidate(chatRoomsProvider);
-        ref.invalidate(totalUnreadChatCountProvider);
-      });
+      _openChatRoom(context, '/chat/${selfRoom.id}', extra: selfRoom);
       return;
     }
 
@@ -287,10 +292,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
       final repository = ref.read(chatRepositoryProvider);
       final room = await repository.getOrCreateSelf();
       if (!context.mounted) return;
-      context.push('/chat/${room.id}', extra: room).then((_) {
-        ref.invalidate(chatRoomsProvider);
-        ref.invalidate(totalUnreadChatCountProvider);
-      });
+      _openChatRoom(context, '/chat/${room.id}', extra: room);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -449,10 +451,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
               children: [
                 InkWell(
                   onTap: () {
-                    context.push('/chat/${room.id}', extra: room).then((_) {
-                      ref.invalidate(chatRoomsProvider);
-                      ref.invalidate(totalUnreadChatCountProvider);
-                    });
+                    _openChatRoom(context, '/chat/${room.id}', extra: room);
                   },
                   onLongPress: () => _showLeaveRoomDialog(context, room, displayName),
                   child: Padding(
@@ -583,10 +582,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
 
         return InkWell(
           onTap: () {
-            context.push('/chat/${room.id}', extra: room).then((_) {
-              ref.invalidate(chatRoomsProvider);
-              ref.invalidate(totalUnreadChatCountProvider);
-            });
+            _openChatRoom(context, '/chat/${room.id}', extra: room);
           },
           onLongPress: !isChannel
               ? () => _showLeaveRoomDialog(context, room, displayName)
@@ -859,10 +855,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
                 overflow: TextOverflow.ellipsis,
               ),
               onTap: () {
-                context.push('/chat/${room.id}', extra: room).then((_) {
-                  ref.invalidate(chatRoomsProvider);
-                  ref.invalidate(totalUnreadChatCountProvider);
-                });
+                _openChatRoom(context, '/chat/${room.id}', extra: room);
               },
             );
           }),
@@ -956,10 +949,7 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
               onTap: () {
                 // 해당 대화방으로 이동
                 final room = allRooms.where((r) => r.id == msg.roomId).firstOrNull;
-                context.push('/chat/${msg.roomId}?messageId=${msg.id}', extra: room).then((_) {
-                  ref.invalidate(chatRoomsProvider);
-                  ref.invalidate(totalUnreadChatCountProvider);
-                });
+                _openChatRoom(context, '/chat/${msg.roomId}?messageId=${msg.id}', extra: room);
               },
             );
           }),

@@ -312,16 +312,18 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
         ).order_by('-start_date', '-id')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.settle')
+        # [H-7] sales.read, sales.settle 또는 sales.payout 권한을 보유한 프로젝트만 노출
+        allowed_ids = (
+            set(get_project_ids_with_permission(user, 'sales.read'))
+            | set(get_project_ids_with_permission(user, 'sales.settle'))
+            | set(get_project_ids_with_permission(user, 'sales.payout'))
         )
         return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.settle', 'sales.payout')
         return 'sales.settle'
 
     def perform_create(self, serializer):
@@ -471,9 +473,11 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.settle')
+        # [H-7] sales.read, sales.settle 또는 sales.payout 권한을 보유한 프로젝트만 노출
+        allowed_ids = (
+            set(get_project_ids_with_permission(user, 'sales.read'))
+            | set(get_project_ids_with_permission(user, 'sales.settle'))
+            | set(get_project_ids_with_permission(user, 'sales.payout'))
         )
         return qs.filter(period__project_id__in=allowed_ids)
 
@@ -482,7 +486,7 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         if self.action == 'update_pay_status':
             return 'sales.payout'
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.settle', 'sales.payout')
         return 'sales.settle'
 
     def create(self, request, *args, **kwargs):
@@ -676,9 +680,11 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.settle')
+        # [H-7] sales.read, sales.settle 또는 sales.payout 권한을 보유한 프로젝트만 노출
+        allowed_ids = (
+            set(get_project_ids_with_permission(user, 'sales.read'))
+            | set(get_project_ids_with_permission(user, 'sales.settle'))
+            | set(get_project_ids_with_permission(user, 'sales.payout'))
         )
         return qs.filter(period__project_id__in=allowed_ids)
 
@@ -687,7 +693,7 @@ class AgencyPayoutViewSet(viewsets.ModelViewSet):
         if self.action == 'update_pay_status':
             return 'sales.payout'
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.settle', 'sales.payout')
         return 'sales.settle'
 
     def create(self, request, *args, **kwargs):

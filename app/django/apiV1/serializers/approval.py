@@ -317,6 +317,16 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
                     mutable_data['observer_ids'] = parsed
             except Exception:
                 pass
+        elif isinstance(observer_val, list):
+            if len(observer_val) == 1 and isinstance(observer_val[0], str):
+                s = observer_val[0].strip()
+                if s.startswith('['):
+                    try:
+                        parsed = json.loads(s)
+                        if isinstance(parsed, list):
+                            mutable_data['observer_ids'] = parsed
+                    except Exception:
+                        pass
 
         return super().to_internal_value(mutable_data)
 

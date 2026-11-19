@@ -766,6 +766,11 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
 
         device_id = request.data.get('device_id', '')
         platform = request.data.get('platform', 'android')
+        is_active_raw = request.data.get('is_active', True)
+        if isinstance(is_active_raw, str):
+            is_active = is_active_raw.strip().lower() not in ('false', '0', 'no', '')
+        else:
+            is_active = bool(is_active_raw)
 
         # 기존 다른 사용자에게 등록된 동일 토큰이 있다면 현재 사용자로 소유권 업데이트
         device, created = FCMDevice.objects.update_or_create(
@@ -774,7 +779,7 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
                 'user': request.user,
                 'device_id': device_id,
                 'platform': platform,
-                'is_active': True,
+                'is_active': is_active,
             }
         )
         serializer = self.get_serializer(device)

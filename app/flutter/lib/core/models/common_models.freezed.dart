@@ -266,6 +266,7 @@ mixin _$SimpleProjectModel {
   int get pk => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get slug => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
 
   /// Serializes this SimpleProjectModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -284,7 +285,10 @@ abstract class $SimpleProjectModelCopyWith<$Res> {
       _$SimpleProjectModelCopyWithImpl<$Res, SimpleProjectModel>;
   @useResult
   $Res call(
-      {@JsonKey(readValue: _readPk) int pk, String name, String slug});
+      {@JsonKey(readValue: _readPk) int pk,
+      String name,
+      String slug,
+      String status});
 }
 
 /// @nodoc
@@ -305,6 +309,7 @@ class _$SimpleProjectModelCopyWithImpl<$Res, $Val extends SimpleProjectModel>
     Object? pk = null,
     Object? name = null,
     Object? slug = null,
+    Object? status = null,
   }) {
     return _then(_value.copyWith(
       pk: null == pk
@@ -319,6 +324,10 @@ class _$SimpleProjectModelCopyWithImpl<$Res, $Val extends SimpleProjectModel>
           ? _value.slug
           : slug // ignore: cast_nullable_to_non_nullable
               as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -332,7 +341,10 @@ abstract class _$$SimpleProjectModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(readValue: _readPk) int pk, String name, String slug});
+      {@JsonKey(readValue: _readPk) int pk,
+      String name,
+      String slug,
+      String status});
 }
 
 /// @nodoc
@@ -351,6 +363,7 @@ class __$$SimpleProjectModelImplCopyWithImpl<$Res>
     Object? pk = null,
     Object? name = null,
     Object? slug = null,
+    Object? status = null,
   }) {
     return _then(_$SimpleProjectModelImpl(
       pk: null == pk
@@ -365,6 +378,10 @@ class __$$SimpleProjectModelImplCopyWithImpl<$Res>
           ? _value.slug
           : slug // ignore: cast_nullable_to_non_nullable
               as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -375,7 +392,8 @@ class _$SimpleProjectModelImpl implements _SimpleProjectModel {
   const _$SimpleProjectModelImpl(
       {@JsonKey(readValue: _readPk) required this.pk,
       this.name = '',
-      this.slug = ''});
+      this.slug = '',
+      this.status = '1'});
 
   factory _$SimpleProjectModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$SimpleProjectModelImplFromJson(json);
@@ -389,10 +407,13 @@ class _$SimpleProjectModelImpl implements _SimpleProjectModel {
   @override
   @JsonKey()
   final String slug;
+  @override
+  @JsonKey()
+  final String status;
 
   @override
   String toString() {
-    return 'SimpleProjectModel(pk: $pk, name: $name, slug: $slug)';
+    return 'SimpleProjectModel(pk: $pk, name: $name, slug: $slug, status: $status)';
   }
 
   @override
@@ -402,12 +423,13 @@ class _$SimpleProjectModelImpl implements _SimpleProjectModel {
             other is _$SimpleProjectModelImpl &&
             (identical(other.pk, pk) || other.pk == pk) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.slug, slug) || other.slug == slug));
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.status, status) || other.status == status));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, pk, name, slug);
+  int get hashCode => Object.hash(runtimeType, pk, name, slug, status);
 
   /// Create a copy of SimpleProjectModel
   /// with the given fields replaced by the non-null parameter values.
@@ -430,7 +452,8 @@ abstract class _SimpleProjectModel implements SimpleProjectModel {
   const factory _SimpleProjectModel(
       {@JsonKey(readValue: _readPk) required final int pk,
       final String name,
-      final String slug}) = _$SimpleProjectModelImpl;
+      final String slug,
+      final String status}) = _$SimpleProjectModelImpl;
 
   factory _SimpleProjectModel.fromJson(Map<String, dynamic> json) =
       _$SimpleProjectModelImpl.fromJson;
@@ -442,6 +465,8 @@ abstract class _SimpleProjectModel implements SimpleProjectModel {
   String get name;
   @override
   String get slug;
+  @override
+  String get status;
 
   /// Create a copy of SimpleProjectModel
   /// with the given fields replaced by the non-null parameter values.

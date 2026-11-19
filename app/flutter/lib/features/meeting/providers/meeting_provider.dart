@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/common_models.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../data/meeting_repository.dart';
 import '../data/models/meeting_model.dart';
 
 // ── 필터 상태 ──────────────────────────────────────────────────────────────────
 
 final meetingFilterProvider = StateProvider<MeetingFilterModel>((ref) {
+  ref.watch(authSessionVersionProvider);
   return const MeetingFilterModel();
 });
 
@@ -46,6 +48,7 @@ class MeetingListState {
 class MeetingListNotifier extends AsyncNotifier<MeetingListState> {
   @override
   Future<MeetingListState> build() async {
+    ref.watch(authSessionVersionProvider);
     final filter = ref.watch(meetingFilterProvider);
     final resp = await ref.read(meetingRepositoryProvider).fetchMeetings(
           filter.copyWith(page: 1),
@@ -74,16 +77,18 @@ class MeetingListNotifier extends AsyncNotifier<MeetingListState> {
       // 응답 대기 중 필터가 바뀌어 목록이 재구성되었다면 오래된 응답은 폐기
       if (ref.read(meetingFilterProvider) != filter) return;
 
-      state = AsyncData(current.copyWith(
-        items: [...current.items, ...resp.results],
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(latest.copyWith(
+        items: [...latest.items, ...resp.results],
         currentPage: nextPage,
         hasMore: resp.next != null,
         isLoadingMore: false,
       ));
     } catch (_) {
       if (ref.read(meetingFilterProvider) != filter) return;
+      final latest = state.valueOrNull ?? current;
       // 스크롤 리스너에서 await 없이 호출되므로 예외를 전파하지 않고 로딩 상태만 해제
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(latest.copyWith(isLoadingMore: false));
     }
   }
 

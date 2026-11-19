@@ -17,13 +17,32 @@ import 'widgets/approval_pdf_helper.dart';
 import 'widgets/approval_route_timeline.dart';
 import 'widgets/approval_status_chip.dart';
 
-class ApprovalDetailScreen extends ConsumerWidget {
+class ApprovalDetailScreen extends ConsumerStatefulWidget {
   final int docId;
 
   const ApprovalDetailScreen({
     super.key,
     required this.docId,
   });
+
+  @override
+  ConsumerState<ApprovalDetailScreen> createState() =>
+      _ApprovalDetailScreenState();
+}
+
+class _ApprovalDetailScreenState extends ConsumerState<ApprovalDetailScreen> {
+  int get docId => widget.docId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(notificationListProvider.notifier)
+          .markReadByTarget('approval_document', docId.toString());
+    });
+  }
 
   String _formatDateTime(String? raw) {
     if (raw == null || raw.isEmpty) return '-';
@@ -49,13 +68,7 @@ class ApprovalDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(notificationListProvider.notifier)
-          .markReadByTarget('approval', docId.toString());
-    });
-
+  Widget build(BuildContext context) {
     final docAsync = ref.watch(approvalDetailProvider(docId));
     final currentUserId = ref.watch(currentUserIdProvider);
 
@@ -735,7 +748,11 @@ class ApprovalDetailScreen extends ConsumerWidget {
                 child: _buildContentItem(
                   context,
                   '최종 변경 금액',
-                  _formatCurrency(c['final_amount'] ?? ((c['original_amount'] ?? 0) + (c['change_amount'] ?? 0))),
+                  _formatCurrency(
+                    c['final_amount'] ??
+                        ((num.tryParse(c['original_amount']?.toString().replaceAll(',', '') ?? '') ?? 0) +
+                            (num.tryParse(c['change_amount']?.toString().replaceAll(',', '') ?? '') ?? 0)),
+                  ),
                 ),
               ),
               if (c['final_end_date'] != null || c['period_change_desc'] != null)
@@ -1651,31 +1668,33 @@ class ApprovalDetailScreen extends ConsumerWidget {
     final delegations = ref.watch(delegationsProvider).valueOrNull ?? const [];
     final pendingDocs = ref.watch(pendingApprovalsProvider).valueOrNull ?? const [];
 
-    final isDirectApprover = currentStepObj != null &&
-        currentStepObj.approvers.any((u) => u.pk == currentUserId);
-    final matchedDelegation = currentStepObj == null
-        ? null
-        : delegations
-            .where((d) =>
-                d.isActive &&
-                d.isValidNow &&
-                d.delegatee?.pk == currentUserId &&
-                currentStepObj.approvers.any((u) => u.pk == d.delegator?.pk))
-            .firstOrNull;
-    final isInMyPending = pendingDocs.any((d) => d.id == doc.id);
+    bool hasDelegatorOrSelfActed(int targetUserId) {
+      if (currentStepObj == null) return false;
+      return currentStepObj.actions.any((a) =>
+          (a.action == 'approved' || a.action == 'rejected') &&
+          (a.approver.pk == targetUserId || a.delegatedFrom?.pk == targetUserId));
+    }
 
-    final alreadyActed = currentStepObj != null &&
-        currentStepObj.actions.any((a) =>
-            (a.action == 'approved' || a.action == 'rejected') &&
-            (a.approver.pk == currentUserId ||
-                (matchedDelegation?.delegator != null &&
-                    a.delegatedFrom?.pk == matchedDelegation!.delegator!.pk)));
+    final isDirectApprover = currentStepObj != null &&
+        currentStepObj.approvers.any((u) => u.pk == currentUserId) &&
+        !hasDelegatorOrSelfActed(currentUserId);
+
+    // 대리 결재 시 위임자 본인이 이미 직접 처리했거나 다른 대결자가 처리한 위임은 제외
+    final hasValidUnactedDelegation = currentStepObj != null &&
+        delegations.any((d) =>
+            d.isActive &&
+            d.isValidNow &&
+            d.delegatee?.pk == currentUserId &&
+            d.delegator != null &&
+            currentStepObj.approvers.any((u) => u.pk == d.delegator!.pk) &&
+            !hasDelegatorOrSelfActed(d.delegator!.pk));
+
+    final isInMyPending = pendingDocs.any((d) => d.id == doc.id);
 
     final isMyTurn = doc.status == 'pending' &&
         currentStepObj != null &&
         currentStepObj.status == 'pending' &&
-        !alreadyActed &&
-        (isDirectApprover || matchedDelegation != null || isInMyPending);
+        (isDirectApprover || hasValidUnactedDelegation || isInMyPending);
 
     final isMyDraft = doc.drafter.pk == currentUserId;
 
@@ -1777,7 +1796,7 @@ class ApprovalDetailScreen extends ConsumerWidget {
                     ),
                     icon: const Icon(Icons.check_rounded, color: Colors.white, size: 18),
                     label: Text(
-                      matchedDelegation != null ? '대결 승인' : '결재 승인',
+                      !isDirectApprover && hasValidUnactedDelegation ? '대결 승인' : '결재 승인',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),

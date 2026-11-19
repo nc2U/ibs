@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/project_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
@@ -99,10 +98,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = false);
 
     if (result['success'] == true) {
-      // 사용자 캐시 무효화 및 새 인증 토큰 반영, 이전 워크스페이스 상태 초기화
-      ref.invalidate(currentUserProvider);
-      ref.read(selectedWorkspaceProvider.notifier).state = null;
-      ref.read(selectedRealEstateProjectProvider.notifier).state = null;
+      // 새 인증 토큰 반영 및 세션 종속 상태 초기화 (setAuthenticated에서 처리)
       ref.read(authProvider.notifier).setAuthenticated(result['access'] as String);
       if (mounted) context.go(AppRoutes.home);
     } else {
@@ -130,10 +126,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     if (result['success'] == true) {
-      // 사용자 캐시 무효화 및 새 인증 토큰 반영, 이전 워크스페이스 상태 초기화
-      ref.invalidate(currentUserProvider);
-      ref.read(selectedWorkspaceProvider.notifier).state = null;
-      ref.read(selectedRealEstateProjectProvider.notifier).state = null;
+      // 새 인증 토큰 반영 및 세션 종속 상태 초기화 (setAuthenticated에서 처리)
       ref.read(authProvider.notifier).setAuthenticated(result['access'] as String);
       if (mounted) context.go(AppRoutes.home);
     } else if (result['canceled'] == true) {

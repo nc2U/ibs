@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -10,6 +11,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 
+import '../../project/providers/project_provider.dart';
 import '../providers/docs_provider.dart';
 import 'widgets/document_card.dart';
 import 'widgets/document_detail_sheet.dart';
@@ -38,6 +40,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.text = ref.read(docsSearchProvider);
     _scrollController.addListener(_onScroll);
   }
 
@@ -79,8 +82,23 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
     final docsContext = ref.watch(docsContextProvider);
     final contextSlug = docsContext.project?.slug;
 
-    final canRead = ref.can(Perm.docsRead, projectSlug: contextSlug);
+    final canRead = ref.can(
+      Perm.docsRead,
+      projectSlug: contextSlug,
+      global: contextSlug == null,
+    );
     if (!canRead) {
+      final isLoadingPerms =
+          (!ref.watch(currentUserProvider).hasValue &&
+              ref.watch(currentUserProvider).isLoading) ||
+          (!ref.watch(myProjectsProvider).hasValue &&
+              ref.watch(myProjectsProvider).isLoading);
+      if (isLoadingPerms) {
+        return Scaffold(
+          backgroundColor: context.colors.bgPrimary,
+          body: const LoadingShimmer(itemCount: 4, itemHeight: 110),
+        );
+      }
       return Scaffold(
         backgroundColor: context.colors.bgPrimary,
         body: const Center(
@@ -479,7 +497,11 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
       ),
 
       // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마, docs.create 권한 체크) ───────────
-      floatingActionButton: ref.can(Perm.docsCreate, projectSlug: contextSlug)
+      floatingActionButton: ref.can(
+        Perm.docsCreate,
+        projectSlug: contextSlug,
+        global: contextSlug == null,
+      )
           ? FloatingActionButton.extended(
               onPressed: () {
                 showModalBottomSheet(

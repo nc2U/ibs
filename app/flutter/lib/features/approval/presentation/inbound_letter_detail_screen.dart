@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
@@ -45,7 +47,12 @@ class _InboundLetterDetailScreenState
     }
 
     if (kIsWeb) {
-      final uri = Uri.tryParse(letter.scanFile!);
+      final raw = letter.scanFile!;
+      final fullUrl =
+          (raw.startsWith('http://') || raw.startsWith('https://'))
+              ? raw
+              : '$appBaseUrl${raw.startsWith('/') ? '' : '/'}$raw';
+      final uri = Uri.tryParse(fullUrl);
       if (uri != null) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
@@ -240,8 +247,11 @@ class _InboundLetterDetailScreenState
                 _buildRelationBox(context, letter),
                 const SizedBox(height: 24),
 
-                // 6. 하단 액션 버튼 (전자결재 상신)
-                if (letter.status != 'closed' && letter.approvalDocument == null)
+                // 6. 하단 액션 버튼 (전자결재 상신 / 반려 재상신)
+                if (letter.status != 'closed' &&
+                    ref.can(Perm.docsUpdate, global: true) &&
+                    (letter.approvalDocument == null ||
+                        letter.approvalDocumentDetail?['status'] == 'rejected'))
                   ElevatedButton.icon(
                     onPressed: _isSubmittingApproval ? null : () => _submitApproval(letter),
                     icon: _isSubmittingApproval

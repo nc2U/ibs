@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -119,22 +120,48 @@ class ApprovalRepository {
     return ApprovalDocumentModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  /// 12. 문서 기안 생성 (Multipart 또는 JSON)
-  Future<ApprovalDocumentModel> createDocument(
+  Future<FormData> _buildDocumentFormData(
     Map<String, dynamic> data, {
     List<String>? filePaths,
+    List<PlatformFile>? files,
   }) async {
-    if (filePaths != null && filePaths.isNotEmpty) {
-      final formData = FormData();
-      data.forEach((key, value) {
-        if (value != null) {
-          if (value is Map || value is List) {
+    final formData = FormData();
+    data.forEach((key, value) {
+      if (value != null) {
+        if (value is List) {
+          if (value.isEmpty) {
             formData.fields.add(MapEntry(key, jsonEncode(value)));
           } else {
-            formData.fields.add(MapEntry(key, value.toString()));
+            for (final item in value) {
+              formData.fields.add(MapEntry(key, item.toString()));
+            }
           }
+        } else if (value is Map) {
+          formData.fields.add(MapEntry(key, jsonEncode(value)));
+        } else {
+          formData.fields.add(MapEntry(key, value.toString()));
         }
-      });
+      }
+    });
+    if (files != null && files.isNotEmpty) {
+      for (final f in files) {
+        if (f.bytes != null) {
+          formData.files.add(
+            MapEntry(
+              'files',
+              MultipartFile.fromBytes(f.bytes!, filename: f.name),
+            ),
+          );
+        } else if (f.path != null && f.path!.isNotEmpty) {
+          formData.files.add(
+            MapEntry(
+              'files',
+              await MultipartFile.fromFile(f.path!, filename: f.name),
+            ),
+          );
+        }
+      }
+    } else if (filePaths != null && filePaths.isNotEmpty) {
       for (final path in filePaths) {
         formData.files.add(
           MapEntry(
@@ -146,6 +173,24 @@ class ApprovalRepository {
           ),
         );
       }
+    }
+    return formData;
+  }
+
+  /// 12. 문서 기안 생성 (Multipart 또는 JSON)
+  Future<ApprovalDocumentModel> createDocument(
+    Map<String, dynamic> data, {
+    List<String>? filePaths,
+    List<PlatformFile>? files,
+  }) async {
+    final hasFiles = (files != null && files.isNotEmpty) ||
+        (filePaths != null && filePaths.isNotEmpty);
+    if (hasFiles) {
+      final formData = await _buildDocumentFormData(
+        data,
+        filePaths: filePaths,
+        files: files,
+      );
       final res = await _dio.post(ApiEndpoints.approvalDocuments, data: formData);
       return ApprovalDocumentModel.fromJson(res.data as Map<String, dynamic>);
     } else {
@@ -159,30 +204,17 @@ class ApprovalRepository {
     int id,
     Map<String, dynamic> data, {
     List<String>? filePaths,
+    List<PlatformFile>? files,
   }) async {
     final url = ApiEndpoints.resolve(ApiEndpoints.approvalDocumentDetail, {'id': id});
-    if (filePaths != null && filePaths.isNotEmpty) {
-      final formData = FormData();
-      data.forEach((key, value) {
-        if (value != null) {
-          if (value is Map || value is List) {
-            formData.fields.add(MapEntry(key, jsonEncode(value)));
-          } else {
-            formData.fields.add(MapEntry(key, value.toString()));
-          }
-        }
-      });
-      for (final path in filePaths) {
-        formData.files.add(
-          MapEntry(
-            'files',
-            await MultipartFile.fromFile(
-              path,
-              filename: path.split(RegExp(r'[/\\]')).last,
-            ),
-          ),
-        );
-      }
+    final hasFiles = (files != null && files.isNotEmpty) ||
+        (filePaths != null && filePaths.isNotEmpty);
+    if (hasFiles) {
+      final formData = await _buildDocumentFormData(
+        data,
+        filePaths: filePaths,
+        files: files,
+      );
       final res = await _dio.patch(url, data: formData);
       return ApprovalDocumentModel.fromJson(res.data as Map<String, dynamic>);
     } else {
@@ -260,25 +292,50 @@ class ApprovalRepository {
     return '취소되었습니다.';
   }
 
-  /// 18. 결재 문서 인쇄용 PDF 다운로드
-  Future<String> downloadDocumentPdf(int docId, String title, {String? pdfUrl}) async {
-    final downloadUrl = (pdfUrl != null && pdfUrl.isNotEmpty)
-        ? pdfUrl
-        : ApiEndpoints.resolve(ApiEndpoints.approvalPrintPdf, {'id': docId});
-
-    final res = await _dio.get(
-      downloadUrl,
-      options: Options(
-        responseType: ResponseType.bytes,
-        headers: {'Accept': 'application/pdf, */*'},
-      ),
+  /// 18. 결재 문서 인쇄용 PDF 바이트 조회 (S3 만료 시 백엔드 print_pdf 폴백 포함)
+  Future<List<int>> fetchDocumentPdfBytes(int docId, {String? pdfUrl}) async {
+    final printUrl = ApiEndpoints.resolve(ApiEndpoints.approvalPrintPdf, {'id': docId});
+    final options = Options(
+      responseType: ResponseType.bytes,
+      headers: {'Accept': 'application/pdf, */*'},
     );
 
+    Response<List<int>>? res;
+    if (pdfUrl != null && pdfUrl.isNotEmpty) {
+      try {
+        final candidate = await _dio.get<List<int>>(pdfUrl, options: options);
+        final ct = candidate.headers.value('content-type')?.toLowerCase() ?? '';
+        if (!ct.contains('text/html') &&
+            candidate.data != null &&
+            candidate.data!.isNotEmpty) {
+          res = candidate;
+        }
+      } catch (_) {
+        // S3 Presigned URL 만료 등 실패 시 print_pdf 엔드포인트로 폴백
+      }
+    }
+
+    res ??= await _dio.get<List<int>>(printUrl, options: options);
+    final ct = res.headers.value('content-type')?.toLowerCase() ?? '';
+    final bytes = res.data;
+    if (ct.contains('text/html') || bytes == null || bytes.isEmpty) {
+      throw Exception('PDF 파일을 내려받을 수 없습니다.');
+    }
+    return bytes;
+  }
+
+  /// 18-1. 결재 문서 인쇄용 PDF 다운로드 (모바일/데스크톱 로컬 파일 저장)
+  Future<String> downloadDocumentPdf(int docId, String title, {String? pdfUrl}) async {
+    final bytes = await fetchDocumentPdfBytes(docId, pdfUrl: pdfUrl);
     final tempDir = await getTemporaryDirectory();
-    final sanitizedTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    var sanitizedTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|\s]+'), '_');
+    if (sanitizedTitle.length > 50) {
+      sanitizedTitle = sanitizedTitle.substring(0, 50);
+    }
+    if (sanitizedTitle.isEmpty) sanitizedTitle = '결재문서';
     final filePath = '${tempDir.path}/전자결재_${sanitizedTitle}_#$docId.pdf';
     final file = File(filePath);
-    await file.writeAsBytes(res.data as List<int>);
+    await file.writeAsBytes(bytes, flush: true);
     return filePath;
   }
 

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/providers/dio_provider.dart';
 import 'models/notice_model.dart';
 
@@ -36,8 +37,13 @@ class NoticeRepository {
       final response = await _dio.get('/api/v1/news/', queryParameters: queryParams);
       return NoticeListResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '공지사항 목록을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '공지사항 목록을 불러오지 못했습니다.'));
     }
+  }
+
+  String _extractError(DioException e, String fallback) {
+    final msg = getDioErrorMessage(e);
+    return msg.isNotEmpty ? msg : fallback;
   }
 
   /// 공지사항 상세 조회
@@ -46,7 +52,7 @@ class NoticeRepository {
       final response = await _dio.get('/api/v1/news/$id/');
       return NoticeModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '공지사항을 불러오지 못했습니다.');
+      throw Exception(_extractError(e, '공지사항을 불러오지 못했습니다.'));
     }
   }
 
@@ -110,7 +116,7 @@ class NoticeRepository {
       );
       return NoticeModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '공지사항 등록에 실패했습니다.');
+      throw Exception(_extractError(e, '공지사항 등록에 실패했습니다.'));
     }
   }
 
@@ -172,7 +178,7 @@ class NoticeRepository {
       );
       return NoticeModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '공지사항 수정에 실패했습니다.');
+      throw Exception(_extractError(e, '공지사항 수정에 실패했습니다.'));
     }
   }
 
@@ -181,7 +187,7 @@ class NoticeRepository {
     try {
       await _dio.delete('/api/v1/news/$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '공지사항 삭제에 실패했습니다.');
+      throw Exception(_extractError(e, '공지사항 삭제에 실패했습니다.'));
     }
   }
 
@@ -202,7 +208,7 @@ class NoticeRepository {
       final response = await _dio.post('/api/v1/news-comment/', data: data);
       return NoticeCommentModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '댓글 등록에 실패했습니다.');
+      throw Exception(_extractError(e, '댓글 등록에 실패했습니다.'));
     }
   }
 
@@ -211,7 +217,7 @@ class NoticeRepository {
     try {
       await _dio.delete('/api/v1/news-comment/$commentId/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? '댓글 삭제에 실패했습니다.');
+      throw Exception(_extractError(e, '댓글 삭제에 실패했습니다.'));
     }
   }
 }

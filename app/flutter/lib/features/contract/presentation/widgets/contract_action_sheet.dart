@@ -186,7 +186,10 @@ class ContractActionSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _downloadAndSharePaymentCertPdf(BuildContext context, WidgetRef ref) async {
+  Future<void> _downloadAndSharePaymentCertPdf(
+    BuildContext context,
+    ContractRepository repository,
+  ) async {
     final contractorName = contract.contractor?.name ?? '계약자';
     final unitStr = contract.displayUnit;
 
@@ -245,7 +248,6 @@ class ContractActionSheet extends ConsumerWidget {
     );
 
     try {
-      final repository = ref.read(contractRepositoryProvider);
       final pdfBytes = await repository.downloadPaymentCertPdf(
         contractId: contract.pk,
         projectId: contract.project,
@@ -282,7 +284,8 @@ class ContractActionSheet extends ConsumerWidget {
           name: fileName,
         );
         final box = context.findRenderObject() as RenderBox?;
-        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        final origin =
+            (box != null && box.hasSize) ? box.localToGlobal(Offset.zero) & box.size : null;
         await AppShareHelper.shareXFiles(
           [xfile],
           subject: '분양대금 납부확인서 - $contractorName',
@@ -351,7 +354,8 @@ class ContractActionSheet extends ConsumerWidget {
                   subtitle: const Text('계약자 또는 대출기관에 파일 직접 전송', style: TextStyle(fontSize: 11.5)),
                   onTap: () async {
                     final box = context.findRenderObject() as RenderBox?;
-                    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+                    final origin =
+                        (box != null && box.hasSize) ? box.localToGlobal(Offset.zero) & box.size : null;
                     Navigator.pop(dialogCtx);
                     await AppShareHelper.shareXFiles(
                       [XFile(file.path, mimeType: 'application/pdf')],
@@ -448,8 +452,9 @@ class ContractActionSheet extends ConsumerWidget {
               subtitle: const Text('기납부 및 약정 내역 PDF 출력·공유', style: TextStyle(fontSize: 11.5)),
               onTap: () {
                 final rootCtx = Navigator.of(context, rootNavigator: true).context;
+                final repository = ref.read(contractRepositoryProvider);
                 Navigator.pop(context);
-                _downloadAndSharePaymentCertPdf(rootCtx, ref);
+                _downloadAndSharePaymentCertPdf(rootCtx, repository);
               },
             ),
             ListTile(

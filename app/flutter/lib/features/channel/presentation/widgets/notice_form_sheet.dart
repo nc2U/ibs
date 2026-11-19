@@ -88,7 +88,7 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
     final targetProjectSlug =
         matchedProject?.slug ?? currentWs?.slug ?? widget.notice?.project?.slug;
 
-    if (!ref.can(Perm.newsManage, projectSlug: targetProjectSlug)) {
+    if (!ref.canOnce(Perm.newsManage, projectSlug: targetProjectSlug)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('공지사항 관리 권한(news.manage)이 없습니다.'),
@@ -220,9 +220,11 @@ class _NoticeFormSheetState extends ConsumerState<NoticeFormSheet> {
                     const SizedBox(height: 6),
                     projectsAsync.when(
                       data: (projects) {
-                        final effectivePk = _selectedProjectPk ??
-                            currentWs?.pk ??
-                            (projects.isNotEmpty ? projects.first.pk : null);
+                        final rawPk = _selectedProjectPk ?? currentWs?.pk;
+                        final effectivePk =
+                            (rawPk != null && projects.any((p) => p.pk == rawPk))
+                                ? rawPk
+                                : (projects.isNotEmpty ? projects.first.pk : null);
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(

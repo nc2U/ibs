@@ -1,4 +1,3 @@
-import 'dart:io' as io;
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -8,10 +7,12 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
@@ -142,14 +143,11 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     final cleanFileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
     final savePath = '${tempDir.path}/doc_${doc.id}_$cleanFileName';
 
-    // 이미 다운로드된 파일이 있으면 재사용
-    final targetFile = io.File(savePath);
-    if (await targetFile.exists() && await targetFile.length() > 0) {
-      return savePath;
-    }
-
     // 서버에서 다운로드
     var fileUrl = doc.file!;
+    if (fileUrl.startsWith('/')) {
+      fileUrl = '$appBaseUrl$fileUrl';
+    }
     await dio.download(fileUrl, savePath);
     return savePath;
   }
@@ -166,7 +164,8 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
     }
 
     if (kIsWeb) {
-      final fileUrl = doc.file!;
+      final rawUrl = doc.file!;
+      final fileUrl = rawUrl.startsWith('/') ? '$appBaseUrl$rawUrl' : rawUrl;
       if (await canLaunchUrlString(fileUrl)) {
         await launchUrlString(fileUrl, mode: LaunchMode.platformDefault);
       } else if (mounted) {
@@ -218,6 +217,11 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
       final title = doc.title.isNotEmpty ? doc.title : (doc.fileName ?? '증빙서류');
       final personName = widget.person.name;
 
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = (box != null && box.hasSize)
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+
       if (kIsWeb) {
         final dio = ref.read(dioProvider);
         final response = await dio.get<List<int>>(
@@ -233,6 +237,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
           [xFile],
           text: '[$personName] $title',
           subject: '영업 인력 증빙 서류 - $personName ($title)',
+          sharePositionOrigin: origin,
         );
         return;
       }
@@ -244,6 +249,7 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
         [XFile(savePath)],
         text: '[$personName] $title',
         subject: '영업 인력 증빙 서류 - $personName ($title)',
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       if (mounted) {
@@ -554,7 +560,10 @@ class _PersonDocumentSheetState extends ConsumerState<PersonDocumentSheet> {
 
   /// 개별 서류 카드 위젯
   Widget _buildDocumentCard(SalesPersonDocumentModel doc) {
-    final canManage = widget.canManage ?? ref.can(Perm.salesManage, projectSlug: widget.projectSlug);
+    final effectiveSlug =
+        widget.projectSlug ?? ref.watch(selectedRealEstateProjectProvider)?.slug;
+    final canManage =
+        widget.canManage ?? ref.can(Perm.salesManage, projectSlug: effectiveSlug);
     final typeColor = _getDocTypeColor(doc.docType);
     final typeLabel = _getDocTypeLabel(doc.docType, doc.docTypeDisplay);
     final isDownloading = _downloadingDocId == doc.id;

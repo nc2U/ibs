@@ -2,11 +2,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
+import '../../../project/providers/project_provider.dart';
 import '../../providers/notice_provider.dart';
 import 'notice_card.dart';
 import 'notice_detail_sheet.dart';
@@ -58,8 +60,17 @@ class _NoticeListViewState extends ConsumerState<NoticeListView> {
       }
     });
 
-    final canRead = ref.can(Perm.newsRead, projectSlug: selectedProject?.slug);
+    final canRead = selectedProject == null ||
+        ref.can(Perm.newsRead, projectSlug: selectedProject.slug);
     if (!canRead) {
+      final isLoadingPerms =
+          (!ref.watch(currentUserProvider).hasValue &&
+              ref.watch(currentUserProvider).isLoading) ||
+          (!ref.watch(myProjectsProvider).hasValue &&
+              ref.watch(myProjectsProvider).isLoading);
+      if (isLoadingPerms) {
+        return const LoadingShimmer();
+      }
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24.0),
@@ -165,7 +176,11 @@ class _NoticeListViewState extends ConsumerState<NoticeListView> {
                       notice: notice,
                       showWorkspaceBadge: selectedProject == null,
                       onTap: () {
-                        if (!ref.can(Perm.newsRead, projectSlug: selectedProject?.slug)) return;
+                        if (selectedProject != null &&
+                            !ref.canOnce(Perm.newsRead,
+                                projectSlug: selectedProject.slug)) {
+                          return;
+                        }
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,

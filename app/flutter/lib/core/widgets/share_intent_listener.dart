@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -23,14 +24,23 @@ class ShareIntentListener extends ConsumerStatefulWidget {
 class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
   Timer? _debounceTimer;
+  SharePayload? _presentedPayload;
 
   @override
   void initState() {
     super.initState();
     _initShareIntent();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pending = ref.read(pendingSharePayloadProvider);
+      if (pending != null && pending.isNotEmpty) {
+        _scheduleShowSheet(pending);
+      }
+    });
   }
 
   void _initShareIntent() {
+    if (kIsWeb) return;
     // 1. 앱이 실행 중인 상태에서 외부에서 공유된 경우 감지
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((files) {
       if (files.isNotEmpty) {
@@ -109,12 +119,26 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
   void _scheduleShowSheet(SharePayload? payload) {
     if (payload == null || payload.isEmpty) {
       _debounceTimer?.cancel();
+      _presentedPayload = null;
+      return;
+    }
+
+    if (identical(payload, _presentedPayload) ||
+        ShareActionChoiceSheet.isAnyShareSheetOpen) {
       return;
     }
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
+      if (ShareActionChoiceSheet.isAnyShareSheetOpen) return;
+
+      final currentPayload = ref.read(pendingSharePayloadProvider);
+      if (currentPayload == null ||
+          currentPayload.isEmpty ||
+          identical(currentPayload, _presentedPayload)) {
+        return;
+      }
 
       // 인증 검증: 비인가 상태이거나 토큰 로딩 중이면 라우터가 /login으로 가거나 리다이렉트 중이므로 대기
       final isAuth = ref.read(isAuthenticatedProvider);
@@ -125,8 +149,9 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
 
       final navContext = rootNavigatorKey.currentContext;
       if (navContext != null && navContext.mounted) {
+        _presentedPayload = currentPayload;
         debugPrint('🚀 [ShareIntentListener] Presenting ShareActionChoiceSheet on stable Navigator');
-        ShareActionChoiceSheet.show(navContext, payload);
+        ShareActionChoiceSheet.show(navContext, currentPayload);
       }
     });
   }
@@ -140,9 +165,12 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 공유 페이로드 변경 감지 시 안정화 후 표출 예약
+    // 1. 공유 페이로드 변경 감지 시 안정화 후 표출 예약 (null로 초기화되면 재표출 허용 상태 복귀)
     ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
-      if (next != null && next.isNotEmpty) {
+      if (next == null || next.isEmpty) {
+        _presentedPayload = null;
+        _debounceTimer?.cancel();
+      } else {
         _scheduleShowSheet(next);
       }
     });
@@ -154,16 +182,6 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
         if (pending != null && pending.isNotEmpty) {
           _scheduleShowSheet(pending);
         }
-      }
-    });
-
-    // 3. 빌드 직후 미처리 대기 페이로드가 있고 인증된 상태라면 1회 예약 (콜드 스타트 복원)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final pending = ref.read(pendingSharePayloadProvider);
-      final isAuth = ref.read(isAuthenticatedProvider);
-      if (pending != null && pending.isNotEmpty && isAuth) {
-        _scheduleShowSheet(pending);
       }
     });
 

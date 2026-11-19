@@ -88,7 +88,8 @@ class PaymentRepository {
   }
 
   /// 2. 개별 납부 거래 내역 목록 조회 (/api/v1/ledger/payment/?project={projectId}&limit=10&page={page})
-  Future<List<PaymentTransactionItemModel>> fetchPaymentTransactions({
+  Future<({List<PaymentTransactionItemModel> items, bool hasMore})>
+  fetchPaymentTransactions({
     required int projectId,
     String? search,
     int? installmentOrder,
@@ -123,17 +124,22 @@ class PaymentRepository {
         queryParameters: queryParams,
       );
 
+      final data = response.data;
       final List<dynamic> results =
-          response.data is Map && response.data.containsKey('results')
-          ? response.data['results']
-          : (response.data is List ? response.data : []);
+          data is Map && data.containsKey('results')
+          ? (data['results'] as List<dynamic>? ?? const [])
+          : (data is List ? data : const []);
+      final hasMore = data is Map && data['next'] != null;
 
-      return results
-          .map((json) => PaymentTransactionItemModel.fromJson(json))
-          .toList();
+      return (
+        items: results
+            .map((json) => PaymentTransactionItemModel.fromJson(json))
+            .toList(),
+        hasMore: hasMore,
+      );
     } on DioException catch (e) {
       if (page > 1 && e.response?.statusCode == 404) {
-        return [];
+        return (items: <PaymentTransactionItemModel>[], hasMore: false);
       }
       rethrow;
     } catch (e) {
@@ -290,6 +296,9 @@ class PaymentRepository {
       );
 
       if (response.statusCode == 200 && response.data != null) {
+        final contentType =
+            response.headers.value('content-type')?.toLowerCase() ?? '';
+        if (contentType.contains('text/html')) return null;
         return response.data;
       }
       return null;

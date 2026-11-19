@@ -1712,7 +1712,7 @@ class _$MeetingModelImpl implements _MeetingModel {
     this.content = '',
     this.decisions = '',
     this.actionItems = '',
-    required this.meetingDate,
+    this.meetingDate = '',
     this.location = '',
     final List<int> attendees = const [],
     final List<SimpleUserModel> attendeesDesc = const [],
@@ -1772,6 +1772,7 @@ class _$MeetingModelImpl implements _MeetingModel {
   @JsonKey()
   final String actionItems;
   @override
+  @JsonKey()
   final String meetingDate;
   @override
   @JsonKey()
@@ -1979,7 +1980,7 @@ abstract class _MeetingModel implements MeetingModel {
     final String content,
     final String decisions,
     final String actionItems,
-    required final String meetingDate,
+    final String meetingDate,
     final String location,
     final List<int> attendees,
     final List<SimpleUserModel> attendeesDesc,

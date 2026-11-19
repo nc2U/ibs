@@ -72,6 +72,7 @@ class AllApprovalsFilter {
     bool clearDocType = false,
     bool clearStatus = false,
     bool clearDepartment = false,
+    bool clearSearch = false,
   }) {
     return AllApprovalsFilter(
       page: page ?? this.page,
@@ -81,7 +82,7 @@ class AllApprovalsFilter {
       department: clearDepartment ? null : (department ?? this.department),
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
-      search: search ?? this.search,
+      search: clearSearch ? null : (search ?? this.search),
     );
   }
 }

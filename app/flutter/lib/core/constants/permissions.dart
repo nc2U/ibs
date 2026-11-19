@@ -50,10 +50,12 @@ abstract class Perm {
   static const String newsComment = 'news.comment';
 
   // Docs permissions
-  static const String docsRead   = 'docs.read';
-  static const String docsCreate = 'docs.create';
-  static const String docsUpdate = 'docs.update';
-  static const String docsDelete = 'docs.delete';
+  static const String docsRead      = 'docs.read';
+  static const String docsCreate    = 'docs.create';
+  static const String docsUpdate    = 'docs.update';
+  static const String docsOwnUpdate = 'docs.own_update';
+  static const String docsDelete    = 'docs.delete';
+  static const String docsOwnDelete = 'docs.own_delete';
 
   // Forum permissions
   static const String forumRead      = 'forum.read';

@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -256,9 +258,12 @@ class _OfficialLetterDetailScreenState
         ),
         data: (letter) {
           final isDispatched = letter.dispatchedAt != null;
+          final hasWritePerm = ref.can(Perm.docsUpdate, global: true) ||
+              ref.can(Perm.docsCreate, global: true);
           final canSubmit = !isDispatched &&
-              letter.approvalStatus == 'none' &&
-              !letter.isSoloApproval;
+              hasWritePerm &&
+              (letter.approvalStatus == 'none' ||
+                  letter.approvalStatus == 'rejected');
 
           return Column(
             children: [

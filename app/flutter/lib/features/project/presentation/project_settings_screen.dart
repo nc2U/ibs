@@ -1087,7 +1087,7 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                                 firstDate: DateTime(1980),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null) {
+                              if (picked != null && mounted) {
                                 setState(() => _monthlyAggrDate = DateFormat('yyyy-MM-dd').format(picked));
                               }
                             },
@@ -1112,7 +1112,7 @@ class _EditProjectBasicInfoSheetState extends ConsumerState<_EditProjectBasicInf
                                 firstDate: DateTime(1980),
                                 lastDate: DateTime(2100),
                               );
-                              if (picked != null) {
+                              if (picked != null && mounted) {
                                 setState(() => _constructionStartDate = DateFormat('yyyy-MM-dd').format(picked));
                               }
                             },

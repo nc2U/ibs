@@ -3,8 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/services/share_helper.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/approval_repository.dart';
@@ -18,13 +16,20 @@ Future<void> exportApprovalPdf(
 ) async {
   try {
     if (kIsWeb) {
-      final downloadUrl = (document.pdfUrl != null && document.pdfUrl!.isNotEmpty)
-          ? document.pdfUrl!
-          : ApiEndpoints.resolve(ApiEndpoints.approvalPrintPdf, {'id': document.id});
-      final uri = Uri.tryParse(downloadUrl);
-      if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+      final repo = ref.read(approvalRepositoryProvider);
+      final bytes = await repo.fetchDocumentPdfBytes(
+        document.id,
+        pdfUrl: document.pdfUrl,
+      );
+      var sanitized = document.title.replaceAll(RegExp(r'[\\/:*?"<>|\s]+'), '_');
+      if (sanitized.length > 50) sanitized = sanitized.substring(0, 50);
+      if (sanitized.isEmpty) sanitized = '결재문서';
+      final xfile = XFile.fromData(
+        Uint8List.fromList(bytes),
+        name: '전자결재_${sanitized}_#${document.id}.pdf',
+        mimeType: 'application/pdf',
+      );
+      await AppShareHelper.shareXFiles([xfile], subject: document.title);
       return;
     }
 

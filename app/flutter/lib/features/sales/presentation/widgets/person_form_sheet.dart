@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
 import '../../data/sales_repository.dart';
@@ -58,7 +59,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
   int? _selectedTeamId;
   String _duty = '1'; // 1: 상담사, 2: 팀장, 3: 본부장, 4: 총괄본부장, 5: 지원/기타
   String _status = '1'; // 1: 위촉(재직), 2: 휴직, 3: 해촉(퇴사)
-  String _taxType = '1'; // 1: 3.3% 프리랜서, 2: 4대보험, 3: 기타
+  String _taxType = '1'; // 1: 3.3% 사업소득, 2: 근로소득, 3: 사업자(세금계산서), 4: 기타
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -375,7 +376,9 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                               Text('소속 팀 *', style: AppTextStyles.label.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<int>(
-                                initialValue: _selectedTeamId,
+                                initialValue: teams.any((t) => t.id == _selectedTeamId)
+                                    ? _selectedTeamId
+                                    : null,
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -403,7 +406,9 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                               Text('직책 *', style: AppTextStyles.label.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String>(
-                                initialValue: _duty,
+                                initialValue: const ['1', '2', '3', '4', '5'].contains(_duty)
+                                    ? _duty
+                                    : '1',
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -435,7 +440,9 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                               Text('활동 상태', style: AppTextStyles.label.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String>(
-                                initialValue: _status,
+                                initialValue: const ['1', '2', '3'].contains(_status)
+                                    ? _status
+                                    : '1',
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -459,7 +466,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                               Text('세무 구분', style: AppTextStyles.label.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String>(
-                                initialValue: _taxType,
+                                initialValue: const ['1', '2', '3', '4'].contains(_taxType) ? _taxType : '1',
                                 decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: context.colors.border)),
@@ -467,8 +474,9 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                                 isExpanded: true,
                                 items: const [
                                   DropdownMenuItem(value: '1', child: Text('3.3% 사업소득', style: TextStyle(fontSize: 12.5))),
-                                  DropdownMenuItem(value: '2', child: Text('4대보험 근로소득', style: TextStyle(fontSize: 12.5))),
-                                  DropdownMenuItem(value: '3', child: Text('기타 소득', style: TextStyle(fontSize: 12.5))),
+                                  DropdownMenuItem(value: '2', child: Text('근로소득', style: TextStyle(fontSize: 12.5))),
+                                  DropdownMenuItem(value: '3', child: Text('사업자 (세금계산서)', style: TextStyle(fontSize: 12.5))),
+                                  DropdownMenuItem(value: '4', child: Text('기타', style: TextStyle(fontSize: 12.5))),
                                 ],
                                 onChanged: (val) => setState(() => _taxType = val ?? '1'),
                               ),
@@ -539,6 +547,42 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                     ),
                     const SizedBox(height: 16),
 
+                    // 4-2. 주민등록번호 (원천세 신고용)
+                    Text(
+                      '주민등록번호 (원천세 신고용)',
+                      style: AppTextStyles.label.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _idNumberController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: '예: 900101-1234567 (선택)',
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: BorderSide(color: context.colors.border),
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 12.5),
+                      validator: (val) {
+                        final raw = val?.trim() ?? '';
+                        if (raw.isEmpty) return null;
+                        final cleaned = raw.replaceAll('-', '');
+                        if (cleaned.length != 13 || !RegExp(r'^\d{13}$').hasMatch(cleaned)) {
+                          return '주민등록번호 13자리 숫자를 정확히 입력해 주세요.';
+                        }
+                        if (!'12345678'.contains(cleaned[6])) {
+                          return '올바르지 않은 주민등록번호 뒷자리 형식입니다.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
                     // 5. 금융 계좌 정보
                     Row(
                       children: [
@@ -604,6 +648,7 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                         onTap: () => showPersonDocumentSheet(
                           context,
                           person: widget.existingPerson!,
+                          projectSlug: ref.read(selectedRealEstateProjectProvider)?.slug,
                         ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

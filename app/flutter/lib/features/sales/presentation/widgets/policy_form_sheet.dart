@@ -436,7 +436,10 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                         // 공급 차수
                         Expanded(
                           child: DropdownButtonFormField<int?>(
-                            initialValue: _selectedOrderGroupId,
+                            initialValue: (_selectedOrderGroupId == null ||
+                                    orderGroups.any((og) => og.id == _selectedOrderGroupId))
+                                ? _selectedOrderGroupId
+                                : null,
                             style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
                             decoration: InputDecoration(
                               labelText: '공급 차수',
@@ -462,7 +465,10 @@ class _PolicyFormSheetState extends ConsumerState<PolicyFormSheet> {
                         // 유니트 타입
                         Expanded(
                           child: DropdownButtonFormField<int?>(
-                            initialValue: _selectedUnitTypeId,
+                            initialValue: (_selectedUnitTypeId == null ||
+                                    unitTypes.any((t) => t.id == _selectedUnitTypeId))
+                                ? _selectedUnitTypeId
+                                : null,
                             style: TextStyle(fontSize: 12.5, color: context.colors.textPrimary),
                             decoration: InputDecoration(
                               labelText: '유니트 타입',

@@ -2,14 +2,16 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../../data/issue_repository.dart';
+import '../../data/models/issue_model.dart';
 import '../../providers/issue_provider.dart';
 
 /// 진척률 슬라이더 바텀 시트
 /// - 0~100%, 10 단위 스냅
-/// - 저장 버튼 탭 → Optimistic Update
+/// - 저장 버튼 탭 → 서버 반영 및 상세/목록 동기화
 Future<void> showDoneRatioBottomSheet({
   required BuildContext context,
-  required WidgetRef ref,
+  WidgetRef? ref,
   required int issueId,
   required int currentRatio,
 }) {
@@ -21,29 +23,26 @@ Future<void> showDoneRatioBottomSheet({
     ),
     isScrollControlled: true,
     builder: (ctx) => _DoneRatioSheet(
-      ref: ref,
       issueId: issueId,
       initialRatio: currentRatio,
     ),
   );
 }
 
-class _DoneRatioSheet extends StatefulWidget {
-  final WidgetRef ref;
+class _DoneRatioSheet extends ConsumerStatefulWidget {
   final int issueId;
   final int initialRatio;
 
   const _DoneRatioSheet({
-    required this.ref,
     required this.issueId,
     required this.initialRatio,
   });
 
   @override
-  State<_DoneRatioSheet> createState() => _DoneRatioSheetState();
+  ConsumerState<_DoneRatioSheet> createState() => _DoneRatioSheetState();
 }
 
-class _DoneRatioSheetState extends State<_DoneRatioSheet> {
+class _DoneRatioSheetState extends ConsumerState<_DoneRatioSheet> {
   late double _ratio;
   bool _isSaving = false;
 
@@ -56,10 +55,53 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
   Future<void> _save() async {
     setState(() => _isSaving = true);
     try {
-      await widget.ref
-          .read(issueDetailProvider(widget.issueId).notifier)
-          .updateDoneRatio(_ratio.round());
-      if (mounted) Navigator.pop(context);
+      final ratio = _ratio.round();
+      final detailState = ref.exists(issueDetailProvider(widget.issueId))
+          ? ref.read(issueDetailProvider(widget.issueId)).valueOrNull
+          : null;
+      final listIssue = ref
+          .read(issueListProvider)
+          .valueOrNull
+          ?.items
+          .where((i) => i.pk == widget.issueId)
+          .firstOrNull;
+      final baseIssue = detailState ?? listIssue;
+      final statuses = ref.read(issueStatusListProvider).valueOrNull;
+
+      int? nextStatusId;
+      if (ratio == 100) {
+        if (baseIssue == null || !baseIssue.status.closed) {
+          final closedStatus = statuses?.where((s) => s.closed).firstOrNull ??
+              const IssueStatusModel(pk: 5, name: '완료', closed: true);
+          nextStatusId = closedStatus.pk;
+        }
+      } else if (baseIssue != null) {
+        if (baseIssue.status.closed || (ratio > 0 && baseIssue.status.pk == 1)) {
+          final inProgressStatus = statuses?.where((s) => s.pk == 2).firstOrNull ??
+              statuses?.where((s) => !s.closed && s.pk != 1).firstOrNull ??
+              const IssueStatusModel(pk: 2, name: '진행', closed: false);
+          nextStatusId = inProgressStatus.pk;
+        }
+      }
+
+      final serverUpdated = await ref
+          .read(issueRepositoryProvider)
+          .updateDoneRatio(widget.issueId, ratio, statusId: nextStatusId);
+
+      if (!mounted) return;
+      ref.read(issueListProvider.notifier).updateSingleIssue(serverUpdated);
+      if (baseIssue != null &&
+          baseIssue.status.closed != serverUpdated.status.closed) {
+        ref.invalidate(issueListProvider);
+      }
+      if (ref.exists(issueDetailProvider(widget.issueId))) {
+        ref.invalidate(issueDetailProvider(widget.issueId));
+      }
+      if (ref.exists(issueLogProvider(widget.issueId))) {
+        ref.invalidate(issueLogProvider(widget.issueId));
+      }
+
+      Navigator.pop(context);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

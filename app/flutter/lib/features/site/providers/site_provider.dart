@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../data/models/site_models.dart';
 import '../data/site_repository.dart';
@@ -14,18 +15,28 @@ enum SiteSubTab {
 final siteCurrentSubTabProvider =
     StateProvider<SiteSubTab>((ref) => SiteSubTab.sites);
 
-/// 통합 검색어 상태 프로바이더
-final siteSearchQueryProvider = StateProvider<String>((ref) => '');
+/// 통합 검색어 상태 프로바이더 (프로젝트 전환 시 자동 초기화)
+final siteSearchQueryProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 소유구분 필터 상태 프로바이더 ('': 전체, '1': 개인, '2': 법인, '3': 국공유지)
-final siteOwnSortFilterProvider = StateProvider<String>((ref) => '');
+final siteOwnSortFilterProvider = StateProvider<String>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return '';
+});
 
 /// 사용동의 필터 상태 프로바이더 (null: 전체, true: 동의완료, false: 미동의)
-final siteUseConsentFilterProvider = StateProvider<bool?>((ref) => null);
+final siteUseConsentFilterProvider = StateProvider<bool?>((ref) {
+  ref.watch(selectedRealEstateProjectProvider.select((p) => p?.realProjectId));
+  return null;
+});
 
 /// 📊 부지 종합 집계 프로바이더
 final siteOverallAggregateProvider =
     FutureProvider<SiteAggregateModel>((ref) async {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) {
     return SiteAggregateModel(
@@ -108,6 +119,7 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
   final Ref ref;
   final int? projectId;
   final String searchQuery;
+  int _generation = 0;
 
   SiteListNotifier(
     this.ref, {
@@ -119,29 +131,32 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
 
   Future<void> fetchInitial() async {
     if (projectId == null) {
-      state = const SitePaginationState();
+      _generation++;
+      if (!mounted) return;
+      state = const SitePaginationState(items: [], hasMore: false);
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, error: null);
+    final gen = ++_generation;
+    state = state.copyWith(isLoading: true, isFetchingNextPage: false, page: 1, error: null);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final items = await repository.fetchSites(
+      final result = await repository.fetchSites(
         projectId: projectId!,
         search: searchQuery,
         page: 1,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: items,
+        items: result.items,
         page: 1,
         isLoading: false,
-        hasMore: items.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -150,26 +165,27 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
     if (projectId == null) return;
 
+    final gen = _generation;
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final nextItems = await repository.fetchSites(
+      final result = await repository.fetchSites(
         projectId: projectId!,
         search: searchQuery,
         page: nextPage,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: [...state.items, ...nextItems],
+        items: [...state.items, ...result.items],
         page: nextPage,
         isFetchingNextPage: false,
-        hasMore: nextItems.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
@@ -177,6 +193,7 @@ class SiteListNotifier extends StateNotifier<SitePaginationState<SiteItemModel>>
 
 final siteListProvider =
     StateNotifierProvider.autoDispose<SiteListNotifier, SitePaginationState<SiteItemModel>>((ref) {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   final searchQuery = ref.watch(siteSearchQueryProvider);
   return SiteListNotifier(
@@ -193,6 +210,7 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
   final String searchQuery;
   final String ownSort;
   final bool? useConsent;
+  int _generation = 0;
 
   SiteOwnerListNotifier(
     this.ref, {
@@ -206,15 +224,18 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
 
   Future<void> fetchInitial() async {
     if (projectId == null) {
-      state = const SitePaginationState();
+      _generation++;
+      if (!mounted) return;
+      state = const SitePaginationState(items: [], hasMore: false);
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, error: null);
+    final gen = ++_generation;
+    state = state.copyWith(isLoading: true, isFetchingNextPage: false, page: 1, error: null);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final items = await repository.fetchSiteOwners(
+      final result = await repository.fetchSiteOwners(
         projectId: projectId!,
         search: searchQuery,
         ownSort: ownSort,
@@ -222,15 +243,15 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
         page: 1,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: items,
+        items: result.items,
         page: 1,
         isLoading: false,
-        hasMore: items.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -239,12 +260,13 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
     if (projectId == null) return;
 
+    final gen = _generation;
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final nextItems = await repository.fetchSiteOwners(
+      final result = await repository.fetchSiteOwners(
         projectId: projectId!,
         search: searchQuery,
         ownSort: ownSort,
@@ -252,15 +274,15 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
         page: nextPage,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: [...state.items, ...nextItems],
+        items: [...state.items, ...result.items],
         page: nextPage,
         isFetchingNextPage: false,
-        hasMore: nextItems.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
@@ -268,6 +290,7 @@ class SiteOwnerListNotifier extends StateNotifier<SitePaginationState<SiteOwnerI
 
 final siteOwnerListProvider =
     StateNotifierProvider.autoDispose<SiteOwnerListNotifier, SitePaginationState<SiteOwnerItemModel>>((ref) {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   final searchQuery = ref.watch(siteSearchQueryProvider);
   final ownSort = ref.watch(siteOwnSortFilterProvider);
@@ -287,6 +310,7 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
   final int? projectId;
   final String searchQuery;
   final String ownSort;
+  int _generation = 0;
 
   SiteContractListNotifier(
     this.ref, {
@@ -299,30 +323,33 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
 
   Future<void> fetchInitial() async {
     if (projectId == null) {
-      state = const SitePaginationState();
+      _generation++;
+      if (!mounted) return;
+      state = const SitePaginationState(items: [], hasMore: false);
       return;
     }
 
-    state = state.copyWith(isLoading: true, page: 1, error: null);
+    final gen = ++_generation;
+    state = state.copyWith(isLoading: true, isFetchingNextPage: false, page: 1, error: null);
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final items = await repository.fetchSiteContracts(
+      final result = await repository.fetchSiteContracts(
         projectId: projectId!,
         search: searchQuery,
         ownSort: ownSort,
         page: 1,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: items,
+        items: result.items,
         page: 1,
         isLoading: false,
-        hasMore: items.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -331,27 +358,28 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
     if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
     if (projectId == null) return;
 
+    final gen = _generation;
     state = state.copyWith(isFetchingNextPage: true);
     final nextPage = state.page + 1;
 
     try {
       final repository = ref.read(siteRepositoryProvider);
-      final nextItems = await repository.fetchSiteContracts(
+      final result = await repository.fetchSiteContracts(
         projectId: projectId!,
         search: searchQuery,
         ownSort: ownSort,
         page: nextPage,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(
-        items: [...state.items, ...nextItems],
+        items: [...state.items, ...result.items],
         page: nextPage,
         isFetchingNextPage: false,
-        hasMore: nextItems.length >= 15,
+        hasMore: result.hasMore,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       state = state.copyWith(isFetchingNextPage: false, hasMore: true);
     }
   }
@@ -359,6 +387,7 @@ class SiteContractListNotifier extends StateNotifier<SitePaginationState<SiteCon
 
 final siteContractListProvider =
     StateNotifierProvider.autoDispose<SiteContractListNotifier, SitePaginationState<SiteContractItemModel>>((ref) {
+  ref.watch(authSessionVersionProvider);
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   final searchQuery = ref.watch(siteSearchQueryProvider);
   final ownSort = ref.watch(siteOwnSortFilterProvider);
