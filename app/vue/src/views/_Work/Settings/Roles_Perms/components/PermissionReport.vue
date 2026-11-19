@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { reactive } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
-import type { Role, GroupedPermissions } from '@/store/types/work_project'
+import type { Role, GroupedPermissions, Permission } from '@/store/types/work_project'
 
 const props = defineProps<{
   roleList: Role[]
   groupedPermissions: GroupedPermissions | null
   workManager: boolean
+  superAuth: boolean
 }>()
 
 const workStore = useWork()
+const pendingRoles = reactive<Record<number, boolean>>({})
 
 const categoryLabel = (cat: string) => {
   const labels: Record<string, string> = {
@@ -27,7 +30,7 @@ const getRolesByCategory = (category: string) => {
 
 const sortLabel = (sort: string) => {
   const labels: Record<string, string> = {
-    project: '프로젝트',
+    project: '워크스페이스',
     meeting: '회의',
     issue: '업무',
     news: '공지',
@@ -40,6 +43,7 @@ const sortLabel = (sort: string) => {
     payment: '수납 관리',
     notice: '고지 관리',
     site: '사업 부지 관리',
+    sales: '분양 관리',
   }
   return labels[sort] || sort
 }
@@ -48,15 +52,35 @@ const hasPermission = (role: Role, permissionPk: number) => {
   return role.permissions.includes(permissionPk)
 }
 
-const togglePermission = async (role: Role, permissionPk: number) => {
-  const newPermissions = [...role.permissions]
-  const index = newPermissions.indexOf(permissionPk)
-  if (index === -1) {
-    newPermissions.push(permissionPk)
-  } else {
-    newPermissions.splice(index, 1)
+const isToggleDisabled = (role: Role, perm: Permission) => {
+  if (!props.workManager || pendingRoles[role.pk]) return true
+  if (
+    !props.superAuth &&
+    (role.is_confidential || role.category === 'ibs_hq_manage' || perm.is_confidential)
+  ) {
+    return true
   }
-  await workStore.patchRole({ pk: role.pk, permissions: newPermissions })
+  return false
+}
+
+const togglePermission = async (role: Role, permissionPk: number) => {
+  if (pendingRoles[role.pk]) return
+  pendingRoles[role.pk] = true
+  try {
+    const newPermissions = [...role.permissions]
+    const index = newPermissions.indexOf(permissionPk)
+    if (index === -1) {
+      newPermissions.push(permissionPk)
+    } else {
+      newPermissions.splice(index, 1)
+    }
+    const res = await workStore.patchRole({ pk: role.pk, permissions: newPermissions })
+    if (!res) {
+      await workStore.fetchRoleList()
+    }
+  } finally {
+    delete pendingRoles[role.pk]
+  }
 }
 </script>
 
@@ -67,7 +91,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
       <CAccordionItem :item-key="1">
         <CAccordionHeader>
           <span class="fw-bold text-info">
-            <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
+            <v-icon icon="mdi-account-group-outline" size="small" class="me-2" />
             {{ categoryLabel('work_space') }}
           </span>
         </CAccordionHeader>
@@ -103,7 +127,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
+                      <span class="fw-semibold me-3">{{ perm.name }}</span>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
@@ -114,7 +138,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                       <CFormCheck
                         :id="`perm-${role.pk}-${perm.pk}`"
                         :checked="hasPermission(role, perm.pk)"
-                        :disabled="!workManager"
+                        :disabled="isToggleDisabled(role, perm)"
                         @change="togglePermission(role, perm.pk)"
                       />
                     </td>
@@ -130,7 +154,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
       <CAccordionItem v-if="getRolesByCategory('ibs_hq_manage').length > 0" :item-key="2">
         <CAccordionHeader>
           <span class="fw-bold text-primary">
-            <v-icon icon="mdi-domain" size="small" class="mr-2" />
+            <v-icon icon="mdi-domain" size="small" class="me-2" />
             {{ categoryLabel('ibs_hq_manage') }}
           </span>
         </CAccordionHeader>
@@ -172,7 +196,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <span class="fw-semibold mr-2">{{ perm.name }}</span>
+                      <span class="fw-semibold me-2">{{ perm.name }}</span>
                       <v-chip
                         v-if="perm.is_confidential"
                         color="error"
@@ -191,7 +215,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                       <CFormCheck
                         :id="`perm-${role.pk}-${perm.pk}`"
                         :checked="hasPermission(role, perm.pk)"
-                        :disabled="!workManager"
+                        :disabled="isToggleDisabled(role, perm)"
                         @change="togglePermission(role, perm.pk)"
                       />
                     </td>
@@ -207,7 +231,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
       <CAccordionItem :item-key="3">
         <CAccordionHeader>
           <span class="fw-bold text-success">
-            <v-icon icon="mdi-database-outline" size="small" class="mr-2" />
+            <v-icon icon="mdi-database-outline" size="small" class="me-2" />
             {{ categoryLabel('ibs_pr_manage') }}
           </span>
         </CAccordionHeader>
@@ -246,7 +270,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
+                      <span class="fw-semibold me-3">{{ perm.name }}</span>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
@@ -257,7 +281,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                       <CFormCheck
                         :id="`perm-${role.pk}-${perm.pk}`"
                         :checked="hasPermission(role, perm.pk)"
-                        :disabled="!workManager"
+                        :disabled="isToggleDisabled(role, perm)"
                         @change="togglePermission(role, perm.pk)"
                       />
                     </td>

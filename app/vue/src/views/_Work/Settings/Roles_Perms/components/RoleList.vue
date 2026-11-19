@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import type { Role } from '@/store/types/work_project'
 
-defineProps<{ roleList: Role[]; workManager: boolean }>()
+const props = defineProps<{ roleList: Role[]; workManager: boolean; superAuth: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
+
+const canModifyRole = (role: Role) => {
+  if (!props.workManager) return false
+  if ((role.is_confidential || role.category === 'ibs_hq_manage') && !props.superAuth) return false
+  return true
+}
 
 const copyRole = (role: Role) => {
   const copied: Role = { ...role, pk: 0, name: '' }
@@ -43,7 +49,7 @@ const copyRole = (role: Role) => {
                     : 'mdi-account-group-outline'
               "
               size="small"
-              class="mr-1"
+              class="me-1"
             />
             {{
               role.category === 'ibs_hq_manage'
@@ -86,7 +92,7 @@ const copyRole = (role: Role) => {
             color="light"
             size="x-small"
             class="me-1"
-            :disabled="!workManager"
+            :disabled="!canModifyRole(role)"
             @click="copyRole(role)"
             flat
           >
@@ -96,15 +102,16 @@ const copyRole = (role: Role) => {
             color="success"
             size="x-small"
             class="me-1"
-            :disabled="!workManager"
+            :disabled="!canModifyRole(role)"
             @click="emit('show-modal', role)"
           >
             수정
           </v-btn>
           <v-btn
+            v-if="role.pk > 2"
             color="warning"
             size="x-small"
-            :disabled="!workManager"
+            :disabled="!canModifyRole(role)"
             @click="emit('delete-role', role.pk)"
           >
             삭제

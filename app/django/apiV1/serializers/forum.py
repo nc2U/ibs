@@ -31,6 +31,23 @@ class ForumSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'name', 'description', 'parent',
                   'search_able', 'manager_only', 'manager', 'post_count', 'all_post_count', 'last_post')
 
+    def validate(self, attrs):
+        parent = attrs.get('parent', self.instance.parent if self.instance else None)
+        project = attrs.get('project', self.instance.project if self.instance else None)
+        if parent:
+            if self.instance and parent.pk == self.instance.pk:
+                raise serializers.ValidationError({'parent': '자기 자신을 상위 게시판으로 지정할 수 없습니다.'})
+            if project and parent.project_id != project.pk:
+                raise serializers.ValidationError({'parent': '상위 게시판의 워크스페이스가 현재 게시판과 일치하지 않습니다.'})
+            visited = {self.instance.pk} if self.instance else set()
+            curr = parent
+            while curr is not None:
+                if curr.pk in visited:
+                    raise serializers.ValidationError({'parent': '상위 게시판 지정에 순환 참조가 발생합니다.'})
+                visited.add(curr.pk)
+                curr = curr.parent
+        return attrs
+
     @staticmethod
     def get_post_count(obj):
         if hasattr(obj, 'annotated_post_count'):
@@ -283,9 +300,11 @@ class PostSerializer(serializers.ModelSerializer):
                 'category': '선택한 카테고리가 해당 게시판에 속하지 않습니다.'
             })
 
+        is_work_admin = bool(user and (user.is_superuser or getattr(user, 'work_manager', False)))
+
         # 1. 포럼 단위 관리자 전용 검사
         if forum and getattr(forum, 'manager_only', False):
-            if user and not user.is_superuser:
+            if user and not is_work_admin:
                 is_manager = forum.manager.filter(pk=user.pk).exists()
                 if not is_manager:
                     raise serializers.ValidationError({
@@ -294,8 +313,8 @@ class PostSerializer(serializers.ModelSerializer):
 
         # 2. 카테고리 단위 관리자 전용 검사
         if category and getattr(category, 'is_manager_only', False):
-            # superuser는 manager 체크 통과
-            if user and not user.is_superuser:
+            # superuser/work_manager는 manager 체크 통과
+            if user and not is_work_admin:
                 is_manager = forum and forum.manager.filter(pk=user.pk).exists()
                 if not is_manager:
                     raise serializers.ValidationError({
@@ -304,7 +323,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         # 3. FAQ 지정 권한 검사
         is_faq = attrs.get('is_faq')
-        if is_faq and user and not user.is_superuser:
+        if is_faq and user and not is_work_admin:
             is_manager = forum and forum.manager.filter(pk=user.pk).exists()
             if not is_manager:
                 raise serializers.ValidationError({

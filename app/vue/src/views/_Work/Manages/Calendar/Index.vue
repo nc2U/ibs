@@ -71,6 +71,7 @@ const onResetQuery = () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
+  workStore.removeIssueProject()
   try {
     await workStore.fetchMemberList()
     await meetingStore.fetchCategoryList()
@@ -101,7 +102,7 @@ const summary = computed(() => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-calendar-clock" color="primary" size="small" class="mr-2" />
+            <v-icon icon="mdi-calendar-clock" color="primary" size="small" class="me-2" />
             캘린더
           </h5>
         </CCol>

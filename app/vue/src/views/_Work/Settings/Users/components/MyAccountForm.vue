@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRouter } from 'vue-router'
+import { isValidate } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -38,6 +39,7 @@ const form = reactive({
 })
 
 const validated = ref(false)
+const isSaving = ref(false)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -80,15 +82,12 @@ const formDataSetup = async () => {
       form.meeting_confirmed_notification = true
     }
 
-    await workStore.fetchSubscribedProjects(profile.value?.user as number)
-    form.subscribed_projects = subscribedProjects.value.map((item: any) => item.project) || []
-
-    // try {
-    //   const res = await api.get(`/project-subscription/?user=${userInfo.value.pk}`)
-    //   form.subscribed_projects = res.data.map((item: any) => item.project)
-    // } catch (err) {
-    //   form.subscribed_projects = []
-    // }
+    if (userInfo.value.pk) {
+      await workStore.fetchSubscribedProjects(userInfo.value.pk)
+      form.subscribed_projects = (subscribedProjects.value ?? []).map((item: any) => item.project)
+    } else {
+      form.subscribed_projects = []
+    }
   } else {
     form.pk = null
     form.user = null
@@ -106,14 +105,13 @@ const formDataSetup = async () => {
   }
 }
 
-watch([userInfo, profile], () => formDataSetup())
+watch([userInfo, profile], () => {
+  if (!isSaving.value) formDataSetup()
+})
 
 const onSubmit = async (event: Event) => {
   if (userInfo.value) {
-    const el = event.currentTarget as HTMLFormElement
-    if (!el.checkValidity()) {
-      event.preventDefault()
-      event.stopPropagation()
+    if (isValidate(event)) {
       validated.value = true
       return
     } else refConfirmModal.value?.callModal()
@@ -121,8 +119,10 @@ const onSubmit = async (event: Event) => {
 }
 
 const onSubmitConfirm = async () => {
+  isSaving.value = true
   try {
     const { pk, image, sign_image, subscribed_projects, ...profileFields } = form
+    const targetSubscribed = [...subscribed_projects]
     if (!profileFields.birth_date) profileFields.birth_date = ''
 
     const submitData = new FormData()
@@ -137,15 +137,20 @@ const onSubmitConfirm = async () => {
     if (sign_image instanceof File) submitData.append('sign_image', sign_image)
 
     // 1. 프로필 업데이트 (이미지 포함)
-    if (pk) await patchProfile({ pk, form: submitData })
-    else await createProfile(submitData)
+    const profileSaved = pk
+      ? await patchProfile({ pk, form: submitData })
+      : await createProfile(submitData)
 
-    // 2. 프로젝트 구독 업데이트 (await 추가 및 프로필 업데이트 성공 후 실행 보장)
+    if (!profileSaved) return
+
+    // 2. 워크스페이스 구독 업데이트 (프로필 저장 성공 후 캡처한 스냅샷으로 저장)
     if (userInfo.value?.pk) {
-      await workStore.createSubscribedProjects({
+      const subSaved = await workStore.createSubscribedProjects({
         user: userInfo.value.pk,
-        project_ids: form.subscribed_projects,
+        project_ids: targetSubscribed,
       })
+      if (!subSaved) return
+      form.subscribed_projects = [...targetSubscribed]
     }
 
     validated.value = false
@@ -153,6 +158,8 @@ const onSubmitConfirm = async () => {
   } catch (err: any) {
     console.error('Error during onSubmitConfirm:', err)
     refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -162,11 +169,10 @@ const setMyAccount = async () => {
 }
 
 onBeforeMount(async () => {
-  await workStore.fetchIssueProjectList({})
   await formDataSetup()
 })
 
-onBeforeRouteUpdate(async to => {
+onBeforeRouteUpdate(async () => {
   await formDataSetup()
 })
 </script>
@@ -181,7 +187,7 @@ onBeforeRouteUpdate(async to => {
       <CCol class="text-end form-text">
         <span class="me-2">
           <TextButton
-            name="내 프로젝트 목록"
+            name="내 워크스페이스 목록"
             @click="setMyAccount"
             icon="mdi-chart-box-multiple-outline"
             icon-color="info"
@@ -319,7 +325,7 @@ onBeforeRouteUpdate(async to => {
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="birth_date" class="col-sm-3 col-form-label required">
+                <CFormLabel for="birth_date" class="col-sm-3 col-form-label">
                   생년월일
                 </CFormLabel>
                 <CCol sm="9">
@@ -394,12 +400,12 @@ onBeforeRouteUpdate(async to => {
                         :items="allActiveProjects"
                         item-title="label"
                         item-value="value"
-                        label="알림 구독 프로젝트"
+                        label="알림 구독 워크스페이스"
                         multiple
                         chips
                         closable-chips
                         density="compact"
-                        hint="선택한 프로젝트의 모든 업무 생성 및 변경 알림 메일을 수신합니다."
+                        hint="선택한 워크스페이스의 모든 업무 생성 및 변경 알림 메일을 수신합니다."
                         persistent-hint
                       />
                     </CCol>
@@ -426,7 +432,7 @@ onBeforeRouteUpdate(async to => {
           <!-- Submit & Cancel Footer -->
           <div class="text-end mb-4">
             <v-btn type="submit" color="primary"> 저장</v-btn>
-            <v-btn color="light" class="me-2" @click="router.push({ name: '사용자' })" flat>
+            <v-btn color="light" class="ms-2" @click="router.push({ name: '사용자' })" flat>
               취소
             </v-btn>
           </div>

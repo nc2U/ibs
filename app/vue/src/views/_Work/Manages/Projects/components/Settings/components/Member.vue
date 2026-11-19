@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
+import { isValidate, message } from '@/utils/helper'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -12,7 +13,7 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 const memberConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const memberFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 const canManageMembers = computed(() => can(PERM.PROJECT_MEMBER))
 
 const workStore = useWork()
@@ -47,11 +48,11 @@ const userList = computed(() => {
 
 const memberRole = ref<number[]>([]) // 업데이트할 멤버의 권한
 
-const noInheritMem = (mem: number) => {
-  const member = memberList.value.filter(m => m.pk === mem)[0]
-  const duplicate = allMembers.value.filter(m => m.pk === mem)[0]
-  return !!member && member.roles.length === duplicate.roles.length
-}
+const getLocalMemberPk = (userPk: number) =>
+  memberList.value.find(m => m.user.pk === userPk)?.pk ?? null
+
+const canDeleteMem = (mem: SimpleMember) =>
+  getLocalMemberPk(mem.user.pk) !== null && !mem.roles.some(r => r.inherited)
 
 const toEdit = (member: SimpleMember) => {
   editMode.value = member.pk
@@ -69,22 +70,40 @@ const editSubmit = async (mem: SimpleMember, roles: number[]) => {
   const slug = currentProject?.value.slug as string
   const parent_roles = mem.roles.filter(r => r.inherited).map(r => r.pk)
   const calc_roles = roles.filter(r => !parent_roles.includes(r))
-  const me = memberList.value.filter(m => m.user.pk === mem.user.pk).map(m => m.pk)[0]
+  const me = getLocalMemberPk(mem.user.pk)
 
-  if (!!me) await patchMember({ pk: me, roles: calc_roles })
-  else await createMember({ user: mem.user.pk, roles: calc_roles, slug })
+  if (me !== null) {
+    if (calc_roles.length === 0) {
+      if (parent_roles.length > 0) {
+        await updateMembers({ slug, users: [], roles: [], del_mem: me })
+      } else {
+        message('warning', '입력 확인', '최소 1개 이상의 역할을 선택해야 합니다.')
+        return
+      }
+    } else {
+      await patchMember({ pk: me, roles: calc_roles })
+    }
+  } else {
+    if (calc_roles.length === 0) {
+      cancelEdit()
+      return
+    }
+    await createMember({ user: mem.user.pk, roles: calc_roles, slug })
+  }
 
   cancelEdit()
 }
 
-const toDelete = (memPk: number) => {
+const toDelete = (mem: SimpleMember) => {
+  const localPk = getLocalMemberPk(mem.user.pk)
+  if (localPk === null) return
   memberConfirmModal.value?.callModal(
     '',
-    '이 구성원을 프로젝트에서 삭제하시겠습니까?',
+    '이 구성원을 워크스페이스에서 삭제하시겠습니까?',
     '',
     'warning',
   )
-  deleteMember.value = memPk
+  deleteMember.value = localPk
 }
 
 const deleteMember = ref<number | null>(null)
@@ -123,25 +142,32 @@ const editMode = ref<number | null>(null)
 
 const callModal = () => memberFormModal.value?.callModal()
 
-const onSubmit = (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
+const onSubmit = async (event: Event) => {
+  if (isValidate(event)) {
     validated.value = true
   } else {
-    modalAction()
-    validated.value = false
-    memberFormModal.value?.close()
+    const ok = await modalAction()
+    if (ok) {
+      validated.value = false
+      memberFormModal.value?.close()
+    }
   }
 }
 
 const modalAction = async () => {
   const _memList = [...users.value.sort((a, b) => a - b)]
   const _roles = [...roles.value.sort((a, b) => a - b)]
-  await updateMembers({ slug: currentProject?.value.slug as string, users: _memList, roles: _roles })
-  users.value = []
-  roles.value = []
+  const res = await updateMembers({
+    slug: currentProject?.value.slug as string,
+    users: _memList,
+    roles: _roles,
+  })
+  if (res) {
+    users.value = []
+    roles.value = []
+    return true
+  }
+  return false
 }
 // FormModal End ------------------
 
@@ -151,12 +177,12 @@ onBeforeMount(() => accStore.fetchUsersList())
 <template>
   <CRow class="py-2">
     <CCol>
-      <span v-if="canManageMembers" class="mr-2 form-text">
+      <span v-if="canManageMembers" class="me-2 form-text">
         <TextButton name="새 구성원" @click="callModal" />
       </span>
     </CCol>
 
-    <CCol class="text-end">
+    <CCol v-if="accStore.workManager" class="text-end">
       <span class="form-text">
         <TextButton name="관리" :to="{ name: '사용자' }" icon="mdi-cog" icon-color="grey" />
       </span>
@@ -185,9 +211,13 @@ onBeforeMount(() => accStore.fetchUsersList())
         <CTableBody>
           <CTableRow v-for="mem in allMembers" :key="mem.pk" align="middle">
             <CTableDataCell class="ps-5">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: mem.user.pk } }">
+              <router-link
+                v-if="canViewUser(mem.user.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: mem.user.pk } }"
+              >
                 {{ mem.user.username }}
               </router-link>
+              <span v-else>{{ mem.user.username }}</span>
             </CTableDataCell>
 
             <CTableDataCell class="ps-3">
@@ -197,12 +227,12 @@ onBeforeMount(() => accStore.fetchUsersList())
                     v-model="memberRole"
                     :label="role.name"
                     :value="role.pk"
-                    :id="'role-' + role.pk"
+                    :id="'role-' + mem.pk + '-' + role.pk"
                     :disabled="isInherit(mem.roles, role.pk)"
                     class="text-start"
                   />
                   <span v-if="isInherit(mem.roles, role.pk)" class="form-text">
-                    상위 프로젝트로부터 상속
+                    상위 워크스페이스로부터 상속
                   </span>
                 </div>
 
@@ -244,17 +274,17 @@ onBeforeMount(() => accStore.fetchUsersList())
                 v-if="canManageMembers && (editMode === null || editMode !== mem.pk)"
                 class="me-2"
               >
-                <v-icon icon="mdi-pencil" color="amber" size="sm" />
+                <v-icon icon="mdi-pencil" color="amber" size="small" />
                 <a href="#" @click.prevent="toEdit(mem)">편집</a>
               </span>
               <span v-else-if="editMode === mem.pk" class="me-2">
-                <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="me-1" />
+                <v-icon icon="mdi-close-octagon-outline" color="grey" size="small" class="me-1" />
                 <a href="#" @click.prevent="cancelEdit">취소</a>
               </span>
 
-              <span v-if="canManageMembers && noInheritMem(mem.pk)">
-                <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
-                <a href="#" @click.prevent="toDelete(mem.pk)">삭제</a>
+              <span v-if="canManageMembers && canDeleteMem(mem)">
+                <v-icon icon="mdi-trash-can-outline" color="grey" size="small" class="me-1" />
+                <a href="#" @click.prevent="toDelete(mem)">삭제</a>
               </span>
             </CTableDataCell>
           </CTableRow>
@@ -271,7 +301,7 @@ onBeforeMount(() => accStore.fetchUsersList())
         <CModalBody class="text-body">
           <CCard class="mb-3">
             <CCardHeader>
-              <v-icon icon="mdi-check" color="success" size="sm" />
+              <v-icon icon="mdi-check" color="success" size="small" />
               추가할 사용자 선택
             </CCardHeader>
             <CCardBody class="pb-5">
@@ -290,7 +320,7 @@ onBeforeMount(() => accStore.fetchUsersList())
 
           <CCard>
             <CCardHeader>
-              <v-icon icon="mdi-check" color="success" size="sm" />
+              <v-icon icon="mdi-check" color="success" size="small" />
               역할
             </CCardHeader>
             <CCardBody>

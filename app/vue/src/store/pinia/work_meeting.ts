@@ -13,41 +13,54 @@ export const useMeeting = defineStore('meeting', () => {
 
   // actions
   const fetchMeetingList = async (payload: MeetingFilter) => {
-    let url = `/meeting/?page=${payload.page ?? 1}`
-    if (payload.project) url += `&project__slug=${payload.project}`
-    if (payload.project__exclude) url += `&project__exclude=${payload.project__exclude}`
-    if (payload.project__my_project !== undefined)
-      url += `&project__my_project=${payload.project__my_project}`
-    if (payload.project__bookmark !== undefined)
-      url += `&project__bookmark=${payload.project__bookmark}`
-    if (payload.project_status) url += `&project_status=${payload.project_status}`
-    if (payload.project_status__exclude)
-      url += `&project_status__exclude=${payload.project_status__exclude}`
-    if (payload.status) url += `&status=${payload.status}`
-    if (payload.status__exclude) url += `&status__exclude=${payload.status__exclude}`
-    if (payload.is_confirmed !== undefined && payload.is_confirmed !== '')
-      url += `&is_confirmed=${payload.is_confirmed}`
-    if (payload.category) url += `&category=${payload.category}`
-    if (payload.category__exclude) url += `&category__exclude=${payload.category__exclude}`
-    if (payload.creator) url += `&creator=${payload.creator}`
-    if (payload.creator__exclude) url += `&creator__exclude=${payload.creator__exclude}`
-    if (payload.attendees) url += `&attendees=${payload.attendees}`
-    if (payload.attendees__exclude) url += `&attendees__exclude=${payload.attendees__exclude}`
-    if (payload.meeting_date) url += `&meeting_date=${payload.meeting_date}`
-    if (payload.meeting_date__range) url += `&meeting_date__range=${payload.meeting_date__range}`
-    if (payload.meeting_date_after) url += `&meeting_date_after=${payload.meeting_date_after}`
-    if (payload.meeting_date_before) url += `&meeting_date_before=${payload.meeting_date_before}`
-    if (payload.created_after) url += `&created_after=${payload.created_after}`
-    if (payload.created_before) url += `&created_before=${payload.created_before}`
-    if (payload.search) url += `&search=${payload.search}`
+    const params = new URLSearchParams()
+    params.append('page', String(payload.page ?? 1))
+    const paramMap: Record<string, string> = {
+      project: 'project__slug',
+      project__exclude: 'project__exclude',
+      project__my_project: 'project__my_project',
+      project__bookmark: 'project__bookmark',
+      project_status: 'project_status',
+      project_status__exclude: 'project_status__exclude',
+      status: 'status',
+      status__exclude: 'status__exclude',
+      is_confirmed: 'is_confirmed',
+      category: 'category',
+      category__exclude: 'category__exclude',
+      creator: 'creator',
+      creator__exclude: 'creator__exclude',
+      attendees: 'attendees',
+      attendees__exclude: 'attendees__exclude',
+      meeting_date: 'meeting_date',
+      meeting_date__range: 'meeting_date__range',
+      meeting_date_after: 'meeting_date_after',
+      meeting_date_before: 'meeting_date_before',
+      created_after: 'created_after',
+      created_before: 'created_before',
+      search: 'search',
+      title: 'title',
+      title__exclude: 'title__exclude',
+      agenda: 'agenda',
+      agenda__exclude: 'agenda__exclude',
+      content: 'content',
+      content__exclude: 'content__exclude',
+      decisions: 'decisions',
+      decisions__exclude: 'decisions__exclude',
+    }
+    for (const [key, apiParam] of Object.entries(paramMap)) {
+      const val = payload[key as keyof MeetingFilter]
+      if (val !== undefined && val !== null && val !== '') {
+        params.append(apiParam, String(val))
+      }
+    }
 
     return await api
-      .get(url)
+      .get(`/meeting/?${params.toString()}`)
       .then(res => {
         meetingList.value = res.data.results
         meetingCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   const meetingPages = (limit: number) => Math.ceil(meetingCount.value / limit)
@@ -55,8 +68,18 @@ export const useMeeting = defineStore('meeting', () => {
   const fetchMeeting = async (pk: number) =>
     await api
       .get(`/meeting/${pk}/`)
-      .then(res => (meeting.value = res.data))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .then(res => {
+        meeting.value = res.data
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
+
+  const removeMeeting = () => {
+    meeting.value = null
+  }
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
@@ -68,7 +91,10 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateMeeting = async (pk: number, payload: FormData) =>
     await api
@@ -78,7 +104,10 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchMeeting = async (pk: number, payload: FormData) =>
     await api
@@ -88,24 +117,33 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const deleteMeeting = async (pk: number, project?: string) =>
+  const deleteMeeting = async (pk: number, project?: string): Promise<boolean> =>
     await api
       .delete(`/meeting/${pk}/`)
       .then(async () => {
+        meeting.value = null
         await fetchMeetingList({ page: 1, project })
         message('warning', '알림!', '해당 회의록이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const fetchCategoryList = async (project?: string) => {
-    let url = `/meeting-category/`
-    if (project) url += `?project__slug=${project}`
+    const params = new URLSearchParams()
+    params.append('limit', '500')
+    if (project) params.append('project__slug', project)
     return await api
-      .get(url)
-      .then(res => (categoryList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .get(`/meeting-category/?${params.toString()}`)
+      .then(res => (categoryList.value = res.data.results ?? []))
+      .catch(err => errorHandle(err))
   }
 
   const createCategory = async (payload: Partial<MeetingCategory> | Record<string, unknown>) =>
@@ -116,7 +154,10 @@ export const useMeeting = defineStore('meeting', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const generatePdf = (pk: number) => {
     const url = `/pdf/work/meeting/${pk}/`
@@ -133,8 +174,12 @@ export const useMeeting = defineStore('meeting', () => {
           '알림!',
           `회의가 ${res.data.is_confirmed ? '확정' : '확정 취소'}되었습니다.`,
         )
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const aiSummarizeMeeting = async (audioBlob: Blob, filename = 'recording.webm') => {
     const formData = new FormData()
@@ -143,7 +188,7 @@ export const useMeeting = defineStore('meeting', () => {
       .post('/meeting/ai-summarize/', formData, config_headers)
       .then(res => res.data)
       .catch(err => {
-        errorHandle(err.response?.data || err.message)
+        errorHandle(err)
         throw err
       })
   }
@@ -156,6 +201,7 @@ export const useMeeting = defineStore('meeting', () => {
     fetchMeetingList,
     meetingPages,
     fetchMeeting,
+    removeMeeting,
     createMeeting,
     updateMeeting,
     patchMeeting,

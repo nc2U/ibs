@@ -78,15 +78,18 @@ const loadRoadmapData = async () => {
 }
 
 const onApplyFilter = async (filter: { completed: boolean; trackerIds: number[] }) => {
+  const completedChanged = showCompleted.value !== filter.completed
   showCompleted.value = filter.completed
   selectedTrackers.value = filter.trackerIds
 
-  router.replace({
+  await router.replace({
     query: {
       ...route.query,
       completed: filter.completed ? '1' : undefined,
     },
   })
+
+  if (!completedChanged) return
 
   loading.value = true
   try {
@@ -100,13 +103,47 @@ const onSubmit = async (payload: any, back = false) => {
   const projId = route.params.projId as string
   if (!payload.pk) {
     payload.project = projId
-    await workStore.createVersion(payload)
-    if (!back) router.replace({ name: '(로드맵)', params: { projId } })
+    const createdPk = await workStore.createVersion(payload)
+    if (!createdPk) return
+    if (back) {
+      await router.replace({ name: '(설정)', params: { projId }, query: { menu: '단계' } })
+    } else {
+      await router.replace({ name: '(로드맵)', params: { projId } })
+    }
   } else {
-    await workStore.updateVersion(payload)
+    const updated = await workStore.updateVersion(payload)
+    if (!updated) return
+    if (back) {
+      await router.replace({ name: '(설정)', params: { projId }, query: { menu: '단계' } })
+    } else {
+      await router.replace({
+        name: '(로드맵) - 보기',
+        params: { projId, verId: updated.pk ?? payload.pk },
+      })
+    }
   }
-  if (back) router.replace({ name: '(설정)', params: { projId }, query: { menu: '단계' } })
 }
+
+watch(
+  () => route.query.completed,
+  val => {
+    const next = val === '1'
+    if (showCompleted.value !== next) {
+      showCompleted.value = next
+      loadRoadmapData()
+    }
+  },
+)
+
+watch(
+  [() => route.name, () => route.params.verId],
+  async ([name, verId]) => {
+    if (name === '(로드맵) - 보기' && verId) {
+      await workStore.fetchVersion(Number(verId))
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.params?.projId,
@@ -143,7 +180,10 @@ onBeforeMount(async () => {
         :selected-version-id="selectedVersionId"
       />
 
-      <VersionDetail v-if="route.name === '(로드맵) - 보기'" :version="version as Version" />
+      <VersionDetail
+        v-if="route.name === '(로드맵) - 보기' && version"
+        :version="version as Version"
+      />
 
       <VersionForm
         v-if="route.name === '(로드맵) - 추가' || route.name === '(로드맵) - 수정'"

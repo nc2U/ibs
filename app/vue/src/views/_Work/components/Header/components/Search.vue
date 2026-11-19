@@ -1,19 +1,43 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
-defineProps({ allActiveProjects: { type: Array, default: () => [] } })
+defineProps({
+  allActiveProjects: {
+    type: Array as PropType<{ value: string; label: string }[]>,
+    default: () => [],
+  },
+})
 const emit = defineEmits(['change-project'])
 
 const [route, router] = [useRoute(), useRouter()]
 
 // 검색 관련 기능 시작
 const search = ref('')
-const goSearch = () => router.push({ name: '전체검색', query: { scope: '', q: search.value } })
+const selectedProject = ref<string | null>(null)
 
-onBeforeMount(async () => {
-  if (route?.query.q) search.value = route.query.q as string
+const goSearch = () => {
+  const q = search.value.trim()
+  if (!q) return
+  router.push({ name: '전체검색', query: { scope: '', q } })
+}
+
+const onProjectSelect = (slug: string | null) => {
+  if (!slug) return
+  emit('change-project', slug)
+  selectedProject.value = null
+}
+
+watch(
+  () => route.query.q,
+  q => {
+    if (typeof q === 'string') search.value = q
+  },
+)
+
+onBeforeMount(() => {
+  if (typeof route?.query.q === 'string') search.value = route.query.q
 })
 </script>
 
@@ -31,15 +55,15 @@ onBeforeMount(async () => {
         class="search-input"
         @click:prepend-inner="goSearch"
         @keydown.enter="goSearch"
-        @focus="search = ''"
       />
     </v-col>
     <v-col cols="6" class="pa-1 text-body">
       <MultiSelect
+        v-model="selectedProject"
         mode="single"
         :options="allActiveProjects"
         placeholder="워크스페이스 바로가기"
-        @change="emit('change-project', $event)"
+        @change="onProjectSelect"
       />
     </v-col>
   </v-row>

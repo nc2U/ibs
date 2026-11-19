@@ -59,7 +59,7 @@ const confirmAlertColor = computed(() => {
 
   const diff = diffDate(meetingDate)
 
-  return diff > 10 ? 'danger' : 'warning'
+  return diff > 10 ? 'error' : 'warning'
 })
 
 const downloadPdf = (event: Event) => {
@@ -131,7 +131,7 @@ const downloadPdf = (event: Event) => {
 
     <!-- 회의 일시 -->
     <CTableDataCell v-else-if="colKey === 'meeting_date'">
-      {{ timeFormat(meeting.meeting_date as string, 'min') }}
+      {{ meeting.meeting_date ? timeFormat(meeting.meeting_date, 'min') : '-' }}
     </CTableDataCell>
 
     <!-- 회의 장소-->

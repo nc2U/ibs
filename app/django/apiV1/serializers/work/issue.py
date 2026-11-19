@@ -1,7 +1,10 @@
 import logging
+from urllib.parse import urlparse
+
 from django.db import transaction, IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from _utils.file_service import FileService
 from accounts.models import User
@@ -14,6 +17,21 @@ from work.models.project import IssueProject, Member, Version, ProjectSubscripti
 
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_safe_http_url(raw_url: str) -> str:
+    url = str(raw_url).strip()
+    if not url:
+        return ''
+    parsed = urlparse(url)
+    if not parsed.scheme:
+        if ':' in url.split('/')[0]:
+            raise serializers.ValidationError({'links': '허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.'})
+        url = f'https://{url}'
+        parsed = urlparse(url)
+    if parsed.scheme.lower() not in ('http', 'https'):
+        raise serializers.ValidationError({'links': '허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.'})
+    return url
 
 
 class MeetingInIssueSerializer(serializers.ModelSerializer):
@@ -69,11 +87,13 @@ class IssueInIssueSerializer(serializers.ModelSerializer):
     tracker = TrackerInIssueProjectSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    status_pk = serializers.IntegerField(source='status_id', read_only=True)
     assigned_to = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Issue
-        fields = ('pk', 'project', 'subject', 'tracker', 'status', 'assigned_to',
+        fields = ('pk', 'project', 'subject', 'tracker', 'status', 'status_pk', 'assigned_to', 'creator',
                   'priority', 'watchers', 'start_date', 'due_date', 'done_ratio', 'closed')
 
 
@@ -104,6 +124,7 @@ class IssueListSerializer(serializers.ModelSerializer):
     watchers = SimpleUserSerializer(many=True, read_only=True)
     meeting_desc = MeetingInIssueSerializer(source='meeting', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
+    updater = SimpleUserSerializer(read_only=True)
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
@@ -131,6 +152,7 @@ class IssueSerializer(serializers.ModelSerializer):
     outgoing_relations = serializers.SerializerMethodField()
     incoming_relation = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
+    updater = SimpleUserSerializer(read_only=True)
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
@@ -486,8 +508,9 @@ class IssueSerializer(serializers.ModelSerializer):
             new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
         for i, link in enumerate(new_links):
             if link and str(link).strip():
+                safe_link = _validate_safe_http_url(str(link))
                 name_val = new_link_names[i] if i < len(new_link_names) else ''
-                IssueLink.objects.create(issue=issue, link=str(link).strip(), name=name_val, creator=creator)
+                IssueLink.objects.create(issue=issue, link=safe_link, name=name_val, creator=creator)
 
         return issue
 
@@ -540,6 +563,11 @@ class IssueSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'parent': '자기 자신을 상위 업무로 지정할 수 없습니다.'})
             instance.parent = Issue.objects.filter(pk=parent_id).first() if parent_id else None
 
+        # 하위 업무 연결 해제(del_child) 처리
+        del_child = self.initial_data.get('del_child', None)
+        if del_child and str(del_child).isdigit():
+            Issue.objects.filter(pk=int(del_child), parent=instance).update(parent=None)
+
         if 'assigned_to' in self.initial_data:
             assigned_to_id = self.initial_data.get('assigned_to', None)
             try:
@@ -556,6 +584,27 @@ class IssueSerializer(serializers.ModelSerializer):
 
         creator = self.context['request'].user if 'request' in self.context else None
 
+        # 지켜보는 사람(watchers / add_watchers / del_watcher) 처리
+        del_watcher = self.initial_data.get('del_watcher', None)
+        if del_watcher and str(del_watcher).isdigit():
+            instance.watchers.remove(int(del_watcher))
+
+        has_add_watchers = 'add_watchers' in self.initial_data or 'add_watchers[]' in self.initial_data
+        has_watchers = 'watchers' in self.initial_data or 'watchers[]' in self.initial_data
+        if has_add_watchers or has_watchers:
+            raw_watchers = (
+                self._extract_initial_list(self.initial_data, 'add_watchers')
+                or self._extract_initial_list(self.initial_data, 'add_watchers[]')
+                or self._extract_initial_list(self.initial_data, 'watchers')
+                or self._extract_initial_list(self.initial_data, 'watchers[]')
+            )
+            watcher_ids = [int(w) for w in raw_watchers if str(w).isdigit()]
+            if has_add_watchers or self.partial:
+                if watcher_ids:
+                    instance.watchers.add(*watcher_ids)
+            else:
+                instance.watchers.set(watcher_ids)
+
         # File 처리
         FileService.manage_files(
             instance=instance,
@@ -568,23 +617,23 @@ class IssueSerializer(serializers.ModelSerializer):
         # Link 처리 (기존 수정/삭제 & 신규 추가)
         links_data = self._extract_initial_list(self.initial_data, 'links')
         for link_str in links_data:
-            try:
-                import json
-                link_data = json.loads(link_str) if isinstance(link_str, str) else link_str
-                link_pk = link_data.get('pk')
-                if link_data.get('del'):
-                    IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
-                else:
+            import json
+            link_data = json.loads(link_str) if isinstance(link_str, str) else link_str
+            link_pk = link_data.get('pk')
+            if link_data.get('del'):
+                IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
+            else:
+                try:
                     link_obj = IssueLink.objects.get(pk=link_pk, issue=instance)
-                    if 'link' in link_data:
-                        link_obj.link = link_data['link']
-                    if 'name' in link_data:
-                        link_obj.name = link_data['name']
-                    elif 'description' in link_data:
-                        link_obj.name = link_data['description']
-                    link_obj.save()
-            except Exception as e:
-                logger.error(f"IssueLink 처리 중 오류: {e}")
+                except IssueLink.DoesNotExist:
+                    continue
+                if 'link' in link_data:
+                    link_obj.link = _validate_safe_http_url(link_data['link'])
+                if 'name' in link_data:
+                    link_obj.name = link_data['name']
+                elif 'description' in link_data:
+                    link_obj.name = link_data['description']
+                link_obj.save()
 
         new_links = self._extract_initial_list(self.initial_data, 'newLinks')
         new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
@@ -592,13 +641,39 @@ class IssueSerializer(serializers.ModelSerializer):
             new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
         for i, link in enumerate(new_links):
             if link and str(link).strip():
+                safe_link = _validate_safe_http_url(str(link))
                 name_val = new_link_names[i] if i < len(new_link_names) else ''
-                IssueLink.objects.create(issue=instance, link=str(link).strip(), name=name_val, creator=creator)
+                IssueLink.objects.create(issue=instance, link=safe_link, name=name_val, creator=creator)
 
         try:
             instance.save()
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else e.messages)
+
+        # 수정 폼 동반 댓글(comment_content / comment_is_private) 생성 처리
+        raw_comment = self.initial_data.get('comment_content', '')
+        comment_content = str(raw_comment).strip() if raw_comment is not None else ''
+        if comment_content and creator and creator.is_authenticated:
+            is_admin = bool(creator.is_superuser or getattr(creator, 'work_manager', False))
+            user_perms = [] if is_admin else instance.project.get_user_permissions(creator)
+            if not is_admin and 'issue.comment_create' not in user_perms:
+                raise PermissionDenied('댓글을 등록할 권한이 없습니다.')
+
+            raw_priv = self.initial_data.get('comment_is_private', False)
+            if isinstance(raw_priv, str):
+                comment_is_private = raw_priv.lower() in ('true', '1')
+            else:
+                comment_is_private = bool(raw_priv)
+            if comment_is_private and not is_admin and 'issue.private_comment_set' not in user_perms:
+                raise PermissionDenied('비공개 댓글을 설정할 권한이 없습니다.')
+
+            IssueComment.objects.create(
+                issue=instance,
+                content=comment_content,
+                is_private=comment_is_private,
+                creator=creator,
+            )
+
         return instance
 
 
@@ -689,6 +764,24 @@ class IssueCommentSerializer(serializers.ModelSerializer):
         model = IssueComment
         fields = ('pk', 'issue', 'content', 'is_private', 'is_blocked', 'created', 'updated', 'creator')
 
+    @transaction.atomic
+    def create(self, validated_data):
+        issue_pk = self.initial_data.get('issue')
+        try:
+            issue = Issue.objects.select_related('project').get(pk=issue_pk)
+        except (Issue.DoesNotExist, ValueError, TypeError):
+            raise serializers.ValidationError({'issue': '존재하지 않는 업무입니다.'})
+
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        is_private = validated_data.get('is_private', False)
+        if is_private and user and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            user_perms = issue.project.get_user_permissions(user)
+            if 'issue.private_comment_set' not in user_perms:
+                raise PermissionDenied('비공개 댓글을 설정할 권한이 없습니다.')
+
+        return IssueComment.objects.create(issue=issue, **validated_data)
+
     def update(self, instance, validated_data):
         user = self.context['request'].user
         is_private_req = self.initial_data.get('is_private', None)
@@ -740,6 +833,8 @@ class IssueCategorySerializer(serializers.ModelSerializer):
                 project = self.instance.project
             else:
                 project_slug = self.initial_data.get('project')
+                if isinstance(project_slug, dict):
+                    project_slug = project_slug.get('pk') or project_slug.get('slug')
                 if project_slug:
                     try:
                         if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
@@ -783,6 +878,8 @@ class IssueCategorySerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         project_slug = self.initial_data.get('project')
+        if isinstance(project_slug, dict):
+            project_slug = project_slug.get('pk') or project_slug.get('slug')
         try:
             if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
                 project = IssueProject.objects.get(pk=int(project_slug))
@@ -798,6 +895,8 @@ class IssueCategorySerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance = super().update(instance, validated_data)
         project_slug = self.initial_data.get('project')
+        if isinstance(project_slug, dict):
+            project_slug = project_slug.get('pk') or project_slug.get('slug')
         if project_slug:
             try:
                 if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):

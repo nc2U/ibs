@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apiV1.pagination import PageNumberPaginationTwenty
+from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import permissions, IsWorkManagerReadOnly
 from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission, \
     IssueRelationPermission
@@ -537,10 +537,14 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
+        if self.action == 'partial_update':
+            req_keys = set(self.request.data.keys()) if hasattr(self.request, 'data') and hasattr(self.request.data, 'keys') else set()
+            if req_keys and req_keys <= {'watchers', 'add_watchers', 'del_watcher'}:
+                return ('issue.update', 'issue.own_update', 'issue.watcher_create', 'issue.watcher_delete', 'issue.read')
         mapping = {
             'list': 'issue.read',
             'retrieve': 'issue.read',
-            'create': 'issue.create',
+            'create': ('issue.create', 'issue.copy'),
             'update': 'issue.update',
             'partial_update': 'issue.update',
             'destroy': 'issue.delete',
@@ -571,7 +575,7 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         base_qs = Issue.objects.all().select_related(
-            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version', 'parent', 'meeting'
+            'project', 'status', 'creator', 'updater', 'assigned_to', 'tracker', 'fixed_version', 'parent', 'meeting'
         ).prefetch_related('watchers')
         if self.action != 'list':
             base_qs = base_qs.prefetch_related('files', 'links')
@@ -760,6 +764,7 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
     serializer_class = IssueCommentSerializer
     permission_classes = (permissions.IsAuthenticated, IssueCommentPermission)
     pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('issue', 'creator')
     search_fields = ('id',)
 
     @property
@@ -770,7 +775,7 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
             'create': 'issue.comment_create',
             'update': 'issue.comment_update',
             'partial_update': 'issue.comment_update',
-            'destroy': 'issue.comment_delete'
+            'destroy': 'issue.comment_update'
         }
         return mapping.get(self.action, None)
 
@@ -786,7 +791,7 @@ class TrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
     serializer_class = TrackerSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
-    pagination_class = PageNumberPaginationTwenty
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('projects',)
 
     def perform_create(self, serializer):
@@ -797,6 +802,7 @@ class IssueCategoryViewSet(viewsets.ModelViewSet):
     queryset = IssueCategory.objects.all()
     serializer_class = IssueCategorySerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project__slug',)
 
     def get_queryset(self):

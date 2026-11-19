@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { ref, type PropType, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
+import { useWork } from '@/store/pinia/work_project'
 import { useForum } from '@/store/pinia/forum'
 import type { Comment } from '@/store/types/forum'
 import CommentList from './components/CommentList.vue'
@@ -17,6 +19,13 @@ const actForm = ref<number | undefined>(undefined)
 
 const route = useRoute()
 const projId = computed(() => route.params.projId as string)
+const workStore = useWork()
+const { can, PERM } = usePerms()
+const canCreateComment = computed(
+  () =>
+    (!workStore.currentProject || workStore.currentProject.status === '1') &&
+    can(PERM.FORUM_CREATE),
+)
 
 const forumStore = useForum()
 const createComment = (payload: Comment, projId: string = '') =>
@@ -62,7 +71,7 @@ const onDelete = (pk: number, post: number) => {
       @form-reset="formReset"
       @page-select="pageSelect"
     />
-    <div v-show="formVision" :class="{ 'border-top': comments.length }">
+    <div v-if="canCreateComment" v-show="formVision" :class="{ 'border-top': comments.length }">
       <CommentForm :form-vision="formVision" :post="post" @on-submit="onSubmit" />
     </div>
   </div>

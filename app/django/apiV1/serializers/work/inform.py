@@ -131,7 +131,7 @@ class CustomQuerySerializer(serializers.ModelSerializer):
             from work.models.project import Role
             user_perms = list(
                 Role.objects.filter(
-                    projects__members__user=user
+                    member__user=user
                 ).filter(
                     permissions__code__in=['project.save_query', 'project.pub_query']
                 ).values_list('permissions__code', flat=True)

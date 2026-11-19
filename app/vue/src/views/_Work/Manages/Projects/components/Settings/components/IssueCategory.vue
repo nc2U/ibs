@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import type { SimpleCategory } from '@/store/types/work_issue'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -11,6 +12,8 @@ defineProps({ categories: { type: Array as PropType<SimpleCategory[]>, default: 
 const emit = defineEmits(['delete-category'])
 
 const route = useRoute()
+const { can, PERM } = usePerms()
+const canManageCategories = computed(() => can(PERM.ISSUE_CATEGORY_MANAGE))
 
 const RefCateDelConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
@@ -35,9 +38,9 @@ const deleteCategory = () => {
 </script>
 
 <template>
-  <CRow class="py-2">
+  <CRow v-if="canManageCategories" class="py-2">
     <CCol>
-      <span class="mr-2 form-text">
+      <span class="me-2 form-text">
         <TextButton
           name="새 업무범주"
           :to="{ name: '(설정) - 범주추가', params: { projId: route.params.projId } }"
@@ -70,21 +73,23 @@ const deleteCategory = () => {
             <CTableDataCell>{{ category.name }}</CTableDataCell>
             <CTableDataCell>{{ category.assigned_to?.username }}</CTableDataCell>
             <CTableDataCell class="form-text">
-              <span class="mr-2">
-                <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
-                <router-link
-                  :to="{
-                    name: '(설정) - 범주수정',
-                    params: { projId: route.params.projId, cateId: category.pk },
-                  }"
-                >
-                  편집
-                </router-link>
-              </span>
-              <span>
-                <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
-                <a href="#" @click.prevent="toDelete(category.pk)">삭제</a>
-              </span>
+              <template v-if="canManageCategories">
+                <span class="me-2">
+                  <v-icon icon="mdi-pencil" color="amber" size="small" class="me-1" />
+                  <router-link
+                    :to="{
+                      name: '(설정) - 범주수정',
+                      params: { projId: route.params.projId, cateId: category.pk },
+                    }"
+                  >
+                    편집
+                  </router-link>
+                </span>
+                <span>
+                  <v-icon icon="mdi-trash-can" color="grey" size="small" class="me-1" />
+                  <a href="#" @click.prevent="toDelete(category.pk)">삭제</a>
+                </span>
+              </template>
             </CTableDataCell>
           </CTableRow>
         </CTableBody>

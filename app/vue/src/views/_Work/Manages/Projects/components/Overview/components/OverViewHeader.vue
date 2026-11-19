@@ -38,8 +38,14 @@ const onToggleBookmark = (projectPk: number) => workStore.toggleBookmark(project
 const projectDelete = () => {
   if (idForDelete.value === (props.project?.slug as string)) {
     emit('delete-project', props.project.slug)
+    idForDelete.value = ''
     RefProjectDeleteConfirm.value?.close()
   } else idForDelete.value = ''
+}
+
+const openDeleteModal = () => {
+  idForDelete.value = ''
+  RefProjectDeleteConfirm.value?.callModal()
 }
 
 const isBookMarked = computed(() => props.project?.is_bookmarked)
@@ -83,12 +89,12 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
               @click="router.push({ name: '워크스페이스 - 추가', query: { parent: project?.pk } })"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-1" />
-                새 하위 프로젝트
+                <v-icon icon="mdi-plus-circle" color="success" size="small" class="me-1" />
+                새 하위 워크스페이스
               </span>
             </CDropdownItem>
             <CDropdownItem
-              v-if="canProjectClose"
+              v-if="canProjectClose && project?.status !== '9'"
               class="form-text"
               @click="RefProjectCloseConfirm?.callModal()"
             >
@@ -96,8 +102,8 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
                 <v-icon
                   :icon="project?.status === '1' ? 'mdi-lock' : 'mdi-lock-open'"
                   :color="project?.status === '1' ? 'warning' : 'secondary'"
-                  size="sm"
-                  class="mr-1"
+                  size="small"
+                  class="me-1"
                 />
                 {{ project?.status === '1' ? '닫기' : '다시 열기' }}
               </span>
@@ -105,10 +111,10 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
             <CDropdownItem
               v-if="canProjectDelete"
               class="form-text"
-              @click="RefProjectDeleteConfirm?.callModal()"
+              @click="openDeleteModal"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />
+                <v-icon icon="mdi-trash-can-outline" color="error" size="small" class="me-1" />
                 삭제
               </span>
             </CDropdownItem>
@@ -118,7 +124,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
               @click="router.push({ name: '(설정)', params: { projId: project?.slug } })"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />
+                <v-icon icon="mdi-cog" color="secondary" size="small" class="me-1" />
                 설정
               </span>
             </CDropdownItem>
@@ -133,14 +139,14 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
       <v-icon
         icon="mdi-arrow-right-bold-box"
         :color="project?.status === '1' ? 'warning' : 'success'"
-        class="mr-2"
+        class="me-2"
       />
     </template>
     <template #default>
       <span v-if="project?.status === '1'">
-        '{{ project?.name }}' 프로젝트를 닫고 읽기 전용 프로젝트로 만드시겠습니까?
+        '{{ project?.name }}' 워크스페이스를 닫고 읽기 전용 워크스페이스로 만드시겠습니까?
       </span>
-      <span v-else>'{{ project?.name }}' 프로젝트를 다시 열고 진행 하시겠습니까?</span>
+      <span v-else>'{{ project?.name }}' 워크스페이스를 다시 열고 진행 하시겠습니까?</span>
     </template>
     <template #footer>
       <v-btn
@@ -155,17 +161,17 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
 
   <ConfirmModal ref="RefProjectDeleteConfirm">
     <template #icon>
-      <v-icon icon="mdi-arrow-right-bold-box" color="danger" class="mr-2" />
+      <v-icon icon="mdi-arrow-right-bold-box" color="error" class="me-2" />
     </template>
     <template #default>
       <div class="bg-amber-lighten-4 p-4 text-center">
         <h6>{{ project?.name }}</h6>
-        <p class="mb-1">이 프로젝트를 삭제 처리하시겠습니까?</p>
+        <p class="mb-1">이 워크스페이스를 삭제 처리하시겠습니까?</p>
         <p class="text-caption text-medium-emphasis mb-3">
-          (단, 회의/업무/문서/소송 이력이 존재하는 프로젝트는 삭제되지 않고 '잠금보관' 처리됩니다.)
+          (단, 회의/업무/문서/소송 이력이 존재하는 워크스페이스는 삭제되지 않고 '잠금보관' 처리됩니다.)
         </p>
         <p>
-          진행하려면 이 프로젝트의 식별자 (<strong class="text-danger">{{ project?.slug }}</strong
+          진행하려면 이 워크스페이스의 식별자 (<strong class="text-danger">{{ project?.slug }}</strong
           >)를 입력하여 주십시오.
         </p>
         <CRow>

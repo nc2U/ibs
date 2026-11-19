@@ -13,6 +13,8 @@ import PostedLink from '@/components/OtherParts/PostedLink.vue'
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
+  canEdit: { type: Boolean, default: false },
+  canDelete: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['docs-hit'])
@@ -90,7 +92,7 @@ onMounted(() => {
             class="ms-2 fw-bold"
             style="vertical-align: middle"
           >
-            <v-icon start icon="mdi-pin" color="danger" size="x-small" class="rotate-45" />
+            <v-icon start icon="mdi-pin" color="error" size="x-small" class="rotate-45" />
             고정
           </v-chip>
 
@@ -103,7 +105,7 @@ onMounted(() => {
                 size="x-small"
                 :color="securityLevelInfo.color"
                 :variant="docs.security_level === '1' ? 'tonal' : 'outlined'"
-                class="ml-2"
+                class="ms-2"
                 style="vertical-align: middle"
               >
                 <v-icon start :icon="securityLevelInfo.icon" size="x-small" />
@@ -121,7 +123,7 @@ onMounted(() => {
                 size="x-small"
                 color="error"
                 variant="tonal"
-                class="ml-2 font-weight-medium"
+                class="ms-2 fw-medium"
                 style="vertical-align: middle"
               >
                 <v-icon start icon="mdi-eye-off" size="x-small" />
@@ -135,11 +137,11 @@ onMounted(() => {
 
     <CRow class="text-muted text-caption">
       <CCol>
-        <span>{{ docs.proj_name }}</span>
+        <span>{{ docs.project?.name || docs.proj_name }}</span>
         <v-icon icon="mdi-chevron-right" size="small" class="mx-1" />
         <span>{{ docs.cate_name }}</span>
-        <v-icon icon="mdi-calendar-range" size="small" class="ml-3 mr-1" />
-        <span>{{ timeFormat(docs.created as string, 'short', '/') }}</span>
+        <v-icon icon="mdi-calendar-range" size="small" class="ms-3 me-1" />
+        <span>{{ timeFormat(docs.created as string, 'min', '/') }}</span>
       </CCol>
     </CRow>
 
@@ -189,16 +191,19 @@ onMounted(() => {
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <p
-            v-if="!workManager && (docs.security_level === '1' || docs.is_blind)"
-            class="text-muted small"
-          >
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
-            {{ docs.is_blind ? '숨김' : '비공개' }}
-            문서의 첨부 파일은 열람이 제한됩니다.
+          <p v-if="!workManager && docs.is_blind" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="me-1" />
+            숨김 문서의 첨부 파일은 열람이 제한됩니다.
           </p>
-          <template v-else-if="docs.files && docs.files.length">
-            <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
+          <template v-else-if="(docs.files && docs.files.length) || canEdit">
+            <PostedFile
+              :docs="docs.pk as number"
+              btn-direction="end"
+              :files="docs.files"
+              :can-create="canEdit"
+              :can-edit="canEdit"
+              :can-delete="canDelete"
+            />
           </template>
 
           <p v-else class="text-muted small">첨부 파일이 없습니다.</p>
@@ -208,15 +213,19 @@ onMounted(() => {
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <p
-            v-if="!workManager && (docs.security_level === '1' || docs.is_blind)"
-            class="text-muted small"
-          >
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
-            {{ docs.is_blind ? '숨김' : '비공개' }} 문서의 관련 링크는 열람이 제한됩니다.
+          <p v-if="!workManager && docs.is_blind" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="me-1" />
+            숨김 문서의 관련 링크는 열람이 제한됩니다.
           </p>
-          <template v-else-if="docs.links && docs.links.length">
-            <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
+          <template v-else-if="(docs.links && docs.links.length) || canEdit">
+            <PostedLink
+              :docs="docs.pk as number"
+              btn-direction="end"
+              :links="docs.links"
+              :can-create="canEdit"
+              :can-edit="canEdit"
+              :can-delete="canDelete"
+            />
           </template>
           <p v-else class="text-muted small">관련 링크가 없습니다.</p>
         </CCol>

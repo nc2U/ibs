@@ -16,16 +16,18 @@ const workSetting = {
       component: () => import('@/views/_Work/Settings/Users/Index.vue'),
       children: [
         {
-          path: ':userId',
+          path: ':userId(\\d+)',
           name: '사용자 - 보기',
         },
         {
           path: 'create',
           name: '사용자 - 생성',
+          meta: { requiresWorkManager: true },
         },
         {
-          path: ':userId/update',
+          path: ':userId(\\d+)/update',
           name: '사용자 - 수정',
+          meta: { requiresWorkManager: true },
         },
         {
           path: 'my/account',

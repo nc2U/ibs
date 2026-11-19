@@ -20,8 +20,8 @@ const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 const sideNavCall = () => cBody.value?.toggle()
 const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 
-const { can, PERM } = usePerms()
-const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const { canGlobal, PERM } = usePerms()
+const canProjectCreate = computed(() => canGlobal(PERM.PROJECT_CREATE))
 
 const route = useRoute()
 const workStore = useWork()
@@ -39,13 +39,13 @@ const { selectedColumns } = useTableColumns(
 
 // 검색양식 관련 계산 및 메서드
 const filterSubmit = (payload: ProjectFilter) => {
-  workStore.fetchIssueProjectList(payload)
+  workStore.fetchIssueProjectList({ ...payload, include_hidden: true })
 }
 
 const loading = ref(true)
 onBeforeMount(async () => {
   try {
-    await workStore.fetchIssueProjectList({ status: '1' })
+    await workStore.fetchIssueProjectList({ status: '1', include_hidden: true })
   } catch (err) {
     console.error('Failed to load issue project list:', err)
   } finally {
@@ -83,6 +83,7 @@ onBeforeMount(async () => {
         ref="querySectionRef"
         :all-readable-projects="allReadableProjects"
         show-locked-option
+        fetch-on-mount
         @filter-submit="filterSubmit"
       >
         <template #option>

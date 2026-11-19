@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, type PropType, reactive, ref, watch } from 'vue'
+import { computed, type PropType, reactive, ref, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import type { selectProject } from '@/store/types/work_project'
 import type { IssueStatus, Tracker } from '@/store/types/work_issue'
@@ -38,6 +38,11 @@ const props = defineProps({
 const emit = defineEmits(['filter-submit'])
 
 const refQuerySaveModal = ref<InstanceType<typeof SaveQueryModal> | null>(null)
+const extraQueryData = computed(() => {
+  const projId = (route.params.projId as string) || ''
+  const projectObj = props.searchProjects.find(p => p.slug === projId)
+  return { project: projectObj ? projectObj.value : null }
+})
 const openSaveModal = () => {
   refQuerySaveModal.value?.callModal()
 }
@@ -331,15 +336,13 @@ const applyQuery = (query: any) => {
   }
 }
 
-onMounted(() => filterSubmit())
-
 defineExpose({ applyQuery, resetFilter })
 </script>
 
 <template>
   <CRow>
     <CCol class="pointer pt-1 mb-0" @click="condVisible = !condVisible">
-      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       검색조건
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
@@ -376,7 +379,7 @@ defineExpose({ applyQuery, resetFilter })
             </CCol>
             <CCol
               v-if="enabledFields.includes('issue_status')"
-              class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+              class="col-4 col-lg-3 col-xl-2"
             >
               <CFormSelect v-model="cond.issue_status" size="sm">
                 <option value="open">진행중</option>
@@ -386,7 +389,7 @@ defineExpose({ applyQuery, resetFilter })
                 <option value="any">모두</option>
               </CFormSelect>
             </CCol>
-            <CCol v-if="enabledFields.includes('issue_status')" class="col-8 col-lg-3">
+            <CCol v-if="enabledFields.includes('issue_status')" class="col-4 col-lg-3">
               <CFormSelect
                 v-if="cond.issue_status === 'is' || cond.issue_status === 'exclude'"
                 v-model="form.issue_status"
@@ -584,5 +587,7 @@ defineExpose({ applyQuery, resetFilter })
     :target-type="targetType"
     :cond="cond"
     :form="form"
+    :extra-filters="{ eventTypes }"
+    :extra-data="extraQueryData"
   />
 </template>

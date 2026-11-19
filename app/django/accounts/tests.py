@@ -168,7 +168,7 @@ class AccountsSecurityAndIsolationTests(APITestCase):
             res = self.client.post('/api/v1/admin-create-user/', {
                 'email': 'nomail@test.com',
                 'username': 'nomailuser',
-                'password': 'password123',
+                'password': 'Str0ngPass!234',
                 'mail_sending': False,
                 'send_option': '1',
                 'expired': 24,

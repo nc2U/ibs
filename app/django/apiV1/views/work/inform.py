@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
-from apiV1.pagination import PageNumberPaginationTen
+from apiV1.pagination import PageNumberPaginationTen, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import permissions
 from apiV1.permissions.work_perms import NewsPermission, QueryPermission
 from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
@@ -203,7 +203,7 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         qs = build_issue_queryset(user)
         if opened_only:
-            qs = qs.filter(closed__isnull=True)
+            qs = qs.filter(status__closed=False)
         if title_only:
             qs = qs.filter(subject__icontains=q)
         else:
@@ -224,7 +224,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(project__members__user=user)
+            qs = qs.filter(project__members__user=user).distinct()
         return IssueSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
@@ -236,15 +236,12 @@ class SearchViewSet(viewsets.ModelViewSet):
             issue__project__status='1',
         ).select_related('issue__project', 'creator')
 
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = build_issue_comment_queryset(user, base_qs)
-        else:
-            qs = base_qs.filter(Q(is_private=False) | Q(creator=user))
+        qs = build_issue_comment_queryset(user, base_qs)
 
         if scope == 'project' and slug:
             qs = qs.filter(issue__project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(issue__project__members__user=user)
+            qs = qs.filter(issue__project__members__user=user).distinct()
         return CommentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
@@ -269,6 +266,8 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
 
         qs = Meeting.objects.exclude(project__status='9').filter(q_expr).select_related('project', 'creator')
+        if attach_mode in ('2', '3'):
+            qs = qs.distinct()
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(
                 Q(project__is_public=True)
@@ -279,7 +278,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(project__members__user=user)
+            qs = qs.filter(project__members__user=user).distinct()
         return MeetingSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
@@ -304,6 +303,8 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
 
         qs = News.objects.exclude(project__status='9').filter(q_expr).select_related('project', 'author')
+        if attach_mode in ('2', '3'):
+            qs = qs.distinct()
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(
                 Q(project__is_public=True) | Q(project__members__user=user)
@@ -311,7 +312,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(project__members__user=user)
+            qs = qs.filter(project__members__user=user).distinct()
         return NewsSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
@@ -343,6 +344,8 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
         qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
+        if attach_mode in ('2', '3'):
+            qs = qs.distinct()
 
         # 권한 제어: 사용자가 관리자가 아닌 경우 보안 등급별 열람 조건 적용
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -357,7 +360,7 @@ class SearchViewSet(viewsets.ModelViewSet):
                 issue_project__in=accessible_projects
             ).filter(
                 Q(security_level=Document.SECURITY_COMPANY)
-                | Q(security_level=Document.SECURITY_PROJECT)
+                | Q(security_level=Document.SECURITY_PROJECT, issue_project__members__user=user)
                 | (Q(security_level=Document.SECURITY_TEAM)
                    & Q(creator__staff__assignments__department_id__in=user_dept_ids))
                 | Q(creator=user)
@@ -367,7 +370,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(issue_project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(issue_project__members__user=user)
+            qs = qs.filter(issue_project__members__user=user).distinct()
         return DocumentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
@@ -397,6 +400,8 @@ class SearchViewSet(viewsets.ModelViewSet):
             forum__search_able=True,
             forum__project__status='1'
         ).select_related('forum__project', 'creator')
+        if attach_mode in ('2', '3'):
+            qs = qs.distinct()
 
         # 권한 제어: 공개 프로젝트 OR 멤버십 프로젝트의 게시글 허용 (비밀글/블라인드글 보안 가드)
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -411,7 +416,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(forum__project__slug=slug)
         elif scope == 'my':
-            qs = qs.filter(forum__project__members__user=user)
+            qs = qs.filter(forum__project__members__user=user).distinct()
         return PostSearchSerializer(qs[:25], many=True).data
 
 
@@ -419,6 +424,7 @@ class CustomQueryViewSet(viewsets.ModelViewSet):
     queryset = CustomQuery.objects.all()
     serializer_class = CustomQuerySerializer
     permission_classes = (permissions.IsAuthenticated, QueryPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_fields = ('project__slug', 'target_type', 'is_public')
     search_fields = ('name',)
@@ -439,11 +445,20 @@ class CustomQueryViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
+            return qs.filter(Q(user=user) | Q(is_public=True)).distinct()
 
-        # 본인의 개인/공용 양식 OR 타인의 공용 양식
-        from django.db.models import Q
+        # 본인의 개인/공용 양식 OR 접근 가능한(비잠금) 워크스페이스/전역의 공용 양식
         return qs.filter(
-            Q(user=user) | Q(is_public=True)
+            Q(user=user)
+            | (
+                Q(is_public=True)
+                & (
+                    Q(project__isnull=True)
+                    | (
+                        Q(project__status__in=['1', '2'])
+                        & (Q(project__is_public=True) | Q(project__members__user=user))
+                    )
+                )
+            )
         ).distinct()
 

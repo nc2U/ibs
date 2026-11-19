@@ -70,7 +70,7 @@ export interface MeetingFile {
   file_size: number
   description: string
   created: string
-  creator: number | null
+  creator: SimpleUser | null
 }
 
 export interface MeetingFilter {
@@ -93,6 +93,14 @@ export interface MeetingFilter {
   created_after?: string
   created_before?: string
   search?: string
+  title?: string
+  title__exclude?: string
+  agenda?: string
+  agenda__exclude?: string
+  content?: string
+  content__exclude?: string
+  decisions?: string
+  decisions__exclude?: string
   project__my_project?: boolean
   project__bookmark?: boolean
   project_status?: string

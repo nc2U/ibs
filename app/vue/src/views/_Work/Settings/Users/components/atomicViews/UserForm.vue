@@ -1,15 +1,13 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
-import { onBeforeRouteUpdate, useRouter } from 'vue-router'
-import { generatePassword } from '@/utils/helper'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { generatePassword, isValidate } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps<{ user: User | null }>()
-
-const emit = defineEmits(['submit'])
 
 const validated = ref(false)
 
@@ -19,6 +17,8 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const router = useRouter()
 
 const accStore = useAccount()
+const superAuth = computed(() => !!accStore.superAuth)
+const isSelf = computed(() => !!props.user?.pk && props.user.pk === accStore.userInfo?.pk)
 
 const form = reactive({
   email: '',
@@ -30,23 +30,37 @@ const form = reactive({
   is_staff: false,
   work_manager: false,
 
-  // Notification fields (creation only)
+  // Notification fields
   mail_sending: true,
-  send_option: '1',
+  send_option: '1' as '1' | '2',
   expired: 24,
+})
+
+// 수정 모드에서 '재설정 링크 포함 메일 발송' 선택 시 비밀번호 직접 입력은 비활성화
+const isEditResetLinkMode = computed(
+  () => !!props.user?.pk && form.mail_sending && form.send_option === '1',
+)
+
+watch(isEditResetLinkMode, active => {
+  if (active) {
+    form.password = ''
+    form.pass_conf = ''
+  }
 })
 
 const formCheck = computed(() => {
   if (props.user) {
-    const a = !form.password
-    const b = form.is_active === props.user.is_active
-    const c = form.is_staff === props.user.is_staff
-    const d = form.work_manager === props.user.work_manager
-    return a && b && c && d
+    const noPasswordChange = !form.password
+    const noResetLinkSend = !(form.mail_sending && form.send_option === '1')
+    const sameActive = form.is_active === props.user.is_active
+    const sameStaff = form.is_staff === props.user.is_staff
+    const sameManager = form.work_manager === props.user.work_manager
+    return noPasswordChange && noResetLinkSend && sameActive && sameStaff && sameManager
   } else return false
 })
 
-const formDataSetup = async () => {
+const formDataSetup = () => {
+  validated.value = false
   if (props.user) {
     form.username = props.user.username || ''
     form.email = props.user.email || ''
@@ -55,6 +69,7 @@ const formDataSetup = async () => {
     form.is_active = props.user.is_active
     form.is_staff = props.user.is_staff
     form.work_manager = props.user.work_manager
+    form.mail_sending = false
   } else {
     form.username = ''
     form.email = ''
@@ -63,31 +78,37 @@ const formDataSetup = async () => {
     form.is_active = true
     form.is_staff = false
     form.work_manager = false
+    form.mail_sending = true
   }
-  form.mail_sending = !props.user || !!form.password
   form.send_option = '1'
   form.expired = 24
 }
 
-watch(props, val => {
-  if (val.user) formDataSetup()
-})
-watch(form, val => (form.mail_sending = !props.user || !!val.password))
+watch(
+  () => props.user,
+  () => formDataSetup(),
+  { immediate: true },
+)
 
 const genPass = ref('')
 
 const applyGen = () => {
+  if (isEditResetLinkMode.value) {
+    form.send_option = '2'
+  }
   form.password = genPass.value
   form.pass_conf = genPass.value
   genPass.value = ''
 }
 
 const onSubmit = async (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
+  if (isValidate(event)) {
     validated.value = true
+    return
+  }
+
+  if (props.user?.pk && form.mail_sending && form.send_option === '2' && !form.password) {
+    refAlertModal.value?.callModal('', '비밀번호 포함 메일을 발송하려면 새 비밀번호를 입력하세요.')
     return
   }
 
@@ -108,44 +129,47 @@ const onSubmitConfirm = async () => {
         username: form.username,
         password: form.password,
         mail_sending: form.mail_sending,
-        send_option: form.send_option as '1' | '2',
+        send_option: form.send_option,
         expired: form.expired,
       }
-      await accStore.adminCreateUser(payload)
+      const created = await accStore.adminCreateUser(payload)
+      if (!created) return
+      validated.value = false
+      refConfirmModal.value?.close()
+      if (created.pk) {
+        await router.push({ name: '사용자 - 수정', params: { userId: created.pk } })
+      } else {
+        await router.push({ name: '사용자' })
+      }
     } else {
       // Edit User account info
       const userPayload: any = {
         email: form.email,
-        // 비밀번호 관련 필드는 명시적으로 입력했을 때만 포함
-        ...(form.password && {
-          password: form.password,
-          mail_sending: form.mail_sending,
-          send_option: form.send_option,
-          expired: form.expired,
-        }),
-        // 권한 필드는 항상 전송 (기존 값 유지)
         is_active: form.is_active,
-        is_staff: form.is_staff,
         work_manager: form.work_manager,
+        ...(superAuth.value ? { is_staff: form.is_staff } : {}),
+        mail_sending: form.mail_sending,
+        ...(form.mail_sending
+          ? { send_option: form.send_option, expired: form.expired }
+          : {}),
+        ...(!isEditResetLinkMode.value && form.password ? { password: form.password } : {}),
       }
-      if (form.password) {
-        userPayload.password = form.password
+      const updated = await accStore.adminUpdateUser(userPayload)
+      if (!updated) return
+      form.password = ''
+      form.pass_conf = ''
+      form.mail_sending = false
+      validated.value = false
+      refConfirmModal.value?.close()
+      if (props.user.pk) {
+        await accStore.fetchUser(props.user.pk)
       }
-      await accStore.adminUpdateUser(userPayload)
     }
-
-    validated.value = false
-    refConfirmModal.value?.close()
-    // await router.push({ name: '사용자' })
   } catch (err: any) {
     console.error(err)
     refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   }
 }
-
-onBeforeMount(async () => await formDataSetup())
-
-onBeforeRouteUpdate(async () => await formDataSetup())
 </script>
 
 <template>
@@ -213,6 +237,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                     maxlength="20"
                     placeholder="비밀번호"
                     autocomplete="off"
+                    :disabled="isEditResetLinkMode"
                     :required="!user"
                   />
                 </CCol>
@@ -221,6 +246,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                     color="info"
                     size="small"
                     class="mt-1"
+                    :disabled="isEditResetLinkMode"
                     @click="genPass = generatePassword()"
                   >
                     임의 패스워드 생성
@@ -244,6 +270,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                     type="password"
                     maxlength="20"
                     placeholder="비밀번호 확인"
+                    :disabled="isEditResetLinkMode"
                     :required="!user"
                   />
                 </CCol>
@@ -277,6 +304,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                         label="활성 사용자"
                         density="compact"
                         messages="사이트 접속 권한"
+                        :disabled="isSelf"
                       />
                     </CCol>
                     <CCol xs="4" class="mb-2">
@@ -287,6 +315,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                         label="스태프 권한"
                         density="compact"
                         messages="관리자페이지 접속 권한"
+                        :disabled="!superAuth || isSelf"
                       />
                     </CCol>
 
@@ -298,6 +327,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                         label="업무관리자"
                         density="compact"
                         messages="업무시스템 관리자"
+                        :disabled="isSelf && !superAuth"
                       />
                     </CCol>
                   </CRow>
@@ -324,7 +354,11 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                   v-model="form.mail_sending"
                   type="checkbox"
                   id="inform-mail"
-                  label="새로 생성한 사용자에게 알림 메일 보내기"
+                  :label="
+                    user?.pk
+                      ? '사용자에게 비밀번호 안내 메일 보내기'
+                      : '새로 생성한 사용자에게 알림 메일 보내기'
+                  "
                 />
               </CCol>
             </CRow>
@@ -340,6 +374,9 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                   label="패스워드 재설정 링크 포함"
                   :disabled="!form.mail_sending"
                 />
+                <div v-if="isEditResetLinkMode" class="form-text ms-4">
+                  재설정 링크 발송 시 사용자가 직접 새 비밀번호를 설정합니다.
+                </div>
               </CCol>
 
               <CRow class="mb-3">
@@ -350,10 +387,10 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                   <CFormSelect
                     v-model.number="form.expired as any"
                     size="sm"
-                    :disabled="!form.mail_sending"
+                    :disabled="!form.mail_sending || form.send_option !== '1'"
                   >
                     <option v-for="i in 24" :value="i" :key="i">
-                      <span v-if="i < 10">0</span>{{ i }}
+                      {{ String(i).padStart(2, '0') }}
                     </option>
                   </CFormSelect>
                 </CCol>
@@ -391,7 +428,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
 
   <ConfirmModal ref="refConfirmModal">
     <template #icon>
-      <v-icon icon="mdi-mail" size="22" color="indigo" class="mr-2" />
+      <v-icon icon="mdi-mail" size="22" color="indigo" class="me-2" />
     </template>
     <template #header>사용자 정보 전송 확인</template>
     <template #default> 변경된 사용자 정보를 전송하시겠습니까? </template>

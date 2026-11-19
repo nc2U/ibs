@@ -69,6 +69,7 @@ describe('useMeetingFilter', () => {
     store.cond.created = 'gte'
     store.form.created_after = '2026-01-05'
     store.form.title = '주간'
+    store.cond.decisions = 'exclude'
     store.form.decisions = '승인'
 
     expect(store.buildFilterPayload()).toEqual({
@@ -81,7 +82,8 @@ describe('useMeetingFilter', () => {
       meeting_date_after: '2026-01-01',
       meeting_date_before: '2026-01-31',
       created_after: '2026-01-05',
-      search: '주간 승인',
+      title: '주간',
+      decisions__exclude: '승인',
     })
   })
 

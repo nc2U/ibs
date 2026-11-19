@@ -39,8 +39,8 @@ const canForumRead = computed(() => can(PERM.FORUM_READ))
       {{ post.title }}
     </router-link>
     <span v-else>{{ post.title }}</span>
-    <span v-if="post.comments?.length" class="ml-2 text-grey"> ({{ post.comments.length }}) </span>
-    <v-chip v-if="post.is_new" color="success" variant="flat" class="ml-2" size="x-small">
+    <span v-if="post.comments?.length" class="ms-2 text-grey"> ({{ post.comments.length }}) </span>
+    <v-chip v-if="post.is_new" color="success" variant="flat" class="ms-2" size="x-small">
       new
     </v-chip>
   </CTableDataCell>

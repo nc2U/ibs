@@ -52,29 +52,36 @@ const allActiveProjects = computed(() =>
 )
 
 const chkModules = (slug: string) => {
-  const routeName = (route.name as string) ?? ''
+  const routeName = String(route.name ?? '')
   const excluded = ['워크스페이스', '전체검색']
   const project = workStore.allReadableProjectsFlat.find(p => p.slug === slug)
   if (
-    (route.meta as any)?.title === '설 정 관 리' ||
+    (route.meta as { title?: string })?.title === '설 정 관 리' ||
     excluded.some(name => routeName.includes(name))
-  )
+  ) {
     return false
-  else if (!project) return true
-  else {
-    if (routeName.includes('회의') && !project.module?.meeting) return false
-    else if (routeName.includes('로드맵') && !project.versions?.length) return false
-    else if (routeName.includes('업무') && !project.module?.issue) return false
-    else if (routeName.includes('캘린더') && !project.module?.calendar) return false
-    else if (routeName.includes('공지') && !project.module?.news) return false
-    else if (routeName.includes('문서') && !project.module?.document) return false
-    else if (routeName.includes('게시판') && !project.module?.forum) return false
-    else return true
   }
+  if (!project) return true
+  if (routeName.includes('설정') && project.status !== '1') return false
+  if (routeName.includes('회의') && !project.module?.meeting) return false
+  if (routeName.includes('로드맵') && !(project.has_versions || project.versions?.length))
+    return false
+  if (
+    routeName.includes('업무') &&
+    !routeName.includes('업무실행내역') &&
+    !project.module?.issue
+  ) {
+    return false
+  }
+  if (routeName.includes('캘린더') && !project.module?.calendar) return false
+  if (routeName.includes('공지') && !project.module?.news) return false
+  if (routeName.includes('문서') && !project.module?.document) return false
+  if (routeName.includes('게시판') && !project.module?.forum) return false
+  return true
 }
 
 const getAncestorRouteTarget = (slug: string) => {
-  const routeName = (route.name as string) ?? ''
+  const routeName = String(route.name ?? '')
   let name = routeName
   if (routeName.includes(' - ')) {
     const baseCategory = routeName.split(' - ')[0]
@@ -83,12 +90,15 @@ const getAncestorRouteTarget = (slug: string) => {
     name = /^\(.*\)$/.test(routeName) ? routeName : `(${routeName})`
   }
 
-  if (!chkModules(slug)) return { name: '(개요)', params: { projId: slug } }
+  if (!name || !router.hasRoute(name) || !chkModules(slug)) {
+    return { name: '(개요)', params: { projId: slug } }
+  }
   return { name, params: { projId: slug } }
 }
 
 const cngProject = async (slug: string | number | null | undefined) => {
   if (slug) {
+    visible.value = false
     const target = getAncestorRouteTarget(String(slug))
     await router.push(target)
   }
@@ -102,14 +112,14 @@ const cngProject = async (slug: string | number | null | undefined) => {
         <CCol class="mb-2 py-3 px-4 col-9 col-md-6 col-lg-7 col-xl-8">
           <CRow class="ps-4 ps-lg-0">
             <CCol class="mb-1" style="font-size: 0.9em">
-              <span v-if="route.params.projId && company" class="mr-1 text-blue-grey">
+              <span v-if="route.params.projId && company" class="me-1 text-blue-grey">
                 <router-link :to="topLevelRouteTarget">{{ company?.name }}</router-link>
                 »
               </span>
 
               <span v-if="!!ancestors.length">
                 <span v-for="p in ancestors" :key="p.pk">
-                  <span v-if="p.visible" class="mr-1 text-blue-grey">
+                  <span v-if="p.visible" class="me-1 text-blue-grey">
                     <router-link :to="getAncestorRouteTarget(p.slug)">
                       {{ p.name }}
                     </router-link>
@@ -122,7 +132,7 @@ const cngProject = async (slug: string | number | null | undefined) => {
 
           <CRow class="mb-3">
             <CCol class="text-body d-none d-lg-flex align-items-center">
-              <strong class="title pl-1"> {{ pageTitle }}</strong>
+              <strong class="title ps-1"> {{ pageTitle }}</strong>
               <v-chip
                 v-if="superAuth"
                 color="deep-purple-lighten-1"
@@ -153,7 +163,7 @@ const cngProject = async (slug: string | number | null | undefined) => {
                   :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'"
                   color=""
                 />
-                <strong class="title pl-1"> {{ pageTitle }}</strong>
+                <strong class="title ps-1"> {{ pageTitle }}</strong>
                 <v-chip
                   v-if="superAuth"
                   color="deep-purple-lighten-1"
@@ -180,7 +190,7 @@ const cngProject = async (slug: string | number | null | undefined) => {
                     <v-list-item
                       v-for="proj in allActiveProjects"
                       :key="proj.value"
-                      @click="cngProject(proj.value)"
+                      @click.stop="cngProject(proj.value)"
                     >
                       {{ proj.label }}
                     </v-list-item>

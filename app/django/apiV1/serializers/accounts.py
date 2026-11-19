@@ -1,10 +1,22 @@
 import logging
 from django.conf import settings
-
-logger = logging.getLogger(__name__)
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
+from django.core.validators import validate_email
 from django.db import transaction
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
+
+
+def _parse_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ('true', '1', 'yes', 'on')
+    return bool(value)
 
 from accounts.models import User, Profile, Todo, DocScrape, PostScrape, FCMDevice, Notification
 from forum.models import Post
@@ -195,6 +207,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         user = instance.user
         new_email = self.initial_data.get('email')
         if new_email and user.email != new_email:
+            try:
+                validate_email(new_email)
+            except DjangoValidationError:
+                raise serializers.ValidationError({'email': '유효한 이메일 주소를 입력해 주세요.'})
             if User.objects.filter(email=new_email).exists():
                 raise serializers.ValidationError({'email': '이미 등록된 이메일입니다.'})
             user.email = new_email
@@ -208,6 +224,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         user = instance.user
         new_email = self.initial_data.get('email')
         if new_email and user.email != new_email:
+            try:
+                validate_email(new_email)
+            except DjangoValidationError:
+                raise serializers.ValidationError({'email': '유효한 이메일 주소를 입력해 주세요.'})
             if User.objects.filter(email=new_email).exists():
                 raise serializers.ValidationError({'email': '이미 등록된 이메일입니다.'})
             user.email = new_email
@@ -217,7 +237,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             is_admin = request and (request.user.is_superuser or getattr(request.user, 'work_manager', False))
             if is_admin:
-                user.is_active = bool(is_active)
+                user.is_active = _parse_bool(is_active)
         user.save()
         return instance
 
@@ -318,11 +338,33 @@ class PasswordResetSerializer(serializers.Serializer):
 
 class AdminCreateUserSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True)
-    mail_sending = serializers.BooleanField()
-    send_option = serializers.CharField()
-    expired = serializers.IntegerField()
+    username = serializers.CharField(
+        required=True,
+        max_length=150,
+        validators=[UnicodeUsernameValidator()],
+    )
+    password = serializers.CharField(required=True, write_only=True)
+    mail_sending = serializers.BooleanField(default=True)
+    send_option = serializers.ChoiceField(choices=('1', '2'), default='1')
+    expired = serializers.IntegerField(min_value=1, max_value=168, default=24)
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('이미 등록된 이메일입니다.')
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError('이미 사용 중인 아이디입니다.')
+        return value
+
+    def validate(self, attrs):
+        temp_user = User(username=attrs.get('username', ''), email=attrs.get('email', ''))
+        try:
+            validate_password(attrs.get('password', ''), user=temp_user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'password': list(exc.messages)})
+        return attrs
 
 
 class FCMDeviceSerializer(serializers.ModelSerializer):

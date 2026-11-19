@@ -23,8 +23,10 @@ const onSubmit = async (new_password: string) => {
     token: route.query.token,
     new_password,
   }
-  await accStore.passResetConfirm(payload)
-  await refAlertModal.value.callModal('', '', '', 'success')
+  const res = await accStore.passResetConfirm(payload)
+  if (res) {
+    await refAlertModal.value?.callModal('', '', '', 'success')
+  }
 }
 
 onBeforeMount(async () => {
@@ -51,13 +53,13 @@ onBeforeMount(async () => {
             </CCardBody>
             <CCardBody v-else-if="isExpired" class="text-center text-danger">
               <h2>This Token was Expired!</h2>
-              <div class="text-left pt-3">
+              <div class="text-start pt-3">
                 <p class="text-muted">
                   이 토큰의 비밀번호 재설정 가능시간이 만료되었습니다. 비밀번호를 재설정 하려면 다시
                   요청해 주십시요.
                 </p>
               </div>
-              <div class="text-right pt-2">
+              <div class="text-end pt-2">
                 <router-link :to="{ name: 'Login' }">To Login</router-link>
               </div>
             </CCardBody>

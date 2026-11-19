@@ -1,20 +1,13 @@
 <script lang="ts" setup>
-import {
-  computed,
-  onBeforeMount,
-  onMounted,
-  type PropType,
-  reactive,
-  ref,
-  watch,
-} from 'vue'
+import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '@/api'
 import { usePerms } from '@/composables/usePerms'
-import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useWork } from '@/store/pinia/work_project'
 import { colorLight } from '@/utils/cssMixins'
+import { errorHandle, isValidate } from '@/utils/helper'
 import type { IssueProject } from '@/store/types/work_project'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -24,27 +17,44 @@ const props = defineProps({
   project: { type: Object as PropType<IssueProject | null>, default: null },
 })
 
-const emit = defineEmits(['modal-close'])
+const { can, canGlobal, PERM } = usePerms()
 
-const store = useStore()
-const isDark = computed(() => store.theme === 'dark')
-
-const { can, PERM } = usePerms()
-
-const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectCreate = computed(() => canGlobal(PERM.PROJECT_CREATE))
+const canProjectCreateSub = computed(() => canGlobal(PERM.PROJECT_CREATE_SUB))
 const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 const canProjectPublic = computed(() => can(PERM.PROJECT_PUBLIC))
-const canProjectModule = computed(() => can(PERM.PROJECT_MODULE))
 
 const validated = ref(false)
+const isApplyingCopy = ref(false)
 
 const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
-const activeProjects = computed(() =>
-  workStore.getAllActiveProjects.filter(p => p.value !== props.project?.pk),
-)
+const excludedParentPks = computed(() => {
+  const excluded = new Set<number>()
+  if (!props.project?.pk) return excluded
+  excluded.add(props.project.pk)
+  const all = workStore.allReadableProjects
+  let added = true
+  while (added) {
+    added = false
+    for (const p of all) {
+      if (p.pk && p.parent && excluded.has(p.parent) && !excluded.has(p.pk)) {
+        excluded.add(p.pk)
+        added = true
+      }
+    }
+  }
+  return excluded
+})
+const activeProjects = computed(() => {
+  const list = workStore.getAllActiveProjects.filter(p => !excludedParentPks.value.has(p.value))
+  if (!props.project && !canProjectCreate.value) {
+    return list.filter(p => can(PERM.PROJECT_CREATE_SUB, p.pk))
+  }
+  return list
+})
 const allRoles = computed(() => workStore.getRoles)
 
 const issueStore = useIssue()
@@ -59,12 +69,24 @@ const form = reactive({
   slug: '',
   homepage: null as string | null,
   is_public: true,
-  parent: null as number | null,
+  parent: null as number | string | null,
   is_inherit_members: false,
   allowed_roles: [] as number[],
   trackers: [] as number[],
   chat_channel_enabled: true,
   slack_notifications_enabled: false,
+})
+
+const normalizedParent = computed<number | null>(() => {
+  if (form.parent === null || form.parent === undefined || form.parent === '') return null
+  const num = Number(form.parent)
+  return Number.isNaN(num) || num <= 0 ? null : num
+})
+
+const canProjectModule = computed(() => {
+  if (props.project) return can(PERM.PROJECT_MODULE)
+  if (normalizedParent.value) return can(PERM.PROJECT_MODULE, normalizedParent.value)
+  return canGlobal(PERM.PROJECT_MODULE)
 })
 
 const module = reactive({
@@ -76,53 +98,58 @@ const module = reactive({
   calendar: true,
 })
 
+const hasModuleChanges = computed(() => {
+  if (!props.project) return true
+  return (
+    module.meeting !== (props.project.module?.meeting ?? true) ||
+    module.issue !== (props.project.module?.issue ?? true) ||
+    module.news !== !!props.project.module?.news ||
+    module.document !== !!props.project.module?.document ||
+    module.forum !== !!props.project.module?.forum ||
+    module.calendar !== !!props.project.module?.calendar
+  )
+})
+
+const hasProjectBodyChanges = computed(() => {
+  if (!props.project) return true
+  const a = form.company === props.project.company
+  const b = form.type === props.project.type
+  const c = form.name === props.project.name
+  const d = form.description === props.project.description
+  const e = (form.homepage || null) === (props.project.homepage || null)
+  const g = normalizedParent.value === (props.project.parent ?? null)
+  const n = form.is_inherit_members === props.project.is_inherit_members
+  const o =
+    JSON.stringify([...form.allowed_roles].sort((x, y) => x - y)) ===
+    JSON.stringify(
+      [...(props.project.allowed_roles?.map(r => r.pk) ?? [])].sort((x, y) => x - y),
+    )
+  const p =
+    JSON.stringify([...form.trackers].sort((x, y) => x - y)) ===
+    JSON.stringify([...(props.project.trackers?.map(t => t.pk) ?? [])].sort((x, y) => x - y))
+  const q = form.chat_channel_enabled === (props.project.chat_channel_enabled ?? true)
+  const r = form.slack_notifications_enabled === props.project.slack_notifications_enabled
+  const modSame = !canProjectModule.value || !hasModuleChanges.value
+
+  return !(a && b && c && d && e && g && n && o && p && q && r && modSame)
+})
+
 const formsCheck = computed(() => {
   // 1. 권한 체크 로직
   const canSubmit = props.project
-    ? canProjectUpdate.value
-    : form.parent
-      ? can(PERM.PROJECT_CREATE_SUB)
+    ? canProjectUpdate.value || canProjectPublic.value
+    : normalizedParent.value
+      ? can(PERM.PROJECT_CREATE_SUB, normalizedParent.value)
       : canProjectCreate.value
 
   // 2. 권한이 아예 없으면 무조건 비활성화
   if (!canSubmit) return true
 
   if (props.project) {
-    const a = form.company === props.project.company
-    const b = form.type === props.project.type
-    const c = form.name === props.project.name
-    const d = form.description === props.project.description
-    const e = form.homepage === props.project.homepage
-
-    // 공개여부 변경은 권한이 있을 때만 체크
-    const f = !canProjectPublic.value || form.is_public === props.project.is_public
-
-    const g = Number(form.parent) === Number(props.project.parent)
-
-    // 모듈 변경은 권한이 있을 때만 체크
-    const h = !canProjectModule.value || module.meeting === props.project.module?.meeting
-    const i = !canProjectModule.value || module.issue === props.project.module?.issue
-    const j = !canProjectModule.value || module.news === props.project.module?.news
-    const k = !canProjectModule.value || module.document === props.project.module?.document
-    const l = !canProjectModule.value || module.forum === props.project.module?.forum
-    const m = !canProjectModule.value || module.calendar === props.project.module?.calendar
-    const n = form.is_inherit_members === props.project.is_inherit_members
-    const o =
-      JSON.stringify([...form.allowed_roles].sort((a, b) => a - b)) ===
-      JSON.stringify(
-        [...(props.project.allowed_roles?.map(r => r.pk) ?? [])].sort((a, b) => a - b),
-      )
-    const p =
-      JSON.stringify([...form.trackers].sort((a, b) => a - b)) ===
-      JSON.stringify([...(props.project.trackers?.map(t => t.pk) ?? [])].sort((a, b) => a - b))
-    const q = form.chat_channel_enabled === (props.project.chat_channel_enabled ?? true)
-    const r = form.slack_notifications_enabled === props.project.slack_notifications_enabled
-
-    const first = a && b && c && d && e && f && g && h && i
-    const second = j && k && l && m && n && o && p && q && r
-
+    const publicChanged = canProjectPublic.value && form.is_public !== props.project.is_public
+    const bodyChanged = canProjectUpdate.value && hasProjectBodyChanges.value
     // 3. 권한은 있지만 변경 사항이 없으면 비활성화
-    return first && second
+    return !publicChanged && !bodyChanged
   }
   // 4. 생성의 경우 권한이 있다면 활성화(false 반환)
   return false
@@ -156,39 +183,52 @@ const getSlug = (event: { key: string; code: string }) => {
 const [route, router] = [useRoute(), useRouter()]
 
 const onSubmit = async (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
+  if (isValidate(event)) {
     validated.value = true
   } else {
-    localStorage.setItem('workSettingMenu', '워크스페이스')
+    localStorage.setItem('workSettingMenu', '메인설정')
+    const parentVal = normalizedParent.value
 
     if (props.project?.pk) {
       // 0. 현재 설정된 공개 여부 값을 미리 캡처 (onUpdated/dataSetup에 의한 덮어쓰기 방지)
       const targetPublic = form.is_public
       const originPublic = props.project.is_public
 
-      // 1. 일반 워크스페이스 정보 업데이트 (is_public은 제외하고 업데이트)
-      const { is_public, ...projectData } = form
-      await workStore.updateIssueProject({ ...projectData, ...module } as any)
+      // 1. 일반 워크스페이스 정보 업데이트 (is_public은 제외, 모듈은 권한+변경 시에만 포함)
+      if (canProjectUpdate.value && hasProjectBodyChanges.value) {
+        const { is_public: _unusedPublic, ...projectData } = form
+        const payload: Record<string, unknown> = {
+          ...projectData,
+          parent: parentVal,
+          is_inherit_members: parentVal ? form.is_inherit_members : false,
+          ...(canProjectModule.value && hasModuleChanges.value ? { ...module } : {}),
+        }
+        const updated = await workStore.updateIssueProject(payload as unknown as IssueProject)
+        if (!updated) return
+      }
 
       // 2. 공개 여부 변경 시 별도 액션 호출
-      if (targetPublic !== originPublic) {
-        if (canProjectPublic.value) {
-          await workStore.toggleProjectPublic(props.project.slug as string)
-        }
+      if (targetPublic !== originPublic && canProjectPublic.value) {
+        await workStore.toggleProjectPublic(props.project.slug as string)
       }
     } else {
-      await workStore.createIssueProject({ ...form, ...module } as any)
-      await router.push({ name: '(설정)', params: { projId: form.slug } })
+      const payload: Record<string, unknown> = {
+        ...form,
+        parent: parentVal,
+        is_inherit_members: parentVal ? form.is_inherit_members : false,
+        ...(canProjectModule.value ? { ...module } : {}),
+      }
+      const created = await workStore.createIssueProject(payload as unknown as IssueProject)
+      if (created?.slug) {
+        await router.push({ name: '(설정)', params: { projId: created.slug } })
+      }
     }
     validated.value = false
   }
 }
 
 const setDefaultRolesAndTrackers = () => {
-  if (props.project) return
+  if (props.project || isApplyingCopy.value) return
 
   if (form.type === '1') {
     // 본사관리(1): 전체 역할 및 업무유형 기본 할당
@@ -211,11 +251,15 @@ const setDefaultRolesAndTrackers = () => {
 watch(
   () => form.type,
   () => {
-    if (!props.project) {
+    if (!props.project && !isApplyingCopy.value) {
       setDefaultRolesAndTrackers()
     }
   },
 )
+
+watch(normalizedParent, nVal => {
+  if (!nVal) form.is_inherit_members = false
+})
 
 const dataSetup = () => {
   if (props.project) {
@@ -236,7 +280,8 @@ const dataSetup = () => {
 
     module.meeting =
       props.project.module?.meeting !== undefined ? !!props.project.module?.meeting : true
-    module.issue = true
+    module.issue =
+      props.project.module?.issue !== undefined ? !!props.project.module?.issue : true
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
     module.forum = !!props.project.module?.forum
@@ -248,11 +293,38 @@ const dataSetup = () => {
   }
 }
 
-const types = ref([
-  { value: '1', label: '본사관리' },
-  { value: '2', label: '부동산개발' },
-  { value: '3', label: '기타 워크스페이스' },
-])
+const applyCopySource = async (copyKey: string) => {
+  isApplyingCopy.value = true
+  try {
+    const res = await api.get(`/issue-project/${copyKey}/`)
+    const src = res.data as IssueProject
+    form.company = src.company
+    form.type = src.type
+    form.name = `${src.name} (복사본)`
+    form.description = src.description ?? ''
+    form.slug = ''
+    form.homepage = src.homepage ?? null
+    form.is_public = src.is_public
+    form.parent = src.parent ?? null
+    form.is_inherit_members = src.is_inherit_members
+    form.allowed_roles = src.allowed_roles?.map(r => r.pk) ?? []
+    form.trackers = src.trackers?.map(t => t.pk) ?? []
+    form.chat_channel_enabled = src.chat_channel_enabled ?? true
+    form.slack_notifications_enabled = src.slack_notifications_enabled ?? false
+    if (src.module) {
+      module.meeting = !!src.module.meeting
+      module.issue = !!src.module.issue
+      module.news = !!src.module.news
+      module.document = !!src.module.document
+      module.forum = !!src.module.forum
+      module.calendar = !!src.module.calendar
+    }
+  } catch (err) {
+    errorHandle(err)
+  } finally {
+    isApplyingCopy.value = false
+  }
+}
 
 watch(
   () => props.project,
@@ -265,7 +337,11 @@ onBeforeMount(async () => {
   comStore.fetchCompanyList()
   await Promise.all([workStore.fetchRoleList(), issueStore.fetchTrackerList()])
   if (!props.project) {
-    setDefaultRolesAndTrackers()
+    if (route.query.copy) {
+      await applyCopySource(String(route.query.copy))
+    } else {
+      setDefaultRolesAndTrackers()
+    }
   }
 })
 </script>
@@ -315,7 +391,7 @@ onBeforeMount(async () => {
               type="radio"
               id="type-3"
               inline
-              label="기타 프로젝트"
+              label="기타 워크스페이스"
               value="3"
               v-model="form.type"
             />
@@ -350,7 +426,8 @@ onBeforeMount(async () => {
               id="project-slug"
               v-model="form.slug"
               maxlength="100"
-              placeholder="워크스페이스 식별자 (영문, 숫자, - 문자만 사용)"
+              pattern="[a-z0-9_-]+"
+              placeholder="워크스페이스 식별자 (영문 소문자, 숫자, -, _ 문자만 사용)"
               :disabled="!!project?.slug"
               required
               text="1에서 100글자 소문자(a-z), 숫자, 대쉬(-)와 밑줄(_)만 가능합니다. 식별자 저장 후에는 수정할 수 없습니다."
@@ -382,7 +459,7 @@ onBeforeMount(async () => {
               v-model.number.lazy="form.parent"
               :issue-project-list="activeProjects"
               default-title="---------"
-              :disabled="!can(PERM.PROJECT_CREATE_SUB)"
+              :disabled="project ? !canProjectUpdate : !canProjectCreateSub"
             />
           </CCol>
         </CRow>
@@ -396,7 +473,7 @@ onBeforeMount(async () => {
               v-model="form.is_inherit_members"
               id="is_inherit_members"
               label="상위 워크스페이스 구성원 상속 여부"
-              :disabled="!form.parent"
+              :disabled="!normalizedParent"
             />
           </CCol>
         </CRow>
@@ -457,7 +534,7 @@ onBeforeMount(async () => {
     </CCard>
 
     <h6>
-      <v-icon icon="mdi-check-bold" size="sm" color="success" />
+      <v-icon icon="mdi-check-bold" size="small" color="success" />
       모듈
     </h6>
     <CCard class="mb-3" :color="colorLight">

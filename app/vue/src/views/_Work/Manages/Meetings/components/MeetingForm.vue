@@ -7,7 +7,7 @@ import { useMeeting } from '@/store/pinia/work_meeting'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
 import { timeFormat } from '@/utils/baseMixins'
-import { getErrorMessage, isValidate } from '@/utils/helper'
+import { getErrorMessage, isValidate, sanitizeExternalUrl } from '@/utils/helper'
 import type { Meeting, MeetingLink } from '@/store/types/work_meeting'
 import type { IssueProject } from '@/store/types/work_project'
 import type { Issue, IssueFile, IssueLink } from '@/store/types/work_issue'
@@ -137,14 +137,16 @@ const parseActionItemsFromText = () => {
     let assignedTo: number | null = null
     let dueDate = ''
 
-    // 1. Assignee pattern: (담당: 홍길동), (담당자: 홍길동), @홍길동
+    // 1. Assignee pattern: (담당: 홍길동), (담당자: 홍길동 / 기한: ...), @홍길동
     const assigneeMatch =
-      text.match(/\((?:담당(?:자)?|담당자명)\s*:\s*([^/,\)]+)\)/i) ||
+      text.match(/(?:담당(?:자)?|담당자명)\s*:\s*([^/,\)\n]+)/i) ||
       text.match(/@([a-zA-Z0-9가-힣]+)/)
     if (assigneeMatch) {
       const name = assigneeMatch[1].trim()
-      const foundPk = userMapByName.get(name.toLowerCase())
-      if (foundPk) assignedTo = foundPk
+      if (name) {
+        const foundPk = userMapByName.get(name.toLowerCase())
+        if (foundPk) assignedTo = foundPk
+      }
     }
 
     // 2. Due date pattern: (기한: 2026-09-15), 2026-09-15, 2026.09.15
@@ -184,13 +186,42 @@ const parseActionItemsFromText = () => {
   }
 }
 
-const { can, PERM } = usePerms()
-const canIssueRead = computed(() => can(PERM.ISSUE_READ))
-const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
+const projId = computed(() => route.params.projId as string | undefined)
+const selectedProjectSlug = computed(() => {
+  const byForm = meetingProjects.value.find(p => p.value === form.value.project)?.slug
+  return byForm || meeting.value?.project_desc?.slug || projId.value || workStore.currentProject?.slug
+})
 
-const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
-const canMeetingUpdate = computed(() => can(PERM.MEETING_UPDATE))
-const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM))
+const isCreator = computed(() => meeting.value?.creator?.pk === accStore.userInfo?.pk)
+const isAttendee = computed(() =>
+  meeting.value?.attendees_desc?.some(user => user.pk === accStore.userInfo?.pk) ?? false,
+)
+
+const { can, PERM } = usePerms()
+const canIssueRead = computed(() => can(PERM.ISSUE_READ, selectedProjectSlug.value))
+const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE, selectedProjectSlug.value))
+
+const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE, selectedProjectSlug.value))
+const canMeetingUpdate = computed(() => {
+  if (meeting.value?.is_confirmed) {
+    return can(PERM.MEETING_EDIT_CONFIRMED, selectedProjectSlug.value)
+  }
+  if (can(PERM.MEETING_UPDATE, selectedProjectSlug.value)) return true
+  if (can(PERM.MEETING_OWN_UPDATE, selectedProjectSlug.value)) {
+    return isCreator.value || isAttendee.value
+  }
+  return false
+})
+const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM, selectedProjectSlug.value))
+
+const assignableUsers = computed(() => {
+  if (workStore.projectMembers.length > 0) {
+    return workStore.projectMembers
+      .filter(m => m.is_assignable)
+      .map(m => ({ pk: m.user_id, username: m.username }))
+  }
+  return users.value
+})
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 단일 파일 최대 100MB
 const MAX_TOTAL_SIZE = 100 * 1024 * 1024 // 전체 첨부파일 합계 최대 100MB
@@ -322,14 +353,14 @@ const onSubmit = async (event: Event) => {
 
       if (meetingPk) {
         const updated = await meetingStore.updateMeeting(meetingPk, formData)
-        if (updated?.project_desc?.slug) targetSlug = updated.project_desc.slug
+        if (!updated?.pk) return
+        if (updated.project_desc?.slug) targetSlug = updated.project_desc.slug
       } else {
         const created = await meetingStore.createMeeting(formData)
-        if (created && created.pk) {
-          meetingPk = created.pk
-          form.value.pk = created.pk
-          if (created.project_desc?.slug) targetSlug = created.project_desc.slug
-        }
+        if (!created?.pk) return
+        meetingPk = created.pk
+        form.value.pk = created.pk
+        if (created.project_desc?.slug) targetSlug = created.project_desc.slug
       }
 
       // Process pending inline action items in parallel with error handling
@@ -548,12 +579,18 @@ const fetchMeeting = async (pk: number) => {
 
 watch(
   () => form.value.project,
-  async newProjPk => {
+  async (newProjPk, oldProjPk) => {
     if (newProjPk) {
+      if (oldProjPk && newProjPk !== oldProjPk) {
+        form.value.category = null
+      }
       const proj = meetingProjects.value.find(p => p.value === newProjPk)
       if (proj) {
-        await issueStore.fetchAllIssueList(proj.slug)
-        await meetingStore.fetchCategoryList(proj.slug)
+        await Promise.all([
+          issueStore.fetchAllIssueList(proj.slug),
+          meetingStore.fetchCategoryList(proj.slug),
+          workStore.fetchProjectMembers(proj.slug),
+        ])
       }
     }
   },
@@ -589,8 +626,10 @@ const onCategorySubmit = async (event: Event) => {
   } else {
     categoryValidated.value = false
     const created = await meetingStore.createCategory(categoryForm.value)
-    if (created?.pk) form.value.category = created.pk
-    refCategoryModal.value?.close()
+    if (created?.pk) {
+      form.value.category = created.pk
+      refCategoryModal.value?.close()
+    }
   }
 }
 
@@ -945,7 +984,6 @@ const populateFormFromAiSummary = (aiData: AiMeetingSummary) => {
   }
 }
 
-const projId = computed(() => route.params.projId as string | undefined)
 watch(projId, newVal => {
   if (newVal)
     form.value.project = meetingProjects.value.find(p => p.slug === newVal)?.value as number
@@ -965,6 +1003,9 @@ watch(
 )
 
 onBeforeMount(async () => {
+  if (!route.params.meetingId) {
+    meetingStore.removeMeeting()
+  }
   await accStore.fetchUsersList()
   await workStore.fetchAllProjectList()
   await issueStore.fetchStatusList()
@@ -974,7 +1015,10 @@ onBeforeMount(async () => {
     const proj = meetingProjects.value.find(p => p.slug === projId.value)
     if (proj) {
       form.value.project = proj.value as number
-      await issueStore.fetchAllIssueList(proj.slug)
+      await Promise.all([
+        issueStore.fetchAllIssueList(proj.slug),
+        workStore.fetchProjectMembers(proj.slug),
+      ])
     }
     await meetingStore.fetchCategoryList(projId.value as string)
   } else {
@@ -1150,7 +1194,7 @@ onBeforeMount(async () => {
                   </span>
                 </div>
 
-                <div v-if="meeting?.files?.length" class="mb-2">
+                <div v-if="form.pk && meeting?.files?.length" class="mb-2">
                   <CTable small striped hover>
                     <CTableBody>
                       <CTableRow v-for="(file, index) in meeting.files" :key="file.pk">
@@ -1223,7 +1267,11 @@ onBeforeMount(async () => {
                     <CTableBody>
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
                         <CTableDataCell>
-                          <a :href="linkItem.link" target="_blank" rel="noopener noreferrer">
+                          <a
+                            :href="sanitizeExternalUrl(linkItem.link)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <v-icon icon="mdi-link-variant" size="14" class="me-1" />
                             {{ linkItem.name ? linkItem.name : linkItem.link }}
                           </a>
@@ -1399,7 +1447,7 @@ onBeforeMount(async () => {
                         <CTableDataCell>
                           <CFormSelect v-model="item.assigned_to" size="sm">
                             <option :value="null">미지정</option>
-                            <option v-for="u in users" :key="u.pk" :value="u.pk">
+                            <option v-for="u in assignableUsers" :key="u.pk" :value="u.pk">
                               {{ u.username }}
                             </option>
                           </CFormSelect>
@@ -1419,7 +1467,7 @@ onBeforeMount(async () => {
                             icon
                             size="x-small"
                             variant="text"
-                            color="danger"
+                            color="error"
                             @click="removePendingActionItem(idx)"
                           >
                             <v-icon icon="mdi-trash-can-outline" size="14" />
@@ -1448,7 +1496,7 @@ onBeforeMount(async () => {
           <CCol md="4" class="bg-more-light p-4">
             <CRow class="mb-3">
               <CFormLabel for="project" class="col-sm-4 col-form-label text-end required">
-                프로젝트
+                워크스페이스
               </CFormLabel>
               <CCol sm="8">
                 <IssueProjectSelector
@@ -1457,7 +1505,7 @@ onBeforeMount(async () => {
                   required
                   :disabled="!!projId"
                 />
-                <CFormFeedback invalid>프로젝트를 선택해 주세요.</CFormFeedback>
+                <CFormFeedback invalid>워크스페이스를 선택해 주세요.</CFormFeedback>
               </CCol>
             </CRow>
 
@@ -1635,7 +1683,7 @@ onBeforeMount(async () => {
         @submit.prevent="onCategorySubmit"
       >
         <CRow class="mb-3">
-          <CFormLabel for="cat-project" class="col-sm-3 col-form-label">프로젝트</CFormLabel>
+          <CFormLabel for="cat-project" class="col-sm-3 col-form-label">워크스페이스</CFormLabel>
           <CCol sm="9">
             <IssueProjectSelector
               v-model="categoryForm.project"
@@ -1746,7 +1794,7 @@ onBeforeMount(async () => {
                   icon
                   size="x-small"
                   variant="text"
-                  color="danger"
+                  color="error"
                   @click="deleteTemplate(idx)"
                 >
                   <v-icon icon="mdi-trash-can-outline" size="14" />
@@ -1866,7 +1914,7 @@ onBeforeMount(async () => {
   </FormModal>
 
   <!-- 🎙️ AI 회의 녹음 및 분석 모달 -->
-  <FormModal ref="refAiRecordModal" size="lg">
+  <FormModal ref="refAiRecordModal" size="lg" @close="cancelRecording">
     <template #header>🎙️ AI 음성 회의록 생성 (Gemini)</template>
     <template #default>
       <div class="p-4 text-center">

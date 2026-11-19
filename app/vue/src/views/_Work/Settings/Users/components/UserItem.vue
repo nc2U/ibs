@@ -1,21 +1,33 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { timeFormat, elapsedTime } from '@/utils/baseMixins'
+import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
 
-defineProps({
+const props = defineProps({
   user: { type: Object as PropType<User>, required: true },
 })
 
 const router = useRouter()
+const accStore = useAccount()
+
+const canEditUser = computed(() => {
+  if (!accStore.workManager) return false
+  if (props.user.pk === accStore.userInfo?.pk) return false
+  if (props.user.is_superuser && !accStore.superAuth) return false
+  return true
+})
+
+const adminRoleLabel = computed(() => {
+  if (props.user.is_superuser) return '최고관리자'
+  if (props.user.work_manager) return '업무관리자'
+  return '-'
+})
 </script>
 
 <template>
-  <CTableRow>
-    <CTableDataCell>
-      <CFormCheck />
-    </CTableDataCell>
+  <CTableRow :class="{ 'text-muted': !user.is_active }">
     <CTableDataCell>
       <router-link :to="{ name: '사용자 - 보기', params: { userId: user.pk } }">
         {{ user.username }}
@@ -23,11 +35,21 @@ const router = useRouter()
     </CTableDataCell>
     <CTableDataCell>{{ user.profile?.name }}</CTableDataCell>
     <CTableDataCell>{{ user.email }}</CTableDataCell>
-    <CTableDataCell>{{ user.is_superuser ? '예' : '아니오' }}</CTableDataCell>
+    <CTableDataCell>
+      <v-chip size="x-small" :color="user.is_active ? 'success' : 'grey'" variant="tonal">
+        {{ user.is_active ? '활성' : '비활성' }}
+      </v-chip>
+    </CTableDataCell>
+    <CTableDataCell>{{ adminRoleLabel }}</CTableDataCell>
     <CTableDataCell>{{ timeFormat(user.date_joined) }}</CTableDataCell>
     <CTableDataCell>{{ elapsedTime(user.last_login as string) }}</CTableDataCell>
-    <CTableDataCell class="py-0">
-      <CDropdown color="secondary" variant="input-group" placement="bottom-end">
+    <CTableDataCell class="py-0 text-end">
+      <CDropdown
+        v-if="canEditUser"
+        color="secondary"
+        variant="input-group"
+        placement="bottom-end"
+      >
         <CDropdownToggle
           :caret="false"
           color="light"
@@ -43,7 +65,7 @@ const router = useRouter()
             @click="router.push({ name: '사용자 - 수정', params: { userId: user.pk } })"
           >
             <span>
-              <v-icon icon="mdi-pencil" color="yellow-darken-2" size="sm" />
+              <v-icon icon="mdi-pencil" color="yellow-darken-2" size="small" class="me-1" />
               편집
             </span>
           </CDropdownItem>

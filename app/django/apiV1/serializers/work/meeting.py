@@ -1,5 +1,6 @@
 import logging
 import json
+from urllib.parse import urlparse
 
 from django.db import transaction
 from rest_framework import serializers
@@ -12,6 +13,21 @@ from _utils.file_service import FileService
 
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_safe_meeting_url(raw_url: str) -> str:
+    url = str(raw_url).strip()
+    if not url:
+        return ''
+    parsed = urlparse(url)
+    if not parsed.scheme:
+        if ':' in url.split('/')[0]:
+            raise serializers.ValidationError({'links': '허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.'})
+        url = f'https://{url}'
+        parsed = urlparse(url)
+    if parsed.scheme.lower() not in ('http', 'https'):
+        raise serializers.ValidationError({'links': '허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.'})
+    return url
 
 
 class MeetingCategorySerializer(serializers.ModelSerializer):
@@ -37,6 +53,9 @@ class MeetingLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = MeetingLink
         fields = ('pk', 'meeting', 'link', 'name', 'hit', 'created', 'creator')
+
+    def validate_link(self, value):
+        return _validate_safe_meeting_url(value)
 
 
 class IssueInMeetingSerializer(serializers.ModelSerializer):
@@ -137,8 +156,9 @@ class MeetingSerializer(serializers.ModelSerializer):
             new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
         for i, link in enumerate(new_links):
             if link and str(link).strip():
+                safe_url = _validate_safe_meeting_url(str(link))
                 name_val = new_link_names[i] if i < len(new_link_names) else ''
-                MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), name=name_val, creator=creator)
+                MeetingLink.objects.create(meeting=meeting, link=safe_url, name=name_val, creator=creator)
 
         return meeting
 
@@ -166,20 +186,24 @@ class MeetingSerializer(serializers.ModelSerializer):
                 continue
             try:
                 link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
-                link_pk = link_data.get('pk')
-                if link_data.get('del'):
-                    MeetingLink.objects.filter(pk=link_pk, meeting=instance).delete()
-                else:
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"MeetingLink JSON 파싱 오류: {e}")
+                continue
+            link_pk = link_data.get('pk')
+            if link_data.get('del'):
+                MeetingLink.objects.filter(pk=link_pk, meeting=instance).delete()
+            else:
+                try:
                     link_obj = MeetingLink.objects.get(pk=link_pk, meeting=instance)
-                    if 'link' in link_data:
-                        link_obj.link = link_data['link']
-                    if 'name' in link_data:
-                        link_obj.name = link_data['name']
-                    elif 'description' in link_data:
-                        link_obj.name = link_data['description']
-                    link_obj.save()
-            except Exception as e:
-                logger.error(f"MeetingLink 처리 중 오류: {e}")
+                except MeetingLink.DoesNotExist:
+                    continue
+                if 'link' in link_data:
+                    link_obj.link = _validate_safe_meeting_url(link_data['link'])
+                if 'name' in link_data:
+                    link_obj.name = link_data['name']
+                elif 'description' in link_data:
+                    link_obj.name = link_data['description']
+                link_obj.save()
 
         new_links = self._extract_initial_list(self.initial_data, 'newLinks')
         new_link_names = self._extract_initial_list(self.initial_data, 'newLinkNames')
@@ -187,7 +211,8 @@ class MeetingSerializer(serializers.ModelSerializer):
             new_link_names = self._extract_initial_list(self.initial_data, 'newLinkDescs')
         for i, link in enumerate(new_links):
             if link and str(link).strip():
+                safe_url = _validate_safe_meeting_url(str(link))
                 name_val = new_link_names[i] if i < len(new_link_names) else ''
-                MeetingLink.objects.create(meeting=instance, link=str(link).strip(), name=name_val, creator=creator)
+                MeetingLink.objects.create(meeting=instance, link=safe_url, name=name_val, creator=creator)
 
         return instance

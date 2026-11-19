@@ -118,7 +118,7 @@ const activeFields = computed(() => {
   if (searchCond.value.includes('project') && !route.params.projId) {
     fields.push({
       key: 'project',
-      label: '프로젝트',
+      label: '워크스페이스',
       type: 'project',
       condOptions: [
         { value: 'is', label: '이다' },
@@ -277,7 +277,7 @@ watch(
 
 onBeforeMount(() => {
   if (!route.params.projId) {
-    searchOptions[0].options.splice(1, 0, { value: 'project', label: '프로젝트' })
+    searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
   }
 })
 
@@ -287,7 +287,7 @@ defineExpose({ applyQuery, resetFilter })
 <template>
   <CRow>
     <CCol class="pointer pt-1 mb-0" @click="condVisible = !condVisible">
-      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       검색조건
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
@@ -308,7 +308,7 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
               <CCol
                 v-if="enabledFields.includes('status')"
-                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+                class="col-4 col-lg-3 col-xl-2"
               >
                 <CFormSelect v-model="cond.status" size="sm" @change="filterSubmit">
                   <option value="open">준비중</option>
@@ -318,7 +318,7 @@ defineExpose({ applyQuery, resetFilter })
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3">
                 <CFormSelect
                   v-if="cond.status === 'is' || cond.status === 'exclude'"
                   v-model="form.status"
@@ -454,7 +454,7 @@ defineExpose({ applyQuery, resetFilter })
 
   <CRow class="mt-2">
     <CCol class="pointer mb-0" @click="optVisible = !optVisible">
-      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       옵션
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />

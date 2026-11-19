@@ -35,13 +35,17 @@ export const useForum = defineStore('forum', () => {
     api
       .get(`/forum/${pk}/`)
       .then(res => (forum.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const fetchForumList = (payload: { project?: string }) =>
-    api
-      .get(`/forum/?project__slug=${payload.project ?? ''}`)
-      .then(res => (forumList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+  const fetchForumList = (payload: { project?: string }) => {
+    const params = new URLSearchParams()
+    params.append('limit', '500')
+    if (payload.project) params.append('project__slug', payload.project)
+    return api
+      .get(`/forum/?${params.toString()}`)
+      .then(res => (forumList.value = res.data.results ?? []))
+      .catch(err => errorHandle(err))
+  }
 
   const createForum = (payload: Forum, projId: string) =>
     api
@@ -49,29 +53,43 @@ export const useForum = defineStore('forum', () => {
       .then(async res => {
         forum.value = res.data
         await fetchForumList({ project: projId })
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   const updateForum = (pk: number, payload: any, projId: string) =>
     api
       .put(`/forum/${pk}/`, payload)
       .then(async res => {
         forum.value = res.data
         await fetchForumList({ project: projId })
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
-  const deleteForum = (pk: number, projId: string) =>
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
+  const deleteForum = (pk: number, projId: string): Promise<boolean> =>
     api
       .delete(`/forum/${pk}/`)
-      .then(async res => await fetchForumList({ project: projId }))
-      .catch(err => errorHandle(err.response.data))
+      .then(async () => {
+        await fetchForumList({ project: projId })
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const categoryList = ref<PostCategory[]>([])
 
   const fetchCategoryList = (forumId: number) =>
     api
-      .get(`/post-category/?forum=${forumId}`)
-      .then(res => (categoryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .get(`/post-category/?forum=${forumId}&limit=500`)
+      .then(res => (categoryList.value = res.data.results ?? []))
+      .catch(err => errorHandle(err))
 
   const createCategory = (payload: PostCategory, projId: string = '') =>
     api
@@ -79,8 +97,12 @@ export const useForum = defineStore('forum', () => {
       .then(async res => {
         await fetchCategoryList(res.data.forum)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateCategory = (payload: PostCategory, projId: string = '') =>
     api
@@ -88,8 +110,12 @@ export const useForum = defineStore('forum', () => {
       .then(async res => {
         await fetchCategoryList(res.data.forum)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteCategory = (payload: { pk: number; forum: number }, projId: string = '') =>
     api
@@ -97,8 +123,12 @@ export const useForum = defineStore('forum', () => {
       .then(async () => {
         await fetchCategoryList(payload.forum)
         message('warning', '', '카테고리가 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const accStore = useAccount()
   const post = ref<Post | null>(null)
@@ -118,39 +148,52 @@ export const useForum = defineStore('forum', () => {
   const fetchPost = async (pk: number) =>
     api
       .get(`/post/${pk}/`)
-      .then(res => {
+      .then(async res => {
         post.value = res.data
-        fetchCommentList({ post: pk })
+        await fetchCommentList({ post: pk })
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const removePost = () => (post.value = null)
+  const clearForumViewState = () => {
+    forum.value = null
+    post.value = null
+    postList.value = []
+    postCount.value = 0
+    commentList.value = []
+    commentCount.value = 0
+    categoryList.value = []
+  }
 
   const fetchPostList = async (payload: PostFilter) => {
-    const { forum: forumId, page } = payload
-    let url = `/post/?page=${page ?? 1}`
-    if (forumId) url += `&forum=${forumId}`
-    if (payload.project) url += `&forum_project=${payload.project}`
-    if (payload.category) url += `&category=${payload.category}`
-    if (payload.is_notice) url += `&is_notice=${payload.is_notice}`
+    const params = new URLSearchParams()
+    params.append('page', String(payload.page ?? 1))
+    if (payload.forum) params.append('forum', String(payload.forum))
+    if (payload.project) params.append('forum__project', String(payload.project))
+    if (payload.category) params.append('category', String(payload.category))
+    if (payload.is_notice) params.append('is_notice', String(payload.is_notice))
     if (payload.is_faq !== undefined && payload.is_faq !== '') {
-      url += `&is_faq=${payload.is_faq}`
+      params.append('is_faq', String(payload.is_faq))
     } else {
       // 일반 게시판 기본값: is_faq=false 인 일반 게시물만 조회
-      url += `&is_faq=false`
+      params.append('is_faq', 'false')
     }
-    if (payload.is_blind) url += `&is_blind=${payload.is_blind}`
-    if (payload.user) url += `&creator=${payload.user}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
+    if (payload.is_blind) params.append('is_blind', String(payload.is_blind))
+    if (payload.user) params.append('creator', String(payload.user))
+    if (payload.ordering) params.append('ordering', payload.ordering)
+    if (payload.search) params.append('search', payload.search)
 
     return await api
-      .get(url)
+      .get(`/post/?${params.toString()}`)
       .then(res => {
         postList.value = res.data.results
         postCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -171,8 +214,12 @@ export const useForum = defineStore('forum', () => {
           page: 1,
         })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updatePost = (
     payload: {
@@ -192,8 +239,12 @@ export const useForum = defineStore('forum', () => {
         })
         await fetchPost(res.data.pk)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchPost = async (
     payload: PatchPost & {
@@ -209,7 +260,7 @@ export const useForum = defineStore('forum', () => {
           ...filter,
         }).then(() => fetchPost(res.data.pk)),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const hitPost = (pk: number) =>
@@ -220,35 +271,39 @@ export const useForum = defineStore('forum', () => {
           post.value.hit = res.data.hit
         }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchPostLike = (pk: number) =>
     api
       .patch(`/post-like/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchPostBlame = (pk: number) =>
     api
       .patch(`/post-blame/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const copyPost = (payload: { post: number; forum: number }, projId: string = '') =>
     api
-      .post(`post/${payload.post}/copy/?project=${projId}`, payload)
+      .post(`/post/${payload.post}/copy/?project=${projId}`, payload)
       .then(() => message('success', '', '게시물 복사가 완료되었습니다.'))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const deletePost = (pk: number, filter: PostFilter, projId: string = '') =>
+  const deletePost = (pk: number, filter: PostFilter, projId: string = ''): Promise<boolean> =>
     api
       .delete(`/post/${pk}/?project=${projId}`)
-      .then(() =>
-        fetchPostList(filter).then(() =>
-          message('warning', '', '해당 게시물이 휴지통으로 삭제되었습니다.'),
-        ),
-      )
-      .catch(err => errorHandle(err.response.data))
+      .then(async () => {
+        post.value = null
+        await fetchPostList(filter)
+        message('warning', '', '해당 게시물이 휴지통으로 삭제되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // state
   const trashPost = ref<TP | null>(null)
@@ -312,46 +367,49 @@ export const useForum = defineStore('forum', () => {
     api
       .get(`/comment/${pk}/`)
       .then(res => (comment.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchCommentList = async (payload: { post?: number; user?: number; page?: number }) => {
-    const { post: postId, user, page } = payload
-    let url = `/comment/?page=${page ?? 1}`
-    url = postId ? `${url}&post=${postId}&is_comment=true` : url
-    url = user ? `${url}&user=${user}` : url
+    const params = new URLSearchParams()
+    params.append('page', String(payload.page ?? 1))
+    if (payload.post) {
+      params.append('post', String(payload.post))
+      params.append('is_comment', 'true')
+    }
+    if (payload.user) params.append('user', String(payload.user))
 
     return await api
-      .get(url)
+      .get(`/comment/?${params.toString()}`)
       .then(res => {
         commentList.value = res.data.results
         commentCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createComment = (payload: Cm, projId: string = '') =>
     api
       .post(`/comment/?project=${projId}`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchComment = (payload: Cm, projId: string = '') =>
     api
       .patch(`/comment/${payload.pk}/?project=${projId}`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchCommentLike = (pk: number, post: number, page = 1) =>
     api
       .patch(`/comment-like/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchCommentList({ post, page })))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchCommentBlame = (pk: number, post: number, page = 1) =>
     api
       .patch(`/comment-blame/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchCommentList({ post, page })))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteComment = (payload: { pk: number; post: number }, projId: string = '') =>
     api
@@ -359,7 +417,7 @@ export const useForum = defineStore('forum', () => {
       .then(() =>
         fetchPost(payload.post).then(() => message('warning', '', '해당 댓글이 삭제되었습니다.')),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const tag = ref(null)
 
@@ -394,6 +452,7 @@ export const useForum = defineStore('forum', () => {
     postPages,
     fetchPost,
     removePost,
+    clearForumViewState,
     fetchPostList,
     createPost,
     updatePost,

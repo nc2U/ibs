@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, type PropType, watchEffect, onUnmounted } from 'vue'
+import { computed, ref, type PropType, watchEffect, onUnmounted } from 'vue'
 import { cutString, diffDate } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -12,7 +12,7 @@ const props = defineProps({ sub: { type: Object as PropType<SubIssue>, required:
 const emit = defineEmits(['unlink-sub-issue'])
 
 const route = useRoute()
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 
 const selected = ref<number | null>(null)
 
@@ -48,9 +48,10 @@ const unlinkSubIssue = () => {
   delSubRef.value?.close()
 }
 
-const projId = route.params.projId as string
-const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
-const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { issueId: id })
+const projId = computed(() => route.params.projId as string)
+const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
+const detailRouteParams = (id: number) =>
+  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
 </script>
 
 <template>
@@ -75,9 +76,13 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-end pt-1">
       <span class="me-3">{{ sub.status }}</span>
       <span v-if="sub.assigned_to" class="me-3">
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }">
+        <router-link
+          v-if="canViewUser(sub.assigned_to.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }"
+        >
           {{ cutString(sub.assigned_to.username, 9) }}
         </router-link>
+        <span v-else>{{ cutString(sub.assigned_to.username, 9) }}</span>
       </span>
       <span class="me-3">
         {{ sub?.start_date }}

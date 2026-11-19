@@ -37,7 +37,7 @@ const { can, PERM } = usePerms()
         </CTableDataCell>
       </CTableRow>
       <CTableRow v-for="frm in forumList" :key="frm.pk as number">
-        <CTableDataCell class="pl-4">
+        <CTableDataCell class="ps-4">
           <router-link
             :to="{
               name: '(게시판) - 보기',
@@ -50,14 +50,14 @@ const { can, PERM } = usePerms()
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ frm.post_count }}</CTableDataCell>
         <CTableDataCell class="text-center">{{ frm.all_post_count }}</CTableDataCell>
-        <CTableDataCell class="form-text pl-4">
+        <CTableDataCell class="form-text ps-4">
           <template v-if="frm.last_post">
             <v-chip
               v-if="frm.last_post.is_notice"
               variant="elevated"
               color="primary"
               size="x-small"
-              class="mr-2"
+              class="me-2"
             >
               공지
             </v-chip>
@@ -75,7 +75,7 @@ const { can, PERM } = usePerms()
               {{ frm.last_post.title }}
             </router-link>
             <span v-else>{{ frm.last_post.title }}</span>
-            <span class="text-grey ml-2">
+            <span class="text-grey ms-2">
               by {{ frm.last_post.creator }}, {{ elapsedTime(frm.last_post.created) }}
             </span>
           </template>

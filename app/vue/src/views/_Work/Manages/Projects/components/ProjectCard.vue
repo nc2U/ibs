@@ -39,7 +39,7 @@ const isOwnProject = (project: IssueProject) => {
         icon="mdi-lock"
         color="blue-grey-lighten-2"
         size="15"
-        class="ml-2"
+        class="ms-2"
         title="비공개 워크스페이스"
       />
       <v-icon
@@ -47,7 +47,7 @@ const isOwnProject = (project: IssueProject) => {
         icon="mdi-account-tag"
         color="success"
         size="15"
-        class="ml-2"
+        class="ms-2"
         title="내 워크스페이스"
       />
       <v-icon
@@ -55,7 +55,7 @@ const isOwnProject = (project: IssueProject) => {
         icon="mdi-bookmark"
         color="info"
         size="15"
-        class="ml-2"
+        class="ms-2"
         title="북마크됨"
       />
       <div v-if="project.description" class="project-desc" v-html="markdownRender(project.description)" />

@@ -58,7 +58,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .get(`/issue-by-member/?user=${userId ?? ''}`)
       .then(res => (issueNumByMember.value = res.data))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
 
   const fetchIssue = async (pk: number) => {
     try {
@@ -67,6 +67,17 @@ export const useIssue = defineStore('issue', () => {
       return { pk: res.data.pk, project: res.data.project.slug }
     } catch (err: unknown) {
       errorHandle(err)
+      return null
+    }
+  }
+
+  const fetchIssueDetail = async (pk: number): Promise<Issue | null> => {
+    try {
+      const res = await api.get(`/issue/${pk}/`)
+      return res.data
+    } catch (err: unknown) {
+      errorHandle(err)
+      return null
     }
   }
 
@@ -80,18 +91,25 @@ export const useIssue = defineStore('issue', () => {
       return Promise.resolve()
     }
     return api
-      .get(`/issue/?project__slug=${project ?? ''}&status__closed=${closed}&limit=1000`)
+      .get('/issue/', {
+        params: {
+          ...(project ? { project__slug: project } : {}),
+          ...(closed !== '' ? { status__closed: closed } : {}),
+          limit: 1000,
+        },
+      })
       .then(res => {
         allIssueList.value = res.data.results
         cachedProject.value = currentKey
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   const fetchIssueList = async (payload: IssueFilter) => {
-    issueFilter.value = payload
+    issueFilter.value = { ...payload }
     const params = new URLSearchParams()
     params.append('page', String(payload.page ?? 1))
+    if (payload.limit) params.append('limit', String(payload.limit))
 
     const paramMap: Record<string, string> = {
       project: 'project__slug',
@@ -192,7 +210,8 @@ export const useIssue = defineStore('issue', () => {
     }
 
     Object.entries(payload).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '' || key === 'page') return
+      if (value === undefined || value === null || value === '' || key === 'page' || key === 'limit')
+        return
       const apiParam = paramMap[key] || key
       params.append(apiParam, String(value))
     })
@@ -203,14 +222,23 @@ export const useIssue = defineStore('issue', () => {
         issueList.value = res.data.results
         issueCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
-  const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
+  const getRequestConfig = (payload: FormData | Record<string, unknown>) =>
+    payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined
+
+  const refreshActiveIssueIfOpen = async (fallbackPk?: number) => {
+    const activePk = issue.value?.pk
+    const targetPk = activePk ?? fallbackPk
+    if (activePk && targetPk) {
+      await Promise.all([fetchIssue(activePk), logStore.fetchIssueLogList({ issue: activePk })])
+    }
+  }
 
   const createIssue = (payload: FormData | Record<string, unknown>) =>
     api
-      .post(`/issue/`, payload, config_headers)
+      .post(`/issue/`, payload, getRequestConfig(payload))
       .then(async res => {
         cachedProject.value = ''
         await fetchIssue(res.data.pk)
@@ -220,59 +248,77 @@ export const useIssue = defineStore('issue', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateIssue = (pk: number, payload: FormData | Record<string, unknown>) =>
     api
-      .put(`/issue/${pk}/`, payload, config_headers)
-      .then(async () => {
+      .put(`/issue/${pk}/`, payload, getRequestConfig(payload))
+      .then(async res => {
         cachedProject.value = ''
         await fetchIssue(pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
         await fetchIssueByMember()
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchIssue = (pk: number, payload: FormData | Record<string, unknown>) =>
     api
-      .patch(`/issue/${pk}/`, payload, config_headers)
+      .patch(`/issue/${pk}/`, payload, getRequestConfig(payload))
       .then(async () => {
         cachedProject.value = ''
-        await fetchIssue(pk)
+        await refreshActiveIssueIfOpen()
         await fetchIssueList(issueFilter.value)
-        await logStore.fetchIssueLogList({ issue: pk })
         await fetchIssueByMember()
         message()
         return true
       })
       .catch(err => {
-        errorHandle(err.response?.data || err.message)
+        errorHandle(err)
         return false
       })
 
   const watchIssue = (pk: number) =>
     api
-      .post(`/issue/${pk}/toggle_watch/`, {}, config_headers)
+      .post(`/issue/${pk}/toggle_watch/`, {})
       .then(async () => {
-        await fetchIssue(pk)
+        await refreshActiveIssueIfOpen()
         await fetchIssueList(issueFilter.value)
-        await logStore.fetchIssueLogList({ issue: pk })
         message()
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const deleteIssue = (pk: number) =>
     api
       .delete(`/issue/${pk}/`)
       .then(async () => {
         cachedProject.value = ''
+        if (issue.value?.pk === pk) {
+          issue.value = null
+        } else {
+          await refreshActiveIssueIfOpen()
+        }
         await fetchIssueList(issueFilter.value)
         await fetchIssueByMember()
-        message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
+        message('warning', '알림!', '해당 업무가 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // issue-relations states & getters
   const issueRelation = ref<IssueRelation | null>(null)
@@ -282,13 +328,17 @@ export const useIssue = defineStore('issue', () => {
     api
       .get(`/issue-relation/${pk}/`)
       .then(res => (issueRelation.value = res.data))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
 
-  const fetchIssueRelationList = (payload: { issue?: number }) =>
+  const fetchIssueRelationList = (payload: { issue?: number; source?: number }) =>
     api
-      .get(`/issue-relation/?issue=${payload.issue ?? ''}`)
+      .get('/issue-relation/', {
+        params: {
+          ...(payload.source || payload.issue ? { source: payload.source ?? payload.issue } : {}),
+        },
+      })
       .then(res => (issueRelationList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
 
   const createIssueRelation = (payload: {
     source: number | null
@@ -298,34 +348,59 @@ export const useIssue = defineStore('issue', () => {
     api
       .post(`/issue-relation/`, payload)
       .then(async res => {
-        await fetchIssue(res.data.source.pk)
+        const targetRefreshPk = issue.value?.pk ?? res.data.source?.pk
+        if (targetRefreshPk) {
+          await Promise.all([
+            fetchIssue(targetRefreshPk),
+            logStore.fetchIssueLogList({ issue: targetRefreshPk }),
+          ])
+        }
         await fetchIssueList(issueFilter.value)
-        await logStore.fetchIssueLogList({ issue: res.data.source.pk })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateIssueRelation = (pk: number, payload: IssueRelation) =>
     api
       .put(`/issue-relation/${pk}/`, payload)
       .then(async res => {
-        await fetchIssue(res.data.issue)
+        const targetRefreshPk = issue.value?.pk ?? res.data.source?.pk
+        if (targetRefreshPk) {
+          await Promise.all([
+            fetchIssue(targetRefreshPk),
+            logStore.fetchIssueLogList({ issue: targetRefreshPk }),
+          ])
+        }
         await fetchIssueList(issueFilter.value)
-        await logStore.fetchIssueLogList({ issue: res.data.issue })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const deleteIssueRelation = (pk: number, issue: number) =>
+  const deleteIssueRelation = (pk: number, issuePk: number) =>
     api
       .delete(`/issue-relation/${pk}/`)
       .then(async () => {
-        await fetchIssue(issue)
+        const targetRefreshPk = issue.value?.pk ?? issuePk
+        await Promise.all([
+          fetchIssue(targetRefreshPk),
+          logStore.fetchIssueLogList({ issue: targetRefreshPk }),
+        ])
         await fetchIssueList(issueFilter.value)
-        await logStore.fetchIssueLogList({ issue })
         message('warning', '알림!', '해당 업무와 연결 관계가 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // issue-comment states & getters
   const issueComment = ref<IssueComment | null>(null)
@@ -335,41 +410,70 @@ export const useIssue = defineStore('issue', () => {
     api
       .get(`/issue-comment/${pk}/`)
       .then(res => (issueComment.value = res.data))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
 
-  const fetchIssueCommentList = async (payload: { issue?: number; user?: number }) => {
-    let url = `/issue-comment/?1=1`
-    if (payload.issue) url += `&issue=${payload.issue}`
-    if (payload.user) url += `&user=${payload.user}`
+  const fetchIssueCommentList = async (payload: {
+    issue?: number
+    user?: number
+    creator?: number
+  }) => {
+    const params: Record<string, number> = {}
+    if (payload.issue) params.issue = payload.issue
+    const creatorId = payload.creator ?? payload.user
+    if (creatorId) params.creator = creatorId
 
     return await api
-      .get(url)
+      .get('/issue-comment/', { params })
       .then(res => (issueCommentList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
+
+  const createIssueComment = (payload: { issue: number; content: string; is_private?: boolean }) =>
+    api
+      .post('/issue-comment/', payload)
+      .then(async res => {
+        await Promise.all([
+          fetchIssueCommentList({ issue: payload.issue }),
+          logStore.fetchIssueLogList({ issue: payload.issue }),
+        ])
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchIssueComment = (payload: { pk?: number; issue?: number; [key: string]: unknown }) =>
     api
       .patch(`/issue-comment/${payload.pk}/`, payload)
-      .then(async () => {
+      .then(async res => {
         if (payload.pk) await fetchIssueComment(payload.pk)
         await fetchIssueCommentList({ issue: payload.issue })
         await logStore.fetchIssueLogList({ issue: payload.issue })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const deleteIssueComment = (pk: number, issue?: number) =>
+  const deleteIssueComment = (pk: number, issuePk?: number) =>
     api
       .delete(`/issue-comment/${pk}/`)
       .then(async () => {
-        if (issue) {
-          await fetchIssueCommentList({ issue })
-          await logStore.fetchIssueLogList({ issue })
+        if (issuePk) {
+          await fetchIssueCommentList({ issue: issuePk })
+          await logStore.fetchIssueLogList({ issue: issuePk })
         }
-        message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
+        message('warning', '알림!', '댓글이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // tracker states & getters
   const trackerList = ref<Tracker[]>([])
@@ -386,9 +490,9 @@ export const useIssue = defineStore('issue', () => {
   const fetchTrackerList = (force = false) => {
     if (!force && trackerList.value.length > 0) return Promise.resolve()
     return api
-      .get(`/tracker/`)
+      .get('/tracker/', { params: { limit: 500 } })
       .then(res => (trackerList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   const fetchTrackerSummary = async (projId?: number) => {
@@ -396,7 +500,7 @@ export const useIssue = defineStore('issue', () => {
     return await api
       .get(url)
       .then(res => (trackerSum.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   // category states & getters
@@ -409,7 +513,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .get(`/issue-category/${pk}/`)
       .then(res => (category.value = res.data))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
 
   const fetchCategoryList = (project = '', force = false) => {
     const cacheKey = project || 'global'
@@ -429,12 +533,17 @@ export const useIssue = defineStore('issue', () => {
     }
 
     return api
-      .get(`/issue-category/?project__slug=${project}`)
+      .get('/issue-category/', {
+        params: {
+          ...(project ? { project__slug: project } : {}),
+          limit: 500,
+        },
+      })
       .then(async res => {
         categoryCacheMap.value[cacheKey] = res.data.results
         categoryList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   const createCategory = (
@@ -446,21 +555,38 @@ export const useIssue = defineStore('issue', () => {
         categoryCacheMap.value = {}
         await fetchCategory(res.data.pk)
         await fetchCategoryList(res.data.project.slug, true)
-        await workStore.fetchIssueProject(res.data.project.slug)
+        if (workStore.currentProject?.slug === res.data.project.slug) {
+          await workStore.fetchIssueProject(res.data.project.slug)
+        }
         message()
         return res.data.pk
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const updateCategory = (payload: IssueCategory) =>
+  const updateCategory = (
+    payload: Partial<Omit<IssueCategory, 'project'>> & { project?: number | string | SimpleProject },
+  ) =>
     api
       .put(`/issue-category/${payload.pk}/`, payload)
       .then(async res => {
         categoryCacheMap.value = {}
         await fetchCategory(res.data.pk)
+        if (res.data.project?.slug) {
+          await fetchCategoryList(res.data.project.slug, true)
+          if (workStore.currentProject?.slug === res.data.project.slug) {
+            await workStore.fetchIssueProject(res.data.project.slug)
+          }
+        }
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteCategory = (pk: number, project = '') =>
     api
@@ -468,10 +594,16 @@ export const useIssue = defineStore('issue', () => {
       .then(async () => {
         categoryCacheMap.value = {}
         await fetchCategoryList(project, true)
-        await workStore.fetchIssueProject(project)
+        if (project && workStore.currentProject?.slug === project) {
+          await workStore.fetchIssueProject(project)
+        }
         message('warning', '알림!', '해당 업무 범주가 삭제되었습니다!')
+        return true
       })
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // status states & getters
   const statusList = ref<IssueStatus[]>([])
@@ -479,9 +611,9 @@ export const useIssue = defineStore('issue', () => {
   const fetchStatusList = (force = false) => {
     if (!force && statusList.value.length > 0) return Promise.resolve()
     return api
-      .get(`/issue-status/`)
+      .get('/issue-status/', { params: { limit: 200 } })
       .then(res => (statusList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   // code-priority states & getters
@@ -490,9 +622,9 @@ export const useIssue = defineStore('issue', () => {
   const fetchPriorityList = (force = false) => {
     if (!force && priorityList.value.length > 0) return Promise.resolve()
     return api
-      .get(`/code-priority/`)
+      .get('/code-priority/', { params: { limit: 200 } })
       .then(res => (priorityList.value = res.data.results))
-      .catch(err => errorHandle(err.response?.data || err.message))
+      .catch(err => errorHandle(err))
   }
 
   return {
@@ -506,6 +638,7 @@ export const useIssue = defineStore('issue', () => {
     fetchIssueByMember,
     issuePages,
     fetchIssue,
+    fetchIssueDetail,
     removeIssue,
     allIssueList,
     fetchAllIssueList,
@@ -528,6 +661,7 @@ export const useIssue = defineStore('issue', () => {
     issueCommentList,
     fetchIssueComment,
     fetchIssueCommentList,
+    createIssueComment,
     patchIssueComment,
     deleteIssueComment,
 

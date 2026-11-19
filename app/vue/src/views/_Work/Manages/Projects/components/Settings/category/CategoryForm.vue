@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, type PropType, ref, watch } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,6 +13,9 @@ defineProps({
 
 const emit = defineEmits(['category-submit'])
 
+const { can, PERM } = usePerms()
+const canManageCategories = computed(() => can(PERM.ISSUE_CATEGORY_MANAGE))
+
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 
@@ -21,13 +25,20 @@ const form = ref({
   pk: null as null | number,
   project: '',
   name: '',
-  assigned_to: null as number | null,
+  assigned_to: null as number | string | null,
+})
+
+const normalizedAssignedTo = computed<number | null>(() => {
+  if (form.value.assigned_to === null || form.value.assigned_to === '') return null
+  const num = Number(form.value.assigned_to)
+  return Number.isNaN(num) || num <= 0 ? null : num
 })
 
 const formsCheck = computed(() => {
+  if (!canManageCategories.value) return true
   if (category.value) {
     const a = category.value.name === form.value.name
-    const b = category.value.assigned_to === form.value.assigned_to
+    const b = (category.value.assigned_to ?? null) === normalizedAssignedTo.value
     return a && b
   } else return false
 })
@@ -39,7 +50,10 @@ const categorySubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    emit('category-submit', { ...form.value })
+    emit('category-submit', {
+      ...form.value,
+      assigned_to: normalizedAssignedTo.value,
+    })
     validated.value = false
   }
 }
@@ -47,7 +61,7 @@ const categorySubmit = (event: Event) => {
 const issueStore = useIssue()
 const category = computed(() => issueStore.category)
 
-onBeforeMount(async () => {
+const loadCategory = async () => {
   if (route.params.cateId) await issueStore.fetchCategory(Number(route.params.cateId))
   else issueStore.removeCategory()
 
@@ -56,8 +70,21 @@ onBeforeMount(async () => {
     form.value.project = category.value.project.slug
     form.value.name = category.value.name
     form.value.assigned_to = category.value.assigned_to ?? null
-  } else form.value.project = route.params.projId as string
-})
+  } else {
+    form.value.pk = null
+    form.value.project = route.params.projId as string
+    form.value.name = ''
+    form.value.assigned_to = null
+  }
+}
+
+watch(
+  [() => route.params.projId, () => route.params.cateId],
+  () => {
+    loadCategory()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

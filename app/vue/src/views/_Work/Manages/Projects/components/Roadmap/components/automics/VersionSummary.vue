@@ -109,7 +109,7 @@ const groupedSummary = computed<SummaryItem[]>(() => {
 <template>
   <CRow class="mb-4">
     <CCol>
-      <div class="p-3 border rounded bg-white">
+      <div class="p-3 border rounded bg-more-white">
         <CRow class="mb-3 align-items-center">
           <CCol class="col-7 col-lg-8">
             <CFormSelect v-model="selectedGroup" size="sm">
@@ -121,7 +121,7 @@ const groupedSummary = computed<SummaryItem[]>(() => {
               <option value="category">범주</option>
             </CFormSelect>
           </CCol>
-          <CCol class="pl-0 text-muted small">별 업무</CCol>
+          <CCol class="ps-0 text-muted small">별 업무</CCol>
         </CRow>
 
         <div v-if="!groupedSummary.length" class="text-muted small text-center py-3">

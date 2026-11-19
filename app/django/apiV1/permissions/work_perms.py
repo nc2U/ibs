@@ -103,19 +103,24 @@ class ProjectPermission(permissions.BasePermission):
                     except (Document.DoesNotExist, ValueError, TypeError):
                         pass
 
-                # 상위 업무(parent) ID를 기반으로 프로젝트 역추적
+                # 상위 워크스페이스 또는 상위 업무(parent) ID를 기반으로 프로젝트 역추적
                 parent_id = source.get('parent')
                 if parent_id:
-                    from work.models.issue import Issue
-                    try:
-                        issue = Issue.objects.select_related('project').get(pk=parent_id)
-                        project = issue.project
-                        request = getattr(view, 'request', None)
-                        if request and project:
-                            request._cached_project = project
-                        return project.slug
-                    except (Issue.DoesNotExist, ValueError, TypeError):
-                        pass
+                    if view.__class__.__name__ == 'IssueProjectViewSet':
+                        project = ProjectPermission.find_project(parent_id, getattr(view, 'request', None))
+                        if project:
+                            return project.slug
+                    else:
+                        from work.models.issue import Issue
+                        try:
+                            issue = Issue.objects.select_related('project').get(pk=parent_id)
+                            project = issue.project
+                            request = getattr(view, 'request', None)
+                            if request and project:
+                                request._cached_project = project
+                            return project.slug
+                        except (Issue.DoesNotExist, ValueError, TypeError):
+                            pass
         return None
 
     @staticmethod
@@ -223,6 +228,8 @@ class ProjectPermission(permissions.BasePermission):
 
             if not required_perm:
                 return False
+            if isinstance(required_perm, (tuple, list, set)):
+                return any(perm in user_perms for perm in required_perm)
             return required_perm in user_perms
 
         # list 또는 커스텀 컬렉션 GET 액션에 대한 선제 검증
@@ -300,23 +307,30 @@ class ProjectPermission(permissions.BasePermission):
             # 설정되지 않았을 경우, 기본적으로 읽기 권한(read)만 허용하거나 접근 막기
             return request.method in permissions.SAFE_METHODS
 
-        if required_perm in user_perms:
-            return True
+        required_perms = (
+            list(required_perm)
+            if isinstance(required_perm, (tuple, list, set))
+            else [required_perm]
+        )
 
-        # own_ 권한 확인 (작성자 본인 검증 등 세부 로직은 하위 Permission 클래스에서 처리)
-        parts = required_perm.split('.')
-        if len(parts) == 2:
-            domain, action = parts
-            if action in ['update', 'delete', 'private']:
-                if f"{domain}.own_{action}" in user_perms:
-                    return True
+        for perm_code in required_perms:
+            if perm_code in user_perms:
+                return True
 
-            # comment_update -> comment_own_update 등 복합 액션 처리
-            if '_' in action:
-                prefix, suffix = action.rsplit('_', 1)
-                if suffix in ['update', 'delete']:
-                    if f"{domain}.{prefix}_own_{suffix}" in user_perms:
+            # own_ 권한 확인 (작성자 본인 검증 등 세부 로직은 하위 Permission 클래스에서 처리)
+            parts = perm_code.split('.')
+            if len(parts) == 2:
+                domain, action = parts
+                if action in ['update', 'delete', 'private']:
+                    if f"{domain}.own_{action}" in user_perms:
                         return True
+
+                # comment_update -> comment_own_update 등 복합 액션 처리
+                if '_' in action:
+                    prefix, suffix = action.rsplit('_', 1)
+                    if suffix in ['update', 'delete']:
+                        if f"{domain}.{prefix}_own_{suffix}" in user_perms:
+                            return True
 
         return False
 
@@ -484,17 +498,47 @@ class IssuePermission(ProjectPermission):
 
             # (A) 수정 권한 처리
             if view.action in ['update', 'partial_update']:
-                # 하위 업무 수정 혹은 상위 관계 수정 시
-                is_sub = (obj.parent_id is not None) or ('parent' in request.data) or ('del_child' in request.data)
-                if is_sub:
-                    return 'issue.sub_manage' in user_perms
-
-                # 기본 수정 권한 확인
                 is_own = (obj.creator == user) or (obj.assigned_to == user)
                 has_update = 'issue.update' in user_perms
                 has_own_update = 'issue.own_update' in user_perms and is_own
+
+                # 지켜보는 사람(watchers) 전용 PATCH 요청 처리
+                req_keys = set(request.data.keys()) if hasattr(request.data, 'keys') else set()
+                if view.action == 'partial_update' and req_keys and req_keys <= {'watchers', 'add_watchers', 'del_watcher'}:
+                    if 'del_watcher' in req_keys:
+                        del_watcher = request.data.get('del_watcher')
+                        if not (
+                            str(del_watcher) == str(user.pk)
+                            or 'issue.watcher_delete' in user_perms
+                            or has_update
+                            or has_own_update
+                        ):
+                            return False
+                    if 'watchers' in req_keys or 'add_watchers' in req_keys:
+                        if not (
+                            is_own
+                            or 'issue.watcher_create' in user_perms
+                            or has_update
+                            or has_own_update
+                        ):
+                            return False
+                    return True
+
+                # 기본 수정 권한 확인 (소유권 검증은 상위/하위 업무 여부와 무관하게 필수)
                 if not (has_update or has_own_update):
                     return False
+
+                # 하위 업무 수정 혹은 상위/하위 관계 실제 변경 시 추가 sub_manage 권한 확인
+                parent_changed = False
+                if 'parent' in request.data:
+                    req_parent = request.data.get('parent')
+                    req_parent_str = '' if req_parent in (None, '', 'null') else str(req_parent)
+                    cur_parent_str = '' if obj.parent_id is None else str(obj.parent_id)
+                    parent_changed = req_parent_str != cur_parent_str
+                del_child_req = bool(request.data.get('del_child'))
+                if obj.parent_id is not None or parent_changed or del_child_req:
+                    if 'issue.sub_manage' not in user_perms:
+                        return False
 
                 # is_private 변경 시 추가 쓰기 권한 검사 (Method D)
                 is_private_req = request.data.get('is_private', None)
@@ -653,6 +697,10 @@ class NewsPermission(ProjectPermission):
             if isinstance(obj, (News, NewsFile)):
                 return 'news.manage' in user_perms
             elif isinstance(obj, NewsComment):
+                if view.action in ['update', 'partial_update', 'destroy']:
+                    return 'news.manage' in user_perms or (
+                        'news.comment' in user_perms and obj.creator == request.user
+                    )
                 return 'news.comment' in user_perms
 
         return False
@@ -715,7 +763,7 @@ class ForumPermission(ProjectPermission):
         if not user or not user.is_authenticated:
             return False
 
-        if user.is_superuser:
+        if user.is_superuser or getattr(user, 'work_manager', False):
             return True
 
         # 게시물/댓글 생성(create) 시 manager_only 포럼 검증
@@ -738,22 +786,17 @@ class ForumPermission(ProjectPermission):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return True
 
-        # manager_only 포럼인 경우 포럼 매니저 또는 superuser만 수정/삭제 가능
-        from forum.models import Forum
+        from forum.models import Forum, PostCategory, Tag
         post_obj = getattr(obj, 'post', None)
         forum = getattr(obj, 'forum', None) or (getattr(post_obj, 'forum', None) if post_obj is not None and hasattr(post_obj, 'forum') else None)
         if isinstance(obj, Forum):
             forum = obj
         is_forum_manager = bool(forum and forum.manager.filter(pk=user.pk).exists())
-        if forum and getattr(forum, 'manager_only', False):
-            if not is_forum_manager:
-                return False
 
         project = self.extract_project(obj)
         if not project:
             return False
 
-        user = request.user
         user_perms = project.get_user_permissions(user)
 
         # 2. 조회(SAFE_METHODS) 요청 시 forum.read 권한 엄격히 대조 (레드마인 모델 준수)
@@ -764,6 +807,15 @@ class ForumPermission(ProjectPermission):
                 return True
             required_perm = getattr(view, 'required_permission', 'forum.read') or 'forum.read'
             return required_perm in user_perms
+
+        # 게시판 메타데이터(Forum/PostCategory/Tag) 수정/삭제는 forum.manage 권한 허용
+        if isinstance(obj, (Forum, PostCategory, Tag)) and 'forum.manage' in user_perms:
+            return True
+
+        # manager_only 포럼인 경우 포럼 매니저 또는 관리자만 수정/삭제 가능
+        if forum and getattr(forum, 'manager_only', False):
+            if not is_forum_manager:
+                return False
 
         creator = (
             getattr(obj, 'creator', None)
@@ -815,7 +867,7 @@ class QueryPermission(ProjectPermission):
 
             from work.models.project import Role
             has_save_query = Role.objects.filter(
-                projects__members__user=request.user,
+                member__user=request.user,
                 permissions__code='project.save_query'
             ).exists()
             if has_save_query:
@@ -844,7 +896,7 @@ class QueryPermission(ProjectPermission):
             from work.models.project import Role
             user_perms = set(
                 Role.objects.filter(
-                    projects__members__user=user
+                    member__user=user
                 ).filter(
                     permissions__code__in=['project.save_query', 'project.pub_query']
                 ).values_list('permissions__code', flat=True)

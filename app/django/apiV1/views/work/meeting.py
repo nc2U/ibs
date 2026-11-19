@@ -2,7 +2,7 @@ import logging
 
 from django.db.models import Q
 from django_filters.rest_framework import (
-    FilterSet, CharFilter, BooleanFilter, NumberFilter, DateTimeFromToRangeFilter
+    FilterSet, CharFilter, BooleanFilter, NumberFilter, DateFromToRangeFilter
 )
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
@@ -71,16 +71,25 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
 class MeetingFilter(FilterSet):
     project__slug = CharFilter(field_name='project__slug', label='프로젝트')
     project__search = CharFilter(field_name='project__slug', label='프로젝트-검색')
+    project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
     status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
     category__exclude = NumberFilter(field_name='category', exclude=True, label='카테고리-제외')
     creator__exclude = NumberFilter(field_name='creator__pk', exclude=True, label='작성자-제외')
     attendees__exclude = NumberFilter(field_name='attendees__pk', exclude=True, label='참석자-제외')
-    meeting_date = DateTimeFromToRangeFilter(field_name='meeting_date', label='회의 일시 범위')
-    created = DateTimeFromToRangeFilter(field_name='created', label='등록일 범위')
+    meeting_date = DateFromToRangeFilter(field_name='meeting_date__date', label='회의 일시 범위')
+    created = DateFromToRangeFilter(field_name='created__date', label='등록일 범위')
     creator = NumberFilter(field_name='creator__pk', label='작성자')
     attendees = NumberFilter(field_name='attendees__pk', label='참석자')
     is_confirmed = BooleanFilter(field_name='is_confirmed', label='확정 여부')
     search = CharFilter(method='search_filter', label='검색어(제목/의제/내용/결정사항)')
+    title = CharFilter(field_name='title', lookup_expr='icontains', label='제목-포함')
+    title__exclude = CharFilter(field_name='title', lookup_expr='icontains', exclude=True, label='제목-제외')
+    agenda = CharFilter(field_name='agenda', lookup_expr='icontains', label='의제-포함')
+    agenda__exclude = CharFilter(field_name='agenda', lookup_expr='icontains', exclude=True, label='의제-제외')
+    content = CharFilter(field_name='content', lookup_expr='icontains', label='내용-포함')
+    content__exclude = CharFilter(field_name='content', lookup_expr='icontains', exclude=True, label='내용-제외')
+    decisions = CharFilter(field_name='decisions', lookup_expr='icontains', label='결정사항-포함')
+    decisions__exclude = CharFilter(field_name='decisions', lookup_expr='icontains', exclude=True, label='결정사항-제외')
 
     project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 회의 여부')
     project__bookmark = BooleanFilter(method='filter_bookmark', label='북마크 프로젝트 회의 여부')
@@ -110,9 +119,13 @@ class MeetingFilter(FilterSet):
     class Meta:
         model = Meeting
         fields = (
-            'project', 'project__slug', 'category', 'status', 'status__exclude', 'is_confirmed',
+            'project', 'project__slug', 'project__exclude', 'category', 'category__exclude',
+            'status', 'status__exclude', 'is_confirmed',
             'creator', 'creator__exclude', 'attendees', 'attendees__exclude',
-            'meeting_date', 'created', 'search', 'project__my_project', 'project__bookmark',
+            'meeting_date', 'created', 'search',
+            'title', 'title__exclude', 'agenda', 'agenda__exclude',
+            'content', 'content__exclude', 'decisions', 'decisions__exclude',
+            'project__my_project', 'project__bookmark',
             'project_status', 'project_status__exclude',
         )
 
@@ -175,9 +188,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
             'list': 'meeting.read',
             'retrieve': 'meeting.read',
             'create': 'meeting.create',
-            'update': 'meeting.update',
-            'partial_update': 'meeting.update',
-            'destroy': 'meeting.delete',
+            'update': ('meeting.update', 'meeting.edit_confirmed'),
+            'partial_update': ('meeting.update', 'meeting.edit_confirmed'),
+            'destroy': ('meeting.delete', 'meeting.edit_confirmed'),
             'confirm': 'meeting.confirm',
             'ai_summarize': 'meeting.create',
         }

@@ -32,9 +32,12 @@ const createVersion = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    emit('create-version', { ...nVersion.value })
-    resetForm()
-    emit('close')
+    emit('create-version', { ...nVersion.value }, (ok: boolean) => {
+      if (ok) {
+        resetForm()
+        emit('close')
+      }
+    })
   }
 }
 

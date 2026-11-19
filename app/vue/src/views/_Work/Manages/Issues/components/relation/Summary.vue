@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import type { SubIssue } from '@/store/types/work_issue'
@@ -14,10 +14,12 @@ const props = defineProps({
 const route = useRoute()
 const { can, PERM } = usePerms()
 
-const projId = route.params.projId as string
-const routeName = projId ? '(업무)' : '업무'
-const routeParams = projId ? { projId } : {}
-const relQueryKey = !props.hasOutgoing && props.hasIncoming ? 'follows_issue' : 'precedes_issue'
+const projId = computed(() => route.params.projId as string)
+const routeName = computed(() => (projId.value ? '(업무)' : '업무'))
+const routeParams = computed(() => (projId.value ? { projId: projId.value } : {}))
+const relQueryKey = computed(() =>
+  !props.hasOutgoing && props.hasIncoming ? 'follows_issue' : 'precedes_issue',
+)
 </script>
 
 <template>

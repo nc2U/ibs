@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, onUnmounted, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useCompany } from '@/store/pinia/company'
 import { useWork } from '@/store/pinia/work_project'
 import { useInform } from '@/store/pinia/work_inform'
 import { useAccount } from '@/store/pinia/account'
 import { usePerms } from '@/composables/usePerms'
-import { onBeforeRouteUpdate, useRoute } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -32,24 +32,19 @@ const { can, PERM } = usePerms()
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
-const canAccessSetting = computed(
-  () =>
+const canAccessSetting = computed(() => {
+  const isForumEnabled = !currentProject.value?.module || currentProject.value.module.forum
+  return (
     !!workManager.value ||
-    can(PERM.PROJECT_CREATE) ||
     can(PERM.PROJECT_UPDATE) ||
-    can(PERM.PROJECT_DELETE) ||
+    can(PERM.PROJECT_PUBLIC) ||
+    can(PERM.PROJECT_MODULE) ||
     can(PERM.PROJECT_MEMBER) ||
-    can(PERM.ISSUE_READ) ||
-    can(PERM.ISSUE_CREATE) ||
-    can(PERM.ISSUE_UPDATE) ||
-    can(PERM.ISSUE_DELETE) ||
     can(PERM.PROJECT_VERSION) ||
     can(PERM.ISSUE_CATEGORY_MANAGE) ||
-    can(PERM.FORUM_READ) ||
-    can(PERM.FORUM_CREATE) ||
-    can(PERM.FORUM_UPDATE) ||
-    can(PERM.FORUM_DELETE),
-)
+    (isForumEnabled && can(PERM.FORUM_MANAGE))
+  )
+})
 
 const projectNavMenus = computed(() => {
   const menus = [
@@ -100,6 +95,14 @@ onBeforeRouteUpdate(async (to, from) => {
       infStore.newsList = []
     }
   }
+})
+
+onBeforeRouteLeave(() => {
+  workStore.removeIssueProject()
+})
+
+onUnmounted(() => {
+  workStore.removeIssueProject()
 })
 
 const loading = ref<boolean>(true)

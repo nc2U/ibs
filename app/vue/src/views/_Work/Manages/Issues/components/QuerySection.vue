@@ -140,8 +140,8 @@ const searchOptions = reactive<SearchOptionGroup[]>([
     ],
   },
   {
-    label: '프로젝트',
-    options: [{ value: 'project_status', label: '\u00A0\u00A0\u00A0프로젝트의 상태' }],
+    label: '워크스페이스',
+    options: [{ value: 'project_status', label: '\u00A0\u00A0\u00A0워크스페이스의 상태' }],
   },
   {
     label: '관계',
@@ -162,7 +162,7 @@ const filterFieldsConfig = computed(() => {
   return [
     {
       key: 'project',
-      label: '프로젝트',
+      label: '워크스페이스',
       type: 'project',
       condOptions: [
         { value: 'is', label: '이다' },
@@ -629,6 +629,70 @@ watch(
   { immediate: true },
 )
 
+const syncRouteQueryToFilter = () => {
+  const hasRouteQuery = Boolean(
+    route.query.status ||
+      route.query.tracker ||
+      route.query.author ||
+      route.query.assignee ||
+      route.query.version ||
+      route.query.parent_issue ||
+      route.query.parent ||
+      route.query.precedes_issue ||
+      route.query.follows_issue,
+  )
+  if (!hasRouteQuery) return
+
+  const currentProj = (route.params.projId as string) ?? ''
+  issueFilterStore.resetFilter(currentProj)
+
+  if (route.query.status)
+    cond.value.status = route.query.status as 'open' | 'is' | 'exclude' | 'closed' | 'any'
+  if (route.query.tracker) {
+    if (!searchCond.value.includes('tracker')) searchCond.value.push('tracker')
+    if (!enabledFields.value.includes('tracker')) enabledFields.value.push('tracker')
+    form.value.tracker = Number(route.query.tracker)
+    cond.value.tracker = 'is'
+  }
+  if (route.query.author) {
+    if (!searchCond.value.includes('author')) searchCond.value.push('author')
+    if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
+    form.value.author = Number(route.query.author)
+    cond.value.author = 'is'
+  }
+  if (route.query.assignee) {
+    if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
+    if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
+    form.value.assignee = Number(route.query.assignee)
+    cond.value.assignee = 'is'
+  }
+  if (route.query.version) {
+    if (!searchCond.value.includes('version')) searchCond.value.push('version')
+    if (!enabledFields.value.includes('version')) enabledFields.value.push('version')
+    form.value.version = Number(route.query.version)
+    cond.value.version = 'is'
+  }
+  const parentVal = route.query.parent_issue || route.query.parent
+  if (parentVal) {
+    if (!searchCond.value.includes('parent_issue')) searchCond.value.push('parent_issue')
+    if (!enabledFields.value.includes('parent_issue')) enabledFields.value.push('parent_issue')
+    form.value.parent_issue = Number(parentVal)
+    cond.value.parent_issue = 'is'
+  }
+  if (route.query.precedes_issue) {
+    if (!searchCond.value.includes('precedes_issue')) searchCond.value.push('precedes_issue')
+    if (!enabledFields.value.includes('precedes_issue')) enabledFields.value.push('precedes_issue')
+    form.value.precedes_issue = Number(route.query.precedes_issue)
+    cond.value.precedes_issue = 'is'
+  }
+  if (route.query.follows_issue) {
+    if (!searchCond.value.includes('follows_issue')) searchCond.value.push('follows_issue')
+    if (!enabledFields.value.includes('follows_issue')) enabledFields.value.push('follows_issue')
+    form.value.follows_issue = Number(route.query.follows_issue)
+    cond.value.follows_issue = 'is'
+  }
+}
+
 onBeforeMount(async () => {
   if (!!props.statusList.length && !form.value.status) form.value.status = props.statusList[0]?.pk
 
@@ -666,54 +730,19 @@ onBeforeMount(async () => {
   )
 
   if (route.name === '업무')
-    searchOptions[0].options.splice(1, 0, { value: 'project', label: '프로젝트' })
+    searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
 
-  if (!!route.query.status)
-    cond.value.status = route.query.status as 'open' | 'is' | 'exclude' | 'closed' | 'any'
-  if (!!route.query.tracker) {
-    if (!searchCond.value.includes('tracker')) searchCond.value.push('tracker')
-    if (!enabledFields.value.includes('tracker')) enabledFields.value.push('tracker')
-    form.value.tracker = Number(route.query.tracker)
-    cond.value.tracker = 'is'
-  }
-  if (!!route.query.author) {
-    if (!searchCond.value.includes('author')) searchCond.value.push('author')
-    if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
-    form.value.author = Number(route.query.author)
-    cond.value.author = 'is'
-  }
-  if (!!route.query.assignee) {
-    if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
-    if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
-    form.value.assignee = Number(route.query.assignee)
-    cond.value.assignee = 'is'
-  }
-  if (!!route.query.version) {
-    if (!searchCond.value.includes('version')) searchCond.value.push('version')
-    if (!enabledFields.value.includes('version')) enabledFields.value.push('version')
-    form.value.version = Number(route.query.version)
-    cond.value.version = 'is'
-  }
-  const parentVal = route.query.parent_issue || route.query.parent
-  if (parentVal) {
-    if (!searchCond.value.includes('parent_issue')) searchCond.value.push('parent_issue')
-    if (!enabledFields.value.includes('parent_issue')) enabledFields.value.push('parent_issue')
-    form.value.parent_issue = Number(parentVal)
-    cond.value.parent_issue = 'is'
-  }
-  if (route.query.precedes_issue) {
-    if (!searchCond.value.includes('precedes_issue')) searchCond.value.push('precedes_issue')
-    if (!enabledFields.value.includes('precedes_issue')) enabledFields.value.push('precedes_issue')
-    form.value.precedes_issue = Number(route.query.precedes_issue)
-    cond.value.precedes_issue = 'is'
-  }
-  if (route.query.follows_issue) {
-    if (!searchCond.value.includes('follows_issue')) searchCond.value.push('follows_issue')
-    if (!enabledFields.value.includes('follows_issue')) enabledFields.value.push('follows_issue')
-    form.value.follows_issue = Number(route.query.follows_issue)
-    cond.value.follows_issue = 'is'
-  }
+  syncRouteQueryToFilter()
 })
+
+watch(
+  () => route.query,
+  () => {
+    syncRouteQueryToFilter()
+    nextTick(() => filterSubmit())
+  },
+  { deep: true },
+)
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
 const applyQuery = (query: any) => {
@@ -741,7 +770,7 @@ defineExpose({ applyQuery, resetFilter })
 <template>
   <CRow>
     <CCol class="pointer pt-1 mb-0" @click="condVisible = !condVisible">
-      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       검색조건
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
@@ -762,7 +791,7 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
               <CCol
                 v-if="enabledFields.includes('status')"
-                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+                class="col-4 col-lg-3 col-xl-2"
               >
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="open">진행중</option>
@@ -772,7 +801,7 @@ defineExpose({ applyQuery, resetFilter })
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3">
                 <CFormSelect
                   v-if="cond.status === 'is' || cond.status === 'exclude'"
                   v-model="form.status"
@@ -1095,7 +1124,7 @@ defineExpose({ applyQuery, resetFilter })
 
   <CRow class="mt-2">
     <CCol class="pointer mb-0" @click="optVisible = !optVisible">
-      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       옵션
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />

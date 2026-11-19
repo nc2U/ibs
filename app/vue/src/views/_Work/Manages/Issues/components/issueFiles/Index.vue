@@ -7,6 +7,7 @@ import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
+  canEdit: { type: Boolean, default: false },
   issuePk: { type: Number, required: true },
   issueFiles: { type: Array as PropType<IssueFile[]>, default: () => [] },
 })
@@ -43,8 +44,8 @@ const editFileSubmit = async (payload: IssueFile) => {
   form.append('edit_file', JSON.stringify(payload.pk))
   if (payload.cngFile) form.append('cng_file', payload.cngFile)
   form.append('edit_file_desc', payload.description)
-  await fileControl(form)
-  editMode.value = false
+  const ok = await fileControl(form)
+  if (ok) editMode.value = false
 }
 
 const downloadAllFiles = async () => {
@@ -71,10 +72,10 @@ onBeforeMount(async () => {
         <CCol class="title">파일</CCol>
       </CRow>
       <CRow v-for="(file, i) in issueFiles" :key="file.pk">
-        <FileDisplay :file="file" @delete-file="deleteFile" />
+        <FileDisplay :file="file" :can-delete="canEdit && projStatus === '1'" @delete-file="deleteFile" />
 
         <CCol v-if="i === 0" class="text-end form-text col-2">
-          <span v-if="projStatus !== '9'" class="me-2 pointer" @click="editMode = !editMode">
+          <span v-if="canEdit && projStatus === '1'" class="me-2 pointer" @click="editMode = !editMode">
             <v-icon icon="mdi-pencil" color="amber" size="18" />
             <v-tooltip activator="parent" location="top">첨부파일 편집</v-tooltip>
           </span>
@@ -85,7 +86,7 @@ onBeforeMount(async () => {
           </span>
         </CCol>
 
-        <template v-if="editMode">
+        <template v-if="editMode && editFiles[i]">
           <CCol class="col-5">
             <CInputGroup size="sm">
               <CFormInput
@@ -97,9 +98,9 @@ onBeforeMount(async () => {
               />
               <CInputGroupText v-if="!editFiles[i].cngFile" class="pb-0">
                 <CFormCheck
+                  v-model="editFiles[i].edit"
                   :id="`change-file-${file.pk}`"
                   label="변경"
-                  @click="editFiles[i].edit = !editFiles[i].edit"
                   size="sm"
                 />
               </CInputGroupText>
@@ -108,7 +109,7 @@ onBeforeMount(async () => {
                 <v-icon
                   icon="mdi-trash-can-outline"
                   color="grey"
-                  size="sm"
+                  size="small"
                   @click="removeFile(file.pk, i)"
                 />
               </CInputGroupText>

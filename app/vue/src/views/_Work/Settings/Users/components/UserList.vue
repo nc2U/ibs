@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { User } from '@/store/types/accounts'
 import { useAccount } from '@/store/pinia/account'
@@ -7,7 +7,7 @@ import NoData from '@/components/NoData/Index.vue'
 import UserItem from './UserItem.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
-defineProps({
+const props = defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },
 })
 
@@ -15,6 +15,23 @@ const route = useRoute()
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
+
+const activeFilter = ref<'all' | 'active' | 'inactive'>('active')
+const searchKeyword = ref('')
+
+const filteredUsers = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  return props.userList.filter(u => {
+    if (activeFilter.value === 'active' && !u.is_active) return false
+    if (activeFilter.value === 'inactive' && u.is_active) return false
+    if (!keyword) return true
+    return (
+      (u.username || '').toLowerCase().includes(keyword) ||
+      (u.email || '').toLowerCase().includes(keyword) ||
+      (u.profile?.name || '').toLowerCase().includes(keyword)
+    )
+  })
+})
 </script>
 
 <template>
@@ -35,32 +52,27 @@ const workManager = computed(() => accStore.workManager)
       <span class="me-2">
         <TextButton name="새 사용자" :to="{ name: '사용자 - 생성' }" />
       </span>
-
-      <span>
-        <CDropdown color="secondary" variant="input-group" placement="bottom-end">
-          <CDropdownToggle
-            :caret="false"
-            color="light"
-            variant="ghost"
-            size="sm"
-            shape="rounded-pill"
-          >
-            <v-icon icon="mdi-dots-horizontal" class="pointer" color="grey-darken-1" />
-            <v-tooltip activator="parent" location="top">Actions</v-tooltip>
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem>
-              <TextButton name="가져오기" icon="mdi-file-document-arrow-right" color="secondary" />
-            </CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-      </span>
     </CCol>
   </CRow>
 
-  <!--  <QuerySection />-->
+  <CRow class="mb-3 align-items-center g-2">
+    <CCol sm="4" md="3" lg="2">
+      <CFormSelect v-model="activeFilter" size="sm" aria-label="활성 상태 필터">
+        <option value="active">활성 사용자</option>
+        <option value="inactive">비활성 사용자</option>
+        <option value="all">전체 사용자</option>
+      </CFormSelect>
+    </CCol>
+    <CCol sm="6" md="4" lg="3">
+      <CFormInput
+        v-model="searchKeyword"
+        size="sm"
+        placeholder="아이디 / 이름 / 이메일 검색"
+      />
+    </CCol>
+  </CRow>
 
-  <NoData v-if="!userList.length" />
+  <NoData v-if="!filteredUsers.length" />
 
   <CRow v-else>
     <CCol>
@@ -68,12 +80,10 @@ const workManager = computed(() => accStore.workManager)
       <CTable hover striped responsive align="middle">
         <CTableHead>
           <CTableRow>
-            <CTableHeaderCell>
-              <CFormCheck />
-            </CTableHeaderCell>
             <CTableHeaderCell>아이디</CTableHeaderCell>
             <CTableHeaderCell>이름</CTableHeaderCell>
             <CTableHeaderCell>메일</CTableHeaderCell>
+            <CTableHeaderCell>상태</CTableHeaderCell>
             <CTableHeaderCell>관리자</CTableHeaderCell>
             <CTableHeaderCell>등록</CTableHeaderCell>
             <CTableHeaderCell>마지막 로그인</CTableHeaderCell>
@@ -81,7 +91,7 @@ const workManager = computed(() => accStore.workManager)
           </CTableRow>
         </CTableHead>
         <CTableBody>
-          <UserItem v-for="user in userList" :key="user.pk" :user="user" />
+          <UserItem v-for="user in filteredUsers" :key="user.pk" :user="user" />
         </CTableBody>
       </CTable>
     </CCol>

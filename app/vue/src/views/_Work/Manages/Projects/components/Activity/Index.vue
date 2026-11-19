@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
+import { computed, type PropType, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useLogging } from '@/store/pinia/work_logging'
 import type { IssueProject } from '@/store/types/work_project'
@@ -19,11 +20,27 @@ const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 const toggle = () => cBody.value?.toggle()
 defineExpose({ toggle })
 
+const route = useRoute()
 const workStore = useWork()
 const hasSubs = computed(() => !!(workStore.currentProject as IssueProject)?.sub_projects?.length)
 
-const toDate = ref(new Date())
+const parseQueryDate = (raw: unknown): Date | null => {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null
+  const [y, m, d] = raw.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return isNaN(dt.getTime()) ? null : dt
+}
+
+const toDate = ref<Date>(parseQueryDate(route.query.from) ?? new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
+
+watch(
+  () => route.query.from,
+  val => {
+    const parsed = parseQueryDate(val)
+    if (parsed) toDate.value = parsed
+  },
+)
 
 const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
@@ -46,7 +63,7 @@ const loading = ref<boolean>(true)
               icon="mdi-history"
               color="green-darken-1"
               size="small"
-              class="mr-2"
+              class="me-2"
             />업무실행내역
           </h5>
         </CCol>

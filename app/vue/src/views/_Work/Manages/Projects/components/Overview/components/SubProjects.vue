@@ -15,8 +15,8 @@ const isDark = computed(() => store.theme === 'dark')
   <CCard :color="isDark ? '' : 'light'" class="mb-3">
     <CCardBody>
       <CCardSubtitle class="mb-2">
-        <v-icon icon="mdi-subdirectory-arrow-right" size="sm" class="mr-1" />
-        하위 프로젝트
+        <v-icon icon="mdi-subdirectory-arrow-right" size="small" class="me-1" />
+        하위 워크스페이스
       </CCardSubtitle>
       <CCardText>
         <router-link

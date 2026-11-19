@@ -39,9 +39,10 @@ const addRelIssue = (event: Event) => {
       }
     }
     emit('add-rel-issue', payload)
+    relIssue.value.target = null
+    relIssue.value.delay = null
+    validated.value = false
   }
-  relIssue.value.target = null
-  relIssue.value.delay = null
 }
 </script>
 

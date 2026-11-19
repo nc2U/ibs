@@ -49,8 +49,8 @@ const done_ratio = computed(() => {
       :class="{ 'selected-version': isSelected }"
     >
       <CCol class="d-flex align-items-center">
-        <v-icon icon="mdi-star-box-multiple" color="amber" class="mr-2" />
-        <span class="mr-2 bold" style="font-size: large">
+        <v-icon icon="mdi-star-box-multiple" color="amber" class="me-2" />
+        <span class="me-2 bold" style="font-size: large">
           <router-link :to="{ name: '(로드맵) - 보기', params: { projId, verId: version.pk } }">
             {{ version.name }}
           </router-link>

@@ -12,12 +12,11 @@ const loading = ref(true)
 
 onBeforeMount(async () => {
   try {
-    // 업무 및 일정 관리에 필수적인 공통/메타 데이터 전역 페치
+    // 업무 및 일정 관리에 필수적인 공통/메타 데이터 전역 페치 (versionList는 워크스페이스별 화면에서 조회)
     await Promise.all([
       workStore.fetchAllProjectList(),
       workStore.fetchRoleList(),
       workStore.fetchPermissionList(),
-      workStore.fetchVersionList(),
       issueStore.fetchTrackerList(),
       issueStore.fetchStatusList(),
       issueStore.fetchPriorityList(),
@@ -33,5 +32,5 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <router-view />
+  <router-view v-if="!loading" />
 </template>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { isValidate } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -38,26 +39,25 @@ const handleSendResetEmail = async () => {
   }
   isSendingReset.value = true
   try {
-    await accStore.passReset({ email: resetEmail.value.trim() })
-    isResetModalOpen.value = false
+    const ok = await accStore.passReset({ email: resetEmail.value.trim() })
+    if (ok) isResetModalOpen.value = false
   } finally {
     isSendingReset.value = false
   }
 }
 
 const onSubmit = async (event: Event) => {
-  const e = event.currentTarget as HTMLFormElement
-  if (!e.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
   } else {
     if (form.new_password === form.confirm_password) {
-      if (await accStore.changePassword(form)) {
-        setTimeout(() => {
-          router.push({ name: 'Login' })
-        }, 1000)
+      const changed = await accStore.changePassword({
+        old_password: form.old_password,
+        new_password: form.new_password,
+      })
+      if (changed) {
+        accStore.logout()
+        await router.push({ name: 'Login' })
       }
     } else {
       refAlertModal.value?.callModal('', '비밀번호가 서로 다릅니다.')
@@ -98,13 +98,13 @@ const onSubmit = async (event: Event) => {
               <CCol sm="6" lg="4" xl="2" class="pt-2">{{ usernameVal }}</CCol>
             </CRow>
 
-            <CRow class="pl-4 my-3">
+            <CRow class="ps-4 my-3">
               <CFormLabel class="col-sm-4 col-lg-2 col-form-label"> 현재 비밀번호 </CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
                     v-model="form.old_password"
-                    :type="!showPassword ? 'password' : ''"
+                    :type="!showPassword ? 'password' : 'text'"
                     required
                     placeholder="현재 패스워드"
                     aria-label="password"
@@ -138,7 +138,7 @@ const onSubmit = async (event: Event) => {
                 <CInputGroup>
                   <CFormInput
                     v-model="form.new_password"
-                    :type="!showPassword ? 'password' : ''"
+                    :type="!showPassword ? 'password' : 'text'"
                     required
                     placeholder="새로운 패스워드"
                     aria-label="password"
@@ -156,13 +156,13 @@ const onSubmit = async (event: Event) => {
                 </CInputGroup>
               </CCol>
             </CRow>
-            <CRow class="pl-4 my-3">
+            <CRow class="ps-4 my-3">
               <CFormLabel class="col-sm-4 col-lg-2 col-form-label">비밀번호 확인</CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
                     v-model="form.confirm_password"
-                    :type="!showPassword ? 'password' : ''"
+                    :type="!showPassword ? 'password' : 'text'"
                     required
                     placeholder="패스워드 재입력"
                     aria-label="password"
@@ -211,13 +211,14 @@ const onSubmit = async (event: Event) => {
         v-model="resetEmail"
         type="email"
         placeholder="이메일 주소 입력"
+        readonly
         :disabled="isSendingReset"
       />
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" variant="ghost" @click="isResetModalOpen = false"> 취소 </CButton>
       <CButton color="primary" :disabled="isSendingReset" @click="handleSendResetEmail">
-        <CSpinner v-if="isSendingReset" size="sm" class="mr-1" />
+        <CSpinner v-if="isSendingReset" size="sm" class="me-1" />
         발송하기
       </CButton>
     </CModalFooter>

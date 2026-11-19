@@ -24,11 +24,23 @@ const emit = defineEmits([
   'case-search',
   'case-reset',
 ])
+
+const onLawsuitChange = (val: number | null | '') => {
+  const next = { ...props.filter, lawsuit: val ?? '', page: 1 }
+  emit('update:filter', next)
+  emit('search', next)
+}
+
+const onCaseFilterChange = (patch: Partial<SuitCaseFilter>) => {
+  const next = { ...props.caseFilter, ...patch, page: 1 }
+  emit('update:caseFilter', next)
+  emit('case-search', next)
+}
 </script>
 
 <template>
   <!-- 전역 문서/소송사건 관리 화면에서만 워크스페이스 선택 셀렉터 표시 -->
-  <CRow v-if="$route.name === '문서' || $route.name === '문서 사건'" class="mb-4 pr-2 mr-2">
+  <CRow v-if="$route.name === '문서' || $route.name === '문서 사건'" class="mb-4 pe-2 me-2">
     <CCol>
       <h6 class="text-subtitle-1 mb-2">워크스페이스 선택</h6>
       <v-divider class="mt-0" />
@@ -42,7 +54,7 @@ const emit = defineEmits([
 
   <!-- Type 1 & 2: 문서 카테고리 및 관련사건/검색 필터 -->
   <template v-if="typeNumber === 1 || typeNumber === 2">
-    <CRow class="mb-4 pr-2 mr-2">
+    <CRow class="mb-4 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">문서 카테고리</h6>
         <v-divider class="mt-0" />
@@ -86,12 +98,12 @@ const emit = defineEmits([
     </CRow>
 
     <template v-if="typeNumber === 2">
-      <CRow v-if="suitCaseOptions.length" class="mb-3 mr-2">
+      <CRow v-if="suitCaseOptions.length" class="mb-3 me-2">
         <CCol>
           <MultiSelect
             mode="single"
             :model-value="filter.lawsuit"
-            @update:model-value="emit('update:filter', { ...filter, lawsuit: $event })"
+            @update:model-value="onLawsuitChange"
             :options="suitCaseOptions"
             placeholder="관련 사건 목록"
           />
@@ -99,7 +111,7 @@ const emit = defineEmits([
       </CRow>
     </template>
 
-    <CRow class="mb-3 mr-2">
+    <CRow class="mb-3 me-2">
       <CCol>
         <div class="input-group mb-3">
           <CFormInput
@@ -113,7 +125,7 @@ const emit = defineEmits([
             type="button"
             @click="emit('search', { ...filter, search: filter.search })"
           >
-            <v-icon icon="mdi-magnify" size="18" class="mr-1" />
+            <v-icon icon="mdi-magnify" size="18" class="me-1" />
             검색
           </button>
         </div>
@@ -124,7 +136,7 @@ const emit = defineEmits([
   <!-- Type 3: 소송사건 전용 필터 -->
   <template v-else-if="typeNumber === 3">
     <!-- 사건 유형 -->
-    <CRow class="mb-3 pr-2 mr-2">
+    <CRow class="mb-3 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">사건 유형</h6>
         <v-divider class="mt-0" />
@@ -132,10 +144,8 @@ const emit = defineEmits([
           :value="caseFilter.sort ?? ''"
           size="sm"
           @change="
-            emit('update:caseFilter', {
-              ...caseFilter,
-              sort: ($event.target as HTMLSelectElement).value,
-              page: 1,
+            onCaseFilterChange({
+              sort: ($event.target as HTMLSelectElement).value as SuitCaseFilter['sort'],
             })
           "
         >
@@ -150,7 +160,7 @@ const emit = defineEmits([
     </CRow>
 
     <!-- 사건 심급 -->
-    <CRow class="mb-3 pr-2 mr-2">
+    <CRow class="mb-3 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">심급</h6>
         <v-divider class="mt-0" />
@@ -158,10 +168,8 @@ const emit = defineEmits([
           :value="caseFilter.level ?? ''"
           size="sm"
           @change="
-            emit('update:caseFilter', {
-              ...caseFilter,
-              level: ($event.target as HTMLSelectElement).value,
-              page: 1,
+            onCaseFilterChange({
+              level: ($event.target as HTMLSelectElement).value as SuitCaseFilter['level'],
             })
           "
         >
@@ -179,20 +187,14 @@ const emit = defineEmits([
     </CRow>
 
     <!-- 관할 법원 -->
-    <CRow class="mb-3 pr-2 mr-2">
+    <CRow class="mb-3 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">관할 법원</h6>
         <v-divider class="mt-0" />
         <CFormSelect
           :value="caseFilter.court ?? ''"
           size="sm"
-          @change="
-            emit('update:caseFilter', {
-              ...caseFilter,
-              court: ($event.target as HTMLSelectElement).value,
-              page: 1,
-            })
-          "
+          @change="onCaseFilterChange({ court: ($event.target as HTMLSelectElement).value })"
         >
           <option value="">전체 법원</option>
           <option v-for="c in courtChoices" :key="c.value" :value="c.value">
@@ -203,7 +205,7 @@ const emit = defineEmits([
     </CRow>
 
     <!-- 진행 상태 -->
-    <CRow class="mb-3 pr-2 mr-2">
+    <CRow class="mb-3 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">진행 상태</h6>
         <v-divider class="mt-0" />
@@ -217,15 +219,13 @@ const emit = defineEmits([
           "
           size="sm"
           @change="
-            emit('update:caseFilter', {
-              ...caseFilter,
+            onCaseFilterChange({
               in_progress:
                 ($event.target as HTMLSelectElement).value === 'true'
                   ? true
                   : ($event.target as HTMLSelectElement).value === 'false'
                     ? false
                     : '',
-              page: 1,
             })
           "
         >
@@ -237,7 +237,7 @@ const emit = defineEmits([
     </CRow>
 
     <!-- 사건 검색 -->
-    <CRow class="mb-3 pr-2 mr-2">
+    <CRow class="mb-3 pe-2 me-2">
       <CCol>
         <h6 class="text-subtitle-1 mb-2">사건 검색</h6>
         <v-divider class="mt-0" />

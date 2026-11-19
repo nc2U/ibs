@@ -19,7 +19,15 @@ const accStore = useAccount()
 const issueStore = useIssue()
 const { can, PERM } = usePerms()
 
-const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE) || can(PERM.ISSUE_OWN_UPDATE))
+const canDragIssue = (issue: Issue) => {
+  if (issue.project?.status !== '1') return false
+  const slug = issue.project?.slug
+  if (can(PERM.ISSUE_UPDATE, slug)) return true
+  const myPk = accStore.userInfo?.pk
+  const isOwn =
+    myPk !== undefined && (issue.creator?.pk === myPk || issue.assigned_to?.pk === myPk)
+  return can(PERM.ISSUE_OWN_UPDATE, slug) && isOwn
+}
 
 // Local filter states for Kanban board
 const kanbanSearch = ref('')
@@ -93,6 +101,7 @@ const draggedIssue = ref<Issue | null>(null)
 const dragOverStatusId = ref<number | null>(null)
 
 const onDragStart = (event: DragEvent, issue: Issue) => {
+  if (!canDragIssue(issue)) return
   draggedIssue.value = issue
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
@@ -106,12 +115,15 @@ const onDragEnd = () => {
 }
 
 const onDragOver = (statusId: number) => {
-  if (canIssueUpdate.value) {
+  if (draggedIssue.value && canDragIssue(draggedIssue.value)) {
     dragOverStatusId.value = statusId
   }
 }
 
-const onDragLeave = (statusId: number) => {
+const onDragLeave = (event: DragEvent, statusId: number) => {
+  const currentTarget = event.currentTarget as HTMLElement | null
+  const relatedTarget = event.relatedTarget as Node | null
+  if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) return
   if (dragOverStatusId.value === statusId) {
     dragOverStatusId.value = null
   }
@@ -119,7 +131,7 @@ const onDragLeave = (statusId: number) => {
 
 const onDrop = async (targetStatus: IssueStatus) => {
   dragOverStatusId.value = null
-  if (!draggedIssue.value || !canIssueUpdate.value) return
+  if (!draggedIssue.value || !canDragIssue(draggedIssue.value)) return
 
   const issue = draggedIssue.value
   draggedIssue.value = null
@@ -146,18 +158,23 @@ const onDrop = async (targetStatus: IssueStatus) => {
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
       <div class="d-flex align-items-center gap-3">
         <div style="width: 260px">
-          <CFormInput
-            v-model="kanbanSearch"
-            size="sm"
-            placeholder="칸반 내 검색 (제목, #번호, 워크스페이스)"
-            clearable
-          >
-            <template #prepend>
-              <CInputGroupText>
-                <v-icon icon="mdi-magnify" size="14" />
-              </CInputGroupText>
-            </template>
-          </CFormInput>
+          <CInputGroup size="sm">
+            <CInputGroupText>
+              <v-icon icon="mdi-magnify" size="14" />
+            </CInputGroupText>
+            <CFormInput
+              v-model="kanbanSearch"
+              placeholder="칸반 내 검색 (제목, #번호, 워크스페이스)"
+            />
+            <CButton
+              v-if="kanbanSearch"
+              color="secondary"
+              variant="outline"
+              @click="kanbanSearch = ''"
+            >
+              <v-icon icon="mdi-close" size="14" />
+            </CButton>
+          </CInputGroup>
         </div>
 
         <CFormCheck
@@ -170,7 +187,10 @@ const onDrop = async (targetStatus: IssueStatus) => {
 
       <div class="text-muted small">
         총 <strong>{{ filteredIssues.length }}</strong
-        >건의 업무
+        >건 표시
+        <span v-if="issueStore.issueCount > issueList.length">
+          (전체 {{ issueStore.issueCount }}건 중 상위 {{ issueList.length }}건 로드됨)
+        </span>
       </div>
     </div>
 
@@ -186,7 +206,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
           class="kanban-column bg-more-light"
           :class="{ 'drag-over': dragOverStatusId === status.pk }"
           @dragover.prevent="onDragOver(status.pk)"
-          @dragleave="onDragLeave(status.pk)"
+          @dragleave="onDragLeave($event, status.pk)"
           @drop.prevent="onDrop(status)"
         >
           <!-- Column Header -->
@@ -216,7 +236,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
               v-for="issue in issuesByStatus.get(status.pk) || []"
               :key="issue.pk"
               class="kanban-card card shadow-sm mb-2 bg-more-white"
-              :draggable="canIssueUpdate"
+              :draggable="canDragIssue(issue)"
               @dragstart="onDragStart($event, issue)"
               @dragend="onDragEnd"
             >

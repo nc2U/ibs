@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
+import { isValidate, message } from '@/utils/helper'
 import type { Member } from '@/store/types/work_project'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -11,8 +12,8 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({ userPk: { type: Number, required: true } })
 
-const { can, PERM } = usePerms()
-const canProjectMember = computed(() => can(PERM.PROJECT_MEMBER))
+const { can, canGlobal, PERM } = usePerms()
+const canGlobalProjectMember = computed(() => canGlobal(PERM.PROJECT_MEMBER))
 
 // ────────────────────────────────────────────────────
 // 스토어 & 데이터
@@ -23,14 +24,29 @@ const formModal = ref<InstanceType<typeof FormModal> | null>(null)
 const accStore = useAccount()
 const workStore = useWork()
 
-// 현재 편집 대상 유저 (AdminUserManage 에서 accStore.user 로 관리)
-// const userPk = computed(() => accStore.user?.pk as number | undefined)
-
 // 이 유저가 소속된 멤버십 목록 (Member[]): { pk, user, project, roles, created }
 const memberList = computed<Member[]>(() => workStore.memberList)
 
-// 전체 역할 목록 (편집/추가 모달에서 선택용) - 시스템 역할(1: 익명, 2: 일반사용자)은 제외
-const roleList = computed(() => workStore.roleList.filter(r => r.pk !== 1 && r.pk !== 2))
+// 전체 역할 목록 (편집/추가 모달에서 선택용) - 시스템 역할(1: 익명, 2: 일반사용자) 및 비슈퍼유저의 보안 격리 역할 제외
+const roleList = computed(() =>
+  workStore.roleList.filter(
+    r => r.pk !== 1 && r.pk !== 2 && (accStore.superAuth || !r.is_confidential),
+  ),
+)
+
+const manageableActiveProjects = computed(() =>
+  workStore.allActiveProjects.filter(p => can(PERM.PROJECT_MEMBER, p.slug)),
+)
+
+const isProjectActive = (projPk: number) => {
+  const proj = workStore.allReadableProjects.find(p => Number(p.pk) === Number(projPk))
+  return !proj || proj.status === '1'
+}
+
+const canManageMemberRow = (mem: Member) =>
+  isProjectActive(mem.project.pk) && can(PERM.PROJECT_MEMBER, mem.project.slug)
+
+const hasAnyManageableRow = computed(() => memberList.value.some(m => canManageMemberRow(m)))
 
 // ────────────────────────────────────────────────────
 // 인라인 편집
@@ -39,6 +55,7 @@ const editMode = ref<number | null>(null) // 편집 중인 member.pk
 const memberRole = ref<number[]>([])
 
 const toEdit = (mem: Member) => {
+  if (!canManageMemberRow(mem)) return
   editMode.value = mem.pk
   memberRole.value = mem.roles.map(r => r.pk)
 }
@@ -48,10 +65,21 @@ const cancelEdit = () => {
   memberRole.value = []
 }
 
-const editSubmit = (mem: Member, roles: number[]) => {
-  workStore.patchMember({ pk: mem.pk, roles }).then(() => {
-    if (props.userPk) workStore.fetchMemberList(props.userPk)
-  })
+const syncAfterSelfEdit = async () => {
+  if (props.userPk === accStore.userInfo?.pk) {
+    await workStore.fetchMyProjectsList()
+  }
+}
+
+const editSubmit = async (mem: Member, roles: number[]) => {
+  if (!roles.length) {
+    message('warning', '입력 확인', '최소 1개 이상의 역할을 선택해야 합니다.')
+    return
+  }
+  const updated = await workStore.patchMember({ pk: mem.pk, roles })
+  if (!updated) return
+  if (props.userPk) await workStore.fetchMemberList(props.userPk)
+  await syncAfterSelfEdit()
   cancelEdit()
 }
 
@@ -70,9 +98,11 @@ const toDelete = (pk: number) => {
   deleteMemberPk.value = pk
 }
 
-const deleteSubmit = () => {
+const deleteSubmit = async () => {
   if (deleteMemberPk.value !== null) {
-    workStore.deleteMember(deleteMemberPk.value, props.userPk)
+    const ok = await workStore.deleteMember(deleteMemberPk.value, props.userPk)
+    if (!ok) return
+    await syncAfterSelfEdit()
   }
   confirmModal.value?.close()
 }
@@ -85,7 +115,7 @@ const selectedProject = ref<number | null>(null)
 const selectedRoles = ref<number[]>([])
 
 const activeProject = computed(() =>
-  workStore.allActiveProjects.find(p => Number(p.pk) === Number(selectedProject.value)),
+  manageableActiveProjects.value.find(p => Number(p.pk) === Number(selectedProject.value)),
 )
 const allowedRoleIds = computed<number[]>(
   () => activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? [],
@@ -97,33 +127,38 @@ watch(selectedProject, () => {
 
 const callModal = () => formModal.value?.callModal()
 
-const onSubmit = (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
+const onSubmit = async (event: Event) => {
+  if (isValidate(event)) {
     validated.value = true
   } else {
-    modalAction()
-    validated.value = false
-    formModal.value?.close()
+    const ok = await modalAction()
+    if (ok) {
+      validated.value = false
+      formModal.value?.close()
+    }
   }
 }
 
 const modalAction = async () => {
-  if (!props.userPk || !selectedProject.value) return
-  const proj = workStore.allActiveProjects.find(p => p.pk === selectedProject.value)
-  if (proj) {
-    await workStore.createMember({
-      user: props.userPk,
-      roles: selectedRoles.value,
-      slug: proj.slug,
-    })
+  if (!props.userPk || !selectedProject.value) return false
+  if (!selectedRoles.value.length) {
+    message('warning', '입력 확인', '최소 1개 이상의 역할을 선택해야 합니다.')
+    return false
   }
+  const proj = manageableActiveProjects.value.find(p => p.pk === selectedProject.value)
+  if (!proj) return false
+  const created = await workStore.createMember({
+    user: props.userPk,
+    roles: selectedRoles.value,
+    slug: proj.slug,
+  })
+  if (!created) return false
   // 전체 목록 갱신
   await workStore.fetchMemberList(props.userPk)
+  await syncAfterSelfEdit()
   selectedProject.value = null
   selectedRoles.value = []
+  return true
 }
 
 // ────────────────────────────────────────────────────
@@ -132,26 +167,36 @@ const modalAction = async () => {
 const addComma = (total: number, i: number) => total > i + 1
 
 const getAllowedRoleIdsByProject = (projPk: number) => {
-  const proj = workStore.allActiveProjects.find(p => Number(p.pk) === Number(projPk))
+  const proj = workStore.allReadableProjects.find(p => Number(p.pk) === Number(projPk))
   return proj?.allowed_roles?.map((r: any) => Number(r.pk)) ?? []
 }
 
 // ────────────────────────────────────────────────────
-// 초기화
+// 초기화 및 userPk 변경 감시
 // ────────────────────────────────────────────────────
+watch(
+  () => props.userPk,
+  async pk => {
+    cancelEdit()
+    if (pk) await workStore.fetchMemberList(pk)
+  },
+)
+
 onBeforeMount(async () => {
-  await workStore.fetchAllProjectList()
-  await workStore.fetchRoleList()
-  await workStore.fetchMemberList(props.userPk)
+  await Promise.all([
+    workStore.fetchAllProjectList(),
+    workStore.fetchRoleList(),
+    props.userPk ? workStore.fetchMemberList(props.userPk) : Promise.resolve(),
+  ])
 })
 </script>
 
 <template>
   <CCol>
     <!-- 헤더 액션 -->
-    <CRow v-if="canProjectMember" class="py-2">
+    <CRow v-if="canGlobalProjectMember" class="py-2">
       <CCol>
-        <span class="mr-2 form-text">
+        <span class="me-2 form-text">
           <TextButton name="워크스페이스 추가" @click="callModal" />
         </span>
       </CCol>
@@ -168,23 +213,26 @@ onBeforeMount(async () => {
           <colgroup>
             <col style="width: 35%" />
             <col style="width: 40%" />
-            <col v-if="canProjectMember" style="width: 25%" />
+            <col v-if="hasAnyManageableRow" style="width: 25%" />
           </colgroup>
           <CTableHead>
             <CTableRow>
-              <CTableHeaderCell class="pl-5" scope="col">워크스페이스</CTableHeaderCell>
-              <CTableHeaderCell class="pl-3" scope="col">역할</CTableHeaderCell>
-              <CTableHeaderCell v-if="canProjectMember" scope="col"></CTableHeaderCell>
+              <CTableHeaderCell class="ps-5" scope="col">워크스페이스</CTableHeaderCell>
+              <CTableHeaderCell class="ps-3" scope="col">역할</CTableHeaderCell>
+              <CTableHeaderCell v-if="hasAnyManageableRow" scope="col"></CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
           <CTableBody>
             <CTableRow v-for="mem in memberList" :key="mem.pk" align="middle">
               <!-- 워크스페이스명 -->
-              <CTableDataCell class="pl-5">
+              <CTableDataCell class="ps-5">
                 <router-link :to="{ name: '(개요)', params: { projId: mem.project.slug } }">
                   {{ mem.project.name }}
                 </router-link>
+                <span v-if="!isProjectActive(mem.project.pk)" class="text-caption text-grey ms-2">
+                  [닫힘]
+                </span>
               </CTableDataCell>
 
               <!-- 역할 (편집 모드 or 표시 모드) -->
@@ -195,7 +243,7 @@ onBeforeMount(async () => {
                       v-model="memberRole"
                       :label="role.name"
                       :value="role.pk"
-                      :id="'user-proj-role-' + role.pk"
+                      :id="'user-proj-role-' + mem.pk + '-' + role.pk"
                       class="text-start"
                       :disabled="
                         !getAllowedRoleIdsByProject(mem.project.pk).includes(Number(role.pk))
@@ -218,7 +266,7 @@ onBeforeMount(async () => {
                     size="x-small"
                     type="button"
                     @click="cancelEdit"
-                    class="mt-2"
+                    class="mt-2 ms-1"
                   >
                     취소
                   </v-btn>
@@ -232,20 +280,22 @@ onBeforeMount(async () => {
               </CTableDataCell>
 
               <!-- 액션 버튼 -->
-              <CTableDataCell v-if="canProjectMember" class="px-3">
-                <span v-if="editMode === null || editMode !== mem.pk" class="me-2">
-                  <v-icon icon="mdi-pencil" color="amber" size="sm" />
-                  <a href="#" @click.prevent="toEdit(mem)">편집</a>
-                </span>
-                <span v-else-if="editMode === mem.pk" class="me-2">
-                  <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="me-1" />
-                  <a href="#" @click.prevent="cancelEdit">취소</a>
-                </span>
+              <CTableDataCell v-if="hasAnyManageableRow" class="px-3">
+                <template v-if="canManageMemberRow(mem)">
+                  <span v-if="editMode === null || editMode !== mem.pk" class="me-2">
+                    <v-icon icon="mdi-pencil" color="amber" size="small" />
+                    <a href="#" @click.prevent="toEdit(mem)">편집</a>
+                  </span>
+                  <span v-else-if="editMode === mem.pk" class="me-2">
+                    <v-icon icon="mdi-close-octagon-outline" color="grey" size="small" class="me-1" />
+                    <a href="#" @click.prevent="cancelEdit">취소</a>
+                  </span>
 
-                <span>
-                  <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
-                  <a href="#" @click.prevent="toDelete(mem.pk)">삭제</a>
-                </span>
+                  <span>
+                    <v-icon icon="mdi-trash-can-outline" color="grey" size="small" class="me-1" />
+                    <a href="#" @click.prevent="toDelete(mem.pk)">삭제</a>
+                  </span>
+                </template>
               </CTableDataCell>
             </CTableRow>
           </CTableBody>
@@ -268,16 +318,16 @@ onBeforeMount(async () => {
             <!-- 워크스페이스 선택 -->
             <CCard class="mb-3">
               <CCardHeader>
-                <v-icon icon="mdi-check" color="success" size="sm" />
+                <v-icon icon="mdi-check" color="success" size="small" />
                 추가할 워크스페이스 선택
               </CCardHeader>
               <CCardBody class="pb-5">
-                <span v-if="!workStore.allActiveProjects.length" class="text-grey-darken-1">
+                <span v-if="!manageableActiveProjects.length" class="text-grey-darken-1">
                   추가 가능한 워크스페이스가 없습니다.
                 </span>
                 <div v-else class="d-flex flex-wrap gap-2">
                   <div
-                    v-for="p in workStore.allActiveProjects"
+                    v-for="p in manageableActiveProjects"
                     :key="p.pk"
                     class="form-check form-check-inline"
                   >
@@ -302,7 +352,7 @@ onBeforeMount(async () => {
             <!-- 역할 선택 -->
             <CCard>
               <CCardHeader>
-                <v-icon icon="mdi-check" color="success" size="sm" />
+                <v-icon icon="mdi-check" color="success" size="small" />
                 역할
               </CCardHeader>
               <CCardBody>

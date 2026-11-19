@@ -65,17 +65,16 @@ const onSubmit = async (payload: any) => {
       form.append(key, formValue as string)
     }
   }
-  if (pk) await updateNews(pk, form)
-  else await createNews(form, payload.project)
-
-  viewForm.value = false
+  const ok = pk ? await updateNews(pk, form) : await createNews(form, payload.project)
+  if (ok) viewForm.value = false
 }
 
 const newsDelConfirm = async () => {
-  RefDelNews.value?.close()
   const newsId = Number(route.params.newsId)
   const projId = route.params.projId as string
-  await deleteNews(newsId, projId)
+  const ok = await deleteNews(newsId, projId)
+  if (!ok) return
+  RefDelNews.value?.close()
   await router.replace({ name: '(공지)', params: { projId } })
 }
 
@@ -90,14 +89,16 @@ const pageSelect = (p: number) => {
 const dataSetup = async () => {
   if (route.params.newsId) await infStore.fetchNews(Number(route.params.newsId))
   else infStore.removeNews()
-  if (route.params.projId) await infStore.fetchNewsList({ project: route.params.projId as string })
+  if (route.params.projId)
+    await infStore.fetchNewsList({ project: route.params.projId as string, page: page.value })
 }
 
 const [route, router] = [useRoute(), useRouter()]
 watch(
   () => route.params?.projId,
   nVal => {
-    if (nVal) infStore.fetchNewsList({ project: nVal as string })
+    page.value = 1
+    if (nVal) infStore.fetchNewsList({ project: nVal as string, page: 1 })
   },
 )
 
@@ -113,7 +114,7 @@ watch(
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   try {
-    if (route.query.viewForm) viewForm.value = true
+    if (route.query.viewForm && canNewsManage.value) viewForm.value = true
     await dataSetup()
   } catch (err) {
     console.error('Failed to load project news data:', err)
@@ -152,17 +153,9 @@ onBeforeMount(async () => {
           <span v-if="canNewsManage">
             <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
-
-          <span v-if="route.params.projId && can(PERM.NEWS_READ)">
-            <TextButton name="지켜보기" icon="mdi-star" icon-color="amber" color="secondary" />
-          </span>
         </CCol>
 
         <CCol v-else class="text-end">
-          <span v-if="can(PERM.NEWS_READ)">
-            <TextButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
-          </span>
-
           <span v-if="canNewsManage">
             <TextButton
               name="편집"
@@ -198,10 +191,11 @@ onBeforeMount(async () => {
           v-else-if="route.name === '(공지) - 보기' && !!news"
           :news="news as News"
           :view-form="viewForm"
+          :can-manage="canNewsManage"
         />
       </template>
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
-        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        <v-icon icon="mdi-alert-circle" class="me-2" />
         공지사항을 조회할 수 있는 권한이 없습니다.
       </v-alert>
 

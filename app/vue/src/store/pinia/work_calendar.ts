@@ -26,6 +26,14 @@ export const useCalendar = defineStore('calendar', () => {
     start?: string,
     end?: string,
   ) => {
+    if (
+      projectOrFilters &&
+      typeof projectOrFilters === 'object' &&
+      projectOrFilters.event_type === 'none'
+    ) {
+      events.value = []
+      return
+    }
     loading.value = true
     try {
       const params = new URLSearchParams()
@@ -48,8 +56,8 @@ export const useCalendar = defineStore('calendar', () => {
       const url = `/work-calendar/?${params.toString()}`
       const res = await api.get(url)
       events.value = res.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     } finally {
       loading.value = false
     }

@@ -32,6 +32,10 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  if (to.matched.some(record => record.meta?.requiresWorkManager) && !accountStore.workManager) {
+    return next({ name: '업 무 관 리' })
+  }
+
   // contractorId 자동 전달 로직
   const fromContractorId = from.params.contractorId
 

@@ -1,11 +1,10 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, watch } from 'vue'
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
-import type { User } from '@/store/types/accounts.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -17,22 +16,24 @@ const props = defineProps({
 
 const emit = defineEmits(['loading-start', 'loading-end', 'update:toDate'])
 
-watch([() => props.toDate, () => props.fromDate], ([newTo, newFrom]) => {
-  if (newTo && newFrom) {
-    actFilter.to_act_date = dateFormat(newTo)
-    actFilter.from_act_date = dateFormat(newFrom)
-    filterActivity()
-  }
-})
+const isInitialized = ref(false)
 
 const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   project: '',
   project__search: '',
-  to_act_date: '',
-  from_act_date: '',
+  to_act_date: props.toDate ? dateFormat(props.toDate) : '',
+  from_act_date: props.fromDate ? dateFormat(props.fromDate) : '',
   creator: '',
   sort: ['1', '2', '3', '4', '5', '6'],
   subProjects: true,
+})
+
+watch([() => props.toDate, () => props.fromDate], ([newTo, newFrom]) => {
+  if (newTo && newFrom) {
+    actFilter.to_act_date = dateFormat(newTo)
+    actFilter.from_act_date = dateFormat(newFrom)
+    if (isInitialized.value) filterActivity()
+  }
 })
 
 const onDateChange = (val: string) => {
@@ -65,10 +66,18 @@ watch(
       if (nVal.length === 0) {
         const defaults: Array<'1' | '2' | '3' | '4' | '5' | '6'> = ['1', '2', '3', '4', '5', '6']
         actFilter.sort.splice(0, actFilter.sort.length, ...defaults)
-        localStorage.removeItem('activity-log-enabled-modules')
+        try {
+          localStorage.removeItem('activity-log-enabled-modules')
+        } catch {
+          // ignore storage error
+        }
       } else {
-        localStorage.setItem('activity-log-enabled-modules', [...nVal].sort().join('-'))
-        filterActivity()
+        try {
+          localStorage.setItem('activity-log-enabled-modules', [...nVal].sort().join('-'))
+        } catch {
+          // ignore storage error
+        }
+        if (isInitialized.value) filterActivity()
       }
     }
   },
@@ -129,16 +138,23 @@ const getUsers = computed(() =>
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
 
-  const enabledModules = (localStorage.getItem('activity-log-enabled-modules') as string)?.split(
-    '-',
-  ) as any[]
-  if (enabledModules?.length) actFilter.sort = enabledModules
-
   if (props.toDate) actFilter.to_act_date = dateFormat(props.toDate)
   if (props.fromDate) actFilter.from_act_date = dateFormat(props.fromDate)
 
+  try {
+    const stored = localStorage.getItem('activity-log-enabled-modules')
+    const validCodes = new Set(['1', '2', '3', '4', '5', '6'])
+    const enabledModules = stored
+      ?.split('-')
+      .filter((s): s is '1' | '2' | '3' | '4' | '5' | '6' => validCodes.has(s))
+    if (enabledModules?.length) actFilter.sort = enabledModules
+  } catch {
+    // ignore storage error
+  }
+
   if (route.query.user) actFilter.creator = route.query.user as string
 
+  isInitialized.value = true
   await filterActivity()
 })
 </script>
@@ -163,7 +179,7 @@ onBeforeMount(async () => {
     <CCol class="col-xxl-6">
       <CFormSelect v-model="actFilter.creator" id="log-user" size="sm">
         <option value="">---------</option>
-        <option :value="(userInfo as User)?.pk">&lt;&lt; 나 &gt;&gt;</option>
+        <option :value="userInfo?.pk">&lt;&lt; 나 &gt;&gt;</option>
         <option v-for="user in getUsers" :value="user.value" :key="user.value">
           {{ user.label }}
         </option>

@@ -15,8 +15,8 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 const props = defineProps({
   projectResults: { type: Array as PropType<IssueProject[]>, default: () => [] },
   issueNum: {
-    type: Object,
-    default: () => {},
+    type: Object as PropType<Record<string, number>>,
+    default: () => ({}),
   },
 })
 
@@ -26,6 +26,14 @@ const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
 const userInfo = computed<User | null>(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
+const superAuth = computed(() => !!accStore.superAuth)
+const canEditTarget = computed(
+  () =>
+    !!workManager.value &&
+    !!user.value?.pk &&
+    user.value.pk !== userInfo.value?.pk &&
+    (!user.value.is_superuser || superAuth.value),
+)
 
 const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
@@ -44,7 +52,7 @@ const projectResults = computed(() => props.projectResults.slice())
     </CCol>
 
     <CCol class="text-end form-text">
-      <span v-if="user?.pk === userInfo?.pk">
+      <span v-if="user?.pk && user.pk === userInfo?.pk">
         <TextButton
           name="내 계정"
           icon="mdi-pencil"
@@ -52,7 +60,7 @@ const projectResults = computed(() => props.projectResults.slice())
           :to="{ name: '사용자 - 내 계정' }"
         />
       </span>
-      <span v-if="workManager && user?.pk !== userInfo?.pk">
+      <span v-if="canEditTarget">
         <TextButton
           name="편집"
           icon="mdi-pencil"
@@ -66,7 +74,7 @@ const projectResults = computed(() => props.projectResults.slice())
   <CRow>
     <CCol lg="6">
       <CRow class="mb-3">
-        <CCol class="pl-5">
+        <CCol class="ps-5">
           <ul>
             <li>로그인 : {{ user?.username }}</li>
             <li>등록시각 : {{ user ? dateFormat(user.date_joined, '/') : '' }}</li>
@@ -98,7 +106,7 @@ const projectResults = computed(() => props.projectResults.slice())
       </template>
     </CCol>
 
-    <CCol lg="6" class="pl-2">
+    <CCol lg="6" class="ps-2">
       <template v-if="!!Object.keys(groupedActivities).length">
         <CRow class="mb-2">
           <CCol>

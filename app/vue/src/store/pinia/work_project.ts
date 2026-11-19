@@ -6,6 +6,7 @@ import { useCompany } from '@/store/pinia/company.ts'
 import { usePermission } from '@/store/pinia/work_permission.ts'
 import type {
   ProjectFilter,
+  ProjectSubscription,
   IssueProject,
   Role,
   Permission,
@@ -192,7 +193,7 @@ export const useWork = defineStore('work', () => {
 
   const getDevProjects = computed(() =>
     myProjectsFlat.value
-      .filter(i => i.type === '2')
+      .filter(i => i.type === '2' && i.project !== null && i.project !== undefined)
       .map(i => ({
         value: i.project as number,
         label:
@@ -203,95 +204,150 @@ export const useWork = defineStore('work', () => {
   )
 
   // actions
+  let fetchProjectSeq = 0
+
   const fetchAllProjectList = async (
     type: '' | '1' | '2' | '3' = '',
     company: '' | number = '',
   ) => {
+    const params: Record<string, string | number> = {
+      status__exclude: '9',
+      limit: 500,
+    }
+    if (type) params.type = type
+    if (company) params.company = company
     return await api
-      .get(`/issue-project/?type=${type}&company=${company}&status__exclude='9'`)
-      .then(res => (allReadableProjects.value = res.data.results || res.data))
-      .catch(err => errorHandle(err.response.data))
+      .get('/issue-project/', { params })
+      .then(res => (allReadableProjects.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
   }
 
   const fetchIssueProjectList = async (payload: ProjectFilter) => {
-    activeFilters.value = payload
-    let url = `/issue-project/?1=1`
-    if (payload.company) url += `&company=${payload.company}`
-    if (payload?.status) url += `&status=${payload?.status}`
-    else if (payload?.status__exclude) url += `&status__exclude=${payload?.status__exclude}`
-    if (payload?.parent) url += `&parent__slug=${payload.parent}`
-    if (payload.project) url += `&project=${payload.project}`
-    else if (payload.project__exclude) url += `&project__exclude=${payload.project__exclude}`
-    if (payload.is_public) url += `&is_public=${payload.is_public}`
-    else if (payload.is_public__exclude) url += `&is_public__exclude=${payload.is_public__exclude}`
-    if (payload.name) url += `&name=${payload.name}`
-    else if (payload.name__exclude) url += `&name__exclude=${payload.name__exclude}`
-    else if (payload.name__startswith) url += `&name__startswith=${payload.name__startswith}`
-    else if (payload.name__endswith) url += `&name__endswith=${payload.name__endswith}`
-    else if (payload.name__isnull !== undefined) url += `&name__isnull=${payload.name__isnull}`
+    activeFilters.value = { ...payload }
+    const params: Record<string, string | number | boolean> = { limit: 500 }
+    if (payload.company) params.company = payload.company
+    if (payload.status) params.status = payload.status
+    else if (payload.status__exclude) params.status__exclude = payload.status__exclude
+    if (payload.parent__isnull !== undefined) params.parent__isnull = payload.parent__isnull
+    if (payload.parent) params.parent__slug = payload.parent
+    else if (payload.parent__exclude) params.parent__exclude = payload.parent__exclude
+    if (payload.project) params.project = payload.project
+    else if (payload.project__exclude) params.project__exclude = payload.project__exclude
+    if (payload.is_public) params.is_public = payload.is_public
+    else if (payload.is_public__exclude) params.is_public__exclude = payload.is_public__exclude
+    if (payload.is_hidden !== undefined) params.is_hidden = payload.is_hidden
+    if (payload.include_hidden) params.include_hidden = true
+    if (payload.name) params.name = payload.name
+    else if (payload.name__exclude) params.name__exclude = payload.name__exclude
+    else if (payload.name__startswith) params.name__startswith = payload.name__startswith
+    else if (payload.name__endswith) params.name__endswith = payload.name__endswith
+    else if (payload.name__isnull !== undefined) params.name__isnull = payload.name__isnull
 
-    if (payload.member) url += `&members__user=${payload.member}`
+    if (payload.member) params.members__user = payload.member
 
-    if (payload.description) url += `&description=${payload.description}`
-    else if (payload.description__exclude)
-      url += `&description__exclude=${payload.description__exclude}`
+    if (payload.description) params.description = payload.description
+    else if (payload.description__exclude) params.description__exclude = payload.description__exclude
     else if (payload.description__startswith)
-      url += `&description__startswith=${payload.description__startswith}`
+      params.description__startswith = payload.description__startswith
     else if (payload.description__endswith)
-      url += `&description__endswith=${payload.description__endswith}`
+      params.description__endswith = payload.description__endswith
     else if (payload.description__isnull !== undefined)
-      url += `&description__isnull=${payload.description__isnull}`
+      params.description__isnull = payload.description__isnull
 
-    if (payload.from_created) url += `&from_created=${payload.from_created}`
-    if (payload.to_created) url += `&to_created=${payload.to_created}`
-    if (payload.from_updated) url += `&from_updated=${payload.from_updated}`
-    if (payload.to_updated) url += `&to_updated=${payload.to_updated}`
+    if (payload.from_created) params.from_created = payload.from_created
+    if (payload.to_created) params.to_created = payload.to_created
+    if (payload.from_updated) params.from_updated = payload.from_updated
+    if (payload.to_updated) params.to_updated = payload.to_updated
 
-    if (payload.bookmark !== undefined) url += `&bookmark=${payload.bookmark}`
-    if (payload.my_project !== undefined) url += `&my_project=${payload.my_project}`
+    if (payload.bookmark !== undefined) params.bookmark = payload.bookmark
+    if (payload.my_project !== undefined) params.my_project = payload.my_project
 
     return await api
-      .get(url)
-      .then(res => (projectResults.value = res.data.results || res.data))
-      .catch(err => errorHandle(err.response.data))
+      .get('/issue-project/', { params })
+      .then(res => (projectResults.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
   }
 
   const fetchMyProjectsList = async () => {
     return await api
       .get(`/issue-project/my_projects/`)
       .then(res => (myProjects.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
-  const fetchIssueProject = (slug: string) =>
-    api
+  const fetchIssueProject = (slug: string) => {
+    const seq = ++fetchProjectSeq
+    return api
       .get(`/issue-project/${slug}/`)
       .then(async res => {
+        if (seq !== fetchProjectSeq) return res.data
         currentProject.value = res.data
         permStore.setProjectPermissions(res.data.my_perms || [])
         permStore.setProjectRole(res.data.my_role || null)
-        await comStore.fetchCompany(res.data.company)
+        if (
+          res.data.company &&
+          typeof res.data.company === 'number' &&
+          comStore.company?.pk !== res.data.company
+        ) {
+          await comStore.fetchCompany(res.data.company)
+        }
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        if (seq === fetchProjectSeq) {
+          currentProject.value = null
+          permStore.setProjectPermissions([])
+          permStore.setProjectRole(null)
+        }
+        errorHandle(err)
+        return null
+      })
+  }
 
-  const removeIssueProject = () => (currentProject.value = null)
+  const removeIssueProject = () => {
+    fetchProjectSeq += 1
+    currentProject.value = null
+    permStore.setProjectPermissions([])
+    permStore.setProjectRole(null)
+  }
+
+  const clearProjectResults = () => {
+    projectResults.value = []
+  }
 
   const createIssueProject = (payload: IssueProject) =>
     api
       .post(`/issue-project/`, payload)
-      .then(res => {
-        fetchIssueProject(res.data.slug).then(() => message())
+      .then(async res => {
+        await Promise.all([
+          fetchIssueProject(res.data.slug),
+          fetchAllProjectList(),
+          fetchMyProjectsList(),
+        ])
+        message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateIssueProject = (payload: IssueProject) =>
     api
       .put(`/issue-project/${payload.slug}/`, payload)
       .then(async res => {
-        await fetchIssueProject(res.data.slug)
+        await Promise.all([
+          fetchIssueProject(res.data.slug),
+          fetchAllProjectList(),
+          fetchMyProjectsList(),
+        ])
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchIssueProject = async (payload: {
     slug: string
@@ -307,8 +363,12 @@ export const useWork = defineStore('work', () => {
       .then(async res => {
         await fetchIssueProject(res.data.slug)
         message(type)
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const updateMembers = async (payload: {
@@ -319,58 +379,106 @@ export const useWork = defineStore('work', () => {
   }) => {
     return await api
       .post(`/issue-project/${payload.slug}/update_members/`, payload)
-      .then(async () => {
-        await fetchIssueProject(payload.slug)
+      .then(async res => {
+        await Promise.all([fetchIssueProject(payload.slug), fetchMyProjectsList()])
         message('success', '성공!', '구성원 정보가 업데이트되었습니다.')
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const deleteIssueProject = (slug: string) =>
     api
       .delete(`/issue-project/${slug}/`)
       .then(async res => {
+        if (currentProject.value?.slug === slug) {
+          removeIssueProject()
+        }
+        await Promise.all([
+          fetchIssueProjectList({ ...activeFilters.value }),
+          fetchAllProjectList(),
+          fetchMyProjectsList(),
+        ])
         if (res.data && res.data.action === 'archived') {
-          await fetchIssueProject(slug)
           message(
             'warning',
             '잠금보관 안내',
             res.data.message || "이력이 보존되어 '잠금보관' 처리되었습니다.",
           )
         } else {
-          await fetchIssueProjectList({})
-          message('danger', '삭제 완료', '해당 프로젝트가 성공적으로 삭제되었습니다.')
+          message('danger', '삭제 완료', '해당 워크스페이스가 성공적으로 삭제되었습니다.')
         }
-        return res.data
+        return res.data ?? { action: 'deleted' }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const toggleProjectClose = (slug: string) =>
     api
       .post(`/issue-project/${slug}/toggle_close/`)
-      .then(async () => {
-        await fetchIssueProject(slug)
+      .then(async res => {
+        const tasks: Promise<unknown>[] = [
+          fetchIssueProjectList({ ...activeFilters.value }),
+          fetchAllProjectList(),
+          fetchMyProjectsList(),
+        ]
+        if (currentProject.value?.slug === slug) {
+          tasks.push(fetchIssueProject(slug))
+        }
+        await Promise.all(tasks)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const toggleProjectLock = (slug: string) =>
     api
       .post(`/issue-project/${slug}/toggle_lock/`)
-      .then(async () => {
-        await fetchIssueProjectList({})
-        message('warning', '상태 변경 완료', '프로젝트 잠금보관 상태가 변경되었습니다.')
+      .then(async res => {
+        const tasks: Promise<unknown>[] = [
+          fetchIssueProjectList({ ...activeFilters.value }),
+          fetchAllProjectList(),
+          fetchMyProjectsList(),
+        ]
+        if (currentProject.value?.slug === slug) {
+          tasks.push(fetchIssueProject(slug))
+        }
+        await Promise.all(tasks)
+        message('warning', '상태 변경 완료', '워크스페이스 잠금보관 상태가 변경되었습니다.')
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const toggleProjectPublic = (slug: string, showMessage = false) =>
     api
       .post(`/issue-project/${slug}/toggle_public/`)
-      .then(async () => {
-        await fetchIssueProject(slug)
+      .then(async res => {
+        const tasks: Promise<unknown>[] = [fetchAllProjectList()]
+        if (currentProject.value?.slug === slug) {
+          tasks.push(fetchIssueProject(slug))
+        }
+        if (projectResults.value.length > 0) {
+          tasks.push(fetchIssueProjectList({ ...activeFilters.value }))
+        }
+        await Promise.all(tasks)
         if (showMessage) message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   // Role & Permission states & getters
   const role = ref<Role | null>(null)
@@ -381,47 +489,68 @@ export const useWork = defineStore('work', () => {
     api
       .get(`/role/${pk}/`)
       .then(res => (role.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchRoleList = (category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage') => {
-    const url = category ? `/role/?category=${category}` : `/role/`
+    const params: Record<string, string | number> = { limit: 500 }
+    if (category) params.category = category
     return api
-      .get(url)
-      .then(res => (roleList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .get('/role/', { params })
+      .then(res => (roleList.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
   }
 
-  const createRole = (payload: Role) =>
+  const createRole = (payload: Partial<Role>) =>
     api
       .post(`/role/`, payload)
-      .then(res => {
-        fetchRoleList().then(() => message())
+      .then(async res => {
+        await fetchRoleList()
+        message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const updateRole = (payload: Role) =>
+  const updateRole = (payload: Partial<Role>) =>
     api
       .put(`/role/${payload.pk}/`, payload)
-      .then(res => {
-        fetchRoleList().then(() => message())
+      .then(async res => {
+        await Promise.all([fetchRoleList(), fetchMyProjectsList()])
+        message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchRole = (payload: { pk: number; permissions: number[] }) =>
     api
       .patch(`/role/${payload.pk}/`, payload)
-      .then(res => {
-        fetchRoleList().then(() => message())
+      .then(async res => {
+        await Promise.all([fetchRoleList(), fetchMyProjectsList()])
+        message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteRole = (pk: number) =>
     api
       .delete(`/role/${pk}/`)
-      .then(() => {
-        fetchRoleList().then(() => message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'))
+      .then(async () => {
+        await Promise.all([fetchRoleList(), fetchMyProjectsList()])
+        message('warning', '알림!', '해당 역할이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const permissionList = ref<Permission[]>([])
   const groupedPermissions = ref<GroupedPermissions | null>(null)
@@ -429,25 +558,26 @@ export const useWork = defineStore('work', () => {
   const fetchPermissionList = async (
     category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage',
   ) => {
-    const url = category ? `/permission/?category=${category}` : `/permission/`
+    const params: Record<string, string | number> = { limit: 500 }
+    if (category) params.category = category
     try {
-      const res = await api.get(url)
+      const res = await api.get('/permission/', { params })
       return (permissionList.value = res.data.results || res.data)
-    } catch (err: any) {
-      return errorHandle(err.response.data)
+    } catch (err: unknown) {
+      return errorHandle(err)
     }
   }
 
   const fetchGroupedPermissions = async () => {
     try {
       const [rawRes, groupedRes] = await Promise.all([
-        api.get('/permission/'),
+        api.get('/permission/', { params: { limit: 500 } }),
         api.get('/permission/grouped/'),
       ])
       permissionList.value = rawRes.data.results || rawRes.data
       groupedPermissions.value = groupedRes.data
-    } catch (err: any) {
-      return errorHandle(err.response.data)
+    } catch (err: unknown) {
+      return errorHandle(err)
     }
   }
 
@@ -459,13 +589,16 @@ export const useWork = defineStore('work', () => {
     api
       .get(`/member/${pk}/`)
       .then(res => (member.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const fetchMemberList = (user?: number) =>
-    api
-      .get(`/member/?user=${user ?? ''}`)
-      .then(res => (memberList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+  const fetchMemberList = (user?: number) => {
+    const params: Record<string, number> = { limit: 500 }
+    if (user !== undefined) params.user = user
+    return api
+      .get('/member/', { params })
+      .then(res => (memberList.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
+  }
 
   const projectMembers = ref<ProjectMember[]>([])
 
@@ -473,7 +606,7 @@ export const useWork = defineStore('work', () => {
     api
       .get(`/issue-project/${slug}/members/`)
       .then(res => (projectMembers.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createMember = async (payload: { user?: number; roles?: number[]; slug: string }) => {
     const { user, roles, ...rest } = payload
@@ -485,11 +618,17 @@ export const useWork = defineStore('work', () => {
     return api
       .post(`/member/`, body)
       .then(async res => {
-        await fetchIssueProject(payload.slug)
+        if (currentProject.value?.slug === payload.slug) {
+          await fetchIssueProject(payload.slug)
+        }
         await fetchMember(res.data.pk)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const patchMember = async (payload: { pk: number; user?: number; roles?: number[] }) => {
@@ -502,11 +641,17 @@ export const useWork = defineStore('work', () => {
     return api
       .patch(`/member/${pk}/`, body)
       .then(async res => {
-        await fetchIssueProject(res.data.project.slug)
+        if (res.data?.project?.slug && currentProject.value?.slug === res.data.project.slug) {
+          await fetchIssueProject(res.data.project.slug)
+        }
         await fetchMember(res.data.pk)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const deleteMember = async (pk: number, userPk?: number) => {
@@ -514,35 +659,44 @@ export const useWork = defineStore('work', () => {
       .delete(`/member/${pk}/`)
       .then(async () => {
         await fetchMemberList(userPk)
-        message('warning', '알림!', '해당 구성원이 프로젝트에서 제거되었습니다.')
+        message('warning', '알림!', '해당 구성원이 워크스페이스에서 제거되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
   }
 
   // subscribed_projects
-  const subscribedProjects = ref([])
+  const subscribedProjects = ref<ProjectSubscription[]>([])
 
   const fetchSubscribedProjects = async (userPk: number) =>
     api
-      .get(`/project-subscription/?user=${userPk}`)
-      .then(res => (subscribedProjects.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .get('/project-subscription/', { params: { user: userPk } })
+      .then(res => (subscribedProjects.value = res.data?.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
 
-  const createSubscribedProjects = async (payload: { user: number; project_ids: number[] }) => {
-    await api
+  const createSubscribedProjects = async (payload: { user: number; project_ids: number[] }) =>
+    api
       .post(`/project-subscription/bulk-update/`, payload)
-      .then(() => fetchSubscribedProjects(payload.user))
-      .catch(err => errorHandle(err.response.data))
-  }
+      .then(async res => {
+        subscribedProjects.value = res.data?.results ?? res.data ?? []
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // bookmarked_projects
   const bookmarkedProjects = ref<ProjectBookmark[]>([])
 
   const fetchBookmarks = async () =>
     api
-      .get(`/project-bookmark/`)
-      .then(res => (bookmarkedProjects.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .get('/project-bookmark/', { params: { limit: 500 } })
+      .then(res => (bookmarkedProjects.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
 
   const toggleBookmark = async (projectId: number) => {
     return api
@@ -570,14 +724,14 @@ export const useWork = defineStore('work', () => {
 
         return res.data as { bookmarked: boolean }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const reorderBookmarks = async (orderedIds: number[]) =>
     api
       .post(`/project-bookmark/reorder/`, { ordered_ids: orderedIds })
       .then(res => (bookmarkedProjects.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // version states & getters
   const version = ref<Version | null>(null)
@@ -589,11 +743,13 @@ export const useWork = defineStore('work', () => {
     })),
   )
 
+  const removeVersion = () => (version.value = null)
+
   const fetchVersion = (pk: number) =>
     api
       .get(`/version/${pk}/`)
       .then(res => (version.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchVersionList = async (
     payload?:
@@ -603,27 +759,25 @@ export const useWork = defineStore('work', () => {
           status?: '' | '1' | '2' | '3'
           exclude?: '' | '1' | '2' | '3'
           search?: string
+          limit?: number
         },
   ) => {
-    let url = `/version/`
-    const params = new URLSearchParams()
+    const params: Record<string, string | number> = { limit: 500 }
 
     if (typeof payload === 'string') {
-      params.append('project__slug', payload)
+      if (payload) params.project__slug = payload
     } else if (payload && typeof payload === 'object') {
-      if (payload.project) params.append('project__slug', payload.project)
-      if (payload.status) params.append('status', payload.status)
-      if (payload.exclude) params.append('status__exclude', payload.exclude)
-      if (payload.search) params.append('search', payload.search)
+      if (payload.project) params.project__slug = payload.project
+      if (payload.status) params.status = payload.status
+      if (payload.exclude) params.status__exclude = payload.exclude
+      if (payload.search) params.search = payload.search
+      if (payload.limit) params.limit = payload.limit
     }
 
-    const queryString = params.toString()
-    if (queryString) url += `?${queryString}`
-
     return await api
-      .get(url)
-      .then(res => (versionList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .get('/version/', { params })
+      .then(res => (versionList.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
   }
 
   const createVersion = (payload: FormVersion) =>
@@ -632,11 +786,16 @@ export const useWork = defineStore('work', () => {
       .then(async res => {
         await fetchVersion(res.data.pk)
         await fetchVersionList(res.data.project.slug)
-        await fetchIssueProject(res.data.project.slug)
+        if (currentProject.value?.slug === res.data.project.slug) {
+          await fetchIssueProject(res.data.project.slug)
+        }
         message()
         return res.data.pk
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const updateVersion = (payload: FormVersion) =>
     api
@@ -644,19 +803,53 @@ export const useWork = defineStore('work', () => {
       .then(async res => {
         await fetchVersion(res.data.pk)
         await fetchVersionList(res.data.project.slug)
+        if (currentProject.value?.slug === res.data.project.slug) {
+          await fetchIssueProject(res.data.project.slug)
+        }
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteVersion = (pk: number, project = '') =>
     api
       .delete(`/version/${pk}/`)
       .then(async () => {
         await fetchVersionList({ project, status: '', exclude: '' })
-        await fetchIssueProject(project)
-        message('warning', '알림!', '해당 버전이 삭제되었습니다!')
+        if (project && currentProject.value?.slug === project) {
+          await fetchIssueProject(project)
+        }
+        message('warning', '알림!', '해당 단계가 삭제되었습니다!')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
+
+  const reset = () => {
+    fetchProjectSeq += 1
+    currentProject.value = null
+    allReadableProjects.value = []
+    myProjects.value = []
+    projectResults.value = []
+    activeFilters.value = {}
+    role.value = null
+    roleList.value = []
+    permissionList.value = []
+    groupedPermissions.value = null
+    member.value = null
+    memberList.value = []
+    projectMembers.value = []
+    subscribedProjects.value = []
+    bookmarkedProjects.value = []
+    version.value = null
+    versionList.value = []
+    permStore.reset()
+  }
 
   return {
     currentProject,
@@ -691,6 +884,7 @@ export const useWork = defineStore('work', () => {
     fetchMyProjectsList,
     fetchIssueProject,
     removeIssueProject,
+    clearProjectResults,
     createIssueProject,
     updateIssueProject,
     patchIssueProject,
@@ -715,13 +909,7 @@ export const useWork = defineStore('work', () => {
     fetchPermissionList,
     fetchGroupedPermissions,
 
-    reset: () => {
-      permissionList.value = []
-      groupedPermissions.value = null
-      member.value = null
-      memberList.value = []
-      projectMembers.value = []
-    },
+    reset,
 
     member,
     memberList,
@@ -745,6 +933,7 @@ export const useWork = defineStore('work', () => {
     version,
     versionList,
     getVersions,
+    removeVersion,
     fetchVersion,
     fetchVersionList,
     createVersion,

@@ -36,6 +36,14 @@ const viewMode = ref<'list' | 'kanban'>(
 const onViewModeChange = (mode: 'list' | 'kanban') => {
   viewMode.value = mode
   localStorage.setItem('ibs_work_issue_view_mode', mode)
+  page.value = 1
+  const payload: IssueFilter = {
+    ...listFilter.value,
+    page: 1,
+    limit: mode === 'kanban' ? 200 : undefined,
+  }
+  listFilter.value = payload
+  issueStore.fetchIssueList(payload)
 }
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -81,8 +89,25 @@ const onResetQuery = () => {
   querySectionRef.value?.resetFilter()
 }
 
-const onSubmit = async (payload: any) => {
-  const { pk, ...getData } = payload
+const onSubmit = async (payload: any, done?: (ok: boolean) => void) => {
+  const { pk, commentOnly, ...getData } = payload
+
+  // 댓글 작성 전용 권한자(issue.comment_create만 보유)는 직접 댓글 엔드포인트 호출
+  if (pk && commentOnly) {
+    const content = String(getData.comment_content ?? '').trim()
+    if (!content) {
+      done?.(false)
+      return
+    }
+    const createdComment = await issueStore.createIssueComment({
+      issue: pk,
+      content,
+      is_private: Boolean(getData.comment_is_private),
+    })
+    done?.(Boolean(createdComment))
+    return
+  }
+
   const form = new FormData()
 
   const nullableClearable = [
@@ -94,12 +119,21 @@ const onSubmit = async (payload: any) => {
     'expected_duration',
   ]
 
+  const currentParentPk = issue.value?.parent?.pk ?? null
+
   for (const key in getData) {
+    // 수정 모드에서 parent 값이 기존과 동일하면 불필요한 parent 필드 전송을 생략 (sub_manage 오판 방지)
+    if (pk && key === 'parent') {
+      const nextParent = getData.parent === '' ? null : (getData.parent ?? null)
+      if (String(nextParent ?? '') === String(currentParentPk ?? '')) continue
+    }
     if (pk && nullableClearable.includes(key) && (getData[key] === null || getData[key] === '')) {
       form.append(key, '')
-    } else if (key === 'watchers' || key === 'files' || key === 'links')
+    } else if (key === 'watchers') {
+      getData[key]?.forEach((val: any) => form.append(key, String(val)))
+    } else if (key === 'files' || key === 'links') {
       getData[key]?.forEach((val: any) => form.append(key, JSON.stringify(val)))
-    else if (key === 'newFiles') {
+    } else if (key === 'newFiles') {
       getData[key].forEach((val: any) => {
         form.append('new_files', val.file as string | Blob)
         form.append('descriptions', val.description ?? '')
@@ -116,35 +150,35 @@ const onSubmit = async (payload: any) => {
     }
   }
 
-  if (pk) await issueStore.updateIssue(pk, form)
-  else {
+  if (pk) {
+    const updated = await issueStore.updateIssue(pk, form)
+    done?.(Boolean(updated))
+  } else {
     const newIssue = await issueStore.createIssue(form)
     if (newIssue && newIssue.pk) {
-      const projId = (route.params.projId as string) || newIssue.project?.slug || newIssue.project
+      done?.(true)
+      const projSlug = (route.params.projId as string) || newIssue.project?.slug || newIssue.project
 
       // 하위 업무를 생성한 경우(부모 ID가 존재하면) 부모 상세 페이지로 복귀
-      const parentId = (route.query.parent as string) || newIssue.parent
+      const parentId =
+        (route.query.parent as string) ||
+        (typeof newIssue.parent === 'object' && newIssue.parent !== null
+          ? newIssue.parent.pk
+          : newIssue.parent)
 
       if (parentId) {
         await router.replace({
           name: '(업무) - 보기',
-          params: { projId, issueId: String(parentId) },
+          params: { projId: projSlug, issueId: String(parentId) },
         })
       } else {
         await router.replace({
           name: '(업무) - 보기',
-          params: { projId, issueId: String(newIssue.pk) },
+          params: { projId: projSlug, issueId: String(newIssue.pk) },
         })
       }
     } else {
-      if (route.params.projId) {
-        if (route.query.parent)
-          await router.replace({
-            name: '(업무) - 보기',
-            params: { projId: route.params.projId, issueId: route.query.parent as string },
-          })
-        else await router.replace({ name: '(업무)' })
-      } else await router.replace({ name: '업무' })
+      done?.(false)
     }
   }
 }
@@ -157,8 +191,12 @@ const page = ref(1)
 
 const filterSubmit = (payload: IssueFilter) => {
   page.value = 1
-  listFilter.value = payload
-  issueStore.fetchIssueList(payload)
+  const enriched: IssueFilter = {
+    ...payload,
+    limit: viewMode.value === 'kanban' ? 200 : undefined,
+  }
+  listFilter.value = enriched
+  issueStore.fetchIssueList(enriched)
 }
 const pageSelect = (p: number) => {
   page.value = p
@@ -168,12 +206,20 @@ const pageSelect = (p: number) => {
 
 watch(
   () => projId.value,
-  nVal => {
+  async nVal => {
     if (nVal && nVal.length > 0) {
       page.value = 1
-      const payload = issueFilterStore.resetFilter(nVal as string)
+      const payload: IssueFilter = {
+        ...issueFilterStore.resetFilter(nVal as string),
+        limit: viewMode.value === 'kanban' ? 200 : undefined,
+      }
       listFilter.value = payload
-      issueStore.fetchIssueList(payload)
+      await Promise.all([
+        issueStore.fetchIssueList(payload),
+        issueStore.fetchCategoryList(nVal, true),
+        workStore.fetchVersionList({ project: nVal }),
+        issueStore.fetchAllIssueList(nVal, '0', true),
+      ])
     }
   },
 )
@@ -184,8 +230,10 @@ watch(
     if (nVal) {
       loading.value = true
       try {
-        await issueStore.fetchIssue(Number(nVal))
-        await logStore.fetchIssueLogList({ issue: Number(nVal) })
+        await Promise.all([
+          issueStore.fetchIssue(Number(nVal)),
+          logStore.fetchIssueLogList({ issue: Number(nVal) }),
+        ])
       } catch (err) {
         console.error('Failed to load issue detail:', err)
       } finally {
@@ -193,7 +241,6 @@ watch(
       }
     } else issueStore.removeIssue()
   },
-  { deep: true },
 )
 
 // Columns Selector Start
@@ -207,22 +254,22 @@ const { selectedColumns } = useTableColumns(
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   try {
-    await workStore.fetchIssueProject(projId.value)
-
-    if (issueId.value) {
-      await issueStore.fetchIssue(Number(issueId.value))
-      await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
+    if (workStore.currentProject?.slug !== projId.value) {
+      await workStore.fetchIssueProject(projId.value)
     }
 
-    await Promise.all([
-      workStore.fetchMemberList(),
-      issueStore.fetchTrackerList(),
-      issueStore.fetchStatusList(),
-      issueStore.fetchPriorityList(),
-      issueStore.fetchCategoryList(projId.value), // 프로젝트 카테고리(범주) 목록 로드
+    const tasks: Promise<unknown>[] = [
+      issueStore.fetchCategoryList(projId.value),
       workStore.fetchVersionList({ project: projId.value }),
       issueStore.fetchAllIssueList(projId.value),
-    ])
+    ]
+    if (issueId.value) {
+      tasks.push(
+        issueStore.fetchIssue(Number(issueId.value)),
+        logStore.fetchIssueLogList({ issue: Number(issueId.value) }),
+      )
+    }
+    await Promise.all(tasks)
   } catch (err) {
     console.error('Failed to load project issues data:', err)
   } finally {
@@ -233,7 +280,7 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="query">
+  <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
       <IssueHeader
         :proj-status="currentProject?.status"
@@ -277,6 +324,7 @@ onBeforeMount(async () => {
 
       <IssueDetail
         v-if="route.name === '(업무) - 보기' && issue"
+        :key="issue.pk"
         :current-project="currentProject as IssueProject"
         :issue="issue"
         :all-readable-projects="allReadableProjects"
@@ -303,6 +351,7 @@ onBeforeMount(async () => {
 
     <template v-slot:aside>
       <SavedQueryAside
+        v-if="route.name === '(업무)'"
         target-type="issue"
         :active-query-id="activeQueryId ?? undefined"
         :can-project-pub-query="canPubQuery"
@@ -310,9 +359,9 @@ onBeforeMount(async () => {
         @on-reset-query="onResetQuery"
       />
       <IssueItemAside
-        v-if="route.name === '(업무) - 보기'"
-        :watchers="issue?.watchers"
-        :issue="issue as any"
+        v-if="route.name === '(업무) - 보기' && issue"
+        :watchers="issue.watchers"
+        :issue="issue"
       />
     </template>
   </ContentBody>

@@ -23,20 +23,32 @@ const [route, router] = [useRoute(), useRouter()]
 
 const projId = computed(() => route.params.projId as string)
 
-const { can, PERM } = usePerms()
-const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
-const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
-const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
-
 const accStore = useAccount()
 const frmStore = useForum()
 
 const isForumManager = computed(() => {
-  if (accStore.userInfo?.is_superuser) return true
+  if (accStore.userInfo?.is_superuser || accStore.workManager) return true
   const forum = frmStore.forumList.find(f => f.pk === props.forumId) || frmStore.forum
   if (!forum || !forum.manager) return false
   return (forum.manager as number[]).includes(accStore.userInfo?.pk ?? 0)
 })
+
+const { can, PERM } = usePerms()
+const canForumCreate = computed(() => {
+  if (isForumManager.value) return true
+  const forum = frmStore.forumList.find(f => f.pk === props.forumId) || frmStore.forum
+  if (forum?.manager_only) return false
+  return can(PERM.FORUM_CREATE)
+})
+const canForumUpdate = computed(() => {
+  if (isForumManager.value) return true
+  if (can(PERM.FORUM_UPDATE)) return true
+  if (can(PERM.FORUM_OWN_UPDATE)) {
+    return !!props.post?.creator?.pk && props.post.creator.pk === accStore.userInfo?.pk
+  }
+  return false
+})
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const availableCategories = computed(() => {
   return props.categories.filter(cate => !cate.is_manager_only || isForumManager.value)
@@ -64,15 +76,20 @@ const openCategoryDialog = () => {
   categoryForm.value?.callModal()
 }
 
-const submitCategory = (event: Event) => {
-  if (isValidate(event)) categoryValidated.value = true
-  else {
-    isSubmittingCategory.value = true
-    frmStore.createCategory(newCategory.value, projId.value).then(() => {
+const submitCategory = async (event: Event) => {
+  if (isValidate(event)) {
+    categoryValidated.value = true
+    return
+  }
+  isSubmittingCategory.value = true
+  try {
+    const created = await frmStore.createCategory(newCategory.value, projId.value)
+    if (created) {
       categoryForm.value?.close()
       categoryValidated.value = false
-      isSubmittingCategory.value = false
-    })
+    }
+  } finally {
+    isSubmittingCategory.value = false
   }
 }
 
@@ -108,14 +125,11 @@ const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(
 const filesUpdate = (payload: any[]) => (form.value.files = payload)
 
 const submitCheck = (event: Event) => {
-  if (!isValidate(event)) {
-    event.preventDefault()
-    event.stopPropagation()
+  if (isValidate(event)) {
     validated.value = true
   } else {
     validated.value = false
     onSubmit()
-    refFileForms.value?.checkRelease()
   }
 }
 
@@ -131,20 +145,25 @@ const onSubmit = async () => {
     }
   })
 
-  newFiles.value.forEach(file => formData.append('newFiles', file))
+  const activeNewFiles = refFileForms.value?.getNewFiles() ?? newFiles.value
+  activeNewFiles.forEach(file => formData.append('newFiles', file))
   cngFiles.value.forEach(val => {
     formData.append('cngPks', val.pk.toString())
     formData.append('cngFiles', val.file)
   })
 
   if (form.value.pk) {
-    await updatePost({ pk: form.value.pk, form: formData }, projId.value)
+    const updated = await updatePost({ pk: form.value.pk, form: formData }, projId.value)
+    if (!updated) return
+    refFileForms.value?.checkRelease()
     await router.replace({
       name: '(게시판) - 게시물 보기',
       params: { projId: route.params.projId, forumId: props.forumId, postId: form.value.pk },
     })
   } else {
-    await createPost({ form: formData }, projId.value)
+    const created = await createPost({ form: formData }, projId.value)
+    if (!created) return
+    refFileForms.value?.checkRelease()
     await router.replace({
       name: '(게시판) - 보기',
       params: { projId: route.params.projId, forumId: props.forumId },
@@ -179,7 +198,7 @@ watch(
   <CRow class="py-2">
     <CCol>
       <h5>
-        <v-icon icon="mdi-forum-outline" color="green-darken-1" class="mr-2" />
+        <v-icon icon="mdi-forum-outline" color="green-darken-1" class="me-2" />
         게시물 {{ post ? '수정' : '작성' }}
       </h5>
     </CCol>

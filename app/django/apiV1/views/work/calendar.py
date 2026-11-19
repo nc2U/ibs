@@ -64,7 +64,14 @@ class CalendarViewSet(viewsets.ViewSet):
 
         # ── 1. Issue 쿼리셋 ────────────────────────────────────────────────
         if event_type in ('all', 'issue'):
-            issue_qs = Issue.objects.filter(project__status='1')
+            has_proj_status_filter = bool(
+                request.query_params.get('project_status')
+                or request.query_params.get('project_status__exclude')
+            )
+            if has_proj_status_filter:
+                issue_qs = Issue.objects.exclude(project__status='9')
+            else:
+                issue_qs = Issue.objects.filter(project__status='1')
             if project_slug:
                 issue_qs = issue_qs.filter(project__slug=project_slug)
 
@@ -74,11 +81,11 @@ class CalendarViewSet(viewsets.ViewSet):
             # IssueFilter로 업무 전용 검색조건 적용 (status, tracker, priority, assignee, subject 등)
             issue_qs = IssueFilter(request.GET, queryset=issue_qs, request=request).qs
 
-            # FullCalendar 조회 기간과 겹치는 업무 필터
+            # FullCalendar 조회 기간과 겹치는 업무 필터 (endStr은 exclusive 경계이므로 lt 사용)
             if start_date_str and end_date_str:
                 issue_qs = issue_qs.filter(
-                    (Q(due_date__gte=start_date_str) & Q(start_date__lte=end_date_str)) |
-                    Q(due_date__isnull=True, start_date__range=[start_date_str, end_date_str])
+                    (Q(due_date__gte=start_date_str) & Q(start_date__lt=end_date_str)) |
+                    Q(due_date__isnull=True, start_date__gte=start_date_str, start_date__lt=end_date_str)
                 )
 
             issue_data = issue_qs.select_related(
@@ -111,6 +118,29 @@ class CalendarViewSet(viewsets.ViewSet):
             meeting_qs = Meeting.objects.exclude(project__status='9')
             if project_slug:
                 meeting_qs = meeting_qs.filter(project__slug=project_slug)
+
+            project__exclude = request.query_params.get('project__exclude')
+            project__my_project = request.query_params.get('project__my_project')
+            project__bookmark = request.query_params.get('project__bookmark')
+            project_status = request.query_params.get('project_status')
+            project_status__exclude = request.query_params.get('project_status__exclude')
+
+            if project__exclude:
+                meeting_qs = meeting_qs.exclude(project__slug=project__exclude)
+            if project__my_project is not None and not is_admin:
+                if str(project__my_project).lower() in ('true', '1'):
+                    meeting_qs = meeting_qs.filter(project__members__user=user)
+                elif str(project__my_project).lower() in ('false', '0'):
+                    meeting_qs = meeting_qs.exclude(project__members__user=user)
+            if project__bookmark is not None:
+                if str(project__bookmark).lower() in ('true', '1'):
+                    meeting_qs = meeting_qs.filter(project__bookmarked_by__user=user)
+                elif str(project__bookmark).lower() in ('false', '0'):
+                    meeting_qs = meeting_qs.exclude(project__bookmarked_by__user=user)
+            if project_status:
+                meeting_qs = meeting_qs.filter(project__status=project_status)
+            if project_status__exclude:
+                meeting_qs = meeting_qs.exclude(project__status=project_status__exclude)
 
             if not is_admin:
                 meeting_qs = meeting_qs.filter(
@@ -170,10 +200,11 @@ class CalendarViewSet(viewsets.ViewSet):
             if meeting_date__lte:
                 meeting_qs = meeting_qs.filter(meeting_date__date__lte=meeting_date__lte)
 
-            # FullCalendar 조회 기간 필터
+            # FullCalendar 조회 기간 필터 (endStr은 exclusive 경계이므로 lt 사용)
             if start_date_str and end_date_str:
                 meeting_qs = meeting_qs.filter(
-                    meeting_date__date__range=[start_date_str, end_date_str]
+                    meeting_date__date__gte=start_date_str,
+                    meeting_date__date__lt=end_date_str,
                 )
 
             meeting_data = meeting_qs.select_related('project').values(

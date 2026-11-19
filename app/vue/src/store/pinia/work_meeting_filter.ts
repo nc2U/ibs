@@ -167,20 +167,16 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
       }
     }
 
-    // 문자열 검색
-    const searchTerms: string[] = []
-    if (enabledFields.value.includes('title') && form.value.title)
-      searchTerms.push(form.value.title)
-    if (enabledFields.value.includes('agenda') && form.value.agenda)
-      searchTerms.push(form.value.agenda)
-    if (enabledFields.value.includes('content') && form.value.content)
-      searchTerms.push(form.value.content)
-    if (enabledFields.value.includes('decisions') && form.value.decisions) {
-      searchTerms.push(form.value.decisions)
-    }
-
-    if (searchTerms.length) {
-      payload.search = searchTerms.join(' ')
+    // 문자열 검색 (필드별 포함/미포함)
+    const textFields = ['title', 'agenda', 'content', 'decisions'] as const
+    for (const field of textFields) {
+      if (enabledFields.value.includes(field) && form.value[field]) {
+        if (cond.value[field] === 'exclude') {
+          payload[`${field}__exclude`] = form.value[field]
+        } else {
+          payload[field] = form.value[field]
+        }
+      }
     }
 
     return payload

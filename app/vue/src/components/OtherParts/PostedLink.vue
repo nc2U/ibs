@@ -4,12 +4,16 @@ import type { Link } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
+import { sanitizeExternalUrl } from '@/utils/helper'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Number, required: true },
   links: { type: Array as PropType<Link[]>, default: () => [] },
-  btnDirection: { type: String, default: 'left' },
+  btnDirection: { type: String, default: 'start' },
+  canCreate: { type: Boolean, default: true },
+  canEdit: { type: Boolean, default: true },
+  canDelete: { type: Boolean, default: true },
 })
 
 const docStore = useDocs()
@@ -74,7 +78,6 @@ const linkUpdate = (pk: number) => {
     if (editLink.value.link) link.link = editLink.value.link
     if (editLink.value.description) link.description = editLink.value.description
     docStore.patchLink(pk, { ...link })
-    console.log({ ...link })
   }
   resetLink()
 }
@@ -101,23 +104,25 @@ const linkDelete = () => {
       <table>
         <tr v-for="link in links" :key="link.pk as number">
           <td>
-            <v-icon icon="mdi-link" size="sm" class="mr-2" />
-            <a :href="link.link" target="_blank">{{ cutString(link.link, 25) }}</a>
+            <v-icon icon="mdi-link" size="small" class="me-2" />
+            <a :href="sanitizeExternalUrl(link.link)" target="_blank" rel="noopener noreferrer">
+              {{ cutString(link.link, 25) }}
+            </a>
           </td>
           <td class="px-2">{{ link.description }}</td>
           <td class="text-secondary">
             <span>{{ link.creator }}, {{ timeFormat(link.created as string, 'full', '/') }}</span>
-            <span class="ml-2">
-              <router-link to="#" @click.prevent="editFormSet(link.pk as number)">
+            <span v-if="canEdit" class="ms-2">
+              <a href="#" @click.prevent="editFormSet(link.pk as number)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />
                 <v-tooltip activator="parent" location="top">변경</v-tooltip>
-              </router-link>
+              </a>
             </span>
-            <span class="ml-2">
-              <router-link to="#" @click.prevent="delLinkConfirm(link.pk as number)">
-                <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
+            <span v-if="canDelete" class="ms-2">
+              <a href="#" @click.prevent="delLinkConfirm(link.pk as number)">
+                <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="me-2" />
                 <v-tooltip activator="parent" location="top">삭제</v-tooltip>
-              </router-link>
+              </a>
             </span>
             <span v-if="isEditForm === link.pk">
               <CRow>
@@ -153,9 +158,9 @@ const linkDelete = () => {
     </CCol>
   </CRow>
 
-  <CRow class="mb-2">
+  <CRow v-if="canCreate" class="mb-2">
     <CCol>
-      <router-link to="#" @click.prevent="addLinkForm = !addLinkForm">링크추가</router-link>
+      <a href="#" @click.prevent="addLinkForm = !addLinkForm">링크추가</a>
     </CCol>
   </CRow>
 

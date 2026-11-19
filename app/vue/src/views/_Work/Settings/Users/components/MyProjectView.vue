@@ -11,7 +11,7 @@ const userInfo = computed(() => accStore.userInfo)
 <template>
   <CRow class="py-2">
     <CCol class="mb-2">
-      <span class="h5 me-2"> 내 프로젝트 목록 </span>
+      <span class="h5 me-2"> 내 워크스페이스 목록 </span>
     </CCol>
 
     <CCol class="text-end form-text">

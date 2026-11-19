@@ -10,12 +10,14 @@ const loading = ref(true)
 
 onBeforeMount(async () => {
   try {
+    // 이전 워크스페이스 컨텍스트 잔류 방지
+    workStore.removeIssueProject()
     // 설정 및 권한 관리에 필수적인 데이터 페치
     await Promise.all([
       workStore.fetchAllProjectList(),
       workStore.fetchRoleList(),
-      workStore.fetchPermissionList(),
-      accStore.fetchUsersList(),
+      workStore.fetchGroupedPermissions(),
+      accStore.fetchUsersList('all'),
     ])
   } catch (error) {
     console.error('Failed to load settings work configurations', error)
@@ -27,5 +29,5 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <router-view />
+  <router-view v-if="!loading" />
 </template>

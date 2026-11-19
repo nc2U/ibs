@@ -1,4 +1,7 @@
+import re
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema_field
@@ -188,14 +191,19 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
     visible = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     is_bookmarked = serializers.SerializerMethodField(read_only=True)
+    has_versions = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'project', 'type', 'name', 'slug', 'description', 'is_public', 'is_hidden',
+        fields = ('pk', 'company', 'project', 'type', 'name', 'slug', 'description', 'homepage', 'is_public', 'is_hidden',
                   'parent', 'parent_name', 'allowed_roles', 'status', 'status_display', 'sub_projects',
                   'chat_channel_enabled', 'slack_notifications_enabled', 'created', 'updated', 'creator',
                   'depth', 'module', 'my_role', 'my_perms', 'all_members', 'visible', 'parent_visible',
-                  'is_bookmarked')
+                  'is_bookmarked', 'has_versions')
+
+    @staticmethod
+    def get_has_versions(obj) -> bool:
+        return bool(list(obj.versions.all()))
 
     @staticmethod
     def get_parent_name(obj):
@@ -242,6 +250,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     visible = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     is_bookmarked = serializers.SerializerMethodField(read_only=True)
+    has_versions = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField(read_only=True)
     creator = serializers.SlugRelatedField('username', read_only=True)
     my_perms = serializers.SerializerMethodField(read_only=True)
@@ -257,12 +266,35 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     class Meta:
         model = IssueProject
-        fields = IssueProjectListSerializer.Meta.fields + ('homepage', 'is_inherit_members', 'default_version',
+        fields = IssueProjectListSerializer.Meta.fields + ('is_inherit_members', 'default_version',
                                                            'trackers',
                                                            'ancestors', 'members', 'versions', 'categories', 'forums',
                                                            'meeting', 'issue', 'news', 'document', 'forum', 'calendar')
 
         read_only_fields = ('project', 'status', 'is_public', 'forums')
+
+    @staticmethod
+    def get_has_versions(obj) -> bool:
+        return bool(list(obj.versions.all()))
+
+    @staticmethod
+    def validate_slug(value):
+        if not re.match(r'^[a-z0-9_-]+$', str(value)):
+            raise serializers.ValidationError('식별자는 영문 소문자(a-z), 숫자, 대쉬(-), 밑줄(_)만 사용할 수 있습니다.')
+        return value
+
+    def validate_parent(self, value):
+        if value and self.instance:
+            if value.pk == self.instance.pk:
+                raise serializers.ValidationError('상위 워크스페이스로 자기 자신을 지정할 수 없습니다.')
+            curr = value
+            visited = {self.instance.pk}
+            while curr:
+                if curr.pk in visited:
+                    raise serializers.ValidationError('상위 워크스페이스 계층 구조에 순환 참조가 존재합니다.')
+                visited.add(curr.pk)
+                curr = curr.parent
+        return value
 
     # 메서드 복구
     @staticmethod
@@ -299,25 +331,39 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     @transaction.atomic
     def create(self, validated_data):
         # validated_data에서 추가 필드 추출
-        meeting = validated_data.pop('meeting', True)
-        issue = validated_data.pop('issue', True)
-        news = validated_data.pop('news', True)
-        document = validated_data.pop('document', True)
-        forum = validated_data.pop('forum', True)
-        calendar = validated_data.pop('calendar', True)
+        module_values = {
+            'meeting': validated_data.pop('meeting', True),
+            'issue': validated_data.pop('issue', True),
+            'news': validated_data.pop('news', True),
+            'document': validated_data.pop('document', True),
+            'forum': validated_data.pop('forum', True),
+            'calendar': validated_data.pop('calendar', True),
+        }
 
-        project = IssueProject.objects.create(**validated_data)
+        try:
+            project = IssueProject.objects.create(**validated_data)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict if hasattr(exc, 'message_dict') else exc.messages)
 
         # 권한 검증 서비스 호출 및 모듈 생성
         module_fields = ['meeting', 'issue', 'news', 'document', 'forum', 'calendar']
+        has_custom_module = any(
+            field in self.initial_data and module_values[field] is not True
+            for field in module_fields
+        )
         if any(field in self.initial_data for field in module_fields):
             request = self.context.get('request')
-            if request:
-                PermissionService.check_module_permission(request.user, project)
+            if request and has_custom_module:
+                user = request.user
+                if not (user.is_superuser or getattr(user, 'work_manager', False)):
+                    if project.parent:
+                        PermissionService.check_module_permission(user, project.parent)
+                    elif not Member.objects.filter(
+                        user=user, roles__permissions__code='project.module'
+                    ).exists():
+                        raise serializers.PermissionDenied("모듈을 수정할 권한이 없습니다.")
 
-            Module.objects.create(
-                project=project, meeting=meeting, issue=issue, news=news,
-                document=document, forum=forum, calendar=calendar)
+            Module.objects.create(project=project, **module_values)
         else:
             # 기본값으로 모듈 생성
             Module.objects.create(project=project)
@@ -339,32 +385,36 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     @transaction.atomic
     def update(self, instance, validated_data):
         # 1. validated_data에서 모듈 필드 추출
-        meeting = validated_data.pop('meeting', None)
-        issue = validated_data.pop('issue', None)
-        news = validated_data.pop('news', None)
-        document = validated_data.pop('document', None)
-        forum = validated_data.pop('forum', None)
-        calendar = validated_data.pop('calendar', None)
+        module_updates = {
+            'meeting': validated_data.pop('meeting', None),
+            'issue': validated_data.pop('issue', None),
+            'news': validated_data.pop('news', None),
+            'document': validated_data.pop('document', None),
+            'forum': validated_data.pop('forum', None),
+            'calendar': validated_data.pop('calendar', None),
+        }
 
-        # 2. 모듈 업데이트 (권한 검증 포함)
+        # 2. 모듈 업데이트 (실제 변경이 있을 때만 권한 검증 포함)
         module_fields = ['meeting', 'issue', 'news', 'document', 'forum', 'calendar']
         if any(field in self.initial_data for field in module_fields):
-            request = self.context.get('request')
-            if request:
-                PermissionService.check_module_permission(request.user, instance)
-
             try:
                 module = instance.module
             except Module.DoesNotExist:
                 module = Module.objects.create(project=instance)
 
-            if meeting is not None: module.meeting = meeting
-            if issue is not None: module.issue = issue
-            if news is not None: module.news = news
-            if document is not None: module.document = document
-            if forum is not None: module.forum = forum
-            if calendar is not None: module.calendar = calendar
-            module.save()
+            module_changed = any(
+                module_updates[field] is not None and getattr(module, field) != module_updates[field]
+                for field in module_fields
+            )
+            if module_changed:
+                request = self.context.get('request')
+                if request:
+                    PermissionService.check_module_permission(request.user, instance)
+
+                for field, val in module_updates.items():
+                    if val is not None:
+                        setattr(module, field, val)
+                module.save()
 
         # 3. initial_data를 사용하여 M2M 관계 업데이트
         if hasattr(self.initial_data, 'getlist'):
@@ -390,7 +440,10 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                 raise serializers.ValidationError({'status': '잠금보관 상태 변경은 관리자만 수행할 수 있습니다.'})
             validated_data['status'] = req_status
 
-        return super().update(instance, validated_data)
+        try:
+            return super().update(instance, validated_data)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict if hasattr(exc, 'message_dict') else exc.messages)
 
 
 class ModuleSerializer(serializers.ModelSerializer):
@@ -410,14 +463,27 @@ class RoleSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, attrs):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        is_superuser = bool(user and user.is_authenticated and user.is_superuser)
+
         category = attrs.get('category')
         if category is None and self.instance:
             category = self.instance.category
         if category is None:
             category = 'work_space'
 
+        if user and user.is_authenticated and not is_superuser:
+            if attrs.get('is_confidential') is True or (self.instance and self.instance.is_confidential):
+                raise serializers.ValidationError({'is_confidential': '보안 격리 역할은 슈퍼유저만 생성/수정할 수 있습니다.'})
+            if category == 'ibs_hq_manage' or (self.instance and self.instance.category == 'ibs_hq_manage'):
+                raise serializers.ValidationError({'category': '본사 관리 역할은 슈퍼유저만 생성/수정할 수 있습니다.'})
+
         permissions = attrs.get('permissions')
         if permissions is not None:
+            if user and user.is_authenticated and not is_superuser:
+                if any(perm.is_confidential for perm in permissions):
+                    raise serializers.ValidationError({'permissions': '보안 격리 권한은 슈퍼유저만 부여할 수 있습니다.'})
             valid_permissions = []
             for perm in permissions:
                 is_valid = False
@@ -463,6 +529,19 @@ class MemberSerializer(serializers.ModelSerializer):
         model = Member
         fields = ('pk', 'user', 'project', 'roles', 'created', 'user_id', 'slug', 'role_ids')
 
+    def _validate_roles_for_project(self, project, roles):
+        if not roles:
+            return
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and user.is_superuser:
+            return
+        if any(r.is_confidential for r in roles):
+            raise serializers.ValidationError({'role_ids': '보안 격리 역할은 슈퍼유저만 부여할 수 있습니다.'})
+        allowed_ids = set(project.allowed_roles.values_list('pk', flat=True))
+        if allowed_ids and any(r.pk not in allowed_ids for r in roles):
+            raise serializers.ValidationError({'role_ids': '이 워크스페이스에서 허용되지 않은 역할이 포함되어 있습니다.'})
+
     def create(self, validated_data):
         slug = validated_data.pop('slug', None)
         roles = validated_data.pop('roles', [])
@@ -474,6 +553,14 @@ class MemberSerializer(serializers.ModelSerializer):
         except IssueProject.DoesNotExist:
             raise serializers.ValidationError({'slug': '존재하지 않는 워크스페이스입니다.'})
 
+        target_user = validated_data.get('user')
+        if not target_user:
+            raise serializers.ValidationError({'user_id': '사용자를 선택해야 합니다.'})
+        if Member.objects.filter(project=project, user=target_user).exists():
+            raise serializers.ValidationError({'user_id': '이미 이 워크스페이스에 등록된 구성원입니다.'})
+
+        self._validate_roles_for_project(project, roles)
+
         member = Member.objects.create(project=project, **validated_data)
 
         if roles:
@@ -482,6 +569,9 @@ class MemberSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         roles = validated_data.pop('roles', None)
+
+        if roles is not None:
+            self._validate_roles_for_project(instance.project, roles)
 
         # 유저 업데이트가 필요한 경우 처리
         if 'user' in validated_data:
@@ -570,6 +660,7 @@ class SimpleIssueSerializer(serializers.ModelSerializer):
         model = Issue
         fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
                   'fixed_version', 'category', 'assigned_to', 'creator', 'watchers',
+                  'start_date', 'due_date',
                   'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
 
 

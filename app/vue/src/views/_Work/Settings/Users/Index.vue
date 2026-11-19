@@ -46,29 +46,53 @@ const logStore = useLogging()
 const fetchActivityLogList = (payload: ActLogEntryFilter) => logStore.fetchActivityLogList(payload)
 
 const route = useRoute()
-watch(route, nVal => {
-  if (nVal.params.userId) {
-    accStore.fetchUser(Number(nVal.params.userId))
-    fetchIssueByMember(nVal.params.userId as string)
-    fetchIssueProjectList({ member: Number(nVal.params.userId) })
-    fetchActivityLogList({ creator: nVal.params.userId as string, limit: 10 })
-  }
-})
-
 const loading = ref(true)
-onBeforeMount(async () => {
-  try {
-    if (route.params.userId) {
-      await accStore.fetchUser(Number(route.params.userId))
-      await fetchIssueByMember(route.params.userId as string)
-      await fetchIssueProjectList({ member: Number(route.params.userId) })
-      await fetchActivityLogList({ creator: route.params.userId as string, limit: 10 })
+
+const loadRouteData = async (name: unknown, rawUserId: unknown) => {
+  const userId = rawUserId ? Number(rawUserId) : null
+  if (name === '사용자 - 보기' && userId && !Number.isNaN(userId)) {
+    loading.value = true
+    accStore.removeUser()
+    logStore.activityLogList = []
+    workStore.clearProjectResults()
+    try {
+      await Promise.all([
+        accStore.fetchUser(userId),
+        fetchIssueByMember(String(userId)),
+        fetchIssueProjectList({ member: userId }),
+        fetchActivityLogList({ creator: String(userId), limit: 10 }),
+      ])
+    } catch (err) {
+      console.error('Failed to load user settings data:', err)
+    } finally {
+      loading.value = false
     }
-  } catch (err) {
-    console.error('Failed to load user settings data:', err)
-  } finally {
+  } else if (name === '사용자 - 수정' && userId && !Number.isNaN(userId)) {
+    loading.value = true
+    try {
+      await accStore.fetchUser(userId)
+    } catch (err) {
+      console.error('Failed to load user data:', err)
+    } finally {
+      loading.value = false
+    }
+  } else if (name === '사용자 - 생성') {
+    accStore.removeUser()
+    loading.value = false
+  } else {
     loading.value = false
   }
+}
+
+watch(
+  [() => route.name, () => route.params.userId],
+  ([name, userId]) => {
+    loadRouteData(name, userId)
+  },
+)
+
+onBeforeMount(async () => {
+  await loadRouteData(route.name, route.params.userId)
 })
 </script>
 

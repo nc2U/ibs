@@ -7,6 +7,7 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useIssueFilter } from '@/store/pinia/work_issue_filter'
 import { useCompany } from '@/store/pinia/company'
+import { usePerms } from '@/composables/usePerms'
 import { useRoute } from 'vue-router'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { Company } from '@/store/types/settings'
@@ -27,7 +28,18 @@ const viewMode = ref<'list' | 'kanban'>(
 const onViewModeChange = (mode: 'list' | 'kanban') => {
   viewMode.value = mode
   localStorage.setItem('ibs_work_issue_view_mode', mode)
+  page.value = 1
+  const payload: IssueFilter = {
+    ...listFilter.value,
+    page: 1,
+    limit: mode === 'kanban' ? 200 : undefined,
+  }
+  listFilter.value = payload
+  issueStore.fetchIssueList(payload)
 }
+
+const { can, PERM } = usePerms()
+const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 const comStore = useCompany()
@@ -61,8 +73,12 @@ const listFilter = ref<IssueFilter>(issueFilterStore.buildFilterPayload())
 const page = ref(1)
 const filterSubmit = (payload: IssueFilter) => {
   page.value = 1
-  listFilter.value = payload
-  issueStore.fetchIssueList(payload)
+  const enriched: IssueFilter = {
+    ...payload,
+    limit: viewMode.value === 'kanban' ? 200 : undefined,
+  }
+  listFilter.value = enriched
+  issueStore.fetchIssueList(enriched)
 }
 const pageSelect = (p: number) => {
   page.value = p
@@ -89,12 +105,9 @@ const { selectedColumns } = useTableColumns('global-issue-table-columns', ALL_IS
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   try {
+    workStore.removeIssueProject()
     await Promise.all([
-      workStore.fetchMemberList(),
       workStore.fetchVersionList(),
-      issueStore.fetchTrackerList(),
-      issueStore.fetchStatusList(),
-      issueStore.fetchPriorityList(),
       issueStore.fetchCategoryList(),
       issueStore.fetchAllIssueList(),
     ])
@@ -110,7 +123,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCall" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
+  <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
       <IssueHeader :view-mode="viewMode" @update:view-mode="onViewModeChange" />
 
@@ -156,6 +169,7 @@ onBeforeMount(async () => {
       <SavedQueryAside
         target-type="issue"
         :active-query-id="activeQueryId ?? undefined"
+        :can-project-pub-query="canPubQuery"
         @on-query-click="onQueryClick"
         @on-reset-query="onResetQuery"
       />

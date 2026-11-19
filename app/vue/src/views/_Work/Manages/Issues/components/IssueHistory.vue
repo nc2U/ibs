@@ -62,8 +62,13 @@ onBeforeMount(() => {
       <CTabContent>
         <CTabPane role="tabpanel" aria-labelledby="home-tab" :visible="tabPaneActiveKey === 1">
           <div v-for="log in issueLogList" :key="log.pk">
-            <AtomicLog v-if="log.action === 'Updated' && !log.comment" :log="log" />
-            <AtomicComment v-else :log="log" @call-reply="callReply" @del-submit="delSubmit" />
+            <AtomicComment
+              v-if="log.action === 'Comment' && log.comment"
+              :log="log"
+              @call-reply="callReply"
+              @del-submit="delSubmit"
+            />
+            <AtomicLog v-else :log="log" />
           </div>
         </CTabPane>
 
@@ -80,7 +85,7 @@ onBeforeMount(() => {
 
         <CTabPane role="tabpanel" aria-labelledby="contact-tab" :visible="tabPaneActiveKey === 3">
           <div v-for="log in issueLogList" :key="log.pk">
-            <AtomicLog v-if="log.action === 'Updated' && !log.comment" :log="log" />
+            <AtomicLog v-if="!log.comment" :log="log" />
           </div>
         </CTabPane>
       </CTabContent>

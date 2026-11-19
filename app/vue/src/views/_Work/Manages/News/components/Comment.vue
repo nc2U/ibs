@@ -14,7 +14,7 @@ const { canViewUser } = usePerms()
 <template>
   <div class="comment-item mb-4">
     <div class="d-flex">
-      <v-avatar size="32" color="primary-lighten-4" class="mr-3">
+      <v-avatar size="32" color="primary-lighten-4" class="me-3">
         <v-icon icon="mdi-account" color="primary" size="20" />
       </v-avatar>
       <div class="flex-grow-1">
@@ -36,12 +36,6 @@ const { canViewUser } = usePerms()
             {{ comment.content }}
           </span>
         </v-card>
-        <div class="d-flex mt-1 ms-1">
-          <v-btn variant="text" size="x-small" density="comfortable" color="primary" class="me-2">
-            답글
-          </v-btn>
-          <v-btn variant="text" size="x-small" density="comfortable" color="grey">공감</v-btn>
-        </div>
       </div>
     </div>
   </div>

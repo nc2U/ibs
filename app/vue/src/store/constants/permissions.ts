@@ -53,7 +53,9 @@ export const PERM = {
   DOCS_READ: 'docs.read',
   DOCS_CREATE: 'docs.create',
   DOCS_UPDATE: 'docs.update',
+  DOCS_OWN_UPDATE: 'docs.own_update',
   DOCS_DELETE: 'docs.delete',
+  DOCS_OWN_DELETE: 'docs.own_delete',
 
   // Forum permissions
   FORUM_READ: 'forum.read',

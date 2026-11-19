@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import type { SuitCase } from '@/store/types/docs'
+import { isValidate } from '@/utils/helper'
 import { courtChoices } from '@/components/LawSuitCase/components/court'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -41,19 +42,16 @@ defineExpose({ callModal })
 const emit = defineEmits(['on-submit'])
 
 const onSubmit = (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
-  } else refConfirmModal.value.callModal()
+  } else refConfirmModal.value?.callModal()
 }
 
 const modalAction = () => {
   emit('on-submit', { ...form.value })
   validated.value = false
-  refConfirmModal.value.close()
+  refConfirmModal.value?.close()
+  refCaseForm.value?.close()
 }
 </script>
 

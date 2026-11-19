@@ -1,21 +1,28 @@
 <script lang="ts" setup>
-import { computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import api from '@/api'
+import { errorHandle } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import type { SimpleUser } from '@/store/types/work_project'
+import type { Issue } from '@/store/types/work_issue'
 
 const route = useRoute()
 const workStore = useWork()
 const issueStore = useIssue()
 
-// 프로젝트 식별자 추출 (Slug)
+// 워크스페이스 식별자 추출 (Slug)
 const projSlug = computed(() => route.params.projId as string | undefined)
 
 const getPk = (val: number | { pk: number } | null | undefined): number | undefined =>
   typeof val === 'object' && val !== null ? val.pk : (val ?? undefined)
 
-onMounted(async () => {
+const reportIssues = ref<Issue[]>([])
+let fetchSeq = 0
+
+const loadReport = async () => {
+  const seq = ++fetchSeq
   // 공통 메타데이터 병렬 조회
   await Promise.all([
     issueStore.fetchTrackerList(),
@@ -28,16 +35,30 @@ onMounted(async () => {
       workStore.fetchIssueProject(projSlug.value),
       workStore.fetchVersionList({ project: projSlug.value }),
       issueStore.fetchCategoryList(projSlug.value),
-      // status__closed='' 로 진행중/완료 통합 전체 로드 (최대 1000개)
-      issueStore.fetchAllIssueList(projSlug.value, ''),
     ])
   } else {
-    await issueStore.fetchAllIssueList('', '')
+    await Promise.all([workStore.fetchVersionList({}), issueStore.fetchCategoryList()])
   }
-})
 
-// 전체 이슈 목록 캐싱
-const allIssues = computed(() => issueStore.allIssueList || [])
+  try {
+    const res = await api.get('/issue/', {
+      params: {
+        ...(projSlug.value ? { project__slug: projSlug.value } : {}),
+        limit: 1000,
+      },
+    })
+    if (seq === fetchSeq) {
+      reportIssues.value = res.data?.results ?? []
+    }
+  } catch (err: unknown) {
+    errorHandle(err)
+  }
+}
+
+watch(projSlug, loadReport, { immediate: true })
+
+// 전체 이슈 목록 (로컬 상태 사용 — 전역 allIssueList 오염 방지)
+const allIssues = computed(() => reportIssues.value)
 
 // 1. 유형별 (Tracker)
 const trackerReport = computed(() => {
@@ -140,14 +161,35 @@ const versionReport = computed(() => {
 // 6. 범주별 (Category)
 const categoryReport = computed(() => {
   const categories = issueStore.categoryList || []
-  const report = categories.map(c => {
+  const catMap = new Map<number, string>(categories.map(c => [c.pk, c.name]))
+  const report: Array<{ name: string; open: number; closed: number; total: number }> = []
+
+  // 현재 프로젝트 범위(또는 전체) 범주 + 실제 이슈에 할당된 범주 동적 집계
+  const seenCatPks = new Set<number>()
+  for (const c of categories) {
+    if (projSlug.value && c.project?.slug && c.project.slug !== projSlug.value) continue
+    seenCatPks.add(c.pk)
     const list = allIssues.value.filter(
       i => getPk(i.category as number | { pk: number } | null | undefined) === c.pk,
     )
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
-    return { name: c.name, open, closed, total: open + closed }
-  })
+    if (projSlug.value || open + closed > 0) {
+      report.push({ name: c.name, open, closed, total: open + closed })
+    }
+  }
+  for (const issue of allIssues.value) {
+    const cPk = getPk(issue.category as number | { pk: number } | null | undefined)
+    if (cPk !== undefined && !seenCatPks.has(cPk)) {
+      seenCatPks.add(cPk)
+      const list = allIssues.value.filter(
+        i => getPk(i.category as number | { pk: number } | null | undefined) === cPk,
+      )
+      const open = list.filter(i => !i.status?.closed).length
+      const closed = list.filter(i => i.status?.closed).length
+      report.push({ name: catMap.get(cPk) ?? `범주 #${cPk}`, open, closed, total: open + closed })
+    }
+  }
 
   // 미지정 카테고리 추가
   const noCatList = allIssues.value.filter(i => !i.category)
@@ -180,7 +222,7 @@ const totalAll = computed(() => allIssues.value.length)
     <v-row class="mb-4">
       <v-col cols="12" sm="4">
         <v-card class="summary-card bg-open" elevation="1">
-          <div class="d-flex justify-between align-center p-3">
+          <div class="d-flex justify-content-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">진행중인 업무</span>
               <h3 class="text-h3 fw-bold text-success mt-1">{{ totalOpen }}</h3>
@@ -191,7 +233,7 @@ const totalAll = computed(() => allIssues.value.length)
       </v-col>
       <v-col cols="12" sm="4">
         <v-card class="summary-card bg-closed" elevation="1">
-          <div class="d-flex justify-between align-center p-3">
+          <div class="d-flex justify-content-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">완료된 업무</span>
               <h3 class="text-h3 fw-bold text-blue mt-1">{{ totalClosed }}</h3>
@@ -202,7 +244,7 @@ const totalAll = computed(() => allIssues.value.length)
       </v-col>
       <v-col cols="12" sm="4">
         <v-card class="summary-card bg-total" elevation="1">
-          <div class="d-flex justify-between align-center p-3">
+          <div class="d-flex justify-content-between align-center p-3">
             <div>
               <span class="text-subtitle-2 text-uppercase text-grey-darken-1">전체 업무 수</span>
               <h3 class="text-h3 fw-bold text-secondary mt-1">{{ totalAll }}</h3>

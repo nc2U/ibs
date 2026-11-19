@@ -23,6 +23,8 @@ export interface SimpleIssue {
   assigned_to: SimpleUser | null
   creator: SimpleUser | null
   watchers: SimpleUser[]
+  start_date?: string
+  due_date?: string | null
   expected_duration: string | null
   expected_duration_display: string
   done_ratio: number
@@ -104,7 +106,9 @@ export interface SubIssue {
     description: string
   }
   status: string
-  assigned_to: SimpleUser
+  status_pk?: number
+  assigned_to: SimpleUser | null
+  creator?: SimpleUser | null
   watchers: SimpleUser[]
   priority: number
   start_date: string
@@ -268,6 +272,7 @@ export interface IssueFilter {
   project__my_project?: boolean
   project__bookmark?: boolean
   page?: number
+  limit?: number
 }
 
 export interface IssueComment {

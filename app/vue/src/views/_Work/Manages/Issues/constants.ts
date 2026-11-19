@@ -3,7 +3,7 @@ import type { ColumnOption } from '@/components/ColumnSelector/Index.vue'
 // 전체 컬럼 풀 (ColumnSelector용)
 export const ALL_ISSUE_COLUMNS: ColumnOption[] = [
   { key: 'subject', label: '제목', fixed: true },
-  { key: 'project', label: '프로젝트' },
+  { key: 'project', label: '워크스페이스' },
   { key: 'parent', label: '상위업무' },
   { key: 'tracker', label: '유형' },
   { key: 'priority', label: '우선순위' },

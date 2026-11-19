@@ -88,6 +88,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
     meeting_creator: null,
     meeting_creator__exclude: null,
     meeting_title: '',
+    meeting_title__exclude: '',
     meeting_date: '',
     meeting_date__gte: '',
     meeting_date__lte: '',
@@ -119,11 +120,18 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   // 6. 페이로드 빌드 로직
   const buildFilterPayload = (currentProjSlug = ''): Record<string, CalendarFilterValue> => {
     const payload: Record<string, CalendarFilterValue> = {
-      event_type: eventTypes.value.length === 2 ? 'all' : (eventTypes.value[0] ?? 'all'),
+      event_type:
+        eventTypes.value.length === 0
+          ? 'none'
+          : eventTypes.value.length === 2
+            ? 'all'
+            : eventTypes.value[0],
     }
 
     // 프로젝트 (체크 박스 활성화시에만 적용하거나, 프로젝트 환경일 때 주입)
-    if (enabledFields.value.includes('project')) {
+    if (currentProjSlug) {
+      payload.project = currentProjSlug
+    } else if (enabledFields.value.includes('project')) {
       if (form.value.project === '') {
         if (cond.value.project === 'is') payload.project__my_project = true
         else if (cond.value.project === 'exclude') payload.project__my_project = false
@@ -137,8 +145,6 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
         if (cond.value.project === 'is') payload.project = form.value.project
         else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
       }
-    } else if (currentProjSlug || form.value.project) {
-      payload.project = currentProjSlug || form.value.project
     }
 
     // 업무 상태 (체크 박스 활성화시에만 적용)
@@ -152,9 +158,12 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
       } else if (cond.value.issue_status === 'is' && form.value.issue_status) {
         payload.status = form.value.issue_status
         payload.status__closed = ''
-      } else if (cond.value.issue_status === 'exclude' && form.value.issue_status__exclude) {
-        payload.status__exclude = form.value.issue_status__exclude
-        payload.status__closed = ''
+      } else if (cond.value.issue_status === 'exclude') {
+        const excludeVal = form.value.issue_status__exclude || form.value.issue_status
+        if (excludeVal) {
+          payload.status__exclude = excludeVal
+          payload.status__closed = ''
+        }
       }
     }
 
@@ -167,19 +176,20 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
       // 업무 필터
       if (key === 'tracker') {
         if (op === 'is' && form.value.tracker) payload.tracker = form.value.tracker
-        else if (op === 'exclude' && form.value.tracker)
-          payload.tracker__exclude = form.value.tracker
+        else if (op === 'exclude' && (form.value.tracker__exclude || form.value.tracker))
+          payload.tracker__exclude = form.value.tracker__exclude || form.value.tracker
       } else if (key === 'priority') {
         if (op === 'is' && form.value.priority) payload.priority = form.value.priority
-        else if (op === 'exclude' && form.value.priority)
-          payload.priority__exclude = form.value.priority
+        else if (op === 'exclude' && (form.value.priority__exclude || form.value.priority))
+          payload.priority__exclude = form.value.priority__exclude || form.value.priority
       } else if (key === 'assignee') {
         if (op === 'is' && form.value.assignee) payload.assigned_to = form.value.assignee
-        else if (op === 'exclude' && form.value.assignee)
-          payload.assigned_to__exclude = form.value.assignee
+        else if (op === 'exclude' && (form.value.assignee__exclude || form.value.assignee))
+          payload.assigned_to__exclude = form.value.assignee__exclude || form.value.assignee
       } else if (key === 'author') {
         if (op === 'is' && form.value.author) payload.creator = form.value.author
-        else if (op === 'exclude' && form.value.author) payload.creator__exclude = form.value.author
+        else if (op === 'exclude' && (form.value.author__exclude || form.value.author))
+          payload.creator__exclude = form.value.author__exclude || form.value.author
       } else if (key === 'issue_subject') {
         if (op === 'contains' && form.value.issue_subject)
           payload.subject = form.value.issue_subject
@@ -193,23 +203,39 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
         // 회의 필터
         if (op === 'is' && form.value.meeting_status)
           payload.meeting_status = form.value.meeting_status
-        else if (op === 'exclude' && form.value.meeting_status)
-          payload.meeting_status__exclude = form.value.meeting_status
+        else if (
+          op === 'exclude' &&
+          (form.value.meeting_status__exclude || form.value.meeting_status)
+        )
+          payload.meeting_status__exclude =
+            form.value.meeting_status__exclude || form.value.meeting_status
       } else if (key === 'meeting_category') {
         if (op === 'is' && form.value.meeting_category)
           payload.meeting_category = form.value.meeting_category
-        else if (op === 'exclude' && form.value.meeting_category)
-          payload.meeting_category__exclude = form.value.meeting_category
+        else if (
+          op === 'exclude' &&
+          (form.value.meeting_category__exclude || form.value.meeting_category)
+        )
+          payload.meeting_category__exclude =
+            form.value.meeting_category__exclude || form.value.meeting_category
       } else if (key === 'meeting_attendees') {
         if (op === 'is' && form.value.meeting_attendees)
           payload.meeting_attendees = form.value.meeting_attendees
-        else if (op === 'exclude' && form.value.meeting_attendees)
-          payload.meeting_attendees__exclude = form.value.meeting_attendees
+        else if (
+          op === 'exclude' &&
+          (form.value.meeting_attendees__exclude || form.value.meeting_attendees)
+        )
+          payload.meeting_attendees__exclude =
+            form.value.meeting_attendees__exclude || form.value.meeting_attendees
       } else if (key === 'meeting_creator') {
         if (op === 'is' && form.value.meeting_creator)
           payload.meeting_creator = form.value.meeting_creator
-        else if (op === 'exclude' && form.value.meeting_creator)
-          payload.meeting_creator__exclude = form.value.meeting_creator
+        else if (
+          op === 'exclude' &&
+          (form.value.meeting_creator__exclude || form.value.meeting_creator)
+        )
+          payload.meeting_creator__exclude =
+            form.value.meeting_creator__exclude || form.value.meeting_creator
       } else if (key === 'meeting_title') {
         if (op === 'contains' && form.value.meeting_title)
           payload.meeting_search = form.value.meeting_title
@@ -252,6 +278,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
     activeQueryId.value = query.pk ?? null
 
     const f = query.filters as CalendarSavedFilters
+    eventTypes.value = ['issue', 'meeting']
     searchCond.value = ['issue_status']
     enabledFields.value = ['issue_status']
     cond.value = { ...defaultCond }
@@ -260,7 +287,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
       project: currentProjSlug,
     }
 
-    if (f.eventTypes) {
+    if (Array.isArray(f.eventTypes)) {
       eventTypes.value = [...f.eventTypes]
     }
     if (f.searchCond) {
@@ -268,16 +295,20 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
       enabledFields.value = [...f.searchCond]
     }
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
+    const myId = currentUserId ?? defaultUserId
     if (f.form) {
-      form.value = { ...form.value, ...f.form }
-      if (f.form.project && !searchCond.value.includes('project')) {
+      const formPayload: Record<string, CalendarFilterValue> = { ...f.form }
+      for (const userField of ['assignee', 'author', 'meeting_attendees', 'meeting_creator']) {
+        if (formPayload[userField] === 'me') formPayload[userField] = myId ?? null
+      }
+      form.value = { ...form.value, ...formPayload }
+      if (formPayload.project && !searchCond.value.includes('project')) {
         searchCond.value.push('project')
         if (!enabledFields.value.includes('project')) {
           enabledFields.value.push('project')
         }
       }
     } else {
-      const myId = currentUserId ?? defaultUserId
 
       if (f.assignee !== undefined || f.assigned_to !== undefined) {
         const val = f.assignee ?? f.assigned_to

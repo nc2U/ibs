@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
-import { onBeforeRouteUpdate, useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -14,23 +14,31 @@ const user = computed<User | null>(() => accStore.user)
 
 const route = useRoute()
 
-onBeforeMount(async () => {
-  const savedTab = localStorage.getItem('admin-user-menu-tab') as '일반' | '워크스페이스' | null
-  if (savedTab === '일반' || savedTab === '워크스페이스') {
-    menu.value = savedTab
-  }
-
-  if (route.params.userId) await accStore.fetchUser(Number(route.params.userId))
-  else accStore.user = null
-})
-
-onBeforeRouteUpdate(async to => {
-  if (to.params.userId) await accStore.fetchUser(Number(to.params.userId))
-  else accStore.user = null
-})
+watch(
+  () => route.params.userId,
+  async rawId => {
+    if (rawId) {
+      const uid = Number(rawId)
+      const savedTab = localStorage.getItem('admin-user-menu-tab') as
+        | '일반'
+        | '워크스페이스'
+        | null
+      menu.value = savedTab === '일반' || savedTab === '워크스페이스' ? savedTab : '일반'
+      if (accStore.user?.pk !== uid) {
+        await accStore.fetchUser(uid)
+      }
+    } else {
+      accStore.removeUser()
+      menu.value = '일반'
+    }
+  },
+  { immediate: true },
+)
 
 watch(menu, newVal => {
-  localStorage.setItem('admin-user-menu-tab', newVal)
+  if (user.value?.pk) {
+    localStorage.setItem('admin-user-menu-tab', newVal)
+  }
 })
 </script>
 
@@ -65,11 +73,11 @@ watch(menu, newVal => {
     </CCol>
   </CRow>
 
-  <CRow v-if="menu === '일반'">
+  <CRow v-if="menu === '일반' || !user?.pk">
     <UserForm :user="user" />
   </CRow>
 
   <CRow v-else>
-    <UserProjects v-if="menu === '워크스페이스'" :user-pk="user?.pk as number" />
+    <UserProjects v-if="menu === '워크스페이스' && user?.pk" :user-pk="user.pk" />
   </CRow>
 </template>

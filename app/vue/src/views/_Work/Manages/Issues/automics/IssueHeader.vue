@@ -18,15 +18,26 @@ const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 
 const workStore = useWork()
-const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.issue))
-
 const { can, PERM } = usePerms()
+const myProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(
+    pjt => pjt.module?.issue && can(PERM.ISSUE_CREATE, pjt.slug),
+  ),
+)
+
 const canIssueCreate = computed(() => {
   if (route.name === '업무') {
-    return myProjects.value.length > 0 && can(PERM.ISSUE_CREATE)
+    return myProjects.value.length > 0
   }
   return props.projStatus === '1' && can(PERM.ISSUE_CREATE)
 })
+
+const canIssueSettings = computed(
+  () =>
+    props.projStatus === '1' &&
+    !!route.params.projId &&
+    (!!workManager.value || can(PERM.ISSUE_CATEGORY_MANAGE)),
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -78,7 +89,7 @@ const router = useRouter()
         <TextButton v-else name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
       </span>
 
-      <span>
+      <span v-if="route.params.projId">
         <CDropdown color="secondary" variant="input-group" placement="bottom-end">
           <CDropdownToggle
             :caret="false"
@@ -92,26 +103,17 @@ const router = useRouter()
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem
-              v-if="route.params.projId"
               class="form-text pointer"
               @click="router.push({ name: '(업무) - 보고서' })"
             >
-              <v-icon icon="mdi-chart-bar" color="amber" size="sm" class="me-1" />요약
-            </CDropdownItem>
-            <CDropdownItem v-if="projStatus !== '9'" class="form-text" disabled>
-              <v-icon
-                icon="mdi-file-document-arrow-right"
-                color="blue-lighten"
-                size="sm"
-                class="me-1"
-              />가져오기
+              <v-icon icon="mdi-chart-bar" color="amber" size="small" class="me-1" />요약
             </CDropdownItem>
             <CDropdownItem
-              v-if="projStatus === '1' && route.params.projId && workManager"
+              v-if="canIssueSettings"
               class="form-text pointer"
-              @click="router.push({ name: '(설정)', query: { menu: '업무추적' } })"
+              @click="router.push({ name: '(설정)', query: { menu: '업무범주' } })"
             >
-              <v-icon icon="mdi-cog" color="secondary" size="sm" class="me-1" />설정
+              <v-icon icon="mdi-cog" color="secondary" size="small" class="me-1" />설정
             </CDropdownItem>
           </CDropdownMenu>
         </CDropdown>

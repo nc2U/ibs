@@ -16,7 +16,7 @@ defineProps({
 <template>
   <v-card variant="outlined" class="mt-4 pa-4 border-dashed rounded-lg">
     <CRow align="center">
-      <CCol md="4" class="border-right d-none d-md-block">
+      <CCol md="4" class="border-end d-none d-md-block">
         <div class="text-subtitle-2 text-grey mb-2">{{ title }}</div>
         <div class="d-flex justify-space-around align-center">
           <div class="text-center">
@@ -33,19 +33,19 @@ defineProps({
           </div>
         </div>
       </CCol>
-      <CCol md="8" class="pl-md-6">
+      <CCol md="8" class="ps-md-4">
         <div class="text-subtitle-2 text-grey mb-2">일정 가이드</div>
         <div class="d-flex flex-wrap gap-4">
           <div class="d-flex align-center me-4">
             <v-icon icon="mdi-arrow-right-bold" color="success" size="small" class="me-1" />
             <span class="text-body-2">오늘 시작</span>
           </div>
-          <div class="d-flex align-center mr-4">
-            <v-icon icon="mdi-arrow-left-bold" color="danger" size="small" class="mr-1" />
+          <div class="d-flex align-center me-4">
+            <v-icon icon="mdi-arrow-left-bold" color="error" size="small" class="me-1" />
             <span class="text-body-2">오늘 종료</span>
           </div>
           <div class="d-flex align-center">
-            <v-icon icon="mdi-rhombus" color="danger" size="small" class="mr-1" />
+            <v-icon icon="mdi-rhombus" color="error" size="small" class="me-1" />
             <span class="text-body-2">오늘 시작/종료</span>
           </div>
         </div>

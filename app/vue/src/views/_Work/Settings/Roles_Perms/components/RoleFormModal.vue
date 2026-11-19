@@ -10,6 +10,7 @@ const props = defineProps<{
   role: Role | null
   maxOrder: number
   workManager: boolean
+  superAuth: boolean
 }>()
 
 const emit = defineEmits(['close'])
@@ -37,17 +38,20 @@ watch(
     if (val) {
       validated.value = false
       if (props.role) {
+        const isCopy = !props.role.pk
+        const rawCat = props.role.category || 'work_space'
+        const safeCat = !props.superAuth && isCopy && rawCat === 'ibs_hq_manage' ? 'work_space' : rawCat
         form.value = {
           pk: props.role.pk,
           name: props.role.name,
           assignable: props.role.assignable,
           issue_visible: props.role.issue_visible,
           user_visible: props.role.user_visible,
-          category: props.role.category || 'work_space',
+          category: safeCat,
           is_for_dev_project: props.role.is_for_dev_project || false,
-          is_confidential: props.role.is_confidential || false,
-          order: props.role.order,
-          permissions: props.role.permissions || [],
+          is_confidential: props.superAuth ? props.role.is_confidential || false : false,
+          order: isCopy ? props.maxOrder + 1 : props.role.order,
+          permissions: [...(props.role.permissions || [])],
         }
       } else {
         form.value = {
@@ -71,9 +75,10 @@ const saveRole = async (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (form.value.pk) await workStore.updateRole(form.value as Role)
-    else await workStore.createRole(form.value as Role)
-    emit('close')
+    const saved = form.value.pk
+      ? await workStore.updateRole(form.value as Role)
+      : await workStore.createRole(form.value as Role)
+    if (saved) emit('close')
   }
 }
 </script>
@@ -87,7 +92,7 @@ const saveRole = async (event: Event) => {
       <CModalBody>
         <div class="mb-3">
           <CFormLabel>이름</CFormLabel>
-          <CFormInput v-model="form.name" placeholder="역할명을 입력하세요" required />
+          <CFormInput v-model="form.name" maxlength="20" placeholder="역할명을 입력하세요" required />
         </div>
         <div class="mb-3">
           <CFormCheck id="assignable" v-model="form.assignable" label="업무 할당 가능 여부" />
@@ -99,7 +104,7 @@ const saveRole = async (event: Event) => {
             label="부동산개발 프로젝트 기본 적용"
           />
         </div>
-        <div class="mb-3">
+        <div v-if="superAuth" class="mb-3">
           <CFormCheck
             id="is_confidential"
             v-model="form.is_confidential"
@@ -119,7 +124,7 @@ const saveRole = async (event: Event) => {
           <CFormLabel>사용자 보기 권한</CFormLabel>
           <CFormSelect v-model="form.user_visible">
             <option value="ALL">모든 활성 사용자</option>
-            <option value="PRJ">보이는 프로젝트 사용자</option>
+            <option value="PRJ">보이는 워크스페이스 사용자</option>
             <option value="NOP">없음</option>
           </CFormSelect>
         </div>
@@ -127,7 +132,9 @@ const saveRole = async (event: Event) => {
           <CFormLabel>권한 구분(카테고리)</CFormLabel>
           <CFormSelect v-model="form.category">
             <option value="work_space">워크스페이스 권한 (work_space)</option>
-            <option value="ibs_hq_manage">본사 관리 권한 (ibs_hq_manage)</option>
+            <option v-if="superAuth || form.category === 'ibs_hq_manage'" value="ibs_hq_manage">
+              본사 관리 권한 (ibs_hq_manage)
+            </option>
             <option value="ibs_pr_manage">프로젝트 관리 권한 (ibs_pr_manage)</option>
           </CFormSelect>
         </div>
@@ -148,7 +155,7 @@ const saveRole = async (event: Event) => {
           type="submit"
           :color="form.pk ? 'success' : 'primary'"
           size="small"
-          :disabled="!workManager"
+          :disabled="!workManager || ((form.is_confidential || form.category === 'ibs_hq_manage') && !superAuth)"
         >
           저장
         </v-btn>

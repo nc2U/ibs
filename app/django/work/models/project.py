@@ -110,7 +110,11 @@ class IssueProject(models.Model):
 
         from work.models.project import Member
         # optimization: select_related('user') and prefetch_related('roles')
-        all_mems = Member.objects.filter(project__in=projects_to_fetch).select_related('user').prefetch_related('roles')
+        # 로컬 워크스페이스 Member 행을 먼저 순회하여 local Member.pk가 결정적으로 우선 사용되도록 정렬
+        all_mems = sorted(
+            Member.objects.filter(project__in=projects_to_fetch).select_related('user').prefetch_related('roles'),
+            key=lambda m: (0 if m.project_id == self.id else 1, m.pk),
+        )
 
         member_data = {}
         for mem in all_mems:

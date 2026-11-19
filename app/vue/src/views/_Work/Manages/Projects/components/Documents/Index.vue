@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
+import { useAccount } from '@/store/pinia/account'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
+import type { Docs, SuitCase } from '@/store/types/docs'
 import type { IssueProject } from '@/store/types/work_project'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import Loading from '@/components/Loading/Index.vue'
@@ -41,11 +42,23 @@ const types = ref([
 const isSuitCase = computed(() => String(route.name ?? '').startsWith('(문서 사건)'))
 const mainViewName = ref('(문서 사건)')
 
+const accStore = useAccount()
+const isDocOwner = computed(
+  () => !!docs.value?.creator?.pk && docs.value.creator.pk === accStore.userInfo?.pk,
+)
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && activeProject.value?.status === '1')
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE) && activeProject.value?.status === '1')
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE) && activeProject.value?.status === '1')
+const canDocsUpdate = computed(
+  () =>
+    activeProject.value?.status === '1' &&
+    (can(PERM.DOCS_UPDATE) || (can(PERM.DOCS_OWN_UPDATE) && isDocOwner.value)),
+)
+const canDocsDelete = computed(
+  () =>
+    activeProject.value?.status === '1' &&
+    (can(PERM.DOCS_DELETE) || (can(PERM.DOCS_OWN_DELETE) && isDocOwner.value)),
+)
 
 const viewForm = ref(false)
 
@@ -93,7 +106,12 @@ const caseFilter = ref<SuitCaseFilter>({
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
-const deleteDocs = (pk: number, proj?: number) => docStore.deleteDocs(pk, { project: proj })
+const deleteDocs = (pk: number) =>
+  docStore.deleteDocs(pk, {
+    issue_project: activeProject.value?.pk ?? '',
+    doc_type: typeNumber.value,
+    page: 1,
+  })
 
 const fetchSuitCase = (pk: number) => docStore.fetchSuitCase(pk)
 const fetchSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchSuitCaseList(payload)
@@ -101,21 +119,13 @@ const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitC
 const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
 const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
-const fetchLink = (pk: number) => docStore.fetchLink(pk)
-const fetchFile = (pk: number) => docStore.fetchFile(pk)
-const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
-const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
 
 const linkHit = async (pk: number) => {
-  const link = (await fetchLink(pk)) as Link
-  link.hit = (link.hit as number) + 1
-  await patchLink(pk, link)
+  await docStore.hitLink(pk)
 }
 
 const fileHit = async (pk: number) => {
-  const file = (await fetchFile(pk)) as AFile
-  const hit = (file.hit as number) + 1
-  await patchFile(pk, { hit })
+  await docStore.hitFile(pk)
 }
 
 const casesRenewal = (page: number) => {
@@ -138,6 +148,8 @@ const getDocsList = (target: unknown) => {
     }
     docsFilter.value.page = 1
     docsFilter.value.doc_type = target
+    docsFilter.value.category = ''
+    docsFilter.value.lawsuit = ''
     fetchCategoryList(target)
     fetchDocsList(docsFilter.value)
     if (viewForm.value) refDocsForm.value?.setDocType(target)
@@ -259,10 +271,11 @@ watch(
 )
 
 const docsDelConfirm = async () => {
+  const targetDocId = docs.value?.pk
+  if (!targetDocId) return
+  const ok = await deleteDocs(targetDocId)
+  if (!ok) return
   RefDelDocs.value?.close()
-  const docId = docs.value?.pk
-  if (docId && projId) await deleteDocs(docId, Number(projId.value))
-
   await router.replace({ name: '(문서)', params: { projId: projId.value } })
 }
 
@@ -297,18 +310,20 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
       }
       await Promise.all(tasks)
     } else if (docId) {
-      // 특정 문서를 보는 경우: docsList 캐시에서 먼저 doc_type 조회 (API 재호출 방지)
+      // 특정 문서를 보는 경우: 캐시 히트 시 즉시 세팅, 미스 시 먼저 단건 조회하여 doc_type 확정
       const cached = docStore.docsList.find(d => d.pk === Number(docId))
       if (cached?.doc_type) {
-        // 목록에서 클릭한 경우 — doc_type을 캐시에서 바로 읽고 docs 스토어에도 반영
         typeNumber.value = cached.doc_type as 1 | 2
-        docStore.setDocs(cached) // 스토어에 현재 docs 세팅 (fetchDocs 불필요)
+        docStore.setDocs(cached)
+      } else {
+        const fetched = await fetchDocs(Number(docId))
+        if (fetched?.doc_type) {
+          typeNumber.value = fetched.doc_type as 1 | 2
+        }
       }
       docsFilter.value.doc_type = typeNumber.value
       await Promise.all([
         ...tasks,
-        // 캐시 미스(직접 URL 접근 등)일 때만 fetchDocs 실행
-        ...(cached ? [] : [await fetchDocs(Number(docId))]),
         fetchCategoryList(typeNumber.value),
         fetchDocsList(docsFilter.value),
       ])
@@ -326,8 +341,8 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
 }
 
 onBeforeMount(async () => {
-  if (route.query.viewForm) viewForm.value = true
   await dataSetup(projId.value as string, docId.value)
+  if (route.query.viewForm && canDocsCreate.value) viewForm.value = true
 })
 
 watch(
@@ -366,7 +381,7 @@ watch(
             <v-icon
               :icon="isSuitCase ? 'mdi-scale-balance' : 'mdi-text-box-search-outline'"
               :color="isSuitCase ? 'primary' : 'green-darken-1'"
-              class="mr-2"
+              class="me-2"
             />
             {{ isSuitCase ? '소송 사건' : '문서' }}
           </h5>
@@ -540,6 +555,7 @@ watch(
 
           <DocsList
             v-if="route.name === '(문서)'"
+            :page="docsFilter.page || 1"
             :category="docsFilter.category as number"
             :category-list="categoryList"
             :docs-list="docsList"
@@ -548,15 +564,17 @@ watch(
           />
 
           <DocsDetail
-            v-else-if="route.name === '(문서) - 보기'"
+            v-else-if="route.name === '(문서) - 보기' && !!docs"
             :docs="docs as Docs"
+            :can-edit="canDocsUpdate"
+            :can-delete="canDocsDelete"
             @docs-hit="docsHit"
           />
         </template>
       </template>
 
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
-        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        <v-icon icon="mdi-alert-circle" class="me-2" />
         문서를 조회할 수 있는 권한이 없습니다.
       </v-alert>
 
@@ -577,10 +595,16 @@ watch(
         :filter="docsFilter"
         :case-filter="caseFilter"
         @select-cate="selectCate"
-        @search="fetchDocsList(docsFilter)"
+        @search="
+          $event ? (docsFilter = { ...$event, page: 1 }) : (docsFilter.page = 1);
+          fetchDocsList(docsFilter)
+        "
         @update:filter="docsFilter = $event"
         @update:caseFilter="caseFilter = $event"
-        @case-search="fetchSuitCaseList(caseFilter)"
+        @case-search="
+          $event ? (caseFilter = { ...$event, page: 1 }) : (caseFilter.page = 1);
+          fetchSuitCaseList(caseFilter)
+        "
         @case-reset="caseReset"
       />
     </template>

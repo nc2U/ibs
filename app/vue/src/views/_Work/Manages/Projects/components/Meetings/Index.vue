@@ -106,8 +106,13 @@ const fetchMeetings = async () => {
 }
 
 watch(
-  () => route.name,
-  (newName, oldName) => {
+  [() => route.name, () => route.params.projId],
+  ([newName, newProjId], [oldName, oldProjId]) => {
+    if (newProjId !== oldProjId) {
+      page.value = 1
+      fetchMeetings()
+      return
+    }
     const isMeetingRoute = (name: any) => name && name.includes('(회의)')
     if (
       (newName === '(회의)' && oldName !== '(회의)') ||
@@ -117,7 +122,6 @@ watch(
     }
   },
 )
-watch(() => route.params.projId, fetchMeetings)
 
 // Columns Selector Start
 const { selectedColumns } = useTableColumns(
@@ -131,7 +135,7 @@ onBeforeMount(fetchMeetings)
 </script>
 
 <template>
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="query">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :query="query" :aside="viewMode === 'list'">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -186,6 +190,7 @@ onBeforeMount(fetchMeetings)
 
     <template v-slot:aside>
       <SavedQueryAside
+        v-if="viewMode === 'list'"
         target-type="meeting"
         :active-query-id="activeQueryId ?? undefined"
         :can-project-pub-query="canProjectPubQuery"

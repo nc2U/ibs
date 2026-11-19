@@ -1,5 +1,3 @@
-import type { SimpleProject } from '@/store/types/work_project.ts'
-
 export interface SearchResultIssue {
   pk: number
   project: { slug: string; name: string }

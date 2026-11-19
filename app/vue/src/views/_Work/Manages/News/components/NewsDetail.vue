@@ -12,6 +12,7 @@ import CommentList from './CommentList.vue'
 const props = defineProps({
   news: { type: Object as PropType<News>, required: true },
   viewForm: { type: Boolean, default: false },
+  canManage: { type: Boolean, default: false },
 })
 
 const router = useRouter()
@@ -55,11 +56,11 @@ const deleteFile = (pk: number) => {
           <router-link
             v-if="canViewUser(news.author?.pk)"
             :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
-            class="text-decoration-none text-primary font-weight-medium"
+            class="text-decoration-none text-primary fw-medium"
           >
             {{ news.author?.username }}
           </router-link>
-          <span v-else class="text-primary font-weight-medium">{{ news.author?.username }}</span>
+          <span v-else class="text-primary fw-medium">{{ news.author?.username }}</span>
         </div>
         <div class="d-flex align-center me-4">
           <v-icon icon="mdi-clock-outline" size="18" class="me-1" />
@@ -104,8 +105,8 @@ const deleteFile = (pk: number) => {
           <span class="fw-bold"> 첨부 파일 ({{ news.files.length }}) </span>
         </div>
         <v-list density="compact" class="bg-transparent pa-0" style="overflow-x: hidden">
-          <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 g-0">
-            <FileDisplay :file="file" @delete-file="deleteFile" />
+          <CRow v-for="file in news.files" :key="file.pk" class="mb-2 g-0">
+            <FileDisplay :file="file" :can-delete="canManage" @delete-file="deleteFile" />
           </CRow>
         </v-list>
       </div>

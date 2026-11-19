@@ -4,6 +4,7 @@ import { useRouter, type LocationQueryRaw } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useInform } from '@/store/pinia/work_inform'
+import { markdownRender, sanitizeExternalUrl } from '@/utils/helper'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project'
 import Loading from '@/components/Loading/Index.vue'
 import OverViewHeader from './components/OverViewHeader.vue'
@@ -66,16 +67,28 @@ const trackerSum = computed(() => issueStore.trackerSum)
 
 const loading = ref(false)
 
+const safeHomepage = computed(() => sanitizeExternalUrl(currentProject.value?.homepage))
+const renderedDescription = computed(() =>
+  currentProject.value?.description ? markdownRender(currentProject.value.description) : '',
+)
+
 watch(
-  () => currentProject.value,
-  async nVal => {
-    if (nVal?.pk) {
+  () => currentProject.value?.pk,
+  async pk => {
+    const proj = currentProject.value
+    if (pk && proj) {
       loading.value = true
       try {
-        await Promise.all([
-          issueStore.fetchTrackerSummary(nVal.pk),
-          infStore.fetchNewsList({ project: nVal.slug }),
-        ])
+        const tasks: Promise<unknown>[] = []
+        if (!proj.module || proj.module.issue) {
+          tasks.push(issueStore.fetchTrackerSummary(pk))
+        }
+        if (!proj.module || proj.module.news) {
+          tasks.push(infStore.fetchNewsList({ project: proj.slug }))
+        } else {
+          infStore.newsList = []
+        }
+        await Promise.all(tasks)
       } catch (err) {
         console.error('Failed to load project overview data:', err)
       } finally {
@@ -87,8 +100,10 @@ watch(
 )
 
 const deleteProject = async (slug: string) => {
-  await workStore.deleteIssueProject(slug)
-  await router.push({ name: '워크스페이스' })
+  const deleted = await workStore.deleteIssueProject(slug)
+  if (deleted) {
+    await router.push({ name: '워크스페이스' })
+  }
 }
 </script>
 
@@ -108,30 +123,35 @@ const deleteProject = async (slug: string) => {
         @delete-project="deleteProject"
       />
 
-      <CAlert v-if="currentProject?.status !== '1'" color="warning">
-        <v-icon icon="mdi-lock" color="warning" size="sm" />
-        이 프로젝트는 닫혀 있거나 잠금보관 상태이며 읽기 전용입니다.
+      <CAlert v-if="currentProject && currentProject.status !== '1'" color="warning">
+        <v-icon icon="mdi-lock" color="warning" size="small" />
+        이 워크스페이스는 닫혀 있거나 잠금보관 상태이며 읽기 전용입니다.
       </CAlert>
 
-      <CRow class="my-2">
-        <CCol class="text-muted">{{ currentProject?.description }}</CCol>
+      <CRow v-if="renderedDescription" class="my-2">
+        <CCol class="text-muted" v-html="renderedDescription" />
       </CRow>
 
-      <CRow v-if="currentProject?.homepage" class="pl-2 my-2">
+      <CRow v-if="safeHomepage" class="ps-2 my-2">
         <li>
-          <a :href="currentProject.homepage" target="_blank">{{ currentProject?.homepage }}</a>
+          <a :href="safeHomepage" target="_blank" rel="noopener noreferrer">
+            {{ currentProject?.homepage }}
+          </a>
         </li>
       </CRow>
 
       <CRow>
-        <CCol lg="6">
+        <CCol v-if="!currentProject?.module || currentProject.module.issue" lg="6">
           <CRow class="mb-3">
             <IssueTracker :trackers="currentProject?.trackers" :tracker-summary="trackerSum" />
           </CRow>
         </CCol>
 
         <CCol lg="6">
-          <NewsBox v-if="!!newsList.length" :news-list="newsList.slice(0, 5)" />
+          <NewsBox
+            v-if="(!currentProject?.module || currentProject.module.news) && !!newsList.length"
+            :news-list="newsList.slice(0, 5)"
+          />
 
           <MemberBox
             v-if="!!Object.keys(computedMembers).length"

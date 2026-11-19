@@ -10,7 +10,7 @@ const props = defineProps({
   fromDate: { type: Date as PropType<Date>, required: true },
   activities: {
     type: Object as PropType<{ [key: string]: ActLogEntry[] }>,
-    default: () => {},
+    default: () => ({}),
   },
 })
 

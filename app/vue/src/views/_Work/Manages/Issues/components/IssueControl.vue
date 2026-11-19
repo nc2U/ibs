@@ -141,11 +141,11 @@ const callDeleteIssue = () => emit('call-delete-issue')
         </CDropdownToggle>
         <CDropdownMenu>
           <CDropdownItem class="form-text pointer" @click="issueLinkCopy">
-            <v-icon icon="mdi-link-plus" color="grey" size="sm" class="me-1" />
+            <v-icon icon="mdi-link-plus" color="grey" size="small" class="me-1" />
             링크 복사
           </CDropdownItem>
           <CDropdownItem v-if="showDeleteButton" class="form-text pointer" @click="callDeleteIssue">
-            <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="me-1" />
+            <v-icon icon="mdi-trash-can-outline" color="grey" size="small" class="me-1" />
             업무 삭제
           </CDropdownItem>
         </CDropdownMenu>

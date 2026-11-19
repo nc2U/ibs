@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isValidate } from '@/utils/helper'
 import { usePerms } from '@/composables/usePerms'
@@ -82,12 +82,32 @@ const resetForm = () => {
   form.value.is_default = false
 }
 
-onBeforeMount(async () => {
+const loadVersionForm = async () => {
   if (route.params.verId) {
     await workStore.fetchVersion(Number(route.params.verId))
     setupForm()
-  } else resetForm()
-})
+  } else {
+    workStore.removeVersion()
+    resetForm()
+  }
+}
+
+watch(
+  [() => route.name, () => route.params.verId],
+  () => {
+    loadVersionForm()
+  },
+  { immediate: true },
+)
+
+const backToList = () => {
+  const projId = route.params.projId
+  if (route.query.back) {
+    router.replace({ name: '(설정)', params: { projId }, query: { menu: '단계' } })
+  } else {
+    router.replace({ name: '(로드맵)', params: { projId } })
+  }
+}
 </script>
 
 <template>
@@ -151,10 +171,10 @@ onBeforeMount(async () => {
             <CCol sm="6">
               <CFormSelect id="sharing" v-model="form.sharing">
                 <option value="0">공유 없음</option>
-                <option value="1">하위 프로젝트</option>
-                <option value="2">상위 및 하위 프로젝트</option>
-                <option value="3">최상위 및 모든 하위 프로젝트</option>
-                <option value="4">모든 프로젝트</option>
+                <option value="1">하위 워크스페이스</option>
+                <option value="2">상위 및 하위 워크스페이스</option>
+                <option value="3">최상위 및 모든 하위 워크스페이스</option>
+                <option value="4">모든 워크스페이스</option>
               </CFormSelect>
             </CCol>
           </CRow>
@@ -177,8 +197,8 @@ onBeforeMount(async () => {
       <v-btn
         color="light"
         type="button"
-        class="ml-2"
-        @click="router.replace({ name: '(로드맵)', params: { projId: route.params.projId } })"
+        class="ms-2"
+        @click="backToList"
         flat
       >
         목록으로

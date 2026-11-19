@@ -2,11 +2,17 @@
 import { type PropType, ref } from 'vue'
 
 defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: '' } })
+const emit = defineEmits(['close'])
 
 const visible = ref(false)
 
 const callModal = () => (visible.value = true)
-const close = () => (visible.value = false)
+const close = () => {
+  if (visible.value) {
+    visible.value = false
+    emit('close')
+  }
+}
 defineExpose({ callModal, close })
 </script>
 
@@ -15,13 +21,13 @@ defineExpose({ callModal, close })
     :size="size"
     alignment="center"
     :visible="visible"
-    @close="() => (visible = false)"
-    @keydown.esc="() => (visible = false)"
+    @close="close"
+    @keydown.esc="close"
   >
     <CModalHeader class="text-body">
       <CModalTitle>
         <slot name="icon">
-          <v-icon icon="mdi-application-cog" size="small" color="blue-grey-darken-1" class="mr-2" />
+          <v-icon icon="mdi-application-cog" size="small" color="blue-grey-darken-1" class="me-2" />
         </slot>
         <slot name="header">Title</slot>
       </CModalTitle>
@@ -30,7 +36,7 @@ defineExpose({ callModal, close })
       <CModalBody class="text-body"> Form here...</CModalBody>
       <CModalFooter>
         <v-btn color="primary" size="small">확인</v-btn>
-        <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
+        <v-btn color="light" size="small" @click="close" flat> 닫기</v-btn>
       </CModalFooter>
     </slot>
   </CModal>

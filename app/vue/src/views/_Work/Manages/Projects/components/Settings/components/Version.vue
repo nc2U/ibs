@@ -57,7 +57,7 @@ const deleteSubmit = () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <span v-if="canManageVersions" class="mr-2 form-text">
+      <span v-if="canManageVersions" class="me-2 form-text">
         <TextButton
           name="새 단계"
           :to="{
@@ -68,23 +68,12 @@ const deleteSubmit = () => {
         />
       </span>
     </CCol>
-
-    <CCol class="text-end">
-      <span v-if="canManageVersions" class="me-2 form-text">
-        <TextButton
-          name="완료된 단계 닫기"
-          icon="mdi-lock"
-          icon-color="warning"
-          color="secondary"
-        />
-      </span>
-    </CCol>
   </CRow>
 
   <CRow class="mt-3">
     <CCol>
       <h6>
-        <v-icon icon="mdi-check" color="success" size="sm" />
+        <v-icon icon="mdi-check" color="success" size="small" />
         검색조건
       </h6>
     </CCol>
@@ -119,7 +108,7 @@ const deleteSubmit = () => {
                 적용
               </v-btn>
               <span class="ms-2">
-                <v-icon icon="mdi-reload" size="sm" color="success" />
+                <v-icon icon="mdi-reload" size="small" color="success" />
                 <a href="#" @click.prevent="formReset">지우기</a>
               </span>
             </CCol>
@@ -163,7 +152,7 @@ const deleteSubmit = () => {
               :class="{ 'text-secondary': ver.status === '3' }"
             >
               <template v-if="ver.project?.slug !== currentProjectSlug">
-                <v-icon icon="mdi-link-variant" color="grey" size="sm" class="me-2" />
+                <v-icon icon="mdi-link-variant" color="grey" size="small" class="me-2" />
 
                 <router-link
                   :to="{
@@ -188,7 +177,7 @@ const deleteSubmit = () => {
               </template>
             </CTableDataCell>
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
-              <v-icon v-if="ver.is_default" icon="mdi-check-bold" color="success" size="sm" />
+              <v-icon v-if="ver.is_default" icon="mdi-check-bold" color="success" size="small" />
             </CTableDataCell>
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
               {{ ver.effective_date }}
@@ -204,8 +193,8 @@ const deleteSubmit = () => {
             </CTableDataCell>
             <CTableDataCell class="form-text">
               <span v-if="ver.project?.slug === currentProjectSlug">
-                <span v-if="canManageVersions" class="mr-2">
-                  <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
+                <span v-if="canManageVersions" class="me-2">
+                  <v-icon icon="mdi-pencil" color="amber" size="small" class="me-1" />
                   <router-link
                     :to="{
                       name: '(로드맵) - 수정',
@@ -217,7 +206,7 @@ const deleteSubmit = () => {
                   </router-link>
                 </span>
                 <span v-if="canManageVersions">
-                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
+                  <v-icon icon="mdi-trash-can" color="grey" size="small" class="me-1" />
                   <a href="#" @click.prevent="toDelete(ver?.pk as number)">삭제</a>
                 </span>
               </span>

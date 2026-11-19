@@ -3,16 +3,23 @@ import { computed, ref } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
 import type { News, NewsComment } from '@/store/types/work_inform'
 import Comment from './Comment.vue'
 
 const accStore = useAccount()
+const workStore = useWork()
 const userInfo = computed(() => accStore.userInfo)
 
 const { can, PERM } = usePerms()
 
 const infStore = useInform()
 const news = computed(() => infStore.news as News | null)
+const canComment = computed(
+  () =>
+    workStore.currentProject?.status === '1' &&
+    can(PERM.NEWS_COMMENT, news.value?.project?.slug),
+)
 
 const commentContent = ref('')
 
@@ -27,15 +34,15 @@ const onSubmit = async () => {
     updated: '',
   }
 
-  await infStore.createNewsComment(payload)
-  commentContent.value = ''
+  const ok = await infStore.createNewsComment(payload)
+  if (ok) commentContent.value = ''
 }
 </script>
 
 <template>
   <div class="comment-list-container">
     <!-- Comment Input -->
-    <div v-if="can(PERM.NEWS_COMMENT)" class="comment-form mb-6">
+    <div v-if="canComment" class="comment-form mb-6">
       <v-textarea
         v-model="commentContent"
         :placeholder="userInfo ? '댓글을 입력하세요...' : '댓글을 작성하려면 로그인이 필요합니다.'"
@@ -51,7 +58,7 @@ const onSubmit = async () => {
             color="primary"
             variant="flat"
             size="small"
-            class="ml-2"
+            class="ms-2"
             :disabled="!commentContent.trim() || !userInfo"
             @click="onSubmit"
           >
@@ -67,7 +74,7 @@ const onSubmit = async () => {
     </div>
     <div v-else class="text-center py-6 text-grey-lighten-1 italic small">
       {{
-        can(PERM.NEWS_COMMENT)
+        canComment
           ? '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!'
           : '아직 등록된 댓글이 없습니다.'
       }}

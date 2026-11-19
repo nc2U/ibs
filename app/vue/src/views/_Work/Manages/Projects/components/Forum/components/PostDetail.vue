@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { useForum } from '@/store/pinia/forum'
+import { useWork } from '@/store/pinia/work_project'
 import type { Comment as ForumComment, Post } from '@/store/types/forum'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
@@ -18,21 +20,35 @@ const emit = defineEmits(['delete-post', 'like-post', 'blame-post'])
 const route = useRoute()
 const router = useRouter()
 
+const accStore = useAccount()
+const forumStore = useForum()
+const workStore = useWork()
+const userInfo = computed(() => accStore.userInfo)
+
+const isProjectActive = computed(() => workStore.currentProject?.status === '1')
+const isForumManager = computed(() => {
+  if (userInfo.value?.is_superuser || accStore.workManager) return true
+  const forum = forumStore.forum
+  if (!forum || !forum.manager) return false
+  return (forum.manager as number[]).includes(userInfo.value?.pk ?? 0)
+})
+
 const { can, canViewUser, PERM } = usePerms()
 const canForumUpdate = computed(() => {
+  if (!isProjectActive.value) return false
+  if (isForumManager.value) return true
   if (can(PERM.FORUM_UPDATE)) return true
   if (can(PERM.FORUM_OWN_UPDATE)) return props.post.creator?.pk === userInfo.value?.pk
   return false
 })
 
 const canForumDelete = computed(() => {
+  if (!isProjectActive.value) return false
+  if (isForumManager.value) return true
   if (can(PERM.FORUM_DELETE)) return true
   if (can(PERM.FORUM_OWN_DELETE)) return props.post.creator?.pk === userInfo.value?.pk
   return false
 })
-
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
 </script>
 
 <template>
@@ -89,7 +105,7 @@ const userInfo = computed(() => accStore.userInfo)
           <h6 class="mb-2">첨부 파일</h6>
           <div v-for="file in post.files" :key="file.pk as number" class="mb-2">
             <v-icon icon="mdi-attachment" size="small" class="me-2" />
-            <a :href="file.file" target="_blank">{{ file.file_name }}</a>
+            <a :href="file.file" target="_blank" rel="noopener noreferrer">{{ file.file_name }}</a>
             <span class="ms-2 text-muted">{{ humanizeFileSize(file.file_size) }}</span>
           </div>
         </div>
@@ -121,30 +137,29 @@ const userInfo = computed(() => accStore.userInfo)
     <div class="text-end mb-6">
       <!-- 하단 간격 조정 -->
       <v-btn
-        v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
+        v-if="canForumUpdate"
         color="success"
         class="me-2 no-underline"
-        :disabled="!canForumUpdate"
         :to="{
           name: '(게시판) - 게시물 수정',
           params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
         }"
       >
-        <v-icon icon="mdi-pencil" size="small" class="mr-1" />
+        <v-icon icon="mdi-pencil" size="small" class="me-1" />
         수정
       </v-btn>
       <v-btn
-        v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
+        v-if="canForumDelete"
         color="warning"
-        :disabled="!canForumDelete"
+        class="me-2"
         @click="emit('delete-post', post.pk)"
       >
-        <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
+        <v-icon icon="mdi-trash-can-outline" size="small" class="me-1" />
         삭제
       </v-btn>
       <v-btn
         color="light"
-        class="mr-2"
+        class="me-2"
         @click="
           router.push({
             name: '(게시판) - 보기',
@@ -158,7 +173,9 @@ const userInfo = computed(() => accStore.userInfo)
     </div>
 
     <Comment
-      v-if="!post.is_hide_comment || userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
+      v-if="
+        !post.is_hide_comment || isForumManager || userInfo?.pk === post.creator?.pk
+      "
       :post="post.pk as number"
       :comments="comments"
     />

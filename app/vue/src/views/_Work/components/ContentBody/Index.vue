@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, provide, ref } from 'vue'
+import { computed, onBeforeMount, type PropType, provide, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
-import type { User } from '@/store/types/accounts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 defineProps({
@@ -18,12 +17,24 @@ const isDark = computed(() => useStore().theme === 'dark')
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 
-const isActive = (menu: string) =>
-  ((route.name as string) ?? '').includes(menu) || ((route.meta as any)?.title ?? '').includes(menu)
+const getTitle = (title: string) => (title ?? '').replace(/[() ]/gim, '')
+const menuName = computed(() => String(route.name ?? '').split(/\s*-\s*/)[0].trim())
+
+const isActive = (menu: string) => {
+  const current = menuName.value
+  const cleanM = getTitle(menu)
+  const cleanCurrent = getTitle(current)
+  return (
+    current === menu ||
+    cleanCurrent === cleanM ||
+    (cleanCurrent === '문서사건' && cleanM === '문서')
+  )
+}
 
 const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo as User)
+const userInfo = computed(() => accStore.userInfo)
 const logout = () => {
+  visible.value = false
   accStore.logout()
   router.push({ name: 'Login' })
 }
@@ -37,33 +48,64 @@ const goToMenu = (menu: string) => {
   }
   visible.value = false
 }
+
+const navigateAndClose = (location: Parameters<typeof router.push>[0]) => {
+  visible.value = false
+  router.push(location)
+}
+
 const toggle = () => (visible.value = !visible.value)
 provide('doingToggle', toggle)
 defineExpose({ toggle })
 
-const getGuide = () => window.open('https://docs.dyibs.com/', '_blank', 'noopener,noreferrer')
+const getGuide = () => {
+  visible.value = false
+  window.open('https://docs.dyibs.com/', '_blank', 'noopener,noreferrer')
+}
 
 // 검색 관련 기능 시작
 const search = ref('')
-const goSearch = () => router.push({ name: '전체검색', query: { scope: '', q: search.value } })
-
-// 우측 사이드바 컨트롤
-const routeSlug = computed(() => route.path.split('/').pop())
-const sidebarVisible = ref(true)
-const sidebarWidth = computed(() => (sidebarVisible.value ? 420 : 30))
-const sidebarToggle = () => {
-  sidebarVisible.value = !sidebarVisible.value
-  localStorage.setItem(
-    `redmine-sidebar-visible-${routeSlug.value}`,
-    JSON.stringify(sidebarVisible.value),
-  )
+const goSearch = () => {
+  const q = search.value.trim()
+  if (!q) return
+  visible.value = false
+  router.push({ name: '전체검색', query: { scope: '', q } })
 }
 
-onBeforeMount(async () => {
-  if (route?.query.q) search.value = route.query.q as string
-  sidebarVisible.value = JSON.parse(
-    localStorage.getItem(`redmine-sidebar-visible-${routeSlug.value}`) ?? 'true',
-  )
+// 우측 사이드바 컨트롤 (엔티티 ID 대신 정규화된 라우트 이름 기준 저장)
+const sidebarKey = computed(() => `redmine-sidebar-visible-${menuName.value || 'work'}`)
+const sidebarVisible = ref(true)
+const sidebarWidth = computed(() => (sidebarVisible.value ? 420 : 30))
+
+const loadSidebarVisible = () => {
+  try {
+    const raw = localStorage.getItem(sidebarKey.value)
+    sidebarVisible.value = raw === null ? true : Boolean(JSON.parse(raw))
+  } catch {
+    sidebarVisible.value = true
+  }
+}
+
+const sidebarToggle = () => {
+  sidebarVisible.value = !sidebarVisible.value
+  try {
+    localStorage.setItem(sidebarKey.value, JSON.stringify(sidebarVisible.value))
+  } catch {
+    // ignore storage errors
+  }
+}
+
+watch(sidebarKey, loadSidebarVisible)
+watch(
+  () => route.query.q,
+  q => {
+    if (typeof q === 'string') search.value = q
+  },
+)
+
+onBeforeMount(() => {
+  if (typeof route?.query.q === 'string') search.value = route.query.q
+  loadSidebarVisible()
 })
 </script>
 
@@ -81,8 +123,8 @@ onBeforeMount(async () => {
       class="text-body d-none d-lg-block p-0 col-lg-2"
       :style="{ width: sidebarWidth + 'px', flexShrink: 0 }"
     >
-      <CRow class="mb-4 py-1 pointer sidebar-switch" @mousedown="sidebarToggle">
-        <CCol class="pl-0">
+      <CRow class="mb-4 py-1 pointer sidebar-switch" @click="sidebarToggle">
+        <CCol class="ps-0">
           <v-icon :icon="`mdi-chevron-double-${sidebarVisible ? 'right' : 'left'}`" color="grey" />
         </CCol>
       </CRow>
@@ -102,7 +144,7 @@ onBeforeMount(async () => {
       @hide="visible = false"
     >
       <COffcanvasHeader class="mb-4">
-        <COffcanvasTitle class="w-100 pr-2">
+        <COffcanvasTitle class="w-100 pe-2">
           <v-text-field
             v-model="search"
             placeholder="검색어 입력"
@@ -110,8 +152,8 @@ onBeforeMount(async () => {
             density="comfortable"
             prepend-inner-icon="mdi-magnify"
             hide-details
+            @click:prepend-inner="goSearch"
             @keydown.enter="goSearch"
-            @focusin="search = ''"
             class="search-field"
           />
         </COffcanvasTitle>
@@ -132,25 +174,24 @@ onBeforeMount(async () => {
               {{ (menu as string).replace(/^\((.*)\)$/, '$1') }}
             </v-list-item>
             <v-list-item variant="tonal" disabled>일반</v-list-item>
-            <v-list-item @click="router.push({ name: '업 무 관 리' })">업무관리</v-list-item>
-            <v-list-item @click="router.push({ name: '설 정 관 리' })">설정관리</v-list-item>
+            <v-list-item @click="navigateAndClose({ name: '업 무 관 리' })">업무관리</v-list-item>
+            <v-list-item @click="navigateAndClose({ name: '설 정 관 리' })">설정관리</v-list-item>
             <v-list-item variant="tonal" disabled>사용자정보</v-list-item>
             <v-list-item @click="getGuide"> 도움말</v-list-item>
             <v-list-item
-              @click="router.push({ name: '사용자 - 보기', params: { userId: userInfo?.pk } })"
+              v-if="userInfo?.pk"
+              @click="navigateAndClose({ name: '사용자 - 보기', params: { userId: userInfo.pk } })"
             >
               내 정보 보기
             </v-list-item>
-            <v-list-item @click="router.push({ name: '사용자 - 내 계정' })">
+            <v-list-item @click="navigateAndClose({ name: '사용자 - 내 계정' })">
               내 계정 관리
             </v-list-item>
             <v-list-item @click="logout">로그아웃</v-list-item>
           </v-list>
         </v-card>
 
-        <!--        <v-divider />-->
-
-        <slot name="aside"></slot>
+        <slot v-if="aside && visible" name="aside"></slot>
       </COffcanvasBody>
     </COffcanvas>
   </CRow>

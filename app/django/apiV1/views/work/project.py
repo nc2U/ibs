@@ -21,6 +21,7 @@ from work.models import IssueProject, Module, Role, Permission, Member, ProjectS
 class IssueProjectFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
     parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='최상위 워크스페이스')
+    parent__exclude = CharFilter(field_name='parent__slug', exclude=True, label='상위 워크스페이스-제외')
     project = CharFilter(field_name='slug', lookup_expr='exact', label='워크스페이스')
     project__exclude = CharFilter(field_name='slug', exclude=True, label='워크스페이스-제외')
     is_public__exclude = BooleanFilter(field_name='is_public', exclude=True, label='공개여부-제외')
@@ -37,10 +38,10 @@ class IssueProjectFilter(FilterSet):
     description__endswith = CharFilter(field_name='description', lookup_expr='iendswith', label='설명-끝')
     description__isnull = BooleanFilter(field_name='description', lookup_expr='isnull', label='설명-없음')
 
-    from_created = DateFilter(field_name='created', lookup_expr='gte', label='등록일자-시작')
-    to_created = DateFilter(field_name='created', lookup_expr='lte', label='등록일자-기한')
-    from_updated = DateFilter(field_name='updated', lookup_expr='gte', label='수정일자-시작')
-    to_updated = DateFilter(field_name='updated', lookup_expr='lte', label='수정일자-기한')
+    from_created = DateFilter(field_name='created__date', lookup_expr='gte', label='등록일자-시작')
+    to_created = DateFilter(field_name='created__date', lookup_expr='lte', label='등록일자-기한')
+    from_updated = DateFilter(field_name='updated__date', lookup_expr='gte', label='수정일자-시작')
+    to_updated = DateFilter(field_name='updated__date', lookup_expr='lte', label='수정일자-기한')
 
     bookmark = BooleanFilter(method='filter_bookmark', label='북마크 여부')
     my_project = BooleanFilter(method='filter_my_project', label='내 워크스페이스 여부')
@@ -51,8 +52,11 @@ class IssueProjectFilter(FilterSet):
         return queryset
 
     def filter_bookmark(self, queryset, name, value):
-        if value and self.request and self.request.user.is_authenticated:
-            return queryset.filter(bookmarked_by__user=self.request.user)
+        if self.request and self.request.user.is_authenticated:
+            if value is True:
+                return queryset.filter(bookmarked_by__user=self.request.user)
+            elif value is False:
+                return queryset.exclude(bookmarked_by__user=self.request.user)
         return queryset
 
     def filter_my_project(self, queryset, name, value):
@@ -82,7 +86,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     def filter_queryset(self, queryset):
         qs = super().filter_queryset(queryset)
-        # detail 액션(retrieve, toggle_* 등)에서는 slug 직접 접근이므로 is_hidden 기본 필터링을 생략
+        # detail 액션(retrieve, toggle_* 등) 및 my_projects에서는 숨김 워크스페이스 권한 조회를 위해 is_hidden 기본 필터링 생략
         if not getattr(self, 'detail', False):
             params = self.request.query_params
             if 'is_hidden' not in params and str(params.get('include_hidden', '')).lower() != 'true':
@@ -91,6 +95,11 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
+        if self.action == 'create':
+            data = getattr(self.request, 'data', {}) if hasattr(self, 'request') and self.request else {}
+            if data.get('parent') or data.get('parent_slug'):
+                return 'project.create_sub'
+            return 'project.create'
         mapping = {  # 매핑 로직 정의
             'create': 'project.create',
             'update': 'project.update',
@@ -250,10 +259,19 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         del_mem = request.data.get('del_mem')
 
         if users:
+            role_objs = []
+            if roles:
+                role_objs = list(Role.objects.filter(pk__in=roles))
+                if not request.user.is_superuser:
+                    if any(r.is_confidential for r in role_objs):
+                        raise serializers.ValidationError({'roles': '보안 격리 역할은 슈퍼유저만 부여할 수 있습니다.'})
+                    allowed_ids = set(project.allowed_roles.values_list('pk', flat=True))
+                    if allowed_ids and any(r.pk not in allowed_ids for r in role_objs):
+                        raise serializers.ValidationError({'roles': '이 워크스페이스에서 허용되지 않은 역할이 포함되어 있습니다.'})
             for user_id in users:
                 member, _ = Member.objects.get_or_create(user_id=user_id, project=project)
                 if roles:
-                    member.roles.set(roles)
+                    member.roles.set(role_objs)
                 member.save()
             return Response({'status': 'members updated'})
         elif del_mem is not None:
@@ -264,15 +282,26 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         parent_slug = self.request.data.get('parent_slug')
+        parent_pk = self.request.data.get('parent')
+        parent_project = None
+
         if parent_slug:
-            # 하위 워크스페이스 생성 권한 체크
             try:
                 parent_project = IssueProject.objects.get(slug=parent_slug)
             except IssueProject.DoesNotExist:
                 raise serializers.ValidationError({"parent_slug": "부모 워크스페이스를 찾을 수 없습니다."})
-            user_perms = parent_project.get_user_permissions(self.request.user)
-            if 'project.create_sub' not in user_perms:
-                raise serializers.PermissionDenied("하위 워크스페이스를 생성할 권한이 없습니다.")
+        elif parent_pk not in (None, '', 'null'):
+            try:
+                parent_project = IssueProject.objects.get(pk=parent_pk)
+            except (IssueProject.DoesNotExist, ValueError, TypeError):
+                raise serializers.ValidationError({"parent": "부모 워크스페이스를 찾을 수 없습니다."})
+
+        if parent_project is not None:
+            # 하위 워크스페이스 생성 권한 체크 (슈퍼유저/work_manager 제외)
+            if not (self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)):
+                user_perms = parent_project.get_user_permissions(self.request.user)
+                if 'project.create_sub' not in user_perms:
+                    raise serializers.PermissionDenied("하위 워크스페이스를 생성할 권한이 없습니다.")
             serializer.save(creator=self.request.user, parent=parent_project)
         else:
             # 일반 워크스페이스 생성
@@ -314,7 +343,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all().select_related('creator')
     serializer_class = RoleSerializer
     permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
-    pagination_class = PageNumberPaginationTwenty
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('category', 'is_confidential')
     search_fields = ('id',)
 
@@ -328,6 +357,20 @@ class RoleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.pk in (1, 2):
+            return Response(
+                {'detail': '시스템 기본 역할(익명/일반사용자)은 삭제할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not request.user.is_superuser and (instance.is_confidential or instance.category == 'ibs_hq_manage'):
+            return Response(
+                {'detail': '보안 격리 또는 본사 관리 역할은 슈퍼유저만 삭제할 수 있습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -343,6 +386,13 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
         # 슈퍼유저가 아닌 경우 보안 격리 권한(is_confidential=True)은 은닉
         if not user.is_superuser:
             queryset = queryset.filter(is_confidential=False)
+        category = self.request.query_params.get('category')
+        if category == 'work_space':
+            queryset = queryset.filter(is_for_workspace=True)
+        elif category == 'ibs_hq_manage':
+            queryset = queryset.filter(is_for_hq=True)
+        elif category == 'ibs_pr_manage':
+            queryset = queryset.filter(is_for_project=True)
         return queryset
 
     @action(detail=False, methods=['get'])
@@ -374,6 +424,7 @@ class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('user',)
 
     @property
@@ -510,6 +561,7 @@ class VersionViewSet(viewsets.ModelViewSet):
     queryset = Version.objects.all()
     serializer_class = VersionSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_class = VersionFilter
     search_fields = ('name', 'description')
 
@@ -584,6 +636,7 @@ class ProjectBookmarkViewSet(viewsets.ModelViewSet):
     queryset = ProjectBookmark.objects.all()
     serializer_class = ProjectBookmarkSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationOneHundred
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user).select_related('project')

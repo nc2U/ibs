@@ -18,6 +18,7 @@ const props = defineProps({
     default: 'project',
   },
   showLockedOption: { type: Boolean, default: false },
+  fetchOnMount: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['filter-submit', 'change-view-mode'])
@@ -178,11 +179,18 @@ const filterSubmit = () => {
   emit('filter-submit', filterData)
 }
 
+watch(
+  () => props.allReadableProjects,
+  projects => {
+    if (!selectedParentVal.value && projects.length) {
+      selectedParentVal.value = projects[0]?.value
+    }
+  },
+  { immediate: true },
+)
+
 onBeforeMount(() => {
   if (selectedProjectVal.value === undefined) selectedProjectVal.value = ''
-  if (!selectedParentVal.value && props.allReadableProjects.length) {
-    selectedParentVal.value = props.allReadableProjects[0]?.value
-  }
 })
 
 // 검색양식 관련 기능 구현
@@ -194,7 +202,9 @@ const publicQueries = computed(() =>
 )
 
 onMounted(() => {
-  informStore.fetchQueries({ targetType: props.targetType })
+  if (props.fetchOnMount) {
+    informStore.fetchQueries({ targetType: props.targetType })
+  }
 })
 
 const extraQueryData = computed(() => ({
@@ -230,7 +240,7 @@ defineExpose({ applyQuery, resetFilter })
 <template>
   <CRow>
     <CCol class="pointer pt-1 mb-0" @click="condVisible = !condVisible">
-      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="condVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       검색조건
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
@@ -251,14 +261,14 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
               <CCol
                 v-if="enabledFields.includes('status')"
-                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+                class="col-4 col-lg-3 col-xl-2"
               >
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
-              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3">
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
                   <option value="2">닫힘</option>
@@ -332,7 +342,11 @@ defineExpose({ applyQuery, resetFilter })
                 </CCol>
 
                 <CCol
-                  v-if="field.type === 'date' && cond[field.key] === 'between'"
+                  v-if="
+                    enabledFields.includes(field.key) &&
+                    field.type === 'date' &&
+                    cond[field.key] === 'between'
+                  "
                   class="col-4 col-lg-3"
                 >
                   <DatePicker v-model="form[`${field.key}_date2`]" size="sm" />
@@ -370,7 +384,7 @@ defineExpose({ applyQuery, resetFilter })
 
   <CRow class="mt-2">
     <CCol class="pointer mb-0" @click="optVisible = !optVisible">
-      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+      <v-icon :icon="optVisible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
       옵션
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
@@ -409,7 +423,7 @@ defineExpose({ applyQuery, resetFilter })
 
         <CFormSelect
           v-if="myQueries.length || publicQueries.length"
-          class="d-inline-block ml-3"
+          class="d-inline-block ms-3"
           style="width: auto; max-width: 250px; vertical-align: middle"
           size="sm"
           @change="onQuerySelect"

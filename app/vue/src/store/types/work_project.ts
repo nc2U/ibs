@@ -9,7 +9,7 @@ export interface SimpleUser {
 export interface SimpleMember {
   pk: number
   user: SimpleUser
-  roles: { pk: number; name: string; assignable: string; inherited?: boolean }[]
+  roles: { pk: number; name: string; assignable: boolean; inherited?: boolean }[]
   add_roles?: { pk: number; name: string }[]
   created: string
 }
@@ -20,7 +20,8 @@ export interface SimpleProject {
   name: string
   slug: string
   visible: boolean
-  status: '1' | '2' | '9' // '1': 사용중, '2': 닫힘, '3': 잠금보관
+  is_hidden?: boolean
+  status: '1' | '2' | '9' // '1': 사용중, '2': 닫힘, '9': 잠금보관
 }
 
 export interface selectProject {
@@ -49,13 +50,15 @@ export interface IssueProject {
   slug: string
   description: string
   is_public: boolean
+  is_hidden?: boolean
   parent: number | null
   parent_name: string | null
-  allowed_roles: { pk: number; name: string; inherited: boolean }[]
+  allowed_roles: { pk: number; name: string; inherited?: boolean }[]
   status: '1' | '2' | '9'
   status_display: '사용중' | '닫힘' | '잠금보관(모든 접근이 차단됨)'
   chat_channel_enabled: boolean
   slack_notifications_enabled: boolean
+  slack_webhook_url?: string
   created?: string
   updated?: string
   creator?: string
@@ -68,9 +71,10 @@ export interface IssueProject {
   visible?: boolean
   parent_visible: boolean
   is_bookmarked?: boolean
+  has_versions?: boolean
   homepage: string | null
   is_inherit_members: boolean
-  default_version: string | null
+  default_version: number | null
   trackers: { pk: number; name: string; description: string }[]
   ancestors: SimpleProject[]
   members: SimpleMember[]
@@ -90,6 +94,8 @@ export interface ProjectFilter {
   project__exclude?: string
   is_public?: '1' | '0'
   is_public__exclude?: '1' | '0'
+  is_hidden?: boolean
+  include_hidden?: boolean
   name?: string
   name__exclude?: string
   name__startswith?: string
@@ -111,6 +117,13 @@ export interface ProjectFilter {
   member?: number
   bookmark?: boolean
   my_project?: boolean
+}
+
+export interface ProjectSubscription {
+  pk?: number
+  user: number
+  project: number
+  created_at?: string
 }
 
 export interface Module {
@@ -158,6 +171,7 @@ export interface Permission {
     | 'ledger'
     | 'site'
     | 'hr_work'
+    | 'sales'
   is_for_workspace?: boolean
   is_for_hq?: boolean
   is_for_project?: boolean
@@ -187,14 +201,12 @@ export interface ProjectMember {
   pk: number
   user_id: number
   username: string
-  roles: [
-    {
-      pk: number
-      name: string
-      assignable: boolean
-      inherited: boolean
-    },
-  ]
+  roles: {
+    pk: number
+    name: string
+    assignable: boolean
+    inherited: boolean
+  }[]
   is_assignable: boolean
 }
 
@@ -216,6 +228,10 @@ export interface SimpleVersion {
   sharing: '0' | '1' | '2' | '3' | '4'
   sharing_desc:
     | '공유 없음'
+    | '하위 워크스페이스'
+    | '상위 및 하위 워크스페이스'
+    | '최상위 및 모든 하위 워크스페이스'
+    | '모든 워크스페이스'
     | '하위 프로젝트'
     | '상위 및 하위 프로젝트'
     | '최상위 및 모든 하위 프로젝트'
@@ -235,6 +251,10 @@ export interface Version {
   sharing: '0' | '1' | '2' | '3' | '4'
   sharing_desc?:
     | '공유 없음'
+    | '하위 워크스페이스'
+    | '상위 및 하위 워크스페이스'
+    | '최상위 및 모든 하위 워크스페이스'
+    | '모든 워크스페이스'
     | '하위 프로젝트'
     | '상위 및 하위 프로젝트'
     | '최상위 및 모든 하위 프로젝트'

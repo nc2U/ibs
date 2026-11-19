@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
@@ -67,28 +67,47 @@ const onResetQuery = () => {
 }
 
 const summary = computed(() => {
-  const issues = issueStore.issueList
+  const issues = calendarStore.events.filter(e => e.type === 'issue')
   return {
     total: issues.length,
-    open: issues.filter(i => !i.status.closed).length,
-    closed: issues.filter(i => i.status.closed).length,
+    open: issues.filter(i => i.status && !i.status.closed).length,
+    closed: issues.filter(i => i.status && i.status.closed).length,
   }
 })
 
 const loading = ref(true)
 const combinedLoading = computed(() => loading.value || calendarStore.loading)
 
-onBeforeMount(async () => {
+const loadProjectCalendarData = async (slug?: string) => {
+  loading.value = true
   try {
-    if (route.params.projId) {
-      await issueStore.fetchIssueList({ project: route.params.projId as string })
-      await meetingStore.fetchCategoryList(route.params.projId as string)
+    if (slug) {
+      await meetingStore.fetchCategoryList(slug)
+      const payload = calendarFilterStore.buildFilterPayload(slug)
+      activeFilters.value = { ...payload }
+      const range = calendarRef.value?.currentRange
+      if (range?.start && range?.end) {
+        await calendarStore.fetchCalendarEvents(payload, range.start, range.end)
+      }
     }
   } catch (err) {
     console.error('Failed to load project calendar data:', err)
   } finally {
     loading.value = false
   }
+}
+
+watch(
+  () => route.params.projId as string | undefined,
+  (newSlug, oldSlug) => {
+    if (newSlug && newSlug !== oldSlug) {
+      loadProjectCalendarData(newSlug)
+    }
+  },
+)
+
+onBeforeMount(async () => {
+  await loadProjectCalendarData(route.params.projId as string | undefined)
 })
 </script>
 
@@ -103,7 +122,7 @@ onBeforeMount(async () => {
               icon="mdi-calendar-clock"
               color="green-darken-1"
               size="small"
-              class="mr-2"
+              class="me-2"
             />캘린더
           </h5>
         </CCol>

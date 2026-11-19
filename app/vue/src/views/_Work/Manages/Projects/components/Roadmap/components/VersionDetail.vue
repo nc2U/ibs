@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
@@ -8,7 +8,9 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import VersionSummary from './automics/VersionSummary.vue'
 import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
-const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
+const props = defineProps({
+  version: { type: Object as PropType<Version | null>, default: null },
+})
 
 const workStore = useWork()
 
@@ -17,17 +19,22 @@ const { can, PERM } = usePerms()
 const canManageVersions = computed(
   () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
 )
+const canCreateIssues = computed(
+  () => workStore.currentProject?.status === '1' && can(PERM.ISSUE_CREATE),
+)
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
-const closedNum = computed(() => props.version?.issues?.filter(i => i.closed).length ?? 0)
+const isIssueClosed = (issue: any) => !!(issue?.closed || issue?.status?.closed)
+
+const closedNum = computed(() => props.version?.issues?.filter(isIssueClosed).length ?? 0)
 const closedStr = computed(() => {
   if (closedNum.value === 0) return '모두 미완료'
   else if (closedNum.value === 1) return '한 건 완료'
   else return `${closedNum.value} 건 완료`
 })
 
-const progressNum = computed(() => props.version?.issues?.filter(i => !i.closed).length ?? 0)
+const progressNum = computed(() => props.version?.issues?.filter(i => !isIssueClosed(i)).length ?? 0)
 const progressStr = computed(() => {
   if (progressNum.value === 0) return '모두 완료'
   else if (progressNum.value === 1) return '한 건 진행 중'
@@ -35,10 +42,12 @@ const progressStr = computed(() => {
 })
 
 const done_ratio = computed(() => {
-  const done_sum = props.version.issues?.reduce((sum, issue) => sum + issue.done_ratio, 0) ?? 0
-
-  if (!props.version?.issues?.length) return 0
-  else return Math.round(done_sum / props.version?.issues?.length)
+  if (typeof props.version?.done_ratio === 'number') {
+    return Math.round(props.version.done_ratio)
+  }
+  const total = props.version?.issues?.length ?? 0
+  if (!total) return 0
+  return Math.round((closedNum.value / total) * 100)
 })
 
 const [route, router] = [useRoute(), useRouter()]
@@ -46,19 +55,16 @@ const [route, router] = [useRoute(), useRouter()]
 const RefVersionConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const deleteSubmit = async () => {
+  if (!props.version?.pk) return
   RefVersionConfirm.value?.close()
-  await workStore.deleteVersion(
-    props.version?.pk as number,
+  const deleted = await workStore.deleteVersion(
+    props.version.pk,
     (props.version.project?.slug || route.params.projId) as string,
   )
-  await router.replace({ name: '(로드맵)', params: { projId: route.params.projId } })
-}
-
-onBeforeMount(() => {
-  if (route.params.verId) {
-    workStore.fetchVersion(Number(route.params.verId))
+  if (deleted) {
+    await router.replace({ name: '(로드맵)', params: { projId: route.params.projId } })
   }
-})
+}
 </script>
 
 <template>
@@ -97,8 +103,8 @@ onBeforeMount(() => {
           삭제
         </a>
       </span>
-      <span v-if="canManageVersions && version?.status === '1'" class="mr-3">
-        <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
+      <span v-if="canCreateIssues && version?.status === '1'" class="me-3">
+        <v-icon icon="mdi-plus-circle" color="success" size="16" class="me-1" />
         <router-link
           :to="{
             name: '(업무) - 추가',

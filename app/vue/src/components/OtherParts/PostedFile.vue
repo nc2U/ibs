@@ -9,7 +9,10 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   docs: { type: Number, required: true },
   files: { type: Array as PropType<AFile[]>, default: () => [] },
-  btnDirection: { type: String, default: 'left' },
+  btnDirection: { type: String, default: 'start' },
+  canCreate: { type: Boolean, default: true },
+  canEdit: { type: Boolean, default: true },
+  canDelete: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['file-change', 'file-delete'])
@@ -114,11 +117,13 @@ const fileDelete = () => {
       <table>
         <tr v-for="file in files" :key="file.pk as number">
           <td style="vertical-align: top">
-            <v-icon icon="mdi-paperclip" size="sm" class="mr-2" />
-            <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 60) }} </a>
-            <span class="ml-1">({{ humanizeFileSize(file.file_size as number) }})</span>
+            <v-icon icon="mdi-paperclip" size="small" class="me-2" />
+            <a :href="file.file" target="_blank" rel="noopener noreferrer">
+              {{ cutString(file.file_name, 60) }}
+            </a>
+            <span class="ms-1">({{ humanizeFileSize(file.file_size as number) }})</span>
             <span class="mx-2">
-              <a :href="file.file" target="_blank">
+              <a :href="file.file" target="_blank" rel="noopener noreferrer">
                 <v-icon icon="mdi-download" size="20" color="secondary" />
                 <v-tooltip activator="parent" location="top">다운로드</v-tooltip>
               </a>
@@ -127,17 +132,17 @@ const fileDelete = () => {
           <td class="px-2">{{ file.description }}</td>
           <td class="text-secondary">
             <span>{{ file.creator }}, {{ timeFormat(file.created as string, 'full', '/') }}</span>
-            <span class="ml-2">
-              <router-link to="#" @click.prevent="editFormSet(file.pk as number)">
+            <span v-if="canEdit" class="ms-2">
+              <a href="#" @click.prevent="editFormSet(file.pk as number)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />
                 <v-tooltip activator="parent" location="top">변경</v-tooltip>
-              </router-link>
+              </a>
             </span>
-            <span class="ml-2">
-              <router-link to="#" @click.prevent="delFileConfirm(file.pk as number)">
-                <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="mr-2" />
+            <span v-if="canDelete" class="ms-2">
+              <a href="#" @click.prevent="delFileConfirm(file.pk as number)">
+                <v-icon icon="mdi-trash-can-outline" size="16" color="secondary" class="me-2" />
                 <v-tooltip activator="parent" location="top">삭제</v-tooltip>
-              </router-link>
+              </a>
             </span>
             <span v-if="isEditForm === file.pk">
               <CRow>
@@ -184,9 +189,9 @@ const fileDelete = () => {
     </CCol>
   </CRow>
 
-  <CRow class="mb-2">
+  <CRow v-if="canCreate" class="mb-2">
     <CCol>
-      <router-link to="#" @click.prevent="newFormSet">파일추가</router-link>
+      <a href="#" @click.prevent="newFormSet">파일추가</a>
     </CCol>
   </CRow>
 

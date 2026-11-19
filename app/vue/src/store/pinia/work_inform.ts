@@ -1,10 +1,13 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useAccount } from '@/store/pinia/account'
 import { errorHandle, message } from '@/utils/helper'
 import type { News, NewsComment, CustomQuery, TargetType } from '@/store/types/work_inform'
 
 export const useInform = defineStore('inform', () => {
+  const accountStore = useAccount()
+
   // news states & getters
   const news = ref<News | null>(null)
   const newsList = ref<News[]>([])
@@ -17,7 +20,7 @@ export const useInform = defineStore('inform', () => {
     api
       .get(`/news/${pk}/`)
       .then(res => (news.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchNewsList = async (payload: {
     project?: string
@@ -40,47 +43,63 @@ export const useInform = defineStore('inform', () => {
         newsList.value = res.data.results
         newsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
-  const createNews = (payload: News, proj: null | string = null) =>
+  const createNews = (payload: FormData | Partial<News>, proj: null | string = null) =>
     api
       .post(`/news/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
         await fetchNewsList({ project: proj ?? '' })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const updateNews = (pk: number, payload: News) =>
+  const updateNews = (pk: number, payload: FormData | Partial<News>) =>
     api
       .put(`/news/${pk}/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
-        await fetchNewsList({ project: res.data.project.slug || '' })
+        await fetchNewsList({ project: res.data.project?.slug || '' })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchNews = (pk: number, payload: FormData | Partial<News> | Record<string, unknown>) =>
     api
       .patch(`/news/${pk}/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
-        await fetchNewsList({ project: res.data.project.slug ?? '' })
+        await fetchNewsList({ project: res.data.project?.slug ?? '' })
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteNews = (pk: number, proj: null | string = null) =>
     api
       .delete(`/news/${pk}/`)
       .then(async () => {
         await fetchNewsList({ project: proj ?? '' })
-        message('warning', '알림', 'deleted!!')
+        message('warning', '알림', '공지 사항이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // news comment states & getters
   const newsComment = ref<NewsComment | null>(null)
@@ -92,52 +111,76 @@ export const useInform = defineStore('inform', () => {
     api
       .get(`/news-comment/${pk}/`)
       .then(res => (newsComment.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchNewsCommentList = (payload: { news: number }) =>
     api
-      .get(`/news-comment/?news=${payload.news}`)
+      .get(`/news-comment/`, { params: { news: payload.news } })
       .then(res => (newsCommentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const createNewsComment = (payload: NewsComment) =>
+  const createNewsComment = (payload: Partial<NewsComment>) =>
     api
       .post(`/news-comment/`, payload)
-      .then(async () => {
+      .then(async res => {
         if (payload.news) await fetchNews(payload.news)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const patchNewsComment = (payload: { pk: number; [key: string]: unknown }) =>
+  const patchNewsComment = (payload: { pk: number; news?: number; [key: string]: unknown }) =>
     api
       .patch(`/news-comment/${payload.pk}/`, payload)
-      .then(() => message())
-      .catch(err => errorHandle(err.response.data))
+      .then(async res => {
+        const newsPk = payload.news ?? news.value?.pk
+        if (newsPk) await fetchNews(newsPk)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const deleteNewsComment = (pk: number) =>
+  const deleteNewsComment = (pk: number, newsPk?: number) =>
     api
       .delete(`/news-comment/${pk}/`)
-      .then(() => message('warning', '알림', 'deleted!!'))
-      .catch(err => errorHandle(err.response.data))
+      .then(async () => {
+        const targetNewsPk = newsPk ?? news.value?.pk
+        if (targetNewsPk) await fetchNews(targetNewsPk)
+        message('warning', '알림', '댓글이 삭제되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // custom query states & actions
   const queries = ref<CustomQuery[]>([])
   const loading = ref(false)
 
   // getter
-  const myQueries = computed(() => queries.value.filter(q => !q.is_public))
+  const myQueries = computed(() =>
+    queries.value.filter(
+      q => !q.is_public && (!accountStore.userInfo?.pk || q.user === accountStore.userInfo.pk),
+    ),
+  )
   const pubQueries = computed(() => queries.value.filter(q => q.is_public))
 
   const fetchQueries = async (payload: { projectSlug?: string; targetType?: TargetType }) => {
     loading.value = true
     try {
-      const params = new URLSearchParams()
-      if (payload.projectSlug) params.append('project__slug', payload.projectSlug)
-      if (payload.targetType) params.append('target_type', payload.targetType)
+      const params: Record<string, string | number> = { limit: 200 }
+      if (payload.projectSlug) params.project__slug = payload.projectSlug
+      if (payload.targetType) params.target_type = payload.targetType
 
-      const res = await api.get(`/custom-query/?${params.toString()}`)
-      queries.value = res.data.results
+      const res = await api.get('/custom-query/', { params })
+      queries.value = res.data.results ?? res.data ?? []
     } catch (err: unknown) {
       errorHandle(err)
     } finally {
@@ -152,6 +195,7 @@ export const useInform = defineStore('inform', () => {
       return res.data
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
@@ -162,16 +206,28 @@ export const useInform = defineStore('inform', () => {
       return res.data
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
   const deleteQuery = async (pk: number) => {
     try {
       await api.delete(`/custom-query/${pk}/`)
-      message()
+      message('warning', '알림', '검색양식이 삭제되었습니다.')
+      return true
     } catch (err: unknown) {
       errorHandle(err)
+      return false
     }
+  }
+
+  const reset = () => {
+    news.value = null
+    newsList.value = []
+    newsCount.value = 0
+    newsComment.value = null
+    newsCommentList.value = []
+    queries.value = []
   }
 
   return {
@@ -206,5 +262,6 @@ export const useInform = defineStore('inform', () => {
     createQuery,
     updateQuery,
     deleteQuery,
+    reset,
   }
 })

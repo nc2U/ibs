@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { Link } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
@@ -14,22 +14,21 @@ const form = ref<{ links: Link[] }>({ links: [] })
 
 const formUpdate = () => nextTick(() => emit('links-update', form.value.links))
 
-const range = (from: number, to: number): number[] =>
-  from < to ? [from, ...range(from + 1, to)] : []
+let linkSlotSeq = 1
+const newLinkSlots = ref<{ id: number; value: string }[]>([{ id: linkSlotSeq++, value: '' }])
 
-const newLinkNum = ref(1)
-const newLinkRange = computed(() => range(0, newLinkNum.value))
-
-const ctlLinkNum = (n: number) => {
-  if (n + 1 >= newLinkNum.value) newLinkNum.value = newLinkNum.value + 1
-  else newLinkNum.value = newLinkNum.value - 1
+const ctlLinkNum = (idx: number) => {
+  if (idx + 1 >= newLinkSlots.value.length) {
+    newLinkSlots.value.push({ id: linkSlotSeq++, value: '' })
+  } else {
+    newLinkSlots.value.splice(idx, 1)
+  }
 }
 
-const newLinks = ref<Link[]>([])
 const newLinkPush = () => {
-  emit('new-link-push', newLinks.value)
-  newLinks.value = []
-  newLinkNum.value = 1
+  const validLinks = newLinkSlots.value.map(s => s.value.trim()).filter(Boolean)
+  emit('new-link-push', validLinks)
+  newLinkSlots.value = [{ id: linkSlotSeq++, value: '' }]
 }
 
 defineExpose({ newLinkPush })
@@ -55,7 +54,7 @@ onBeforeMount(() => dataSetup())
 
 <template>
   <CRow>
-    <CFormLabel for="title" class="col-form-label col-2 text-right">{{ label }}</CFormLabel>
+    <CFormLabel for="title" class="col-form-label col-2 text-end">{{ label }}</CFormLabel>
     <CCol class="col-sm-10 col-xl-8">
       <CRow v-if="(links as Link[]).length">
         <CAlert :color="AlertSecondary">
@@ -67,7 +66,7 @@ onBeforeMount(() => dataSetup())
                 size="sm"
                 placeholder="파일 링크"
               />
-              <CInputGroupText id="basic-addon1" class="py-0">
+              <CInputGroupText class="py-0">
                 <CFormCheck
                   :id="`del-link-${link.pk}`"
                   v-model="(form.links as Link[])[i].del"
@@ -81,12 +80,12 @@ onBeforeMount(() => dataSetup())
 
       <CRow class="mb-2">
         <CCol>
-          <CInputGroup v-for="lNum in newLinkRange" :key="`ln-${lNum}`" class="mb-2">
-            <CFormInput :id="`link-${lNum}`" v-model="newLinks[lNum]" placeholder="파일 링크" />
-            <CInputGroupText id="basic-addon1" @click="ctlLinkNum(lNum)">
+          <CInputGroup v-for="(slot, idx) in newLinkSlots" :key="`ln-${slot.id}`" class="mb-2">
+            <CFormInput :id="`link-${slot.id}`" v-model="slot.value" placeholder="파일 링크" />
+            <CInputGroupText class="pointer" @click="ctlLinkNum(idx)">
               <v-icon
-                :icon="`mdi-${lNum + 1 < newLinkNum ? 'minus' : 'plus'}-thick`"
-                :color="lNum + 1 < newLinkNum ? 'error' : 'primary'"
+                :icon="`mdi-${idx + 1 < newLinkSlots.length ? 'minus' : 'plus'}-thick`"
+                :color="idx + 1 < newLinkSlots.length ? 'error' : 'primary'"
               />
             </CInputGroupText>
           </CInputGroup>

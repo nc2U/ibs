@@ -117,22 +117,28 @@ const handleEventClick = (info: any) => {
 const renderEventContent = (eventInfo: any) => {
   const { type, status } = eventInfo.event.extendedProps
   if (type === 'meeting') {
-    return {
-      html: `
-        <div class="fc-event-main-frame d-flex align-items-center" style="overflow: hidden; text-overflow: ellipsis; padding: 1px 4px;">
-          <span class="fc-event-title" style="font-size: 0.85em; font-weight: 600; white-space: nowrap;">
-            📅 ${eventInfo.event.title}
-          </span>
-        </div>
-      `,
-    }
+    const frame = document.createElement('div')
+    frame.className = 'fc-event-main-frame d-flex align-items-center'
+    frame.style.overflow = 'hidden'
+    frame.style.textOverflow = 'ellipsis'
+    frame.style.padding = '1px 4px'
+
+    const span = document.createElement('span')
+    span.className = 'fc-event-title'
+    span.style.fontSize = '0.85em'
+    span.style.fontWeight = '600'
+    span.style.whiteSpace = 'nowrap'
+    span.textContent = `📅 ${eventInfo.event.title ?? ''}`
+
+    frame.appendChild(span)
+    return { domNodes: [frame] }
   }
 
   const { start, end, expected_duration } = eventInfo.event.extendedProps
   const today = getToday()
   const isStartToday = start === today
   const isEndToday = !!end && end === today
-  const isSameDayTask = expected_duration === '0'
+  const isSameDayTask = expected_duration === '1'
   const isClosed = !!status?.closed
 
   let icon = ''
@@ -152,20 +158,36 @@ const renderEventContent = (eventInfo: any) => {
     color = '#f87171'
   }
 
-  const titleStyle = isClosed ? 'text-decoration: line-through; opacity: 0.85;' : ''
+  const frame = document.createElement('div')
+  frame.className = 'fc-event-main-frame'
+  frame.style.overflow = 'hidden'
+  frame.style.textOverflow = 'ellipsis'
 
-  return {
-    html: `
-      <div class="fc-event-main-frame" style="overflow: hidden; text-overflow: ellipsis;">
-        <div class="fc-event-title-container">
-          <div class="fc-event-title fc-sticky" style="font-size: 0.85em; white-space: nowrap; ${titleStyle}">
-            ${icon ? `<i class="mdi ${icon}" style="color: ${color}; font-size: 12px; margin-right: 2px;"></i>` : ''}
-            ${eventInfo.event.title}
-          </div>
-        </div>
-      </div>
-    `,
+  const container = document.createElement('div')
+  container.className = 'fc-event-title-container'
+
+  const titleEl = document.createElement('div')
+  titleEl.className = 'fc-event-title fc-sticky'
+  titleEl.style.fontSize = '0.85em'
+  titleEl.style.whiteSpace = 'nowrap'
+  if (isClosed) {
+    titleEl.style.textDecoration = 'line-through'
+    titleEl.style.opacity = '0.85'
   }
+
+  if (icon) {
+    const iconEl = document.createElement('i')
+    iconEl.className = `mdi ${icon}`
+    iconEl.style.color = color
+    iconEl.style.fontSize = '12px'
+    iconEl.style.marginRight = '2px'
+    titleEl.appendChild(iconEl)
+  }
+
+  titleEl.appendChild(document.createTextNode(String(eventInfo.event.title ?? '')))
+  container.appendChild(titleEl)
+  frame.appendChild(container)
+  return { domNodes: [frame] }
 }
 
 // 캘린더의 현재 조회 범위를 기록해두고 외부 필터에서 쓸 수 있도록 노출
@@ -209,7 +231,7 @@ defineExpose({ calendarOptions, currentRange })
 </script>
 
 <template>
-  <FullCalendar :key="`${canCalendarRead}-${isDark}`" :options="calendarOptions" />
+  <FullCalendar :key="String(canCalendarRead)" :options="calendarOptions" />
 </template>
 
 <style lang="scss" scoped>

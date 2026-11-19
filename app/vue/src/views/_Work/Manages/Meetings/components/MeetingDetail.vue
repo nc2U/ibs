@@ -7,7 +7,7 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
 import { diffDate, elapsedTime, timeFormat, getMeetingStatusColor } from '@/utils/baseMixins'
-import { markdownRender } from '@/utils/helper'
+import { markdownRender, sanitizeExternalUrl } from '@/utils/helper'
 import { markNotificationReadByTarget } from '@/utils/notification'
 import type { SimpleIssueInMeeting } from '@/store/types/work_meeting'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -74,18 +74,27 @@ const isProjectActive = computed(() => {
 })
 
 const { can, canViewUser, PERM } = usePerms()
-const canIssueCreate = computed(() => isProjectActive.value && can(PERM.ISSUE_CREATE))
+const meetingSlug = computed(() => meeting.value?.project_desc?.slug)
+const canIssueCreate = computed(
+  () => isProjectActive.value && can(PERM.ISSUE_CREATE, meetingSlug.value),
+)
 const canMeetingUpdate = computed(() => {
   if (!isProjectActive.value) return false
   if (meeting.value) {
-    if (meeting.value.is_confirmed) return can(PERM.MEETING_EDIT_CONFIRMED)
-    if (can(PERM.MEETING_UPDATE)) return true
-    if (can(PERM.MEETING_OWN_UPDATE)) return isCreator.value || isAttendee.value
+    if (meeting.value.is_confirmed) return can(PERM.MEETING_EDIT_CONFIRMED, meetingSlug.value)
+    if (can(PERM.MEETING_UPDATE, meetingSlug.value)) return true
+    if (can(PERM.MEETING_OWN_UPDATE, meetingSlug.value)) return isCreator.value || isAttendee.value
   }
   return false
 })
-const canMeetingConfirm = computed(() => isProjectActive.value && can(PERM.MEETING_CONFIRM))
-const canMeetingDelete = computed(() => isProjectActive.value && can(PERM.MEETING_DELETE))
+const canMeetingConfirm = computed(
+  () => isProjectActive.value && can(PERM.MEETING_CONFIRM, meetingSlug.value),
+)
+const canMeetingDelete = computed(() => {
+  if (!isProjectActive.value || !meeting.value) return false
+  if (meeting.value.is_confirmed) return can(PERM.MEETING_EDIT_CONFIRMED, meetingSlug.value)
+  return can(PERM.MEETING_DELETE, meetingSlug.value)
+})
 
 const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)
@@ -109,7 +118,7 @@ const confirmAlertColor = computed(() => {
 
   const diff = diffDate(meetingDate)
 
-  return diff > 10 ? 'danger' : 'warning'
+  return diff > 10 ? 'error' : 'warning'
 })
 
 const completedIssues = computed(() => meeting.value?.issues.filter(i => i.closed).length ?? 0)
@@ -198,9 +207,12 @@ const parsedActionItems = computed<ParsedActionItem[]>(() => {
     let dueDate: string | undefined = undefined
 
     const assigneeMatch =
-      text.match(/\((?:담당(?:자)?|담당자명)\s*:\s*([^/,\)]+)\)/i) ||
+      text.match(/(?:담당(?:자)?|담당자명)\s*:\s*([^/,\)\n]+)/i) ||
       text.match(/@([a-zA-Z0-9가-힣]+)/)
-    if (assigneeMatch) assignedName = assigneeMatch[1].trim()
+    if (assigneeMatch) {
+      const candidate = assigneeMatch[1].trim()
+      if (candidate) assignedName = candidate
+    }
 
     const dateMatch =
       text.match(/(?:기한|마감|완료|일자)\s*:\s*(\d{4}[-.]\d{2}[-.]\d{2})/i) ||
@@ -312,7 +324,9 @@ const createRelatedIssue = async (payload: any) => {
 const deleteMeeting = async () => {
   if (meeting.value) {
     const projId = meeting.value.project_desc?.slug || (route.params.projId as string)
-    await meetingStore.deleteMeeting(meeting.value.pk, projId)
+    const deleted = await meetingStore.deleteMeeting(meeting.value.pk, projId)
+    if (!deleted) return
+    refConfirmModal.value?.close()
     if (projId) {
       await router.push({ name: '(회의)', params: { projId } })
     } else {
@@ -451,7 +465,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
         <CRow>
           <CCol md="6">
             <CRow class="mb-2">
-              <CCol class="title" sm="4">프로젝트 :</CCol>
+              <CCol class="title" sm="4">워크스페이스 :</CCol>
               <CCol sm="8">{{ meeting.project_desc?.name || '회사 본사' }}</CCol>
             </CRow>
             <CRow class="mb-2">
@@ -562,7 +576,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.agenda" class="mb-5">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="me-1" />
+            <v-icon icon="mdi-bullseye-arrow" color="primary" size="small" class="me-1" />
             회의 의제
           </h6>
           <div
@@ -573,7 +587,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
         <div v-if="meeting.content" class="mb-5">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-text-box-outline" color="text-primary" size="small" class="me-1" />
+            <v-icon icon="mdi-text-box-outline" color="primary" size="small" class="me-1" />
             회의 내용
           </h6>
           <div
@@ -717,10 +731,8 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
             <FileDisplay
               v-for="file in meeting.files"
               :key="file.pk"
-              :file="{
-                ...file,
-                creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
-              }"
+              :file="file"
+              :can-delete="canMeetingUpdate"
               @delete-file="deleteFile(file.pk)"
             />
           </CRow>
@@ -733,7 +745,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
           </h6>
           <ul class="ps-4 mb-0">
             <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
-              <a :href="link.link" target="_blank" rel="noopener noreferrer">
+              <a :href="sanitizeExternalUrl(link.link)" target="_blank" rel="noopener noreferrer">
                 {{ link.name ? link.name : link.link }}
               </a>
             </li>
@@ -822,20 +834,8 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
         >
           {{ meeting.is_confirmed ? '확정취소' : '회의확정' }}
         </v-btn>
-        <v-btn
-          v-if="canMeetingUpdate"
-          color="success"
-          @click="goEdit"
-          :disabled="meeting.is_confirmed"
-        >
-          수정
-        </v-btn>
-        <v-btn
-          v-if="canMeetingDelete"
-          color="warning"
-          @click="refConfirmModal?.callModal()"
-          :disabled="meeting.is_confirmed"
-        >
+        <v-btn v-if="canMeetingUpdate" color="success" @click="goEdit"> 수정 </v-btn>
+        <v-btn v-if="canMeetingDelete" color="warning" @click="refConfirmModal?.callModal()">
           삭제
         </v-btn>
         <v-btn color="light" @click="goList" flat> 목록으로 </v-btn>

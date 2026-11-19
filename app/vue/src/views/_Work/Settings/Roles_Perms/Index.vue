@@ -19,6 +19,7 @@ const route = useRoute()
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
+const superAuth = computed(() => !!accStore.superAuth)
 
 const workStore = useWork()
 const { roleList, groupedPermissions } = storeToRefs(workStore)
@@ -39,13 +40,17 @@ const maxOrder = computed(() => {
   return normalRoles.length ? Math.max(...normalRoles.map(r => r.order)) : 0
 })
 
+const CATEGORY_RANK: Record<string, number> = {
+  work_space: 0,
+  ibs_hq_manage: 1,
+  ibs_pr_manage: 2,
+}
+
 const sortedRoleList = computed(() => {
   return [...roleList.value].sort((a, b) => {
-    const catA = a.category || 'work_space'
-    const catB = b.category || 'work_space'
-    if (catA !== catB) {
-      return catA === 'work_space' ? -1 : 1
-    }
+    const rankA = CATEGORY_RANK[a.category || 'work_space'] ?? 99
+    const rankB = CATEGORY_RANK[b.category || 'work_space'] ?? 99
+    if (rankA !== rankB) return rankA - rankB
     return a.order - b.order
   })
 })
@@ -67,8 +72,8 @@ const deleteRole = (pk: number) => {
 
 const roleDelete = async () => {
   if (pkToDelete.value) {
-    await workStore.deleteRole(pkToDelete.value)
-    refConfirmModal.value?.close()
+    const ok = await workStore.deleteRole(pkToDelete.value)
+    if (ok) refConfirmModal.value?.close()
   }
 }
 
@@ -98,7 +103,7 @@ onBeforeMount(async () => {
 
         <CCol class="text-end">
           <span v-if="workManager" class="me-2 form-text">
-            <TextButton name="새 역할" @click="showRoleModal" />
+            <TextButton name="새 역할" @click="showRoleModal(null)" />
           </span>
         </CCol>
       </CRow>
@@ -120,8 +125,9 @@ onBeforeMount(async () => {
 
           <div v-if="activeTab === 0">
             <RoleList
-              :role-list="roleList"
+              :role-list="sortedRoleList"
               :work-manager="!!workManager"
+              :super-auth="superAuth"
               @show-modal="showRoleModal"
               @delete-role="deleteRole"
             />
@@ -131,6 +137,7 @@ onBeforeMount(async () => {
             <PermissionReport
               :role-list="sortedRoleList"
               :work-manager="!!workManager"
+              :super-auth="superAuth"
               :grouped-permissions="groupedPermissions"
             />
           </div>
@@ -142,6 +149,7 @@ onBeforeMount(async () => {
         :role="selectedRole"
         :max-order="maxOrder"
         :work-manager="!!workManager"
+        :super-auth="superAuth"
         @close="roleModal = false"
       />
 

@@ -3,12 +3,25 @@ import { computed, type PropType } from 'vue'
 import type { Docs } from '@/store/types/docs'
 import { usePerms } from '@/composables/usePerms'
 import { cutString, timeFormat } from '@/utils/baseMixins'
-import DOMPurify from 'dompurify'
 
-defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
+const props = defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 
 const { can, PERM } = usePerms()
-const canDocsRead = computed(() => can(PERM.DOCS_READ))
+const canDocsRead = computed(() => can(PERM.DOCS_READ, props.docs.project?.slug))
+
+const plainDescription = computed(() => {
+  const raw = props.docs.description ?? ''
+  if (!raw) return ''
+  return cutString(
+    raw
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/[#*_`~>\[\]()]/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+    60,
+  )
+})
 </script>
 
 <template>
@@ -30,8 +43,8 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
           <v-icon
             v-if="docs.is_pinned"
             icon="mdi-pin"
-            color="danger"
-            class="mr-2 rotate-45"
+            color="error"
+            class="me-2 rotate-45"
             size="small"
           />
           <v-tooltip
@@ -45,7 +58,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
                 :icon="docs.is_blind ? 'mdi-eye-off' : 'mdi-lock-outline'"
                 :color="docs.is_blind ? 'error' : 'warning'"
                 size="small"
-                class="mr-2"
+                class="me-2"
               />
             </template>
           </v-tooltip>
@@ -53,14 +66,14 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             v-else-if="!docs.is_pinned"
             icon="mdi-text-box-plus-outline"
             color="blue-grey-lighten-3"
-            class="mr-2"
+            class="me-2"
           />
 
-          <span class="mr-2 text-grey"> [{{ docs.project?.name }}] </span>
-          <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
+          <span class="me-2 text-grey"> [{{ docs.project?.name }}] </span>
+          <span v-if="docs.cate_name" class="me-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
           </span>
-          <span class="d-flex align-center text-primary font-weight-semibold">
+          <span class="d-flex align-center text-primary fw-semibold">
             {{ cutString(docs.title, 38) }}
           </span>
           <v-chip
@@ -88,9 +101,9 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
           {{ timeFormat(docs.created as string, 'min', '/') }}
         </CCol>
       </CRow>
-      <CRow v-if="docs.description" class="mt-2">
+      <CRow v-if="plainDescription" class="mt-2">
         <CCol class="text-body-2 text-muted">
-          <div v-html="DOMPurify.sanitize(cutString(docs.description, 60))" />
+          <div>{{ plainDescription }}</div>
         </CCol>
       </CRow>
     </v-card-text>

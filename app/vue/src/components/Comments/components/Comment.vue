@@ -80,7 +80,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
   <li class="text-muted" :id="`comment_${comment.pk}`">
     <strong>
       <router-link
-        v-if="canViewUser(userInfo?.pk)"
+        v-if="canViewUser(comment?.creator?.pk)"
         :to="{ name: '사용자 - 보기', params: { userId: comment?.creator?.pk } }"
         class="text-decoration-none text-muted"
       >
@@ -88,14 +88,14 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       </router-link>
       <span v-else>{{ comment?.creator?.username }}</span>
     </strong>
-    <small class="ml-2">
-      <v-icon icon="mdi-clock-time-four-outline" size="sm" />
+    <small class="ms-2">
+      <v-icon icon="mdi-clock-time-four-outline" size="small" />
       {{ elapsedTime(comment?.created ?? '') }}
     </small>
-    <small class="ml-3 text-btn" @click="toLike">
+    <small class="ms-3 text-btn" @click="toLike">
       <v-icon
         :icon="comment.my_like ? 'mdi-heart' : 'mdi-heart-outline'"
-        size="sm"
+        size="small"
         class="icon-btn"
       />
       <v-tooltip activator="parent" location="top">
@@ -104,10 +104,10 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       {{ comment?.like ?? 0 }}
     </small>
 
-    <small class="ml-3 text-btn" @click="blameConfirm">
+    <small class="ms-3 text-btn" @click="blameConfirm">
       <v-icon
         :icon="comment.my_blame ? 'mdi-bell' : 'mdi-bell-outline'"
-        size="xs"
+        size="x-small"
         class="icon-btn"
       />
       <!--      신고-->
@@ -117,19 +117,19 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       {{ comment.blame ?? 0 }}
     </small>
 
-    <small v-if="!lastDepth" class="ml-3 text-btn" @click="toReply">
+    <small v-if="!lastDepth && can(PERM.FORUM_CREATE)" class="ms-3 text-btn" @click="toReply">
       {{ !isReplying ? '답글' : '취소' }}
     </small>
     <template v-if="!comment.replies?.length && (canCommentUpdate || canCommentDelete)">
       <!--    해당 작성글/관리자 권한이고 댓글에 대댓글이 없을 경우 수정/삭제 활성-->
-      <small v-if="canCommentUpdate" class="ml-1 text-btn" @click="toModify">
+      <small v-if="canCommentUpdate" class="ms-1 text-btn" @click="toModify">
         {{ !isEditing ? '수정' : '취소' }}
       </small>
-      <small v-if="canCommentDelete" class="ml-1 text-btn" @click="toDelete">삭제</small>
+      <small v-if="canCommentDelete" class="ms-1 text-btn" @click="toDelete">삭제</small>
     </template>
 
     <p v-if="!(formShow && isEditing)" class="mt-1 p-1">
-      <v-chip v-if="comment.secret" color="error" variant="flat" size="x-small" class="mr-2">
+      <v-chip v-if="comment.secret" color="error" variant="flat" size="x-small" class="me-2">
         비밀글
       </v-chip>
       <span

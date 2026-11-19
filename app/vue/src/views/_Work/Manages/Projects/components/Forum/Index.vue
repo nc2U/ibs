@@ -35,7 +35,7 @@ const forumStore = useForum()
 const forum = computed(() => forumStore.forum)
 
 const isForumManager = computed(() => {
-  if (accStore.userInfo?.is_superuser) return true
+  if (accStore.userInfo?.is_superuser || accStore.workManager) return true
   if (!forum.value || !forum.value.manager) return false
   return (forum.value.manager as number[]).includes(accStore.userInfo?.pk ?? 0)
 })
@@ -59,7 +59,7 @@ const heatedPage = ref<number[]>([])
 
 const fetchPostData = async (pk: number) => {
   await forumStore.fetchPost(pk)
-  if (!heatedPage.value.includes(pk)) {
+  if (route.name === '(게시판) - 게시물 보기' && !heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
     await forumStore.hitPost(pk)
   }
@@ -75,16 +75,21 @@ const onDeletePost = (pk: number) => {
 
 const deletePostConfirm = async () => {
   if (delPk.value) {
-    await forumStore.deletePost(delPk.value, {
-      forum: Number(route.params.forumId),
-      page: page.value,
-    })
+    const ok = await forumStore.deletePost(
+      delPk.value,
+      {
+        forum: Number(route.params.forumId),
+        page: page.value,
+      },
+      route.params.projId as string,
+    )
+    if (!ok) return
+    refConfirmModal.value?.close()
     await router.replace({
       name: '(게시판) - 보기',
       params: { projId: route.params.projId, forumId: route.params.forumId },
     })
   }
-  refConfirmModal.value?.close()
 }
 
 const onLikePost = (pk: number) => forumStore.patchPostLike(pk)
@@ -97,6 +102,7 @@ const dataSetup = async () => {
     const forumId = route.params.forumId ? Number(route.params.forumId) : null
     const postId = route.params.postId ? Number(route.params.postId) : null
 
+    forumStore.clearForumViewState()
     if (projId) {
       await forumStore.fetchForumList({ project: projId })
       if (forumId) {
@@ -179,7 +185,10 @@ onBeforeMount(async () => {
             icon="mdi-pencil-plus"
             :to="{
               name: '(게시판) - 게시물 작성',
-              params: { forumId: forum?.pk },
+              params: {
+                projId: route.params.projId,
+                forumId: forum?.pk || Number(route.params.forumId),
+              },
             }"
           />
         </CCol>
@@ -230,7 +239,7 @@ onBeforeMount(async () => {
           <v-divider class="mt-0" />
           <ul v-if="postList.length" class="list-unstyled aside-menu mb-4">
             <li v-for="p in postList.slice(0, 5)" :key="p.pk" class="mb-2 text-truncate">
-              <v-icon icon="mdi-comment-text-outline" size="x-small" class="mr-1" />
+              <v-icon icon="mdi-comment-text-outline" size="x-small" class="me-1" />
               <router-link
                 v-if="canForumRead"
                 :to="{
@@ -246,7 +255,7 @@ onBeforeMount(async () => {
                 {{ p.title }}
               </router-link>
               <span v-else>{{ p.title }}</span>
-              <span v-if="p.comments?.length" class="ml-2 text-grey">
+              <span v-if="p.comments?.length" class="ms-2 text-grey">
                 ({{ p.comments.length }})
               </span>
             </li>
@@ -261,13 +270,13 @@ onBeforeMount(async () => {
           <v-divider class="mt-0" />
           <ul v-if="canForumManage" class="list-unstyled aside-menu">
             <li class="mb-2">
-              <v-icon icon="mdi-view-dashboard-outline" size="small" class="mr-2" />
+              <v-icon icon="mdi-view-dashboard-outline" size="small" class="me-2" />
               <router-link :to="{ name: '(개요)', params: { projId: route.params.projId } }">
-                프로젝트 개요
+                워크스페이스 개요
               </router-link>
             </li>
             <li v-if="canForumManage" class="mb-2">
-              <v-icon icon="mdi-cog-outline" size="small" class="mr-2" />
+              <v-icon icon="mdi-cog-outline" size="small" class="me-2" />
               <router-link
                 :to="{
                   name: '(설정)',
@@ -280,7 +289,7 @@ onBeforeMount(async () => {
             </li>
             <li>
               <span class="text-muted">
-                <v-icon icon="mdi-trash-can-outline" size="small" class="mr-2 text-muted" />
+                <v-icon icon="mdi-trash-can-outline" size="small" class="me-2 text-muted" />
                 휴지통 (준비 중)
               </span>
             </li>

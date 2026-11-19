@@ -27,9 +27,19 @@ const createCategory = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    emit('create-category', { ...nCategory.value })
-    resetForm()
-    emit('close')
+    emit(
+      'create-category',
+      {
+        name: nCategory.value.name,
+        assigned_to: nCategory.value.assigned_to || null,
+      },
+      (ok: boolean) => {
+        if (ok) {
+          resetForm()
+          emit('close')
+        }
+      },
+    )
   }
 }
 

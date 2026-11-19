@@ -7,7 +7,7 @@ import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/doc
 import { useCompany } from '@/store/pinia/company'
 import { usePerms } from '@/composables/usePerms'
 import type { Company } from '@/store/types/settings'
-import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
+import type { Docs, SuitCase } from '@/store/types/docs'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import DocsList from './components/DocsList.vue'
@@ -39,11 +39,21 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 const router = useRouter()
 const workStore = useWork()
-const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.document))
-
 const { can, PERM } = usePerms()
-const canDocsRead = computed(() => can(PERM.DOCS_READ))
-const canDocsCreate = computed(() => myProjects.value.length > 0 && can(PERM.DOCS_CREATE))
+const myProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(
+    pjt => pjt.module?.document && can(PERM.DOCS_CREATE, pjt.slug),
+  ),
+)
+const readableProjects = computed(() =>
+  workStore.getAllReadableProjects.filter(pjt => pjt.module?.document),
+)
+const canDocsRead = computed(
+  () =>
+    can(PERM.DOCS_READ) ||
+    workStore.allReadableProjectsFlat.some(p => p.is_public && p.module?.document),
+)
+const canDocsCreate = computed(() => myProjects.value.length > 0)
 
 const viewForm = ref(false)
 
@@ -91,33 +101,12 @@ const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitC
 const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
 const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
 const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
-const fetchLink = (pk: number) => docStore.fetchLink(pk)
-const fetchFile = (pk: number) => docStore.fetchFile(pk)
-const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
-const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
-
 const linkHit = async (pk: number) => {
-  try {
-    const link = (await fetchLink(pk)) as Link
-    if (link) {
-      link.hit = ((link.hit as number) || 0) + 1
-      await patchLink(pk, link)
-    }
-  } catch (e) {
-    console.warn('Failed to update link hit count:', e)
-  }
+  await docStore.hitLink(pk)
 }
 
 const fileHit = async (pk: number) => {
-  try {
-    const file = (await fetchFile(pk)) as AFile
-    if (file) {
-      const hit = ((file.hit as number) || 0) + 1
-      await patchFile(pk, { hit })
-    }
-  } catch (e) {
-    console.warn('Failed to update file hit count:', e)
-  }
+  await docStore.hitFile(pk)
 }
 
 const casesRenewal = (page: number) => {
@@ -140,6 +129,8 @@ const getDocsList = (target: unknown) => {
     }
     docsFilter.value.page = 1
     docsFilter.value.doc_type = target as number
+    docsFilter.value.category = ''
+    docsFilter.value.lawsuit = ''
     fetchCategoryList(target as 1 | 2)
     fetchDocsList(docsFilter.value)
   }
@@ -235,6 +226,7 @@ const onCaseDelete = async (pk: number) => {
 const loading = ref<boolean>(true)
 const initData = async () => {
   loading.value = true
+  workStore.removeIssueProject()
   try {
     await workStore.fetchAllProjectList()
     await fetchAllSuitCaseList({ company: company.value?.pk ?? '' })
@@ -443,6 +435,7 @@ watch(
           />
 
           <DocsList
+            :page="docsFilter.page || 1"
             :category="docsFilter.category as number"
             :category-list="categoryList"
             :docs-list="docsList"
@@ -453,24 +446,30 @@ watch(
       </template>
 
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
-        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        <v-icon icon="mdi-alert-circle" class="me-2" />
         문서를 조회할 수 있는 권한이 없습니다.
       </v-alert>
     </template>
 
     <template v-slot:aside>
       <DocsListAside
-        :my-projects="myProjects"
+        :my-projects="readableProjects"
         :type-number="isSuitCase ? 3 : typeNumber"
         :category-list="categoryList"
         :suit-case-options="getSuitCase"
         :filter="docsFilter"
         :case-filter="caseFilter"
         @select-cate="selectCate"
-        @search="fetchDocsList(docsFilter)"
+        @search="
+          $event ? (docsFilter = { ...$event, page: 1 }) : (docsFilter.page = 1);
+          fetchDocsList(docsFilter)
+        "
         @update:filter="docsFilter = $event"
         @update:caseFilter="caseFilter = $event"
-        @case-search="fetchSuitCaseList(caseFilter)"
+        @case-search="
+          $event ? (caseFilter = { ...$event, page: 1 }) : (caseFilter.page = 1);
+          fetchSuitCaseList(caseFilter)
+        "
         @case-reset="caseReset"
       />
     </template>

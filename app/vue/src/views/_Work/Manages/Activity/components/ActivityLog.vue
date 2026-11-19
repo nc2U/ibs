@@ -89,7 +89,7 @@ const getTargetRoute = (act: ActLogEntry) => {
       name: '(업무) - 보기',
       params: { projId: act.project.slug, issueId: act.parent_id },
       query: { tap: 2 },
-      hash: `#note-${act.target_id}`,
+      hash: `#comment-${act.target_id}`,
     }
   } else if (act.sort === '3') {
     return { name: '(회의) - 보기', params: { projId: act.project.slug, meetingId: act.target_id } }
@@ -117,13 +117,13 @@ const getTargetRoute = (act: ActLogEntry) => {
         </span>
       </CAlert>
 
-      <CRow v-for="({ act, inGroup }, i) in sortedActivityEvents" :key="act.pk" class="pl-3">
-        <CCol :class="{ 'ml-4': inGroup }">
+      <CRow v-for="{ act, inGroup } in sortedActivityEvents" :key="act.pk" class="ps-3">
+        <CCol :class="{ 'ms-4': inGroup }">
           <v-icon
             v-if="inGroup"
             icon="mdi-subdirectory-arrow-right"
             size="13"
-            class="mr-1 text-medium-emphasis"
+            class="me-1 text-medium-emphasis"
           />
           <v-icon
             :icon="getIcon(act.sort, act.status_log === '종료' || act.status_log === '완료')"
@@ -134,9 +134,9 @@ const getTargetRoute = (act: ActLogEntry) => {
                 ? 'success'
                 : 'brown-lighten-3'
             "
-            class="mr-1"
+            class="me-1"
           />
-          <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, 'short') }}</span>
+          <span class="form-text underline me-2">{{ timeFormat(act.timestamp, 'short') }}</span>
 
           <span v-if="!$route.params.projId || act.project?.slug !== $route.params.projId">
             {{ act.project?.name || '회사 본사' }} -
@@ -147,11 +147,11 @@ const getTargetRoute = (act: ActLogEntry) => {
           </router-link>
           <span v-else>{{ act.title || act.summary || '(제목 없음)' }}</span>
 
-          <div v-if="act.summary" class="ml-5 pl-4 fst-italic form-text">
+          <div v-if="act.summary" class="ms-5 ps-4 fst-italic form-text">
             <div v-html="markdownRender(cutString(act.summary, 113))" class="form-text" />
           </div>
 
-          <div v-if="act.creator" class="form-text ml-5 pl-2">
+          <div v-if="act.creator" class="form-text ms-5 ps-2">
             <router-link
               v-if="canViewUser(act.creator.pk)"
               :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"

@@ -49,21 +49,21 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
         @update:model-value="onViewModeChange"
       >
         <v-btn value="list" size="x-small" title="목록 뷰" class="text-muted">
-          <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
+          <v-icon icon="mdi-format-list-bulleted" size="14" class="me-1" /> 목록
         </v-btn>
         <v-btn value="gantt" size="x-small" title="타임라인 뷰" class="text-muted">
-          <v-icon icon="mdi-chart-gantt" size="14" class="mr-1" /> 타임라인
+          <v-icon icon="mdi-chart-gantt" size="14" class="me-1" /> 타임라인
         </v-btn>
       </v-btn-toggle>
 
-      <span v-if="canManageVersions" class="mr-2 form-text">
+      <span v-if="canManageVersions" class="me-2 form-text">
         <TextButton
           name="새 단계"
           :to="{ name: '(로드맵) - 추가', params: { projId: route.params.projId } }"
         />
       </span>
 
-      <span>
+      <span v-if="canManageVersions && route.params.projId">
         <CDropdown color="secondary" variant="input-group" placement="bottom-end">
           <CDropdownToggle
             :caret="false"
@@ -77,7 +77,6 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem
-              v-if="route.params.projId"
               class="form-text"
               @click="
                 router.push({
@@ -88,7 +87,7 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
               "
             >
               <span class="text-primary">
-                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />
+                <v-icon icon="mdi-cog" color="secondary" size="small" class="me-1" />
                 설정
               </span>
             </CDropdownItem>

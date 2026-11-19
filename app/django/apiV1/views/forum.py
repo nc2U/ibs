@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import permissions
 from apiV1.permissions.work_perms import ForumPermission
 from forum.models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
@@ -21,6 +22,7 @@ class ForumViewSet(viewsets.ModelViewSet):
     queryset = Forum.objects.all()
     serializer_class = ForumSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project__slug', 'search_able', 'manager_only', 'manager')
 
     @property
@@ -65,6 +67,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = PostCategory.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
+    pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('forum', 'parent', 'is_manager_only')
 
     @property
@@ -103,6 +106,7 @@ class PostViewSet(viewsets.ModelViewSet):
     ).prefetch_related('files', 'forum__manager')
     serializer_class = PostSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
+    pagination_class = PageNumberPaginationTwenty
     filterset_class = PostFilterSet
     search_fields = ('title', 'content', 'files__file', 'creator__username')
 

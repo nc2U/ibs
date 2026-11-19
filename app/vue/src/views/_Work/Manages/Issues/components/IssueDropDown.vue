@@ -27,9 +27,10 @@ const workStore = useWork()
 const { can, PERM } = usePerms()
 
 // 프로젝트 닫힘 여부 및 내 권한 연동 연산 추가
+const projSlug = computed(() => props.issue?.project?.slug)
 const isProjectClosed = computed(() => props.issue?.project?.status !== '1')
 
-const issueCreator = computed(() => (props.issue as any).creator?.pk ?? null)
+const issueCreator = computed(() => (props.issue as Issue | SubIssue).creator?.pk ?? null)
 const issueAssignee = computed(() => {
   const assigned = props.issue.assigned_to
   if (!assigned) return null
@@ -40,11 +41,16 @@ const isAssignee = computed(() => issueAssignee.value === userInfo.value?.pk)
 
 const canEditIssue = computed(() => {
   if (isProjectClosed.value) return false
-  if (can(PERM.ISSUE_UPDATE)) return true
-  return can(PERM.ISSUE_OWN_UPDATE) && (isCreator.value || isAssignee.value)
+  if (can(PERM.ISSUE_UPDATE, projSlug.value)) return true
+  return can(PERM.ISSUE_OWN_UPDATE, projSlug.value) && (isCreator.value || isAssignee.value)
 })
 
-const canCreateSubIssue = computed(() => can(PERM.ISSUE_CREATE) && !isProjectClosed.value)
+const canCreateSubIssue = computed(
+  () =>
+    can(PERM.ISSUE_CREATE, projSlug.value) &&
+    can(PERM.ISSUE_SUB_MANAGE, projSlug.value) &&
+    !isProjectClosed.value,
+)
 
 const issueStore = useIssue()
 const statusList = computed(() => issueStore.statusList)
@@ -63,10 +69,17 @@ const watchControl = () => {
   issueStore.watchIssue(props.issue?.pk)
 }
 
+const currentStatusPk = computed(() => {
+  if (typeof props.issue.status === 'object' && props.issue.status !== null) {
+    return props.issue.status.pk
+  }
+  const subStatusPk = (props.issue as SubIssue).status_pk
+  if (subStatusPk !== undefined) return subStatusPk
+  return statusList.value.find(s => s.name === props.issue.status)?.pk ?? null
+})
+
 const changeStatus = (statusPk: number) => {
-  const currentStatusPk =
-    typeof props.issue.status === 'object' ? props.issue.status.pk : props.issue.status
-  if (currentStatusPk !== statusPk) {
+  if (currentStatusPk.value !== statusPk) {
     issueStore.patchIssue(props.issue.pk, { status: statusPk })
   }
 }
@@ -106,8 +119,8 @@ const fetchMembersOnDemand = async (visible: boolean) => {
       await workStore.fetchProjectMembers(slug)
       members.value = workStore.projectMembers
       loadedProjSlug.value = slug
-    } catch (err: any) {
-      errorHandle(err.response?.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     } finally {
       loadingMembers.value = false
     }
@@ -144,14 +157,16 @@ const toggleWatcher = (userPk: number) => {
   if (isWatcherMember(userPk)) {
     issueStore.patchIssue(props.issue.pk, { del_watcher: userPk })
   } else {
-    issueStore.patchIssue(props.issue.pk, { watchers: [userPk] })
+    issueStore.patchIssue(props.issue.pk, { add_watchers: [userPk] })
   }
 }
 
 // 복사, 링크복사, 삭제 권한 정의
-const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && !isProjectClosed.value)
+const showCopyButton = computed(
+  () => can(PERM.ISSUE_COPY, projSlug.value) && !isProjectClosed.value,
+)
 const showDeleteButton = computed(
-  () => props.isDelete && can(PERM.ISSUE_DELETE) && !isProjectClosed.value,
+  () => props.isDelete && can(PERM.ISSUE_DELETE, projSlug.value) && !isProjectClosed.value,
 )
 
 // 링크 복사 기능
@@ -263,9 +278,7 @@ const confirmDelete = async () => {
               <v-list-item
                 v-for="status in statusList"
                 :key="status.pk"
-                :active="
-                  (typeof issue.status === 'object' ? issue.status.pk : issue.status) === status.pk
-                "
+                :active="currentStatusPk === status.pk"
                 min-height="30px"
                 min-width="150px"
                 class="py-0"

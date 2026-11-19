@@ -170,10 +170,9 @@ export const useIssueFilter = defineStore('issueFilter', () => {
       project_status: '1',
     }
 
-    // 기본 프로젝트 조회 세팅
-    const projSlug = currentProjectSlug || form.value.project
-    if (projSlug) {
-      filterData.project__slug = projSlug
+    // 기본 프로젝트 조회 세팅 (전역에서 project 필터 해제 시 sticky 방지)
+    if (currentProjectSlug) {
+      filterData.project__slug = currentProjectSlug
     }
 
     // 1. 상태(status) 필터링
@@ -225,6 +224,8 @@ export const useIssueFilter = defineStore('issueFilter', () => {
           } else {
             filterData.project__search = form.value.project
           }
+        } else if (key === 'issue') {
+          filterData.id = form.value.id
         } else if (key === 'is_private') {
           filterData.is_private = true
         } else {
@@ -240,6 +241,7 @@ export const useIssueFilter = defineStore('issueFilter', () => {
             delete filterData.project__slug
           } else if (form.value.project === 'closed') {
             filterData.project_status__exclude = '2'
+            delete filterData.project_status
             delete filterData.project__slug
           } else {
             filterData.project__exclude = form.value.project
@@ -248,14 +250,24 @@ export const useIssueFilter = defineStore('issueFilter', () => {
         } else if (key === 'is_private') {
           filterData.is_private = false
         } else {
-          filterData[`${fieldKey}__exclude`] = val
+          const exclRaw = form.value[`${fieldKey}__exclude`]
+          const exclVal =
+            exclRaw !== undefined && exclRaw !== null && exclRaw !== '' ? exclRaw : val
+          if (key === 'project_status' && exclVal !== undefined && exclVal !== null && exclVal !== '') {
+            delete filterData.project_status
+          }
+          filterData[`${fieldKey}__exclude`] = exclVal
         }
       } else if (operator === 'none') {
         filterData[`${fieldKey}__isnull`] = '1'
       } else if (operator === 'any') {
         filterData[`${fieldKey}__isnull`] = '0'
       } else if (operator === 'contains') {
-        filterData[fieldKey] = val
+        if (fieldKey === 'parent_issue' || fieldKey === 'parent') {
+          filterData[`${fieldKey}__contains`] = form.value[`${fieldKey}__contains`] || val
+        } else {
+          filterData[fieldKey] = val
+        }
       } else if (operator === 'gte') {
         if (key === 'issue') filterData.id__gte = form.value.id__gte
         else filterData[`${fieldKey}__gte`] = form.value[`${fieldKey}__gte`]
@@ -266,23 +278,26 @@ export const useIssueFilter = defineStore('issueFilter', () => {
         let min = ''
         let max = ''
         if (key === 'issue') {
-          min = form.value.id__between_min !== null ? String(form.value.id__between_min) : ''
-          max = form.value.id__between_max !== null ? String(form.value.id__between_max) : ''
+          const rawIdMin = form.value.id__between_min as number | string | null | undefined
+          const rawIdMax = form.value.id__between_max as number | string | null | undefined
+          min =
+            rawIdMin !== null && rawIdMin !== undefined && String(rawIdMin) !== ''
+              ? String(rawIdMin)
+              : ''
+          max =
+            rawIdMax !== null && rawIdMax !== undefined && String(rawIdMax) !== ''
+              ? String(rawIdMax)
+              : ''
           if (min || max) filterData.id__between = `${min},${max}`
         } else {
-          min = form.value[`${fieldKey}__between_min`] || ''
-          max = form.value[`${fieldKey}__between_max`] || ''
+          const rawMin = form.value[`${fieldKey}__between_min`]
+          const rawMax = form.value[`${fieldKey}__between_max`]
+          min = rawMin !== null && rawMin !== undefined && rawMin !== '' ? String(rawMin) : ''
+          max = rawMax !== null && rawMax !== undefined && rawMax !== '' ? String(rawMax) : ''
           if (min || max) filterData[`${fieldKey}__between`] = `${min},${max}`
         }
       }
     })
-
-    if (form.value.project__my_project !== undefined) {
-      filterData.project__my_project = form.value.project__my_project
-    }
-    if (form.value.project__bookmark !== undefined) {
-      filterData.project__bookmark = form.value.project__bookmark
-    }
 
     return filterData
   }
@@ -304,7 +319,7 @@ export const useIssueFilter = defineStore('issueFilter', () => {
   const applySavedQuery = (
     query: any,
     currentUserId?: number,
-    defaultUserId?: number,
+    _defaultUserId?: number,
     currentProjectSlug = '',
   ) => {
     if (!query || !query.filters) {
@@ -331,7 +346,7 @@ export const useIssueFilter = defineStore('issueFilter', () => {
       cond.value = { ...cond.value, ...f.cond }
     }
 
-    const myId = currentUserId ?? defaultUserId
+    const myId: number | string = currentUserId ?? 'me'
 
     if (f.form) {
       const formPayload = { ...f.form }
@@ -344,11 +359,16 @@ export const useIssueFilter = defineStore('issueFilter', () => {
 
       form.value = { ...form.value, ...formPayload }
 
-      if (formPayload.project && !searchCond.value.includes('project')) {
+      if (!currentProjectSlug && formPayload.project && !searchCond.value.includes('project')) {
         searchCond.value.push('project')
         if (!enabledFields.value.includes('project')) {
           enabledFields.value.push('project')
         }
+      }
+      // 워크스페이스 범위 내 적용 시 다른 워크스페이스 조건과 충돌 방지
+      if (currentProjectSlug) {
+        searchCond.value = searchCond.value.filter(k => k !== 'project')
+        enabledFields.value = enabledFields.value.filter(k => k !== 'project')
       }
     } else {
       // 레거시 평면 필터 구조 복원

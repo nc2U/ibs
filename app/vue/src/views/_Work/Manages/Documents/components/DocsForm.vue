@@ -6,6 +6,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account'
 import { colorLight } from '@/utils/cssMixins'
+import { isValidate } from '@/utils/helper'
 import type { CodeValue } from '@/store/types/work_issue'
 import type { selectProject } from '@/store/types/work_project'
 import type { AFile, Attatches, Docs, Link, SuitCase } from '@/store/types/docs'
@@ -47,11 +48,25 @@ const onCaseCreated = async (payload: SuitCase) => {
   }
 }
 
-const { can, PERM } = usePerms()
-const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const accStore = useAccount()
+const { workManager } = storeToRefs(accStore)
+const isOwner = computed(
+  () => !!props.docs?.creator?.pk && props.docs.creator.pk === accStore.userInfo?.pk,
+)
 
-const { workManager } = storeToRefs(useAccount())
+const { can, PERM } = usePerms()
+const targetProjectSlug = computed(() => {
+  const fromList = props.myProjects.find(p => p.value === form.value.issue_project)?.slug
+  return fromList || props.docs?.project?.slug || undefined
+})
+const canDocsCreate = computed(() =>
+  targetProjectSlug.value ? can(PERM.DOCS_CREATE, targetProjectSlug.value) : props.myProjects.length > 0,
+)
+const canDocsUpdate = computed(
+  () =>
+    can(PERM.DOCS_UPDATE, targetProjectSlug.value) ||
+    (can(PERM.DOCS_OWN_UPDATE, targetProjectSlug.value) && isOwner.value),
+)
 
 const validated = ref(false)
 const lawsuitError = ref(false)
@@ -98,20 +113,17 @@ const filesUpdate = (payload: AFile[]) => {
 const linksUpdate = (payload: Link[]) => (form.value.links = payload)
 
 const submitCheck = (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-
   // @vueform/multiselect의 fake-input은 브라우저 native validation이 동작하지 않으므로 직접 검증
   lawsuitError.value = form.value.doc_type === 2 && !form.value.lawsuit
+  const invalidNative = isValidate(event)
 
-  if (!el.checkValidity() || lawsuitError.value) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (invalidNative || lawsuitError.value) {
     validated.value = true
   } else {
     validated.value = false
     refLinkForms.value?.newLinkPush()
-    onSubmit({ ...form.value, newLinks: newLinks.value })
+    const activeNewFiles = refFileForms.value?.getNewFiles() ?? newFiles.value
+    onSubmit({ ...form.value, newFiles: activeNewFiles, newLinks: newLinks.value })
     refFileForms.value?.checkRelease()
   }
 }
@@ -120,36 +132,47 @@ const onSubmit = async (payload: Docs & Attatches) => {
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
 
-  getData.newFiles = newFiles.value
+  getData.newFiles = (payload.newFiles as File[] | undefined) ?? newFiles.value
   getData.cngFiles = cngFiles.value
 
-  const form = new FormData()
+  const formData = new FormData()
 
   for (const key in getData) {
     if (key === 'links' || key === 'files') {
-      ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
+      ;(getData[key] as any[]).forEach(val => formData.append(key, JSON.stringify(val)))
     } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
       if (key === 'cngFiles') {
         getData[key]?.forEach((val: any) => {
-          form.append('cngPks', val.pk as any)
-          form.append('cngFiles', val.file as Blob)
+          formData.append('cngPks', val.pk as any)
+          formData.append('cngFiles', val.file as Blob)
         })
-      } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
+      } else if (key === 'newFiles') {
+        ;(getData[key] as any[]).forEach(val => {
+          if (val) formData.append('new_files', val as Blob)
+        })
+      } else {
+        ;(getData[key] as any[]).forEach(val => {
+          if (val) formData.append(key, val as string)
+        })
+      }
     } else {
       const val = getData[key]
       if (val !== undefined && val !== null && val !== 'undefined') {
-        form.append(key, String(val))
+        formData.append(key, String(val))
       } else if (val === null) {
-        form.append(key, '')
+        formData.append(key, '')
       }
     }
   }
 
+  let saved: Docs | null = null
   if (pk) {
-    await updateDocs({ pk, form })
+    saved = await updateDocs({ pk, form: formData })
+    if (!saved) return
     await router.replace({ name: `(문서) - 보기`, params: { docId: pk } })
   } else {
-    await createDocs({ form })
+    saved = await createDocs({ form: formData })
+    if (!saved) return
   }
   newFiles.value = []
   cngFiles.value = []

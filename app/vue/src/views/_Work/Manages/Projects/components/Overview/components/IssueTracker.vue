@@ -36,7 +36,7 @@ const getSummary = (pk: number) => props.trackerSummary.find(t => t.pk === pk)
   <CCard :color="isDark ? '' : 'light'">
     <CCardBody>
       <CCardSubtitle class="mb-2">
-        <v-icon icon="mdi-briefcase-edit" size="sm" color="grey" class="mr-1" />
+        <v-icon icon="mdi-briefcase-edit" size="small" color="grey" class="me-1" />
         업무 추적
       </CCardSubtitle>
       <CTable bordered hover small striped class="mt-2 mb-0">
@@ -56,7 +56,7 @@ const getSummary = (pk: number) => props.trackerSummary.find(t => t.pk === pk)
                 :to="{
                   name: '(업무)',
                   params: { projId: route.params.projId },
-                  query: { tracker: tracker.pk },
+                  query: { status: 'open', tracker: tracker.pk },
                 }"
               >
                 {{ tracker.name }}
@@ -67,7 +67,7 @@ const getSummary = (pk: number) => props.trackerSummary.find(t => t.pk === pk)
                 :to="{
                   name: '(업무)',
                   params: { projId: route.params.projId },
-                  query: { tracker: tracker.pk },
+                  query: { status: 'open', tracker: tracker.pk },
                 }"
               >
                 {{ getSummary(tracker.pk)?.open ?? 0 }}

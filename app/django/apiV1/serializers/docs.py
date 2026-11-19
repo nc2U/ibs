@@ -132,11 +132,19 @@ class FilesInDocumentSerializer(serializers.ModelSerializer):
 
 
 def validate_link(value):
-    parsed_url = urlparse(value)
-    # 스키마(http, https)가 없으면 자동으로 'https://' 추가
+    url = str(value).strip()
+    if not url:
+        return ''
+    parsed_url = urlparse(url)
+    # 스키마(http, https)가 없으면 자동으로 'https://' 추가 (javascript: 등 위험 스킴 차단)
     if not parsed_url.scheme:
-        value = f"https://{value}"
-    return value
+        if ':' in url.split('/')[0]:
+            raise serializers.ValidationError('허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.')
+        url = f"https://{url}"
+        parsed_url = urlparse(url)
+    if parsed_url.scheme.lower() not in ('http', 'https'):
+        raise serializers.ValidationError('허용되지 않는 URL 스킴입니다. http:// 또는 https:// 링크만 등록할 수 있습니다.')
+    return url
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -342,6 +350,10 @@ class DocumentSerializer(serializers.ModelSerializer):
         if hasattr(request, 'user') and request.user:
             instance.updator = request.user
 
+        # multipart/form-data 요청에서 allowed_users 키가 누락된 경우 기존 권한자 목록이 초기화되지 않도록 방어
+        if 'allowed_users' not in self.initial_data:
+            validated_data.pop('allowed_users', None)
+
         instance = super().update(instance, validated_data)
 
         # multipart/form-data 또는 JSON 요청 링크/파일 처리
@@ -390,6 +402,9 @@ class LinkSerializer(serializers.ModelSerializer):
         model = Link
         fields = ('pk', 'docs', 'link', 'description', 'hit', 'creator', 'created')
         read_only_fields = ('hit', 'created')
+
+    def validate_link(self, value):
+        return validate_link(value)
 
 
 class FileSerializer(serializers.ModelSerializer):

@@ -19,7 +19,7 @@ const { canViewUser } = usePerms()
   <CCard :color="isDark ? '' : 'light'" class="mb-3">
     <CCardBody>
       <CCardSubtitle class="mb-2">
-        <v-icon icon="mdi-newspaper" size="sm" color="grey" class="me-1" />
+        <v-icon icon="mdi-newspaper" size="small" color="grey" class="me-1" />
         최근 공지
       </CCardSubtitle>
       <CCardText>

@@ -47,16 +47,16 @@ const toEdit = (commentVal: string) => {
 }
 
 const issueStore = useIssue()
-const commentSubmit = () => {
+const commentSubmit = async () => {
   const pk = props.log?.comment?.pk
   const issue = props.log?.issue?.pk
-  issueStore.patchIssueComment({
+  const updated = await issueStore.patchIssueComment({
     pk,
     issue,
     content: content.value,
     is_private: isPrivate.value,
   })
-  editMode.value = false
+  if (updated) editMode.value = false
 }
 
 const fallbackCopy = (text: string) => {
@@ -108,8 +108,13 @@ const delSubmit = () => {
     <CCol>
       <CRow
         :id="`note-${log.log_id}`"
-        :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
+        :class="{
+          'bg-blue-lighten-5':
+            route.hash === `#note-${log.log_id}` ||
+            (!!log.comment?.pk && route.hash === `#comment-${log.comment.pk}`),
+        }"
       >
+        <span v-if="log.comment?.pk" :id="`comment-${log.comment.pk}`" />
         <CCol v-if="log.creator" class="pt-1">
           <router-link
             v-if="canViewUser(log.creator.pk)"
@@ -189,7 +194,7 @@ const delSubmit = () => {
                   class="form-text pointer"
                   @click="copyLink(route.path, `#note-${log.log_id}`)"
                 >
-                  <v-icon icon="mdi-link-variant" color="amber" size="sm" class="me-1" />
+                  <v-icon icon="mdi-link-variant" color="amber" size="small" class="me-1" />
                   링크 복사
                 </CDropdownItem>
                 <CDropdownItem
@@ -200,7 +205,7 @@ const delSubmit = () => {
                   class="form-text pointer"
                   @click="delConfirm(log.comment?.pk as number)"
                 >
-                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="me-1" />
+                  <v-icon icon="mdi-trash-can" color="grey" size="small" class="me-1" />
                   삭제
                 </CDropdownItem>
               </CDropdownMenu>
@@ -217,7 +222,7 @@ const delSubmit = () => {
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
           <CFormCheck
             v-model="isPrivate"
-            id="private_comment"
+            :id="'private-comment-' + log.pk"
             inline
             label="비공개 댓글"
             :disabled="isLockedByAdmin"
@@ -227,7 +232,7 @@ const delSubmit = () => {
             관리자에 의해 비공개로 전환된 댓글입니다. 설정을 변경할 수 없습니다.
           </span>
           <div class="my-3">
-            <v-btn color="success" size="small" @click="commentSubmit" :disabled="isLockedByAdmin">
+            <v-btn color="success" size="small" @click="commentSubmit">
               저장
             </v-btn>
             <v-btn color="light" size="small" @click="() => (editMode = false)" flat>취소</v-btn>

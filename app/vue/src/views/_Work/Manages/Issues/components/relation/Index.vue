@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType, ref, watchEffect, onUnmounted } from 'vue'
+import { computed, type PropType, ref, watchEffect, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { cutString, diffDate } from '@/utils/baseMixins'
@@ -15,7 +15,7 @@ const props = defineProps({
 const emit = defineEmits(['delete-relation'])
 
 const route = useRoute()
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 
 const selected = ref<number | null>(null)
 
@@ -47,9 +47,10 @@ const deleteRelConfirm = () => {
   delRelRef.value?.close()
 }
 
-const projId = route.params.projId as string
-const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
-const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { issueId: id })
+const projId = computed(() => route.params.projId as string)
+const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
+const detailRouteParams = (id: number) =>
+  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
 </script>
 
 <template>
@@ -78,9 +79,13 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       <span class="me-3">{{ rel.issue.status }}</span>
       <span class="me-3" v-if="rel.issue.assigned_to">
         담당자 :
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }">
-          {{ cutString(rel.issue.assigned_to?.username, 9) }}
+        <router-link
+          v-if="canViewUser(rel.issue.assigned_to.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to.pk } }"
+        >
+          {{ cutString(rel.issue.assigned_to.username, 9) }}
         </router-link>
+        <span v-else>{{ cutString(rel.issue.assigned_to.username, 9) }}</span>
       </span>
       <span class="me-3">{{ rel.issue.start_date }}</span>
       <span
@@ -104,9 +109,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
         <v-icon icon="mdi-link-variant-off" size="16" />
         <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>
-      <span v-if="can(PERM.ISSUE_SUB_MANAGE)">
-        <IssueDropDown :issue="rel.issue" />
-      </span>
+      <IssueDropDown :issue="rel.issue" />
     </CCol>
   </CRow>
 

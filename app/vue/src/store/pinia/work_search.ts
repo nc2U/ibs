@@ -7,6 +7,8 @@ export const useSearch = defineStore('work_search', () => {
   const results = ref<SearchResults | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  let abortController: AbortController | null = null
+  let searchSeq = 0
 
   const totalCount = computed(() => {
     if (!results.value) return 0
@@ -17,14 +19,28 @@ export const useSearch = defineStore('work_search', () => {
 
   async function fetchSearch(params: SearchParams) {
     if (!params.q || params.q.trim().length < 2) {
+      if (abortController) {
+        abortController.abort()
+        abortController = null
+      }
+      searchSeq += 1
+      results.value = null
+      loading.value = false
       error.value = '검색어는 2자 이상 입력하세요.'
       return
     }
+    if (abortController) {
+      abortController.abort()
+    }
+    const controller = new AbortController()
+    abortController = controller
+    const seq = ++searchSeq
+
     loading.value = true
     error.value = null
     try {
       const searchParams = new URLSearchParams()
-      searchParams.append('q', params.q)
+      searchParams.append('q', params.q.trim())
       searchParams.append('scope', params.scope ?? 'all')
       if (params.slug) {
         searchParams.append('slug', params.slug)
@@ -36,18 +52,37 @@ export const useSearch = defineStore('work_search', () => {
       const targets = params.t ?? ['issues', 'comments', 'meetings', 'news', 'documents', 'posts']
       targets.forEach(t => searchParams.append('t', t))
 
-      const res = await api.get('/issue-search/run/', { params: searchParams })
+      const res = await api.get('/issue-search/run/', {
+        params: searchParams,
+        signal: controller.signal,
+      })
+      if (seq !== searchSeq) return
       results.value = res.data
-    } catch {
+    } catch (err: unknown) {
+      if (
+        seq !== searchSeq ||
+        (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) ||
+        (typeof err === 'object' && err !== null && (err as { code?: string }).code === 'ERR_CANCELED')
+      ) {
+        return
+      }
       error.value = '검색 중 오류가 발생했습니다.'
       results.value = null
     } finally {
-      loading.value = false
+      if (seq === searchSeq) {
+        loading.value = false
+      }
     }
   }
 
   function reset() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+    searchSeq += 1
     results.value = null
+    loading.value = false
     error.value = null
   }
 

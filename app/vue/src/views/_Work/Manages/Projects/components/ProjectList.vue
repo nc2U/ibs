@@ -38,6 +38,16 @@ const projectResultsTree = computed<IssueProject[]>(() => workStore.projectResul
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const rollList = computed(() => workStore.roleList)
+const projectCreatePermPk = computed(
+  () => workStore.permissionList.find(p => p.code === PERM.PROJECT_CREATE)?.pk,
+)
+const projectCreateRoleNames = computed(() => {
+  if (projectCreatePermPk.value === undefined) return ''
+  return rollList.value
+    .filter(r => r.permissions.includes(projectCreatePermPk.value as number))
+    .map(r => r.name)
+    .join(', ')
+})
 
 const viewMode = ref<'board' | 'list'>(
   (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
@@ -231,12 +241,7 @@ onBeforeMount(() => {
           <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="me-2" />
           워크스페이스를 생성 하려면
           <strong>
-            {{
-              rollList
-                .filter(r => r.permissions.includes(1))
-                .map(r => r.name)
-                .join(', ')
-            }}
+            {{ projectCreateRoleNames }}
           </strong>
           역할이 필요합니다.<br />
           해당 역할을 배정 받거나 해당 멤버에게 생성을 요청하시기 바랍니다.

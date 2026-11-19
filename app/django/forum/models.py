@@ -40,6 +40,10 @@ class Forum(models.Model):
                     visited.add(curr.pk)
                 curr = curr.parent
 
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['id']
         verbose_name = '01. 게시판 관리'

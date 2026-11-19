@@ -37,10 +37,13 @@ const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat
 const allReadableProjects = computed(() =>
   workStore.getAllReadableProjects.filter(pjt => pjt.module?.meeting),
 )
-const myProjects = computed(() => workStore.getMyActiveProjects.filter(pjt => pjt.module?.meeting))
-
 const { can, PERM } = usePerms()
-const canMeetingCreate = computed(() => myProjects.value.length > 0 && can(PERM.MEETING_CREATE))
+const myProjects = computed(() =>
+  workStore.getMyActiveProjects.filter(
+    pjt => pjt.module?.meeting && can(PERM.MEETING_CREATE, pjt.slug),
+  ),
+)
+const canMeetingCreate = computed(() => myProjects.value.length > 0)
 const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const meetingStore = useMeeting()
@@ -86,6 +89,8 @@ const loading = ref<boolean>(true)
 
 const initData = async () => {
   loading.value = true
+  workStore.removeIssueProject()
+  page.value = 1
   try {
     const currentProjSlug = (route.params.projId as string) || ''
     const initialFilter = meetingFilterStore.buildFilterPayload(currentProjSlug)

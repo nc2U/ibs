@@ -4,8 +4,9 @@ import type { selectProject, IssueProject } from '@/store/types/work_project'
 import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { markdownRender } from '@/utils/helper'
+import { markdownRender, sanitizeExternalUrl } from '@/utils/helper'
 import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useLogging } from '@/store/pinia/work_logging'
 import { useWork } from '@/store/pinia/work_project'
@@ -48,11 +49,12 @@ const editForm = ref(false)
 
 const { can, canViewUser, PERM } = usePerms()
 const canCommentCreate = computed(
-  () => props.currentProject?.status !== '9' && can(PERM.ISSUE_COMMENT_CREATE),
+  () => props.currentProject?.status === '1' && can(PERM.ISSUE_COMMENT_CREATE),
 )
 
 const isClosed = computed(() => props.issue?.closed)
 
+const accStore = useAccount()
 const workStore = useWork()
 const myProjects = computed(() =>
   props.myProjects.length ? props.myProjects : workStore.getMyProjects,
@@ -96,8 +98,9 @@ const doneRatio = computed(() => {
 })
 
 const onSubmit = (payload: any) => {
-  emit('on-submit', payload)
-  editForm.value = false
+  emit('on-submit', payload, (ok: boolean) => {
+    if (ok) editForm.value = false
+  })
 }
 
 const scrollToId = (id: string) => {
@@ -107,6 +110,15 @@ const scrollToId = (id: string) => {
 
 const callEditForm = () => {
   editForm.value = !editForm.value
+  if (editForm.value) {
+    setTimeout(() => {
+      scrollToId('edit-form')
+    }, 100)
+  }
+}
+
+const openEditForm = () => {
+  editForm.value = true
   setTimeout(() => {
     scrollToId('edit-form')
   }, 100)
@@ -147,9 +159,9 @@ const unlinkSubIssue = (del_child: number) =>
 // 연결된 업무 관련 코드
 const addRIssue = ref(false)
 const addFormCtl = (bool: boolean) => (addRIssue.value = bool)
-const addRelIssue = (payload: any) => {
-  issueStore.createIssueRelation(payload)
-  addRIssue.value = false
+const addRelIssue = async (payload: any) => {
+  const created = await issueStore.createIssueRelation(payload)
+  if (created) addRIssue.value = false
 }
 const deleteRelation = (pk: number) => issueStore.deleteIssueRelation(pk, props.issue?.pk as number)
 
@@ -168,15 +180,19 @@ const deleteIssue = () => {
 }
 
 const confirmDelete = async () => {
-  await issueStore.deleteIssue(props.issue?.pk as number)
+  const deleted = await issueStore.deleteIssue(props.issue?.pk as number)
+  if (!deleted) return
   refDelModal.value?.close()
   await router.push({ name: listRouteName.value, params: getListParams() })
 }
 
 const [route, router] = [useRoute(), useRouter()]
-watch(route, async nVal => {
-  if (nVal.query.edit) callEditForm()
-})
+watch(
+  () => route.query.edit,
+  nVal => {
+    if (nVal) openEditForm()
+  },
+)
 
 const projId = computed(() => route.params.projId as string)
 const listRouteName = computed(() => (projId.value ? '(업무)' : '업무'))
@@ -210,9 +226,25 @@ const relatedIssues = computed(() => {
   return list
 })
 
+const canEditIssue = computed(() => {
+  if (props.currentProject?.status !== '1') return false
+  const slug = props.issue?.project?.slug
+  if (can(PERM.ISSUE_UPDATE, slug)) return true
+  const myPk = accStore.userInfo?.pk
+  const isOwn =
+    myPk !== undefined &&
+    (props.issue?.creator?.pk === myPk || props.issue?.assigned_to?.pk === myPk)
+  return can(PERM.ISSUE_OWN_UPDATE, slug) && isOwn
+})
+
 onBeforeMount(async () => {
-  await logStore.fetchIssueLogList({ issue: props.issue?.pk })
-  if (route.query.edit) callEditForm()
+  if (
+    props.issue?.pk &&
+    (!issueLogList.value.length || issueLogList.value[0]?.issue?.pk !== props.issue.pk)
+  ) {
+    await logStore.fetchIssueLogList({ issue: props.issue.pk })
+  }
+  if (route.query.edit) openEditForm()
 })
 </script>
 
@@ -228,7 +260,7 @@ onBeforeMount(async () => {
           rounded="1"
           class="ms-2"
         />
-        <v-badge v-if="issue.is_private" color="danger" content="비공개" inline rounded="1" />
+        <v-badge v-if="issue.is_private" color="error" content="비공개" inline rounded="1" />
       </h5>
     </CCol>
 
@@ -418,7 +450,7 @@ onBeforeMount(async () => {
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
         <CCol v-if="canCommentCreate" class="text-end form-text">
-          <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="me-2" />
+          <v-icon icon="mdi-comment-text-outline" size="small" color="grey" class="me-2" />
           <a href="#" @click.prevent="callComment">댓글달기</a>
         </CCol>
       </CRow>
@@ -434,6 +466,7 @@ onBeforeMount(async () => {
       <IssueFiles
         v-if="issue.files?.length"
         :proj-status="currentProject?.status"
+        :can-edit="canEditIssue"
         :issue-pk="issue.pk"
         :issue-files="issue.files"
       />
@@ -448,7 +481,7 @@ onBeforeMount(async () => {
               class="mb-1"
             >
               <a
-                :href="typeof link === 'object' ? link.link : link"
+                :href="sanitizeExternalUrl(typeof link === 'object' ? link.link : link)"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -470,7 +503,9 @@ onBeforeMount(async () => {
           />
         </CCol>
         <CCol
-          v-if="currentProject?.status === '1' && can(PERM.ISSUE_SUB_MANAGE)"
+          v-if="
+            currentProject?.status === '1' && can(PERM.ISSUE_CREATE) && can(PERM.ISSUE_SUB_MANAGE)
+          "
           class="text-end form-text"
         >
           <router-link
@@ -510,16 +545,16 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <!-- Outgoing relations -->
+      <!-- Outgoing relations (target is successor of this issue) -->
       <template v-for="rel in issue.outgoing_relations ?? []" :key="rel.pk">
-        <Relation :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
+        <Relation :rel="rel" type="후행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 
-      <!-- Incoming (reverse) relation -->
+      <!-- Incoming (reverse) relation (source is predecessor of this issue) -->
       <Relation
         v-if="issue?.incoming_relation"
         :rel="issue.incoming_relation"
-        type="후행업무"
+        type="선행업무"
         @delete-relation="deleteRelation(issue.incoming_relation.pk as number)"
       />
 

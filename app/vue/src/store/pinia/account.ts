@@ -4,6 +4,10 @@ import { Buffer } from 'buffer'
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useWork } from '@/store/pinia/work_project'
+import { usePermission } from '@/store/pinia/work_permission'
+import { useLogging } from '@/store/pinia/work_logging'
+import { useSearch } from '@/store/pinia/work_search'
+import { useInform } from '@/store/pinia/work_inform'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
 import type { LocationQueryValue } from 'vue-router'
@@ -46,41 +50,52 @@ export const useAccount = defineStore('account', () => {
   const isAuthorized = computed(() => !!accessToken.value && !!userInfo.value)
 
   // actions
-  const fetchUsersList = () =>
-    api
-      .get('/user/?is_active=true')
-      .then(res => (usersList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+  const fetchUsersList = (isActive: boolean | 'all' = true) => {
+    const params: Record<string, string | number | boolean> = { limit: 500 }
+    if (isActive !== 'all') params.is_active = isActive
+    return api
+      .get('/user/', { params })
+      .then(res => (usersList.value = res.data.results ?? res.data ?? []))
+      .catch(err => errorHandle(err))
+  }
 
   const fetchUser = (pk: number) =>
     api
       .get(`/user/${pk}/`)
       .then(res => (user.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeUser = () => (user.value = null)
 
   const adminCreateUser = (payload: UserByAdmin) =>
     api
       .post('/admin-create-user/', payload)
-      .then(res => {
-        fetchUsersList().then(r => message('info', '', '사용자를 생성하고 메일을 발송했습니다.'))
+      .then(async res => {
+        await fetchUsersList('all')
+        message('info', '', res.data?.detail || '사용자를 생성하였습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const adminUpdateUser = (payload: UserByAdmin) =>
     api
       .put(`/admin-create-user/`, payload)
-      .then(res => {
-        const send_mail = payload.password && payload.mail_sending
-        const notice_massage = send_mail
-          ? '비밀번호를 수정하고 메일을 발송했습니다.'
-          : '사용자 권한 정보를 수정하였습니다.'
-        fetchUsersList().then(r => message('info', '', notice_massage))
+      .then(async res => {
+        const defaultMsg =
+          payload.mail_sending && (payload.password || payload.send_option === '1')
+            ? '사용자 정보를 수정하고 안내 메일을 발송했습니다.'
+            : '사용자 권한 정보를 수정하였습니다.'
+        await fetchUsersList('all')
+        message('info', '', res.data?.detail || defaultMsg)
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const signup = (payload: LoginUser & { username: string }) =>
     api
@@ -90,7 +105,7 @@ export const useAccount = defineStore('account', () => {
         return true
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         return false
       })
 
@@ -104,7 +119,7 @@ export const useAccount = defineStore('account', () => {
     userInfo.value = user
 
     const workStore = useWork()
-    Promise.all([
+    return Promise.all([
       fetchTodoList(),
       workStore.fetchMyProjectsList(),
       workStore.fetchGroupedPermissions(),
@@ -124,7 +139,7 @@ export const useAccount = defineStore('account', () => {
 
       // API 응답을 확인하고 처리
       if (userResponse.data && (userResponse.data.profile || userResponse.data.is_superuser)) {
-        setUser(userResponse.data)
+        await setUser(userResponse.data)
         // 성공 메시지
         message('info', '', '로그인 성공 알림!', 2000, 'top-center', 'bounce')
       } else {
@@ -159,9 +174,26 @@ export const useAccount = defineStore('account', () => {
 
   const logout = () => {
     const workStore = useWork()
+    const permStore = usePermission()
+    const loggingStore = useLogging()
+    const searchStore = useSearch()
+    const informStore = useInform()
     workStore.reset()
+    permStore.reset()
+    loggingStore.reset()
+    searchStore.reset()
+    informStore.reset()
+    user.value = null
+    usersList.value = []
     userInfo.value = null
     profile.value = null
+    passChecked.value = false
+    docScrape.value = null
+    docScrapeList.value = []
+    docScrapeCount.value = 0
+    scrape.value = null
+    scrapeList.value = []
+    scrapeCount.value = 0
     todoList.value = []
     accessToken.value = ''
     delete api.defaults.headers.common.Authorization
@@ -182,13 +214,22 @@ export const useAccount = defineStore('account', () => {
         message('success', '', res.data.detail)
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const passReset = (payload: { email: string }) =>
     api
       .post('password-reset/', payload)
-      .then(res => message(undefined, '', '비밀번호 초기화 안내메일을 발송했습니다.'))
-      .catch(err => errorHandle(err.response.data))
+      .then(() => {
+        message(undefined, '', '비밀번호 초기화 안내메일을 발송했습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const passResetConfirm = (payload: {
     user_id: LocationQueryValue | LocationQueryValue[]
@@ -196,13 +237,16 @@ export const useAccount = defineStore('account', () => {
     new_password: string
   }) => {
     const { user_id, token, new_password } = payload
-    api
+    return api
       .post(`/password-reset-confirm/${user_id}/${token}/`, { new_password })
       .then(res => {
         message('success', '', '비밀번호가 변경되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   // 재설정 링크의 토큰 유효성 검증 (토큰 값은 서버에서만 대조하며 응답으로 받지 않음)
@@ -229,33 +273,38 @@ export const useAccount = defineStore('account', () => {
       ? await api
           .get(`/profile/${profilePk}/`)
           .then(res => (profile.value = res.data))
-          .catch(err => errorHandle(err.response.data))
+          .catch(err => errorHandle(err))
       : null
   }
 
-  const createProfile = async (payload: FormData) => {
-    api.defaults.headers.post['Content-Type'] = 'multipart/form-data'
-    return await api
-      .post(`/profile/`, payload)
+  const createProfile = async (payload: FormData) =>
+    await api
+      .post(`/profile/`, payload, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then(async () => {
         const cookedToken = Cookies.get('accessToken')
         await loginByToken(cookedToken)
         message('info', '', '프로필 정보가 생성되었습니다.', 2000, 'top-center', 'bounce')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
-  }
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const patchProfile = async (payload: { pk: number; form: FormData }) => {
     const { pk, form } = payload
-    api.defaults.headers.patch['Content-Type'] = 'multipart/form-data'
     return await api
-      .patch(`/profile/${pk}/`, form)
+      .patch(`/profile/${pk}/`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then(async () => {
         const cookedToken = Cookies.get('accessToken')
         await loginByToken(cookedToken)
         message('info', '', '프로필 정보가 수정되었습니다.', 2000, 'top-center', 'bounce')
+        return true
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
   }
 
   // states
@@ -264,12 +313,12 @@ export const useAccount = defineStore('account', () => {
   const docScrapeCount = ref(0)
 
   // actions
-  const docScrapePages = (itemsPerPage: number) => Math.ceil(scrapeCount.value / itemsPerPage)
+  const docScrapePages = (itemsPerPage: number) => Math.ceil(docScrapeCount.value / itemsPerPage)
   const fetchDocScrape = (pk: number) =>
     api
       .get(`/doc-scrape/${pk}/`)
       .then(res => (docScrape.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchDocScrapeList = (page = 1) =>
     api
@@ -278,7 +327,7 @@ export const useAccount = defineStore('account', () => {
         docScrapeList.value = res.data.results
         docScrapeCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const docStore = useDocs()
 
@@ -286,23 +335,23 @@ export const useAccount = defineStore('account', () => {
     api
       .post('/doc-scrape/', payload)
       .then(() => docStore.fetchDocs(payload.docs))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchDocScrape = (pk: number, title: string) =>
     api
       .patch(`/doc-scrape/${pk}/`, { title })
-      .then(() => fetchScrapeList().then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .then(() => fetchDocScrapeList().then(() => message()))
+      .catch(err => errorHandle(err))
 
   const deleteDocScrape = (pk: number) =>
     api
       .delete(`/doc-scrape/${pk}/`)
       .then(() =>
-        fetchScrapeList().then(() =>
-          message('warning', '', '해당 포스트 스크랩을 취소하였습니다.'),
+        fetchDocScrapeList().then(() =>
+          message('warning', '', '해당 문서 스크랩을 취소하였습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states
   const scrape = ref<Scrape | null>(null)
@@ -315,7 +364,7 @@ export const useAccount = defineStore('account', () => {
     api
       .get(`/post-scrape/${pk}/`)
       .then(res => (scrape.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchScrapeList = (page = 1) =>
     api
@@ -324,7 +373,7 @@ export const useAccount = defineStore('account', () => {
         scrapeList.value = res.data.results
         scrapeCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // const documentStore = useDocument()
 
@@ -332,13 +381,13 @@ export const useAccount = defineStore('account', () => {
     api
       .post('/post-scrape/', payload)
       .then(() => console.log('fetchPost()')) //documentStore.fetchPost(payload.post))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchScrape = (pk: number, title: string) =>
     api
       .patch(`/post-scrape/${pk}/`, { title })
       .then(() => fetchScrapeList().then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteScrape = (pk: number) =>
     api
@@ -348,7 +397,7 @@ export const useAccount = defineStore('account', () => {
           message('warning', '', '해당 포스트 스크랩을 취소하였습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states
   const todoList = ref<Todo[]>([])
@@ -365,7 +414,7 @@ export const useAccount = defineStore('account', () => {
       .then(res => {
         todoList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createTodo = (payload: Todo) =>
@@ -378,16 +427,16 @@ export const useAccount = defineStore('account', () => {
             .then(res => {
               userInfo.value = res.data
             })
-            .catch(err => errorHandle(err.response.data)),
+            .catch(err => errorHandle(err)),
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchTodo = (payload: Todo) =>
     api
       .patch(`/todo/${payload.pk}/`, payload)
       .then(() => fetchTodoList())
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteTodo = (pk: number) =>
     api
@@ -399,10 +448,10 @@ export const useAccount = defineStore('account', () => {
             .then(res => {
               userInfo.value = res.data
             })
-            .catch(err => errorHandle(err.response.data)),
+            .catch(err => errorHandle(err)),
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const convertTodoToIssue = async (
     pk: number,
@@ -420,7 +469,7 @@ export const useAccount = defineStore('account', () => {
         fetchTodoList()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     user,

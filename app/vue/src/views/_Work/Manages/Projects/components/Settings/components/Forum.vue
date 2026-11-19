@@ -32,6 +32,7 @@ const form = ref<Forum>({
 
 const resetForm = () => {
   form.value.pk = null
+  form.value.project = props.project
   form.value.name = ''
   form.value.description = ''
   form.value.parent = null
@@ -42,6 +43,33 @@ const frmStore = useForum()
 const forumList = computed(() => frmStore.forumList as Forum[])
 const fetchForumList = (payload: any) => frmStore.fetchForumList(payload)
 
+// 상위 게시판 선택 시 본인 및 하위 게시판 제외 (순환 참조 방지)
+const availableParentForums = computed(() => {
+  if (!form.value.pk) return forumList.value
+  const excluded = new Set<number>([form.value.pk])
+  let added = true
+  while (added) {
+    added = false
+    for (const f of forumList.value) {
+      if (f.pk && f.parent && excluded.has(f.parent) && !excluded.has(f.pk)) {
+        excluded.add(f.pk)
+        added = true
+      }
+    }
+  }
+  return forumList.value.filter(f => !f.pk || !excluded.has(f.pk))
+})
+
+watch(
+  () => props.project,
+  nVal => {
+    if (nVal && !form.value.pk) {
+      form.value.project = nVal
+    }
+  },
+  { immediate: true },
+)
+
 // 프로젝트 변경 시 목록 다시 불러오기
 const projId = computed(() => route.params.projId as string)
 watch(projId, async nVal => {
@@ -51,15 +79,15 @@ watch(projId, async nVal => {
   }
 })
 
-// 2. 정렬본 목록
-const STORAGE_KEY = 'forumList'
+// 2. 정렬본 목록 (워크스페이스별 키 격리)
+const storageKey = computed(() => `forumList_${projId.value || props.project}`)
 const orderedList = ref<Forum[]>([])
 
 // 원본 목록 변경 시 정렬본 다시 불러오기
 watch(
-  forumList,
-  nVal => {
-    orderedList.value = getOrderedList(nVal as any[], STORAGE_KEY)
+  [forumList, storageKey],
+  ([nVal, key]) => {
+    orderedList.value = getOrderedList(nVal as any[], key)
   },
   { immediate: true },
 )
@@ -82,10 +110,21 @@ const modifyCall = (frm: Forum) => {
 const onSubmit = async (event: Event) => {
   if (isValidate(event)) validated.value = true
   else {
+    const rawParent = form.value.parent as number | string | null
+    const parentVal = rawParent === '' || rawParent === null ? null : Number(rawParent)
+    const payload = {
+      ...form.value,
+      project: form.value.project ?? props.project,
+      parent: Number.isNaN(parentVal) ? null : parentVal,
+    }
+    let result: unknown = null
     if (form.value.pk) {
-      const { pk, ...rest } = form.value
-      await frmStore.updateForum(pk as number, rest, projId.value)
-    } else await frmStore.createForum({ ...form.value }, projId.value)
+      const { pk, ...rest } = payload
+      result = await frmStore.updateForum(pk as number, rest, projId.value)
+    } else {
+      result = await frmStore.createForum(payload, projId.value)
+    }
+    if (!result) return
     validated.value = false
     RefForumForm.value?.close()
     resetForm()
@@ -100,16 +139,14 @@ const deleteModalCall = (pk: number) => {
 }
 const deleteForum = async () => {
   if (delForumPk.value) {
-    await frmStore.deleteForum(delForumPk.value, route.params.projId as string)
-    RefDelConfirm.value?.close()
+    const ok = await frmStore.deleteForum(delForumPk.value, route.params.projId as string)
+    if (ok) RefDelConfirm.value?.close()
   }
 }
 
 onBeforeMount(async () => {
   form.value.project = props.project as number
   await fetchForumList({ project: projId.value })
-  if (forumList.value.length)
-    orderedList.value = getOrderedList(forumList.value as any[], STORAGE_KEY)
 })
 </script>
 
@@ -127,24 +164,26 @@ onBeforeMount(async () => {
   <CRow v-else>
     <CCol class="mt-3">
       <CTable table small hover responsive>
-        <col style="width: 30%" />
-        <col style="width: 45%" />
-        <col style="width: 25%" />
+        <colgroup>
+          <col style="width: 30%" />
+          <col style="width: 45%" />
+          <col style="width: 25%" />
+        </colgroup>
         <CTableHead>
           <CTableRow color="secondary">
-            <CTableHeaderCell class="pl-3" colspan="3">게시판</CTableHeaderCell>
+            <CTableHeaderCell class="ps-3" colspan="3">게시판</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
 
         <Draggable
           v-model="orderedList"
           tag="tbody"
-          item-key="name"
-          @end="setLocalStorage(orderedList as any[], STORAGE_KEY)"
+          item-key="pk"
+          @end="setLocalStorage(orderedList as any[], storageKey)"
         >
           <template #item="{ element }">
             <CTableRow>
-              <CTableDataCell class="pl-3">
+              <CTableDataCell class="ps-3">
                 <router-link
                   :to="{
                     name: '(게시판) - 보기',
@@ -209,12 +248,16 @@ onBeforeMount(async () => {
               />
             </CCol>
           </CRow>
-          <CRow v-if="forumList.length" class="mb-3">
+          <CRow v-if="availableParentForums.length" class="mb-3">
             <CFormLabel for="parent" class="col-sm-3 col-form-label">상위 게시판</CFormLabel>
             <CCol sm="9">
               <CFormSelect v-model="form.parent" id="parent">
                 <option value="">---------</option>
-                <option v-for="frm in forumList" :value="frm.pk" :key="frm.pk as number">
+                <option
+                  v-for="frm in availableParentForums"
+                  :value="frm.pk"
+                  :key="frm.pk as number"
+                >
                   {{ frm.name }}
                 </option>
               </CFormSelect>

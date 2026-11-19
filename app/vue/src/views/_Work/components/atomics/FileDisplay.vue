@@ -3,23 +3,36 @@ import { computed, type PropType, ref } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
 import type { SimpleUser } from '@/store/types/work_project'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
+import { sanitizeExternalUrl } from '@/utils/helper'
+import { useDownload } from '@/utils/useDownload'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-interface File {
+interface WorkFileItem {
   pk: number
   file: string
   file_name: string
   file_size: number
   description: string
-  creator: SimpleUser
+  creator: SimpleUser | null
   created: string
 }
 
-const props = defineProps({ file: { type: Object as PropType<File>, required: true } })
+const props = defineProps({
+  file: { type: Object as PropType<WorkFileItem>, required: true },
+  canDelete: { type: Boolean, default: false },
+})
 
 const emit = defineEmits(['delete-file'])
 
-const RefDelFile = ref<InstanceType<typeof ConfirmModal> | null>(null) // Del confirm model
+const RefDelFile = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const { downloadFile } = useDownload()
+
+const safeUrl = computed(() => sanitizeExternalUrl(props.file?.file))
+
+const onDownload = () => {
+  if (safeUrl.value === '#') return
+  downloadFile(safeUrl.value, props.file.file_name)
+}
 
 const deleteFile = () => {
   emit('delete-file', props.file?.pk)
@@ -32,22 +45,26 @@ const projStatus = computed(() => workStore.currentProject?.status)
 
 <template>
   <CCol class="col-10">
-    <v-icon icon="mdi-paperclip" size="sm" color="grey" class="mr-2" />
+    <v-icon icon="mdi-paperclip" size="small" color="grey" class="me-2" />
     <span>
-      <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 25) }} </a>
+      <a :href="safeUrl" target="_blank" rel="noopener noreferrer">
+        {{ cutString(file.file_name, 25) }}
+      </a>
       <v-tooltip activator="parent" location="top">{{ file.file_name }}</v-tooltip>
     </span>
-    <span class="file-desc1 mr-1"> ({{ humanizeFileSize(file.file_size) }}) </span>
-    <span class="mr-2">
-      <a :href="file.file" target="_blank">
+    <span class="file-desc1 me-1"> ({{ humanizeFileSize(file.file_size) }}) </span>
+    <span class="me-2">
+      <a href="#" @click.prevent="onDownload">
         <v-icon icon="mdi-download-box" size="16" color="secondary" />
         <v-tooltip activator="parent" location="top">다운로드</v-tooltip>
       </a>
     </span>
     <span v-if="file.description" class="me-2">{{ file.description }}</span>
-    <span class="file-desc2 me-1 text-grey"> {{ file.creator?.username }}, </span>
+    <span v-if="file.creator?.username" class="file-desc2 me-1 text-grey">
+      {{ file.creator.username }},
+    </span>
     <span class="file-desc2 me-2 text-grey">{{ timeFormat(file.created) }}</span>
-    <span v-if="projStatus === '1'">
+    <span v-if="canDelete && projStatus === '1'">
       <a
         href="#"
         class="me-2 cursor-pointer"
@@ -64,6 +81,7 @@ const projStatus = computed(() => workStore.currentProject?.status)
   </CCol>
 
   <ConfirmModal ref="RefDelFile">
+    <template #header>파일 삭제 확인</template>
     <template #default>이 파일의 삭제를 계속 진행하시겠습니까?</template>
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteFile">삭제</v-btn>

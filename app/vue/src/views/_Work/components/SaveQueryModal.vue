@@ -15,16 +15,24 @@ const props = defineProps({
     required: true,
   },
   cond: {
-    type: Object as PropType<Record<string, any>>,
+    type: Object as PropType<Record<string, unknown>>,
     required: true,
   },
   form: {
-    type: Object as PropType<Record<string, any>>,
+    type: Object as PropType<Record<string, unknown>>,
     required: true,
   },
   extraData: {
-    type: Object as PropType<Record<string, any>>,
+    type: Object as PropType<Record<string, unknown>>,
     default: () => ({}),
+  },
+  extraFilters: {
+    type: Object as PropType<Record<string, unknown>>,
+    default: () => ({}),
+  },
+  projectId: {
+    type: Number as PropType<number | null>,
+    default: null,
   },
 })
 
@@ -40,12 +48,14 @@ const queryName = ref('')
 const queryDescription = ref('')
 const isPublic = ref(false)
 const validated = ref(false)
+const submitting = ref(false)
 
 const callModal = () => {
   queryName.value = ''
   queryDescription.value = ''
   isPublic.value = false
   validated.value = false
+  submitting.value = false
   refModal.value?.callModal()
 }
 
@@ -54,34 +64,51 @@ const closeModal = () => {
 }
 
 const saveQuery = async (event: Event) => {
-  if (isValidate(event)) {
+  if (submitting.value) return
+  queryName.value = queryName.value.trim()
+  if (isValidate(event) || !queryName.value) {
     validated.value = true
     return
   }
   validated.value = false
+  submitting.value = true
 
-  const { project: extraProject, ...otherExtraData } = props.extraData || {}
+  try {
+    // targetType === 'project'일 때 extraData.project는 'bookmark'/'closed' 등의 필터 값이므로
+    // CustomQuery.project FK가 아닌 filters.form 내부에 그대로 유지합니다.
+    const extraProject = props.extraData?.project
+    const resolvedProjectFk =
+      props.projectId !== null
+        ? props.projectId
+        : props.targetType !== 'project' && typeof extraProject === 'number'
+          ? extraProject
+          : null
 
-  const payload = {
-    name: queryName.value,
-    description: queryDescription.value,
-    target_type: props.targetType,
-    is_public: isPublic.value,
-    project: extraProject || null,
-    filters: {
-      searchCond: props.searchCond,
-      cond: props.cond,
-      form: {
-        ...props.form,
-        ...otherExtraData,
+    const payload = {
+      name: queryName.value,
+      description: queryDescription.value.trim(),
+      target_type: props.targetType,
+      is_public: isPublic.value,
+      project: resolvedProjectFk,
+      filters: {
+        ...props.extraFilters,
+        searchCond: [...props.searchCond],
+        cond: { ...props.cond },
+        form: {
+          ...props.form,
+          ...(props.extraData || {}),
+        },
       },
-    },
-  }
+    }
 
-  await informStore.createQuery(payload)
-  await informStore.fetchQueries({ targetType: props.targetType })
-  closeModal()
-  emit('saved')
+    const created = await informStore.createQuery(payload)
+    if (!created) return
+    await informStore.fetchQueries({ targetType: props.targetType })
+    closeModal()
+    emit('saved')
+  } finally {
+    submitting.value = false
+  }
 }
 
 defineExpose({ callModal, closeModal })
@@ -127,7 +154,16 @@ defineExpose({ callModal, closeModal })
       </CModalBody>
 
       <CModalFooter>
-        <v-btn type="submit" size="small" color="indigo" class="text-white">저장</v-btn>
+        <v-btn
+          type="submit"
+          size="small"
+          color="indigo"
+          class="text-white"
+          :loading="submitting"
+          :disabled="submitting"
+        >
+          저장
+        </v-btn>
         <v-btn color="light" size="small" @click="closeModal" flat>취소</v-btn>
       </CModalFooter>
     </CForm>

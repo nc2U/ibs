@@ -20,7 +20,13 @@ export const diffDate = (date1: Date | string, date2?: Date | string) => {
 export const addDays = (date: Date, days: number) => date.setDate(date.getDate() + days)
 
 export const addDaysToDate = (dateString: Date | string, days: number) => {
-  const date = new Date(dateString)
+  let date: Date
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [y, m, d] = dateString.split('-').map(Number)
+    date = new Date(y, m - 1, d)
+  } else {
+    date = new Date(dateString)
+  }
   date.setDate(date.getDate() + days)
 
   const year = date.getFullYear()

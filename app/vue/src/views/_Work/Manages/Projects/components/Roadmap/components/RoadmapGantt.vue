@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import { diffDate } from '@/utils/baseMixins'
 import type { Version } from '@/store/types/work_project'
 import NoData from '@/components/NoData/Index.vue'
 
@@ -30,32 +29,54 @@ const toggleAll = () => {
   })
 }
 
-// Initialize all expanded by default
-props.versionList.forEach(v => {
-  if (v.pk && expandedVersions.value[v.pk] === undefined) {
-    expandedVersions.value[v.pk] = true
+// Initialize expanded state reactively whenever versionList updates
+watch(
+  () => props.versionList,
+  list => {
+    list.forEach(v => {
+      if (v.pk && expandedVersions.value[v.pk] === undefined) {
+        expandedVersions.value[v.pk] = allExpanded.value
+      }
+    })
+  },
+  { immediate: true },
+)
+
+// Safe local date parser (avoids UTC timezone shift for YYYY-MM-DD strings)
+const parseLocalDate = (dateStr?: string | null): Date | null => {
+  if (!dateStr) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d)
   }
-})
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? null : d
+}
+
+const isOverdue = (dueDateStr?: string | null) => {
+  const due = parseLocalDate(dueDateStr)
+  if (!due) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return due.getTime() < today.getTime()
+}
 
 // Time Range Calculation
 const viewMonthsRange = ref<3 | 6 | 12>(6)
 
 const timelineStart = computed(() => {
-  const d = new Date()
-  d.setMonth(d.getMonth() - 1)
-  d.setDate(1)
-  return d
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1)
 })
 
 const timelineEnd = computed(() => {
-  const d = new Date(timelineStart.value)
-  d.setMonth(d.getMonth() + viewMonthsRange.value)
-  return d
+  const s = timelineStart.value
+  return new Date(s.getFullYear(), s.getMonth() + viewMonthsRange.value, 1)
 })
 
 const totalTimelineDays = computed(() => {
   const diffTime = timelineEnd.value.getTime() - timelineStart.value.getTime()
-  return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
+  return Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)))
 })
 
 // Generate Month columns
@@ -68,12 +89,14 @@ interface MonthCol {
 
 const monthColumns = computed<MonthCol[]>(() => {
   const cols: MonthCol[] = []
-  const start = new Date(timelineStart.value)
+  const baseYear = timelineStart.value.getFullYear()
+  const baseMonth = timelineStart.value.getMonth()
   const totalDays = totalTimelineDays.value
 
   for (let i = 0; i < viewMonthsRange.value; i++) {
-    const currentYear = start.getFullYear()
-    const currentMonth = start.getMonth()
+    const d = new Date(baseYear, baseMonth + i, 1)
+    const currentYear = d.getFullYear()
+    const currentMonth = d.getMonth()
 
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
     const widthPct = (daysInMonth / totalDays) * 100
@@ -84,52 +107,61 @@ const monthColumns = computed<MonthCol[]>(() => {
       month: currentMonth + 1,
       widthPercent: widthPct,
     })
-
-    start.setMonth(start.getMonth() + 1)
   }
 
   return cols
 })
 
-// Position calculations
-const getPositionPercent = (dateStr?: string | null) => {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return null
+// Unclamped position calculation
+const getRawPositionPercent = (dateStr?: string | null): number | null => {
+  const d = parseLocalDate(dateStr)
+  if (!d) return null
 
   const diffTime = d.getTime() - timelineStart.value.getTime()
   const days = diffTime / (1000 * 60 * 60 * 24)
-  const pct = (days / totalTimelineDays.value) * 100
-  return Math.max(0, Math.min(100, pct))
+  return (days / totalTimelineDays.value) * 100
 }
 
 const todayPosition = computed(() => {
   const now = new Date()
-  return getPositionPercent(now.toISOString())
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const diffTime = todayLocal.getTime() - timelineStart.value.getTime()
+  const days = diffTime / (1000 * 60 * 60 * 24)
+  const pct = (days / totalTimelineDays.value) * 100
+  if (pct < 0 || pct > 100) return null
+  return pct
 })
 
-// Calculate bar left & width for items
+// Calculate bar left & width for items (hides out-of-range bars & clamps within 0..100%)
 const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | null) => {
-  let startPct = getPositionPercent(startDateStr)
-  let endPct = getPositionPercent(dueDateStr)
+  let startPct = getRawPositionPercent(startDateStr)
+  let endPct = getRawPositionPercent(dueDateStr)
 
   if (startPct === null && endPct === null) {
     return { left: '0%', width: '0%', isVisible: false }
   }
 
   if (startPct === null && endPct !== null) {
-    startPct = Math.max(0, endPct - 8)
+    startPct = endPct - 8
   } else if (startPct !== null && endPct === null) {
-    endPct = Math.min(100, startPct + 8)
+    endPct = startPct + 8
   }
 
-  const left = Math.min(startPct!, endPct!)
-  const width = Math.max(2.5, Math.abs(endPct! - startPct!))
+  const rawLeft = Math.min(startPct!, endPct!)
+  const rawRight = Math.max(startPct!, endPct!)
+
+  if (rawRight < 0 || rawLeft > 100) {
+    return { left: '0%', width: '0%', isVisible: false }
+  }
+
+  const left = Math.max(0, Math.min(100, rawLeft))
+  const right = Math.max(0, Math.min(100, rawRight))
+  const width = Math.min(100 - left, Math.max(2.5, right - left))
 
   return {
     left: `${left}%`,
     width: `${width}%`,
-    isVisible: true,
+    isVisible: width > 0,
   }
 }
 </script>
@@ -143,12 +175,12 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
           <v-icon
             :icon="allExpanded ? 'mdi-collapse-all' : 'mdi-expand-all'"
             size="14"
-            class="mr-1"
+            class="me-1"
           />
           {{ allExpanded ? '모두 접기' : '모두 펼치기' }}
         </v-btn>
 
-        <span class="text-muted small ml-2"> 표시 범위: </span>
+        <span class="text-muted small ms-2"> 표시 범위: </span>
         <v-btn-toggle
           v-model="viewMonthsRange"
           mandatory
@@ -165,13 +197,13 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
 
       <div class="d-flex align-items-center gap-3 text-muted small">
         <span class="d-flex align-items-center">
-          <span class="legend-dot bg-success mr-1"></span> 완료
+          <span class="legend-dot bg-success me-1"></span> 완료
         </span>
         <span class="d-flex align-items-center">
-          <span class="legend-dot bg-primary mr-1"></span> 진행 중
+          <span class="legend-dot bg-primary me-1"></span> 진행 중
         </span>
         <span class="d-flex align-items-center">
-          <span class="legend-dot bg-danger mr-1"></span> 지연/경고
+          <span class="legend-dot bg-danger me-1"></span> 지연/경고
         </span>
       </div>
     </div>
@@ -181,7 +213,17 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
 
     <!-- Gantt Layout Grid -->
     <div v-else class="gantt-container border rounded bg-more-white shadow-sm">
-      <div class="gantt-inner">
+      <div class="gantt-inner position-relative">
+        <!-- Full-height Red Today Line -->
+        <div
+          v-if="todayPosition !== null"
+          class="today-line"
+          :style="{ left: `calc(320px + (100% - 320px) * ${todayPosition / 100})` }"
+          title="오늘"
+        >
+          <span class="today-badge">오늘</span>
+        </div>
+
         <!-- Gantt Header -->
         <div class="gantt-header d-flex border-bottom bg-more-light">
           <!-- Left Label Column -->
@@ -199,16 +241,6 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
             >
               {{ m.label }}
             </div>
-
-            <!-- Red Today Line -->
-            <div
-              v-if="todayPosition !== null"
-              class="today-line"
-              :style="{ left: `${todayPosition}%` }"
-              title="오늘"
-            >
-              <span class="today-badge">오늘</span>
-            </div>
           </div>
         </div>
 
@@ -221,13 +253,13 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
               <div
                 class="gantt-label-col border-end p-2 d-flex align-items-center justify-content-between"
               >
-                <div class="d-flex align-items-center text-truncate mr-2">
+                <div class="d-flex align-items-center text-truncate me-2">
                   <v-btn
                     icon
                     size="x-small"
                     variant="text"
                     density="compact"
-                    class="mr-1"
+                    class="me-1"
                     @click="toggleExpand(ver.pk)"
                   >
                     <v-icon
@@ -297,11 +329,11 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
               >
                 <!-- Issue Title and Assignee -->
                 <div
-                  class="gantt-label-col border-end p-2 pl-4 d-flex align-items-center justify-content-between"
+                  class="gantt-label-col border-end p-2 ps-4 d-flex align-items-center justify-content-between"
                 >
-                  <div class="d-flex align-items-center text-truncate mr-2">
+                  <div class="d-flex align-items-center text-truncate me-2">
                     <span
-                      class="badge bg-secondary-subtle text-secondary mr-1"
+                      class="badge bg-secondary-subtle text-secondary me-1"
                       style="font-size: 10px"
                     >
                       {{ issue.tracker?.name || '업무' }}
@@ -329,28 +361,32 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                 <!-- Issue Timeline Bar -->
                 <div class="gantt-timeline-area position-relative flex-grow-1 p-2">
                   <div
+                    v-if="
+                      getBarCoordinates(
+                        issue.start_date,
+                        issue.due_date || ver.effective_date,
+                      ).isVisible
+                    "
                     class="gantt-bar issue-bar"
                     :class="{
-                      'is-closed': issue.status?.closed,
+                      'is-closed': issue.closed || issue.status?.closed,
                       'is-overdue':
-                        !issue.status?.closed &&
-                        (issue as any).due_date &&
-                        diffDate((issue as any).due_date) < 0,
+                        !(issue.closed || issue.status?.closed) && isOverdue(issue.due_date),
                     }"
                     :style="{
                       left: getBarCoordinates(
-                        (issue as any).start_date,
-                        (issue as any).due_date || ver.effective_date,
+                        issue.start_date,
+                        issue.due_date || ver.effective_date,
                       ).left,
                       width: getBarCoordinates(
-                        (issue as any).start_date,
-                        (issue as any).due_date || ver.effective_date,
+                        issue.start_date,
+                        issue.due_date || ver.effective_date,
                       ).width,
                     }"
                   >
                     <div
                       class="bar-fill"
-                      :class="issue.status?.closed ? 'bg-success' : 'bg-primary'"
+                      :class="issue.closed || issue.status?.closed ? 'bg-success' : 'bg-primary'"
                       :style="{ width: `${issue.done_ratio || 0}%` }"
                     ></div>
                     <span class="bar-label"> {{ issue.done_ratio || 0 }}% </span>

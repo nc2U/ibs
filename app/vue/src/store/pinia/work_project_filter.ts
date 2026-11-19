@@ -134,9 +134,6 @@ export const useProjectFilter = defineStore('projectFilter', () => {
       }
     })
 
-    if (form.value.bookmark !== undefined) filterData.bookmark = form.value.bookmark
-    if (form.value.my_project !== undefined) filterData.my_project = form.value.my_project
-
     return filterData
   }
 

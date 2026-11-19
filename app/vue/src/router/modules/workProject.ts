@@ -36,11 +36,11 @@ const workProject = {
               name: '(회의) - 추가',
             },
             {
-              path: ':meetingId',
+              path: ':meetingId(\\d+)',
               name: '(회의) - 보기',
             },
             {
-              path: ':meetingId/update',
+              path: ':meetingId(\\d+)/update',
               name: '(회의) - 수정',
             },
           ],
@@ -56,7 +56,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Roadmap/Index.vue'),
           children: [
             {
-              path: ':verId',
+              path: ':verId(\\d+)',
               name: '(로드맵) - 보기',
             },
             {
@@ -64,7 +64,7 @@ const workProject = {
               name: '(로드맵) - 추가',
             },
             {
-              path: ':verId/update',
+              path: ':verId(\\d+)/update',
               name: '(로드맵) - 수정',
             },
           ],
@@ -75,7 +75,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Issues/Index.vue'),
           children: [
             {
-              path: ':issueId',
+              path: ':issueId(\\d+)',
               name: '(업무) - 보기',
             },
             {
@@ -99,7 +99,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/News/Index.vue'),
           children: [
             {
-              path: ':newsId',
+              path: ':newsId(\\d+)',
               name: '(공지) - 보기',
             },
           ],
@@ -116,26 +116,18 @@ const workProject = {
             {
               path: 'case',
               name: '(문서 사건)',
-              component: () =>
-                import('@/views/_Work/Manages/Projects/components/Documents/Index.vue'),
             },
             {
               path: 'case/:caseId(\\d+)',
               name: '(문서 사건) - 보기',
-              component: () =>
-                import('@/views/_Work/Manages/Projects/components/Documents/Index.vue'),
             },
             {
               path: 'case/create',
               name: '(문서 사건) - 작성',
-              component: () =>
-                import('@/views/_Work/Manages/Projects/components/Documents/Index.vue'),
             },
             {
               path: 'case/:caseId(\\d+)/update',
               name: '(문서 사건) - 수정',
-              component: () =>
-                import('@/views/_Work/Manages/Projects/components/Documents/Index.vue'),
             },
           ],
         },
@@ -145,7 +137,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Forum/Index.vue'),
           children: [
             {
-              path: ':forumId',
+              path: ':forumId(\\d+)',
               name: '(게시판) - 보기',
               children: [
                 {
@@ -153,7 +145,7 @@ const workProject = {
                   name: '(게시판) - 게시물 작성',
                 },
                 {
-                  path: ':postId',
+                  path: ':postId(\\d+)',
                   name: '(게시판) - 게시물 보기',
                   children: [
                     {
@@ -176,7 +168,7 @@ const workProject = {
               name: '(설정) - 범주추가',
             },
             {
-              path: 'category/:cateId/update',
+              path: 'category/:cateId(\\d+)/update',
               name: '(설정) - 범주수정',
             },
           ],
@@ -216,22 +208,18 @@ const workProject = {
         {
           path: 'case',
           name: '문서 사건',
-          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
         },
         {
           path: 'case/:caseId(\\d+)',
           name: '문서 사건 - 보기',
-          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
         },
         {
           path: 'case/create',
           name: '문서 사건 - 작성',
-          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
         },
         {
           path: 'case/:caseId(\\d+)/update',
           name: '문서 사건 - 수정',
-          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
         },
       ],
     },

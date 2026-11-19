@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { colorLight } from '@/utils/cssMixins'
+import { isValidate } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work_project'
 import { usePerms } from '@/composables/usePerms'
 import type { News } from '@/store/types/work_inform'
@@ -31,8 +32,14 @@ const form = ref({
 const { can, PERM } = usePerms()
 const workStore = useWork()
 const getNewsProjects = computed(() =>
-  workStore.getMyActiveProjects.filter(proj => proj.module?.news),
+  workStore.getMyActiveProjects.filter(
+    proj => proj.module?.news && can(PERM.NEWS_MANAGE, proj.slug),
+  ),
 )
+const canSubmitNews = computed(() => {
+  const targetSlug = form.value.project || (route.params.projId as string) || undefined
+  return targetSlug ? can(PERM.NEWS_MANAGE, targetSlug) : getNewsProjects.value.length > 0
+})
 
 const RefNewFiles = ref<InstanceType<typeof FileUpload> | null>(null)
 const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)
@@ -43,15 +50,12 @@ const fileDelete = (payload: { pk: number; del: boolean }): void => {
 }
 
 const onSubmit = (event: Event) => {
-  const e = event.currentTarget as HTMLFormElement
-  if (!e.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
   } else {
     RefNewFiles.value?.getNewFiles()
     emit('on-submit', { ...form.value })
+    validated.value = false
   }
 }
 
@@ -63,7 +67,7 @@ onBeforeMount(() => {
     form.value.summary = props.news?.summary as string
     form.value.content = props.news?.content as string
     form.value.is_important = props.news?.is_important
-    form.value.files = props.news.files
+    form.value.files = (props.news.files ?? []).map(f => ({ ...f }))
   }
 })
 </script>
@@ -80,7 +84,7 @@ onBeforeMount(() => {
       <CCardBody>
         <CRow v-if="!route.params.projId" class="mb-2">
           <CFormLabel for="project" class="col-sm-2 col-form-label text-end required">
-            프로젝트
+            워크스페이스
           </CFormLabel>
 
           <CCol sm="8">
@@ -143,7 +147,7 @@ onBeforeMount(() => {
     </CCard>
 
     <CCol class="mt-4 mb-5 text-end">
-      <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!can(PERM.NEWS_MANAGE)">
+      <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!canSubmitNews">
         저장
       </v-btn>
       <v-btn color="light" type="button" class="ms-2" @click="emit('close-form')" flat>취소</v-btn>

@@ -23,6 +23,7 @@ const { can, canViewUser, PERM } = usePerms()
 
 // 1. 관람자 추가 자격 조건 (책임자군이거나 watcher_create 권한 소유자)
 const canAddWatcher = computed(() => {
+  if (!props.issue || props.issue.project?.status !== '1') return false
   const currentUserId = userInfo.value?.pk
   if (!currentUserId) return false
   if (workManager.value) return true
@@ -31,11 +32,12 @@ const canAddWatcher = computed(() => {
   const isCreator = props.issue.creator?.pk === currentUserId
   if (isAssignee || isCreator) return true
 
-  return can(PERM.ISSUE_WATCHER_CREATE)
+  return can(PERM.ISSUE_WATCHER_CREATE, props.issue.project?.slug)
 })
 
 // 2. 관람자 삭제 자격 조건 (자기 자신이거나, 책임자군이거나, watcher_delete 권한 소유자)
 const canDeleteWatcher = (watcherPk: number) => {
+  if (!props.issue || props.issue.project?.status !== '1') return false
   const currentUserId = userInfo.value?.pk
   if (!currentUserId) return false
   if (workManager.value) return true
@@ -46,17 +48,19 @@ const canDeleteWatcher = (watcherPk: number) => {
   const isCreator = props.issue.creator?.pk === currentUserId
   if (isAssignee || isCreator) return true
 
-  return can(PERM.ISSUE_WATCHER_DELETE)
+  return can(PERM.ISSUE_WATCHER_DELETE, props.issue.project?.slug)
 }
 
 const issueStore = useIssue()
 const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
+  if (!props.issue?.pk) return
   const form = new FormData()
-  payload.forEach(val => form.append('watchers', val.pk.toString()))
+  payload.forEach(val => form.append('add_watchers', val.pk.toString()))
   issueStore.patchIssue(props.issue.pk, form)
 }
 
 const delWatcher = (pk: number) => {
+  if (!props.issue?.pk) return
   const form = new FormData()
   form.append('del_watcher', JSON.stringify(pk))
   issueStore.patchIssue(props.issue.pk, form)
@@ -64,7 +68,7 @@ const delWatcher = (pk: number) => {
 </script>
 
 <template>
-  <template v-if="(workManager || canAddWatcher || watchers.length > 0) && route.name === '(업무) - 보기'">
+  <template v-if="issue && (workManager || canAddWatcher || watchers.length > 0) && route.name === '(업무) - 보기'">
     <CRow class="mb-1 me-3 pe-2">
       <CCol>
         <h6 class="asideTitle">업무 관람자 ({{ watchers.length }})</h6>
@@ -83,7 +87,7 @@ const delWatcher = (pk: number) => {
         </router-link>
         <span v-else>{{ watcher.username }}</span>
         <span v-if="canDeleteWatcher(watcher.pk)" @click="delWatcher(watcher.pk)">
-          <v-icon icon="mdi-trash-can-outline" size="sm" color="grey" class="ms-2 pointer" />
+          <v-icon icon="mdi-trash-can-outline" size="small" color="grey" class="ms-2 pointer" />
           <v-tooltip activator="parent" location="right">삭제</v-tooltip>
         </span>
       </CCol>

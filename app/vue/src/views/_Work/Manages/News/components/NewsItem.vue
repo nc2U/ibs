@@ -55,7 +55,7 @@ const previewContent = computed(() => {
             </router-link>
           </span>
           <router-link
-            v-if="can(PERM.NEWS_READ)"
+            v-if="can(PERM.NEWS_READ, news.project?.slug)"
             :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
             class="text-decoration-none fw-bold"
           >
@@ -95,7 +95,7 @@ const previewContent = computed(() => {
             </v-chip>
             {{ news.title }}
 
-            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+            <v-chip v-if="news.is_new" color="warning" variant="flat" size="x-small" class="ms-2">
               new
             </v-chip>
             <v-chip
@@ -103,7 +103,7 @@ const previewContent = computed(() => {
               color="info"
               variant="flat"
               size="x-small"
-              class="ml-1"
+              class="ms-1"
             >
               <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
             </v-chip>
@@ -114,7 +114,7 @@ const previewContent = computed(() => {
 
     <CRow class="mb-3 text-grey small">
       <CCol>
-        <v-icon icon="mdi-account-outline" size="small" class="mr-1" />
+        <v-icon icon="mdi-account-outline" size="small" class="me-1" />
         <router-link
           v-if="canViewUser(news.author?.pk)"
           :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
@@ -123,7 +123,7 @@ const previewContent = computed(() => {
         </router-link>
         <span v-else>{{ news.author?.username || '알 수 없음' }}</span>
         <span class="mx-2">|</span>
-        <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
+        <v-icon icon="mdi-clock-outline" size="small" class="me-1" />
         <router-link
           :to="{
             name: '(업무실행내역)',

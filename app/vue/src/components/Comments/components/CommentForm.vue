@@ -18,18 +18,21 @@ const form = reactive<any>({
 })
 
 const onSubmit = () => {
-  emit('on-submit', form)
+  if (!form.content?.trim()) return
+  emit('on-submit', { ...form, post: props.post })
   formReset()
 }
 
 const formReset = () => {
   form.pk = undefined
+  form.post = props.post
   form.content = ''
-  form.parent = null
+  form.parent = props.parent
   form.secret = false
 }
 
 const formSet = () => {
+  form.post = props.post
   if (props.comment) {
     form.pk = props.comment.pk
     form.content = props.comment.content
@@ -41,7 +44,7 @@ const formSet = () => {
 }
 
 watch(
-  () => props.comment,
+  [() => props.comment, () => props.post, () => props.parent],
   () => formSet(),
   { deep: true },
 )
@@ -75,13 +78,13 @@ onMounted(() => formSet())
         />
         <span
           v-if="form.secret"
-          class="text-right text-muted text-caption"
+          class="text-end text-muted text-caption"
           style="padding-top: 30px"
         >
           비밀댓글은 관리자와 작성자만 볼 수 있습니다.
         </span>
 
-        <v-col class="text-right pt-3">
+        <v-col class="text-end pt-3">
           <v-btn
             type="submit"
             :color="!comment ? 'primary' : 'success'"

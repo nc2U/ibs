@@ -40,21 +40,54 @@ const activeTargets = computed(() =>
 )
 
 const goSearch = () => {
-  if (searchWord.value.trim().length < 2) return
-  router.replace({
-    name: '전체검색',
-    query: {
-      q: searchWord.value,
-      scope: projectScope.value,
-      title_only: titleOnly.value ? '1' : '0',
-      opened_only: openedOnly.value ? '1' : '0',
-      attach_mode: attachMode.value,
-      t: activeTargets.value,
-    },
-  })
+  const q = searchWord.value.trim()
+  if (q.length < 2) {
+    searchStore.reset()
+    searchStore.error = '검색어는 2자 이상 입력하세요.'
+    return
+  }
+  if (!activeTargets.value.length) {
+    searchStore.reset()
+    searchStore.error = '검색 대상을 1개 이상 선택하세요.'
+    return
+  }
+
+  const nextQuery = {
+    q,
+    scope: projectScope.value,
+    title_only: titleOnly.value ? '1' : '0',
+    opened_only: openedOnly.value ? '1' : '0',
+    attach_mode: attachMode.value,
+    t: activeTargets.value,
+  }
+
+  const curT = Array.isArray(route.query.t)
+    ? route.query.t.map(String)
+    : route.query.t
+      ? [String(route.query.t)]
+      : []
+  const sameQuery =
+    route.query.q === nextQuery.q &&
+    (route.query.scope ?? 'all') === nextQuery.scope &&
+    (route.query.title_only ?? '0') === nextQuery.title_only &&
+    (route.query.opened_only ?? '0') === nextQuery.opened_only &&
+    (route.query.attach_mode ?? '1') === nextQuery.attach_mode &&
+    curT.length === nextQuery.t.length &&
+    curT.every((v, i) => v === nextQuery.t[i])
+
+  if (sameQuery) {
+    doSearch(q)
+  } else {
+    router.replace({ name: '전체검색', query: nextQuery })
+  }
 }
 
 const doSearch = (q: string) => {
+  if (!activeTargets.value.length) {
+    searchStore.reset()
+    searchStore.error = '검색 대상을 1개 이상 선택하세요.'
+    return
+  }
   searchStore.fetchSearch({
     q,
     scope: projectScope.value,
@@ -69,24 +102,13 @@ watch(
   () => route.query,
   query => {
     const q = query.q
-    if (q && typeof q === 'string') {
+    if (q && typeof q === 'string' && q.trim()) {
       searchWord.value = q
-      if (query.scope === 'my') {
-        projectScope.value = 'my'
-      } else {
-        projectScope.value = 'all'
-      }
-      if (query.title_only) {
-        titleOnly.value = query.title_only === '1'
-      }
-      if (query.opened_only) {
-        openedOnly.value = query.opened_only === '1'
-      }
-      if (query.attach_mode === '2' || query.attach_mode === '3') {
-        attachMode.value = query.attach_mode
-      } else {
-        attachMode.value = '1'
-      }
+      projectScope.value = query.scope === 'my' ? 'my' : 'all'
+      titleOnly.value = query.title_only === '1'
+      openedOnly.value = query.opened_only === '1'
+      attachMode.value =
+        query.attach_mode === '2' || query.attach_mode === '3' ? query.attach_mode : '1'
       if (query.t) {
         const queryTargets = Array.isArray(query.t) ? query.t : [query.t]
         Object.keys(targets.value).forEach(k => {
@@ -98,6 +120,9 @@ watch(
         })
       }
       doSearch(q)
+    } else {
+      searchWord.value = ''
+      searchStore.reset()
     }
   },
   { deep: true, immediate: true },
@@ -126,12 +151,12 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
 <template>
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCall" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-magnify" size="small" class="mr-1" />
+            <v-icon icon="mdi-magnify" size="small" class="me-1" />
             검색
           </h5>
         </CCol>
@@ -193,17 +218,17 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <!-- 옵션 -->
           <CRow class="mt-3">
             <CCol class="pointer mb-0" @click="visible = !visible">
-              <v-icon :icon="visible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
+              <v-icon :icon="visible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="small" />
               옵션
             </CCol>
             <CCollapse :visible="visible">
               <v-divider class="mx-1" />
-              <CRow class="mt-2 pl-1">
+              <CRow class="mt-2 ps-1">
                 <CCol>
                   <CFormCheck v-model="openedOnly" label="열린 업무만" id="opened-only" />
                 </CCol>
               </CRow>
-              <CRow class="mt-2 pl-1">
+              <CRow class="mt-2 ps-1">
                 <CCol>
                   <CFormCheck
                     v-model="attachMode"
@@ -263,12 +288,12 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       </CRow>
 
       <!-- 검색 결과 -->
-      <div v-if="route.query.q && !searchStore.loading" class="mb-3">
+      <div v-if="route.query.q && !searchStore.loading && !searchStore.error" class="mb-3">
         <CRow class="mt-4">
           <CCol>
             <h5>
               결과
-              <v-chip size="small" color="primary" class="ml-1">
+              <v-chip size="small" color="primary" class="ms-1">
                 {{ searchStore.totalCount }}
               </v-chip>
             </h5>
@@ -279,7 +304,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
         <CRow v-if="!searchStore.hasResults" class="mt-2">
           <CCol>
             <v-alert variant="tonal" color="blue-grey-lighten-1">
-              <v-icon icon="mdi-magnify-close" size="20" class="mr-2" />
+              <v-icon icon="mdi-magnify-close" size="20" class="me-2" />
               검색 결과가 없습니다.
             </v-alert>
           </CCol>
@@ -290,9 +315,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-account-group-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-account-group-outline" size="small" class="me-1" />
                 {{ typeLabel.meetings }}
-                <v-chip size="x-small" class="ml-1">
+                <v-chip size="x-small" class="ms-1">
                   {{ searchStore.results.meetings.length }}
                 </v-chip>
               </h6>
@@ -336,9 +361,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-clipboard-check-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-clipboard-check-outline" size="small" class="me-1" />
                 {{ typeLabel.issues }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.issues.length }}</v-chip>
+                <v-chip size="x-small" class="ms-1">{{ searchStore.results.issues.length }}</v-chip>
               </h6>
               <v-divider />
             </CCol>
@@ -361,7 +386,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                     v-if="item.is_private"
                     icon="mdi-lock-outline"
                     size="x-small"
-                    class="mr-1 text-warning"
+                    class="me-1 text-warning"
                   />
                   {{ item.subject }}
                 </router-link>
@@ -379,9 +404,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-comment-search-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-comment-search-outline" size="small" class="me-1" />
                 {{ typeLabel.comments }}
-                <v-chip size="x-small" class="ml-1">
+                <v-chip size="x-small" class="ms-1">
                   {{ searchStore.results.comments.length }}
                 </v-chip>
               </h6>
@@ -420,9 +445,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-message-badge-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-message-badge-outline" size="small" class="me-1" />
                 {{ typeLabel.news }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.news.length }}</v-chip>
+                <v-chip size="x-small" class="ms-1">{{ searchStore.results.news.length }}</v-chip>
               </h6>
               <v-divider />
             </CCol>
@@ -456,9 +481,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-text-box-search-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-text-box-search-outline" size="small" class="me-1" />
                 {{ typeLabel.documents }}
-                <v-chip size="x-small" class="ml-1">
+                <v-chip size="x-small" class="ms-1">
                   {{ searchStore.results.documents.length }}
                 </v-chip>
               </h6>
@@ -494,9 +519,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-forum-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-forum-outline" size="small" class="me-1" />
                 {{ typeLabel.posts }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.posts.length }}</v-chip>
+                <v-chip size="x-small" class="ms-1">{{ searchStore.results.posts.length }}</v-chip>
               </h6>
               <v-divider />
             </CCol>

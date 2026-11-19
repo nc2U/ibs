@@ -129,27 +129,61 @@ export const isValidate = (event: Event) => {
   } else return false
 }
 
+export const sanitizeExternalUrl = (url?: string | null): string => {
+  if (!url) return '#'
+  const trimmed = String(url).trim()
+  if (!trimmed) return '#'
+  if (trimmed.startsWith('/')) return trimmed
+  try {
+    const parsed = new URL(trimmed, window.location.origin)
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed
+    }
+  } catch {
+    // invalid URL
+  }
+  return '#'
+}
+
 const md = new MarkdownIt('default', { html: true, breaks: true })
+
+DOMPurify.addHook('afterSanitizeAttributes', node => {
+  if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
 
 export const markdownRender = (content: string) => {
   if (!content) return ''
   const normalized = content.replace(/\r\n/g, '\n')
-  // 1) 행 시작의 숫자+마침표('1. ', '2. ')가 마크다운 <ol> 리스트로 자동 변환되어 숫자와 텍스트가 분리되는 현상 방지
-  const listEscaped = normalized.replace(/^(\s*\d+)\.\s+/gm, '$1\\. ')
+  // 1) 코드 펜스(```) 외 영역에서만 행 시작 숫자+마침표('1. ') 자동 <ol> 변환 방지
+  const fenceParts = normalized.split(/(```[\s\S]*?```)/g)
+  const listEscaped = fenceParts
+    .map((segment, idx) =>
+      idx % 2 === 1 ? segment : segment.replace(/^(\s*\d+)\.\s+/gm, '$1\\. '),
+    )
+    .join('')
   // 2) 3개 이상 연속된 엔터(빈 줄 1개 이상)가 있을 때, 빈 문단 보존
   const preprocessed = listEscaped.replace(/\n{3,}/g, match => {
     const extraEmptyLines = match.length - 2
     return '\n\n' + '<p class="empty-line">&nbsp;</p>\n\n'.repeat(extraEmptyLines)
   })
   const rendered = md.render(preprocessed)
-  // 3) HTML 태그 외부의 2개 이상 연속 스페이스('  +')를 &nbsp;로 변환하여 다중 띄어쓰기(스페이스바) 보존
+  // 3) <pre>/<code> 외부의 HTML 태그 외부 텍스트에서만 2개 이상 연속 스페이스를 &nbsp;로 변환
   const parts = rendered.split(/(<[^>]+>)/g)
+  let inCodeDepth = 0
   for (let i = 0; i < parts.length; i++) {
-    if (!parts[i].startsWith('<')) {
-      parts[i] = parts[i].replace(/  +/g, match => '&nbsp;'.repeat(match.length))
+    const part = parts[i]
+    if (part.startsWith('<')) {
+      if (/^<(pre|code)\b/i.test(part)) inCodeDepth += 1
+      else if (/^<\/(pre|code)\b/i.test(part)) inCodeDepth = Math.max(0, inCodeDepth - 1)
+    } else if (inCodeDepth === 0) {
+      parts[i] = part.replace(/  +/g, match => '&nbsp;'.repeat(match.length))
     }
   }
-  return DOMPurify.sanitize(parts.join(''))
+  return DOMPurify.sanitize(parts.join(''), {
+    FORBID_TAGS: ['form', 'input', 'button', 'textarea', 'select', 'object', 'embed'],
+  })
 }
 
 // localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬

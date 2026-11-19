@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref, watch } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
@@ -30,8 +30,27 @@ const route = useRoute()
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
-const toDate = ref(new Date())
+const parseQueryDate = (raw: unknown): Date | null => {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null
+  const [y, m, d] = raw.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return isNaN(dt.getTime()) ? null : dt
+}
+
+const toDate = ref<Date>(parseQueryDate(route.query.from) ?? new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))
+
+watch(
+  () => route.query.from,
+  val => {
+    const parsed = parseQueryDate(val)
+    if (parsed) toDate.value = parsed
+  },
+)
+
+onBeforeMount(() => {
+  workStore.removeIssueProject()
+})
 
 const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
@@ -54,7 +73,7 @@ const loading = ref<boolean>(true)
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-history" color="primary" size="small" class="mr-2" />업무실행내역
+            <v-icon icon="mdi-history" color="primary" size="small" class="me-2" />업무실행내역
           </h5>
         </CCol>
       </CRow>

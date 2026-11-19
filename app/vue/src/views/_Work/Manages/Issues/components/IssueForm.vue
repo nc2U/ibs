@@ -21,7 +21,7 @@ import type {
   IssueStatus,
   SimpleCategory,
 } from '@/store/types/work_issue'
-import { isValidate } from '@/utils/helper'
+import { isValidate, sanitizeExternalUrl } from '@/utils/helper'
 import { dateFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -86,25 +86,46 @@ const removeLink = (index: number) => {
 const isCreator = computed(() => props.issue?.creator?.pk === userInfo?.value?.pk)
 const isAssignee = computed(() => props.issue?.assigned_to?.pk === userInfo?.value?.pk)
 
+const route = useRoute()
+const projId = computed(() => route.params.projId as string | undefined)
 const { can, PERM } = usePerms()
-const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
+const targetProjectSlug = computed(
+  () => props.issue?.project?.slug || form.value.project || props.currentProject?.slug || projId.value,
+)
+const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE, targetProjectSlug.value))
 
 const canEditIssue = computed(() => {
   if (!props.issue) return true // 신규 생성 시
 
   return (
-    can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator.value || isAssignee.value))
+    can(PERM.ISSUE_UPDATE, targetProjectSlug.value) ||
+    (can(PERM.ISSUE_OWN_UPDATE, targetProjectSlug.value) && (isCreator.value || isAssignee.value))
   )
 })
 
+const canCommentCreate = computed(() => can(PERM.ISSUE_COMMENT_CREATE, targetProjectSlug.value))
+const canSetPrivateComment = computed(() =>
+  can(PERM.ISSUE_PRIVATE_COMMENT_SET, targetProjectSlug.value),
+)
+const canManageWatchers = computed(
+  () =>
+    workManager.value ||
+    can(PERM.ISSUE_WATCHER_CREATE, targetProjectSlug.value) ||
+    isCreator.value ||
+    isAssignee.value,
+)
+
 const canSetPrivate = computed(() => {
   if (!props.issue) {
-    return can(PERM.ISSUE_PRIVATE) || can(PERM.ISSUE_OWN_PRIVATE)
+    return (
+      can(PERM.ISSUE_PRIVATE, targetProjectSlug.value) ||
+      can(PERM.ISSUE_OWN_PRIVATE, targetProjectSlug.value)
+    )
   }
 
   return (
-    can(PERM.ISSUE_PRIVATE) ||
-    (can(PERM.ISSUE_OWN_PRIVATE) && (isCreator.value || isAssignee.value))
+    can(PERM.ISSUE_PRIVATE, targetProjectSlug.value) ||
+    (can(PERM.ISSUE_OWN_PRIVATE, targetProjectSlug.value) && (isCreator.value || isAssignee.value))
   )
 })
 
@@ -200,24 +221,28 @@ const removeFile = (index: number) => {
 }
 
 const formsCheck = computed(() => {
+  if (props.issue && !canEditIssue.value) {
+    // 편집 권한은 없으나 댓글 작성 권한이 있는 경우 댓글 입력 시에만 제출 허용
+    return !(canCommentCreate.value && comment.value.content.trim().length > 0)
+  }
   const canSubmit = props.issue ? canEditIssue.value : canIssueCreate.value
   if (!canSubmit) return true
   if (props.issue) {
     const a = form.value.project === props.issue.project.slug
     const b = form.value.is_private === props.issue.is_private
-    const c = form.value.tracker === props.issue.tracker.pk
+    const c = Number(form.value.tracker) === props.issue.tracker.pk
     const d = form.value.subject === props.issue.subject
     const e = form.value.description === props.issue.description
-    const f = form.value.status === props.issue.status.pk
+    const f = Number(form.value.status) === props.issue.status.pk
     const g = form.value.parent === (props.issue.parent?.pk ?? null)
-    const h = form.value.priority === props.issue.priority.pk
+    const h = Number(form.value.priority) === props.issue.priority.pk
     const i = form.value.start_date === dateFormat(props.issue.start_date)
-    const j = form.value.assigned_to === (props.issue.assigned_to?.pk ?? null)
+    const j = (form.value.assigned_to || null) === (props.issue.assigned_to?.pk ?? null)
     const k = form.value.due_date === (props.issue.due_date ? dateFormat(props.issue.due_date) : null)
     const l = (form.value.category || null) === (props.issue.category ?? null)
     const m = form.value.expected_duration === (props.issue.expected_duration ?? '')
     const n = (form.value.fixed_version || null) === (props.issue.fixed_version?.pk ?? null)
-    const o = form.value.done_ratio === props.issue.done_ratio
+    const o = Number(form.value.done_ratio) === props.issue.done_ratio
     const p = !form.value.files?.some(f => f.del === true)
     const q = !newFiles.value.length
     const r = !form.value.links?.some(l => l.del === true)
@@ -227,7 +252,7 @@ const formsCheck = computed(() => {
     const t =
       origWatchers.length === currWatchers.length &&
       origWatchers.every((v, idx) => v === currWatchers[idx])
-    const u = !comment.value.content
+    const u = !comment.value.content.trim()
 
     const first = a && b && c && d && e && f && g && h && i
     const second = j && k && l && m && n && o && p && q && r && s && t && u
@@ -236,28 +261,16 @@ const formsCheck = computed(() => {
   return false
 })
 
-const route = useRoute()
 const workStore = useWork()
 
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
-// 프로젝트 전체 멤버 목록 (업무 관람자 대상용)
-const allProjectMembers = computed(() => {
-  if (workStore.projectMembers.length > 0) {
-    return workStore.projectMembers.map(m => ({ pk: m.user_id, username: m.username }))
-  }
-  return [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()]
-})
-
-// 프로젝트 멤버가 로드/변경될 때, 멤버가 아닌 관람자를 자동으로 필터링
-watch(
-  () => allProjectMembers.value,
-  newMembers => {
-    const memberPks = newMembers.map(m => m.pk)
-    watcherList.value = watcherList.value.filter(w => memberPks.includes(w.pk))
-    form.value.watchers = form.value.watchers.filter(pk => memberPks.includes(pk))
-  },
-  { deep: true },
+const selectedWatchers = computed(() =>
+  form.value.watchers.map(pk => {
+    const found =
+      watcherList.value.find(w => w.pk === pk) || props.issue?.watchers?.find(w => w.pk === pk)
+    return found ?? { pk, username: '' }
+  }),
 )
 
 const memberList = computed(() => {
@@ -311,12 +324,23 @@ const trackers = computed(() => {
   }
 })
 
+const isClosedStatus = (statusPk: number) =>
+  props.statusList.find(s => s.pk === Number(statusPk))?.closed === true
+
+const firstClosedStatusPk = computed(() => props.statusList.find(s => s.closed)?.pk ?? null)
+const inProgressStatusPk = computed(
+  () => props.statusList.find(s => !s.closed && s.pk !== props.statusList[0]?.pk)?.pk ?? null,
+)
+const defaultOpenStatusPk = computed(
+  () => props.statusList.find(s => !s.closed)?.pk ?? props.statusList[0]?.pk ?? 1,
+)
+
 // form.status 변경 감시
 watch(
   () => form.value.status,
   newStatus => {
-    // 새로운 상태가 '종료'(PK 5) 또는 '거절'(PK 6)이고 진척도가 100이 아니면 진척도를 100으로 설정
-    if (newStatus >= 5 && form.value.done_ratio !== 100) {
+    // 새로운 상태가 완료(closed) 상태이고 진척도가 100이 아니면 진척도를 100으로 설정
+    if (isClosedStatus(newStatus) && form.value.done_ratio !== 100) {
       form.value.done_ratio = 100
     }
   },
@@ -326,10 +350,9 @@ watch(
 watch(
   () => form.value.done_ratio,
   newDoneRatio => {
-    // 진척도가 100이고 현재 상태가 '완료'(PK 5)가 아니면 상태를 '완료'(PK 5)로 설정
-    if (newDoneRatio === 100 && form.value.status < 5) {
-      // 5: 완료
-      form.value.status = 5
+    // 진척도가 100이고 현재 상태가 완료(closed)가 아니면 첫 번째 완료 상태로 설정
+    if (newDoneRatio === 100 && !isClosedStatus(form.value.status) && firstClosedStatusPk.value) {
+      form.value.status = firstClosedStatusPk.value
     }
   },
 )
@@ -352,9 +375,9 @@ watch(
 
 const newIssueStatusList = computed(() => {
   if (!props.issue) {
-    // 신규 생성 모드
-    // '신규'와 '진행' 상태만 필터링 (이름으로 식별)
-    return props.statusList.filter(status => status.pk <= 2)
+    // 신규 생성 모드: 진행 중(미완료) 상태만 선택 가능
+    const openStatuses = props.statusList.filter(status => !status.closed)
+    return openStatuses.length ? openStatuses : props.statusList
   }
   return props.statusList // 수정 모드일 때는 모든 상태 반환
 })
@@ -487,14 +510,25 @@ const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
 }
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  const isCommentOnly = Boolean(props.issue && !canEditIssue.value && canCommentCreate.value)
+  if (!isCommentOnly && isValidate(event)) {
     validated.value = true
   } else {
+    const clampedDoneRatio = Math.max(0, Math.min(100, Number(form.value.done_ratio) || 0))
     emit('on-submit', {
       ...form.value,
+      tracker: form.value.tracker || null,
+      status: Number(form.value.status),
+      priority: Number(form.value.priority),
+      assigned_to: form.value.assigned_to || null,
+      fixed_version: form.value.fixed_version || null,
+      category: form.value.category || null,
+      done_ratio: clampedDoneRatio,
       newFiles: newFiles.value,
       newLinks: newLinks.value,
       comment_content: comment.value.content,
+      comment_is_private: canSetPrivateComment.value ? comment.value.is_private : false,
+      commentOnly: isCommentOnly,
     })
     validated.value = false
   }
@@ -504,7 +538,11 @@ const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
 const callReply = (payload?: { id?: number; user?: string; content?: string }) => {
   if (!payload) return
-  comment.value.content = `> ${payload.user} [#note-${payload.id}](이력#note-${payload.id})  \n> ${payload.content}  \n\n`
+  const quotedContent = (payload.content ?? '')
+    .split('\n')
+    .map(line => `> ${line}`)
+    .join('\n')
+  comment.value.content = `> ${payload.user} [#note-${payload.id}](#note-${payload.id})  \n${quotedContent}\n\n`
   cmtFocus.value = true
 }
 
@@ -512,24 +550,45 @@ const RefCategoryModal = ref<InstanceType<typeof FormModal> | null>(null)
 const RefVersionModal = ref<InstanceType<typeof FormModal> | null>(null)
 const refWatcherAdd = ref<InstanceType<typeof WatcherAdd> | null>(null)
 
-const createCategory = async (payload: { name: string; assigned_to: number | null }) => {
+const createCategory = async (
+  payload: { name: string; assigned_to: number | null },
+  done?: (ok: boolean) => void,
+) => {
   const projectSlug = props.currentProject?.slug || form.value.project || projId.value
-  if (!projectSlug) return
+  if (!projectSlug) {
+    done?.(false)
+    return
+  }
   const newPk = await issueStore.createCategory({ ...payload, project: projectSlug })
-  if (newPk) form.value.category = newPk
+  if (newPk) {
+    form.value.category = newPk
+    done?.(true)
+  } else {
+    done?.(false)
+  }
 }
-const createVersion = async (payload: Omit<FormVersion, 'pk' | 'project'> & { pk?: number | null }) => {
+const createVersion = async (
+  payload: Omit<FormVersion, 'pk' | 'project'> & { pk?: number | null },
+  done?: (ok: boolean) => void,
+) => {
   const projectSlug = props.currentProject?.slug || form.value.project || projId.value
-  if (!projectSlug) return
+  if (!projectSlug) {
+    done?.(false)
+    return
+  }
   const newPk = await workStore.createVersion({
     ...payload,
     pk: payload.pk ?? null,
     project: projectSlug,
   })
-  if (newPk) form.value.fixed_version = newPk
+  if (newPk) {
+    form.value.fixed_version = newPk
+    done?.(true)
+  } else {
+    done?.(false)
+  }
 }
 
-const projId = computed(() => route.params.projId as string | undefined)
 const lastFetchedMemberSlug = ref('')
 
 watch(projId, newVal => {
@@ -566,13 +625,18 @@ watch(
       ) {
         form.value.assigned_to = null
       }
+      const memberPks = memberList.value.map(m => m.pk)
+      form.value.watchers = form.value.watchers.filter(pk => memberPks.includes(pk))
     }
   },
 )
 
 onBeforeMount(async () => {
   const copyId = route.query.copy ? Number(route.query.copy) : null
-  const copyIssueObj = copyId ? (issueStore.allIssueList.find(i => i.pk === copyId) as Issue) : null
+  const copyIssueObj =
+    !props.issue && copyId && !Number.isNaN(copyId)
+      ? await issueStore.fetchIssueDetail(copyId)
+      : null
 
   const initialProjSlug =
     props.issue?.project?.slug ||
@@ -607,15 +671,18 @@ onBeforeMount(async () => {
         watcherList.value.push({ pk: w.pk, username: w.username })
       }
     })
-    form.value.files = props.issue.files
-    form.value.links = props.issue.links ?? []
+    form.value.files = (props.issue.files ?? []).map(f => ({ ...f }))
+    form.value.links = (props.issue.links ?? []).map(l => ({ ...l }))
   } else if (copyIssueObj) {
     form.value.project = copyIssueObj.project.slug
     form.value.tracker = copyIssueObj.tracker.pk
     form.value.is_private = copyIssueObj.is_private
     form.value.subject = copyIssueObj.subject
     form.value.description = copyIssueObj.description
-    form.value.status = copyIssueObj.status.pk
+    // 복사 원본이 완료 상태이면 신규 생성 시 기본 진행중 상태로 초기화
+    form.value.status = copyIssueObj.status?.closed
+      ? defaultOpenStatusPk.value
+      : copyIssueObj.status.pk
     form.value.parent = copyIssueObj?.parent?.pk ?? null
     form.value.priority = copyIssueObj.priority.pk
     form.value.start_date = dateFormat(copyIssueObj.start_date)
@@ -624,9 +691,9 @@ onBeforeMount(async () => {
     form.value.fixed_version = copyIssueObj.fixed_version?.pk ?? null
     form.value.category = copyIssueObj.category
     form.value.expected_duration = copyIssueObj.expected_duration ?? ''
-    form.value.done_ratio = copyIssueObj.done_ratio
-    form.value.watchers = copyIssueObj.watchers.map(w => w.pk)
-    copyIssueObj.watchers.forEach(w => {
+    form.value.done_ratio = copyIssueObj.status?.closed ? 0 : copyIssueObj.done_ratio
+    form.value.watchers = (copyIssueObj.watchers ?? []).map(w => w.pk)
+    ;(copyIssueObj.watchers ?? []).forEach(w => {
       if (!watcherList.value.some(existing => existing.pk === w.pk)) {
         watcherList.value.push({ pk: w.pk, username: w.username })
       }
@@ -662,7 +729,7 @@ defineExpose({ callComment, callReply })
                   유형
                 </CFormLabel>
                 <CCol sm="4">
-                  <CFormSelect v-model="form.tracker" id="tracker" required>
+                  <CFormSelect v-model.number="form.tracker" id="tracker" required>
                     <option value="">---------</option>
                     <option v-for="tracker in trackers" :value="tracker.pk" :key="tracker.pk">
                       {{ tracker.name }} - [{{ tracker.description }}]
@@ -733,7 +800,11 @@ defineExpose({ callComment, callReply })
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
                         <CTableDataCell>
                           <a
-                            :href="typeof linkItem === 'object' ? linkItem.link : linkItem"
+                            :href="
+                              sanitizeExternalUrl(
+                                typeof linkItem === 'object' ? linkItem.link : linkItem,
+                              )
+                            "
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -848,7 +919,7 @@ defineExpose({ callComment, callReply })
                       :class="newLinks.length ? 'offset-sm-2 col-sm-10' : 'col-sm-10'"
                       class="form-text pt-2"
                     >
-                      <v-icon icon="mdi-link-plus" color="primary" size="sm" class="me-1" />
+                      <v-icon icon="mdi-link-plus" color="primary" size="small" class="me-1" />
                       <a href="#" @click.prevent="addLink">
                         외부 클라우드 링크 추가 (OneDrive, Google Drive 등)
                       </a>
@@ -856,7 +927,7 @@ defineExpose({ callComment, callReply })
                   </CRow>
                 </div>
 
-                <CRow v-if="workManager" class="mb-3">
+                <CRow v-if="canManageWatchers" class="mb-3">
                   <CFormLabel for="watcher" class="col-sm-2 col-form-label text-end">
                     업무 관람자
                   </CFormLabel>
@@ -876,7 +947,7 @@ defineExpose({ callComment, callReply })
                   </CCol>
                   <CCol class="col-sm-2"></CCol>
                   <CCol class="form-text">
-                    <v-icon icon="mdi-plus-circle" color="success" size="sm" class="me-2" />
+                    <v-icon icon="mdi-plus-circle" color="success" size="small" class="me-2" />
                     <a href="#" @click.prevent="refWatcherAdd?.callModal()">
                       추가할 업무 관람자 검색
                     </a>
@@ -888,7 +959,7 @@ defineExpose({ callComment, callReply })
             <CCol md="4" class="bg-more-light p-4">
               <CRow class="mb-3">
                 <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-end required">
-                  프로젝트
+                  워크스페이스
                 </CFormLabel>
                 <CCol sm="8">
                   <CFormSelect
@@ -928,16 +999,16 @@ defineExpose({ callComment, callReply })
                       </option>
                     </CFormSelect>
                     <CInputGroupText
-                      v-if="form.status === 1"
+                      v-if="inProgressStatusPk && form.status === defaultOpenStatusPk"
                       class="pointer"
-                      @click="form.status = 2"
+                      @click="form.status = inProgressStatusPk"
                     >
                       진행 &nbsp;&nbsp; »
                     </CInputGroupText>
                     <CInputGroupText
-                      v-if="issue?.pk && form.status === 2"
+                      v-if="issue?.pk && firstClosedStatusPk && form.status === inProgressStatusPk"
                       class="pointer"
-                      @click="form.status = 5"
+                      @click="form.status = firstClosedStatusPk"
                     >
                       완료 &nbsp;&nbsp; »
                     </CInputGroupText>
@@ -950,7 +1021,7 @@ defineExpose({ callComment, callReply })
                   우선순위
                 </CFormLabel>
                 <CCol sm="8">
-                  <CFormSelect v-model="form.priority" id="priority" required>
+                  <CFormSelect v-model.number="form.priority" id="priority" required>
                     <option v-for="pri in priorityList" :value="pri.pk" :key="pri.pk">
                       {{ pri.name }}
                     </option>
@@ -964,7 +1035,7 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="8">
                   <CInputGroup>
-                    <CFormSelect v-model="form.assigned_to" id="assigned_to">
+                    <CFormSelect v-model.number="form.assigned_to" id="assigned_to">
                       <option value="">---------</option>
                       <option
                         v-for="member in memberList"
@@ -1008,7 +1079,7 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="8">
                   <CInputGroup>
-                    <CFormSelect v-model="form.fixed_version" id="fixed_version">
+                    <CFormSelect v-model.number="form.fixed_version" id="fixed_version">
                       <option value="">---------</option>
                       <option v-for="ver in versions" :value="ver.pk" :key="ver.pk">
                         {{ ver.name }}
@@ -1019,7 +1090,7 @@ defineExpose({ callComment, callReply })
                       class="pointer"
                       @click="RefVersionModal?.callModal()"
                     >
-                      <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+                      <v-icon icon="mdi-plus-circle" color="success" size="small" />
                     </CInputGroupText>
                   </CInputGroup>
                 </CCol>
@@ -1042,7 +1113,7 @@ defineExpose({ callComment, callReply })
                       class="pointer"
                       @click="RefCategoryModal?.callModal()"
                     >
-                      <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+                      <v-icon icon="mdi-plus-circle" color="success" size="small" />
                     </CInputGroupText>
                   </CInputGroup>
                 </CCol>
@@ -1153,10 +1224,12 @@ defineExpose({ callComment, callReply })
                   >
                     <template v-slot:append>
                       <v-text-field
-                        v-model="form.done_ratio"
+                        v-model.number="form.done_ratio"
                         density="compact"
                         style="width: 90px"
                         type="number"
+                        :min="0"
+                        :max="100"
                         hide-details
                         single-line
                       />
@@ -1168,7 +1241,7 @@ defineExpose({ callComment, callReply })
           </CRow>
         </div>
 
-        <div v-if="issue">
+        <div v-if="issue && canCommentCreate">
           <CRow class="mb-3">
             <CCol>
               <h6>댓글</h6>
@@ -1180,7 +1253,12 @@ defineExpose({ callComment, callReply })
                 class="mb-1"
                 placeholder="Comment"
               />
-              <CFormCheck v-model="comment.is_private" id="private_comment" label="비공개 댓글" />
+              <CFormCheck
+                v-if="canSetPrivateComment"
+                v-model="comment.is_private"
+                id="private_comment"
+                label="비공개 댓글"
+              />
             </CCol>
           </CRow>
         </div>
@@ -1223,7 +1301,7 @@ defineExpose({ callComment, callReply })
 
   <WatcherAdd
     ref="refWatcherAdd"
-    :watchers="issue?.watchers"
+    :watchers="selectedWatchers"
     @watcher-add-submit="watcherAddSubmit"
   />
 </template>

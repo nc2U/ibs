@@ -404,12 +404,13 @@ class PasswordResetRequestView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetSerializer(data=request.data)
         if serializer.is_valid():
-            # Find the user with the given email
+            # Find the user with the given email (이메일 열거 방지를 위해 미등록 계정도 동일 200 응답 반환)
             email = serializer.validated_data.get('email')
+            generic_detail = '입력하신 이메일로 등록된 계정이 존재하면 비밀번호 재설정 안내 메일을 발송했습니다.'
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                return Response({'detail': '입력한 이메일로 등록된 사용자가 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': generic_detail}, status=status.HTTP_200_OK)
 
             # Generate a password reset token (이전 미사용 토큰 정리 후 단일 발급)
             token = default_token_generator.make_token(user)
@@ -442,7 +443,7 @@ class PasswordResetRequestView(APIView):
 IBS 워크스페이스""")
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
 
-            return Response({'detail': '비밀번호 재설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
+            return Response({'detail': generic_detail}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -653,21 +654,46 @@ IBS 워크스페이스'''
         if user.is_superuser and not request.user.is_superuser:
             return Response({'detail': '최고관리자 계정은 최고관리자만 변경할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
+        def _parse_bool(val):
+            if isinstance(val, bool):
+                return val
+            if isinstance(val, str):
+                return val.strip().lower() in ('true', '1', 'yes', 'on')
+            return bool(val)
+
+        # 본인 계정 비활성화 / 업무관리자 자기 강등 차단
+        if user.pk == request.user.pk:
+            if 'is_active' in request.data and not _parse_bool(request.data['is_active']):
+                return Response({'detail': '본인 계정은 비활성화할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            if (
+                'work_manager' in request.data
+                and not _parse_bool(request.data['work_manager'])
+                and not request.user.is_superuser
+            ):
+                return Response({'detail': '본인의 업무관리자 권한은 해제할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         # 1. 권한 관련 필드 업데이트 (명시적 존재 확인)
         # 요청 데이터에 해당 필드가 있을 때만 업데이트합니다.
         for field in ['is_active', 'is_staff', 'work_manager']:
             if field in request.data:
                 if field == 'is_staff' and not request.user.is_superuser:
                     continue
-                setattr(user, field, bool(request.data[field]))
+                setattr(user, field, _parse_bool(request.data[field]))
 
-        # 2. 비밀번호 변경 (비밀번호 정보가 명시적으로 들어올 때만)
-        password = request.data.get('password')
-        mail_sending = bool(request.data.get('mail_sending', False))
-        send_option = request.data.get('send_option', '1')  # '1': 리셋 링크, '2': 새 비밀번호 정보
+        # 2. 비밀번호 변경 및 메일 발송 옵션 검증
+        password = request.data.get('password') or ''
+        mail_sending = _parse_bool(request.data.get('mail_sending', False))
+        send_option = str(request.data.get('send_option', '1'))  # '1': 리셋 링크, '2': 새 비밀번호 정보
+
+        if mail_sending and send_option == '2' and not password:
+            return Response({'detail': '비밀번호 포함 메일을 발송하려면 새 비밀번호를 입력해 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 비밀번호 직접 변경 로직 (send_option '2'이거나 메일 발송 없이 직접 변경할 때)
         if password and (send_option == '2' or not mail_sending):
+            try:
+                validate_password(password, user)
+            except ValidationError as exc:
+                return Response({'detail': list(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
             user.set_password(password)
 
         # 3. 데이터 저장 및 메일 발송 (트랜잭션으로 원자적 처리)

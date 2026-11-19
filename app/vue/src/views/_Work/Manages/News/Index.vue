@@ -22,14 +22,20 @@ const comName = computed(() => company?.value?.name)
 const viewForm = ref(false)
 const route = useRoute()
 
+const { can, PERM } = usePerms()
 const workStore = useWork()
 const activeNewsProjects = computed(() =>
-  workStore.getMyActiveProjects.filter(pjt => pjt.module?.news),
+  workStore.getMyActiveProjects.filter(
+    pjt => pjt.module?.news && can(PERM.NEWS_MANAGE, pjt.slug),
+  ),
 )
 
-const { can, PERM } = usePerms()
-const canNewsRead = computed(() => can(PERM.NEWS_READ))
-const canNewsManage = computed(() => activeNewsProjects.value.length > 0 && can(PERM.NEWS_MANAGE))
+const canNewsRead = computed(
+  () =>
+    can(PERM.NEWS_READ) ||
+    workStore.allReadableProjectsFlat.some(p => p.is_public && p.module?.news),
+)
+const canNewsManage = computed(() => activeNewsProjects.value.length > 0)
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -58,8 +64,8 @@ const onSubmit = async (payload: any) => {
       form.append(key, formValue as string)
     }
   }
-  await createNews(form)
-  viewForm.value = false
+  const ok = await createNews(form)
+  if (ok) viewForm.value = false
 }
 
 const page = ref(1)
@@ -70,6 +76,7 @@ const pageSelect = (p: number) => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
+  workStore.removeIssueProject()
   try {
     await infStore.fetchNewsList({ page: page.value })
   } catch (err) {
@@ -106,7 +113,7 @@ onBeforeMount(async () => {
         variant="tonal"
         class="mb-4 py-2"
       >
-        <v-icon icon="mdi-alert-decagram" class="mr-2" />
+        <v-icon icon="mdi-alert-decagram" class="me-2" />
         <strong>중요 공지사항이 {{ importantNews.length }}건 있습니다.</strong>
       </v-alert>
 
@@ -118,7 +125,7 @@ onBeforeMount(async () => {
         @page-select="pageSelect"
       />
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
-        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        <v-icon icon="mdi-alert-circle" class="me-2" />
         공지사항을 조회할 수 있는 권한이 없습니다.
       </v-alert>
     </template>
@@ -130,7 +137,7 @@ onBeforeMount(async () => {
           <v-divider class="mt-0" />
           <ul class="list-unstyled aside-menu">
             <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">
-              <v-icon icon="mdi-chevron-right" size="x-small" class="mr-1" />
+              <v-icon icon="mdi-chevron-right" size="x-small" class="me-1" />
               <router-link
                 v-if="canNewsRead"
                 :to="{

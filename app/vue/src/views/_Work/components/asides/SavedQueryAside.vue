@@ -1,13 +1,17 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref, watch } from 'vue'
+import { useAccount } from '@/store/pinia/account'
 import { useInform } from '@/store/pinia/work_inform'
+import type { CustomQuery } from '@/store/types/work_inform'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 type TargetType = 'project' | 'meeting' | 'issue' | 'calendar'
 
+const SYSTEM_QUERY_PKS = [1, 2, 3, 4, 5, 6]
+
 const props = defineProps({
   targetType: { type: String as PropType<TargetType>, required: true },
-  activeQueryId: { type: Number, default: null },
+  activeQueryId: { type: Number as PropType<number | null>, default: null },
   canProjectPubQuery: { type: Boolean, default: false },
 })
 
@@ -15,6 +19,7 @@ const emit = defineEmits(['on-query-click', 'on-reset-query'])
 
 const refConfirmDelete = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
+const accStore = useAccount()
 const informStore = useInform()
 
 const myQueries = computed(() =>
@@ -24,17 +29,31 @@ const pubQueries = computed(() =>
   informStore.pubQueries.filter(q => q.target_type === props.targetType),
 )
 
-const onDeleteQuery = async (query: any, event: Event) => {
+const canDeletePublicQuery = (q: CustomQuery) =>
+  !SYSTEM_QUERY_PKS.includes(q.pk) &&
+  (props.canProjectPubQuery || q.user === accStore.userInfo?.pk)
+
+const delPk = ref<number | null>(null)
+const delName = ref('')
+const onDeleteQuery = (query: CustomQuery, event: Event) => {
   event.stopPropagation()
   delPk.value = query.pk
+  delName.value = query.name
   refConfirmDelete.value?.callModal()
 }
-const delPk = ref<number | null>(null)
+
 const onDeleteConfirm = async () => {
-  await informStore.deleteQuery(delPk.value as number)
+  if (delPk.value === null) return
+  const targetPk = delPk.value
+  const deleted = await informStore.deleteQuery(targetPk)
+  if (!deleted) return
   await informStore.fetchQueries({ targetType: props.targetType })
   refConfirmDelete.value?.close()
   delPk.value = null
+  delName.value = ''
+  if (props.activeQueryId === targetPk) {
+    emit('on-reset-query')
+  }
 }
 
 watch(
@@ -52,7 +71,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mb-4 pr-4">
+  <div class="mb-4 pe-4">
     <div v-if="myQueries.length" class="mb-4">
       <h6 class="text-subtitle-1 mb-2">내 검색 양식</h6>
       <v-list density="compact" nav class="pa-0 bg-transparent">
@@ -63,13 +82,13 @@ onMounted(async () => {
           @click="emit('on-query-click', q)"
           :active="activeQueryId === q.pk"
           active-color="blue-grey-lighten-2"
-          class="rounded-lg mb-1 px-2 query-item pr-3"
+          class="rounded-lg mb-1 px-2 query-item pe-3"
         >
           <template v-slot:prepend>
-            <v-icon icon="mdi-filter-variant" size="small" class="mr-0" color="indigo" />
+            <v-icon icon="mdi-filter-variant" size="small" class="me-0" color="indigo" />
           </template>
           <v-list-item-title class="text-primary">{{ q.name }}</v-list-item-title>
-          <template v-slot:append v-if="![1, 2].includes(q.pk)">
+          <template v-slot:append v-if="!SYSTEM_QUERY_PKS.includes(q.pk)">
             <v-btn
               icon="mdi-close-circle"
               size="small"
@@ -95,13 +114,13 @@ onMounted(async () => {
           @click="emit('on-query-click', q)"
           :active="activeQueryId === q.pk"
           active-color="blue-grey-lighten-2"
-          class="rounded-lg mb-1 px-2 query-item pr-3"
+          class="rounded-lg mb-1 px-2 query-item pe-3"
         >
           <template v-slot:prepend>
-            <v-icon icon="mdi-filter-variant" size="small" class="mr-0" color="brown-darken-4" />
+            <v-icon icon="mdi-filter-variant" size="small" class="me-0" color="brown-darken-4" />
           </template>
           <v-list-item-title class="text-primary">{{ q.name }}</v-list-item-title>
-          <template v-slot:append v-if="canProjectPubQuery && ![1, 2].includes(q.pk)">
+          <template v-slot:append v-if="canDeletePublicQuery(q)">
             <v-btn
               icon="mdi-close-circle"
               size="small"
@@ -114,7 +133,7 @@ onMounted(async () => {
         </v-list-item>
         <div
           v-if="!pubQueries.length"
-          class="text-caption text-grey pl-2 py-1"
+          class="text-caption text-grey ps-2 py-1"
           style="font-size: 0.9rem"
         >
           저장된 공용 검색 양식이 없습니다.
@@ -137,7 +156,15 @@ onMounted(async () => {
     </v-btn>
   </div>
 
-  <ConfirmModal ref="refConfirmDelete" item-name="검색양식" @confirm-func="onDeleteConfirm" />
+  <ConfirmModal ref="refConfirmDelete">
+    <template #header>검색양식 삭제 확인</template>
+    <template #default>
+      <strong>{{ delName }}</strong> 검색양식을 삭제하시겠습니까?
+    </template>
+    <template #footer>
+      <v-btn color="warning" size="small" @click="onDeleteConfirm">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>
 
 <style lang="scss" scoped>
