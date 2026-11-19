@@ -119,7 +119,7 @@ const downloadPdf = (event: Event) => {
         :to="{
           name: '(회의) - 보기',
           params: {
-            projId: (route.params.projId as string) || meeting.project_desc.slug,
+            projId: meeting.project_desc.slug || (route.params.projId as string),
             meetingId: meeting.pk,
           },
         }"

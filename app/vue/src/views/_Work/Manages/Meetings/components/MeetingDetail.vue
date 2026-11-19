@@ -121,20 +121,52 @@ const completedRatio = computed(() => {
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
   if (meeting.value?.project_desc) {
-    await workStore.fetchIssueProject(meeting.value.project_desc.slug)
-    await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
+    const realSlug = meeting.value.project_desc.slug
+    if (
+      route.name === '(회의) - 보기' &&
+      route.params.projId &&
+      realSlug &&
+      route.params.projId !== realSlug
+    ) {
+      await router.replace({
+        name: '(회의) - 보기',
+        params: { projId: realSlug, meetingId: meeting.value.pk },
+      })
+    }
+    await workStore.fetchIssueProject(realSlug)
+    await issueStore.fetchAllIssueList(realSlug)
   }
 }
 
 const refIssueModal = ref<InstanceType<typeof FormModal> | null>(null)
+const issueModalKey = ref(0)
 const initialIssueSubject = ref('')
 const initialIssueDescription = ref('')
 
+const meetingProject = computed(() => {
+  const realSlug = meeting.value?.project_desc?.slug
+  if (realSlug && workStore.currentProject?.slug === realSlug) {
+    return workStore.currentProject
+  }
+  return undefined
+})
+
+const openIssueModal = async (subject = '', description = '') => {
+  if (meeting.value?.project_desc?.slug && !meetingProject.value) {
+    await workStore.fetchIssueProject(meeting.value.project_desc.slug)
+  }
+  initialIssueSubject.value = subject
+  initialIssueDescription.value = description
+  issueModalKey.value++
+  refIssueModal.value?.callModal()
+}
+
 const openIssueModalForActionItem = () => {
   if (meeting.value) {
-    initialIssueSubject.value = `[후속조치] ${meeting.value.title}`
-    initialIssueDescription.value = `### 회의 후속 조치 사항\n${meeting.value.action_items}`
-    refIssueModal.value?.callModal()
+    void openIssueModal(
+      `[후속조치] ${meeting.value.title}`,
+      `### 회의 후속 조치 사항\n${meeting.value.action_items}`,
+    )
   }
 }
 
@@ -204,16 +236,15 @@ const parsedActionItems = computed<ParsedActionItem[]>(() => {
 
 const openIssueModalForSpecificItem = (item: ParsedActionItem) => {
   if (meeting.value) {
-    initialIssueSubject.value = item.title
-    initialIssueDescription.value = `### 회의 후속 조치 사항\n- **관련 회의**: #${meeting.value.pk} ${meeting.value.title}\n- **후속 조치 내용**: ${item.raw}`
-    refIssueModal.value?.callModal()
+    void openIssueModal(
+      item.title,
+      `### 회의 후속 조치 사항\n- **관련 회의**: #${meeting.value.pk} ${meeting.value.title}\n- **후속 조치 내용**: ${item.raw}`,
+    )
   }
 }
 
 const openNormalIssueModal = () => {
-  initialIssueSubject.value = ''
-  initialIssueDescription.value = ''
-  refIssueModal.value?.callModal()
+  void openIssueModal('', '')
 }
 
 const refAlertModal = ref<InstanceType<typeof AlertModal>>()
@@ -223,7 +254,12 @@ const createRelatedIssue = async (payload: any) => {
   if (!meeting.value) return
   try {
     const formData = new FormData()
-    const payloadData = { ...payload, meeting: meeting.value.pk }
+    const projectSlug = meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
+    const payloadData = {
+      ...payload,
+      meeting: meeting.value.pk,
+      ...(projectSlug ? { project: projectSlug } : {}),
+    }
 
     for (const key in payloadData) {
       if (key === 'pk') continue
@@ -256,18 +292,16 @@ const createRelatedIssue = async (payload: any) => {
             formData.append('newLinkNames', v.name ?? '')
           }
         })
-      } else if (key === 'project' && !val) {
-        const projectSlug =
-          meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
-        if (projectSlug) formData.append(key, projectSlug)
       } else {
         formData.append(key, val as string)
       }
     }
 
-    await issueStore.createIssue(formData)
-    await meetingStore.fetchMeeting(meeting.value.pk)
-    refIssueModal.value?.close()
+    const created = await issueStore.createIssue(formData)
+    if (created?.pk) {
+      await meetingStore.fetchMeeting(meeting.value.pk)
+      refIssueModal.value?.close()
+    }
   } catch (err) {
     console.error('Failed to create related issue:', err)
     alertMessage.value = '후속 조치 업무 등록 중 오류가 발생했습니다.'
@@ -277,7 +311,7 @@ const createRelatedIssue = async (payload: any) => {
 
 const deleteMeeting = async () => {
   if (meeting.value) {
-    const projId = (route.params.projId as string) || meeting.value.project_desc?.slug
+    const projId = meeting.value.project_desc?.slug || (route.params.projId as string)
     await meetingStore.deleteMeeting(meeting.value.pk, projId)
     if (projId) {
       await router.push({ name: '(회의)', params: { projId } })
@@ -294,7 +328,7 @@ const deleteFile = async (fileId: number) => {
 }
 
 const goList = () => {
-  const projId = (route.params.projId as string) || meeting.value?.project_desc?.slug
+  const projId = meeting.value?.project_desc?.slug || (route.params.projId as string)
   if (projId) {
     router.push({ name: '(회의)', params: { projId } })
   } else {
@@ -303,7 +337,7 @@ const goList = () => {
 }
 
 const goEdit = () => {
-  const projId = (route.params.projId as string) || meeting.value?.project_desc?.slug
+  const projId = meeting.value?.project_desc?.slug || (route.params.projId as string)
   if (projId && meeting.value) {
     router.push({
       name: '(회의) - 수정',
@@ -820,7 +854,8 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :current-project="workStore.currentProject ?? undefined"
+        :key="issueModalKey"
+        :current-project="meetingProject"
         :my-projects="workStore.getMyProjects"
         :status-list="statusList"
         :priority-list="priorityList"

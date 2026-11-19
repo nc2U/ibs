@@ -357,14 +357,14 @@ const onSubmit = async (event: Event) => {
           })
 
           const results = await Promise.allSettled(creationPromises)
-          const failedCount = results.filter(r => r.status === 'rejected').length
+          const isFailed = (r: PromiseSettledResult<unknown>) =>
+            r.status === 'rejected' || !(r.value as { pk?: number } | undefined)?.pk
+          const failedCount = results.filter(isFailed).length
 
           if (failedCount > 0) {
             console.error(`Failed to create ${failedCount} action item issues`)
             // Keep only failed items in pending list if any
-            pendingActionItems.value = validItems.filter(
-              (_, idx) => results[idx].status === 'rejected',
-            )
+            pendingActionItems.value = validItems.filter((_, idx) => isFailed(results[idx]))
             alertMessage.value = `회의록은 저장되었으나, 후속 조치 업무 중 ${failedCount}건의 등록에 실패하였습니다.`
             refAlertModal.value?.callModal()
             return
@@ -416,7 +416,19 @@ const refIssueModal = ref<InstanceType<typeof FormModal> | null>(null)
 const selectedIssue = ref<Issue | null>(null)
 const modalKey = ref(0)
 
+const meetingIssueProject = computed(() => {
+  const proj = meetingProjects.value.find(p => p.value === form.value.project)
+  if (proj?.slug && workStore.currentProject?.slug === proj.slug) {
+    return workStore.currentProject
+  }
+  return workStore.allReadableProjectsFlat.find(p => p.pk === form.value.project)
+})
+
 const callIssueModal = async (pk?: number) => {
+  const proj = meetingProjects.value.find(p => p.value === form.value.project)
+  if (proj?.slug && workStore.currentProject?.slug !== proj.slug) {
+    await workStore.fetchIssueProject(proj.slug)
+  }
   if (pk) {
     await issueStore.fetchIssue(pk)
     selectedIssue.value = issueStore.issue
@@ -430,6 +442,14 @@ const createRelatedIssue = async (payload: RelatedIssuePayload) => {
   if (!form.value.pk) return
   try {
     const { pk, ...getData } = payload
+    const selectedProjSlug =
+      meetingProjects.value.find(p => p.value === form.value.project)?.slug ||
+      meeting.value?.project_desc?.slug ||
+      (workStore.currentProject as IssueProject)?.slug ||
+      ''
+    if (!pk && selectedProjSlug) {
+      getData.project = selectedProjSlug
+    }
     const formData = new FormData()
     const nullableClearable = [
       'category',
@@ -477,18 +497,23 @@ const createRelatedIssue = async (payload: RelatedIssuePayload) => {
           }
         })
       } else if (key === 'project' && !val) {
-        const projectSlug = (workStore.currentProject as IssueProject)?.slug || ''
-        if (projectSlug) formData.append(key, projectSlug)
+        if (selectedProjSlug) formData.append(key, selectedProjSlug)
       } else {
         formData.append(key, val as string)
       }
     }
 
-    if (pk) await issueStore.updateIssue(pk, formData)
-    else await issueStore.createIssue(formData)
-
-    await meetingStore.fetchMeeting(form.value.pk)
-    refIssueModal.value?.close()
+    if (pk) {
+      await issueStore.updateIssue(pk, formData)
+      await meetingStore.fetchMeeting(form.value.pk)
+      refIssueModal.value?.close()
+    } else {
+      const created = await issueStore.createIssue(formData)
+      if (created?.pk) {
+        await meetingStore.fetchMeeting(form.value.pk)
+        refIssueModal.value?.close()
+      }
+    }
   } catch (err) {
     console.error('Failed to save related issue:', err)
     alertMessage.value = '후속 조치 업무 저장 중 오류가 발생했습니다.'
@@ -1588,7 +1613,7 @@ onBeforeMount(async () => {
       <IssueForm
         :key="modalKey"
         :issue="selectedIssue ?? undefined"
-        :current-project="workStore.allReadableProjectsFlat.find(p => p.pk === form.project)"
+        :current-project="meetingIssueProject"
         :my-projects="myProjects"
         :status-list="statusList"
         :priority-list="priorityList"

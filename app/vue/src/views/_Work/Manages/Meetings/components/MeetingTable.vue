@@ -41,7 +41,7 @@ onUnmounted(() => {
 })
 
 const goDetail = (meeting: Meeting) => {
-  const projId = (route.params.projId as string) || meeting.project_desc?.slug
+  const projId = meeting.project_desc?.slug || (route.params.projId as string)
   if (projId && meeting.pk) {
     router.push({ name: '(회의) - 보기', params: { projId, meetingId: meeting.pk } })
   }

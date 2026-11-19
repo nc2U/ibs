@@ -359,29 +359,70 @@ const newIssueStatusList = computed(() => {
   return props.statusList // 수정 모드일 때는 모든 상태 반환
 })
 
+const projectOptions = computed((): selectProject[] => {
+  const activeProj = props.issue?.project ?? props.currentProject
+  if (activeProj?.slug && !props.myProjects.some(p => p.slug === activeProj.slug)) {
+    const depth =
+      'depth' in activeProj && typeof activeProj.depth === 'number' ? activeProj.depth : 0
+    const parentVisible =
+      'parent_visible' in activeProj && typeof activeProj.parent_visible === 'boolean'
+        ? activeProj.parent_visible
+        : false
+    return [
+      {
+        value: activeProj.pk ?? 0,
+        pk: activeProj.pk,
+        slug: activeProj.slug,
+        label: activeProj.name,
+        depth,
+        parent_visible: parentVisible,
+      },
+      ...props.myProjects,
+    ]
+  }
+  return props.myProjects
+})
+
 const categories = computed(
   (): Array<{ pk: number; name: string; assigned_to?: SimpleUser | number | null }> => {
     const slug = form.value.project || props.currentProject?.slug
     const storeCats = issueStore.categoryList.filter(c => !slug || c.project?.slug === slug)
     if (storeCats.length) return storeCats
-    return (props.currentProject?.categories as SimpleCategory[]) ?? []
+    if (!slug || props.currentProject?.slug === slug) {
+      return (props.currentProject?.categories as SimpleCategory[]) ?? []
+    }
+    return []
   },
 )
 const versions = computed(() => {
-  const projVers: Array<SimpleVersion | Version> = props.currentProject?.versions ?? []
+  const slug = form.value.project || props.currentProject?.slug
+  const hasProjectVersionsProp =
+    props.currentProject &&
+    Array.isArray(props.currentProject.versions) &&
+    (!slug || props.currentProject.slug === slug)
+
+  let projVers: Array<SimpleVersion | Version> = []
+  if (hasProjectVersionsProp) {
+    projVers = props.currentProject.versions
+  } else if (slug) {
+    projVers = workStore.versionList.filter(v => v.project?.slug === slug || v.sharing === '4')
+  }
+
+  const currentFixedVerPk =
+    typeof props.issue?.fixed_version === 'object'
+      ? props.issue?.fixed_version?.pk
+      : props.issue?.fixed_version
+
   const extra =
-    form.value.fixed_version && !projVers.some(v => v.pk === form.value.fixed_version)
-      ? workStore.versionList.filter(v => v.pk === form.value.fixed_version)
+    props.issue && currentFixedVerPk && !projVers.some(v => v.pk === currentFixedVerPk)
+      ? workStore.versionList.filter(v => v.pk === currentFixedVerPk)
       : []
-  const allVers = projVers.length || extra.length ? [...projVers, ...extra] : workStore.versionList
+
+  const allVers = [...projVers, ...extra]
   return allVers.filter(v => {
     // status: '1' (열림/진행) 버전만 지정 가능
     if (v.status === '1') return true
     // 편집 모드에서 이미 이 버전에 지정되어 있던 경우(잠김 버전 등)는 예외 허용
-    const currentFixedVerPk =
-      typeof props.issue?.fixed_version === 'object'
-        ? props.issue?.fixed_version?.pk
-        : props.issue?.fixed_version
     if (currentFixedVerPk && currentFixedVerPk === v.pk) return true
     return false
   })
@@ -390,14 +431,25 @@ const versions = computed(() => {
 watch(
   () => versions.value,
   newVersions => {
-    // 신규 생성 모드이면서 fixed_version이 설정되지 않았을 때만 자동 설정
-    if (!props.issue && !route.query.copy && newVersions.length > 0 && !form.value.fixed_version) {
-      if (route.query.version) {
-        form.value.fixed_version = Number(route.query.version)
-      } else {
-        const defaultVersion = newVersions.find(v => v.is_default)
-        if (defaultVersion?.pk) {
-          form.value.fixed_version = defaultVersion.pk
+    if (!props.issue && !route.query.copy) {
+      if (
+        form.value.fixed_version &&
+        !newVersions.some(v => v.pk === form.value.fixed_version)
+      ) {
+        form.value.fixed_version = null
+      }
+      // 신규 생성 모드이면서 fixed_version이 설정되지 않았을 때만 자동 설정
+      if (newVersions.length > 0 && !form.value.fixed_version) {
+        if (route.query.version) {
+          const qVer = Number(route.query.version)
+          if (newVersions.some(v => v.pk === qVer)) {
+            form.value.fixed_version = qVer
+          }
+        } else {
+          const defaultVersion = newVersions.find(v => v.is_default)
+          if (defaultVersion?.pk) {
+            form.value.fixed_version = defaultVersion.pk
+          }
         }
       }
     }
@@ -461,13 +513,13 @@ const RefVersionModal = ref<InstanceType<typeof FormModal> | null>(null)
 const refWatcherAdd = ref<InstanceType<typeof WatcherAdd> | null>(null)
 
 const createCategory = async (payload: { name: string; assigned_to: number | null }) => {
-  const projectSlug = form.value.project || projId.value || props.currentProject?.slug
+  const projectSlug = props.currentProject?.slug || form.value.project || projId.value
   if (!projectSlug) return
   const newPk = await issueStore.createCategory({ ...payload, project: projectSlug })
   if (newPk) form.value.category = newPk
 }
 const createVersion = async (payload: Omit<FormVersion, 'pk' | 'project'> & { pk?: number | null }) => {
-  const projectSlug = form.value.project || projId.value || props.currentProject?.slug
+  const projectSlug = props.currentProject?.slug || form.value.project || projId.value
   if (!projectSlug) return
   const newPk = await workStore.createVersion({
     ...payload,
@@ -478,15 +530,59 @@ const createVersion = async (payload: Omit<FormVersion, 'pk' | 'project'> & { pk
 }
 
 const projId = computed(() => route.params.projId as string | undefined)
+const lastFetchedMemberSlug = ref('')
+
 watch(projId, newVal => {
-  if (newVal) form.value.project = newVal
+  if (!props.issue && !route.query.copy && !props.currentProject?.slug && newVal) {
+    form.value.project = newVal
+  }
 })
 
-onBeforeMount(async () => {
-  if (projId.value) await workStore.fetchProjectMembers(projId.value)
+watch(
+  () => props.currentProject?.slug,
+  newSlug => {
+    if (!props.issue && !route.query.copy && newSlug) {
+      form.value.project = newSlug
+    }
+  },
+  { immediate: true },
+)
 
+watch(
+  () => form.value.project,
+  async (newSlug, oldSlug) => {
+    if (!newSlug) return
+    if (newSlug !== lastFetchedMemberSlug.value) {
+      lastFetchedMemberSlug.value = newSlug
+      await workStore.fetchProjectMembers(newSlug)
+    }
+    if (!props.issue && !route.query.copy && oldSlug && newSlug !== oldSlug) {
+      if (form.value.category && !categories.value.some(c => c.pk === form.value.category)) {
+        form.value.category = null
+      }
+      if (
+        form.value.assigned_to &&
+        !memberList.value.some(m => m.pk === form.value.assigned_to)
+      ) {
+        form.value.assigned_to = null
+      }
+    }
+  },
+)
+
+onBeforeMount(async () => {
   const copyId = route.query.copy ? Number(route.query.copy) : null
   const copyIssueObj = copyId ? (issueStore.allIssueList.find(i => i.pk === copyId) as Issue) : null
+
+  const initialProjSlug =
+    props.issue?.project?.slug ||
+    copyIssueObj?.project?.slug ||
+    props.currentProject?.slug ||
+    projId.value
+  if (initialProjSlug) {
+    lastFetchedMemberSlug.value = initialProjSlug
+    await workStore.fetchProjectMembers(initialProjSlug)
+  }
 
   if (props.issue) {
     form.value.pk = props.issue.pk
@@ -536,7 +632,8 @@ onBeforeMount(async () => {
       }
     })
   } else {
-    if (projId.value) form.value.project = projId.value
+    const targetSlug = props.currentProject?.slug || projId.value
+    if (targetSlug) form.value.project = targetSlug
     if (route.query.parent) {
       form.value.parent = Number(route.query.parent)
       if (route.query.tracker) form.value.tracker = Number(route.query.tracker)
@@ -801,7 +898,11 @@ defineExpose({ callComment, callReply })
                     :disabled="!!props.currentProject || !!issue"
                   >
                     <option value="">---------</option>
-                    <option v-for="proj in myProjects" :key="proj.pk ?? proj.value" :value="proj.slug">
+                    <option
+                      v-for="proj in projectOptions"
+                      :key="proj.pk ?? proj.value"
+                      :value="proj.slug"
+                    >
                       <template v-if="!!proj.depth && proj.parent_visible">
                         {{ '\u00A0'.repeat(proj.depth) }} »
                       </template>
