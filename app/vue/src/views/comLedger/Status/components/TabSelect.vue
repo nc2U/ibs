@@ -17,7 +17,7 @@ const showTab = (num: number) => {
 
 <template>
   <CRow class="mb-3">
-    <CCol md="8" lg="6" xl="4">
+    <CCol md="10" lg="7" xl="5">
       <CNav variant="pills" layout="justified">
         <CNavItem>
           <CNavLink
@@ -37,6 +37,16 @@ const showTab = (num: number) => {
             @click="showTab(2)"
           >
             당일 입출금내역
+          </CNavLink>
+        </CNavItem>
+        <CNavItem>
+          <CNavLink
+            component="button"
+            type="button"
+            :active="tabPanePillsActiveKey === 3"
+            @click="showTab(3)"
+          >
+            월별 자금집계
           </CNavLink>
         </CNavItem>
       </CNav>

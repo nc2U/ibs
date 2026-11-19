@@ -3,11 +3,24 @@ import { ref, watch } from 'vue'
 import { getToday } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
+const props = defineProps<{
+  value?: string
+}>()
+
 const emit = defineEmits<{
   (e: 'set-date', date: string): void
 }>()
 
-const date = ref(getToday())
+const date = ref(props.value || getToday())
+
+watch(
+  () => props.value,
+  val => {
+    if (val && val !== date.value) {
+      date.value = val
+    }
+  },
+)
 
 watch(date, val => {
   if (!val) date.value = getToday()

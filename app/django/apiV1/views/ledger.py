@@ -26,6 +26,7 @@ from ledger.models import (
     CompanyAccountingEntry, ProjectAccountingEntry,
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
+from ledger.services.company_monthly_summary import build_company_monthly_summary
 from ledger.services.company_transaction import get_company_transactions, prefetch_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from work.models import IssueProject
@@ -669,6 +670,28 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
             result = result.exclude(balance=0)
 
         return Response(list(result))
+
+    @action(detail=False, methods=['get'])
+    def monthly_summary(self, request):
+        """월별 자금 집계 (수입: 수익/기타수입, 지출: 비용/기타지출, 전월·누계 비교)"""
+        company = request.query_params.get('company')
+        try:
+            company_id = int(company)
+            from_date = datetime.strptime(request.query_params.get('from_date', ''), '%Y-%m-%d').date()
+            to_date = datetime.strptime(request.query_params.get('to_date', ''), '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'company, from_date(YYYY-MM-DD), to_date(YYYY-MM-DD) parameters are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if from_date > to_date:
+            return Response({'error': 'from_date must not be after to_date'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if not user.is_superuser and company_id not in get_accessible_company_ids(user):
+            return Response({'error': '해당 회사의 원장 데이터를 조회할 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(build_company_monthly_summary(company_id, from_date, to_date))
 
     @action(detail=False, methods=['get'])
     def daily_transactions(self, request):

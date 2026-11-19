@@ -15,9 +15,11 @@ import TabSelect from './components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import StatusByAccount from './components/StatusByAccount.vue'
 import CashListByDate from './components/CashListByDate.vue'
+import MonthlySummary from './components/MonthlySummary.vue'
 import Calculated from './components/Calculated.vue'
 
 const date = ref(getToday())
+const periodMode = ref<'mtd' | 'full'>('mtd')
 const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
 
@@ -33,6 +35,25 @@ const fetchComLedgerBalanceByAccList = (com: {
 }) => ledgerStore.fetchComLedgerBalanceByAccList(com)
 const fetchDateLedgerTransactionList = (payload: { company: number; date: string }) =>
   ledgerStore.fetchDateLedgerTransactionList(payload)
+const fetchComMonthlySummary = (payload: {
+  company: number
+  from_date: string
+  to_date: string
+}) => ledgerStore.fetchComMonthlySummary(payload)
+
+const monthlyPeriodRange = computed(() => {
+  const raw = date.value || getToday()
+  const [yStr, mStr] = raw.split('-')
+  const y = Number(yStr)
+  const m = Number(mStr)
+  if (!y || !m) return { from_date: raw, to_date: raw }
+  const from_date = `${yStr}-${mStr}-01`
+  if (periodMode.value === 'full') {
+    const lastDay = new Date(y, m, 0).getDate()
+    return { from_date, to_date: `${yStr}-${mStr}-${String(lastDay).padStart(2, '0')}` }
+  }
+  return { from_date, to_date: raw }
+})
 
 const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalculation(com)
 const createComLedgerCalc = (payload: ComCalculated) =>
@@ -64,15 +85,19 @@ const checkBalance = async () => {
 
 const excelUrl = computed(() => {
   const comp = compName.value
-  let url = ''
-  if (comp === 'StatusByAccount') url = `/excel/com-balance/?company=${company.value}`
-  else if (comp === 'CashListByDate') url = `/excel/com-daily-cash/?company=${company.value}`
-  return `${url}&date=${date.value}`
+  if (comp === 'StatusByAccount') return `/excel/com-balance/?company=${company.value}&date=${date.value}`
+  if (comp === 'CashListByDate') return `/excel/com-daily-cash/?company=${company.value}&date=${date.value}`
+  if (comp === 'MonthlySummary') {
+    const { from_date, to_date } = monthlyPeriodRange.value
+    return `/excel/com-monthly-summary/?company=${company.value}&from_date=${from_date}&to_date=${to_date}`
+  }
+  return ''
 })
 
 const comp: { [key: number]: string } = {
   1: 'StatusByAccount',
   2: 'CashListByDate',
+  3: 'MonthlySummary',
 }
 
 const filename = computed(() => {
@@ -81,14 +106,23 @@ const filename = computed(() => {
       return '계좌별-원장현황.xlsx'
     case 'CashListByDate':
       return '일별-원장내역.xlsx'
+    case 'MonthlySummary':
+      return '월별-자금집계.xlsx'
     default:
       return ''
   }
 })
 
 const showTab = (num: number) => {
-  compName.value = comp[num]
+  compName.value = comp[num] || 'StatusByAccount'
   localStorage.setItem('comLedgerStatus', `${num}`)
+}
+
+const loadMonthlySummary = (comId?: number | null) => {
+  const targetCom = comId ?? company.value
+  if (!targetCom) return
+  const { from_date, to_date } = monthlyPeriodRange.value
+  fetchComMonthlySummary({ company: targetCom, from_date, to_date })
 }
 
 const setDate = (dt: string) => {
@@ -96,7 +130,13 @@ const setDate = (dt: string) => {
   if (company.value) {
     fetchComLedgerBalanceByAccList({ company: company.value, date: dt, is_balance: isBalance.value })
     fetchDateLedgerTransactionList({ company: company.value, date: dt })
+    loadMonthlySummary(company.value)
   }
+}
+
+const onChangePeriodMode = (mode: 'mtd' | 'full') => {
+  periodMode.value = mode
+  loadMonthlySummary()
 }
 
 const isExistBalance = (val: boolean | 'true' | '') => {
@@ -114,6 +154,7 @@ const dataSetup = (pk: number) => {
   fetchComBankAccList(pk)
   fetchComLedgerBalanceByAccList({ company: pk, date: date.value, is_balance: 'true' })
   fetchDateLedgerTransactionList({ company: pk, date: date.value })
+  loadMonthlySummary(pk)
   fetchComLedgerCalc(pk)
   fetchComLedgerLastDeal(pk)
 }
@@ -122,6 +163,7 @@ const dataReset = () => {
   ledgerStore.comBankList = []
   ledgerStore.comLedgerBalanceByAccList = []
   ledgerStore.dateLedgerTransactions = []
+  ledgerStore.comMonthlySummary = null
   ledgerStore.comLedgerCalculation = []
   ledgerStore.comLedgerLastDealList = []
 }
@@ -133,10 +175,10 @@ const comSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
+  compName.value = comp[Number(localStorage.getItem('comLedgerStatus')) || 1] || 'StatusByAccount'
   const comId = company.value || comStore.initComId
   if (comId) {
     dataSetup(comId)
-    compName.value = comp[Number(localStorage.getItem('comLedgerStatus') ?? 1)]
   }
   loading.value = false
 })
@@ -153,7 +195,7 @@ onBeforeMount(async () => {
     />
     <ContentBody>
       <CCardBody class="pb-5">
-        <DateChoicer @set-date="setDate" />
+        <DateChoicer :value="date" @set-date="setDate" />
 
         <TabSelect @tab-select="showTab" />
 
@@ -173,6 +215,15 @@ onBeforeMount(async () => {
         />
 
         <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
+
+        <MonthlySummary
+          v-if="compName === 'MonthlySummary'"
+          :date="date"
+          :company="company"
+          :period-mode="periodMode"
+          @change-date="setDate"
+          @update:period-mode="onChangePeriodMode"
+        />
 
         <Calculated
           :calc-date="comLedgerCalculated?.calculated"

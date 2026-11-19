@@ -12,6 +12,7 @@ import {
   type CompanyBank,
   type AccountingEntry,
   type LedgerTransactionForDisplay,
+  type ComMonthlySummary,
 } from '@/store/types/comLedger'
 
 export type DataFilter = {
@@ -320,6 +321,29 @@ export const useComLedger = defineStore('comLedger', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // 월별 자금 집계 (수입/지출, 전월·누계 비교)
+  const comMonthlySummary = ref<ComMonthlySummary | null>(null)
+  let monthlySummarySeq = 0
+
+  const fetchComMonthlySummary = async (payload: {
+    company: number
+    from_date: string
+    to_date: string
+  }) => {
+    const seq = ++monthlySummarySeq
+    return await api
+      .get('/ledger/company-transaction/monthly_summary/', { params: payload })
+      .then(res => {
+        if (seq === monthlySummarySeq) comMonthlySummary.value = res.data
+        return res.data as ComMonthlySummary
+      })
+      .catch(err => {
+        if (seq === monthlySummarySeq) comMonthlySummary.value = null
+        errorHandle(err.response?.data ?? err)
+        return null
+      })
+  }
+
   const fetchComLedgerCalculation = async (com: number) =>
     await api
       .get(`/ledger/company-calculation/?company=${com}`)
@@ -402,6 +426,9 @@ export const useComLedger = defineStore('comLedger', () => {
 
     fetchComLedgerBalanceByAccList,
     fetchDateLedgerTransactionList,
+
+    comMonthlySummary,
+    fetchComMonthlySummary,
 
     fetchComLedgerCalculation,
     createComLedgerCalculation,

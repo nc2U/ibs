@@ -8,6 +8,7 @@ from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, Expor
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, ExportCompanyTransactions,
+                            ExportCompanyMonthlySummary,
                             ExportProjectLedgerBalance, ExportProjectLedgerDateCashbook,
                             ExportLedgerBudgetExecutionStatus, ExportLedgerCashFlowForm, ExportProjectTransactions)
 from payment.exports import (ExportLedgerPayments, ExportLedgerPaymentsByCont, ExportLedgerPaymentStatus,
@@ -57,6 +58,7 @@ urlpatterns = [
     path('com-balance/', ExportLedgerBalanceByAcc.as_view(), name='com-balance'),
     path('com-daily-cash/', ExportLedgerDateCashbook.as_view(), name='com-daily-cash'),
     path('com-trans/', ExportCompanyTransactions.as_view(), name='com-trans'),
+    path('com-monthly-summary/', ExportCompanyMonthlySummary.as_view(), name='com-monthly-summary'),
 
     # ledger
     path('pro-balance/', ExportProjectLedgerBalance.as_view(), name='ledger-pro-balance'),

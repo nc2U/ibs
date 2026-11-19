@@ -148,3 +148,63 @@ export interface ComCalculated {
   calculated: string
   creator?: { pk: number; username: string }
 }
+
+// 월별 자금 집계
+export interface PeriodAmounts {
+  prev: number
+  cur: number
+  ytd: number
+}
+
+export interface MonthlySummaryRow extends PeriodAmounts {
+  account: number
+  code: string
+  name: string
+  category: string
+}
+
+export interface MonthlySummaryGroup extends PeriodAmounts {
+  name: string
+  rows: MonthlySummaryRow[]
+}
+
+export interface MonthlySummaryBlock {
+  groups: MonthlySummaryGroup[]
+  total: PeriodAmounts
+}
+
+export interface MonthlySummaryAffiliatePeriod {
+  lend: number
+  collect: number
+  borrow: number
+  repay: number
+  other_in: number
+  other_out: number
+  net: number
+}
+
+export interface MonthlySummaryAffiliate {
+  affiliate: number
+  label: string
+  sort: 'company' | 'project'
+  cur: MonthlySummaryAffiliatePeriod
+  ytd: MonthlySummaryAffiliatePeriod
+}
+
+export interface ComMonthlySummary {
+  company: number
+  from_date: string
+  to_date: string
+  periods: Record<'prev' | 'cur' | 'ytd', { from: string; to: string }>
+  opening_balance: number
+  closing_balance: number
+  income: { revenue: MonthlySummaryBlock; other: MonthlySummaryBlock; total: PeriodAmounts }
+  expense: { cost: MonthlySummaryBlock; other: MonthlySummaryBlock; total: PeriodAmounts }
+  operating_net: PeriodAmounts
+  net: PeriodAmounts
+  transfer: { in: PeriodAmounts; out: PeriodAmounts }
+  cancel: { in: PeriodAmounts; out: PeriodAmounts }
+  unclassified: { in: PeriodAmounts; out: PeriodAmounts }
+  bank_flow: { in: PeriodAmounts; out: PeriodAmounts }
+  affiliates: MonthlySummaryAffiliate[]
+}

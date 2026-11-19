@@ -22,6 +22,7 @@ from apiV1.views.ledger import get_accessible_company_ids
 from company.models import Company
 from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, \
     ProjectAccountingEntry
+from ledger.services.company_monthly_summary import build_company_monthly_summary
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from project.models import Project, ProjectOutBudget
@@ -1434,3 +1435,107 @@ class ExportProjectTransactions(ExcelExportMixin):
 
     def get(self, request, *args, **kwargs):
         return export_pro_transaction_xls(request)
+
+
+class ExportCompanyMonthlySummary(ExcelExportMixin):
+    """본사 월별 자금 집계 엑셀 내보내기 (수입/지출 집계, 전월·당월·증감·누계)"""
+
+    def get(self, request):
+        company = _get_authorized_company(request)
+        com_name = company.name.replace('주식회사 ', '(주)')
+        try:
+            from_date = datetime.date.fromisoformat(request.GET.get('from_date', ''))
+            to_date = datetime.date.fromisoformat(request.GET.get('to_date', ''))
+        except ValueError:
+            from_date = to_date = datetime.date.today()
+        if from_date > to_date:
+            from_date = to_date
+
+        data = build_company_monthly_summary(company.pk, from_date, to_date)
+
+        output, workbook, worksheet = self.create_workbook('월별_자금집계')
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        number_format = self.create_number_format(workbook)
+        left_format = self.create_left_format(workbook)
+        sum_format = self.create_sum_format(workbook)
+
+        worksheet.set_column(0, 0, 22)
+        worksheet.set_column(1, 1, 28)
+        worksheet.set_column(2, 5, 18)
+
+        row = 0
+        worksheet.set_row(row, 50)
+        worksheet.write(row, 0, f'{com_name} 월별 자금 집계 [{data["from_date"]} ~ {data["to_date"]}]', title_format)
+        row += 1
+        worksheet.write(row, 5, '(단위: 원)', workbook.add_format({'align': 'right'}))
+        row += 1
+        for col, head in enumerate(('구분', '계정과목', '전월 동기', '당월', '전월 대비', '당해 누계')):
+            worksheet.write(row, col, head, h_format)
+
+        def write_amounts(r, amounts, fmt):
+            worksheet.write(r, 2, amounts['prev'], fmt)
+            worksheet.write(r, 3, amounts['cur'], fmt)
+            worksheet.write(r, 4, amounts['cur'] - amounts['prev'], fmt)
+            worksheet.write(r, 5, amounts['ytd'], fmt)
+
+        def write_block(title, groups, total):
+            nonlocal row
+            for group in groups:
+                for item in group['rows']:
+                    row += 1
+                    worksheet.write(row, 0, f'{title} > {group["name"]}', left_format)
+                    worksheet.write(row, 1, item['name'], left_format)
+                    write_amounts(row, item, number_format)
+            row += 1
+            worksheet.merge_range(row, 0, row, 1, f'{title} 계', sum_format)
+            write_amounts(row, total, sum_format)
+
+        def write_single(title, amounts, fmt=None):
+            nonlocal row
+            row += 1
+            worksheet.merge_range(row, 0, row, 1, title, fmt or left_format)
+            write_amounts(row, amounts, fmt or number_format)
+
+        income, expense = data['income'], data['expense']
+        write_block('수익', income['revenue']['groups'], income['revenue']['total'])
+        write_block('기타 수입', income['other']['groups'], income['other']['total'])
+        write_single('미분류 입금', data['unclassified']['in'])
+        write_single('수입 합계', income['total'], sum_format)
+        write_block('비용', expense['cost']['groups'], expense['cost']['total'])
+        write_block('기타 지출', expense['other']['groups'], expense['other']['total'])
+        write_single('미분류 출금', data['unclassified']['out'])
+        write_single('지출 합계', expense['total'], sum_format)
+        write_single('영업수지 (수익 - 비용)', data['operating_net'], sum_format)
+        write_single('순증감 (수입 - 지출)', data['net'], sum_format)
+        write_single('[참고] 내부 대체 입금', data['transfer']['in'])
+        write_single('[참고] 내부 대체 출금', data['transfer']['out'])
+        write_single('[참고] 거래취소 입금', data['cancel']['in'])
+        write_single('[참고] 거래취소 출금', data['cancel']['out'])
+
+        row += 2
+        worksheet.merge_range(row, 0, row, 1, '기초 잔고', left_format)
+        worksheet.write(row, 3, data['opening_balance'], number_format)
+        row += 1
+        worksheet.merge_range(row, 0, row, 1, '기말 잔고', sum_format)
+        worksheet.write(row, 3, data['closing_balance'], sum_format)
+
+        if data['affiliates']:
+            row += 2
+            for col, head in enumerate(('관계회사/프로젝트', '구분', '대여', '회수', '차입', '상환')):
+                worksheet.write(row, col, head, h_format)
+            worksheet.write(row, 6, '당월 순유출입', h_format)
+            worksheet.set_column(6, 6, 18)
+            for aff in data['affiliates']:
+                row += 1
+                cur = aff['cur']
+                worksheet.write(row, 0, aff['label'], left_format)
+                worksheet.write(row, 1, '관계회사' if aff['sort'] == 'company' else '프로젝트', left_format)
+                worksheet.write(row, 2, cur['lend'], number_format)
+                worksheet.write(row, 3, cur['collect'], number_format)
+                worksheet.write(row, 4, cur['borrow'], number_format)
+                worksheet.write(row, 5, cur['repay'], number_format)
+                worksheet.write(row, 6, cur['net'], number_format)
+
+        filename = request.GET.get('filename') or '본사_월별자금집계'
+        return ExcelExportMixin.create_response(output, workbook, f'{filename}-{data["to_date"]}')

@@ -798,6 +798,77 @@ class HqLedgerAndGlobalVisibilityTests(LedgerTestBase):
         self.assertNotIn(tx_balanced.pk, pks_false)
         self.assertIn(tx_unbalanced.pk, pks_false)
 
+    def test_company_monthly_summary_classification_and_permission(self):
+        """월별 자금 집계: category+입출금 기준 분류, 대체 제외, 미분류 분리, 잔고 검산, 권한 격리"""
+        acc_rev = CompanyAccount.objects.create(
+            code='4101', name='용역수익', category='revenue', direction='deposit',
+            is_active=True, is_category_only=False)
+        acc_borrow = CompanyAccount.objects.create(
+            code='2111', name='차입금', category='liability', direction='deposit',
+            is_active=True, is_category_only=False)
+        acc_repay = CompanyAccount.objects.create(
+            code='2121', name='차입금 상환', category='liability', direction='withdraw',
+            is_active=True, is_category_only=False)
+        acc_exp = CompanyAccount.objects.create(
+            code='5101', name='지급수수료', category='expense', direction='withdraw',
+            is_active=True, is_category_only=False)
+        acc_trf = CompanyAccount.objects.create(
+            code='6012', name='대체(입금)', category='transfer', direction='deposit',
+            is_active=True, is_category_only=False)
+
+        def make_tx(deal_date, amount, sort, account):
+            tx = CompanyBankTransaction.objects.create(
+                company=self.company, bank_account=self.hq_bank_acc, deal_date=deal_date,
+                amount=amount, sort=sort, content='집계 테스트', creator=self.admin_user)
+            CompanyAccountingEntry.objects.create(
+                transaction_id=tx.transaction_id, company=self.company,
+                account=account, amount=amount, trader='테스트')
+            return tx
+
+        make_tx(date(2026, 6, 15), 1000000, self.sort_deposit, acc_rev)  # 전월 수익
+        make_tx(date(2026, 7, 7), 3000000, self.sort_deposit, acc_rev)  # 당월 수익
+        make_tx(date(2026, 7, 8), 10000000, self.sort_deposit, acc_borrow)  # 기타 수입(부채 증가)
+        make_tx(date(2026, 7, 9), 500000, self.sort_withdraw, acc_exp)  # 비용
+        make_tx(date(2026, 7, 10), 2000000, self.sort_withdraw, acc_repay)  # 기타 지출(부채 상환)
+        make_tx(date(2026, 7, 11), 1000000, self.sort_deposit, acc_trf)  # 내부 대체
+        # setUp 의 hq_tx(7/1, 50,000,000 입금)는 분개가 없으므로 미분류 입금
+
+        url = (f'/api/v1/ledger/company-transaction/monthly_summary/'
+               f'?company={self.company.pk}&from_date=2026-07-01&to_date=2026-07-31')
+
+        # 권한 없는 사용자 차단
+        self.client.force_authenticate(user=self.user_a)
+        self.assertEqual(self.client.get(url).status_code, http_status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        data = res.data
+
+        self.assertEqual(data['income']['revenue']['total']['cur'], 3000000)
+        self.assertEqual(data['income']['revenue']['total']['prev'], 1000000)
+        self.assertEqual(data['income']['revenue']['total']['ytd'], 4000000)
+        self.assertEqual(data['income']['other']['total']['cur'], 10000000)
+        self.assertEqual(data['income']['total']['cur'], 13000000)
+        self.assertEqual(data['expense']['cost']['total']['cur'], 500000)
+        self.assertEqual(data['expense']['other']['total']['cur'], 2000000)
+        self.assertEqual(data['expense']['total']['cur'], 2500000)
+        self.assertEqual(data['operating_net']['cur'], 2500000)
+        self.assertEqual(data['net']['cur'], 10500000)
+        self.assertEqual(data['transfer']['in']['cur'], 1000000)
+        self.assertEqual(data['unclassified']['in']['cur'], 50000000)
+
+        # 기초 + 은행 입금 - 은행 출금 == 기말 (1번 탭 잔고와 일치)
+        self.assertEqual(data['opening_balance'], 1000000)
+        self.assertEqual(
+            data['closing_balance'],
+            data['opening_balance'] + data['bank_flow']['in']['cur'] - data['bank_flow']['out']['cur'])
+        self.assertEqual(data['closing_balance'], 62500000)
+
+        # 잘못된 파라미터는 400
+        bad = self.client.get('/api/v1/ledger/company-transaction/monthly_summary/?company=abc')
+        self.assertEqual(bad.status_code, http_status.HTTP_400_BAD_REQUEST)
+
     def test_company_transaction_search_and_category_filter_combined(self):
         """본사 거래에서 search와 account_category 필터가 결합될 때 AND로 결합되어 카테고리 필터가 유지되는지 검증"""
         self.client.force_authenticate(user=self.admin_user)
