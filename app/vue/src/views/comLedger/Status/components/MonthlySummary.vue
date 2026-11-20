@@ -3,14 +3,11 @@ import { computed, ref } from 'vue'
 import api from '@/api'
 import { numFormat } from '@/utils/baseMixins'
 import { TableSecondary, TableInfo } from '@/utils/cssMixins'
+import MonthlySummaryTable from './MonthlySummaryTable.vue'
+import { diffClass, formatSigned } from './monthlySummaryUtils'
 import { errorHandle } from '@/utils/helper'
 import { useComLedger } from '@/store/pinia/comLedger'
-import type {
-  BankTransaction,
-  MonthlySummaryGroup,
-  MonthlySummaryRow,
-  PeriodAmounts,
-} from '@/store/types/comLedger'
+import type { BankTransaction, MonthlySummaryRow, PeriodAmounts } from '@/store/types/comLedger'
 
 const props = withDefaults(
   defineProps<{
@@ -55,75 +52,6 @@ const moveMonth = (delta: number) => {
   emit('change-date', candidate > todayStr ? todayStr : candidate)
 }
 
-const formatSigned = (val: number) => {
-  if (!val) return '-'
-  const prefix = val > 0 ? '+' : ''
-  return `${prefix}${numFormat(val)}`
-}
-
-const diffClass = (val: number, invertColor = false) => {
-  if (!val) return 'text-muted'
-  const isPositive = invertColor ? val < 0 : val > 0
-  return isPositive ? 'text-primary fw-semibold' : 'text-danger fw-semibold'
-}
-
-const calcShare = (amount: number, total: number) => {
-  if (!total || !amount) return '-'
-  return `${((amount / total) * 100).toFixed(1)}%`
-}
-
-interface FlatSectionRow {
-  subTitle: string
-  isFirstInSub: boolean
-  subRowSpan: number
-  groupName: string
-  isFirstInGroup: boolean
-  groupRowSpan: number
-  row: MonthlySummaryRow
-}
-
-const flattenBlock = (subTitle: string, groups: MonthlySummaryGroup[]): FlatSectionRow[] => {
-  const activeGroups = groups
-    .map(g => ({
-      ...g,
-      rows: g.rows.filter(r => r.prev !== 0 || r.cur !== 0 || r.ytd !== 0),
-    }))
-    .filter(g => g.rows.length > 0)
-
-  const totalRows = activeGroups.reduce((acc, g) => acc + g.rows.length, 0)
-  const result: FlatSectionRow[] = []
-  let subIdx = 0
-
-  for (const grp of activeGroups) {
-    grp.rows.forEach((row, grpIdx) => {
-      result.push({
-        subTitle,
-        isFirstInSub: subIdx === 0,
-        subRowSpan: totalRows,
-        groupName: grp.name,
-        isFirstInGroup: grpIdx === 0,
-        groupRowSpan: grp.rows.length,
-        row,
-      })
-      subIdx += 1
-    })
-  }
-  return result
-}
-
-const revenueRows = computed(() =>
-  flattenBlock('수익 (영업·영업외)', summary.value?.income.revenue.groups ?? []),
-)
-const otherIncomeRows = computed(() =>
-  flattenBlock('기타 수입 (비수익)', summary.value?.income.other.groups ?? []),
-)
-const costRows = computed(() =>
-  flattenBlock('비용 (원가·판관·영업외)', summary.value?.expense.cost.groups ?? []),
-)
-const otherExpenseRows = computed(() =>
-  flattenBlock('기타 지출 (비비용)', summary.value?.expense.other.groups ?? []),
-)
-
 const transferDiff = computed(() => {
   const trfIn = summary.value?.transfer.in ?? zeroAmounts
   const trfOut = summary.value?.transfer.out ?? zeroAmounts
@@ -132,16 +60,6 @@ const transferDiff = computed(() => {
     cur: trfIn.cur - trfOut.cur,
     ytd: trfIn.ytd - trfOut.ytd,
   }
-})
-
-const hasUnclassifiedIn = computed(() => {
-  const u = summary.value?.unclassified.in
-  return !!(u && (u.prev !== 0 || u.cur !== 0 || u.ytd !== 0))
-})
-
-const hasUnclassifiedOut = computed(() => {
-  const u = summary.value?.unclassified.out
-  return !!(u && (u.prev !== 0 || u.cur !== 0 || u.ytd !== 0))
 })
 
 const isReconciled = computed(() => {
@@ -155,37 +73,66 @@ const isReconciled = computed(() => {
   )
 })
 
-// 계정 클릭 드릴다운 모달
+// 계정 클릭 드릴다운 모달 (페이지네이션 + 경합 방지)
 const drillModalVisible = ref(false)
 const drillLoading = ref(false)
+const drillMoreLoading = ref(false)
 const drillAccount = ref<{ account: number; code: string; name: string; sort: 1 | 2 } | null>(null)
 const drillTransactions = ref<BankTransaction[]>([])
+const drillCount = ref(0)
+const drillPage = ref(1)
+let drillSeq = 0
 
-const openAccountDrilldown = async (row: MonthlySummaryRow, sort: 1 | 2) => {
-  if (!props.company || !summary.value) return
-  drillAccount.value = { account: row.account, code: row.code, name: row.name, sort }
-  drillModalVisible.value = true
-  drillLoading.value = true
+const hasMoreDrill = computed(() => drillTransactions.value.length < drillCount.value)
+
+const fetchDrillPage = async (page: number) => {
+  if (!props.company || !summary.value || !drillAccount.value) return
+  const seq = ++drillSeq
+  const isFirst = page === 1
+  if (isFirst) drillLoading.value = true
+  else drillMoreLoading.value = true
   try {
     const res = await api.get('/ledger/company-transaction/', {
       params: {
         company: props.company,
         from_deal_date: summary.value.from_date,
         to_deal_date: summary.value.to_date,
-        account: row.account,
-        sort,
-        page: 1,
+        account: drillAccount.value.account,
+        sort: drillAccount.value.sort,
+        page,
       },
     })
-    drillTransactions.value = res.data.results ?? []
+    if (seq !== drillSeq) return // 더 최신 요청이 있으면 무시
+    const results: BankTransaction[] = res.data.results ?? []
+    drillTransactions.value = isFirst ? results : [...drillTransactions.value, ...results]
+    drillCount.value = res.data.count ?? drillTransactions.value.length
+    drillPage.value = page
   } catch (err: unknown) {
+    if (seq !== drillSeq) return
     const axiosErr = err as { response?: { data?: unknown } }
     errorHandle(axiosErr.response?.data ?? err)
-    drillTransactions.value = []
+    if (isFirst) {
+      drillTransactions.value = []
+      drillCount.value = 0
+    }
   } finally {
-    drillLoading.value = false
+    if (seq === drillSeq) {
+      drillLoading.value = false
+      drillMoreLoading.value = false
+    }
   }
 }
+
+const openAccountDrilldown = async (row: MonthlySummaryRow, sort: 1 | 2) => {
+  if (!props.company || !summary.value) return
+  drillAccount.value = { account: row.account, code: row.code, name: row.name, sort }
+  drillTransactions.value = []
+  drillCount.value = 0
+  drillModalVisible.value = true
+  await fetchDrillPage(1)
+}
+
+const loadMoreDrill = () => fetchDrillPage(drillPage.value + 1)
 
 const getMatchedEntryAmount = (tx: BankTransaction, accountId?: number) => {
   if (!accountId || !tx.accounting_entries?.length) return tx.amount
@@ -316,417 +263,18 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
   </CRow>
 
   <!-- 3. 수입 집계 테이블 -->
-  <CTable hover responsive bordered align="middle" class="mb-4">
-    <colgroup>
-      <col style="width: 14%" />
-      <col style="width: 14%" />
-      <col style="width: 18%" />
-      <col style="width: 13%" />
-      <col style="width: 14%" />
-      <col style="width: 11%" />
-      <col style="width: 10%" />
-      <col style="width: 6%" />
-    </colgroup>
-    <CTableHead>
-      <CTableRow>
-        <CTableDataCell colspan="7">
-          <strong>
-            <CIcon name="cilFolderOpen" />
-            1. 본사 월별 수입 집계 (입금)
-          </strong>
-          <small class="text-medium-emphasis ms-1">
-            ({{ summary?.from_date }} ~ {{ summary?.to_date }}) — 계정 클릭 시 상세 거래내역 조회
-          </small>
-        </CTableDataCell>
-        <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>구분</CTableHeaderCell>
-        <CTableHeaderCell>대분류</CTableHeaderCell>
-        <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>전월 동기</CTableHeaderCell>
-        <CTableHeaderCell>당월 실적</CTableHeaderCell>
-        <CTableHeaderCell>전월 대비</CTableHeaderCell>
-        <CTableHeaderCell>당해 누계(YTD)</CTableHeaderCell>
-        <CTableHeaderCell>구성비</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-
-    <CTableBody>
-      <!-- 1-A. 수익 집계 -->
-      <template v-if="revenueRows.length">
-        <CTableRow v-for="item in revenueRows" :key="`rev-${item.row.account}`" class="text-end">
-          <CTableDataCell
-            v-if="item.isFirstInSub"
-            :rowspan="item.subRowSpan"
-            class="text-center fw-semibold"
-            :color="TableInfo"
-          >
-            {{ item.subTitle }}
-          </CTableDataCell>
-          <CTableDataCell
-            v-if="item.isFirstInGroup"
-            :rowspan="item.groupRowSpan"
-            class="text-center"
-          >
-            {{ item.groupName }}
-          </CTableDataCell>
-          <CTableDataCell
-            class="text-start pointer text-primary"
-            @click="openAccountDrilldown(item.row, 1)"
-          >
-            <span class="text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
-            <span class="text-decoration-underline">{{ item.row.name }}</span>
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.prev) }}</CTableDataCell>
-          <CTableDataCell class="fw-semibold">{{ numFormat(item.row.cur) }}</CTableDataCell>
-          <CTableDataCell :class="diffClass(item.row.cur - item.row.prev)">
-            {{ formatSigned(item.row.cur - item.row.prev) }}
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.ytd) }}</CTableDataCell>
-          <CTableDataCell class="text-center small text-medium-emphasis">
-            {{ calcShare(item.row.cur, summary?.income.total.cur || 0) }}
-          </CTableDataCell>
-        </CTableRow>
-      </template>
-      <CTableRow v-else>
-        <CTableDataCell colspan="8" class="text-center py-3 text-muted">
-          조회 기간 내 수익(매출·영업외수익·배당금) 입금 내역이 없습니다.
-        </CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-end fw-semibold">
-        <CTableHeaderCell colspan="3" class="text-center">수익 집계 소계 (A)</CTableHeaderCell>
-        <CTableHeaderCell>{{
-          numFormat(summary?.income.revenue.total.prev || 0)
-        }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.revenue.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell
-          :class="
-            diffClass(
-              (summary?.income.revenue.total.cur || 0) - (summary?.income.revenue.total.prev || 0),
-            )
-          "
-        >
-          {{
-            formatSigned(
-              (summary?.income.revenue.total.cur || 0) - (summary?.income.revenue.total.prev || 0),
-            )
-          }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.revenue.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center small">
-          {{ calcShare(summary?.income.revenue.total.cur || 0, summary?.income.total.cur || 0) }}
-        </CTableHeaderCell>
-      </CTableRow>
-
-      <!-- 1-B. 수익 외 기타 수입 -->
-      <template v-if="otherIncomeRows.length">
-        <CTableRow
-          v-for="item in otherIncomeRows"
-          :key="`inc-oth-${item.row.account}`"
-          class="text-end"
-        >
-          <CTableDataCell
-            v-if="item.isFirstInSub"
-            :rowspan="item.subRowSpan"
-            class="text-center fw-semibold"
-          >
-            {{ item.subTitle }}
-          </CTableDataCell>
-          <CTableDataCell
-            v-if="item.isFirstInGroup"
-            :rowspan="item.groupRowSpan"
-            class="text-center"
-          >
-            {{ item.groupName }}
-          </CTableDataCell>
-          <CTableDataCell
-            class="text-start pointer text-primary"
-            @click="openAccountDrilldown(item.row, 1)"
-          >
-            <span class="text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
-            <span class="text-decoration-underline">{{ item.row.name }}</span>
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.prev) }}</CTableDataCell>
-          <CTableDataCell class="fw-semibold">{{ numFormat(item.row.cur) }}</CTableDataCell>
-          <CTableDataCell :class="diffClass(item.row.cur - item.row.prev)">
-            {{ formatSigned(item.row.cur - item.row.prev) }}
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.ytd) }}</CTableDataCell>
-          <CTableDataCell class="text-center small text-medium-emphasis">
-            {{ calcShare(item.row.cur, summary?.income.total.cur || 0) }}
-          </CTableDataCell>
-        </CTableRow>
-      </template>
-      <CTableRow v-else>
-        <CTableDataCell colspan="8" class="text-center py-3 text-muted">
-          조회 기간 내 기타 수입(차입·대여금회수·보증금·선수금·투자금 등) 내역이 없습니다.
-        </CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-end fw-semibold">
-        <CTableHeaderCell colspan="3" class="text-center">
-          수익 외 기타 수입 소계 (B)
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.other.total.prev || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.other.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell
-          :class="
-            diffClass(
-              (summary?.income.other.total.cur || 0) - (summary?.income.other.total.prev || 0),
-            )
-          "
-        >
-          {{
-            formatSigned(
-              (summary?.income.other.total.cur || 0) - (summary?.income.other.total.prev || 0),
-            )
-          }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.other.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center small">
-          {{ calcShare(summary?.income.other.total.cur || 0, summary?.income.total.cur || 0) }}
-        </CTableHeaderCell>
-      </CTableRow>
-
-      <!-- 미분류 입금 (존재 시) -->
-      <CTableRow v-if="hasUnclassifiedIn" color="warning" class="text-end">
-        <CTableDataCell colspan="3" class="text-center fw-semibold">
-          미분류 입금 (은행거래 대비 분개 미완료)
-        </CTableDataCell>
-        <CTableDataCell>{{ numFormat(summary?.unclassified.in.prev || 0) }}</CTableDataCell>
-        <CTableDataCell class="fw-bold">
-          {{ numFormat(summary?.unclassified.in.cur || 0) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{
-            formatSigned((summary?.unclassified.in.cur || 0) - (summary?.unclassified.in.prev || 0))
-          }}
-        </CTableDataCell>
-        <CTableDataCell>{{ numFormat(summary?.unclassified.in.ytd || 0) }}</CTableDataCell>
-        <CTableDataCell class="text-center">-</CTableDataCell>
-      </CTableRow>
-
-      <!-- 수입 총계 -->
-      <CTableRow color="primary" class="text-end fw-bold">
-        <CTableHeaderCell colspan="3" class="text-center"> 수입 합계 (A + B) </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.total.prev || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>
-          {{ formatSigned((summary?.income.total.cur || 0) - (summary?.income.total.prev || 0)) }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center">100%</CTableHeaderCell>
-      </CTableRow>
-    </CTableBody>
-  </CTable>
+  <MonthlySummaryTable
+    :summary="summary"
+    direction="income"
+    @drill="(r, s) => openAccountDrilldown(r, s)"
+  />
 
   <!-- 4. 지출 집계 테이블 -->
-  <CTable hover responsive bordered align="middle" class="mb-4">
-    <colgroup>
-      <col style="width: 14%" />
-      <col style="width: 14%" />
-      <col style="width: 18%" />
-      <col style="width: 13%" />
-      <col style="width: 14%" />
-      <col style="width: 11%" />
-      <col style="width: 10%" />
-      <col style="width: 6%" />
-    </colgroup>
-    <CTableHead>
-      <CTableRow>
-        <CTableDataCell colspan="7">
-          <strong>
-            <CIcon name="cilFolderOpen" />
-            2. 본사 월별 지출 집계 (출금)
-          </strong>
-          <small class="text-medium-emphasis ms-1">
-            ({{ summary?.from_date }} ~ {{ summary?.to_date }}) — 계정 클릭 시 상세 거래내역 조회
-          </small>
-        </CTableDataCell>
-        <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>구분</CTableHeaderCell>
-        <CTableHeaderCell>대분류</CTableHeaderCell>
-        <CTableHeaderCell>계정 과목</CTableHeaderCell>
-        <CTableHeaderCell>전월 동기</CTableHeaderCell>
-        <CTableHeaderCell>당월 실적</CTableHeaderCell>
-        <CTableHeaderCell>전월 대비</CTableHeaderCell>
-        <CTableHeaderCell>당해 누계(YTD)</CTableHeaderCell>
-        <CTableHeaderCell>구성비</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-
-    <CTableBody>
-      <!-- 2-A. 비용 항목 집계 -->
-      <template v-if="costRows.length">
-        <CTableRow v-for="item in costRows" :key="`cost-${item.row.account}`" class="text-end">
-          <CTableDataCell
-            v-if="item.isFirstInSub"
-            :rowspan="item.subRowSpan"
-            class="text-center fw-semibold"
-            :color="TableInfo"
-          >
-            {{ item.subTitle }}
-          </CTableDataCell>
-          <CTableDataCell
-            v-if="item.isFirstInGroup"
-            :rowspan="item.groupRowSpan"
-            class="text-center"
-          >
-            {{ item.groupName }}
-          </CTableDataCell>
-          <CTableDataCell
-            class="text-start pointer text-primary"
-            @click="openAccountDrilldown(item.row, 2)"
-          >
-            <span class="text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
-            <span class="text-decoration-underline">{{ item.row.name }}</span>
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.prev) }}</CTableDataCell>
-          <CTableDataCell class="fw-semibold">{{ numFormat(item.row.cur) }}</CTableDataCell>
-          <CTableDataCell :class="diffClass(item.row.cur - item.row.prev, true)">
-            {{ formatSigned(item.row.cur - item.row.prev) }}
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.ytd) }}</CTableDataCell>
-          <CTableDataCell class="text-center small text-medium-emphasis">
-            {{ calcShare(item.row.cur, summary?.expense.total.cur || 0) }}
-          </CTableDataCell>
-        </CTableRow>
-      </template>
-      <CTableRow v-else>
-        <CTableDataCell colspan="8" class="text-center py-3 text-muted">
-          조회 기간 내 비용(매출원가·판관비·영업외비용) 출금 내역이 없습니다.
-        </CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-end fw-semibold">
-        <CTableHeaderCell colspan="3" class="text-center">비용 집계 소계 (C)</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.cost.total.prev || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.cost.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell
-          :class="
-            diffClass(
-              (summary?.expense.cost.total.cur || 0) - (summary?.expense.cost.total.prev || 0),
-              true,
-            )
-          "
-        >
-          {{
-            formatSigned(
-              (summary?.expense.cost.total.cur || 0) - (summary?.expense.cost.total.prev || 0),
-            )
-          }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.cost.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center small">
-          {{ calcShare(summary?.expense.cost.total.cur || 0, summary?.expense.total.cur || 0) }}
-        </CTableHeaderCell>
-      </CTableRow>
-
-      <!-- 2-B. 비용 외 기타 지출 -->
-      <template v-if="otherExpenseRows.length">
-        <CTableRow
-          v-for="item in otherExpenseRows"
-          :key="`exp-oth-${item.row.account}`"
-          class="text-end"
-        >
-          <CTableDataCell
-            v-if="item.isFirstInSub"
-            :rowspan="item.subRowSpan"
-            class="text-center fw-semibold"
-          >
-            {{ item.subTitle }}
-          </CTableDataCell>
-          <CTableDataCell
-            v-if="item.isFirstInGroup"
-            :rowspan="item.groupRowSpan"
-            class="text-center"
-          >
-            {{ item.groupName }}
-          </CTableDataCell>
-          <CTableDataCell
-            class="text-start pointer text-primary"
-            @click="openAccountDrilldown(item.row, 2)"
-          >
-            <span class="text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
-            <span class="text-decoration-underline">{{ item.row.name }}</span>
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.prev) }}</CTableDataCell>
-          <CTableDataCell class="fw-semibold">{{ numFormat(item.row.cur) }}</CTableDataCell>
-          <CTableDataCell :class="diffClass(item.row.cur - item.row.prev, true)">
-            {{ formatSigned(item.row.cur - item.row.prev) }}
-          </CTableDataCell>
-          <CTableDataCell>{{ numFormat(item.row.ytd) }}</CTableDataCell>
-          <CTableDataCell class="text-center small text-medium-emphasis">
-            {{ calcShare(item.row.cur, summary?.expense.total.cur || 0) }}
-          </CTableDataCell>
-        </CTableRow>
-      </template>
-      <CTableRow v-else>
-        <CTableDataCell colspan="8" class="text-center py-3 text-muted">
-          조회 기간 내 기타 지출(대여금지급·차입상환·법인카드대금·자산취득·보증금 등) 내역이
-          없습니다.
-        </CTableDataCell>
-      </CTableRow>
-      <CTableRow :color="TableSecondary" class="text-end fw-semibold">
-        <CTableHeaderCell colspan="3" class="text-center">
-          비용 외 기타 지출 소계 (D)
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.other.total.prev || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.other.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell
-          :class="
-            diffClass(
-              (summary?.expense.other.total.cur || 0) - (summary?.expense.other.total.prev || 0),
-              true,
-            )
-          "
-        >
-          {{
-            formatSigned(
-              (summary?.expense.other.total.cur || 0) - (summary?.expense.other.total.prev || 0),
-            )
-          }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.other.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center small">
-          {{ calcShare(summary?.expense.other.total.cur || 0, summary?.expense.total.cur || 0) }}
-        </CTableHeaderCell>
-      </CTableRow>
-
-      <!-- 미분류 출금 (존재 시) -->
-      <CTableRow v-if="hasUnclassifiedOut" color="warning" class="text-end">
-        <CTableDataCell colspan="3" class="text-center fw-semibold">
-          미분류 출금 (은행거래 대비 분개 미완료)
-        </CTableDataCell>
-        <CTableDataCell>{{ numFormat(summary?.unclassified.out.prev || 0) }}</CTableDataCell>
-        <CTableDataCell class="fw-bold">
-          {{ numFormat(summary?.unclassified.out.cur || 0) }}
-        </CTableDataCell>
-        <CTableDataCell>
-          {{
-            formatSigned(
-              (summary?.unclassified.out.cur || 0) - (summary?.unclassified.out.prev || 0),
-            )
-          }}
-        </CTableDataCell>
-        <CTableDataCell>{{ numFormat(summary?.unclassified.out.ytd || 0) }}</CTableDataCell>
-        <CTableDataCell class="text-center">-</CTableDataCell>
-      </CTableRow>
-
-      <!-- 지출 총계 -->
-      <CTableRow color="danger" class="text-end fw-bold">
-        <CTableHeaderCell colspan="3" class="text-center"> 지출 합계 (C + D) </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.total.prev || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.total.cur || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell>
-          {{ formatSigned((summary?.expense.total.cur || 0) - (summary?.expense.total.prev || 0)) }}
-        </CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.expense.total.ytd || 0) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center">100%</CTableHeaderCell>
-      </CTableRow>
-    </CTableBody>
-  </CTable>
+  <MonthlySummaryTable
+    :summary="summary"
+    direction="expense"
+    @drill="(r, s) => openAccountDrilldown(r, s)"
+  />
 
   <!-- 5. 현금수지 요약 및 내부대체/거래취소 참고표 -->
   <CTable hover responsive bordered align="middle" class="mb-4">
@@ -937,12 +485,29 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
           </template>
           <CTableRow v-else>
             <CTableDataCell colspan="6" class="text-center py-4 text-muted">
-              해당 기간의 거래 내역이 없습니다. (최대 15건까지 우선 표시되며 전체 내역은 본사 거래
-              관리에서 확인할 수 있습니다.)
+              해당 기간의 거래 내역이 없습니다.
             </CTableDataCell>
           </CTableRow>
         </CTableBody>
       </CTable>
+      <div
+        v-if="!drillLoading && drillCount"
+        class="d-flex justify-content-between align-items-center mt-2"
+      >
+        <span class="text-medium-emphasis small">
+          총 {{ numFormat(drillCount) }}건 중 {{ numFormat(drillTransactions.length) }}건 표시
+        </span>
+        <v-btn
+          v-if="hasMoreDrill"
+          size="small"
+          color="primary"
+          variant="tonal"
+          :loading="drillMoreLoading"
+          @click="loadMoreDrill"
+        >
+          더 보기
+        </v-btn>
+      </div>
     </CModalBody>
     <CModalFooter>
       <v-btn size="small" color="secondary" variant="tonal" @click="drillModalVisible = false">
