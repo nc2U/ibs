@@ -147,9 +147,7 @@ const hasUnclassifiedOut = computed(() => {
 const isReconciled = computed(() => {
   if (!summary.value) return true
   const expected =
-    summary.value.opening_balance +
-    summary.value.bank_flow.in.cur -
-    summary.value.bank_flow.out.cur
+    summary.value.opening_balance + summary.value.bank_flow.in.cur - summary.value.bank_flow.out.cur
   return (
     expected === summary.value.closing_balance &&
     summary.value.unclassified.in.cur === 0 &&
@@ -233,6 +231,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
         density="compact"
         variant="outlined"
         color="primary"
+        class="text-muted"
         @update:model-value="val => emit('update:periodMode', val)"
       >
         <v-btn value="mtd" size="small">기준일 누계 (MTD)</v-btn>
@@ -306,11 +305,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
         <CCardBody class="py-2 px-3">
           <div class="d-flex justify-content-between align-items-center">
             <span class="text-medium-emphasis small">기말 잔고 ({{ summary.to_date }})</span>
-            <v-chip
-              size="x-small"
-              :color="isReconciled ? 'success' : 'warning'"
-              variant="flat"
-            >
+            <v-chip size="x-small" :color="isReconciled ? 'success' : 'warning'" variant="flat">
               {{ isReconciled ? '계좌잔고 일치' : '미분류 확인 필요' }}
             </v-chip>
           </div>
@@ -360,11 +355,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
     <CTableBody>
       <!-- 1-A. 수익 집계 -->
       <template v-if="revenueRows.length">
-        <CTableRow
-          v-for="item in revenueRows"
-          :key="`rev-${item.row.account}`"
-          class="text-end"
-        >
+        <CTableRow v-for="item in revenueRows" :key="`rev-${item.row.account}`" class="text-end">
           <CTableDataCell
             v-if="item.isFirstInSub"
             :rowspan="item.subRowSpan"
@@ -405,7 +396,9 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-end fw-semibold">
         <CTableHeaderCell colspan="3" class="text-center">수익 집계 소계 (A)</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(summary?.income.revenue.total.prev || 0) }}</CTableHeaderCell>
+        <CTableHeaderCell>{{
+          numFormat(summary?.income.revenue.total.prev || 0)
+        }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(summary?.income.revenue.total.cur || 0) }}</CTableHeaderCell>
         <CTableHeaderCell
           :class="
@@ -506,9 +499,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
         </CTableDataCell>
         <CTableDataCell>
           {{
-            formatSigned(
-              (summary?.unclassified.in.cur || 0) - (summary?.unclassified.in.prev || 0),
-            )
+            formatSigned((summary?.unclassified.in.cur || 0) - (summary?.unclassified.in.prev || 0))
           }}
         </CTableDataCell>
         <CTableDataCell>{{ numFormat(summary?.unclassified.in.ytd || 0) }}</CTableDataCell>
@@ -517,9 +508,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
 
       <!-- 수입 총계 -->
       <CTableRow color="primary" class="text-end fw-bold">
-        <CTableHeaderCell colspan="3" class="text-center">
-          수입 합계 (A + B)
-        </CTableHeaderCell>
+        <CTableHeaderCell colspan="3" class="text-center"> 수입 합계 (A + B) </CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(summary?.income.total.prev || 0) }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(summary?.income.total.cur || 0) }}</CTableHeaderCell>
         <CTableHeaderCell>
@@ -675,7 +664,8 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       </template>
       <CTableRow v-else>
         <CTableDataCell colspan="8" class="text-center py-3 text-muted">
-          조회 기간 내 기타 지출(대여금지급·차입상환·법인카드대금·자산취득·보증금 등) 내역이 없습니다.
+          조회 기간 내 기타 지출(대여금지급·차입상환·법인카드대금·자산취득·보증금 등) 내역이
+          없습니다.
         </CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-end fw-semibold">
@@ -726,9 +716,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
 
       <!-- 지출 총계 -->
       <CTableRow color="danger" class="text-end fw-bold">
-        <CTableHeaderCell colspan="3" class="text-center">
-          지출 합계 (C + D)
-        </CTableHeaderCell>
+        <CTableHeaderCell colspan="3" class="text-center"> 지출 합계 (C + D) </CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(summary?.expense.total.prev || 0) }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(summary?.expense.total.cur || 0) }}</CTableHeaderCell>
         <CTableHeaderCell>
@@ -760,9 +748,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
     </CTableHead>
     <CTableBody class="text-end">
       <CTableRow class="fw-bold">
-        <CTableDataCell class="text-start">
-          손익 현금수지 (수익 A - 비용 C)
-        </CTableDataCell>
+        <CTableDataCell class="text-start"> 손익 현금수지 (수익 A - 비용 C) </CTableDataCell>
         <CTableDataCell :class="diffClass(summary?.operating_net.prev || 0)">
           {{ formatSigned(summary?.operating_net.prev || 0) }}
         </CTableDataCell>
@@ -770,13 +756,9 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
           {{ formatSigned(summary?.operating_net.cur || 0) }}
         </CTableDataCell>
         <CTableDataCell
-          :class="
-            diffClass((summary?.operating_net.cur || 0) - (summary?.operating_net.prev || 0))
-          "
+          :class="diffClass((summary?.operating_net.cur || 0) - (summary?.operating_net.prev || 0))"
         >
-          {{
-            formatSigned((summary?.operating_net.cur || 0) - (summary?.operating_net.prev || 0))
-          }}
+          {{ formatSigned((summary?.operating_net.cur || 0) - (summary?.operating_net.prev || 0)) }}
         </CTableDataCell>
         <CTableDataCell :class="diffClass(summary?.operating_net.ytd || 0)">
           {{ formatSigned(summary?.operating_net.ytd || 0) }}
