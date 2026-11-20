@@ -204,20 +204,53 @@ const delta = (a: PeriodAmounts) => a.cur - a.prev
               {{ item.groupName }}
             </CTableDataCell>
             <CTableDataCell
-              class="text-start pointer text-primary"
+              class="text-start pointer text-primary drill-cell"
               @click="emit('drill', item.row, sort)"
             >
-              <span class="text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
+              <span class="acc-code text-medium-emphasis small me-1">[{{ item.row.code }}]</span>
               <span class="text-decoration-underline">{{ item.row.name }}</span>
+              <v-icon icon="mdi-magnify" size="x-small" class="drill-icon ms-1" />
             </CTableDataCell>
-            <CTableDataCell>{{ numFormat(item.row.prev) }}</CTableDataCell>
-            <CTableDataCell class="fw-semibold">{{ numFormat(item.row.cur) }}</CTableDataCell>
-            <CTableDataCell :class="diffClass(delta(item.row), invert)">
-              {{ formatSigned(delta(item.row)) }}
+            <CTableDataCell
+              class="tabular-nums"
+              :class="{ 'text-muted opacity-50': !item.row.prev }"
+            >
+              {{ item.row.prev ? numFormat(item.row.prev) : '-' }}
             </CTableDataCell>
-            <CTableDataCell>{{ numFormat(item.row.ytd) }}</CTableDataCell>
-            <CTableDataCell class="text-center small text-medium-emphasis">
-              {{ calcShare(item.row.cur, grandTotal.cur) }}
+            <CTableDataCell
+              class="tabular-nums fw-semibold"
+              :class="{ 'text-muted opacity-50': !item.row.cur }"
+            >
+              {{ item.row.cur ? numFormat(item.row.cur) : '-' }}
+            </CTableDataCell>
+            <CTableDataCell class="tabular-nums">
+              <span
+                v-if="delta(item.row) !== 0"
+                class="diff-pill"
+                :class="diffClass(delta(item.row), invert)"
+              >
+                {{ delta(item.row) > 0 ? '▲' : '▼' }}
+                {{ formatSigned(delta(item.row)) }}
+              </span>
+              <span v-else class="text-muted opacity-50">-</span>
+            </CTableDataCell>
+            <CTableDataCell
+              class="tabular-nums"
+              :class="{ 'text-muted opacity-50': !item.row.ytd }"
+            >
+              {{ item.row.ytd ? numFormat(item.row.ytd) : '-' }}
+            </CTableDataCell>
+            <CTableDataCell class="text-center small text-medium-emphasis tabular-nums">
+              <div>{{ calcShare(item.row.cur, grandTotal.cur) }}</div>
+              <div v-if="grandTotal.cur && item.row.cur" class="share-track mt-1">
+                <div
+                  class="share-fill"
+                  :class="isIncome ? 'bg-primary' : 'bg-danger'"
+                  :style="{
+                    width: `${Math.min(100, (item.row.cur / grandTotal.cur) * 100)}%`,
+                  }"
+                />
+              </div>
             </CTableDataCell>
           </CTableRow>
         </template>
@@ -226,15 +259,15 @@ const delta = (a: PeriodAmounts) => a.cur - a.prev
             {{ blk.empty }}
           </CTableDataCell>
         </CTableRow>
-        <CTableRow :color="TableSecondary" class="text-end fw-semibold">
+        <CTableRow :color="TableSecondary" class="text-end fw-semibold subtotal-row">
           <CTableHeaderCell colspan="3" class="text-center">{{ blk.label }}</CTableHeaderCell>
-          <CTableHeaderCell>{{ numFormat(blk.total.prev) }}</CTableHeaderCell>
-          <CTableHeaderCell>{{ numFormat(blk.total.cur) }}</CTableHeaderCell>
-          <CTableHeaderCell :class="diffClass(delta(blk.total), invert)">
+          <CTableHeaderCell class="tabular-nums">{{ numFormat(blk.total.prev) }}</CTableHeaderCell>
+          <CTableHeaderCell class="tabular-nums">{{ numFormat(blk.total.cur) }}</CTableHeaderCell>
+          <CTableHeaderCell class="tabular-nums" :class="diffClass(delta(blk.total), invert)">
             {{ formatSigned(delta(blk.total)) }}
           </CTableHeaderCell>
-          <CTableHeaderCell>{{ numFormat(blk.total.ytd) }}</CTableHeaderCell>
-          <CTableHeaderCell class="text-center small">
+          <CTableHeaderCell class="tabular-nums">{{ numFormat(blk.total.ytd) }}</CTableHeaderCell>
+          <CTableHeaderCell class="text-center small tabular-nums">
             {{ calcShare(blk.total.cur, grandTotal.cur) }}
           </CTableHeaderCell>
         </CTableRow>
@@ -253,14 +286,74 @@ const delta = (a: PeriodAmounts) => a.cur - a.prev
       </CTableRow>
 
       <!-- 합계 -->
-      <CTableRow :color="cfg.totalColor" class="text-end fw-bold">
+      <CTableRow :color="cfg.totalColor" class="text-end fw-bold total-row">
         <CTableHeaderCell colspan="3" class="text-center">{{ cfg.totalLabel }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(grandTotal.prev) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(grandTotal.cur) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ formatSigned(delta(grandTotal)) }}</CTableHeaderCell>
-        <CTableHeaderCell>{{ numFormat(grandTotal.ytd) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center">100%</CTableHeaderCell>
+        <CTableHeaderCell class="tabular-nums">{{ numFormat(grandTotal.prev) }}</CTableHeaderCell>
+        <CTableHeaderCell class="tabular-nums">{{ numFormat(grandTotal.cur) }}</CTableHeaderCell>
+        <CTableHeaderCell class="tabular-nums">{{
+          formatSigned(delta(grandTotal))
+        }}</CTableHeaderCell>
+        <CTableHeaderCell class="tabular-nums">{{ numFormat(grandTotal.ytd) }}</CTableHeaderCell>
+        <CTableHeaderCell class="text-center tabular-nums">100%</CTableHeaderCell>
       </CTableRow>
     </CTableBody>
   </CTable>
 </template>
+
+<style scoped>
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-code {
+  display: inline-block;
+  min-width: 3.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.drill-cell .drill-icon {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.drill-cell:hover .drill-icon {
+  opacity: 0.85;
+}
+
+.diff-pill {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+
+.diff-pill.text-primary {
+  background-color: rgba(var(--cui-primary-rgb, 50, 31, 219), 0.08);
+}
+
+.diff-pill.text-danger {
+  background-color: rgba(var(--cui-danger-rgb, 229, 83, 83), 0.08);
+}
+
+.share-track {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(128, 128, 128, 0.16);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.share-fill {
+  height: 100%;
+  border-radius: 2px;
+  opacity: 0.75;
+}
+
+.subtotal-row > * {
+  border-top: 2px solid rgba(128, 128, 128, 0.35) !important;
+}
+
+.total-row > * {
+  border-top: 2px solid rgba(128, 128, 128, 0.55) !important;
+}
+</style>

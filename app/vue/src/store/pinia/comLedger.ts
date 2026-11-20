@@ -344,6 +344,23 @@ export const useComLedger = defineStore('comLedger', () => {
       })
   }
 
+  // 월별 자금 집계 계정 드릴다운용 거래 조회 (공유 상태를 건드리지 않는 단발성 조회)
+  const fetchComMonthlyDrilldown = async (payload: {
+    company: number
+    from_deal_date: string
+    to_deal_date: string
+    account: number
+    sort: 1 | 2
+    page: number
+  }) =>
+    await api
+      .get('/ledger/company-transaction/', { params: payload })
+      .then(res => res.data as { count: number; results: BankTransaction[] })
+      .catch(err => {
+        errorHandle(err.response?.data ?? err)
+        return null
+      })
+
   const fetchComLedgerCalculation = async (com: number) =>
     await api
       .get(`/ledger/company-calculation/?company=${com}`)
@@ -406,6 +423,7 @@ export const useComLedger = defineStore('comLedger', () => {
     bankTransactionCount,
     transPages,
     fetchBankTransaction,
+    fetchComMonthlyDrilldown,
     fetchBankTransactionList,
     findBankTransactionPage,
     createBankTransaction,

@@ -1,13 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import api from '@/api'
-import { numFormat } from '@/utils/baseMixins'
-import { TableSecondary, TableInfo } from '@/utils/cssMixins'
-import MonthlySummaryTable from './MonthlySummaryTable.vue'
-import { diffClass, formatSigned } from './monthlySummaryUtils'
-import { errorHandle } from '@/utils/helper'
 import { useComLedger } from '@/store/pinia/comLedger'
+import { TableSecondary, TableInfo } from '@/utils/cssMixins'
+import { numFormat } from '@/utils/baseMixins'
+import { diffClass, formatSigned } from './monthlySummaryUtils'
 import type { BankTransaction, MonthlySummaryRow, PeriodAmounts } from '@/store/types/comLedger'
+import MonthlySummaryTable from './MonthlySummaryTable.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -91,36 +89,26 @@ const fetchDrillPage = async (page: number) => {
   const isFirst = page === 1
   if (isFirst) drillLoading.value = true
   else drillMoreLoading.value = true
-  try {
-    const res = await api.get('/ledger/company-transaction/', {
-      params: {
-        company: props.company,
-        from_deal_date: summary.value.from_date,
-        to_deal_date: summary.value.to_date,
-        account: drillAccount.value.account,
-        sort: drillAccount.value.sort,
-        page,
-      },
-    })
-    if (seq !== drillSeq) return // 더 최신 요청이 있으면 무시
-    const results: BankTransaction[] = res.data.results ?? []
+  const data = await ledgerStore.fetchComMonthlyDrilldown({
+    company: props.company,
+    from_deal_date: summary.value.from_date,
+    to_deal_date: summary.value.to_date,
+    account: drillAccount.value.account,
+    sort: drillAccount.value.sort,
+    page,
+  })
+  if (seq !== drillSeq) return // 더 최신 요청이 있으면 무시
+  if (data) {
+    const results = data.results ?? []
     drillTransactions.value = isFirst ? results : [...drillTransactions.value, ...results]
-    drillCount.value = res.data.count ?? drillTransactions.value.length
+    drillCount.value = data.count ?? drillTransactions.value.length
     drillPage.value = page
-  } catch (err: unknown) {
-    if (seq !== drillSeq) return
-    const axiosErr = err as { response?: { data?: unknown } }
-    errorHandle(axiosErr.response?.data ?? err)
-    if (isFirst) {
-      drillTransactions.value = []
-      drillCount.value = 0
-    }
-  } finally {
-    if (seq === drillSeq) {
-      drillLoading.value = false
-      drillMoreLoading.value = false
-    }
+  } else if (isFirst) {
+    drillTransactions.value = []
+    drillCount.value = 0
   }
+  drillLoading.value = false
+  drillMoreLoading.value = false
 }
 
 const openAccountDrilldown = async (row: MonthlySummaryRow, sort: 1 | 2) => {
@@ -188,63 +176,69 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
   </CRow>
 
   <!-- 2. 상단 5-카드 현금흐름 브릿지 KPI -->
-  <CRow v-if="summary" class="mb-4 g-2">
-    <CCol sm="6" lg="2">
+  <CRow v-if="summary" class="mb-4 g-2 kpi-bridge">
+    <CCol sm="6" lg="3" class="kpi-step">
       <CCard class="h-100 border-top-secondary border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">기초 잔고 (전월 말)</div>
-          <div class="fw-bold fs-6 text-end mt-1">{{ numFormat(summary.opening_balance) }}원</div>
+          <div class="fw-bold fs-6 text-end mt-1 tabular-nums">
+            {{ numFormat(summary.opening_balance) }}원
+          </div>
         </CCardBody>
       </CCard>
+      <span class="kpi-op d-none d-lg-flex" aria-hidden="true">+</span>
     </CCol>
 
-    <CCol sm="6" lg="2">
+    <CCol sm="6" lg="2" class="kpi-step">
       <CCard class="h-100 border-top-primary border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">당월 수입 계 (외부유입)</div>
-          <div class="fw-bold fs-6 text-primary text-end mt-1">
+          <div class="fw-bold fs-6 text-primary text-end mt-1 tabular-nums">
             +{{ numFormat(summary.income.total.cur) }}원
           </div>
-          <div class="text-medium-emphasis text-end" style="font-size: 0.75rem">
+          <div class="text-medium-emphasis text-end kpi-sub tabular-nums">
             수익 {{ numFormat(summary.income.revenue.total.cur) }} / 기타
             {{ numFormat(summary.income.other.total.cur) }}
           </div>
         </CCardBody>
       </CCard>
+      <span class="kpi-op d-none d-lg-flex" aria-hidden="true">−</span>
     </CCol>
 
-    <CCol sm="6" lg="2">
+    <CCol sm="6" lg="2" class="kpi-step">
       <CCard class="h-100 border-top-danger border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">당월 지출 계 (외부유출)</div>
-          <div class="fw-bold fs-6 text-danger text-end mt-1">
+          <div class="fw-bold fs-6 text-danger text-end mt-1 tabular-nums">
             -{{ numFormat(summary.expense.total.cur) }}원
           </div>
-          <div class="text-medium-emphasis text-end" style="font-size: 0.75rem">
+          <div class="text-medium-emphasis text-end kpi-sub tabular-nums">
             비용 {{ numFormat(summary.expense.cost.total.cur) }} / 기타
             {{ numFormat(summary.expense.other.total.cur) }}
           </div>
         </CCardBody>
       </CCard>
+      <span class="kpi-op d-none d-lg-flex" aria-hidden="true">=</span>
     </CCol>
 
-    <CCol sm="6" lg="3">
+    <CCol sm="6" lg="2" class="kpi-step">
       <CCard class="h-100 border-top-info border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="d-flex justify-content-between align-items-center">
             <span class="text-medium-emphasis small">손익 현금수지 (수익-비용)</span>
-            <span :class="diffClass(summary.operating_net.cur)">
+            <span class="tabular-nums" :class="diffClass(summary.operating_net.cur)">
               {{ formatSigned(summary.operating_net.cur) }}원
             </span>
           </div>
           <div class="d-flex justify-content-between align-items-center mt-1">
             <span class="text-medium-emphasis small">전체 순증감 (수입-지출)</span>
-            <span class="fw-bold" :class="diffClass(summary.net.cur)">
+            <span class="fw-bold tabular-nums" :class="diffClass(summary.net.cur)">
               {{ formatSigned(summary.net.cur) }}원
             </span>
           </div>
         </CCardBody>
       </CCard>
+      <span class="kpi-op d-none d-lg-flex" aria-hidden="true">→</span>
     </CCol>
 
     <CCol sm="12" lg="3">
@@ -256,7 +250,9 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
               {{ isReconciled ? '계좌잔고 일치' : '미분류 확인 필요' }}
             </v-chip>
           </div>
-          <div class="fw-bold fs-6 text-end mt-1">{{ numFormat(summary.closing_balance) }}원</div>
+          <div class="fw-bold fs-6 text-end mt-1 tabular-nums">
+            {{ numFormat(summary.closing_balance) }}원
+          </div>
         </CCardBody>
       </CCard>
     </CCol>
@@ -405,13 +401,17 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
         <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
-        <CTableHeaderCell>관계회사 / 프로젝트</CTableHeaderCell>
-        <CTableHeaderCell>구분</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2" class="align-middle">관계회사 / 프로젝트</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2" class="align-middle">구분</CTableHeaderCell>
+        <CTableHeaderCell colspan="2">자금 운용 (대여 · 회수)</CTableHeaderCell>
+        <CTableHeaderCell colspan="2">자금 조달 (차입 · 상환)</CTableHeaderCell>
+        <CTableHeaderCell rowspan="2" class="align-middle">당월 순유출입 (누계)</CTableHeaderCell>
+      </CTableRow>
+      <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell>당월 대여(유출)</CTableHeaderCell>
         <CTableHeaderCell>당월 회수(유입)</CTableHeaderCell>
         <CTableHeaderCell>당월 차입(유입)</CTableHeaderCell>
         <CTableHeaderCell>당월 상환(유출)</CTableHeaderCell>
-        <CTableHeaderCell>당월 순유출입 (누계)</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
@@ -422,11 +422,19 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
             {{ aff.sort === 'company' ? '관계회사' : '프로젝트' }}
           </v-chip>
         </CTableDataCell>
-        <CTableDataCell>{{ numFormat(aff.cur.lend) }}</CTableDataCell>
-        <CTableDataCell>{{ numFormat(aff.cur.collect) }}</CTableDataCell>
-        <CTableDataCell>{{ numFormat(aff.cur.borrow) }}</CTableDataCell>
-        <CTableDataCell>{{ numFormat(aff.cur.repay) }}</CTableDataCell>
-        <CTableDataCell :class="diffClass(aff.cur.net)">
+        <CTableDataCell class="tabular-nums" :class="{ 'text-muted opacity-50': !aff.cur.lend }">
+          {{ aff.cur.lend ? numFormat(aff.cur.lend) : '-' }}
+        </CTableDataCell>
+        <CTableDataCell class="tabular-nums" :class="{ 'text-muted opacity-50': !aff.cur.collect }">
+          {{ aff.cur.collect ? numFormat(aff.cur.collect) : '-' }}
+        </CTableDataCell>
+        <CTableDataCell class="tabular-nums" :class="{ 'text-muted opacity-50': !aff.cur.borrow }">
+          {{ aff.cur.borrow ? numFormat(aff.cur.borrow) : '-' }}
+        </CTableDataCell>
+        <CTableDataCell class="tabular-nums" :class="{ 'text-muted opacity-50': !aff.cur.repay }">
+          {{ aff.cur.repay ? numFormat(aff.cur.repay) : '-' }}
+        </CTableDataCell>
+        <CTableDataCell class="tabular-nums" :class="diffClass(aff.cur.net)">
           {{ formatSigned(aff.cur.net) }}
           <span class="text-medium-emphasis small ms-1">({{ formatSigned(aff.ytd.net) }})</span>
         </CTableDataCell>
@@ -516,3 +524,36 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
     </CModalFooter>
   </CModal>
 </template>
+
+<style scoped>
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-sub {
+  font-size: 0.75rem;
+}
+
+.kpi-step {
+  position: relative;
+}
+
+.kpi-op {
+  position: absolute;
+  right: -0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 1.1rem;
+  height: 1.1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--cui-body-bg, #fff);
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  color: var(--cui-secondary-color, #6c757d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+</style>
