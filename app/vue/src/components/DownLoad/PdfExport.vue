@@ -14,9 +14,9 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
 })
 
-const { downloadPDF } = useDownload()
+const { downloadPDF, downloadState } = useDownload()
 
-const isDisabled = computed(() => props.disabled || !props.url)
+const isDisabled = computed(() => props.disabled || !props.url || downloadState.isDownloading)
 
 const handleDownload = () => {
   if (!isDisabled.value && props.url) {
@@ -37,8 +37,8 @@ const handleDownload = () => {
     class="mt-1 mx-3"
     style="text-decoration: none"
   >
-    <v-icon icon="mdi-file-pdf-box" color="red" class="mr-2" />
+    <v-icon icon="mdi-file-pdf-box" color="red" class="me-2" />
     Pdf Export
-    <v-icon icon="mdi-download" color="grey" class="ml-2" />
+    <v-icon icon="mdi-download" color="grey" class="ms-2" />
   </v-btn>
 </template>

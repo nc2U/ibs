@@ -139,7 +139,9 @@ const getDownloadMessage = (): string => {
 }
 
 .download-modal {
-  background: white;
+  background: var(--cui-body-bg, #ffffff);
+  color: var(--cui-body-color, #1f2937);
+  border: 1px solid var(--cui-border-color, transparent);
   border-radius: 12px;
   padding: 32px;
   min-width: 320px;
@@ -188,12 +190,12 @@ const getDownloadMessage = (): string => {
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--cui-emphasis-color, #1f2937);
 }
 
 .download-description {
   margin: 0 0 24px 0;
-  color: #6b7280;
+  color: var(--cui-secondary-color, #6b7280);
   font-size: 14px;
 }
 
@@ -204,7 +206,7 @@ const getDownloadMessage = (): string => {
 .progress-bar {
   width: 100%;
   height: 8px;
-  background-color: #e5e7eb;
+  background-color: var(--cui-secondary-bg, #e5e7eb);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -219,14 +221,14 @@ const getDownloadMessage = (): string => {
 
 .progress-text {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--cui-secondary-color, #6b7280);
   font-weight: 500;
 }
 
 .download-hint {
   margin: 0;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--cui-tertiary-color, #9ca3af);
 }
 
 @keyframes modalSlideIn {
