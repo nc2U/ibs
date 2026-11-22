@@ -13,7 +13,7 @@ const Pagination = defineComponent({
     align: {
       type: String,
       default: 'start',
-      require: false,
+      required: false,
       validator: (value: string) => {
         return ['start', 'center', 'end'].includes(value)
       },
@@ -26,7 +26,7 @@ const Pagination = defineComponent({
     activePage: {
       type: Number,
       default: 1,
-      require: false,
+      required: false,
     },
     /**
      * Show/hide arrows
@@ -36,7 +36,7 @@ const Pagination = defineComponent({
     arrows: {
       type: Boolean,
       default: true,
-      require: false,
+      required: false,
     },
     /**
      * Show/hide dots
@@ -46,7 +46,7 @@ const Pagination = defineComponent({
     dots: {
       type: Boolean,
       default: true,
-      require: false,
+      required: false,
     },
 
     /**
@@ -57,7 +57,7 @@ const Pagination = defineComponent({
     doubleArrows: {
       type: Boolean,
       default: true,
-      require: false,
+      required: false,
     },
     /**
      * The content of 'firstButton' button
@@ -67,7 +67,7 @@ const Pagination = defineComponent({
     firstButton: {
       type: String,
       default: '&laquo;',
-      require: false,
+      required: false,
     },
     /**
      * The content of 'lastButton' button
@@ -77,7 +77,7 @@ const Pagination = defineComponent({
     lastButton: {
       type: String,
       default: '&raquo;',
-      require: false,
+      required: false,
     },
     /**
      * Maximum items number
@@ -87,7 +87,7 @@ const Pagination = defineComponent({
     limit: {
       type: Number,
       default: 5,
-      require: false,
+      required: false,
     },
     /**
      * The content of 'nextButton' button
@@ -97,7 +97,7 @@ const Pagination = defineComponent({
     nextButton: {
       type: String,
       default: '&rsaquo;',
-      require: false,
+      required: false,
     },
     /**
      * Number of pages
@@ -105,7 +105,7 @@ const Pagination = defineComponent({
     pages: {
       type: Number,
       default: 1000,
-      require: true,
+      required: false,
     },
     /**
      * The content of 'previousButton' button
@@ -115,7 +115,7 @@ const Pagination = defineComponent({
     previousButton: {
       type: String,
       default: '&lsaquo;',
-      require: false,
+      required: false,
     },
     /**
      * Size of pagination, valid values: 'sm', 'lg'
@@ -141,11 +141,14 @@ const Pagination = defineComponent({
     const pages = ref(props.pages)
     const isItem = computed(() => !!Number(pages.value))
 
-    watch(props, () => {
-      activePage.value = props.activePage
-      limit.value = props.limit
-      pages.value = props.pages
-    })
+    watch(
+      () => [props.activePage, props.limit, props.pages] as const,
+      ([newActive, newLimit, newPages]) => {
+        activePage.value = newActive
+        limit.value = newLimit
+        pages.value = newPages
+      },
+    )
 
     const showDots = computed(() => {
       return props.dots && limit.value > 4 && limit.value < pages.value
@@ -226,10 +229,9 @@ const Pagination = defineComponent({
                 {
                   onClick: () => {
                     if (isItem.value) setPage(1)
-                    else return
                   },
                   'aria-label': 'Go to first page',
-                  ...(activePage.value === 1 && {
+                  ...((!isItem.value || activePage.value <= 1) && {
                     'aria-disabled': true,
                     disabled: true,
                   }),
@@ -246,11 +248,10 @@ const Pagination = defineComponent({
                 CPaginationItem,
                 {
                   onClick: () => {
-                    if (isItem.value && activePage.value !== 1) setPage(activePage.value - 1)
-                    else return
+                    if (isItem.value && activePage.value > 1) setPage(activePage.value - 1)
                   },
                   'aria-label': 'Go to previous page',
-                  ...(activePage.value === 1 && {
+                  ...((!isItem.value || activePage.value <= 1) && {
                     'aria-disabled': true,
                     disabled: true,
                   }),
@@ -277,6 +278,7 @@ const Pagination = defineComponent({
               return h(
                 CPaginationItem,
                 {
+                  key: i,
                   onClick: () => setPage(i),
                   'aria-label': activePage.value === i ? `Current page ${i}` : `Go to page ${i}`,
                   active: activePage.value === i,
@@ -302,12 +304,11 @@ const Pagination = defineComponent({
                 CPaginationItem,
                 {
                   onClick: () => {
-                    if (isItem.value && activePage.value !== lastItem.value)
+                    if (isItem.value && activePage.value < pages.value)
                       setPage(activePage.value + 1)
-                    else return
                   },
                   'aria-label': 'Go to next page',
-                  ...((!isItem.value || activePage.value === pages.value) && {
+                  ...((!isItem.value || activePage.value >= pages.value) && {
                     'aria-disabled': true,
                     disabled: true,
                   }),
@@ -327,7 +328,7 @@ const Pagination = defineComponent({
                     if (isItem.value) setPage(pages.value)
                   },
                   'aria-label': 'Go to last page',
-                  ...((!isItem.value || activePage.value === pages.value) && {
+                  ...((!isItem.value || activePage.value >= pages.value) && {
                     'aria-disabled': true,
                     disabled: true,
                   }),
