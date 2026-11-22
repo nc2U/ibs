@@ -16,10 +16,10 @@ const category = ref<number | null>(null)
 
 const onSubmit = () => {
   emit('change-cate', category.value ?? undefined)
-  refListModal.value.close()
+  refListModal.value?.close()
 }
 
-const callModal = () => refListModal.value.callModal()
+const callModal = () => refListModal.value?.callModal()
 
 defineExpose({ callModal })
 </script>

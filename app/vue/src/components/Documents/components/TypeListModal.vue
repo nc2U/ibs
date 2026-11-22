@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onUpdated } from 'vue'
+import { ref, computed } from 'vue'
 import { useDocs } from '@/store/pinia/docs'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -25,12 +25,12 @@ const formCheck = computed(() => {
 const onSubmit = () => {
   if (props.isCopy) emit('copy-docs', doc_type.value, project.value ?? undefined)
   else emit('move-docs', doc_type.value, project.value ?? undefined)
-  refListModal.value.close()
+  refListModal.value?.close()
 }
 
 const callModal = () => {
   doc_type.value = props.nowType ? Number(props.nowType) : null
-  refListModal.value.callModal()
+  refListModal.value?.callModal()
 }
 
 defineExpose({ callModal })

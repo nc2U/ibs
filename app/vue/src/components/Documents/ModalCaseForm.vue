@@ -12,7 +12,7 @@ defineProps({ getSuitCase: { type: Array, default: () => [] } })
 
 const refConfirmModal = ref()
 const refCaseForm = ref()
-const callModal = () => refCaseForm.value.callModal()
+const callModal = () => refCaseForm.value?.callModal()
 
 const validated = ref(false)
 const form = ref<SuitCase>({
@@ -289,7 +289,7 @@ const modalAction = () => {
           </CRow>
 
           <CRow>
-            <CCol class="text-right">
+            <CCol class="text-end">
               <v-btn color="primary" type="submit" size="small"> 저장하기</v-btn>
               <v-btn color="light" size="small" @click="refCaseForm.close()" flat> 닫기</v-btn>
             </CCol>

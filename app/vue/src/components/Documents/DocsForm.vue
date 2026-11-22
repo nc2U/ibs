@@ -3,10 +3,10 @@ import {
   computed,
   defineAsyncComponent,
   onBeforeMount,
-  onBeforeUpdate,
   type PropType,
   reactive,
   ref,
+  watch,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -60,9 +60,9 @@ const form = reactive<Docs & { issue_project: number | null }>({
   newLinks: [],
 })
 
-const enableStore = (event: Event | any) => {
-  const el = event.target as HTMLInputElement
-  attach.value = el.value ? !el.value : false
+const enableStore = (event: Event) => {
+  const el = event.target as HTMLInputElement | null
+  attach.value = el?.value ? !el.value : false
 }
 
 const { can, PERM } = usePerms()
@@ -76,8 +76,11 @@ const formsCheck = computed(() => {
     const c = form.title === props.docs.title
     const d = form.execution_date === props.docs.execution_date
     const e = form.description === props.docs.description
+    const f = form.is_pinned === props.docs.is_pinned
+    const g = form.security_level === (props.docs.security_level ?? '3')
+    const h = form.is_blind === props.docs.is_blind
 
-    return a && b && c && d && e && attach.value
+    return a && b && c && d && e && f && g && h && attach.value
   }
   return !can(PERM.DOCS_CREATE)
 })
@@ -86,14 +89,16 @@ const [route, router] = [useRoute(), useRouter()]
 const btnClass = computed(() => (route.params.docsId ? 'success' : 'primary'))
 
 const RefNewFiles = ref()
-const fileUpload = (newFiles: any[]) => (form.newFiles = newFiles)
+const fileUpload = (newFiles: { file: File | null; description: string }[]) =>
+  (form.newFiles = newFiles as unknown as File[])
 
 const fileChange = (payload: { pk: number; file: File }) => {
-  ;(form.cngFiles as any[]).push(payload)
+  const cngFiles = (form.cngFiles ?? []) as { pk: number; file: File }[]
+  form.cngFiles = [...cngFiles.filter(f => f.pk !== payload.pk), payload]
   attach.value = !payload.pk
 }
 const fileDelete = (payload: { pk: number; del: boolean }): void => {
-  const file = (form.files as AFile[]).find((f: any) => f.pk === payload.pk)
+  const file = (form.files as AFile[]).find(f => f.pk === payload.pk)
   if (file) {
     file.del = payload.del
     attach.value = !payload.del
@@ -103,12 +108,10 @@ const fileDelete = (payload: { pk: number; del: boolean }): void => {
 const RefNewLinks = ref()
 const linkUpload = (newLinks: Link[]) => (form.newLinks = newLinks)
 const linkChange = (payload: { pk: number; link: string }) => {
-  console.log(payload)
   const link = (form.links as Link[]).find(l => l.pk === payload.pk)
   if (link) link.link = payload.link
 }
 const linkDelete = (payload: { pk: number; del: boolean }): void => {
-  console.log(payload)
   const link = (form.links as Link[]).find(l => l.pk === payload.pk)
   if (link) {
     link.del = payload.del
@@ -124,16 +127,16 @@ const onSubmit = (event: Event) => {
       event.stopPropagation()
 
       validated.value = true
-    } else refConfirmModal.value.callModal()
-  } else refAlertModal.value.callModal()
+    } else refConfirmModal.value?.callModal()
+  } else refAlertModal.value?.callModal()
 }
 
 const modalAction = () => {
-  RefNewFiles.value.getNewFiles()
-  RefNewLinks.value.getNewLinks()
+  RefNewFiles.value?.getNewFiles()
+  RefNewLinks.value?.getNewLinks()
   emit('on-submit', { ...form })
   validated.value = false
-  refConfirmModal.value.close()
+  refConfirmModal.value?.close()
 }
 
 const caseCreate = (payload: SuitCase) => emit('create-lawsuit', payload)
@@ -158,7 +161,7 @@ const dataSetup = () => {
 }
 
 onBeforeMount(() => dataSetup())
-onBeforeUpdate(() => dataSetup())
+watch(() => props.docs, dataSetup)
 </script>
 
 <template>
@@ -166,7 +169,7 @@ onBeforeUpdate(() => dataSetup())
     <CCol>
       <h5>
         {{ sortName }}
-        <v-icon icon="mdi-chevron-double-right" size="xs" />
+        <v-icon icon="mdi-chevron-double-right" size="x-small" />
         {{ viewRoute.substring(3) }}
       </h5>
     </CCol>

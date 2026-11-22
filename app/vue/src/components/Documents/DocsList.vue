@@ -98,7 +98,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         @active-page-change="pageSelect"
       />
     </CCol>
-    <CCol lg="4" class="text-right pt-3">
+    <CCol lg="4" class="text-end pt-3">
       <v-btn
         v-if="canDocsCreate"
         color="primary"

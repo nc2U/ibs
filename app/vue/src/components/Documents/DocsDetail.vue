@@ -85,9 +85,17 @@ const sendUrl = `${window.location.host}${route.fullPath}`
 
 const shareFacebook = () => window.open(`https://facebook.com/share/share.php?u=${sendUrl}`)
 const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?text=&url=${sendUrl}`)
+interface KakaoWindow extends Window {
+  Kakao?: {
+    Share?: {
+      createDefaultButton: (opts: Record<string, unknown>) => void
+    }
+  }
+}
+
 const shareKakaoTalk = () => {
   // 카카오링크 버튼 생성
-  ;(window as any).Kakao.Share.createDefaultButton({
+  ;(window as KakaoWindow).Kakao?.Share?.createDefaultButton({
     container: '#kakaotalk-sharing-btn',
     objectType: 'feed',
     content: {
@@ -125,7 +133,7 @@ const shareKakaoTalk = () => {
 
 const toScrape = () => {
   if (props.docs?.my_scrape)
-    refAlertModal.value.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
+    refAlertModal.value?.callModal('', '이미 이 포스트를 스크랩 하였습니다.')
   else emit('docs-scrape', props.docs?.pk)
 }
 
@@ -136,12 +144,12 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
     if (!canDocsUpdate.value) return
     if (fn === 1) {
       isCopy.value = true
-      refTypeListModal.value.callModal()
+      refTypeListModal.value?.callModal()
     } else if (fn === 2) {
       isCopy.value = false
-      refTypeListModal.value.callModal()
+      refTypeListModal.value?.callModal()
     } else if (fn === 3) {
-      refCateListModal.value.callModal()
+      refCateListModal.value?.callModal()
     }
   } else {
     if (fn === 4)
@@ -149,11 +157,11 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
     else if (fn === 7)
       state = props.docs?.is_blind ?? false // is_blind
     else if (fn === 8)
-      refTrashModal.value.callModal() // deleted confirm
+      refTrashModal.value?.callModal() // deleted confirm
     else if (fn === 88) {
       // soft delete
       state = !!props.docs?.deleted // is_deleted
-      refTrashModal.value.close()
+      refTrashModal.value?.close()
       router.replace({ name: props.viewRoute })
     }
     const payload = {
@@ -182,11 +190,11 @@ const toEdit = () => {
   })
 }
 
-const deleteConfirm = () => refTrashModal.value.callModal()
+const deleteConfirm = () => refTrashModal.value?.callModal()
 
 const toDelete = () => {
   if (can(PERM.DOCS_DELETE)) toManage(88)
-  refDelModal.value.close()
+  refTrashModal.value?.close()
 }
 
 watch(
@@ -243,7 +251,12 @@ onMounted(() => {
     <CRow class="mt-5">
       <CCol md="8">
         <h5>
-          <v-icon v-if="docs.is_notice" icon="mdi-bullhorn" size="sm" color="blue-grey-darken-1" />
+          <v-icon
+            v-if="docs.is_notice"
+            icon="mdi-bullhorn"
+            size="small"
+            color="blue-grey-darken-1"
+          />
           {{ docs.title }}
           <v-chip
             v-if="docs.security_level"
@@ -251,7 +264,7 @@ onMounted(() => {
             size="x-small"
             :color="docs.security_level === '1' ? 'warning' : 'grey-darken-1'"
             :variant="docs.security_level === '1' ? 'tonal' : 'outlined'"
-            class="ml-2"
+            class="ms-2"
           >
             {{
               docs.security_level === '2' && docs.creator_dept_name
@@ -262,7 +275,7 @@ onMounted(() => {
           </v-chip>
         </h5>
       </CCol>
-      <CCol v-if="docs.cate_name" class="pt-1 text-right">
+      <CCol v-if="docs.cate_name" class="pt-1 text-end">
         <span>[{{ sortName }}] [{{ docs.cate_name }}]</span>
       </CCol>
     </CRow>
@@ -356,12 +369,7 @@ onMounted(() => {
 
     <CRow class="my-3 px-3">
       <CCol class="text-grey-darken-1 pt-2 social">
-        <a
-          id="kakaotalk-sharing-btn"
-          href="#"
-          @click.prevent="shareKakaoTalk"
-          class="me-2"
-        >
+        <a id="kakaotalk-sharing-btn" href="#" @click.prevent="shareKakaoTalk" class="me-2">
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"
             alt="카카오톡 공유 보내기 버튼"
@@ -377,7 +385,7 @@ onMounted(() => {
           :color="docs.my_scrape ? 'primary' : ''"
           size="small"
           :rounded="0"
-          class="mr-1"
+          class="me-1"
           @click="toScrape"
         >
           스크랩 {{ docs.scrape ? `+${docs.scrape}` : '' }}
@@ -399,7 +407,7 @@ onMounted(() => {
                 @click="toManage(index + 1)"
               >
                 <v-list-item-title style="font-size: 0.9em">
-                  <v-icon :icon="`mdi-${item.icon}`" size="sm" />
+                  <v-icon :icon="`mdi-${item.icon}`" size="small" />
                   {{ item.title }}
                 </v-list-item-title>
               </v-list-item>
@@ -448,7 +456,7 @@ onMounted(() => {
           </v-btn>
         </v-btn-group>
       </CCol>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn
           v-if="canDocsCreate"
           color="primary"

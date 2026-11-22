@@ -158,7 +158,7 @@ onBeforeMount(async () => {
       <CCol color="warning" class="p-2 pl-3">
         <strong> 문서 건수 조회 결과 : {{ numFormat(docsCount, 0, 0) }} 건 </strong>
       </CCol>
-      <CCol v-if="!formsCheck" class="text-right mb-0">
+      <CCol v-if="!formsCheck" class="text-end mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>

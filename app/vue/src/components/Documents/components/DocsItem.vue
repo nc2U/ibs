@@ -20,23 +20,23 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
 <template>
   <CTableRow v-if="docs" class="text-center">
     <CTableDataCell>{{ docs.pk }}</CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       <v-badge :color="sortColor" :content="sortName" offset-x="-20" offset-y="-7" />
     </CTableDataCell>
     <CTableDataCell>{{ docs.execution_date }}</CTableDataCell>
     <CTableDataCell :style="{ background: docs.cate_color ? `${docs.cate_color}33` : '' }">
       <span v-if="docs.cate_name">[{{ docs.cate_name }}]</span>
     </CTableDataCell>
-    <CTableDataCell v-if="isLawsuit" class="text-left">
+    <CTableDataCell v-if="isLawsuit" class="text-start">
       {{ cutString(docs.lawsuit_name ?? '', 26) }}
     </CTableDataCell>
-    <CTableDataCell class="text-left">
-      <v-icon v-if="docs.is_blind" icon="mdi-eye-off" size="sm" class="mr-1 text-danger" />
+    <CTableDataCell class="text-start">
+      <v-icon v-if="docs.is_blind" icon="mdi-eye-off" size="small" class="me-1 text-danger" />
       <v-icon
         v-if="docs.security_level === '1'"
         icon="mdi-lock-outline"
-        size="sm"
-        class="mr-1 text-warning"
+        size="small"
+        class="me-1 text-warning"
       />
       <router-link
         v-if="canDocsRead"
@@ -45,7 +45,7 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
         {{ cutString(docs.title, 32) }}
       </router-link>
       <span v-else class="text-grey">{{ cutString(docs.title, 32) }}</span>
-      <v-chip v-if="docs.is_new" color="warning" variant="flat" size="x-small" class="ml-2">
+      <v-chip v-if="docs.is_new" color="warning" variant="flat" size="x-small" class="ms-2">
         new
       </v-chip>
     </CTableDataCell>
