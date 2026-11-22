@@ -14,13 +14,15 @@ defineProps({
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
-const options = ref({ format: 'yyyy-MM-dd' })
+const options = ref({ format: 'yyyy-MM-dd HH:mm' })
 </script>
 
 <template>
   <Datepicker
     :dark="isDark"
     :teleport="true"
+    :disabled="disabled"
+    :readonly="readonly"
     :enable-time-picker="true"
     :text-input="options"
     auto-apply

@@ -18,9 +18,11 @@ const isDark = computed(() => store.theme === 'dark')
 // 12시간 형식으로 표시하기 위한 포맷 함수
 const formatTime = (time: string | null): string => {
   if (!time) return ''
-
-  const [hours, minutes] = time.split(':')
-  const hour = parseInt(hours)
+  const match = /^(\d{1,2}):(\d{2})/.exec(time.trim())
+  if (!match) return time
+  const hour = Number(match[1])
+  const minutes = match[2]
+  if (Number.isNaN(hour)) return time
   const ampm = hour >= 12 ? '오후' : '오전'
   const displayHour = hour % 12 || 12
 
@@ -45,11 +47,11 @@ const formatTime = (time: string | null): string => {
     <template #input-icon>
       <v-icon icon="mdi-clock-outline" class="m-1" size="14" />
     </template>
-    <template #dp-input="{ value, onInput, onEnter, onTab, onBlur, onPaste }">
+    <template #dp-input="{ value, onEnter, onTab, onBlur }">
       <input
         :value="formatTime(value)"
         :disabled="disabled"
-        :readonly="readonly"
+        readonly
         :required="required"
         :placeholder="placeholder"
         autocomplete="off"
@@ -58,9 +60,6 @@ const formatTime = (time: string | null): string => {
         style="padding-left: 20px"
         @keydown.enter="onEnter"
         @keydown.tab="onTab"
-        @keydown="onInput"
-        @keyup="onInput"
-        @paste="onPaste"
         @blur="onBlur"
       />
     </template>

@@ -21,6 +21,8 @@ const options = ref({ format: 'yyyy-MM-dd' })
   <Datepicker
     :dark="isDark"
     :teleport="true"
+    :disabled="disabled"
+    :readonly="readonly"
     :enable-time-picker="false"
     :text-input="options"
     auto-apply
