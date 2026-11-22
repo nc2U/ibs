@@ -177,7 +177,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
 
   <!-- 2. 상단 5-카드 현금흐름 브릿지 KPI -->
   <CRow v-if="summary" class="mb-4 g-2 kpi-bridge">
-    <CCol sm="6" lg="3" class="kpi-step">
+    <CCol sm="6" class="kpi-col kpi-step">
       <CCard class="h-100 border-top-secondary border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">기초 잔고 (전월 말)</div>
@@ -189,7 +189,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       <span class="kpi-op d-none d-lg-flex" aria-hidden="true">+</span>
     </CCol>
 
-    <CCol sm="6" lg="2" class="kpi-step">
+    <CCol sm="6" class="kpi-col kpi-step">
       <CCard class="h-100 border-top-primary border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">당월 수입 계 (외부유입)</div>
@@ -205,7 +205,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       <span class="kpi-op d-none d-lg-flex" aria-hidden="true">−</span>
     </CCol>
 
-    <CCol sm="6" lg="2" class="kpi-step">
+    <CCol sm="6" class="kpi-col kpi-step">
       <CCard class="h-100 border-top-danger border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="text-medium-emphasis small">당월 지출 계 (외부유출)</div>
@@ -221,7 +221,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       <span class="kpi-op d-none d-lg-flex" aria-hidden="true">=</span>
     </CCol>
 
-    <CCol sm="6" lg="2" class="kpi-step">
+    <CCol sm="6" class="kpi-col kpi-step">
       <CCard class="h-100 border-top-info border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="d-flex justify-content-between align-items-center">
@@ -241,7 +241,7 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
       <span class="kpi-op d-none d-lg-flex" aria-hidden="true">→</span>
     </CCol>
 
-    <CCol sm="12" lg="3">
+    <CCol sm="12" class="kpi-col">
       <CCard class="h-100 border-top-success border-top-3">
         <CCardBody class="py-2 px-3">
           <div class="d-flex justify-content-between align-items-center">
@@ -536,6 +536,14 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
 
 .kpi-step {
   position: relative;
+}
+
+@media (min-width: 992px) {
+  .kpi-bridge > .kpi-col {
+    flex: 0 0 20%;
+    width: 20%;
+    max-width: 20%;
+  }
 }
 
 .kpi-op {
