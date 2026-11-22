@@ -65,7 +65,9 @@ export const EVIDENCE_TYPE_MAP: { [key: string]: string } = {
 }
 
 // 코드값('0'~'6')을 한글 라벨로 역변환하는 매핑
-export const CODE_TO_EVIDENCE_MAP: { [key: string]: string } = Object.entries(EVIDENCE_TYPE_MAP).reduce(
+export const CODE_TO_EVIDENCE_MAP: { [key: string]: string } = Object.entries(
+  EVIDENCE_TYPE_MAP,
+).reduce(
   (acc, [label, code]) => {
     acc[code] = label
     return acc
@@ -76,6 +78,18 @@ export const CODE_TO_EVIDENCE_MAP: { [key: string]: string } = Object.entries(EV
 /**
  * ExcelJS 셀에서 텍스트 값을 안전하게 추출 (RichText, 수식, 하이퍼링크 등 대응)
  */
+const formatFormulaResult = (result: ExcelJS.CellFormulaValue['result']): string => {
+  if (result === null || result === undefined) return ''
+  if (result instanceof Date) {
+    const y = result.getUTCFullYear()
+    const m = String(result.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(result.getUTCDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  if (typeof result === 'object' && 'error' in result) return ''
+  return String(result).trim()
+}
+
 export function extractCellValue(cell: ExcelJS.Cell): string {
   const val = cell.value
   if (val === null || val === undefined) return ''
@@ -85,22 +99,35 @@ export function extractCellValue(cell: ExcelJS.Cell): string {
     return String(val).trim()
   }
 
-  // 2. 수식 셀 ({ formula: '...', result: '...' })
-  if (typeof val === 'object' && 'result' in val) {
-    return val.result !== null && val.result !== undefined ? String(val.result).trim() : ''
+  // 2. Date 셀
+  if (val instanceof Date) {
+    const y = val.getUTCFullYear()
+    const m = String(val.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(val.getUTCDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
   }
 
-  // 3. RichText 셀 ({ richText: [{ text: '...' }] })
-  if (typeof val === 'object' && 'richText' in val && Array.isArray((val as any).richText)) {
-    return (val as any).richText
-      .map((t: any) => t.text || '')
+  // 3. 수식 셀 ({ formula: '...', result: '...' })
+  if ('result' in val) {
+    return formatFormulaResult(val.result)
+  }
+
+  // 4. RichText 셀 ({ richText: [{ text: '...' }] })
+  if ('richText' in val && Array.isArray(val.richText)) {
+    return val.richText
+      .map(t => t.text || '')
       .join('')
       .trim()
   }
 
-  // 4. 하이퍼링크 셀 ({ text: '...', hyperlink: '...' })
-  if (typeof val === 'object' && 'text' in val) {
-    return String((val as any).text || '').trim()
+  // 5. 하이퍼링크 셀 ({ text: '...', hyperlink: '...' })
+  if ('text' in val) {
+    return String(val.text || '').trim()
+  }
+
+  // 6. 엑셀 오류 셀 ({ error: ... })
+  if ('error' in val) {
+    return ''
   }
 
   return String(val).trim()
@@ -110,10 +137,10 @@ export function extractCellValue(cell: ExcelJS.Cell): string {
  * ExcelJS 셀에서 숫자(금액)를 안전하게 추출 (쉼표, 공백, 통화기호 제거)
  */
 export function extractCellNumber(cell: ExcelJS.Cell): number {
-  const str = extractCellValue(cell).replace(/,/g, '').replace(/\s/g, '')
+  const str = extractCellValue(cell).replace(/[₩￦$,\s원]/g, '')
   if (!str) return 0
-  const parsed = parseFloat(str)
-  return isNaN(parsed) ? 0 : parsed
+  const parsed = Number(str)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 export function useExcelUpload() {
@@ -156,7 +183,13 @@ export function useExcelUpload() {
         const contractOrAffiliateName = extractCellValue(row.getCell(5))
 
         // 빈 행 건너뛰기: 모든 주요 컬럼이 비어있으면 건너뜀
-        if (!accountName && !trader && amount === 0 && !rawEvidenceType && !contractOrAffiliateName) {
+        if (
+          !accountName &&
+          !trader &&
+          amount === 0 &&
+          !rawEvidenceType &&
+          !contractOrAffiliateName
+        ) {
           continue
         }
 
@@ -259,7 +292,7 @@ export function useExcelUpload() {
         entriesToCreate,
         entriesToDelete,
         totalAmount,
-        isValid: isAmountValid && parsedEntries.every(e => e.isValid),
+        isValid: parsedEntries.length > 0 && isAmountValid && parsedEntries.every(e => e.isValid),
         validationSummary: {
           totalRows: parsedEntries.length,
           validRows: parsedEntries.filter(e => e.isValid).length,

@@ -122,17 +122,22 @@ export const BULK_COLUMNS = [
 
 const SORT_MAP: Record<string, 1 | 2> = { 입금: 1, 출금: 2, '1': 1, '2': 2 }
 
+// 문자열 날짜를 YYYY-MM-DD 로 정규화
+const normalizeDateString = (raw: string): string => {
+  const s = raw.trim()
+  const m = s.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/)
+  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
+  const digits = s.replace(/[.\-/\s]/g, '')
+  if (/^\d{8}/.test(digits)) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
+  }
+  return s
+}
+
 // 엑셀 셀 값(Date/문자열/숫자)을 YYYY-MM-DD 로 정규화
 const normalizeDate = (cell: ExcelJS.Cell | string): string => {
   if (typeof cell === 'string') {
-    const s = cell.trim()
-    const m = s.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/)
-    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
-    const digits = s.replace(/[.\-/\s]/g, '')
-    if (/^\d{8}/.test(digits)) {
-      return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
-    }
-    return s
+    return normalizeDateString(cell)
   }
   const val = cell.value
   if (val instanceof Date) {
@@ -141,14 +146,7 @@ const normalizeDate = (cell: ExcelJS.Cell | string): string => {
     const d = String(val.getUTCDate()).padStart(2, '0')
     return `${y}-${m}-${d}`
   }
-  const str = extractCellValue(cell).trim()
-  const m = str.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/)
-  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
-  const digits = str.replace(/[.\-/\s]/g, '')
-  if (/^\d{8}/.test(digits)) {
-    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
-  }
-  return str
+  return normalizeDateString(extractCellValue(cell))
 }
 
 const isValidDate = (s: string) => {
@@ -169,30 +167,122 @@ interface KeywordCategoryRule {
 
 const CATEGORY_RULES: KeywordCategoryRule[] = [
   // 이자수익 / 지급이자
-  { keywords: ['이자', '결산이자', '예금이자'], accountKeywords: ['이자수익', '이자수입'], sort: 1 },
-  { keywords: ['이자', '지급이자', '차입금이자', '대출이자'], accountKeywords: ['지급이자', '이자비용'], sort: 2 },
+  {
+    keywords: ['이자', '결산이자', '예금이자'],
+    accountKeywords: ['이자수익', '이자수입'],
+    sort: 1,
+  },
+  {
+    keywords: ['이자', '지급이자', '차입금이자', '대출이자'],
+    accountKeywords: ['지급이자', '이자비용'],
+    sort: 2,
+  },
   // 지급수수료
-  { keywords: ['수수료', '이체수수료', '펌뱅킹', '송금수수료', '타행이체', '발급수수료', '결제수수료', 'van', 'cms'], accountKeywords: ['수수료'] },
+  {
+    keywords: [
+      '수수료',
+      '이체수수료',
+      '펌뱅킹',
+      '송금수수료',
+      '타행이체',
+      '발급수수료',
+      '결제수수료',
+      'van',
+      'cms',
+    ],
+    accountKeywords: ['수수료'],
+  },
   // 식대 / 복리후생
-  { keywords: ['식대', '점심', '식당', '도시락', '커피', '음료', '간식', '야식', '생수', '회식', '카페'], accountKeywords: ['복리후생', '식대'] },
+  {
+    keywords: [
+      '식대',
+      '점심',
+      '식당',
+      '도시락',
+      '커피',
+      '음료',
+      '간식',
+      '야식',
+      '생수',
+      '회식',
+      '카페',
+    ],
+    accountKeywords: ['복리후생', '식대'],
+  },
   // 공과금 / 수도광열비
-  { keywords: ['한전', '한국전력', '전기요금', '도시가스', '수도요금', '관리비', '난방비'], accountKeywords: ['수도광열', '공과금', '관리비'] },
+  {
+    keywords: ['한전', '한국전력', '전기요금', '도시가스', '수도요금', '관리비', '난방비'],
+    accountKeywords: ['수도광열', '공과금', '관리비'],
+  },
   // 통신비
-  { keywords: ['kt', 'skt', 'lgu', '케이티', '통신비', '인터넷', 'sk텔레콤', 'lg유플러스', '전화요금', '휴대폰'], accountKeywords: ['통신'] },
+  {
+    keywords: [
+      'kt',
+      'skt',
+      'lgu',
+      '케이티',
+      '통신비',
+      '인터넷',
+      'sk텔레콤',
+      'lg유플러스',
+      '전화요금',
+      '휴대폰',
+    ],
+    accountKeywords: ['통신'],
+  },
   // 여비교통비 / 차량유지비
-  { keywords: ['주유', 'gs칼텍스', 'sk에너지', '에쓰오일', 's-oil', '현대오일', '하이패스', '주차', '톨게이트', 'ktx', '코레일', '택시', '세차'], accountKeywords: ['차량', '여비교통', '교통비'] },
+  {
+    keywords: [
+      '주유',
+      'gs칼텍스',
+      'sk에너지',
+      '에쓰오일',
+      's-oil',
+      '현대오일',
+      '하이패스',
+      '주차',
+      '톨게이트',
+      'ktx',
+      '코레일',
+      '택시',
+      '세차',
+    ],
+    accountKeywords: ['차량', '여비교통', '교통비'],
+  },
   // 소모품비 / 도서인쇄비
-  { keywords: ['소모품', '문구', '오피스', '다이소', '알파', '인쇄', '복사', '제본', '도서', '교보문고', '영풍문고'], accountKeywords: ['소모품', '도서'] },
+  {
+    keywords: [
+      '소모품',
+      '문구',
+      '오피스',
+      '다이소',
+      '알파',
+      '인쇄',
+      '복사',
+      '제본',
+      '도서',
+      '교보문고',
+      '영풍문고',
+    ],
+    accountKeywords: ['소모품', '도서'],
+  },
   // 세금과공과
-  { keywords: ['국세', '지방세', '취득세', '재산세', '등록면허세', '세무서', '구청', '원천세'], accountKeywords: ['세금과공과', '공과금'] },
+  {
+    keywords: ['국세', '지방세', '취득세', '재산세', '등록면허세', '세무서', '구청', '원천세'],
+    accountKeywords: ['세금과공과', '공과금'],
+  },
   // 분양 수납 (프로젝트 입금)
-  { keywords: ['계약금', '중도금', '잔금', '분양대금', '분양', '수납', '분담금', '부담금'], accountKeywords: ['분양수입', '분담금', '수입금'], sort: 1 },
+  {
+    keywords: ['계약금', '중도금', '잔금', '분양대금', '분양', '수납', '분담금', '부담금'],
+    accountKeywords: ['분양수입', '분담금', '수입금'],
+    sort: 1,
+  },
 ]
 
 /** 텍스트 및 적요에서 계약자/호실 정보 매칭 (프로젝트 모드 전용) */
 const matchContract = (
   text: string,
-  contracts: Array<{ value: number; label: string }>
+  contracts: Array<{ value: number; label: string }>,
 ): { value: number; label: string } | null => {
   if (!text || !contracts.length) return null
   const clean = text.replace(/[\s\-_]/g, '')
@@ -226,7 +316,7 @@ const matchContract = (
 const autoMatchAccount = (
   text: string,
   sort: 1 | 2,
-  accounts: Array<{ value: number; label: string; is_cate_only?: boolean }>
+  accounts: Array<{ value: number; label: string; is_cate_only?: boolean }>,
 ): { value: number; label: string } | null => {
   if (!text || !accounts.length) return null
   const lower = text.toLowerCase()
@@ -249,11 +339,37 @@ const autoMatchAccount = (
 
 // 주요 국내 은행 식별 힌트
 const BANK_NAMES = [
-  '국민은행', 'KB국민', '신한은행', '우리은행', '하나은행', '기업은행', 'IBK기업',
-  '농협은행', 'NH농협', '농협', '지역농협', '농·축협', '농축협', '축협',
-  '수협은행', 'SC제일은행', '씨티은행', '카카오뱅크', '케이뱅크',
-  '토스뱅크', '부산은행', '대구은행', '경남은행', '광주은행', '전북은행', '제주은행',
-  '우체국', '새마을금고', '신협', '산림조합', '저축은행',
+  '국민은행',
+  'KB국민',
+  '신한은행',
+  '우리은행',
+  '하나은행',
+  '기업은행',
+  'IBK기업',
+  '농협은행',
+  'NH농협',
+  '농협',
+  '지역농협',
+  '농·축협',
+  '농축협',
+  '축협',
+  '수협은행',
+  'SC제일은행',
+  '씨티은행',
+  '카카오뱅크',
+  '케이뱅크',
+  '토스뱅크',
+  '부산은행',
+  '대구은행',
+  '경남은행',
+  '광주은행',
+  '전북은행',
+  '제주은행',
+  '우체국',
+  '새마을금고',
+  '신협',
+  '산림조합',
+  '저축은행',
 ]
 
 export function useBulkTransExcel() {
@@ -271,10 +387,12 @@ export function useBulkTransExcel() {
     const relatedLabel = relatedLabelOf(ref_.systemType)
     const isProject = ref_.systemType !== 'company'
 
-    const columns = BULK_COLUMNS.filter(c => isProject || c.key !== 'installment_order_name').map(c => ({
-      ...c,
-      header: c.header === '__RELATED__' ? relatedLabel : c.header,
-    }))
+    const columns = BULK_COLUMNS.filter(c => isProject || c.key !== 'installment_order_name').map(
+      c => ({
+        ...c,
+        header: c.header === '__RELATED__' ? relatedLabel : c.header,
+      }),
+    )
     ws.columns = columns
 
     const header = ws.getRow(1)
@@ -287,13 +405,67 @@ export function useBulkTransExcel() {
     const accB = accounts[1]?.label || accA
 
     if (isProject) {
-      ws.addRow([1, '2026-01-15', '', firstBank, '예시 적요', '출금', 1500000, accA, '', '', '거래처A', 1000000, '증빙없음'])
+      ws.addRow([
+        1,
+        '2026-01-15',
+        '',
+        firstBank,
+        '예시 적요',
+        '출금',
+        1500000,
+        accA,
+        '',
+        '',
+        '거래처A',
+        1000000,
+        '증빙없음',
+      ])
       ws.addRow([1, '', '', '', '', '', '', accB, '', '', '거래처B', 500000, '세금계산서'])
-      ws.addRow([2, '2026-01-16', '', firstBank, '예시 입금', '입금', 300000, accA, '', '', '거래처C', 300000, ''])
+      ws.addRow([
+        2,
+        '2026-01-16',
+        '',
+        firstBank,
+        '예시 입금',
+        '입금',
+        300000,
+        accA,
+        '',
+        '',
+        '거래처C',
+        300000,
+        '',
+      ])
     } else {
-      ws.addRow([1, '2026-01-15', '', firstBank, '예시 적요', '출금', 1500000, accA, '', '거래처A', 1000000, '증빙없음'])
+      ws.addRow([
+        1,
+        '2026-01-15',
+        '',
+        firstBank,
+        '예시 적요',
+        '출금',
+        1500000,
+        accA,
+        '',
+        '거래처A',
+        1000000,
+        '증빙없음',
+      ])
       ws.addRow([1, '', '', '', '', '', '', accB, '', '거래처B', 500000, '세금계산서'])
-      ws.addRow([2, '2026-01-16', '', firstBank, '예시 입금', '입금', 300000, accA, '', '거래처C', 300000, ''])
+      ws.addRow([
+        2,
+        '2026-01-16',
+        '',
+        firstBank,
+        '예시 입금',
+        '입금',
+        300000,
+        accA,
+        '',
+        '거래처C',
+        300000,
+        '',
+      ])
     }
     ws.getColumn('deal_date').numFmt = '@'
 
@@ -310,7 +482,9 @@ export function useBulkTransExcel() {
       '3. 은행거래 정보(거래일자, 메모, 거래계좌, 적요, 구분, 입출금액)는 그룹의 첫 번째 행에만 입력하세요.',
       '4. 같은 그룹의 분류금액 합계는 입출금액과 반드시 일치해야 합니다.',
       '5. 거래일자는 YYYY-MM-DD 형식, 구분은 "입금" 또는 "출금"으로 입력하세요.',
-      '6. 거래계좌/계정이름/' + relatedLabel + '은(는) 시스템에 등록된 이름과 정확히 일치해야 합니다. (참조목록 시트 확인)',
+      '6. 거래계좌/계정이름/' +
+        relatedLabel +
+        '은(는) 시스템에 등록된 이름과 정확히 일치해야 합니다. (참조목록 시트 확인)',
     ]
     if (isProject) {
       guideTexts.push(
@@ -329,7 +503,8 @@ export function useBulkTransExcel() {
     guide.getRow(2).font = { bold: true, color: { argb: 'FFC00000' } }
 
     const refSheet = workbook.addWorksheet('참조목록')
-    const payOrderNames = isProject && ref_.payOrders ? ref_.payOrders.filter(p => p.value).map(p => p.label) : []
+    const payOrderNames =
+      isProject && ref_.payOrders ? ref_.payOrders.filter(p => p.value).map(p => p.label) : []
 
     refSheet.columns = [
       { header: '거래계좌', key: 'bank', width: 30 },
@@ -362,23 +537,26 @@ export function useBulkTransExcel() {
   /**
    * 워크시트 공통 파서: IBS 템플릿 및 인터넷 뱅킹 원본 엑셀 자동 판별 및 변환
    */
-  const parseWorksheet = async (ws: ExcelJS.Worksheet, opts: BulkParseOptions): Promise<BulkParseResult> => {
+  const parseWorksheet = async (
+    ws: ExcelJS.Worksheet,
+    opts: BulkParseOptions,
+  ): Promise<BulkParseResult> => {
     // 1. 시트 포맷 판별: 1~5행 내에 '그룹번호'나 '분류금액'이 있는지 확인
-    let isIbsTemplate = false
+    let templateHeaderRow = -1
     for (let r = 1; r <= Math.min(5, ws.rowCount); r++) {
       const row = ws.getRow(r)
       for (let c = 1; c <= row.cellCount; c++) {
         const val = extractCellValue(row.getCell(c))
         if (val.includes('그룹번호') || val.includes('분류금액')) {
-          isIbsTemplate = true
+          templateHeaderRow = r
           break
         }
       }
-      if (isIbsTemplate) break
+      if (templateHeaderRow !== -1) break
     }
 
-    if (isIbsTemplate) {
-      return parseIbsTemplateSheet(ws, opts)
+    if (templateHeaderRow !== -1) {
+      return parseIbsTemplateSheet(ws, opts, templateHeaderRow)
     } else {
       return parseBankRawSheet(ws, opts)
     }
@@ -387,16 +565,30 @@ export function useBulkTransExcel() {
   /**
    * 포맷 1: IBS 표준 템플릿 파서 (기존 완벽 호환)
    */
-  const parseIbsTemplateSheet = (ws: ExcelJS.Worksheet, opts: BulkParseOptions): BulkParseResult => {
+  const parseIbsTemplateSheet = (
+    ws: ExcelJS.Worksheet,
+    opts: BulkParseOptions,
+    headerRowIdx = 1,
+  ): BulkParseResult => {
     const transactions: BulkTransaction[] = []
     let current: BulkTransaction | null = null
     let lastKey = ''
     let validRowCount = 0
 
-    const headerRow = ws.getRow(1)
-    let colKey = 1, colDate = 2, colNote = 3, colBank = 4, colContent = 5
-    let colSort = 6, colBankAmt = 7, colAcc = 8, colContract = 9
-    let colPayOrder = -1, colTrader = 10, colEntryAmt = 11, colEvidence = 12
+    const headerRow = ws.getRow(headerRowIdx)
+    let colKey = 1,
+      colDate = 2,
+      colNote = 3,
+      colBank = 4,
+      colContent = 5
+    let colSort = 6,
+      colBankAmt = 7,
+      colAcc = 8,
+      colContract = 9
+    let colPayOrder = -1,
+      colTrader = 10,
+      colEntryAmt = 11,
+      colEvidence = 12
 
     const headerMap: Record<string, number> = {}
     for (let c = 1; c <= headerRow.cellCount; c++) {
@@ -422,7 +614,7 @@ export function useBulkTransExcel() {
       })
     }
 
-    for (let i = 2; i <= ws.rowCount; i++) {
+    for (let i = headerRowIdx + 1; i <= ws.rowCount; i++) {
       const row = ws.getRow(i)
       const key = extractCellValue(row.getCell(colKey))
       const dealDate = normalizeDate(row.getCell(colDate))
@@ -439,8 +631,19 @@ export function useBulkTransExcel() {
       const rawEvidence = extractCellValue(row.getCell(colEvidence))
 
       if (
-        !key && !dealDate && !bankName && !sortRaw && !content && !note && !bankAmount &&
-        !accountName && !trader && !entryAmount && !rawEvidence && !contractName && !payOrderName
+        !key &&
+        !dealDate &&
+        !bankName &&
+        !sortRaw &&
+        !content &&
+        !note &&
+        !bankAmount &&
+        !accountName &&
+        !trader &&
+        !entryAmount &&
+        !rawEvidence &&
+        !contractName &&
+        !payOrderName
       ) {
         continue
       }
@@ -468,7 +671,7 @@ export function useBulkTransExcel() {
           firstRow: i,
           bankForm: {
             deal_date: dealDate,
-            bank_account: bank?.value ?? (opts.targetBankAccount ?? ''),
+            bank_account: bank?.value ?? opts.targetBankAccount ?? '',
             bank_account_name: bank?.label || '',
             sort: sort ?? 2,
             amount: bankAmount || null,
@@ -482,15 +685,20 @@ export function useBulkTransExcel() {
           warnings: [],
           isValid: true,
         }
-        if (!isValidDate(dealDate)) current.errors.push(`거래일자 '${dealDate}' 형식이 올바르지 않습니다. (YYYY-MM-DD)`)
-        if (!bank && !opts.targetBankAccount) current.errors.push(`거래계좌 '${bankName}'을(를) 찾을 수 없습니다.`)
+        if (!isValidDate(dealDate))
+          current.errors.push(`거래일자 '${dealDate}' 형식이 올바르지 않습니다. (YYYY-MM-DD)`)
+        if (!bank && !opts.targetBankAccount)
+          current.errors.push(`거래계좌 '${bankName}'을(를) 찾을 수 없습니다.`)
         if (!sort) current.errors.push(`구분 '${sortRaw}'은(는) 입금/출금이어야 합니다.`)
-        if (!bankAmount || bankAmount <= 0) current.errors.push('입출금액은 0보다 큰 숫자여야 합니다.')
+        if (!bankAmount || bankAmount <= 0)
+          current.errors.push('입출금액은 0보다 큰 숫자여야 합니다.')
         if (!content) current.errors.push('적요는 필수 입력 항목입니다.')
         transactions.push(current)
         lastKey = key || current.key
       } else if (current && hasBankInfo) {
-        current.warnings.push(`행 ${i}: 같은 그룹번호의 두 번째 이후 행에 입력된 은행거래 정보는 무시됩니다.`)
+        current.warnings.push(
+          `행 ${i}: 같은 그룹번호의 두 번째 이후 행에 입력된 은행거래 정보는 무시됩니다.`,
+        )
       }
 
       const entry: BulkEntry = {
@@ -512,11 +720,13 @@ export function useBulkTransExcel() {
       if (!acc) entry.errors.push(`계정명 '${accountName}'을(를) 찾을 수 없습니다.`)
       else entry.account = acc.value
 
-      if (isNaN(entryAmount) || entryAmount <= 0) entry.errors.push('분류금액은 0보다 큰 숫자여야 합니다.')
+      if (isNaN(entryAmount) || entryAmount <= 0)
+        entry.errors.push('분류금액은 0보다 큰 숫자여야 합니다.')
 
       let code = EVIDENCE_TYPE_MAP[rawEvidence]
       if (!code && CODE_TO_EVIDENCE_MAP[rawEvidence]) code = rawEvidence
-      if (rawEvidence && !code) entry.errors.push(`지출증빙 '${rawEvidence}'은(는) 유효하지 않습니다.`)
+      if (rawEvidence && !code)
+        entry.errors.push(`지출증빙 '${rawEvidence}'은(는) 유효하지 않습니다.`)
       else entry.evidence_type = (code || '') as BulkEntry['evidence_type']
 
       if (contractName) {
@@ -530,7 +740,10 @@ export function useBulkTransExcel() {
 
       if (payOrderName && opts.payOrders && opts.payOrders.length) {
         const po = opts.payOrders.find(
-          o => o.label === payOrderName || o.label.includes(payOrderName) || payOrderName.includes(o.label),
+          o =>
+            o.label === payOrderName ||
+            o.label.includes(payOrderName) ||
+            payOrderName.includes(o.label),
         )
         if (po && po.value) {
           entry.installment_order = po.value
@@ -588,8 +801,23 @@ export function useBulkTransExcel() {
 
     // 헤더 행 탐색 (거래일자, 입금, 출금, 적요, 기재내용 키워드가 가장 많이 포함된 행)
     const keywords = [
-      '거래일자', '거래일시', '거래일', '일자', '입금', '출금', '적요', '거래내용',
-      '기재내용', '통장인자내용', '잔액', '보낸분', '받는분', '거래처', '의뢰인', '수취인', '송금인',
+      '거래일자',
+      '거래일시',
+      '거래일',
+      '일자',
+      '입금',
+      '출금',
+      '적요',
+      '거래내용',
+      '기재내용',
+      '통장인자내용',
+      '잔액',
+      '보낸분',
+      '받는분',
+      '거래처',
+      '의뢰인',
+      '수취인',
+      '송금인',
     ]
     for (let r = 1; r <= Math.min(15, ws.rowCount); r++) {
       const row = ws.getRow(r)
@@ -605,18 +833,31 @@ export function useBulkTransExcel() {
     }
 
     if (bestScore < 2) {
-      throw new Error('인터넷 뱅킹 거래내역 헤더(거래일자, 입출금액, 적요 등)를 찾을 수 없습니다. 엑셀 파일 서식을 확인해 주세요.')
+      throw new Error(
+        '인터넷 뱅킹 거래내역 헤더(거래일자, 입출금액, 적요 등)를 찾을 수 없습니다. 엑셀 파일 서식을 확인해 주세요.',
+      )
     }
 
     const headerRow = ws.getRow(headerRowIdx)
-    let colDate = -1, colDeposit = -1, colWithdraw = -1, colAmount = -1, colSort = -1
-    let colContent = -1, colDesc = -1, colTrader = -1, colNote = -1, colBalance = -1
+    let colDate = -1,
+      colDeposit = -1,
+      colWithdraw = -1,
+      colAmount = -1,
+      colSort = -1
+    let colContent = -1,
+      colDesc = -1,
+      colTrader = -1,
+      colNote = -1,
+      colBalance = -1
 
     for (let c = 1; c <= headerRow.cellCount; c++) {
       const text = extractCellValue(headerRow.getCell(c)).replace(/[\s\-_()]/g, '')
       if (!text) continue
 
-      if (['거래일자', '거래일시', '거래일', '일자', '거래년월일'].some(k => text.includes(k)) && colDate === -1) {
+      if (
+        ['거래일자', '거래일시', '거래일', '일자', '거래년월일'].some(k => text.includes(k)) &&
+        colDate === -1
+      ) {
         colDate = c
       } else if (
         !['입금자', '입금인', '입금계좌'].some(k => text.includes(k)) &&
@@ -628,7 +869,9 @@ export function useBulkTransExcel() {
         colDeposit = c
       } else if (
         !['출금계좌'].some(k => text.includes(k)) &&
-        (['출금액', '찾으신금액', '출금금액', '출금원', '지급금액', '지급액'].some(k => text.includes(k)) ||
+        (['출금액', '찾으신금액', '출금금액', '출금원', '지급금액', '지급액'].some(k =>
+          text.includes(k),
+        ) ||
           text === '출금' ||
           /^출금[금액원()]*$/.test(text)) &&
         colWithdraw === -1
@@ -636,24 +879,51 @@ export function useBulkTransExcel() {
         colWithdraw = c
       } else if (['거래금액', '금액'].some(k => text.includes(k)) && colAmount === -1) {
         colAmount = c
-      } else if (['거래구분', '구분', '입출구분', '거래종류'].some(k => text.includes(k)) && colSort === -1) {
+      } else if (
+        ['거래구분', '구분', '입출구분', '거래종류'].some(k => text.includes(k)) &&
+        colSort === -1
+      ) {
         colSort = c
-      } else if (['기재내용', '통장인자내용', '통장메모'].some(k => text.includes(k)) && colDesc === -1) {
+      } else if (
+        ['기재내용', '통장인자내용', '통장메모'].some(k => text.includes(k)) &&
+        colDesc === -1
+      ) {
         colDesc = c
-      } else if (['적요', '적요명', '거래내용', '통장적요', '내용'].some(k => text.includes(k)) && colContent === -1) {
+      } else if (
+        ['적요', '적요명', '거래내용', '통장적요', '내용'].some(k => text.includes(k)) &&
+        colContent === -1
+      ) {
         colContent = c
       } else if (
         [
-          '보낸분/받는분', '보낸분받는분', '거래처', '입금자', '수취인',
-          '상대예금주', '상대계좌예금주', '상대계좌예금주명', '상대방',
-          '의뢰인', '송금의뢰인', '송금인', '입금인', '송금인/수취인', '의뢰인/수취인',
+          '보낸분/받는분',
+          '보낸분받는분',
+          '거래처',
+          '입금자',
+          '수취인',
+          '상대예금주',
+          '상대계좌예금주',
+          '상대계좌예금주명',
+          '상대방',
+          '의뢰인',
+          '송금의뢰인',
+          '송금인',
+          '입금인',
+          '송금인/수취인',
+          '의뢰인/수취인',
         ].some(k => text.includes(k)) &&
         colTrader === -1
       ) {
         colTrader = c
-      } else if (['취급점', '거래점', '영업점', '메모', '비고'].some(k => text.includes(k)) && colNote === -1) {
+      } else if (
+        ['취급점', '거래점', '영업점', '메모', '비고'].some(k => text.includes(k)) &&
+        colNote === -1
+      ) {
         colNote = c
-      } else if (['잔액', '거래후잔액', '현재잔액'].some(k => text.includes(k)) && colBalance === -1) {
+      } else if (
+        ['잔액', '거래후잔액', '현재잔액'].some(k => text.includes(k)) &&
+        colBalance === -1
+      ) {
         colBalance = c
       }
     }
@@ -680,10 +950,10 @@ export function useBulkTransExcel() {
       // 날짜가 없거나 유효하지 않으면 요약행(합계, 소계, 안내문 등)으로 간주하고 건너뜀
       if (!isValidDate(dealDate)) continue
 
-      let deposit = colDeposit > 0 ? extractCellNumber(row.getCell(colDeposit)) : 0
-      let withdraw = colWithdraw > 0 ? extractCellNumber(row.getCell(colWithdraw)) : 0
-      let singleAmt = colAmount > 0 ? extractCellNumber(row.getCell(colAmount)) : 0
-      let sortText = colSort > 0 ? extractCellValue(row.getCell(colSort)) : ''
+      const deposit = colDeposit > 0 ? extractCellNumber(row.getCell(colDeposit)) : 0
+      const withdraw = colWithdraw > 0 ? extractCellNumber(row.getCell(colWithdraw)) : 0
+      const singleAmt = colAmount > 0 ? extractCellNumber(row.getCell(colAmount)) : 0
+      const sortText = colSort > 0 ? extractCellValue(row.getCell(colSort)) : ''
 
       let sort: 1 | 2 = 2
       let amount = 0
@@ -705,10 +975,16 @@ export function useBulkTransExcel() {
         continue
       }
 
+      if (transactions.length >= MAX_BULK_TRANSACTIONS) {
+        throw new Error(
+          `1회 업로드 최대 허용 거래 건수(${MAX_BULK_TRANSACTIONS}건)를 초과하였습니다.\n안정적인 처리를 위해 파일을 기간별로 나누어 등록해 주세요.`,
+        )
+      }
+
       validRowCount++
       if (validRowCount > MAX_BULK_ROWS) {
         throw new Error(
-          `1회 업로드 최대 허용 행 수(${MAX_BULK_ROWS}건)를 초과하였습니다.\n파일을 기간별로 나누어 업로드해 주세요.`,
+          `1회 업로드 최대 허용 행 수(${MAX_BULK_ROWS}행)를 초과하였습니다.\n파일을 기간별로 나누어 업로드해 주세요.`,
         )
       }
 
@@ -721,7 +997,9 @@ export function useBulkTransExcel() {
       if (desc) {
         if (!content) {
           content = desc
-        } else if (['대체', '전자금융', '타행', '타행이체', '현금', 'CD', 'ATM'].includes(content.trim())) {
+        } else if (
+          ['대체', '전자금융', '타행', '타행이체', '현금', 'CD', 'ATM'].includes(content.trim())
+        ) {
           content = desc
         } else if (!content.includes(desc)) {
           content = `${content} ${desc}`
@@ -736,7 +1014,10 @@ export function useBulkTransExcel() {
       // 계정과목 및 계약자 자동 추천 (규칙 기반)
       const textToMatch = `${content} ${trader} ${note}`
       const matchedAcc = autoMatchAccount(textToMatch, sort, opts.accounts)
-      const matchedContract = opts.systemType === 'project' && sort === 1 ? matchContract(textToMatch, opts.contracts) : null
+      const matchedContract =
+        opts.systemType === 'project' && sort === 1
+          ? matchContract(textToMatch, opts.contracts)
+          : null
 
       const txErrors: string[] = []
       const txWarnings: string[] = []
@@ -754,7 +1035,9 @@ export function useBulkTransExcel() {
 
       // 프로젝트 모드이고 입금인데 계정이 없는 경우 '분양수입금'/'분담금' 기본 추천 시도
       if (!accountId && opts.systemType === 'project' && sort === 1) {
-        const salesAcc = opts.accounts.find(a => !a.is_cate_only && (a.label.includes('분양수입') || a.label.includes('분담금')))
+        const salesAcc = opts.accounts.find(
+          a => !a.is_cate_only && (a.label.includes('분양수입') || a.label.includes('분담금')),
+        )
         if (salesAcc) {
           accountId = salesAcc.value
           accountName = salesAcc.label
@@ -831,7 +1114,7 @@ export function useBulkTransExcel() {
    */
   const applyValidationAndDuplicates = (
     transactions: BulkTransaction[],
-    existing?: ExistingTransactionRef[]
+    existing?: ExistingTransactionRef[],
   ) => {
     for (const t of transactions) {
       t.entryTotal = t.entries.reduce((s, e) => s + (e.amount > 0 ? e.amount : 0), 0)
@@ -850,7 +1133,8 @@ export function useBulkTransExcel() {
             ex.deal_date === t.bankForm.deal_date &&
             ex.amount === t.bankForm.amount &&
             ex.sort === t.bankForm.sort &&
-            (ex.content === t.bankForm.content || (t.entries[0] && ex.content === t.entries[0].trader))
+            (ex.content === t.bankForm.content ||
+              (t.entries[0] && ex.content === t.entries[0].trader)),
         )
         if (isDup) {
           t.isDuplicate = true

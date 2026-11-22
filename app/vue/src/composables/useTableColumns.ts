@@ -8,11 +8,29 @@ export function useTableColumns(
 ) {
   const getDefaultColumns = (): string[] => defaultKeys || allColumns.map(c => c.key)
 
+  const readStoredColumns = (): string | null => {
+    if (typeof window === 'undefined') return null
+    try {
+      return localStorage.getItem(storageKey)
+    } catch {
+      return null
+    }
+  }
+
+  const writeStoredColumns = (cols: string[]) => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(cols))
+    } catch {
+      // ignore storage access or quota errors
+    }
+  }
+
   const getInitialColumns = (): string[] => {
     const defaultCols = getDefaultColumns()
     const validKeySet = new Set(allColumns.map(c => c.key))
 
-    const saved = localStorage.getItem(storageKey)
+    const saved = readStoredColumns()
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -37,7 +55,7 @@ export function useTableColumns(
   watch(
     selectedColumns,
     nVal => {
-      localStorage.setItem(storageKey, JSON.stringify(nVal))
+      writeStoredColumns(nVal)
     },
     { deep: true },
   )

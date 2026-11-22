@@ -12,7 +12,7 @@ export type SSENotificationPayload = {
   body: string
   target_type?: string
   target_id?: string
-  extra?: Record<string, any>
+  extra?: Record<string, unknown>
 }
 
 const eventSource = ref<EventSource | null>(null)
@@ -78,13 +78,14 @@ export function useSSE() {
           playNotificationSound()
 
           // 4. 인앱 토스트 팝업 알림 (승인은 초록색, 반려는 주황색, 일반은 파란색)
+          const title = payload.title || ''
           let toastType: 'success' | 'warning' | 'info' | 'error' = 'info'
-          if (payload.title.includes('완료') || payload.title.includes('승인')) {
+          if (title.includes('완료') || title.includes('승인')) {
             toastType = 'success'
-          } else if (payload.title.includes('반려')) {
+          } else if (title.includes('반려')) {
             toastType = 'warning'
           }
-          message(toastType, payload.title, payload.body, 5000)
+          message(toastType, title, payload.body || '', 5000)
         } catch (err) {
           console.error('Failed to parse SSE notification payload:', err)
         }
@@ -92,8 +93,16 @@ export function useSSE() {
 
       es.onerror = () => {
         es.close()
+        // 이미 교체되었거나 disconnect된 이전 인스턴스의 지연 에러는 무시
+        if (eventSource.value !== es) return
+
         eventSource.value = null
         currentConnectedToken = null
+
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer)
+          reconnectTimer = null
+        }
 
         // 지수 백오프(Exponential Backoff): 3초, 6초, 12초... 최대 30초
         const delay = Math.min(3000 * Math.pow(2, retryCount), 30000)
