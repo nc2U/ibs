@@ -3,7 +3,15 @@ import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useChat } from '@/store/pinia/chat'
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
-import type { ChatRoom, ChatMessage } from '@/store/types/chat'
+import { message } from '@/utils/helper'
+import type { ChatRoom, ChatMessage, ChatUser } from '@/store/types/chat'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+
+type ChatUserLike = ChatUser & {
+  name?: string
+  is_system?: boolean
+  profile?: { name?: string; cell_phone?: string }
+}
 
 const chatStore = useChat()
 const accountStore = useAccount()
@@ -36,8 +44,8 @@ const globalSearchRoomResults = computed(() => {
   return chatStore.rooms.filter(room => {
     const name = getRoomDisplayName(room).toLowerCase()
     const desc = (room.description || '').toLowerCase()
-    const memberMatch = room.members?.some(
-      (m: any) =>
+    const memberMatch = (room.members as ChatUserLike[] | undefined)?.some(
+      m =>
         (m.username || '').toLowerCase().includes(q) ||
         (m.name || '').toLowerCase().includes(q) ||
         (m.profile?.name || '').toLowerCase().includes(q),
@@ -47,7 +55,7 @@ const globalSearchRoomResults = computed(() => {
 })
 const globalSearchMessageResults = ref<ChatMessage[]>([])
 const isGlobalSearchingMessages = ref(false)
-let globalSearchDebounceTimer: any = null
+let globalSearchDebounceTimer: ReturnType<typeof setTimeout> | undefined
 const globalSearchSeq = ref(0)
 
 const handleGlobalSearchChange = () => {
@@ -65,7 +73,7 @@ const handleGlobalSearchChange = () => {
       const res = await chatStore.searchMessages({ q, page: 1, pageSize: 30 })
       if (seq !== globalSearchSeq.value) return
       globalSearchMessageResults.value = res.results || []
-    } catch (_) {
+    } catch {
       if (seq !== globalSearchSeq.value) return
       globalSearchMessageResults.value = []
     } finally {
@@ -89,10 +97,10 @@ const matchedMessageIds = ref<number[]>([]) // 서버 전체 영구 이력 검�
 const matchHasMore = ref(false)
 const currentMatchIndex = ref(-1)
 const isRoomSearchLoading = ref(false)
-let roomSearchDebounceTimer: any = null
+let roomSearchDebounceTimer: ReturnType<typeof setTimeout> | undefined
 const roomSearchSeq = ref(0)
 const highlightedMessageId = ref<number | null>(null)
-let highlightTimer: any = null
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
 
 const handleRoomSearchChange = () => {
   clearTimeout(roomSearchDebounceTimer)
@@ -121,7 +129,7 @@ const handleRoomSearchChange = () => {
       if (ids.length) {
         jumpToMessageById(ids[currentMatchIndex.value])
       }
-    } catch (_) {
+    } catch {
       if (seq !== roomSearchSeq.value) return
       matchedMessageIds.value = []
       currentMatchIndex.value = -1
@@ -205,7 +213,7 @@ const loadChatFiles = async () => {
       pageSize: 50,
     })
     chatFiles.value = res.results || []
-  } catch (_) {
+  } catch {
     chatFiles.value = []
   } finally {
     isLoadingFiles.value = false
@@ -236,12 +244,13 @@ const getRoomDisplayName = (room: ChatRoom) => {
   if (room.room_type === 'self') return '나와의 채팅'
   if (room.room_type === 'direct' && room.members?.length) {
     // 1:1 DM인 경우: 현재 사용자가 아니며, 시스템 계정이 아닌 상대방을 우선 탐색
+    const members = room.members as ChatUserLike[]
     const other =
-      room.members.find(m => m.pk !== currentUserId.value && !(m as any).is_system) ||
-      room.members.find(m => m.pk !== currentUserId.value)
+      members.find(m => m.pk !== currentUserId.value && !m.is_system) ||
+      members.find(m => m.pk !== currentUserId.value)
 
     if (other) {
-      return (other as any).name ? `${(other as any).name} (${other.username})` : other.username
+      return other.name ? `${other.name} (${other.username})` : other.username
     }
     return '1:1 대화'
   }
@@ -314,7 +323,7 @@ watch(
 
 // ── 댓글 / 답장 (Reply) 상태 ─────────────────────────────
 const replyingTo = ref<ChatMessage | null>(null)
-const inputFieldRef = ref<any>(null)
+const inputFieldRef = ref<{ focus?: () => void } | null>(null)
 
 const setReplyTarget = (msg: ChatMessage) => {
   replyingTo.value = msg
@@ -381,7 +390,7 @@ const openUserSelectModal = async () => {
 
 const filteredUsers = computed(() => {
   const q = userSearchQuery.value.trim().toLowerCase()
-  return allUsers.value.filter((u: any) => {
+  return (allUsers.value as ChatUserLike[]).filter(u => {
     if (u.pk === currentUserId.value) return false
     if (!q) return true
     const name = (u.profile?.name || '').toLowerCase()
@@ -390,18 +399,20 @@ const filteredUsers = computed(() => {
   })
 })
 
-const startDmWithUser = async (user: any) => {
+const startDmWithUser = async (user: ChatUserLike) => {
   try {
     isUserSelectModalOpen.value = false
     await chatStore.getOrCreateDm(user.pk)
-  } catch (_) {}
+  } catch {
+    message('danger', '오류', '대화방을 시작하는데 실패했습니다.')
+  }
 }
 
 const handleSelectSelfChat = async () => {
   try {
     await chatStore.getOrCreateSelf()
-  } catch (_) {
-    alert('나와의 채팅방을 불러오는데 실패했습니다.')
+  } catch {
+    message('danger', '오류', '나와의 채팅방을 불러오는데 실패했습니다.')
   }
 }
 
@@ -410,19 +421,53 @@ const startSelfChatFromModal = async () => {
   await handleSelectSelfChat()
 }
 
-const confirmLeaveRoom = async (room: ChatRoom) => {
-  const name = getRoomDisplayName(room)
-  if (
-    confirm(
-      `'${name}' 대화방을 나가시겠습니까?\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)`,
-    )
-  ) {
-    try {
-      await chatStore.exitAndHideRoom(room.id)
-    } catch (e) {
-      alert('대화방 나가기에 실패했습니다.')
-    }
+const confirmModalRef = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const confirmState = ref<{
+  title: string
+  body: string
+  color: string
+  actionText: string
+  onConfirm: () => Promise<void>
+} | null>(null)
+
+const openConfirmModal = (opts: {
+  title: string
+  body: string
+  color?: string
+  actionText?: string
+  onConfirm: () => Promise<void>
+}) => {
+  confirmState.value = {
+    title: opts.title,
+    body: opts.body,
+    color: opts.color || 'warning',
+    actionText: opts.actionText || '확인',
+    onConfirm: opts.onConfirm,
   }
+  confirmModalRef.value?.callModal()
+}
+
+const handleConfirmSubmit = async () => {
+  const fn = confirmState.value?.onConfirm
+  confirmModalRef.value?.close()
+  if (fn) await fn()
+}
+
+const confirmLeaveRoom = (room: ChatRoom) => {
+  const name = getRoomDisplayName(room)
+  openConfirmModal({
+    title: '대화방 나가기',
+    body: `'${name}' 대화방을 나가시겠습니까?\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)`,
+    color: 'warning',
+    actionText: '나가기',
+    onConfirm: async () => {
+      try {
+        await chatStore.exitAndHideRoom(room.id)
+      } catch {
+        message('danger', '오류', '대화방 나가기에 실패했습니다.')
+      }
+    },
+  })
 }
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -444,7 +489,7 @@ const handleFileSelected = async (event: Event) => {
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
-const processFileUpload = async (file: File) => {
+const processFileUpload = async (file: File, rethrow = false) => {
   try {
     isUploading.value = true
     const replyId = replyingTo.value?.id
@@ -452,7 +497,8 @@ const processFileUpload = async (file: File) => {
     replyingTo.value = null
     scrollToBottom(true)
   } catch (err) {
-    alert('파일 전송에 실패했습니다. 다시 시도해주세요.')
+    if (rethrow) throw err
+    message('danger', '전송 실패', '파일 전송에 실패했습니다. 다시 시도해주세요.')
   } finally {
     isUploading.value = false
   }
@@ -490,13 +536,13 @@ const handleDrop = async (e: DragEvent) => {
     let failCount = 0
     for (let i = 0; i < files.length; i++) {
       try {
-        await processFileUpload(files[i])
-      } catch (_) {
+        await processFileUpload(files[i], true)
+      } catch {
         failCount++
       }
     }
     if (failCount > 0) {
-      alert(`${failCount}개 파일 전송에 실패했습니다.`)
+      message('danger', '전송 실패', `${failCount}개 파일 전송에 실패했습니다.`)
     }
   }
 }
@@ -542,7 +588,7 @@ const copyMessageContent = async (msg: ChatMessage) => {
       await navigator.clipboard.writeText(msg.content)
       showCopyNotice('메시지가 복사되었습니다.')
     }
-  } catch (err) {
+  } catch {
     showCopyNotice('복사에 실패했습니다.')
   }
 }
@@ -586,15 +632,15 @@ const handleForwardToRoom = async (room: ChatRoom) => {
       })
     }
     showCopyNotice(`'${getRoomDisplayName(room)}' 방으로 공유되었습니다.`)
-  } catch (err) {
-    alert('메시지 전달에 실패했습니다.')
+  } catch {
+    message('danger', '오류', '메시지 전달에 실패했습니다.')
   }
 }
 
 // ── 메시지 삭제 (스마트 삭제 Smart Delete) ────────────────────────
 const isDeleting = ref(false)
 
-const handleDeleteMessage = async (msg: ChatMessage) => {
+const handleDeleteMessage = (msg: ChatMessage) => {
   if (msg.sender?.pk !== currentUserId.value) return
   if (msg.is_deleted || isDeleting.value) return
 
@@ -621,16 +667,24 @@ const handleDeleteMessage = async (msg: ChatMessage) => {
     }
   }
 
-  if (!confirm(confirmMsg)) return
-
-  try {
-    isDeleting.value = true
-    await chatStore.deleteMessage(msg.id, currentRoom.value?.id)
-  } catch (err: any) {
-    alert(err.response?.data?.detail || '메시지 삭제에 실패했습니다.')
-  } finally {
-    isDeleting.value = false
-  }
+  openConfirmModal({
+    title: '메시지 삭제',
+    body: confirmMsg,
+    color: 'danger',
+    actionText: '삭제',
+    onConfirm: async () => {
+      try {
+        isDeleting.value = true
+        await chatStore.deleteMessage(msg.id, currentRoom.value?.id)
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail
+        message('danger', '삭제 실패', detail || '메시지 삭제에 실패했습니다.')
+      } finally {
+        isDeleting.value = false
+      }
+    },
+  })
 }
 
 const formatFileSize = (bytes?: number) => {
@@ -672,13 +726,16 @@ onUnmounted(() => {
         <div
           class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0"
         >
-          <div class="d-flex align-items-center overflow-hidden mr-2" style="min-width: 0; flex: 1 1 auto;">
+          <div
+            class="d-flex align-items-center overflow-hidden me-2"
+            style="min-width: 0; flex: 1 1 auto"
+          >
             <v-btn
               v-if="currentRoom"
               icon="mdi-chevron-left"
               variant="text"
               size="small"
-              class="mr-1 flex-shrink-0"
+              class="me-1 flex-shrink-0"
               @click="handleBackToList"
             />
             <v-icon
@@ -693,9 +750,9 @@ onUnmounted(() => {
               "
               size="small"
               :color="currentRoom?.room_type === 'self' ? 'info' : 'primary'"
-              class="mr-2 flex-shrink-0"
+              class="me-2 flex-shrink-0"
             />
-            <span class="font-weight-bold text-truncate room-header-title">
+            <span class="fw-bold text-truncate room-header-title">
               {{ currentRoom ? getRoomDisplayName(currentRoom) : '실시간 사내 메신저' }}
             </span>
             <span
@@ -704,7 +761,7 @@ onUnmounted(() => {
                 currentRoom.room_type !== 'channel' &&
                 currentRoom.project_name !== getRoomDisplayName(currentRoom)
               "
-              class="text-xs text-muted ml-2 text-truncate flex-shrink-0"
+              class="text-xs text-muted ms-2 text-truncate flex-shrink-0"
               style="max-width: 120px"
             >
               {{ currentRoom.project_name }}
@@ -719,7 +776,7 @@ onUnmounted(() => {
                 variant="text"
                 size="small"
                 :color="isRoomSearching ? 'primary' : undefined"
-                class="mr-1"
+                class="me-1"
                 title="대화방 내 검색"
                 @click="
                   () => {
@@ -737,7 +794,7 @@ onUnmounted(() => {
                 variant="text"
                 size="small"
                 color="primary"
-                class="mr-1"
+                class="me-1"
                 title="파일/미디어 보관함 서랍"
                 @click="openFilesDrawer"
               />
@@ -749,7 +806,7 @@ onUnmounted(() => {
                 variant="text"
                 size="small"
                 color="primary"
-                class="mr-1"
+                class="me-1"
                 title="참여 멤버 목록"
                 @click="isMembersDrawerOpen = !isMembersDrawerOpen"
               >
@@ -771,7 +828,7 @@ onUnmounted(() => {
                 variant="text"
                 size="small"
                 color="secondary"
-                class="mr-1"
+                class="me-1"
                 title="대화방 나가기 (목록에서 숨김)"
                 @click="confirmLeaveRoom(currentRoom)"
               />
@@ -1997,6 +2054,19 @@ onUnmounted(() => {
         {{ copySnackbarText }}
       </div>
     </v-snackbar>
+
+    <!-- ── 공용 확인 모달 (대화방 나가기 / 메시지 삭제) ──────────── -->
+    <ConfirmModal ref="confirmModalRef">
+      <template #header>{{ confirmState?.title }}</template>
+      <template #default>
+        <div style="white-space: pre-line">{{ confirmState?.body }}</div>
+      </template>
+      <template #footer>
+        <v-btn :color="confirmState?.color || 'warning'" size="small" @click="handleConfirmSubmit">
+          {{ confirmState?.actionText || '확인' }}
+        </v-btn>
+      </template>
+    </ConfirmModal>
   </div>
 </template>
 
