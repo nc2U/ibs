@@ -9,14 +9,22 @@ defineProps({
 </script>
 
 <template>
-  <div v-if="active" :class="['loading-container', isFullPage ? 'full-page' : 'inline-page']">
-    <div class="loading-content d-flex flex-column align-center justify-center">
-      <v-progress-circular indeterminate color="primary" :size="size" :width="width" />
-      <div class="mt-4 loading-text text-subtitle-2 font-weight-medium">
-        {{ message }}
+  <Teleport to="body" :disabled="!isFullPage">
+    <div
+      v-if="active"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      :class="['loading-container', isFullPage ? 'full-page' : 'inline-page']"
+    >
+      <div class="loading-content d-flex flex-column align-center justify-center">
+        <v-progress-circular indeterminate color="primary" :size="size" :width="width" />
+        <div class="mt-4 loading-text text-subtitle-2 font-weight-medium">
+          {{ message }}
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -27,20 +35,20 @@ defineProps({
   z-index: 9999;
 }
 
-/* 전체 화면 오버레이 스타일 (Glassmorphism 투명도 및 블러 강도 완화) */
+/* 전체 화면 오버레이 스타일 */
 .loading-container.full-page {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
 }
 
 :global(body.dark-theme) .loading-container.full-page {
-  background-color: rgba(26, 29, 39, 0.15) !important;
+  background-color: rgba(26, 29, 39, 0.25) !important;
 }
 
 /* 컨테이너 내부 로컬 오버레이 스타일 */
@@ -50,7 +58,7 @@ defineProps({
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
   min-height: 250px;
 }
 
@@ -63,7 +71,7 @@ defineProps({
 }
 
 .loading-text {
-  color: #cccccc;
+  color: var(--cui-secondary-color, #6c757d);
 }
 
 :global(body.dark-theme) .loading-text {
