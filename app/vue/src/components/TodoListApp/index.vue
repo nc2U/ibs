@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, watch } from 'vue'
+import { ref, computed, onBeforeMount, onUnmounted, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Todo as T, TodoIssueInfo } from '@/store/types/accounts.ts'
 import Todo from './Todo.vue'
@@ -13,7 +13,7 @@ const visibility = ref<FilterKey>('all')
 const account = useAccount()
 const userId = computed(() => account.userInfo?.pk)
 const myTodos = computed(() => account.myTodos)
-watch(myTodos, val => (todos.value = val))
+watch(myTodos, val => (todos.value = val), { immediate: true })
 
 const filters: Record<FilterKey, (items: T[]) => T[]> = {
   all: (items: T[]) => items,
@@ -21,7 +21,9 @@ const filters: Record<FilterKey, (items: T[]) => T[]> = {
   completed: (items: T[]) => items.filter(todo => todo.completed),
 }
 
-const allChecked = computed(() => todos.value.length > 0 && todos.value.every(todo => todo.completed))
+const allChecked = computed(
+  () => todos.value.length > 0 && todos.value.every(todo => todo.completed),
+)
 
 const filteredTodos = computed(() => filters[visibility.value](todos.value))
 
@@ -39,14 +41,18 @@ const openConvertModal = (todo: T) => {
   convertModalVisible.value = true
 }
 
+let noticeTimer: ReturnType<typeof setTimeout> | undefined
+
 const onConverted = (payload: { todo: T; issue: TodoIssueInfo }) => {
   successNotice.value = { visible: true, issue: payload.issue }
-  setTimeout(() => {
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
     if (successNotice.value) successNotice.value.visible = false
   }, 8000)
 }
 
 const addTodo = (e: Event) => {
+  if ((e as KeyboardEvent).isComposing) return
   const input = e.target as HTMLInputElement
   const title = input.value.trim()
   if (userId.value && title) {
@@ -80,7 +86,7 @@ const clearCompleted = () => {
 
 const toggleAll = ({ completed }: { completed: boolean }) => {
   todos.value.forEach((todo: T) => {
-    if (todo.pk) {
+    if (todo.pk && todo.completed !== completed) {
       todo.completed = completed
       account.patchTodo({ pk: todo.pk, completed })
     }
@@ -91,6 +97,7 @@ const pluralize = (n: number, w: string) => (n === 1 ? w : w + 's')
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 onBeforeMount(() => account.fetchTodoList())
+onUnmounted(() => clearTimeout(noticeTimer))
 </script>
 
 <template>

@@ -31,7 +31,7 @@ const editTodo = (pk: number, title: string) => {
 const toggleTodo = (todo: Todo) => emit('toggle-todo', todo)
 
 const doneEdit = (e: Event) => {
-  if (!editing.value) return
+  if ((e as KeyboardEvent).isComposing || !editing.value) return
   const input = e.target as HTMLInputElement
   const title = input.value.trim()
   if (!title && props.todo.pk) delTodo(props.todo.pk)

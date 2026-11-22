@@ -95,8 +95,9 @@ const handleConvert = async () => {
     } else {
       errorMessage.value = '업무 전환 처리에 실패했습니다.'
     }
-  } catch (err: any) {
-    errorMessage.value = err?.message || '업무 전환 중 오류가 발생했습니다.'
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : ''
+    errorMessage.value = msg || '업무 전환 중 오류가 발생했습니다.'
   } finally {
     submitting.value = false
   }
@@ -114,7 +115,8 @@ const handleConvert = async () => {
 
     <CModalBody class="py-3 text-body">
       <p class="text-muted mb-3 small">
-        개인 할 일을 워크스페이스 공식 업무로 등록합니다. 전환 완료 시 본 할 일은 자동으로 완료 처리됩니다.
+        개인 할 일을 워크스페이스 공식 업무로 등록합니다. 전환 완료 시 본 할 일은 자동으로 완료
+        처리됩니다.
       </p>
 
       <CAlert v-if="errorMessage" color="danger" class="py-2 small">
