@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { type PropType, ref } from 'vue'
 import TodoListApp from '@/components/TodoListApp/index.vue'
 
-defineProps({ size: { type: String, default: '' } })
+defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: undefined } })
 
 const visible = ref(false)
 
@@ -12,10 +12,16 @@ defineExpose({ callModal, close })
 </script>
 
 <template>
-  <CModal :size="size" :visible="visible" scrollable @close="close" @keydown.esc="close">
+  <CModal
+    :size="size || undefined"
+    :visible="visible"
+    scrollable
+    @close="close"
+    @keydown.esc="close"
+  >
     <CModalHeader>
       <CModalTitle class="text-body">
-        <CIcon name="cilCalendarCheck" class="mr-2" />
+        <CIcon name="cilCalendarCheck" class="me-2" />
         할 일 목록
       </CModalTitle>
     </CModalHeader>

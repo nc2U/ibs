@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 
-defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: '' } })
+defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: undefined } })
 const emit = defineEmits(['close'])
 
 const visible = ref(false)
@@ -18,7 +18,7 @@ defineExpose({ callModal, close })
 
 <template>
   <CModal
-    :size="size"
+    :size="size || undefined"
     alignment="center"
     :visible="visible"
     @close="close"
