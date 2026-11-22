@@ -32,10 +32,6 @@ const createComment = (payload: Comment, projId: string = '') =>
   forumStore.createComment(payload, projId)
 const patchComment = (payload: Comment, projId: string = '') =>
   forumStore.patchComment(payload, projId)
-const patchCommentLike = (pk: number, post: number, page?: number) =>
-  forumStore.patchCommentLike(pk, post, page)
-
-const toLike = (pk: number) => patchCommentLike(pk, props.post)
 
 const onSubmit = (payload: Comment) => {
   if (!payload?.pk) createComment(payload, projId.value)
@@ -65,7 +61,6 @@ const onDelete = (pk: number, post: number) => {
       :act-form="actForm"
       :comments="comments"
       @vision-toggle="visionToggle"
-      @to-like="toLike"
       @on-submit="onSubmit"
       @on-delete="onDelete"
       @form-reset="formReset"

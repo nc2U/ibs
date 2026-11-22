@@ -9,7 +9,15 @@ const props = defineProps({
 })
 const emit = defineEmits(['on-submit'])
 
-const form = reactive<any>({
+interface CommentFormState {
+  pk?: number
+  post: number
+  content: string
+  parent: number | null
+  secret: boolean
+}
+
+const form = reactive<CommentFormState>({
   pk: undefined,
   post: props.post,
   content: '',
@@ -43,11 +51,7 @@ const formSet = () => {
   }
 }
 
-watch(
-  [() => props.comment, () => props.post, () => props.parent],
-  () => formSet(),
-  { deep: true },
-)
+watch([() => props.comment, () => props.post, () => props.parent], () => formSet(), { deep: true })
 
 onMounted(() => formSet())
 </script>
@@ -76,11 +80,7 @@ onMounted(() => formSet())
           hide-details
           class="m-3 pt-1 text-muted text-caption"
         />
-        <span
-          v-if="form.secret"
-          class="text-end text-muted text-caption"
-          style="padding-top: 30px"
-        >
+        <span v-if="form.secret" class="text-end text-muted text-caption" style="padding-top: 30px">
           비밀댓글은 관리자와 작성자만 볼 수 있습니다.
         </span>
 
@@ -90,9 +90,9 @@ onMounted(() => formSet())
             :color="!comment ? 'primary' : 'success'"
             tonal
             size="large"
-            :disabled="!form.content"
+            :disabled="!form.content?.trim()"
           >
-            댓글등록
+            {{ !comment ? '댓글등록' : '댓글수정' }}
           </v-btn>
         </v-col>
       </v-row>

@@ -23,8 +23,8 @@ watch(props, val => {
 
 const emit = defineEmits(['vision-toggle', 'to-like', 'to-blame', 'on-submit', 'on-delete'])
 
-const refBlameModal = ref()
-const refDeleteModal = ref()
+const refBlameModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refDeleteModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -34,10 +34,10 @@ const isEditing = ref<boolean>(false)
 
 const toLike = () => emit('to-like', props.comment.pk, props.comment?.post.pk)
 
-const blameConfirm = () => refBlameModal.value.callModal()
+const blameConfirm = () => refBlameModal.value?.callModal()
 
 const blameAction = () => {
-  refBlameModal.value.close()
+  refBlameModal.value?.close()
   emit('to-blame', props.comment.pk as number, props.comment?.post.pk)
 }
 
@@ -67,9 +67,9 @@ const canCommentDelete = computed(() => {
   else return false
 })
 
-const toDelete = () => refDeleteModal.value.callModal()
+const toDelete = () => refDeleteModal.value?.callModal()
 const deleteComment = () => {
-  refDeleteModal.value.close()
+  refDeleteModal.value?.close()
   emit('on-delete', props.comment?.pk, props.comment?.post.pk)
 }
 
@@ -142,43 +142,47 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       >
         {{ comment?.content }}
       </span>
-      <span v-else class="text-muted small">
-        비밀댓글은 관리자와 작성자만 볼 수 있습니다.
-      </span>
+      <span v-else class="text-muted small"> 비밀댓글은 관리자와 작성자만 볼 수 있습니다. </span>
     </p>
-    <p v-if="formShow && isEditing">
+    <div v-if="formShow && isEditing" class="mt-2">
       <!-- 수정시 -->
       <CommentForm :post="comment?.post.pk as number" :comment="comment" @on-submit="onSubmit" />
-    </p>
-    <p v-if="formShow && isReplying">
+    </div>
+    <div v-if="formShow && isReplying" class="mt-2">
       <!-- 답글시 -->
       <CommentForm
         :post="comment?.post.pk as number"
         :parent="comment?.pk as number"
         @on-submit="onSubmit"
       />
-    </p>
+    </div>
+
+    <ConfirmModal ref="refBlameModal">
+      <template #header>알림</template>
+      <template #default>
+        {{
+          comment.my_blame ? '이 댓글의 신고를 취소 하시겠습니까?' : '이 댓글을 신고 하시겠습니까?'
+        }}
+      </template>
+      <template #footer>
+        <v-btn
+          size="small"
+          :color="comment.my_blame ? 'secondary' : 'warning'"
+          @click="blameAction"
+        >
+          {{ comment.my_blame ? '취소' : '신고' }}
+        </v-btn>
+      </template>
+    </ConfirmModal>
+
+    <ConfirmModal ref="refDeleteModal">
+      <template #header>알림</template>
+      <template #default> 이 댓글을 삭제하시겠습니까? </template>
+      <template #footer>
+        <v-btn color="warning" size="small" @click="deleteComment"> 삭제 </v-btn>
+      </template>
+    </ConfirmModal>
   </li>
-
-  <ConfirmModal ref="refBlameModal">
-    <template #header>알림</template>
-    <template #default>
-      이 댓글을 신고 {{ comment.my_blame ? '를 취소' : '' }} 하시겠습니까?
-    </template>
-    <template #footer>
-      <v-btn size="small" :color="comment.my_blame ? 'secondary' : 'warning'" @click="blameAction">
-        {{ comment.my_blame ? '취소' : '신고' }}
-      </v-btn>
-    </template>
-  </ConfirmModal>
-
-  <ConfirmModal ref="refDeleteModal">
-    <template #header>알림</template>
-    <template #default> 이 댓글을 삭제하시겠습니까? </template>
-    <template #footer>
-      <v-btn color="warning" size="small" @click="deleteComment"> 삭제 </v-btn>
-    </template>
-  </ConfirmModal>
 </template>
 
 <style lang="scss" scoped>
