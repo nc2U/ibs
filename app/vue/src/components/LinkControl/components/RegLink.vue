@@ -52,11 +52,12 @@ const handleDeleteChange = () => {
     v-model="linkData.link"
     :id="`docs-link-${link.pk}`"
     size="sm"
+    :disabled="linkData.del"
     placeholder="파일 링크"
     @input="linkChange($event, link.pk)"
   />
 
-  <CInputGroupText id="basic-addon1" class="py-0">
+  <CInputGroupText class="py-0">
     <CFormCheck
       v-model="linkData.del"
       :id="`del-link-${link.pk}`"

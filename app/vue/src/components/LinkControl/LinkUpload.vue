@@ -51,7 +51,6 @@ defineExpose({ getNewLinks })
           @input="emit('enable-store', $event)"
         />
         <CInputGroupText
-          id="basic-addon1"
           role="button"
           style="cursor: pointer"
           @click="index + 1 === newLinks.length ? addLinkField() : removeLinkField(index)"

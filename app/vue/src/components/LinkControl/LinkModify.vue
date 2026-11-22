@@ -22,7 +22,7 @@ const emit = defineEmits<{
   <CRow v-if="links && links.length" class="px-2">
     <CAlert :color="AlertSecondary">
       <CCol>
-        <CInputGroup v-for="link in links" :key="link.pk" class="mb-2">
+        <CInputGroup v-for="link in links" :key="link.pk ?? link.link" class="mb-2">
           <RegLink
             :link="link"
             @enable-store="emit('enable-store', $event)"
