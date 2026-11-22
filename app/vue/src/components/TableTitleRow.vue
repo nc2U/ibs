@@ -2,31 +2,37 @@
 import ExcelExport from '@/components/DownLoad/ExcelExport.vue'
 import PdfExport from '@/components/DownLoad/PdfExport.vue'
 
-defineProps({
-  color: { type: String, default: 'indigo' },
-  title: { type: String, default: '' },
-  excel: Boolean,
-  pdf: Boolean,
-  url: { type: String, default: '' },
-  filename: { type: String, default: '' },
-  disabled: Boolean,
+interface Props {
+  color?: string
+  title?: string
+  excel?: boolean
+  pdf?: boolean
+  url?: string
+  filename?: string
+  disabled?: boolean
+}
+
+withDefaults(defineProps<Props>(), {
+  color: 'indigo',
+  title: '',
+  excel: false,
+  pdf: false,
+  url: '',
+  filename: '',
+  disabled: false,
 })
 </script>
 
 <template>
-  <v-row class="justify-end my-1 pr-2">
+  <v-row class="justify-end my-1 pe-2">
     <v-col class="my-0 py-1 d-flex align-center">
       <slot name="title">
-        <v-icon
-          v-if="title"
-          icon="mdi-arrow-right-bold-box"
-          rounded="pill"
-          :color="color"
-          class="mr-1"
-        />
-        <h6 class="d-inline-block mb-0" style="font-size: 1em; font-weight: bold">
-          {{ title }}
-        </h6>
+        <template v-if="title">
+          <v-icon icon="mdi-arrow-right-bold-box" :color="color" class="me-1" />
+          <h6 class="d-inline-block mb-0 fw-bold" style="font-size: 1em">
+            {{ title }}
+          </h6>
+        </template>
       </slot>
     </v-col>
 
