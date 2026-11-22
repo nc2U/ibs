@@ -50,7 +50,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
 
       await tokenStorage.clearTokens();
-      ref.invalidate(currentUserProvider);
       ref.read(selectedWorkspaceProvider.notifier).state = null;
       ref.read(selectedRealEstateProjectProvider.notifier).state = null;
       ref.read(docsContextProvider.notifier).state = DocsContext.all();
@@ -65,7 +64,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     ref.read(selectedWorkspaceProvider.notifier).state = null;
     ref.read(selectedRealEstateProjectProvider.notifier).state = null;
     ref.read(docsContextProvider.notifier).state = DocsContext.all();
-    ref.invalidate(currentUserProvider);
     ref.read(authSessionVersionProvider.notifier).state++;
     state = AsyncData(AuthState.authenticated(accessToken: accessToken));
   }

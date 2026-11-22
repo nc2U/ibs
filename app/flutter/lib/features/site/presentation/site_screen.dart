@@ -401,15 +401,19 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '${NumberFormat('#,###.#').format(aggregate.targetTotalArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.targetTotalPyung)}평)',
-                style: AppTextStyles.titleSm.copyWith(
-                  color: context.colors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  '${NumberFormat('#,###.#').format(aggregate.targetTotalArea)}㎡ (${NumberFormat('#,###.#').format(aggregate.targetTotalPyung)}평)',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 6),
               Text(
                 '총 ${aggregate.totalSitesCount}필지 / ${aggregate.totalOwnersCount}명 / 계약 ${aggregate.totalContractsCount}건',
                 style: AppTextStyles.caption.copyWith(
