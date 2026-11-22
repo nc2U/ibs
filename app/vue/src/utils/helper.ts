@@ -34,12 +34,7 @@ const isRecord = (val: unknown): val is Record<string, unknown> =>
 export const getErrorData = (err: unknown): unknown => {
   if (isRecord(err)) {
     const response = isRecord(err.response) ? err.response : null
-    if (
-      response &&
-      response.data !== undefined &&
-      response.data !== null &&
-      response.data !== ''
-    ) {
+    if (response && response.data !== undefined && response.data !== null && response.data !== '') {
       return response.data
     }
     if (err.data !== undefined && err.data !== null && err.data !== '') {
@@ -83,7 +78,10 @@ export const errorHandle = (err: unknown): void => {
 
   if (isRecord(errorData) && errorData.code === 'token_not_valid') {
     console.log('token_not_valid')
-  } else if (isRecord(errorData) && errorData.detail === '자격 인증 데이터가 제공되지 않았습니다.') {
+  } else if (
+    isRecord(errorData) &&
+    errorData.detail === '자격 인증 데이터가 제공되지 않았습니다.'
+  ) {
     // 401 Unauthorized 에러의 경우 조용히 처리 (이미 API 인터셉터에서 리다이렉트 처리됨)
     console.log('Unauthorized - redirecting to login')
   } else {
@@ -184,6 +182,15 @@ export const markdownRender = (content: string) => {
   return DOMPurify.sanitize(parts.join(''), {
     FORBID_TAGS: ['form', 'input', 'button', 'textarea', 'select', 'object', 'embed'],
   })
+}
+
+/** 마크다운·HTML 문자열에서 서식을 제거하고 한 줄 평문 미리보기 텍스트를 반환 */
+export const stripMarkdown = (content: string): string => {
+  if (!content) return ''
+  const html = DOMPurify.sanitize(md.render(content.replace(/\r\n/g, '\n')))
+  const withSpaces = html.replace(/<\/(p|h[1-6]|li|blockquote|pre|tr|div)>|<br\s*\/?>/gi, ' ')
+  const doc = new DOMParser().parseFromString(withSpaces, 'text/html')
+  return (doc.body.textContent || '').replace(/\s+/g, ' ').trim()
 }
 
 // localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬

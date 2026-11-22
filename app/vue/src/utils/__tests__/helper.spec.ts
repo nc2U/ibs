@@ -8,6 +8,7 @@ import {
   getOrderedList,
   markdownRender,
   setLocalStorage,
+  stripMarkdown,
 } from '@/utils/helper'
 import { formatMailMergePreview } from '@/views/notices/Mailing/preview'
 
@@ -47,6 +48,14 @@ describe('utils/helper', () => {
     expect(html).toContain('<strong>안전</strong>')
     expect(html).not.toContain('<script>')
     expect(html).not.toContain('onerror')
+  })
+
+  it('stripMarkdown converts markdown and HTML into clean single-line plain text', () => {
+    expect(
+      stripMarkdown('### 제목입니다\n\n**굵은** [링크](https://example.com) &amp; `코드`'),
+    ).toBe('제목입니다 굵은 링크 & 코드')
+    expect(stripMarkdown('<script>alert(1)</script>본문')).toBe('본문')
+    expect(stripMarkdown('')).toBe('')
   })
 
   it('getErrorData extracts response payloads safely across error shapes', () => {

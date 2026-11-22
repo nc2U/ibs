@@ -3,7 +3,7 @@ import { computed, type PropType } from 'vue'
 import { useStore } from '@/store'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins'
-import { markdownRender } from '@/utils/helper.ts'
+import { stripMarkdown } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
@@ -143,12 +143,12 @@ const getTargetRoute = (act: ActLogEntry) => {
           </span>
 
           <router-link v-if="getTargetRoute(act)" :to="getTargetRoute(act)!">
-            {{ act.title || act.summary || '(제목 없음)' }}
+            {{ act.title || stripMarkdown(act.summary) || '(제목 없음)' }}
           </router-link>
-          <span v-else>{{ act.title || act.summary || '(제목 없음)' }}</span>
+          <span v-else>{{ act.title || stripMarkdown(act.summary) || '(제목 없음)' }}</span>
 
           <div v-if="act.summary" class="ms-5 ps-4 fst-italic form-text">
-            <div v-html="markdownRender(cutString(act.summary, 113))" class="form-text" />
+            <div class="form-text">{{ cutString(stripMarkdown(act.summary), 113) }}</div>
           </div>
 
           <div v-if="act.creator" class="form-text ms-5 ps-2">
