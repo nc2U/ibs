@@ -5,7 +5,7 @@ import type { ToolbarNames, ExposeParam } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { computed, ref } from 'vue'
 
-const props = defineProps({
+defineProps({
   modelValue: { type: String, default: '' },
   codeTheme: { type: String, default: 'atom' },
   height: { type: Number, default: 250 },
@@ -106,11 +106,11 @@ const insertCenter = () => {
 </template>
 
 <style lang="scss" scoped>
-.dark-theme .md-editor {
+:global(body.dark-theme) .md-editor {
   background: #2f303b !important;
 }
 
-.md-editor-dark {
+:deep(.md-editor-dark) {
   --md-bk-color: #474850;
 }
 </style>
