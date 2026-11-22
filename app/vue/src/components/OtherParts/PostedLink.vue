@@ -65,9 +65,9 @@ const resetLink = (mode: 'new' | 'edit' | 'all' = 'all') => {
   editLink.value.description = ''
 }
 const editFormSet = (pk: number) => {
-  editLink.value.pk = pk
   isEditForm.value = isEditForm.value === pk ? null : pk
   resetLink('edit')
+  editLink.value.pk = pk
 }
 
 const linkUpdate = (pk: number) => {
@@ -75,7 +75,11 @@ const linkUpdate = (pk: number) => {
   if (editLink.value.link || editLink.value.description) {
     const link: { docs?: number; link?: string; description?: string } = {}
     link.docs = props.docs as number
-    if (editLink.value.link) link.link = editLink.value.link
+    if (editLink.value.link) {
+      link.link = /^(https?:\/\/)/.test(editLink.value.link)
+        ? editLink.value.link
+        : `https://${editLink.value.link}`
+    }
     if (editLink.value.description) link.description = editLink.value.description
     docStore.patchLink(pk, { ...link })
   }
@@ -83,17 +87,17 @@ const linkUpdate = (pk: number) => {
 }
 
 // 링크 삭제 로직
-const refDelLink = ref()
+const refDelLink = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const delLinkPk = ref<number | null>(null)
 const delLinkConfirm = (pk: number) => {
   delLinkPk.value = pk
-  refDelLink.value.callModal()
+  refDelLink.value?.callModal()
 }
 const linkDelete = () => {
   if (delLinkPk.value) {
     docStore.deleteLink(delLinkPk.value as number, props.docs as number)
     delLinkPk.value = null
-    refDelLink.value.close()
+    refDelLink.value?.close()
   }
 }
 </script>
@@ -187,7 +191,7 @@ const linkDelete = () => {
   <CRow v-if="addLinkForm" :class="`text-${btnDirection}`">
     <CCol>
       <v-btn color="info" size="small" @click="createLink">추가</v-btn>
-      <v-btn color="light" size="small" @click="clearLink" flat>취소</v-btn>
+      <v-btn color="light" size="small" @click="clearLink()" flat>취소</v-btn>
     </CCol>
   </CRow>
 

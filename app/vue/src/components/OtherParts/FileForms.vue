@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { AFile } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
@@ -19,7 +19,13 @@ const newFileSlots = ref<{ id: number; file: File | null }[]>([{ id: slotSeq++, 
 
 const devideUri = (uri: string) => {
   if (!uri || !uri.includes('media/')) return ['', uri || '']
-  const devidedUri = decodeURI(uri).split('media/')
+  let decoded = uri
+  try {
+    decoded = decodeURI(uri)
+  } catch {
+    // 잘못 인코딩된 URI는 원본 사용
+  }
+  const devidedUri = decoded.split('media/')
   return [devidedUri[0] + 'media/', devidedUri[1] || '']
 }
 
@@ -43,36 +49,29 @@ const fileUpload = (event: Event, idx: number) => {
 const getNewFiles = (): File[] =>
   newFileSlots.value.map(s => s.file).filter((f): f is File => f !== null)
 
-const editFile = (event: Event, i: number) => {
-  const el = event.target as HTMLInputElement
-  const delForm = document.getElementById(`del-file-${i}`) as HTMLInputElement
-  if (el.checked && delForm?.checked) delForm.checked = false
-  if (el.value === 'true' && delForm?.checked) delForm.checked = false
-
-  if ((form.value.files as any[]).length) {
-    ;(form.value.files as any[])[i].del = false
-    ;(form.value.files as any[])[i].edit = !(form.value.files as any[])[i].edit
+const editFile = (i: number) => {
+  const target = form.value.files[i]
+  if (target) {
+    target.del = false
     formUpdate()
   }
 }
 
 const fileChange = (event: Event, pk: number) => {
   const el = event.target as HTMLInputElement
-  if (el.files) {
-    const file = el.files[0]
-    emit('file-change', { pk, file })
+  if (el.files?.[0]) {
+    emit('file-change', { pk, file: el.files[0] })
   }
 }
 
-const delFile = (i: number) => {
-  ;(form.value.files as any[])[i].del = !(form.value.files as any[])[i].del
+const delFile = () => {
   formUpdate()
 }
 
 const checkRelease = () => {
-  form.value.files.forEach((f, i) => {
-    const editForm = document.getElementById(`edit-file-${i}`) as HTMLInputElement
-    if (editForm?.checked) editForm.checked = false
+  form.value.files.forEach(f => {
+    f.edit = false
+    f.del = false
   })
   newFileSlots.value = [{ id: slotSeq++, file: null }]
 }
@@ -106,7 +105,7 @@ onBeforeMount(() => dataSetup())
       <CRow v-if="(files as AFile[]).length">
         <CAlert :color="AlertSecondary">
           <small>{{ devideUri((files as AFile[])[0]?.file ?? ' ')[0] }}</small>
-          <CCol v-for="(file, i) in files as AFile[]" :key="file.pk" xs="12" color="primary">
+          <CCol v-for="(file, i) in files as AFile[]" :key="file.pk" xs="12">
             <small>
               현재 :
               <a :href="file.file" target="_blank" rel="noopener noreferrer">
@@ -114,18 +113,22 @@ onBeforeMount(() => dataSetup())
               </a>
               <span>
                 <CFormCheck
+                  v-if="form.files[i]"
                   :id="`del-file-${i}`"
+                  v-model="form.files[i].del"
                   label="삭제"
                   inline
-                  :disabled="(form.files as AFile[])[i]?.edit"
+                  :disabled="form.files[i]?.edit"
                   class="ms-4"
-                  @change="delFile(i)"
+                  @change="delFile"
                 />
                 <CFormCheck
+                  v-if="form.files[i]"
                   :id="`edit-file-${i}`"
+                  v-model="form.files[i].edit"
                   label="변경"
                   inline
-                  @click="editFile($event, i)"
+                  @change="editFile(i)"
                 />
               </span>
               <CRow v-if="(form.files as AFile[])[i]?.edit">

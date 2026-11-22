@@ -15,8 +15,6 @@ const props = defineProps({
   canDelete: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['file-change', 'file-delete'])
-
 const docStore = useDocs()
 
 // 파일 폼 핸들링 로직
@@ -47,7 +45,8 @@ const newFormSet = () => {
   resetFile('new')
 }
 
-const fileUpload = (event: Event) => {
+const fileUpload = () => {
+  if (!newFile.value.file) return
   descShow.value = false
   addFileForm.value = false
   const formData = new FormData()
@@ -75,9 +74,9 @@ const resetFile = (mode: 'new' | 'edit' | 'all' = 'all') => {
   editFile.value.description = ''
 }
 const editFormSet = (pk: number) => {
-  editFile.value.pk = pk
   isEditForm.value = isEditForm.value === pk ? null : pk
   resetFile('edit')
+  editFile.value.pk = pk
 }
 const editFileChange = (event: Event) => {
   const el = event.target as HTMLInputElement
@@ -96,17 +95,17 @@ const fileChange = (pk: number) => {
 }
 
 // 파일 삭제 로직
-const refDelFile = ref()
+const refDelFile = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const delFilePk = ref<number | null>(null)
 const delFileConfirm = (pk: number) => {
   delFilePk.value = pk
-  refDelFile.value.callModal()
+  refDelFile.value?.callModal()
 }
 const fileDelete = () => {
   if (delFilePk.value) {
     docStore.deleteFile(delFilePk.value as number, props.docs as number)
     delFilePk.value = null
-    refDelFile.value.close()
+    refDelFile.value?.close()
   }
 }
 </script>
@@ -157,7 +156,7 @@ const fileDelete = () => {
                     <CInputGroupText
                       :id="`file-edit-${file.pk}`"
                       :color="editFile.file ? 'info' : 'secondary'"
-                      @click="clearFile"
+                      @click="clearFile()"
                     >
                       취소
                     </CInputGroupText>
@@ -179,7 +178,7 @@ const fileDelete = () => {
                   <v-btn color="success" size="small" @click="fileChange(file.pk as number)">
                     변경
                   </v-btn>
-                  <v-btn color="light" size="small" @click="clearFile" flat> 취소 </v-btn>
+                  <v-btn color="light" size="small" @click="clearFile()" flat> 취소 </v-btn>
                 </CCol>
               </CRow>
             </span>
@@ -220,7 +219,7 @@ const fileDelete = () => {
   <CRow v-if="addFileForm" :class="`text-${btnDirection}`">
     <CCol>
       <v-btn color="info" size="small" @click="fileUpload">추가</v-btn>
-      <v-btn color="light" size="small" @click="clearFile" flat>취소</v-btn>
+      <v-btn color="light" size="small" @click="clearFile()" flat>취소</v-btn>
     </CCol>
   </CRow>
 
