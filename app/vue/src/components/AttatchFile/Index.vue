@@ -1,4 +1,4 @@
-<script lang="ts" setup="">
+<script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { useStore } from '@/store'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins'
@@ -15,11 +15,10 @@ interface AttatchFile {
 
 const props = defineProps({
   labelClass: { type: String, default: 'col-sm-2' },
-  labelWidth: { type: Number, default: 2 },
   labelName: { type: String, default: '첨부파일' },
   disabled: { type: Boolean, default: false },
   attatchFiles: { type: Array as PropType<AttatchFile[]>, default: () => [] },
-  deleted: { type: Number, default: null },
+  deleted: { type: Number as PropType<number | null>, default: null },
   density: { type: String as PropType<'default' | 'comfortable' | 'compact'>, default: 'default' },
   variant: {
     type: String as PropType<'outlined' | 'underlined' | 'filled' | 'solo' | 'solo-filled'>,
@@ -32,31 +31,41 @@ const emit = defineEmits(['file-control'])
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
-const RefDelFile = ref()
+const RefDelFile = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const newFile = ref<File | null>(null)
 
-const editMode = ref(false)
-const doneEdit = () => (editMode.value = false)
-defineExpose({ doneEdit })
+const editingFilePk = ref<number | null>(null)
 const editFile = ref<number | null>(null)
 const cngFile = ref<File | null>(null)
 
-// v-file-input을 위한 헬퍼 함수
-const handleNewFile = (file: File | File[] | null) => {
-  newFile.value = Array.isArray(file) ? file[0] : file
-  emit('file-control', { newFile: newFile.value })
-}
-
-const handleEditFile = (pk: number) => {
-  return (file: File | File[] | null) => {
-    editFile.value = pk
-    cngFile.value = Array.isArray(file) ? file[0] : file
-    emit('file-control', { editFile: editFile.value, cngFile: cngFile.value })
+const toggleEditMode = (pk: number) => {
+  if (editingFilePk.value === pk) {
+    editingFilePk.value = null
+  } else {
+    editingFilePk.value = pk
+    cngFile.value = null
   }
 }
 
-const removeFile = (id: string) => {
+const doneEdit = () => {
+  editingFilePk.value = null
+}
+defineExpose({ doneEdit })
+
+// v-file-input을 위한 헬퍼 함수
+const handleNewFile = (file: File | File[] | null) => {
+  newFile.value = Array.isArray(file) ? (file[0] ?? null) : file
+  emit('file-control', { newFile: newFile.value })
+}
+
+const handleEditFile = (pk: number, file: File | File[] | null) => {
+  editFile.value = pk
+  cngFile.value = Array.isArray(file) ? (file[0] ?? null) : file
+  emit('file-control', { editFile: editFile.value, cngFile: cngFile.value })
+}
+
+const removeFile = (id: 'scan-new-file' | 'scan-edit-file') => {
   if (id === 'scan-new-file') {
     newFile.value = null
     emit('file-control', { newFile: null })
@@ -68,21 +77,21 @@ const removeFile = (id: string) => {
 }
 
 const delFile = ref<number | null>(null)
+const isRestoringDelete = computed(() => delFile.value !== null && delFile.value === props.deleted)
 
 const delFileConfirm = (pk: number) => {
   delFile.value = pk
-  RefDelFile.value.callModal()
+  RefDelFile.value?.callModal()
 }
 
 const delFileSubmit = () => {
-  if (props.deleted) {
+  if (isRestoringDelete.value) {
     emit('file-control', { delFile: '' })
-    RefDelFile.value.close()
   } else {
     emit('file-control', { delFile: delFile.value })
-    delFile.value = null
-    RefDelFile.value.close()
   }
+  delFile.value = null
+  RefDelFile.value?.close()
 }
 </script>
 
@@ -93,52 +102,51 @@ const delFileSubmit = () => {
       <template v-if="!!attatchFiles.length">
         <CRow v-for="file in attatchFiles" :key="file.pk" class="mb-2" style="padding-top: 6px">
           <CCol sm="10">
-            <v-icon icon="mdi-paperclip" size="sm" color="grey" class="mr-2" />
+            <v-icon icon="mdi-paperclip" size="small" color="grey" class="me-2" />
             <span :class="{ 'text-decoration-line-through': file.pk === deleted }">
               <a :href="file.file" target="_blank">
                 {{ cutString(file.file_name, 46) }}
               </a>
             </span>
-            <span class="file-desc1 form-text mr-1">
+            <span class="file-desc1 form-text me-1">
               ({{ humanizeFileSize(file.file_size) }})
             </span>
           </CCol>
-          <CCol class="text-right">
+          <CCol class="text-end">
             <v-btn
               density="compact"
               icon="mdi-pencil"
-              :color="!deleted ? 'success' : 'secondary'"
+              :color="file.pk !== deleted ? 'success' : 'secondary'"
               size="small"
-              :class="{ pointer: !deleted }"
+              :class="{ pointer: file.pk !== deleted }"
               variant="text"
-              :disabled="!!deleted"
-              @click="editMode = !editMode"
+              :disabled="file.pk === deleted"
+              @click="toggleEditMode(file.pk)"
             />
             <v-btn
               density="compact"
-              :icon="!deleted ? 'mdi-delete' : 'mdi-delete-restore'"
-              :color="editMode ? 'secondary' : 'grey'"
+              :icon="file.pk !== deleted ? 'mdi-delete' : 'mdi-delete-restore'"
+              :color="editingFilePk === file.pk ? 'secondary' : 'grey'"
               size="small"
-              class="ml-2"
+              class="ms-2"
               variant="text"
-              :disabled="editMode"
+              :disabled="editingFilePk === file.pk"
               @click="delFileConfirm(file.pk)"
             />
           </CCol>
 
-          <CRow>
+          <CRow v-if="editingFilePk === file.pk">
             <v-file-input
-              v-if="editMode"
               v-model="cngFile"
-              @update:model-value="handleEditFile(file.pk)"
               :clearable="!!cngFile"
-              @click:clear="removeFile('scan-edit-file')"
               :disabled="disabled"
               :label="labelName"
               :variant="variant"
               :density="density"
               hide-details
               class="mt-2"
+              @update:model-value="val => handleEditFile(file.pk, val)"
+              @click:clear="removeFile('scan-edit-file')"
             />
           </CRow>
         </CRow>
@@ -147,26 +155,30 @@ const delFileSubmit = () => {
       <v-file-input
         v-else
         v-model="newFile"
-        @update:model-value="handleNewFile"
         :clearable="!!newFile"
-        @click:clear="removeFile('scan-new-file')"
         :disabled="disabled"
         :label="labelName"
         :variant="variant"
         :density="density"
         hide-details
+        @update:model-value="handleNewFile"
+        @click:clear="removeFile('scan-new-file')"
       />
     </CCol>
   </CRow>
 
   <ConfirmModal ref="RefDelFile">
     <template #default>
-      <span v-if="!deleted">이 파일 삭제를 계속 진행하시겠습니까?</span>
+      <span v-if="!isRestoringDelete">이 파일 삭제를 계속 진행하시겠습니까?</span>
       <span v-else>이 파일 삭제를 취소 하시겠습니까?</span>
     </template>
     <template #footer>
-      <v-btn :color="!deleted ? 'warning' : 'success'" size="small" @click="delFileSubmit">
-        <span v-if="!deleted">삭제</span>
+      <v-btn
+        :color="!isRestoringDelete ? 'warning' : 'success'"
+        size="small"
+        @click="delFileSubmit"
+      >
+        <span v-if="!isRestoringDelete">삭제</span>
         <span v-else>취소</span>
       </v-btn>
     </template>
