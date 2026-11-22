@@ -2,6 +2,38 @@
 import { ref, computed, onMounted } from 'vue'
 import { type AddressData } from '@/components/DaumPostcode/address'
 import { useStore } from '@/store'
+import { message } from '@/utils/helper'
+
+interface DaumPostcodeOptions {
+  oncomplete: (data: AddressData) => void
+  alwaysShowEngAddr?: boolean
+  animation?: boolean
+  autoMapping?: boolean
+  autoResize?: boolean
+  hideEngBtn?: boolean
+  hideMapBtn?: boolean
+  maxSuggestItems?: number
+  pleaseReadGuide?: number
+  pleaseReadGuideTimer?: number
+  shorthand?: boolean
+  showMoreHName?: boolean
+  submitMode?: boolean
+  theme?: { searchBgColor: string; queryTextColor: string } | null
+  useSuggest?: boolean
+  width?: string
+  height?: string
+}
+
+interface DaumPostcodeInstance {
+  embed: (el: HTMLElement | undefined, options?: { q?: string }) => void
+}
+
+interface DaumPostcodeWindow extends Window {
+  daum?: {
+    postcode?: { load: (cb: () => void) => void }
+    Postcode?: new (options: DaumPostcodeOptions) => DaumPostcodeInstance
+  }
+}
 
 const store = useStore()
 
@@ -27,30 +59,19 @@ const props = defineProps({
   defaultQuery: { type: String, default: null },
   scriptUrl: {
     type: String,
-    default: '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js',
+    default: '//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js',
   },
 })
 
 const emit = defineEmits(['address-callback'])
 
-const element_layer = ref()
+const element_layer = ref<HTMLElement>()
 const displayVal = ref('none')
 
 const widthVal = computed(() => props.width + 'px')
 const heightVal = computed(() => props.height + 'px')
 const borderVal = computed(() => props.borderWidth + 'px solid')
-const leftVal = computed(
-  () =>
-    ((window.innerWidth || document.documentElement.clientWidth) - props.width) / 2 -
-    props.borderWidth +
-    'px',
-)
-const topVal = computed(
-  () =>
-    ((window.innerHeight || document.documentElement.clientHeight) - props.height) / 2 -
-    props.borderWidth +
-    'px',
-)
+
 const theme = computed(() => {
   if (store.theme === 'dark') {
     return {
@@ -63,56 +84,42 @@ const theme = computed(() => {
 })
 
 const initiate = (formNum = 1) => {
-  ;(window as any).daum.postcode // { daum: { postcode: { load: (p: () => void) => void } } }
-    .load(() => {
-      new // {
-      //     daum: {
-      //       Postcode: (p: {
-      //         hideMapBtn: boolean | undefined
-      //         maxSuggestItems: number | undefined
-      //         pleaseReadGuideTimer: number | undefined
-      //         showMoreHName: boolean | undefined
-      //         alwaysShowEngAddr: boolean | undefined
-      //         submitMode: boolean | undefined
-      //         autoResize: boolean | undefined
-      //         shorthand: boolean | undefined
-      //         hideEngBtn: boolean | undefined
-      //         animation: boolean | undefined
-      //         useSuggest: boolean | undefined
-      //         pleaseReadGuide: number | undefined
-      //         width: string
-      //         theme: { searchBgColor: string; queryTextColor: string } | null
-      //         oncomplete: (data: AddressData) => void
-      //         autoMapping: boolean | undefined
-      //         height: string
-      //       }) => void
-      //     }
-      //   }
-      (window as any).daum.Postcode({
-        oncomplete: function oncomplete(data: AddressData) {
-          emit('address-callback', { ...{ formNum }, ...data })
-          displayVal.value = 'none'
-        },
-        alwaysShowEngAddr: props.alwaysShowEngAddr,
-        animation: props.animation,
-        autoMapping: props.autoMapping,
-        autoResize: props.autoResize,
-        hideEngBtn: props.hideEngBtn,
-        hideMapBtn: props.hideMapBtn,
-        maxSuggestItems: props.maxSuggestItems,
-        pleaseReadGuide: props.pleaseReadGuide,
-        pleaseReadGuideTimer: props.pleaseReadGuideTimer,
-        shorthand: props.shorthand,
-        showMoreHName: props.showMoreHName,
-        submitMode: props.submitMode,
-        theme: theme.value,
-        useSuggest: props.useSuggest,
-        width: '100%',
-        height: '100%',
-      }).embed(element_layer.value)
+  const win = window as DaumPostcodeWindow
+  const postcodeApi = win.daum?.postcode
+  if (!postcodeApi) {
+    message('warning', '안내', '주소 검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+    return
+  }
 
-      displayVal.value = 'block'
-    })
+  postcodeApi.load(() => {
+    const PostcodeCtor = (window as DaumPostcodeWindow).daum?.Postcode
+    if (!PostcodeCtor) return
+
+    new PostcodeCtor({
+      oncomplete: function oncomplete(data: AddressData) {
+        emit('address-callback', { ...{ formNum }, ...data })
+        displayVal.value = 'none'
+      },
+      alwaysShowEngAddr: props.alwaysShowEngAddr,
+      animation: props.animation,
+      autoMapping: props.autoMapping,
+      autoResize: props.autoResize,
+      hideEngBtn: props.hideEngBtn,
+      hideMapBtn: props.hideMapBtn,
+      maxSuggestItems: props.maxSuggestItems,
+      pleaseReadGuide: props.pleaseReadGuide,
+      pleaseReadGuideTimer: props.pleaseReadGuideTimer,
+      shorthand: props.shorthand,
+      showMoreHName: props.showMoreHName,
+      submitMode: props.submitMode,
+      theme: theme.value,
+      useSuggest: props.useSuggest,
+      width: '100%',
+      height: '100%',
+    }).embed(element_layer.value, props.defaultQuery ? { q: props.defaultQuery } : undefined)
+
+    displayVal.value = 'block'
+  })
 }
 
 defineExpose({ initiate })
@@ -140,13 +147,11 @@ onMounted(() => {
       width: widthVal,
       height: heightVal,
       border: borderVal,
-      left: leftVal,
-      top: topVal,
     }"
   >
     <img
       id="btnCloseLayer"
-      src="//t1.daumcdn.net/postcode/resource/images/close.png"
+      src="//t1.kakaocdn.net/postcode/resource/images/close.png"
       alt="닫기 버튼"
       @click="closeLayer"
     />
@@ -156,8 +161,13 @@ onMounted(() => {
 <style lang="scss" scoped>
 #layer {
   position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 95vw;
+  max-height: 90vh;
   overflow: hidden;
-  z-index: 100;
+  z-index: 2500;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -166,6 +176,6 @@ onMounted(() => {
   position: absolute;
   right: -3px;
   top: -3px;
-  z-index: 100;
+  z-index: 2501;
 }
 </style>
