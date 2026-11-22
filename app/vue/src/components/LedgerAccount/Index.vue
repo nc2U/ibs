@@ -1,13 +1,23 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, inject } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, type Ref } from 'vue'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
+import {
+  filterAccountOptions,
+  searchAccountOptions,
+  type AccountCateType,
+  type AccountSortType,
+} from './accountFilterUtils'
+
+interface ComponentElRef {
+  $el?: HTMLElement
+}
 
 interface Props {
   options: Array<AccountPicker>
   modelValue?: number | null
   placeholder?: string
-  cateType?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | null
-  sortType?: 'deposit' | 'withdraw' | null
+  cateType?: AccountCateType
+  sortType?: AccountSortType
   isSearch?: boolean
   required?: boolean
 }
@@ -29,11 +39,10 @@ const clearSelection = () => {
 }
 
 const searchInputRef = ref<HTMLInputElement | null>(null)
-const dropdownRef = ref<any>(null)
-const menuRef = ref<HTMLElement | null>(null)
-const toggleRef = ref<any>(null)
-
-import type { Ref } from 'vue'
+const dropdownRef = ref<ComponentElRef | null>(null)
+const menuRef = ref<ComponentElRef | null>(null)
+const toggleRef = ref<ComponentElRef | null>(null)
+let focusTimer: ReturnType<typeof setTimeout> | undefined
 
 const validated = inject<Ref<boolean>>('validated', ref(false))
 const isInvalid = computed(() => {
@@ -55,124 +64,14 @@ const handleInput = (event: Event) => {
 }
 
 // 필터링된 옵션 생성
-const filteredOptions = computed(() => {
-  let filtered = props.options
-
-  // cateType에 따른 필터링
-  if (props.cateType) {
-    // 1. 조건에 맞는 실제 계정들만 필터링
-    const matchingAccounts = filtered.filter(
-      option => !option.is_cate_only && option.category === props.cateType,
-    )
-
-    // 2. 매칭된 계정들의 부모 계정들 수집 (순환 참조 방어)
-    const neededParents = new Set<number>()
-    matchingAccounts.forEach(account => {
-      if (account.parent) {
-        // 부모 체인을 따라 올라가며 모든 부모 수집
-        let currentParent = account.parent
-        let currentOption = filtered.find(opt => opt.value === currentParent)
-
-        while (currentOption) {
-          if (neededParents.has(currentOption.value)) break
-          neededParents.add(currentOption.value)
-          if (currentOption.parent === null) break
-          currentParent = currentOption.parent
-          currentOption = filtered.find(opt => opt.value === currentParent)
-        }
-      }
-    })
-
-    // 3. 매칭된 계정들 + 필요한 부모들만 포함
-    filtered = filtered.filter(
-      option =>
-        !props.cateType || // 필터 없으면 전체
-        (!option.is_cate_only && option.category === props.cateType) || // 조건 맞는 실제 계정
-        (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
-    )
-  }
-
-  // sortType에 따른 필터링
-  if (props.sortType) {
-    const targetDirection = props.sortType === 'deposit' ? '입금' : '출금'
-
-    // 1. 조건에 맞는 실제 계정들만 필터링
-    const matchingAccounts = filtered.filter(
-      option => !option.is_cate_only && option.direction === targetDirection,
-    )
-
-    // 2. 매칭된 계정들의 부모 계정들 수집 (순환 참조 방어)
-    const neededParents = new Set<number>()
-    matchingAccounts.forEach(account => {
-      if (account.parent) {
-        // 부모 체인을 따라 올라가며 모든 부모 수집
-        let currentParent = account.parent
-        let currentOption = filtered.find(opt => opt.value === currentParent)
-
-        while (currentOption) {
-          if (neededParents.has(currentOption.value)) break
-          neededParents.add(currentOption.value)
-          if (currentOption.parent === null) break
-          currentParent = currentOption.parent
-          currentOption = filtered.find(opt => opt.value === currentParent)
-        }
-      }
-    })
-
-    // 3. 매칭된 계정들 + 필요한 부모들만 포함
-    filtered = filtered.filter(
-      option =>
-        !props.sortType || // 필터 없으면 전체
-        (!option.is_cate_only && option.direction === targetDirection) || // 조건 맞는 실제 계정
-        (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
-    )
-  }
-
-  return filtered
-})
+const filteredOptions = computed(() =>
+  filterAccountOptions(props.options, { cateType: props.cateType, sortType: props.sortType }),
+)
 
 // 검색 결과 필터링 (부모-자식 관계 포함)
-const searchFilteredOptions = computed(() => {
-  if (!searchQuery.value.trim()) return filteredOptions.value
-
-  const query = searchQuery.value.toLowerCase()
-  const matchingOptions = new Set<number>()
-
-  // 1. 검색어에 직접 매치되는 옵션들 찾기
-  filteredOptions.value.forEach(option => {
-    if (option.label.toLowerCase().includes(query)) {
-      matchingOptions.add(option.value)
-
-      // 매치된 옵션의 모든 부모들 추가 (순환 참조 방어)
-      if (option.parent) {
-        let currentParent = option.parent
-        let parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
-
-        while (parentOption) {
-          if (matchingOptions.has(parentOption.value)) break
-          matchingOptions.add(parentOption.value)
-          if (parentOption.parent === null) break
-          currentParent = parentOption.parent
-          parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
-        }
-      }
-    }
-  })
-
-  // 2. 자식이 매치된 경우 부모도 표시
-  filteredOptions.value.forEach(option => {
-    if (option.is_cate_only) {
-      const hasMatchingChildren = filteredOptions.value.some(
-        child => child.parent === option.value && matchingOptions.has(child.value),
-      )
-      if (hasMatchingChildren) {
-        matchingOptions.add(option.value)
-      }
-    }
-  })
-
-  return filteredOptions.value.filter(option => matchingOptions.has(option.value))
-})
+const searchFilteredOptions = computed(() =>
+  searchAccountOptions(filteredOptions.value, searchQuery.value),
+)
 
 // 현재 선택된 옵션의 표시 텍스트
 const selectedLabel = computed(() => {
@@ -182,7 +81,7 @@ const selectedLabel = computed(() => {
 })
 
 // 옵션 선택 처리
-const selectOption = (option: any) => {
+const selectOption = (option: AccountPicker) => {
   // 검색 모드가 아닐 때만 카테고리 전용 항목 선택 차단
   if (!option.is_cate_only || props.isSearch) {
     emit('update:modelValue', option.value)
@@ -203,9 +102,9 @@ const selectableOptions = computed(() => {
 // 드롭다운 닫기 함수
 const closeDropdown = () => {
   dropdownVisible.value = false
-  const dropdownEl = (dropdownRef.value as any)?.$el
+  const dropdownEl = dropdownRef.value?.$el
   if (dropdownEl) {
-    const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement
+    const toggleButton = dropdownEl.querySelector('.dropdown-toggle') as HTMLElement | null
     if (toggleButton && toggleButton.getAttribute('aria-expanded') === 'true') {
       toggleButton.click()
     }
@@ -214,15 +113,12 @@ const closeDropdown = () => {
 
 // 키보드 네비게이션 처리
 const handleKeyDown = (event: KeyboardEvent) => {
-  // dropdownVisible 상태가 v-model을 통해 동기화되지 않는 것으로 보여 이 가드를 제거합니다.
-  // if (!dropdownVisible.value) return
-
   const scrollIntoView = () => {
     nextTick(() => {
-      const menuEl = (menuRef.value as any)?.$el
+      const menuEl = menuRef.value?.$el
       if (!menuEl) return
-      const activeEl = menuEl.querySelector('.keyboard-active') as HTMLElement
-      const searchContainer = menuEl.querySelector('.search-container') as HTMLElement
+      const activeEl = menuEl.querySelector('.keyboard-active') as HTMLElement | null
+      const searchContainer = menuEl.querySelector('.search-container') as HTMLElement | null
 
       if (activeEl) {
         // 메뉴 컨테이너 내부에서만 스크롤, 페이지 전체 스크롤 방지
@@ -230,13 +126,9 @@ const handleKeyDown = (event: KeyboardEvent) => {
         const activeRect = activeEl.getBoundingClientRect()
         const searchHeight = searchContainer ? searchContainer.offsetHeight : 0
 
-        // 활성 요소가 메뉴 상단(검색창 아래) 밖에 있으면
-        // 검색창 높이를 고려하여 완전히 보이도록 스크롤
         if (activeRect.top < menuRect.top + searchHeight) {
           menuEl.scrollTop -= menuRect.top + searchHeight - activeRect.top
-        }
-        // 활성 요소가 메뉴 하단 밖에 있으면
-        else if (activeRect.bottom > menuRect.bottom) {
+        } else if (activeRect.bottom > menuRect.bottom) {
           menuEl.scrollTop += activeRect.bottom - menuRect.bottom
         }
       }
@@ -283,18 +175,16 @@ const onDropdownShow = () => {
 
   // nextTick과 setTimeout을 함께 사용하여 DOM 렌더링 및 포커스 타이밍 보장
   nextTick(() => {
-    setTimeout(() => {
+    clearTimeout(focusTimer)
+    focusTimer = setTimeout(() => {
       // 1. 검색창에 포커스
-      if (searchInputRef.value) {
-        ;(searchInputRef.value as any).focus()
-      }
+      searchInputRef.value?.focus()
 
       // 2. 선택된 항목으로 스크롤 (메뉴 내부에서만)
-      const menuEl = (menuRef.value as any)?.$el
+      const menuEl = menuRef.value?.$el
       if (menuEl) {
-        const selectedEl = menuEl.querySelector('.selected-item') as HTMLElement
+        const selectedEl = menuEl.querySelector('.selected-item') as HTMLElement | null
         if (selectedEl) {
-          // 메뉴 컨테이너 내부에서만 스크롤
           menuEl.scrollTop = Math.max(
             0,
             selectedEl.offsetTop - menuEl.clientHeight / 2 + selectedEl.clientHeight / 2,
@@ -314,20 +204,17 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!dropdownVisible.value) return
 
   const target = event.target as Node
-  const menuEl = (menuRef.value as any)?.$el
-  const toggleEl = (toggleRef.value as any)?.$el
+  const menuEl = menuRef.value?.$el
+  const toggleEl = toggleRef.value?.$el
 
-  // If the click is on the toggle, let the component handle it.
   if (toggleEl && toggleEl.contains(target)) {
     return
   }
 
-  // If the click is inside the menu, do nothing.
   if (menuEl && menuEl.contains(target)) {
     return
   }
 
-  // Otherwise, the click is outside. Close the dropdown.
   if (toggleEl) {
     toggleEl.click()
   }
@@ -339,6 +226,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  clearTimeout(focusTimer)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>

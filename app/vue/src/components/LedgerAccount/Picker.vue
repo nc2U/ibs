@@ -1,11 +1,16 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
+import {
+  filterAccountOptions,
+  searchAccountOptions,
+  type AccountSortType,
+} from './accountFilterUtils'
 
 interface Props {
   options: Array<AccountPicker>
   modelValue?: number | null
-  sortType?: 'deposit' | 'withdraw' | null
+  sortType?: AccountSortType
   visible?: boolean
   position?: { top: number; left: number; width: number } | null
 }
@@ -26,6 +31,7 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const searchQuery = ref('')
 const selectedIndex = ref(-1)
+let focusTimer: ReturnType<typeof setTimeout> | undefined
 
 // 한글 IME 입력 중에도 즉시 반영
 const handleInput = (event: Event) => {
@@ -34,90 +40,14 @@ const handleInput = (event: Event) => {
 }
 
 // 필터링된 옵션 생성
-const filteredOptions = computed(() => {
-  let filtered = props.options
-
-  // sortType에 따른 필터링
-  if (props.sortType) {
-    const targetDirection = props.sortType === 'deposit' ? '입금' : '출금'
-
-    // 1. 조건에 맞는 실제 계정들만 필터링
-    const matchingAccounts = filtered.filter(
-      option => !option.is_cate_only && option.direction === targetDirection,
-    )
-
-    // 2. 매칭된 계정들의 부모 계정들 수집
-    const neededParents = new Set<number>()
-    matchingAccounts.forEach(account => {
-      if (account.parent) {
-        // 부모 체인을 따라 올라가며 모든 부모 수집 (순환 참조 방어)
-        let currentParent = account.parent
-        let currentOption = filtered.find(opt => opt.value === currentParent)
-
-        while (currentOption) {
-          if (neededParents.has(currentOption.value)) break
-          neededParents.add(currentOption.value)
-          if (currentOption.parent === null) break
-          currentParent = currentOption.parent
-          currentOption = filtered.find(opt => opt.value === currentParent)
-        }
-      }
-    })
-
-    // 3. 매칭된 계정들 + 필요한 부모들만 포함
-    filtered = filtered.filter(
-      option =>
-        !props.sortType || // 필터 없으면 전체
-        (!option.is_cate_only && option.direction === targetDirection) || // 조건 맞는 실제 계정
-        (option.is_cate_only && neededParents.has(option.value)), // 필요한 부모 카테고리만
-    )
-  }
-
-  return filtered
-})
+const filteredOptions = computed(() =>
+  filterAccountOptions(props.options, { sortType: props.sortType }),
+)
 
 // 검색 결과 필터링 (부모-자식 관계 포함)
-const searchFilteredOptions = computed(() => {
-  if (!searchQuery.value.trim()) return filteredOptions.value
-
-  const query = searchQuery.value.toLowerCase()
-  const matchingOptions = new Set<number>()
-
-  // 1. 검색어에 직접 매치되는 옵션들 찾기
-  filteredOptions.value.forEach(option => {
-    if (option.label.toLowerCase().includes(query)) {
-      matchingOptions.add(option.value)
-
-      // 매치된 옵션의 모든 부모들 추가 (순환 참조 방어)
-      if (option.parent) {
-        let currentParent = option.parent
-        let parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
-
-        while (parentOption) {
-          if (matchingOptions.has(parentOption.value)) break
-          matchingOptions.add(parentOption.value)
-          if (parentOption.parent === null) break
-          currentParent = parentOption.parent
-          parentOption = filteredOptions.value.find(opt => opt.value === currentParent)
-        }
-      }
-    }
-  })
-
-  // 2. 자식이 매치된 경우 부모도 표시
-  filteredOptions.value.forEach(option => {
-    if (option.is_cate_only) {
-      const hasMatchingChildren = filteredOptions.value.some(
-        child => child.parent === option.value && matchingOptions.has(child.value),
-      )
-      if (hasMatchingChildren) {
-        matchingOptions.add(option.value)
-      }
-    }
-  })
-
-  return filteredOptions.value.filter(option => matchingOptions.has(option.value))
-})
+const searchFilteredOptions = computed(() =>
+  searchAccountOptions(filteredOptions.value, searchQuery.value),
+)
 
 // 선택 가능한 옵션들 (카테고리 전용 항목 제외)
 const selectableOptions = computed(() => {
@@ -187,6 +117,26 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 
+const focusAndScrollSelected = () => {
+  nextTick(() => {
+    clearTimeout(focusTimer)
+    focusTimer = setTimeout(() => {
+      searchInputRef.value?.focus()
+
+      if (props.modelValue && containerRef.value) {
+        const listEl = containerRef.value.querySelector('.account-list') as HTMLElement | null
+        const selectedEl = listEl?.querySelector('.selected-item') as HTMLElement | null
+        if (listEl && selectedEl) {
+          listEl.scrollTop = Math.max(
+            0,
+            selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2,
+          )
+        }
+      }
+    }, 100)
+  })
+}
+
 // visible 변경 시 처리
 watch(
   () => props.visible,
@@ -194,29 +144,7 @@ watch(
     if (newVal) {
       searchQuery.value = ''
       selectedIndex.value = -1
-      // Teleport와 position fixed 렌더링 대기 후 focus 및 스크롤
-      nextTick(() => {
-        setTimeout(() => {
-          // 1. 검색창에 포커스
-          searchInputRef.value?.focus()
-
-          // 2. 선택된 항목으로 스크롤
-          if (props.modelValue && containerRef.value) {
-            const listEl = containerRef.value.querySelector('.account-list') as HTMLElement
-            if (listEl) {
-              const selectedEl = listEl.querySelector('.selected-item') as HTMLElement
-              if (selectedEl) {
-                const targetScrollTop = Math.max(
-                  0,
-                  selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2,
-                )
-                // 선택된 항목이 중앙에 오도록 scrollTop 직접 조작
-                listEl.scrollTop = targetScrollTop
-              }
-            }
-          }
-        }, 100)
-      })
+      focusAndScrollSelected()
     }
   },
 )
@@ -233,32 +161,11 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-
-  // 마운트 시 focus 및 스크롤
-  if (props.visible) {
-    nextTick(() => {
-      setTimeout(() => {
-        // 1. 검색창에 포커스
-        searchInputRef.value?.focus()
-
-        // 2. 선택된 항목으로 스크롤
-        if (props.modelValue && containerRef.value) {
-          const listEl = containerRef.value.querySelector('.account-list') as HTMLElement
-          if (listEl) {
-            const selectedEl = listEl.querySelector('.selected-item') as HTMLElement
-            if (selectedEl) {
-              const targetScrollTop =
-                selectedEl.offsetTop - listEl.clientHeight / 2 + selectedEl.clientHeight / 2
-              listEl.scrollTop = targetScrollTop
-            }
-          }
-        }
-      }, 100)
-    })
-  }
+  if (props.visible) focusAndScrollSelected()
 })
 
 onUnmounted(() => {
+  clearTimeout(focusTimer)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
@@ -295,7 +202,7 @@ onUnmounted(() => {
     <!-- 계정 목록 -->
     <div class="account-list">
       <div
-        v-for="(option, index) in searchFilteredOptions"
+        v-for="option in searchFilteredOptions"
         :key="option.value"
         :class="{
           'account-item': true,
