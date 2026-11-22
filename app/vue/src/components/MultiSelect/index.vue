@@ -2,12 +2,13 @@
 import type { PropType } from 'vue'
 import Multiselect from '@vueform/multiselect'
 
-
-const props = defineProps({
+defineProps({
   mode: { type: String as PropType<'single' | 'tags'>, default: 'tags' },
   options: { type: Array, default: () => [] },
   modelValue: {
-    type: [Number, String, Array, null] as PropType<number | string | any[] | null>,
+    type: [Number, String, Array] as PropType<
+      number | string | (number | string | Record<string, unknown>)[] | null
+    >,
     default: null,
   },
   placeholder: { type: String, default: undefined },
@@ -26,7 +27,7 @@ const emit = defineEmits(['update:modelValue'])
       invalid ? { '--ms-border-color': '#dc3545', '--ms-border-color-active': '#dc3545' } : {}
     "
     :classes="{
-      caret: 'multiselect-caret mr-4',
+      caret: 'multiselect-caret me-4',
       search: 'form-control multiselect-search',
       tagsSearch: 'multiselect-tags-search',
       container: invalid ? 'multiselect is-invalid' : 'multiselect',
@@ -39,7 +40,6 @@ const emit = defineEmits(['update:modelValue'])
     searchable
     @update:model-value="emit('update:modelValue', $event)"
   />
-  <!--  :attrs="form.court ? {} : { required: true }"-->
 </template>
 
 <style lang="scss" scoped>
