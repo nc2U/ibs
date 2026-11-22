@@ -51,6 +51,7 @@ const getSitesTotal = computed(() => siteStore.getSitesTotal)
 const totalArea = computed(() =>
   isReturned.value ? getSitesTotal.value?.returned : getSitesTotal.value?.official,
 )
+const totalIncorporatedArea = computed(() => getSitesTotal.value?.incorporated ?? totalArea.value)
 
 const rights = ref(false)
 const excelUrl = computed(
@@ -91,6 +92,7 @@ const multiSubmit = (payload: Site) => {
   for (const key in data) {
     const value = data[key]
     if (value !== null && value !== undefined && value !== '') form.set(key, value)
+    else if (key === 'incorporated_area') form.set(key, '')
   }
 
   const submitData = { form, page, search }
@@ -219,11 +221,7 @@ onBeforeMount(async () => {
           :project="project ?? undefined"
           @list-filtering="listFiltering"
         />
-        <AddSite
-          v-if="canSiteCreate"
-          :project="project ?? undefined"
-          @multi-submit="multiSubmit"
-        />
+        <AddSite v-if="canSiteCreate" :project="project ?? undefined" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="사업 부지 목록"
           excel
@@ -232,10 +230,16 @@ onBeforeMount(async () => {
           :disabled="!project"
         >
           <span v-if="project" class="text-success" style="padding-top: 7px">
-            총 면적 : {{ numFormat(totalArea || 0, 2) }}m<sup>2</sup> ({{
+            전체 면적 : {{ numFormat(totalArea || 0, 2) }}m<sup>2</sup> ({{
               numFormat((totalArea || 0) * 0.3025, 2)
             }}
-            평) 등록
+            평) /
+            <strong class="text-primary">
+              편입 면적 : {{ numFormat(totalIncorporatedArea || 0, 2) }}m<sup>2</sup> ({{
+                numFormat((totalIncorporatedArea || 0) * 0.3025, 2)
+              }}
+              평)
+            </strong>
           </span>
           <span style="padding-top: 7px">
             <CFormCheck

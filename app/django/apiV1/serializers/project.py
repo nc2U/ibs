@@ -351,10 +351,11 @@ class TotalSiteAreaSerializer(serializers.ModelSerializer):
     project = serializers.IntegerField()
     official = serializers.DecimalField(max_digits=16, decimal_places=7, allow_null=True)
     returned = serializers.DecimalField(max_digits=16, decimal_places=7, allow_null=True)
+    incorporated = serializers.DecimalField(max_digits=16, decimal_places=7, allow_null=True)
 
     class Meta:
         model = Site
-        fields = ('project', 'official', 'returned')
+        fields = ('project', 'official', 'returned', 'incorporated')
 
 
 class SiteOwnerInSiteSerializer(serializers.ModelSerializer):
@@ -390,9 +391,19 @@ class SiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Site
         fields = ('pk', 'project', 'order', 'district', 'lot_number', 'site_purpose',
-                  'official_area', 'returned_area', 'notice_price', 'rights_a',
+                  'official_area', 'returned_area', 'incorporated_area', 'notice_price', 'rights_a',
                   'rights_b', 'dup_issue_date', 'owners', 'note', 'site_info_files',
                   'creator', 'updator', 'created', 'updated')
+
+    def validate(self, attrs):
+        official_area = attrs.get('official_area', getattr(self.instance, 'official_area', None))
+        incorporated_area = attrs.get('incorporated_area', getattr(self.instance, 'incorporated_area', None))
+        if incorporated_area is not None:
+            if incorporated_area < 0:
+                raise serializers.ValidationError({'incorporated_area': '편입면적은 0보다 작을 수 없습니다.'})
+            if official_area is not None and incorporated_area > official_area:
+                raise serializers.ValidationError({'incorporated_area': '편입면적은 공부상 면적(대지면적)보다 클 수 없습니다.'})
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):

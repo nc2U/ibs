@@ -90,9 +90,9 @@ class InfoFileAdmin(admin.TabularInline):
 class SiteAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = (
         'order', 'project', '__str__', 'site_purpose', 'official_area',
-        'returned_area', 'notice_price', 'dup_issue_date')
+        'returned_area', 'incorporated_area', 'notice_price', 'dup_issue_date')
     list_display_links = ('project', '__str__',)
-    list_editable = ('order', 'official_area', 'returned_area', 'notice_price', 'dup_issue_date')
+    list_editable = ('order', 'official_area', 'returned_area', 'incorporated_area', 'notice_price', 'dup_issue_date')
     search_fields = ('district', 'lot_number',)
     list_filter = ('project', 'site_purpose')
     list_select_related = ('project',)

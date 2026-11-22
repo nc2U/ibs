@@ -24,6 +24,28 @@ const isModalVisible = ref(false)
 
 const owners = computed(() => (props.site.owners ? props.site.owners.map(o => o.owner) : []))
 
+const baseArea = computed(() =>
+  props.isReturned && props.site.returned_area !== null && props.site.returned_area !== undefined
+    ? props.site.returned_area
+    : props.site.official_area,
+)
+
+const effectiveIncorporatedArea = computed(() =>
+  props.site.incorporated_area !== null &&
+  props.site.incorporated_area !== undefined &&
+  props.site.incorporated_area !== ''
+    ? props.site.incorporated_area
+    : baseArea.value,
+)
+
+const isPartialIncorporated = computed(
+  () =>
+    props.site.incorporated_area !== null &&
+    props.site.incorporated_area !== undefined &&
+    props.site.incorporated_area !== '' &&
+    Number(props.site.incorporated_area) !== Number(baseArea.value || 0),
+)
+
 const showDetail = () => {
   isModalVisible.value = true
   updateFormModal.value.callModal()
@@ -74,8 +96,18 @@ const onDelete = (payload: { pk: number; project: number }) => {
     <CTableDataCell v-if="isReturned" class="text-end">
       {{ numFormat(site.returned_area || 0, 2) }}
     </CTableDataCell>
-    <CTableDataCell v-if="isReturned" class="text-right" color="warning">
+    <CTableDataCell v-if="isReturned" class="text-end" color="warning">
       {{ numFormat((Number(site.returned_area) || 0) * 0.3025, 2) }}
+    </CTableDataCell>
+    <CTableDataCell class="text-end" :class="{ 'text-primary fw-semibold': isPartialIncorporated }">
+      {{ numFormat(effectiveIncorporatedArea || 0, 2) }}
+    </CTableDataCell>
+    <CTableDataCell
+      class="text-end"
+      :class="{ 'text-primary fw-semibold': isPartialIncorporated }"
+      color="warning"
+    >
+      {{ numFormat((Number(effectiveIncorporatedArea) || 0) * 0.3025, 2) }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
       {{ owners.length ? cutString(owners.join(', '), 48) : '' }}

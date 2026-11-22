@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
 
-from django.db.models import Sum, F, Case, When
+from django.db.models import Sum, F, Case, When, DecimalField
+from django.db.models.functions import Coalesce
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -222,8 +223,20 @@ class TotalSiteAreaViewSet(viewsets.ReadOnlyModelViewSet):
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(project_id__in=get_accessible_project_ids(user, 'site.read'))
         return qs.values('project') \
-            .annotate(official=Sum('official_area'),
-                      returned=Sum('returned_area')) \
+            .annotate(
+                official=Sum('official_area'),
+                returned=Sum('returned_area'),
+                incorporated=Sum(
+                    Coalesce(
+                        'incorporated_area',
+                        Case(
+                            When(project__is_returned_area=True, then=Coalesce('returned_area', 'official_area')),
+                            default=F('official_area'),
+                            output_field=DecimalField(max_digits=12, decimal_places=7),
+                        ),
+                    )
+                ),
+            ) \
             .order_by('project')
 
 

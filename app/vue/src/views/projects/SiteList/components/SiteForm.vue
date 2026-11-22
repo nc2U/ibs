@@ -37,6 +37,7 @@ const form = reactive({
   site_purpose: '',
   official_area: '',
   returned_area: null as number | null,
+  incorporated_area: null as number | string | null,
   notice_price: null as number | null,
   rights_a: '',
   rights_b: '',
@@ -47,7 +48,9 @@ const form = reactive({
 
 const projectStore = useProject()
 const currProject = computed(() => projectStore.currentProject)
-const project = computed(() => props.project || (projectStore.project as Project)?.pk || currProject.value)
+const project = computed(
+  () => props.project || (projectStore.project as Project)?.pk || currProject.value,
+)
 const isReturned = computed(() => (projectStore.project as Project)?.is_returned_area)
 const siteStore = useSite()
 
@@ -60,6 +63,7 @@ const formsCheck = computed(() => {
     const e = form.site_purpose === props.site.site_purpose
     const f = form.official_area === props.site.official_area
     const g = form.returned_area === props.site.returned_area
+    const g2 = (form.incorporated_area ?? '') === (props.site.incorporated_area ?? '')
     const h = form.notice_price === props.site.notice_price
     const i = form.rights_a === props.site.rights_a
     const j = form.rights_b === props.site.rights_b
@@ -71,9 +75,17 @@ const formsCheck = computed(() => {
     const o = !cngFile.value
     const p = !delFile.value
 
-    return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
+    return a && b && c && d && e && f && g && g2 && h && i && j && k && l && m && n && o && p
   }
   return false
+})
+
+const isIncorporatedValid = computed(() => {
+  const val = form.incorporated_area
+  if (val === null || val === undefined || val === '') return true
+  const num = Number(val)
+  const official = Number(form.official_area)
+  return !Number.isNaN(num) && num >= 0 && (Number.isNaN(official) || num <= official)
 })
 
 const isFormValid = computed(() => {
@@ -83,6 +95,7 @@ const isFormValid = computed(() => {
     Boolean(form.site_purpose?.trim()) &&
     Boolean(form.official_area) &&
     Number(form.official_area) >= 0 &&
+    isIncorporatedValid.value &&
     form.order !== null &&
     form.order !== undefined &&
     form.order >= 0
@@ -158,6 +171,7 @@ const dataSetup = () => {
     form.site_purpose = props.site.site_purpose
     form.official_area = props.site.official_area
     form.returned_area = props.site.returned_area
+    form.incorporated_area = props.site.incorporated_area ?? null
     form.notice_price = props.site.notice_price
     form.rights_a = props.site.rights_a
     form.rights_b = props.site.rights_b
@@ -173,6 +187,7 @@ const dataSetup = () => {
     form.site_purpose = ''
     form.official_area = ''
     form.returned_area = null
+    form.incorporated_area = null
     form.notice_price = null
     form.rights_a = ''
     form.rights_b = ''
@@ -271,6 +286,31 @@ onBeforeMount(() => dataSetup())
                   step="0.0000001"
                   placeholder="환지 면적(㎡)"
                 />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label">편입 면적(㎡)</CFormLabel>
+              <CCol sm="8">
+                <CFormInput
+                  v-model="form.incorporated_area"
+                  type="number"
+                  min="0"
+                  :max="form.official_area || undefined"
+                  step="0.0000001"
+                  :invalid="!isIncorporatedValid"
+                  placeholder="미입력 시 전체 면적 편입"
+                />
+                <CFormFeedback v-if="!isIncorporatedValid" invalid>
+                  편입면적은 0 이상, 공부상 면적 이하이어야 합니다.
+                </CFormFeedback>
+                <div v-else class="form-text">
+                  일부 편입 시에만 입력 (미입력 시 {{ isReturned ? '환지' : '공부상' }} 면적 전체)
+                </div>
               </CCol>
             </CRow>
           </CCol>

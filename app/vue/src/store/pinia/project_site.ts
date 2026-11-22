@@ -47,6 +47,7 @@ export const useSite = defineStore('site', () => {
     project: number
     official: number | null
     returned: number | null
+    incorporated: number | null
   }>()
 
   const fetchAllSites = (project: number) => {
@@ -72,6 +73,7 @@ export const useSite = defineStore('site', () => {
       site_purpose: s.site_purpose,
       official_area: s.official_area,
       returned_area: s.returned_area,
+      incorporated_area: s.incorporated_area,
       rights_a: s.rights_a,
       rights_b: s.rights_b,
       dup_issue_date: s.dup_issue_date,

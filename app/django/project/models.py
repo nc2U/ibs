@@ -129,6 +129,7 @@ class Site(models.Model):
     site_purpose = models.CharField('지목', max_length=10)
     official_area = models.DecimalField('대지면적', max_digits=12, decimal_places=7)
     returned_area = models.DecimalField('환지면적', max_digits=12, decimal_places=7, null=True, blank=True)
+    incorporated_area = models.DecimalField('편입면적', max_digits=12, decimal_places=7, null=True, blank=True)
     notice_price = models.PositiveIntegerField('공시지가', null=True, blank=True)
     dup_issue_date = models.DateField('등본발급일', null=True, blank=True)
     rights_a = models.TextField('갑구 권리 제한사항', blank=True, default='')
@@ -139,6 +140,22 @@ class Site(models.Model):
                                 related_name='updated_sites', verbose_name='편집자')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
+
+    @property
+    def effective_incorporated_area(self):
+        if self.incorporated_area is not None:
+            return self.incorporated_area
+        if self.project.is_returned_area and self.returned_area is not None:
+            return self.returned_area
+        return self.official_area
+
+    def clean(self):
+        super().clean()
+        if self.incorporated_area is not None:
+            if self.incorporated_area < 0:
+                raise ValidationError({'incorporated_area': '편입면적은 0보다 작을 수 없습니다.'})
+            if self.official_area is not None and self.incorporated_area > self.official_area:
+                raise ValidationError({'incorporated_area': '편입면적은 공부상 면적(대지면적)보다 클 수 없습니다.'})
 
     def __str__(self):
         return f'{self.district} {self.lot_number}'

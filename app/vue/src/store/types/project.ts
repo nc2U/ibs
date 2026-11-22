@@ -218,6 +218,7 @@ export interface Site {
   site_purpose: string
   official_area: string
   returned_area: number | null
+  incorporated_area: number | string | null
   notice_price: number | null
   rights_a: string
   rights_b: string

@@ -866,3 +866,51 @@ class ProjectPermissionTestCase(ProjectTestCaseBase):
         with self.assertRaises(ValidationError):
             bad_log.clean()
 
+    def test_site_incorporated_area_validation_and_totals(self):
+        """편입면적 검증(<= 공부상 면적) 및 비환지/환지 프로젝트 합계 fallback 검증"""
+        from decimal import Decimal
+        from apiV1.serializers.project import SiteSerializer
+
+        # 1. 편입면적이 공부상 면적보다 크면 Serializer / Model clean 모두 차단
+        bad_ser = SiteSerializer(data={
+            'project': self.project_a.pk,
+            'order': 2,
+            'district': '역삼동',
+            'lot_number': '100-2',
+            'site_purpose': '대',
+            'official_area': '100.0000000',
+            'incorporated_area': '120.0000000',
+        })
+        self.assertFalse(bad_ser.is_valid())
+        self.assertIn('incorporated_area', bad_ser.errors)
+
+        # 2. 비환지 프로젝트: site_a(330.5, inc=None -> 330.5) + 신규(100, inc=60 -> 60) = total official 430.5, incorporated 390.5
+        Site.objects.create(
+            project=self.project_a,
+            order=2,
+            district='역삼동',
+            lot_number='100-3',
+            site_purpose='대',
+            official_area='100.0000000',
+            incorporated_area='60.0000000',
+            creator=self.admin_user,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+        res = self.client.get(f'/api/v1/sites-total/?project={self.project_a.pk}')
+        self.assertEqual(res.status_code, 200)
+        row = res.data['results'][0]
+        self.assertEqual(Decimal(row['official']), Decimal('430.5000000'))
+        self.assertEqual(Decimal(row['incorporated']), Decimal('390.5000000'))
+
+        # 3. 환지 프로젝트: returned_area(200)가 있으면 inc=None일 때 returned_area 기준
+        self.project_b.is_returned_area = True
+        self.project_b.save(update_fields=['is_returned_area'])
+        self.site_b.returned_area = Decimal('200.0000000')
+        self.site_b.save(update_fields=['returned_area'])
+        res_b = self.client.get(f'/api/v1/sites-total/?project={self.project_b.pk}')
+        self.assertEqual(res_b.status_code, 200)
+        row_b = res_b.data['results'][0]
+        self.assertEqual(Decimal(row_b['official']), Decimal('500.0000000'))
+        self.assertEqual(Decimal(row_b['returned']), Decimal('200.0000000'))
+        self.assertEqual(Decimal(row_b['incorporated']), Decimal('200.0000000'))
+

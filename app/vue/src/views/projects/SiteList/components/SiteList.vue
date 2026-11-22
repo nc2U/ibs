@@ -32,58 +32,66 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
 
 <template>
   <CTable hover responsive bordered align="middle">
-    <!-- 환지면적 포함 & 비고 컬럼 포함 (12 cols) -->
+    <!-- 환지면적 포함 & 비고 컬럼 포함 (14 cols) -->
     <colgroup v-if="isReturned && canSiteManage">
-      <col style="width: 5%" />
+      <col style="width: 4%" />
       <col style="width: 6%" />
       <col style="width: 7%" />
-      <col style="width: 5%" />
-      <col style="width: 8%" />
-      <col style="width: 8%" />
+      <col style="width: 4%" />
       <col style="width: 7%" />
       <col style="width: 7%" />
-      <col style="width: 30%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 21%" />
       <col style="width: 5%" />
       <col style="width: 6%" />
-      <col style="width: 6%" />
+      <col style="width: 5%" />
     </colgroup>
-    <!-- 환지면적 포함 & 비고 컬럼 미포함 (11 cols) -->
+    <!-- 환지면적 포함 & 비고 컬럼 미포함 (13 cols) -->
     <colgroup v-else-if="isReturned && !canSiteManage">
-      <col style="width: 5%" />
+      <col style="width: 4%" />
+      <col style="width: 6%" />
       <col style="width: 7%" />
-      <col style="width: 8%" />
-      <col style="width: 5%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
+      <col style="width: 4%" />
       <col style="width: 7%" />
       <col style="width: 7%" />
-      <col style="width: 31%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 7%" />
+      <col style="width: 25%" />
       <col style="width: 5%" />
       <col style="width: 7%" />
     </colgroup>
-    <!-- 환지면적 미포함 & 비고 컬럼 포함 (10 cols) -->
+    <!-- 환지면적 미포함 & 비고 컬럼 포함 (12 cols) -->
     <colgroup v-else-if="!isReturned && canSiteManage">
-      <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 7%" />
       <col style="width: 8%" />
-      <col style="width: 9%" />
-      <col style="width: 6%" />
-      <col style="width: 10%" />
-      <col style="width: 10%" />
-      <col style="width: 33%" />
-      <col style="width: 6%" />
+      <col style="width: 5%" />
+      <col style="width: 8%" />
+      <col style="width: 8%" />
+      <col style="width: 8%" />
+      <col style="width: 8%" />
+      <col style="width: 26%" />
+      <col style="width: 5%" />
       <col style="width: 6%" />
       <col style="width: 6%" />
     </colgroup>
-    <!-- 환지면적 미포함 & 비고 컬럼 미포함 (9 cols) -->
+    <!-- 환지면적 미포함 & 비고 컬럼 미포함 (11 cols) -->
     <colgroup v-else>
-      <col style="width: 6%" />
-      <col style="width: 8%" />
-      <col style="width: 9%" />
-      <col style="width: 6%" />
-      <col style="width: 11%" />
-      <col style="width: 11%" />
-      <col style="width: 35%" />
+      <col style="width: 5%" />
       <col style="width: 7%" />
+      <col style="width: 8%" />
+      <col style="width: 5%" />
+      <col style="width: 9%" />
+      <col style="width: 9%" />
+      <col style="width: 9%" />
+      <col style="width: 9%" />
+      <col style="width: 26%" />
+      <col style="width: 6%" />
       <col style="width: 7%" />
     </colgroup>
 
@@ -95,6 +103,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
         <CTableHeaderCell rowspan="2" scope="col">지목</CTableHeaderCell>
         <CTableHeaderCell colspan="2" scope="col">공부상 면적</CTableHeaderCell>
         <CTableHeaderCell v-if="isReturned" colspan="2" scope="col">환지 면적</CTableHeaderCell>
+        <CTableHeaderCell colspan="2" scope="col">편입 면적</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">소유자 목록</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">등기부 등본</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">등본 발급일</CTableHeaderCell>
@@ -105,6 +114,8 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
         <CTableHeaderCell scope="col">평</CTableHeaderCell>
         <CTableHeaderCell v-if="isReturned" scope="col">m<sup>2</sup></CTableHeaderCell>
         <CTableHeaderCell v-if="isReturned" scope="col">평</CTableHeaderCell>
+        <CTableHeaderCell scope="col">m<sup>2</sup></CTableHeaderCell>
+        <CTableHeaderCell scope="col">평</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
@@ -120,7 +131,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
       />
       <CTableRow v-if="!siteList.length">
         <CTableDataCell
-          :colspan="(isReturned ? 11 : 9) + (canSiteManage ? 1 : 0)"
+          :colspan="(isReturned ? 13 : 11) + (canSiteManage ? 1 : 0)"
           class="text-center p-5 text-danger"
         >
           등록된 데이터가 없습니다.

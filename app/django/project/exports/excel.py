@@ -60,7 +60,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         ).distinct() if search else obj_list
         # -------------------- get_queryset finish -------------------- #
 
-        rows_cnt = 9 if project.is_returned_area else 7
+        rows_cnt = 11 if project.is_returned_area else 9
         rows_cnt = rows_cnt if not rights else rows_cnt + 2
 
         # 1. Title
@@ -94,6 +94,9 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
             header_src.append(['환지면적', 'returned_area', 13])
             header_src.append(['', '', 13])
 
+        header_src.append(['편입면적', 'incorporated_area', 13])
+        header_src.append(['', '', 13])
+
         header_src.append(['공시지가', 'notice_price', 14])
 
         if rights:
@@ -116,7 +119,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
             worksheet.set_column(i, i, cw)
 
         # Write header
-        area_col_num = (4, 5, 6, 7) if project.is_returned_area else (4, 5)
+        area_col_num = (4, 5, 6, 7, 8, 9) if project.is_returned_area else (4, 5, 6, 7)
 
         for col_num, title in enumerate(titles):  # 헤더 줄 제목 세팅
             if '면적' in title:
@@ -127,8 +130,8 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         row_num = 3
         worksheet.set_row(row_num, 23, workbook.add_format({'bold': True}))
 
-        area_col1 = (4, 6) if project.is_returned_area else (4,)
-        area_col2 = (5, 7) if project.is_returned_area else (5,)
+        area_col1 = (4, 6, 8) if project.is_returned_area else (4, 6)
+        area_col2 = (5, 7, 9) if project.is_returned_area else (5, 7)
         for col_num, title in enumerate(titles):
             if int(col_num) in area_col1:
                 worksheet.write(row_num, col_num, '㎡', formats['header'])
@@ -150,9 +153,13 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         for row in rows:
             row_num += 1
             row = list(row)
+            if project.is_returned_area:
+                inc_area = row[6] if row[6] is not None else (row[5] if row[5] is not None else (row[4] or 0))
+            else:
+                inc_area = row[5] if row[5] is not None else (row[4] or 0)
 
             for col_num, title in enumerate(titles):
-                left_col_num = 8 if project.is_returned_area else 6
+                left_col_num = 10 if project.is_returned_area else 8
                 if col_num > left_col_num:
                     body_format['align'] = 'left'
                 elif col_num == left_col_num:
@@ -170,23 +177,38 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
                 if col_num < 5:
                     worksheet.write(row_num, col_num, row[col_num], bf)
                 elif col_num == 5:
-                    worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
+                    worksheet.write(row_num, col_num, float(row[4] or 0) * 0.3025, bf)
                 else:
                     if project.is_returned_area:
                         if col_num == 6:
-                            worksheet.write(row_num, col_num, row[col_num - 1], bf)
+                            worksheet.write(row_num, col_num, row[5], bf)
                         elif col_num == 7:
-                            worksheet.write(row_num, col_num, float(row[col_num - 2] or 0) * 0.3025, bf)
+                            worksheet.write(row_num, col_num, float(row[5] or 0) * 0.3025, bf)
+                        elif col_num == 8:
+                            worksheet.write(row_num, col_num, inc_area, bf)
+                        elif col_num == 9:
+                            worksheet.write(row_num, col_num, float(inc_area or 0) * 0.3025, bf)
+                        else:
+                            worksheet.write(row_num, col_num, row[col_num - 3], bf)
+                    else:
+                        if col_num == 6:
+                            worksheet.write(row_num, col_num, inc_area, bf)
+                        elif col_num == 7:
+                            worksheet.write(row_num, col_num, float(inc_area or 0) * 0.3025, bf)
                         else:
                             worksheet.write(row_num, col_num, row[col_num - 2], bf)
-                    else:
-                        worksheet.write(row_num, col_num, row[col_num - 1], bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
         sum_area = sum([a[4] or 0 for a in rows])
         sum_ret_area = sum([a[5] or 0 for a in rows]) if project.is_returned_area else None
+        if project.is_returned_area:
+            sum_inc_area = sum(
+                [(a[6] if a[6] is not None else (a[5] if a[5] is not None else (a[4] or 0))) for a in rows]
+            )
+        else:
+            sum_inc_area = sum([(a[5] if a[5] is not None else (a[4] or 0)) for a in rows])
 
         for col_num, title in enumerate(titles):
             # css 정렬
@@ -211,10 +233,19 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
                         worksheet.write(row_num, col_num, sum_ret_area, sum_format)
                     elif col_num == 7:
                         worksheet.write(row_num, col_num, float(sum_ret_area or 0) * 0.3025, sum_format)
+                    elif col_num == 8:
+                        worksheet.write(row_num, col_num, sum_inc_area, sum_format)
+                    elif col_num == 9:
+                        worksheet.write(row_num, col_num, float(sum_inc_area or 0) * 0.3025, sum_format)
                     else:
                         worksheet.write(row_num, col_num, '', sum_format)
                 else:
-                    worksheet.write(row_num, col_num, '', sum_format)
+                    if col_num == 6:
+                        worksheet.write(row_num, col_num, sum_inc_area, sum_format)
+                    elif col_num == 7:
+                        worksheet.write(row_num, col_num, float(sum_inc_area or 0) * 0.3025, sum_format)
+                    else:
+                        worksheet.write(row_num, col_num, '', sum_format)
         #################################################################
 
         # data finish -------------------------------------------- #
