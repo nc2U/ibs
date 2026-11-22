@@ -31,6 +31,7 @@ class SiteRepository {
 
     double officialArea = 0.0;
     double returnedArea = 0.0;
+    double? incorporatedArea;
     final siteAreaRaw = results[0].data;
     final siteAreaList = siteAreaRaw is Map && siteAreaRaw.containsKey('results')
         ? siteAreaRaw['results'] as List<dynamic>
@@ -39,6 +40,7 @@ class SiteRepository {
     if (siteAreaList.isNotEmpty) {
       officialArea = double.tryParse(siteAreaList[0]['official']?.toString() ?? '') ?? 0.0;
       returnedArea = double.tryParse(siteAreaList[0]['returned']?.toString() ?? '') ?? 0.0;
+      incorporatedArea = double.tryParse(siteAreaList[0]['incorporated']?.toString() ?? '');
     }
 
     double contractedArea = 0.0;
@@ -74,6 +76,7 @@ class SiteRepository {
       totalSitesCount: totalSites,
       totalOfficialArea: officialArea,
       totalReturnedArea: returnedArea,
+      totalIncorporatedArea: incorporatedArea,
       isReturnedArea: isReturnedArea,
       totalOwnersCount: totalOwners,
       totalContractsCount: totalContracts,

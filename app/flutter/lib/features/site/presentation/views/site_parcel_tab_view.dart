@@ -252,6 +252,31 @@ class _SiteParcelTabViewState extends ConsumerState<SiteParcelTabView> {
                           ),
                       ],
                     ),
+                    if (item.incorporatedArea != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            '편입면적: ',
+                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                          ),
+                          Text(
+                            '${item.incorporatedArea!.toStringAsFixed(2)}㎡',
+                            style: AppTextStyles.bodySecond.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${(item.incorporatedArea! / 3.305785).toStringAsFixed(1)}평)',
+                            style: AppTextStyles.caption.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Row(
                       children: [

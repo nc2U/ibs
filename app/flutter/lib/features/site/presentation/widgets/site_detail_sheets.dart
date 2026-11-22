@@ -91,6 +91,13 @@ void showSiteDetailBottomSheet({
                   value: '${item.returnedArea!.toStringAsFixed(2)}㎡ (${(item.returnedArea! / 3.305785).toStringAsFixed(1)}평)',
                   isHighlight: true,
                 ),
+              if (item.incorporatedArea != null)
+                SiteDetailRow(
+                  label: '편입면적',
+                  value: '${item.incorporatedArea!.toStringAsFixed(2)}㎡ (${(item.incorporatedArea! / 3.305785).toStringAsFixed(1)}평)',
+                  isHighlight: true,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               if (item.noticePrice != null)
                 SiteDetailRow(
                   label: '공시지가',

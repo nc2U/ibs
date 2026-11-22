@@ -31,6 +31,7 @@ class SiteAggregateModel {
   final int totalSitesCount;          // 총 필지 수
   final double totalOfficialArea;     // 공부상 총면적 (㎡)
   final double totalReturnedArea;     // 환지 총면적 (㎡)
+  final double? totalIncorporatedArea; // 편입 총면적 (㎡)
   final bool isReturnedArea;          // 환지방식 여부 (동춘 등 환지사업은 환지면적이 사업대상)
   final int totalOwnersCount;         // 총 소유자 수
   final int totalContractsCount;      // 총 계약 체결 건수
@@ -41,6 +42,7 @@ class SiteAggregateModel {
     required this.totalSitesCount,
     required this.totalOfficialArea,
     required this.totalReturnedArea,
+    this.totalIncorporatedArea,
     this.isReturnedArea = false,
     required this.totalOwnersCount,
     required this.totalContractsCount,
@@ -48,8 +50,11 @@ class SiteAggregateModel {
     required this.totalPrice,
   });
 
-  /// 실제 사업 기준 총 대상면적 (환지방식이면 환지면적, 아니면 공부상면적)
+  /// 실제 사업 기준 총 대상면적 (편입면적 합계 우선, 미제공 시 환지/공부상면적)
   double get targetTotalArea {
+    if (totalIncorporatedArea != null && totalIncorporatedArea! > 0) {
+      return totalIncorporatedArea!;
+    }
     if (isReturnedArea && totalReturnedArea > 0) {
       return totalReturnedArea;
     }
@@ -111,6 +116,7 @@ class SiteItemModel {
   final String sitePurpose;           // 지목 (대, 답, 전 등)
   final double officialArea;          // 대지면적 (㎡)
   final double? returnedArea;         // 환지면적 (㎡)
+  final double? incorporatedArea;     // 편입면적 (㎡, null이면 전체 편입)
   final int? noticePrice;             // 공시지가
   final String rightsA;               // 갑구 권리제한
   final String rightsB;               // 을구 권리제한
@@ -128,6 +134,7 @@ class SiteItemModel {
     required this.sitePurpose,
     required this.officialArea,
     this.returnedArea,
+    this.incorporatedArea,
     this.noticePrice,
     required this.rightsA,
     required this.rightsB,
@@ -159,6 +166,7 @@ class SiteItemModel {
       sitePurpose: json['site_purpose']?.toString() ?? '',
       officialArea: _parseDouble(json['official_area']),
       returnedArea: _tryParseDouble(json['returned_area']),
+      incorporatedArea: _tryParseDouble(json['incorporated_area']),
       noticePrice: _tryParseInt(json['notice_price']),
       rightsA: json['rights_a']?.toString() ?? '',
       rightsB: json['rights_b']?.toString() ?? '',
