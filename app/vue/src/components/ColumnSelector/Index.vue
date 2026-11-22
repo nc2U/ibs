@@ -30,6 +30,19 @@ const selectedItems = computed(() =>
     .filter((c): c is ColumnOption => !!c),
 )
 
+const fixedKeys = computed(() => new Set(props.allColumns.filter(c => c.fixed).map(c => c.key)))
+
+const selectedIndex = computed(() => {
+  if (selectedSelected.value.length !== 1) return -1
+  return props.modelValue.indexOf(selectedSelected.value[0])
+})
+
+const canRemove = computed(() => selectedSelected.value.some(k => !fixedKeys.value.has(k)))
+const canMoveUp = computed(() => selectedIndex.value > 0)
+const canMoveDown = computed(
+  () => selectedIndex.value >= 0 && selectedIndex.value < props.modelValue.length - 1,
+)
+
 const addColumns = () => {
   if (!availableSelected.value.length) return
   const updated = [...props.modelValue, ...availableSelected.value]
@@ -45,18 +58,15 @@ const addSingleColumn = (key: string) => {
 }
 
 const removeColumns = () => {
-  if (!selectedSelected.value.length) return
-  const toRemove = selectedSelected.value.filter(
-    key => !props.allColumns.find(c => c.key === key)?.fixed,
-  )
+  if (!canRemove.value) return
+  const toRemove = selectedSelected.value.filter(key => !fixedKeys.value.has(key))
   const updated = props.modelValue.filter(k => !toRemove.includes(k))
   emit('update:modelValue', updated)
   selectedSelected.value = []
 }
 
 const removeSingleColumn = (key: string) => {
-  const col = props.allColumns.find(c => c.key === key)
-  if (col?.fixed) return
+  if (fixedKeys.value.has(key)) return
   emit(
     'update:modelValue',
     props.modelValue.filter(k => k !== key),
@@ -82,60 +92,31 @@ const onSelectedDblClick = (event: MouseEvent) => {
   }
 }
 
-const moveTop = () => {
-  if (selectedSelected.value.length !== 1) return
-  const targetKey = selectedSelected.value[0]
-  const idx = props.modelValue.indexOf(targetKey)
-  if (idx > 0) {
-    const updated = props.modelValue.filter(k => k !== targetKey)
-    updated.unshift(targetKey)
-    emit('update:modelValue', updated)
-  }
+const moveBy = (delta: -1 | 1) => {
+  const idx = selectedIndex.value
+  const targetIdx = idx + delta
+  if (idx < 0 || targetIdx < 0 || targetIdx >= props.modelValue.length) return
+  const updated = [...props.modelValue]
+  ;[updated[idx], updated[targetIdx]] = [updated[targetIdx], updated[idx]]
+  emit('update:modelValue', updated)
 }
 
-const moveUp = () => {
-  if (selectedSelected.value.length !== 1) return
-  const targetKey = selectedSelected.value[0]
-  const idx = props.modelValue.indexOf(targetKey)
-  if (idx > 0) {
-    const updated = [...props.modelValue]
-    const temp = updated[idx - 1]
-    updated[idx - 1] = updated[idx]
-    updated[idx] = temp
-    emit('update:modelValue', updated)
-  }
-}
-
-const moveDown = () => {
-  if (selectedSelected.value.length !== 1) return
-  const targetKey = selectedSelected.value[0]
-  const idx = props.modelValue.indexOf(targetKey)
-  if (idx >= 0 && idx < props.modelValue.length - 1) {
-    const updated = [...props.modelValue]
-    const temp = updated[idx + 1]
-    updated[idx + 1] = updated[idx]
-    updated[idx] = temp
-    emit('update:modelValue', updated)
-  }
-}
-
-const moveBottom = () => {
-  if (selectedSelected.value.length !== 1) return
-  const targetKey = selectedSelected.value[0]
-  const idx = props.modelValue.indexOf(targetKey)
-  if (idx >= 0 && idx < props.modelValue.length - 1) {
-    const updated = props.modelValue.filter(k => k !== targetKey)
-    updated.push(targetKey)
-    emit('update:modelValue', updated)
-  }
+const moveToEdge = (edge: 'top' | 'bottom') => {
+  const idx = selectedIndex.value
+  if (idx < 0) return
+  if (edge === 'top' && idx === 0) return
+  if (edge === 'bottom' && idx === props.modelValue.length - 1) return
+  const targetKey = props.modelValue[idx]
+  const rest = props.modelValue.filter(k => k !== targetKey)
+  emit('update:modelValue', edge === 'top' ? [targetKey, ...rest] : [...rest, targetKey])
 }
 </script>
 
 <template>
-  <CRow class="m-2 align-items-center" color="light">
+  <CRow class="m-2 align-items-center">
     <!-- 가능한 컬럼 -->
     <CCol col="12" md="5" lg="4">
-      <label class="form-label text-caption font-weight-bold text-muted mb-1">
+      <label class="form-label text-caption fw-bold text-muted mb-1">
         {{ availableLabel }}
       </label>
       <select
@@ -161,7 +142,7 @@ const moveBottom = () => {
       col="12"
       md="2"
       lg="1"
-      class="text-center d-flex flex-row flex-md-column justify-content-center align-items-center gap-1 my-2 my-md-0 pt-4"
+      class="text-center d-flex flex-row flex-md-column justify-content-center align-items-center gap-1 my-2 my-md-0 pt-md-4"
     >
       <v-btn
         size="x-small"
@@ -178,7 +159,7 @@ const moveBottom = () => {
         variant="outlined"
         icon="mdi-chevron-left"
         title="제거"
-        :disabled="!selectedSelected.length"
+        :disabled="!canRemove"
         @click="removeColumns"
       />
     </CCol>
@@ -186,7 +167,7 @@ const moveBottom = () => {
     <!-- 선택된 컬럼 & 순서 이동 -->
     <CCol col="12" md="5" lg="4" class="d-flex align-items-center">
       <div class="flex-grow-1">
-        <label class="form-label text-caption font-weight-bold text-indigo mb-1">
+        <label class="form-label text-caption fw-bold text-indigo mb-1">
           {{ selectedLabel }}
         </label>
         <select
@@ -207,15 +188,15 @@ const moveBottom = () => {
           </option>
         </select>
       </div>
-      <div class="d-flex flex-column gap-1 ml-2 pt-4">
+      <div class="d-flex flex-column gap-1 ms-2 pt-4">
         <v-btn
           size="x-small"
           color="indigo"
           variant="outlined"
           icon="mdi-chevron-double-up"
           title="맨 위로 이동"
-          :disabled="selectedSelected.length !== 1"
-          @click="moveTop"
+          :disabled="!canMoveUp"
+          @click="moveToEdge('top')"
         />
         <v-btn
           size="x-small"
@@ -223,8 +204,8 @@ const moveBottom = () => {
           variant="outlined"
           icon="mdi-chevron-up"
           title="위로 이동"
-          :disabled="selectedSelected.length !== 1"
-          @click="moveUp"
+          :disabled="!canMoveUp"
+          @click="moveBy(-1)"
         />
         <v-btn
           size="x-small"
@@ -232,8 +213,8 @@ const moveBottom = () => {
           variant="outlined"
           icon="mdi-chevron-down"
           title="아래로 이동"
-          :disabled="selectedSelected.length !== 1"
-          @click="moveDown"
+          :disabled="!canMoveDown"
+          @click="moveBy(1)"
         />
         <v-btn
           size="x-small"
@@ -241,8 +222,8 @@ const moveBottom = () => {
           variant="outlined"
           icon="mdi-chevron-double-down"
           title="맨 아래로 이동"
-          :disabled="selectedSelected.length !== 1"
-          @click="moveBottom"
+          :disabled="!canMoveDown"
+          @click="moveToEdge('bottom')"
         />
       </div>
     </CCol>
@@ -251,6 +232,6 @@ const moveBottom = () => {
 
 <style scoped lang="scss">
 select {
-  height: 9rem;
+  min-height: 9rem;
 }
 </style>
