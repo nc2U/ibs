@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useStore } from '@/store'
 
 defineProps({
   size: {
-    type: String,
+    type: String as PropType<'sm' | 'lg' | 'xl' | 'xxl' | 'custom' | 'custom-size'>,
     default: 'lg',
   },
   tooltipLocation: {
-    type: String as () => 'top' | 'bottom' | 'left' | 'right',
+    type: String as PropType<'top' | 'bottom' | 'left' | 'right'>,
     default: 'bottom',
   },
   customClass: {
@@ -47,10 +47,10 @@ const cycleTheme = () => {
   <button
     type="button"
     :class="['theme-switcher-btn pointer', customClass]"
+    :aria-label="`테마 전환 (현재: ${currentThemeLabel})`"
     @click="cycleTheme"
-    aria-label="Toggle Theme"
   >
-    <CIcon :icon="currentThemeIcon" :size="size as any" class="text-50" />
+    <CIcon :icon="currentThemeIcon" :size="size" class="text-50" />
     <v-tooltip activator="parent" :location="tooltipLocation">
       테마: {{ currentThemeLabel }}
     </v-tooltip>
