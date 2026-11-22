@@ -40,7 +40,7 @@ const props = defineProps({
   placeholder: { type: String, default: '내용을 입력하세요' },
   // 'standard' | 'minimal' | 'full' 또는 커스텀 툴바 배열
   toolbar: {
-    type: [String, Array] as PropType<'standard' | 'minimal' | 'full' | any[]>,
+    type: [String, Array] as PropType<'standard' | 'minimal' | 'full' | unknown[]>,
     default: 'standard',
   },
 })
@@ -139,5 +139,23 @@ const resolvedToolbar = computed(() => {
 .dark-mode :deep(.ql-editor.ql-blank::before) {
   color: #9fa0a4;
   font-style: normal;
+}
+
+/* 다크모드 링크 편집 툴팁 */
+.dark-mode :deep(.ql-snow .ql-tooltip) {
+  background-color: #2a2b38;
+  border-color: #434955;
+  color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.dark-mode :deep(.ql-snow .ql-tooltip input[type='text']) {
+  background-color: #212631;
+  border-color: #434955;
+  color: #e2e8f0;
+}
+
+.dark-mode :deep(.ql-snow .ql-tooltip a) {
+  color: #60a5fa;
 }
 </style>
