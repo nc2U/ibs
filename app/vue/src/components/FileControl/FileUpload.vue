@@ -101,16 +101,16 @@ defineExpose({ getNewFiles })
     <CCol sm="12">
       <div class="d-flex align-items-center justify-content-between text-muted small">
         <span>
-          <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
+          <v-icon icon="mdi-paperclip" size="14" class="me-1" />
           첨부파일 용량 (최대 {{ formatBytes(maxTotalSize) }})
         </span>
-        <span :class="{ 'text-danger font-weight-bold': totalFileSize > maxTotalSize }">
+        <span :class="{ 'text-danger fw-bold': totalFileSize > maxTotalSize }">
           {{ formatBytes(totalFileSize) }} / {{ formatBytes(maxTotalSize) }}
         </span>
       </div>
 
       <div v-if="fileErrorMessage" class="text-danger small mt-1">
-        <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+        <v-icon icon="mdi-alert-circle" size="14" class="me-1" />
         {{ fileErrorMessage }}
       </div>
     </CCol>
@@ -121,7 +121,6 @@ defineExpose({ getNewFiles })
       <CInputGroup>
         <CFormInput :id="`file-${item.id}`" type="file" @change="loadFile($event, item)" />
         <CInputGroupText
-          id="basic-addon2"
           role="button"
           style="cursor: pointer"
           @click="index + 1 === newFiles.length ? addFileField() : removeFileField(index)"

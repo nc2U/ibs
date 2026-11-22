@@ -20,7 +20,12 @@ const emit = defineEmits<{
 const basePath = computed(() => {
   const first = props.files[0]?.file
   if (!first) return ''
-  const decoded = decodeURI(first)
+  let decoded = first
+  try {
+    decoded = decodeURI(first)
+  } catch {
+    // 잘못 인코딩된 URI는 원본 문자열 그대로 사용
+  }
   if (decoded.includes('media/')) {
     return decoded.split('media/')[0] + 'media/'
   }
@@ -32,7 +37,7 @@ const basePath = computed(() => {
   <CRow v-if="files && files.length" class="px-2">
     <CAlert :color="AlertSecondary">
       <small v-if="basePath">{{ basePath }}</small>
-      <CCol v-for="file in files" :key="file.pk ?? file.file_name" xs="12" color="primary">
+      <CCol v-for="file in files" :key="file.pk ?? file.file_name" xs="12">
         <RegFile
           :file="file"
           @file-delete="emit('file-delete', $event)"

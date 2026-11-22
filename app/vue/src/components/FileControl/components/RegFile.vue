@@ -68,7 +68,7 @@ const fileChange = (event: Event, pk: number) => {
     <s v-if="fileData.del || fileData.edit">{{ file.file_name }}</s>
     <a v-else :href="file.file" target="_blank">{{ file.file_name }}</a>
 
-    <span v-if="file?.description" class="pl-2"> ({{ file.description }}) </span>
+    <span v-if="file?.description" class="ps-2"> ({{ file.description }}) </span>
 
     <span>
       <CFormCheck
@@ -77,7 +77,7 @@ const fileChange = (event: Event, pk: number) => {
         label="삭제"
         inline
         :disabled="fileData.edit"
-        class="ml-4"
+        class="ms-4"
         @change="handleDeleteChange"
       />
       <CFormCheck
@@ -96,7 +96,7 @@ const fileChange = (event: Event, pk: number) => {
             :id="`docs-file-${file.pk}`"
             size="sm"
             type="file"
-            @input="fileChange($event, file.pk as number)"
+            @change="fileChange($event, file.pk as number)"
           />
         </CInputGroup>
       </CCol>
