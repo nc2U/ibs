@@ -52,9 +52,17 @@ const getNext = (pk: number) => getCaseNav.value.filter(c => c.pk === pk).map(c 
 const linkHitUp = async (pk: number) => emit('link-hit', pk)
 const fileHitUp = async (pk: number) => emit('file-hit', pk)
 
+interface KakaoWindow extends Window {
+  Kakao?: {
+    Share?: {
+      createDefaultButton: (opts: Record<string, unknown>) => void
+    }
+  }
+}
+
 const toPrint = () => {
   // Clone the specific area to be printed
-  const printContent: any = document.getElementById('print-area')?.cloneNode(true)
+  const printContent = document.getElementById('print-area')?.cloneNode(true) as HTMLElement | null
 
   // Create a new window for printing
   const printWindow = window.open('', '_blank')
@@ -63,7 +71,7 @@ const toPrint = () => {
 
     // Add the cloned content to the new window
     printWindow.document.write(`<html><head><title>${props.suitcase?.__str__}</title></head><body>`)
-    printWindow.document.write(printContent?.innerHTML)
+    printWindow.document.write(printContent?.innerHTML ?? '')
     printWindow.document.write('</body></html>')
 
     // Close the document for writing
@@ -76,7 +84,7 @@ const toPrint = () => {
   }
 }
 
-const toDownload = () => window.open(`excel/suitcase/?pk=${route.params.caseId}`, 'blank')
+const toDownload = () => window.open(`/excel/suitcase/?pk=${route.params.caseId}`, '_blank')
 
 const route = useRoute()
 const router = useRouter()
@@ -87,7 +95,7 @@ const shareFacebook = () => window.open(`https://facebook.com/share/share.php?u=
 const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?text=&url=${sendUrl}`)
 const shareKakaoTalk = () => {
   // 카카오링크 버튼 생성
-  ;(window as any).Kakao.Share.createDefaultButton({
+  ;(window as KakaoWindow).Kakao?.Share?.createDefaultButton({
     container: '#kakaotalk-sharing-btn',
     objectType: 'feed',
     content: {
@@ -131,10 +139,10 @@ const toEdit = () => {
   })
 }
 
-const deleteConfirm = () => refDelModal.value.callModal()
+const deleteConfirm = () => refDelModal.value?.callModal()
 
 const toDelete = () => {
-  refDelModal.value.close()
+  refDelModal.value?.close()
   emit('post-delete', props.suitcase.pk)
 }
 
@@ -155,7 +163,7 @@ onBeforeRouteUpdate((to, from) => {
 
   const last = getCaseNav.value.length - 1
   const getLast = getCaseNav.value[last]
-  if (toCaseId && getLast.pk === fromCaseId && getLast.prev_pk === toCaseId)
+  if (toCaseId && getLast?.pk === fromCaseId && getLast?.prev_pk === toCaseId)
     // 다음 페이지 목록으로
     emit('cases-renewal', props.currPage + 1)
 
@@ -191,7 +199,7 @@ onBeforeMount(() => {
           {{ suitcase.case_name }}
         </h5>
       </CCol>
-      <CCol class="pt-1 text-right">
+      <CCol class="pt-1 text-end">
         <span>[{{ sortName }}] [{{ sortDesc }}/{{ levelDesc }}]</span>
       </CCol>
     </CRow>
@@ -200,21 +208,21 @@ onBeforeMount(() => {
 
     <CRow class="text-blue-grey">
       <CCol>
-        <small class="mr-3">작성자 : {{ suitcase.creator?.username }}</small>
-        <small class="mr-3 text-btn" @click="toPrint">
+        <small class="me-3">작성자 : {{ suitcase.creator?.username }}</small>
+        <small class="me-3 text-btn" @click="toPrint">
           <v-icon icon="mdi-printer" size="small" />
-          <span class="ml-2">프린트</span>
+          <span class="ms-2">프린트</span>
         </small>
-        <small class="mr-3 text-btn" @click="toDownload">
+        <small class="me-3 text-btn" @click="toDownload">
           <v-icon icon="mdi-microsoft-excel" size="small" />
-          <span class="ml-2">다운로드</span>
+          <span class="ms-2">다운로드</span>
         </small>
       </CCol>
 
-      <CCol class="text-right" md="3">
+      <CCol class="text-end" md="3">
         <small>
           <v-icon icon="mdi-calendar-clock" size="small" />
-          <span class="ml-2">{{ timeFormat(suitcase.created ?? '') }}</span>
+          <span class="ms-2">{{ timeFormat(suitcase.created ?? '') }}</span>
         </small>
       </CCol>
     </CRow>
@@ -351,7 +359,7 @@ onBeforeMount(() => {
                 <table>
                   <tr v-for="(sc, i) in suitcase.links" :key="i" class="mb-1">
                     <td style="width: 15px">▪</td>
-                    <td style="width: 100px" class="pl-3 pb-2">
+                    <td style="width: 100px" class="ps-3 pb-2">
                       <v-badge
                         :content="sc.category.name"
                         :color="sc.category.color ?? 'secondary'"
@@ -368,7 +376,7 @@ onBeforeMount(() => {
                 <table>
                   <tr v-for="(sc, i) in suitcase.files" :key="i" class="mb-1">
                     <td style="width: 15px">▪</td>
-                    <td style="width: 100px" class="pl-3 pb-2">
+                    <td style="width: 100px" class="ps-3 pb-2">
                       <v-badge
                         :content="sc.category.name"
                         :color="sc.category.color ?? 'secondary'"
@@ -390,20 +398,15 @@ onBeforeMount(() => {
 
     <CRow class="mt-2 px-3">
       <CCol class="text-grey-darken-1 pt-2 social">
-        <a
-          id="kakaotalk-sharing-btn"
-          href="#"
-          @click.prevent="shareKakaoTalk"
-          class="me-2"
-        >
+        <a id="kakaotalk-sharing-btn" href="#" @click.prevent="shareKakaoTalk" class="me-2">
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"
             alt="카카오톡 공유 보내기 버튼"
             width="20px;"
           />
         </a>
-        <v-icon icon="mdi-facebook" class="mr-2" @click="shareFacebook" />
-        <v-icon icon="mdi-twitter" class="mr-2" @click="shareTwitter" />
+        <v-icon icon="mdi-facebook" class="me-2" @click="shareFacebook" />
+        <v-icon icon="mdi-twitter" class="me-2" @click="shareTwitter" />
       </CCol>
     </CRow>
 
@@ -463,7 +466,7 @@ onBeforeMount(() => {
           </v-btn>
         </v-btn-group>
       </CCol>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn
           v-if="canDocsCreate"
           color="primary"

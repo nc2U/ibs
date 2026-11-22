@@ -86,14 +86,14 @@ const onSubmit = (event: Event) => {
       event.stopPropagation()
 
       validated.value = true
-    } else refConfirmModal.value.callModal()
-  } else refAlertModal.value.callModal()
+    } else refConfirmModal.value?.callModal()
+  } else refAlertModal.value?.callModal()
 }
 
 const modalAction = () => {
   emit('on-submit', { ...form })
   validated.value = false
-  refConfirmModal.value.close()
+  refConfirmModal.value?.close()
 }
 
 const dataSetup = () => {
@@ -134,7 +134,7 @@ onMounted(() => dataSetup())
     <CCol>
       <h5>
         {{ sortName }}
-        <v-icon icon="mdi-chevron-double-right" size="xs" />
+        <v-icon icon="mdi-chevron-double-right" size="x-small" />
         소송 사건
       </h5>
     </CCol>
@@ -360,7 +360,7 @@ onMounted(() => dataSetup())
     </CRow>
 
     <CRow>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</v-btn>
         <v-btn v-if="route.params.caseId" color="light" @click="router.go(-1)" flat> 뒤로</v-btn>
         <v-btn color="light" @click="router.push({ name: `${viewRoute}` })" flat> 목록으로</v-btn>

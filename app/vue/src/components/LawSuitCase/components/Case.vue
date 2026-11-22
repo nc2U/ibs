@@ -29,9 +29,11 @@ const relatedCaseName = computed(() =>
 )
 
 const agencyFunc = () => {
-  props.suitCase?.court_desc !== ''
-    ? emit('agency-filter', props.suitCase?.court)
-    : emit('agency-search', props.suitCase.other_agency)
+  if (props.suitCase?.court_desc) {
+    emit('agency-filter', props.suitCase.court)
+  } else {
+    emit('agency-search', props.suitCase?.other_agency)
+  }
 }
 
 const relatedFilter = () => emit('related-filter', props.suitCase?.related_case)
@@ -47,12 +49,12 @@ const getCourt = (court: string | undefined) =>
 
 <template>
   <CTableRow v-if="suitCase" class="text-center" :color="suitCase.case_end_date ? 'light' : ''">
-    <CTableDataCell class="text-left pl-4">
+    <CTableDataCell class="text-start ps-4">
       <v-badge :color="sortColor" :content="sortName" offset-x="5" offset-y="-7" />
     </CTableDataCell>
     <CTableDataCell>{{ suitCase.sort_desc }}</CTableDataCell>
     <CTableDataCell>{{ suitCase.level_desc }}</CTableDataCell>
-    <CTableDataCell class="text-left pl-4">
+    <CTableDataCell class="text-start ps-4">
       <span
         v-if="suitCase.court_desc || suitCase.other_agency"
         style="cursor: pointer"
