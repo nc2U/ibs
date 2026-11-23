@@ -14,7 +14,11 @@ from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 
-from _utils.contract_price import get_contract_price, get_sales_price_by_gt
+from _utils.contract_price import (
+    bump_payment_summary_cache_version,
+    get_contract_price,
+    get_sales_price_by_gt,
+)
 from _utils.rrn_crypto import decrypt_rrn, encrypt_rrn, hash_rrn, normalize_and_parse_rrn
 from apiV1.serializers.ledger import ProjectCompositeTransactionSerializer
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
@@ -120,6 +124,8 @@ class ContractPriceBulkUpdateService:
         uncontracted_created_count = 0
         if self.order_group_for_uncontracted:
             uncontracted_created_count = self._create_uncontracted_prices()
+
+        bump_payment_summary_cache_version(self.project.pk)
 
         return {
             'total_processed': len(contracts),
@@ -389,6 +395,49 @@ class UnitAssignmentService:
     """유닛 할당/재할당 관리 서비스"""
 
     @staticmethod
+    def _validate_and_get_key_unit(contract, unit_pk):
+        key_unit = KeyUnit.objects.select_related('unit_type').filter(pk=unit_pk).first()
+        if not key_unit:
+            raise serializers.ValidationError({'key_unit': '유효한 계약 유닛을 찾을 수 없습니다.'})
+
+        key_unit_project_id = getattr(key_unit, 'project_id', None) or getattr(key_unit.unit_type, 'project_id', None)
+        if contract.project_id and key_unit_project_id and key_unit_project_id != contract.project_id:
+            raise serializers.ValidationError({'key_unit': '계약의 프로젝트와 유닛의 프로젝트가 일치하지 않습니다.'})
+
+        if contract.unit_type_id and key_unit.unit_type_id != contract.unit_type_id:
+            raise serializers.ValidationError('계약의 타입과 유닛의 타입이 일치하지 않습니다.')
+
+        occupied_qs = Contract.objects.filter(key_unit=key_unit)
+        if contract.pk:
+            occupied_qs = occupied_qs.exclude(pk=contract.pk)
+        if occupied_qs.exists():
+            raise serializers.ValidationError({'key_unit': '이미 다른 계약에 할당된 계약 유닛입니다.'})
+
+        return key_unit
+
+    @staticmethod
+    def _validate_and_get_house_unit(contract, key_unit, house_unit_pk):
+        house_unit = HouseUnit.objects.select_related('unit_type').filter(pk=house_unit_pk).first()
+        if not house_unit:
+            raise serializers.ValidationError({'houseunit': '유효한 동호수(세대) 정보를 찾을 수 없습니다.'})
+
+        hu_project_id = getattr(house_unit.unit_type, 'project_id', None) if house_unit.unit_type else None
+        if contract.project_id and hu_project_id and hu_project_id != contract.project_id:
+            raise serializers.ValidationError({'houseunit': '계약의 프로젝트와 세대(동호수)의 프로젝트가 일치하지 않습니다.'})
+
+        if key_unit and house_unit.unit_type_id and key_unit.unit_type_id != house_unit.unit_type_id:
+            raise serializers.ValidationError({'houseunit': '유닛의 타입과 세대(동호수)의 타입이 일치하지 않습니다.'})
+
+        if house_unit.key_unit_id and (not key_unit or house_unit.key_unit_id != key_unit.pk):
+            other_contract_occupied = Contract.objects.filter(key_unit_id=house_unit.key_unit_id)
+            if contract.pk:
+                other_contract_occupied = other_contract_occupied.exclude(pk=contract.pk)
+            if other_contract_occupied.exists():
+                raise serializers.ValidationError({'houseunit': '이미 다른 계약에 배정된 동호수(세대)입니다.'})
+
+        return house_unit
+
+    @staticmethod
     def assign_unit(contract, unit_pk, house_unit_pk=None):
         """
         계약에 유닛 할당
@@ -405,19 +454,16 @@ class UnitAssignmentService:
         if not unit_pk:
             return None
 
-        key_unit = KeyUnit.objects.get(pk=unit_pk)
-
-        # unit_type 일관성 검증
-        if contract.unit_type_id and key_unit.unit_type_id != contract.unit_type_id:
-            raise serializers.ValidationError(
-                '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
-            )
+        key_unit = UnitAssignmentService._validate_and_get_key_unit(contract, unit_pk)
+        house_unit = (
+            UnitAssignmentService._validate_and_get_house_unit(contract, key_unit, house_unit_pk)
+            if house_unit_pk else None
+        )
 
         contract.key_unit = key_unit
         contract.save()
 
-        if house_unit_pk:
-            house_unit = HouseUnit.objects.get(pk=house_unit_pk)
+        if house_unit:
             house_unit.key_unit = key_unit
             house_unit.save()
             return house_unit
@@ -441,6 +487,12 @@ class UnitAssignmentService:
         old_house_unit = None
         new_house_unit = None
 
+        new_key_unit = UnitAssignmentService._validate_and_get_key_unit(contract, new_unit_pk)
+        if new_house_unit_pk:
+            new_house_unit = UnitAssignmentService._validate_and_get_house_unit(
+                contract, new_key_unit, new_house_unit_pk
+            )
+
         # 기존 연결 해제
         if contract.key_unit:
             try:
@@ -451,20 +503,10 @@ class UnitAssignmentService:
             except ObjectDoesNotExist:
                 pass
 
-        # 새 연결 설정
-        new_key_unit = KeyUnit.objects.get(pk=new_unit_pk)
-
-        # unit_type 일관성 검증
-        if contract.unit_type_id and new_key_unit.unit_type_id != contract.unit_type_id:
-            raise serializers.ValidationError(
-                '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
-            )
-
         contract.key_unit = new_key_unit
         contract.save()
 
-        if new_house_unit_pk:
-            new_house_unit = HouseUnit.objects.get(pk=new_house_unit_pk)
+        if new_house_unit:
             new_house_unit.key_unit = new_key_unit
             new_house_unit.save()
 
@@ -479,8 +521,8 @@ class ContractorSensitiveService:
 
     @staticmethod
     def can_collect_rrn(contractor: Contractor) -> bool:
-        """단순 일반 청약('1') 단계는 수집 제한 (본계약 또는 조합원만 허용)"""
-        return not (contractor.status == '1' and contractor.qualification == '1')
+        """청약('1') 단계는 수집 제한 (본계약 '2' 이상만 허용)"""
+        return contractor.status != '1'
 
     @staticmethod
     def _contractor_context_snapshot(contractor: Contractor) -> tuple[int | None, str]:
@@ -502,7 +544,7 @@ class ContractorSensitiveService:
     ) -> ContractorSensitiveInfo:
         if not ContractorSensitiveService.can_collect_rrn(contractor):
             raise serializers.ValidationError({
-                'rrn': '일반 청약 단계에서는 주민등록번호를 수집할 수 없습니다. 계약 전환 후 입력해 주십시오.'
+                'rrn': '청약 단계에서는 주민등록번호를 수집할 수 없습니다. 계약 전환 후 입력해 주십시오.'
             })
 
         try:
@@ -769,7 +811,7 @@ class ContractorRegistrationService:
             )
 
         raw_rrn = str(data.get('rrn') or '').strip()
-        if raw_rrn:
+        if contractor.status == '2' and raw_rrn:
             ContractorSensitiveService.upsert_rrn(
                 contractor=contractor,
                 raw_rrn=raw_rrn,
@@ -835,11 +877,23 @@ class ContractorRegistrationService:
         contact.email = data.get('email', '')
         contact.save()
 
-        # 주소 정보 처리 (청약→계약 전환 시에만 새로 생성)
+        # 주소 정보 처리 (다중 주소 이력 보유 시 MultipleObjectsReturned 방지 및 현주소 갱신)
         if contractor.status == '2' and ContractorRegistrationService._has_address_data(data):
-            try:
-                ContractorAddress.objects.get(contractor=contractor)
-            except ContractorAddress.DoesNotExist:
+            curr_addr = (
+                ContractorAddress.objects.filter(contractor=contractor, is_current=True).first()
+                or ContractorAddress.objects.filter(contractor=contractor).order_by('-id').first()
+            )
+            if curr_addr:
+                curr_addr.id_zipcode = data.get('id_zipcode', curr_addr.id_zipcode)
+                curr_addr.id_address1 = data.get('id_address1', curr_addr.id_address1)
+                curr_addr.id_address2 = data.get('id_address2', curr_addr.id_address2)
+                curr_addr.id_address3 = data.get('id_address3', curr_addr.id_address3)
+                curr_addr.dm_zipcode = data.get('dm_zipcode', curr_addr.dm_zipcode)
+                curr_addr.dm_address1 = data.get('dm_address1', curr_addr.dm_address1)
+                curr_addr.dm_address2 = data.get('dm_address2', curr_addr.dm_address2)
+                curr_addr.dm_address3 = data.get('dm_address3', curr_addr.dm_address3)
+                curr_addr.save()
+            else:
                 ContractorAddress.objects.create(
                     contractor=contractor,
                     id_zipcode=data.get('id_zipcode', ''),
@@ -853,7 +907,7 @@ class ContractorRegistrationService:
                 )
 
         raw_rrn = str(data.get('rrn') or '').strip()
-        if raw_rrn:
+        if contractor.status == '2' and raw_rrn:
             ContractorSensitiveService.upsert_rrn(
                 contractor=contractor,
                 raw_rrn=raw_rrn,
@@ -875,11 +929,18 @@ class ContractorRegistrationService:
 
 class FileManagementService:
     """계약 파일 관리 서비스"""
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+    @classmethod
+    def _validate_file_size(cls, file):
+        if file and getattr(file, 'size', 0) > cls.MAX_FILE_SIZE:
+            raise serializers.ValidationError({'file': '첨부파일 크기는 최대 50MB를 초과할 수 없습니다.'})
 
     @staticmethod
     def handle_new_file(contractor, file, user):
         """새 파일 업로드 처리"""
         if file:
+            FileManagementService._validate_file_size(file)
             ContractFile.objects.create(
                 contractor=contractor,
                 file=file,
@@ -899,6 +960,7 @@ class FileManagementService:
         edit_file_pk = data.get('editFile')
         change_file = data.get('cngFile')
         if edit_file_pk and change_file:
+            FileManagementService._validate_file_size(change_file)
             try:
                 file_to_edit = ContractFile.objects.get(pk=edit_file_pk, contractor=contractor)
                 old_storage = file_to_edit.file.storage if file_to_edit.file else None
@@ -978,11 +1040,14 @@ class PaymentProcessingService:
         if not account:
             raise serializers.ValidationError({'account': '수납 처리용 프로젝트 회계 계정(is_payment=True)이 설정되어 있지 않습니다.'})
 
-        # 납부 정보
+        # 납부 정보 (해당 프로젝트 소속 계좌인지 함께 검증)
         bank_acc_id = clean_id_value(data.get('bank_account'))
-        bank_account = ProjectBankAccount.objects.filter(pk=bank_acc_id).first() if bank_acc_id else None
+        bank_account = (
+            ProjectBankAccount.objects.filter(pk=bank_acc_id, project=project).first()
+            if bank_acc_id else None
+        )
         if not bank_account:
-            raise serializers.ValidationError({'bank_account': '유효한 입금 계좌를 선택해 주십시오.'})
+            raise serializers.ValidationError({'bank_account': '해당 프로젝트의 유효한 입금 계좌를 선택해 주십시오.'})
 
         # deal_date 유효성 검사 및 조정 (미래 날짜 방지)
         deal_date_input = data.get('deal_date')
@@ -1074,16 +1139,22 @@ class PaymentProcessingService:
                 if not account:
                     raise serializers.ValidationError({'account': '수납 처리용 프로젝트 회계 계정(is_payment=True)이 설정되어 있지 않습니다.'})
 
-                # 납부 정보
+                # 납부 정보 (해당 계약의 프로젝트 소속 회차·계좌인지 함께 검증)
                 inst_id = clean_id_value(data.get('installment_order'))
-                installment_order = InstallmentPaymentOrder.objects.filter(pk=inst_id).first() if inst_id else None
+                installment_order = (
+                    InstallmentPaymentOrder.objects.filter(pk=inst_id, project=contract.project).first()
+                    if inst_id else None
+                )
                 if not installment_order:
-                    raise serializers.ValidationError({'installment_order': '유효한 납부 회차를 선택해 주십시오.'})
+                    raise serializers.ValidationError({'installment_order': '해당 프로젝트의 유효한 납부 회차를 선택해 주십시오.'})
 
                 bank_acc_id = clean_id_value(data.get('bank_account'))
-                bank_account = ProjectBankAccount.objects.filter(pk=bank_acc_id).first() if bank_acc_id else None
+                bank_account = (
+                    ProjectBankAccount.objects.filter(pk=bank_acc_id, project=contract.project).first()
+                    if bank_acc_id else None
+                )
                 if not bank_account:
-                    raise serializers.ValidationError({'bank_account': '유효한 입금 계좌를 선택해 주십시오.'})
+                    raise serializers.ValidationError({'bank_account': '해당 프로젝트의 유효한 입금 계좌를 선택해 주십시오.'})
 
                 # 은행 거래 업데이트
                 bank_tx.bank_account = bank_account
@@ -1152,6 +1223,8 @@ class ContractCreationService:
 
         # 6. 초기 납부 처리
         self.payment_service.process_initial_payment(contract, contractor, data, user)
+
+        bump_payment_summary_cache_version(contract.project_id)
 
         return contract
 
@@ -1333,6 +1406,8 @@ class ContractUpdateService:
         # 6. 납부 정보 처리
         self.payment_service.process_payment_update(instance, data, user)
 
+        bump_payment_summary_cache_version(instance.project_id)
+
         return instance
 
 
@@ -1412,6 +1487,8 @@ class ContractorReleaseService:
         # 6. 계약자 최종 해지 상태로 변경
         ContractorReleaseService._update_contractor_status(contractor, contract, contractor_release)
         result['contractor_updated'] = True
+
+        bump_payment_summary_cache_version(contract.project_id)
 
         return result
 

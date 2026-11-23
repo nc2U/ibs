@@ -13,7 +13,7 @@ from weasyprint import HTML
 
 from _pdf.mixins import PdfExportMixin
 from _pdf.utils import get_contract
-from apiV1.permissions._utils import get_project_ids_with_permission
+from apiV1.permissions._utils import get_project_ids_with_permission, is_project_locked
 
 
 class PdfExportCertOccupancy(PdfExportMixin, View):
@@ -32,6 +32,10 @@ class PdfExportCertOccupancy(PdfExportMixin, View):
             contract = get_contract(contract_id)
         except (Exception,):
             return HttpResponse("존재하지 않거나 유효하지 않은 계약 ID입니다.", status=404, content_type='text/plain; charset=utf-8')
+
+        issue_project = getattr(getattr(contract, 'project', None), 'issue_project', None)
+        if is_project_locked(issue_project):
+            return HttpResponse("잠금 보관된 프로젝트의 증명서는 발급받을 수 없습니다.", status=403, content_type='text/plain; charset=utf-8')
 
         if user is not None and user.is_authenticated and not (user.is_superuser or getattr(user, 'work_manager', False)):
             allowed_ids = get_project_ids_with_permission(user, 'contract.read')

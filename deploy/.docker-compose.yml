@@ -14,7 +14,7 @@ services:
       PGPASSWORD: my-db-secret # (postgres 클라이언트 라이브러리 - 실제 데이터로 수정)
       TZ: Asia/Seoul
     volumes:
-      - postgres_data:/var/lib/postgresql/18/docker
+      - postgres_data:/var/lib/postgresql
       - ../volume/backups:/var/backups
       - ../volume/initdb/postgres:/docker-entrypoint-initdb.d
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db.models import Q
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 
@@ -19,6 +19,13 @@ class OrderGroupAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'sort')
     list_editable = ('order_number', 'is_default_for_uncontracted',)
     search_fields = ('name',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(project_id__in=accessible_projects)
 
 
 @admin.register(DocumentType)
@@ -39,6 +46,13 @@ class RequiredDocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'document_type', 'require_type')
     list_editable = ('sort', 'quantity', 'require_type', 'description', 'display_order')
     search_fields = ('document_type__name',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(project_id__in=accessible_projects)
 
 
 class ContractPriceInline(admin.StackedInline):
@@ -193,40 +207,39 @@ class ContractDocumentInline(admin.TabularInline):
     is_complete_display.short_description = '완료'
 
     def files_info(self, obj):
-        """파일 정보 (업로드/삭제)"""
+        """파일 정보 (업로드/삭제) — format_html_join으로 파일명/URL 안전 이스케이프"""
         if not obj.pk:
             return '-'
 
-        files = obj.files.all()
-        parts = []
-
-        # 기존 파일 목록
+        files = list(obj.files.all())
         if files:
-            file_links = []
-            for f in files:
-                file_links.append(
-                    '<div style="margin: 2px 0;">'
-                    '<input type="checkbox" name="delete_file_{}" value="1" style="margin-right: 3px;"> '
-                    '<a href="{}" target="_blank" title="{}KB">📎 {}</a>'
-                    '</div>'.format(
+            existing_html = format_html_join(
+                '',
+                '<div style="margin: 2px 0;">'
+                '<input type="checkbox" name="delete_file_{}" value="1" style="margin-right: 3px;"> '
+                '<a href="{}" target="_blank" rel="noopener noreferrer" title="{}KB">📎 {}</a>'
+                '</div>',
+                (
+                    (
                         f.pk,
-                        f.file.url,
+                        f.file.url if f.file else '#',
                         f.file_size // 1024 if f.file_size else 0,
-                        f.file_name[:20] + '...' if len(f.file_name) > 20 else f.file_name
+                        f.file_name[:20] + '...' if len(f.file_name or '') > 20 else (f.file_name or ''),
                     )
-                )
-            parts.append(''.join(file_links))
+                    for f in files
+                ),
+            )
         else:
-            parts.append('<span style="color: gray;">파일 없음</span>')
+            existing_html = format_html('<span style="color: gray;">파일 없음</span>')
 
-        # 파일 업로드
-        parts.append(
+        return format_html(
+            '<div style="min-width: 200px;">{}'
             '<div style="margin-top: 5px;">'
             '<input type="file" name="upload_file_{}" multiple style="font-size: 11px;">'
-            '</div>'.format(obj.pk)
+            '</div></div>',
+            existing_html,
+            obj.pk,
         )
-
-        return format_html('<div style="min-width: 200px;">{}</div>'.format(''.join(parts)))
 
     files_info.short_description = '파일 (☐삭제/업로드)'
 
@@ -242,6 +255,16 @@ class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
                    'contract_date', 'gender', 'qualification', 'status', 'change_type')
     list_editable = ('gender', 'qualification', 'status', 'change_type', 'is_active')
     inlines = (CContactInline, CAdressInline, ContractFileAdmin, ContractDocumentInline)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(
+            Q(contract__project_id__in=accessible_projects) |
+            Q(prev_contract__project_id__in=accessible_projects)
+        )
 
     def save_model(self, request, obj, form, change):
         """계약자 저장"""
@@ -292,6 +315,16 @@ class CAdressAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('__str__', 'id_zipcode', 'id_address1', 'id_address2', 'id_address3', 'is_current')
     list_select_related = ('contractor__contract',)
     list_editable = ('is_current',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(
+            Q(contractor__contract__project_id__in=accessible_projects) |
+            Q(contractor__prev_contract__project_id__in=accessible_projects)
+        )
 
 
 @admin.register(ContractorConsultationLogs)
@@ -360,6 +393,16 @@ class ContractorConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
             obj.creator = request.user
         obj.updator = request.user
         super().save_model(request, obj, form, change)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
+        return qs.filter(
+            Q(contractor__contract__project_id__in=accessible_projects) |
+            Q(contractor__prev_contract__project_id__in=accessible_projects)
+        )
 
 
 @admin.register(Succession)

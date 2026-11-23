@@ -442,6 +442,7 @@ class ContractAggregateSerializer(serializers.Serializer):
     total_units = serializers.IntegerField()
     subs_num = serializers.IntegerField()
     conts_num = serializers.IntegerField()
+    non_conts_num = serializers.IntegerField(required=False, default=0)
     non_conts_num = serializers.IntegerField()
 
 
@@ -519,6 +520,9 @@ class SimpleContractorSerializer(serializers.ModelSerializer):
             return f'{obj.name}(미계약)'
 
 
+MAX_CONTRACT_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+
 class ContractFileSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
 
@@ -527,6 +531,12 @@ class ContractFileSerializer(serializers.ModelSerializer):
         fields = ('pk', 'contractor', 'file', 'file_name', 'file_type', 'file_size', 'created', 'creator')
         read_only_fields = ('file_name', 'file_type', 'file_size', 'created', 'creator')
         extra_kwargs = {'contractor': {'required': False}}
+
+    @staticmethod
+    def validate_file(file):
+        if file and getattr(file, 'size', 0) > MAX_CONTRACT_FILE_SIZE:
+            raise serializers.ValidationError('첨부파일 크기는 최대 50MB를 초과할 수 없습니다.')
+        return file
 
 
 class ContractDocumentFileSerializer(serializers.ModelSerializer):
@@ -539,6 +549,12 @@ class ContractDocumentFileSerializer(serializers.ModelSerializer):
                   'uploaded_date', 'uploader')
         read_only_fields = ('file_name', 'file_type', 'file_size', 'uploaded_date', 'uploader')
         extra_kwargs = {'contract_document': {'required': False}}
+
+    @staticmethod
+    def validate_file(file):
+        if file and getattr(file, 'size', 0) > MAX_CONTRACT_FILE_SIZE:
+            raise serializers.ValidationError('첨부파일 크기는 최대 50MB를 초과할 수 없습니다.')
+        return file
 
 
 class ContractDocumentSerializer(serializers.ModelSerializer):

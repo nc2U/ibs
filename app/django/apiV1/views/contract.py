@@ -14,8 +14,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
-    get_contract_price, get_contract_payment_plan
+from _utils.contract_price import (
+    get_project_payment_summary,
+    get_multiple_projects_payment_summary,
+    get_contract_price,
+    get_contract_payment_plan,
+    get_payment_summary_cache_version,
+)
 from _utils.rrn_crypto import get_client_ip
 from apiV1.permissions._utils import get_project_ids_with_permission
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerOnly
@@ -320,8 +325,9 @@ class ContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Generate cache key
-        cache_key = f'payment_summary_{project_id}_{order_group_id}_{unit_type_id}'
+        # Generate versioned cache key (invalidated when project contracts/prices change)
+        ver = get_payment_summary_cache_version(project.pk)
+        cache_key = f'payment_summary_{project_id}_v{ver}_{order_group_id}_{unit_type_id}'
 
         if use_cache:
             cached_result = cache.get(cache_key)
@@ -585,22 +591,9 @@ class ContractSetViewSet(ContractViewSet):
         except (ValueError, TypeError):
             limit = 10
 
-        # Contract 모델의 기본 정렬이 없으므로 ordering 파라미터 확인
-        ordering = request.query_params.get('ordering', '-created')
-
-        if ordering.startswith('-'):
-            # 내림차순 정렬
-            field = ordering[1:]
-            if field == 'created':
-                items_before = queryset.filter(created__gt=target_item.created).count()
-            else:
-                items_before = queryset.filter(id__gt=target_item.id).count()
-        else:
-            # 오름차순 정렬
-            if ordering == 'created':
-                items_before = queryset.filter(created__lt=target_item.created).count()
-            else:
-                items_before = queryset.filter(id__lt=target_item.id).count()
+        # 현재 필터 및 정렬 조건(filter_queryset)이 적용된 ID 순서에서 정확한 위치 산출
+        ordered_pks = list(queryset.values_list('pk', flat=True))
+        items_before = ordered_pks.index(target_item.pk)
 
         page_number = (items_before // limit) + 1
         return Response({'page': page_number})
@@ -1341,6 +1334,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             seller.change_type = None
             seller.is_active = True
             seller.save()
+            ContractorSensitiveService.clear_retention(seller)
 
         # 2. Succession 레코드 삭제
         instance.delete()
@@ -1469,6 +1463,8 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
                 contractor.change_type = None
                 contractor.is_active = True
                 contractor.save()
+                if contractor.status == '2':
+                    ContractorSensitiveService.clear_retention(contractor)
 
         serializer.save(updator=self.request.user)
 
@@ -1486,6 +1482,8 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
             contractor.change_type = None
             contractor.is_active = True
             contractor.save()
+            if contractor.status == '2':
+                ContractorSensitiveService.clear_retention(contractor)
 
         # 3. ContractorRelease 레코드 삭제 (contractor, project는 PROTECT로 DB 안전 보존)
         instance.delete()

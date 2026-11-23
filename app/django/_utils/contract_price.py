@@ -2,12 +2,34 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.db.models import Sum
 
 from payment.models import SalesPriceByGT, DownPayment, InstallmentPaymentOrder, PaymentPerInstallment
 from project.models import ProjectIncBudget
 
 logger = logging.getLogger(__name__)
+
+
+def get_payment_summary_cache_version(project_id: int) -> int:
+    if not project_id:
+        return 1
+    key = f'payment_summary_ver_{project_id}'
+    ver = cache.get(key)
+    if ver is None:
+        cache.set(key, 1, timeout=None)
+        return 1
+    return int(ver)
+
+
+def bump_payment_summary_cache_version(project_id: int | None) -> None:
+    if not project_id:
+        return
+    key = f'payment_summary_ver_{project_id}'
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, 2, timeout=None)
 
 
 def get_due_date_per_order(contract, order, payment_orders=None):
@@ -31,29 +53,46 @@ def get_due_date_per_order(contract, order, payment_orders=None):
 
     # 2. 미래 기준점(ff_date) 찾기
     ff_date = getattr(contract, '_first_future_date', None)
+    ctx = getattr(contract, '_project_pricing_ctx', None)
 
-    if ff_date is None:
-        # [수정] ff_date 탐색 시에는 '제외 차수' 여부와 상관없이 프로젝트 전체 일정을 참조해야 함
-        future_middle = InstallmentPaymentOrder.objects.filter(
-            project=contract.project,
-            type_sort=contract.unit_type.sort,  # 계약 타입 일치
-            pay_sort='2',  # 중도금
-            pay_due_date__gte=cont_date  # 계약일 이후
-        ).order_by('pay_due_date').first()
-
-        if future_middle:
-            ff_date = future_middle.pay_due_date
+    if ff_date is None and not getattr(contract, '_ff_date_resolved', False):
+        if ctx is not None:
+            type_insts = ctx['insts_by_type'].get(contract.unit_type.sort, [])
+            future_middles = [
+                i.pay_due_date for i in type_insts
+                if i.pay_sort == '2' and i.pay_due_date and i.pay_due_date >= cont_date
+            ]
+            if future_middles:
+                ff_date = min(future_middles)
+            else:
+                future_remains = [
+                    i.pay_due_date for i in type_insts
+                    if i.pay_sort == '3' and i.pay_due_date and i.pay_due_date >= cont_date
+                ]
+                ff_date = min(future_remains) if future_remains else None
         else:
-            # 중도금이 없으면 잔금(3)에서 동일 로직 적용
-            future_remain = InstallmentPaymentOrder.objects.filter(
+            # [수정] ff_date 탐색 시에는 '제외 차수' 여부와 상관없이 프로젝트 전체 일정을 참조해야 함
+            future_middle = InstallmentPaymentOrder.objects.filter(
                 project=contract.project,
-                type_sort=contract.unit_type.sort,
-                pay_sort='3',
-                pay_due_date__gte=cont_date
+                type_sort=contract.unit_type.sort,  # 계약 타입 일치
+                pay_sort='2',  # 중도금
+                pay_due_date__gte=cont_date  # 계약일 이후
             ).order_by('pay_due_date').first()
-            ff_date = future_remain.pay_due_date if future_remain else None
+
+            if future_middle:
+                ff_date = future_middle.pay_due_date
+            else:
+                # 중도금이 없으면 잔금(3)에서 동일 로직 적용
+                future_remain = InstallmentPaymentOrder.objects.filter(
+                    project=contract.project,
+                    type_sort=contract.unit_type.sort,
+                    pay_sort='3',
+                    pay_due_date__gte=cont_date
+                ).order_by('pay_due_date').first()
+                ff_date = future_remain.pay_due_date if future_remain else None
 
         contract._first_future_date = ff_date
+        contract._ff_date_resolved = True
 
     # 3. 현재 회차 정보 파악
     is_dict = isinstance(order, dict)
@@ -75,11 +114,17 @@ def get_due_date_per_order(contract, order, payment_orders=None):
 
             if si_date:
                 # 상대 날짜 계산 시에도 전체 일정을 참조해야 정확한 누적 합산 가능
-                if payment_orders is None:
-                    payment_orders = InstallmentPaymentOrder.objects.filter(
-                        project=contract.project, type_sort=contract.unit_type.sort)
-                pre_si = payment_orders.filter(pay_code__lt=pay_code).aggregate(
-                    total=Sum('days_since_prev'))['total'] or 0
+                if ctx is not None:
+                    type_insts = ctx['insts_by_type'].get(contract.unit_type.sort, [])
+                    pre_si = sum((i.days_since_prev or 0) for i in type_insts if (i.pay_code or 0) < (pay_code or 0))
+                elif isinstance(payment_orders, list):
+                    pre_si = sum((i.days_since_prev or 0) for i in payment_orders if (i.pay_code or 0) < (pay_code or 0))
+                else:
+                    if payment_orders is None:
+                        payment_orders = InstallmentPaymentOrder.objects.filter(
+                            project=contract.project, type_sort=contract.unit_type.sort)
+                    pre_si = payment_orders.filter(pay_code__lt=pay_code).aggregate(
+                        total=Sum('days_since_prev'))['total'] or 0
                 due_date = cont_date + timedelta(days=pre_si + (si_date or 0))
 
             fixed_date = ed_date or pd_date
@@ -114,12 +159,21 @@ def get_floor_type(contract):
 def get_sales_price_by_gt(contract, houseunit=None):
     if not contract: return None
     if houseunit is None:
-        if not contract.key_unit: return None
+        houseunit = getattr(contract, '_temp_houseunit', None)
+    if houseunit is None:
+        if not getattr(contract, 'key_unit', None): return None
         try:
             houseunit = contract.key_unit.houseunit
         except AttributeError:
             return None
     if not houseunit or not hasattr(houseunit, 'floor_type'): return None
+    ctx = getattr(contract, '_project_pricing_ctx', None)
+    if ctx is not None:
+        return ctx['sp_map'].get((
+            getattr(contract, 'order_group_id', None) or getattr(contract.order_group, 'pk', None),
+            getattr(contract, 'unit_type_id', None) or getattr(contract.unit_type, 'pk', None),
+            getattr(houseunit, 'floor_type_id', None) or getattr(houseunit.floor_type, 'pk', None),
+        ))
     try:
         return SalesPriceByGT.objects.get(project=contract.project, order_group=contract.order_group,
                                           unit_type=contract.unit_type, unit_floor_type=houseunit.floor_type)
@@ -135,7 +189,8 @@ def get_contract_price(contract, houseunit=None, is_set=False):
     if not is_set:
         try:
             cp = contract.contractprice
-            return (cp.price or 0, cp.price_build or 0, cp.price_land or 0, cp.price_tax or 0)
+            if cp and cp.price is not None:
+                return (cp.price or 0, cp.price_build or 0, cp.price_land or 0, cp.price_tax or 0)
         except AttributeError:
             pass
     try:
@@ -144,18 +199,29 @@ def get_contract_price(contract, houseunit=None, is_set=False):
                                 sales_price.price_land or 0, sales_price.price_tax or 0)
     except Exception as e:
         logger.debug("get_sales_price_by_gt 실패 폴백: %s", e)
-    try:
-        budget = ProjectIncBudget.objects.get(project=contract.project, order_group=contract.order_group,
-                                              unit_type=contract.unit_type)
-        if budget and budget.average_price: return budget.average_price, 0, 0, 0
-    except ProjectIncBudget.DoesNotExist:
-        pass
-    except Exception as e:
-        logger.debug("ProjectIncBudget 조회 실패 폴백: %s", e)
+    ctx = getattr(contract, '_project_pricing_ctx', None)
+    if ctx is not None:
+        og_id = getattr(contract, 'order_group_id', None) or getattr(contract.order_group, 'pk', None)
+        ut_id = getattr(contract, 'unit_type_id', None) or getattr(contract.unit_type, 'pk', None)
+        budget = ctx['budget_map'].get((og_id, ut_id))
+        if budget and budget.average_price:
+            return budget.average_price, 0, 0, 0
+    else:
+        try:
+            budget = ProjectIncBudget.objects.get(project=contract.project, order_group=contract.order_group,
+                                                  unit_type=contract.unit_type)
+            if budget and budget.average_price: return budget.average_price, 0, 0, 0
+        except ProjectIncBudget.DoesNotExist:
+            pass
+        except Exception as e:
+            logger.debug("ProjectIncBudget 조회 실패 폴백: %s", e)
     try:
         if contract.unit_type and contract.unit_type.average_price: return contract.unit_type.average_price, 0, 0, 0
     except AttributeError:
         pass
+    fallback_price = getattr(contract, '_fallback_price', 0) or 0
+    if fallback_price:
+        return fallback_price, 0, 0, 0
     return 0, 0, 0, 0
 
 
@@ -168,19 +234,33 @@ def get_down_payment(contract, installment_order):
     if not contract or not installment_order or installment_order.pay_sort != '1': return None
     fixed = get_fixed_payment_amount(installment_order)
     if fixed is not None: return fixed
+    ctx = getattr(contract, '_project_pricing_ctx', None)
     try:
         sales_price = get_sales_price_by_gt(contract)
-        if sales_price: return PaymentPerInstallment.objects.get(sales_price=sales_price,
-                                                                 pay_order=installment_order).amount
+        if sales_price:
+            if ctx is not None:
+                amt = ctx['ppi_map'].get(sales_price.pk, {}).get(installment_order.pk)
+                if amt is not None:
+                    return amt
+            else:
+                return PaymentPerInstallment.objects.get(sales_price=sales_price,
+                                                         pay_order=installment_order).amount
     except Exception:
         pass
     if getattr(installment_order, 'calculation_method', 'auto') != 'ratio':
-        try:
-            down = DownPayment.objects.get(project=contract.project, order_group=contract.order_group,
-                                           unit_type=contract.unit_type)
-            if down.payment_amount: return down.payment_amount
-        except Exception:
-            pass
+        if ctx is not None:
+            og_id = getattr(contract, 'order_group_id', None) or getattr(contract.order_group, 'pk', None)
+            ut_id = getattr(contract, 'unit_type_id', None) or getattr(contract.unit_type, 'pk', None)
+            down = ctx['dp_map'].get((og_id, ut_id))
+            if down and down.payment_amount:
+                return down.payment_amount
+        else:
+            try:
+                down = DownPayment.objects.get(project=contract.project, order_group=contract.order_group,
+                                               unit_type=contract.unit_type)
+                if down.payment_amount: return down.payment_amount
+            except Exception:
+                pass
     try:
         price = get_contract_price(contract)[0]
         if not price: return None
@@ -191,12 +271,25 @@ def get_down_payment(contract, installment_order):
     return None
 
 
+def _filter_active_installments_for_contract(contract, ctx):
+    ut_sort = getattr(getattr(contract, 'unit_type', None), 'sort', None)
+    og_id = getattr(contract, 'order_group_id', None) or getattr(getattr(contract, 'order_group', None), 'pk', None)
+    return [
+        inst for inst in ctx['insts_by_type'].get(ut_sort, [])
+        if og_id not in ctx['excluded_og_ids_by_inst'].get(inst.pk, set())
+    ]
+
+
 def get_total_paid_down_payments(contract):
     if not contract: return 0
+    ctx = getattr(contract, '_project_pricing_ctx', None)
     try:
-        orders = InstallmentPaymentOrder.objects.filter(project=contract.project, type_sort=contract.unit_type.sort,
-                                                        pay_sort='1').exclude(
-            excluded_order_groups=contract.order_group)
+        if ctx is not None:
+            orders = [o for o in _filter_active_installments_for_contract(contract, ctx) if o.pay_sort == '1']
+        else:
+            orders = InstallmentPaymentOrder.objects.filter(project=contract.project, type_sort=contract.unit_type.sort,
+                                                            pay_sort='1').exclude(
+                excluded_order_groups=contract.order_group)
         return sum(filter(None, [get_down_payment(contract, o) for o in orders]))
     except Exception:
         return 0
@@ -214,11 +307,18 @@ def calculate_remain_payment(contract, remain_installment_order):
     if not contract or not remain_installment_order: return 0
     price = get_contract_price(contract)[0]
     if not price: return 0
+    ctx = getattr(contract, '_project_pricing_ctx', None)
     try:
-        others = InstallmentPaymentOrder.objects.filter(
-            project=contract.project,
-            type_sort=contract.unit_type.sort).exclude(pay_sort='3').exclude(
-            id=remain_installment_order.id).exclude(excluded_order_groups=contract.order_group)
+        if ctx is not None:
+            others = [
+                o for o in _filter_active_installments_for_contract(contract, ctx)
+                if o.pay_sort != '3' and o.id != remain_installment_order.id
+            ]
+        else:
+            others = InstallmentPaymentOrder.objects.filter(
+                project=contract.project,
+                type_sort=contract.unit_type.sort).exclude(pay_sort='3').exclude(
+                id=remain_installment_order.id).exclude(excluded_order_groups=contract.order_group)
         total_other_payments = 0
         for installment in others:
             total_other_payments += get_payment_amount(contract, installment)
@@ -242,9 +342,16 @@ def get_payment_amount(contract, installment_order):
     if sort == '3': return calculate_remain_payment(contract, installment_order)
     if sort not in ['1', '2', '3', '4']:
         if installment_order.pay_ratio: return int(price * (installment_order.pay_ratio / 100))
+        ctx = getattr(contract, '_project_pricing_ctx', None)
         try:
             sp = get_sales_price_by_gt(contract)
-            if sp: return PaymentPerInstallment.objects.get(sales_price=sp, pay_order=installment_order).amount
+            if sp:
+                if ctx is not None:
+                    amt = ctx['ppi_map'].get(sp.pk, {}).get(installment_order.pk)
+                    if amt is not None:
+                        return amt
+                else:
+                    return PaymentPerInstallment.objects.get(sales_price=sp, pay_order=installment_order).amount
         except Exception:
             pass
     return 0
@@ -254,13 +361,21 @@ def get_contract_payment_plan(contract):
     if not contract: return []
     cached = contract.get_cached_payment_plan()
     if cached is not None: return cached
+    ctx = getattr(contract, '_project_pricing_ctx', None)
     try:
         sp = get_sales_price_by_gt(contract)
-        manuals = {p.pay_order_id: p.amount for p in
-                   PaymentPerInstallment.objects.filter(sales_price=sp).select_related('pay_order')} if sp else {}
-        installments = InstallmentPaymentOrder.objects.filter(project=contract.project,
-                                                              type_sort=contract.unit_type.sort).exclude(
-            excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
+        if ctx is not None:
+            manuals = ctx['ppi_map'].get(sp.pk, {}) if sp else {}
+            installments = _filter_active_installments_for_contract(contract, ctx)
+        else:
+            manuals = {p.pay_order_id: p.amount for p in
+                       PaymentPerInstallment.objects.filter(sales_price=sp).select_related('pay_order')} if sp else {}
+            installments = list(
+                InstallmentPaymentOrder.objects.filter(
+                    project=contract.project,
+                    type_sort=contract.unit_type.sort,
+                ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
+            )
         plan = []
         for inst in installments:
             due = get_due_date_per_order(contract, inst, installments)
@@ -278,21 +393,66 @@ def get_contract_payment_plan(contract):
 def get_project_payment_summary(project, order_group=None, unit_type=None):
     if not project: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
     try:
-        contracts_q = project.contract_set.filter(is_active=True).select_related('contractprice', 'order_group',
-                                                                                 'unit_type',
-                                                                                 'key_unit__houseunit__floor_type')
+        contracts_q = project.contract_set.filter(is_active=True).select_related(
+            'contractor',
+            'contractprice',
+            'order_group',
+            'unit_type',
+            'key_unit__houseunit__floor_type',
+        )
         if order_group: contracts_q = contracts_q.filter(order_group=order_group)
         if unit_type: contracts_q = contracts_q.filter(unit_type=unit_type)
         contracts = list(contracts_q)
         if not contracts: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
-        inst_q = InstallmentPaymentOrder.objects.filter(project=project)
-        if order_group: inst_q = inst_q.exclude(excluded_order_groups=order_group)
-        if unit_type: inst_q = inst_q.filter(type_sort=unit_type.sort)
-        insts = list(inst_q.order_by('pay_code', 'pay_time'))
+
+        all_project_insts = list(
+            InstallmentPaymentOrder.objects.filter(project=project)
+            .prefetch_related('excluded_order_groups')
+            .order_by('pay_code', 'pay_time')
+        )
+        insts_by_type = {}
+        excluded_og_ids_by_inst = {}
+        for inst in all_project_insts:
+            insts_by_type.setdefault(inst.type_sort, []).append(inst)
+            excluded_og_ids_by_inst[inst.pk] = {og.pk for og in inst.excluded_order_groups.all()}
+
+        sp_map = {
+            (sp.order_group_id, sp.unit_type_id, sp.unit_floor_type_id): sp
+            for sp in SalesPriceByGT.objects.filter(project=project)
+        }
+        ppi_map = {}
+        for ppi in PaymentPerInstallment.objects.filter(sales_price__project=project):
+            ppi_map.setdefault(ppi.sales_price_id, {})[ppi.pay_order_id] = ppi.amount
+        dp_map = {
+            (dp.order_group_id, dp.unit_type_id): dp
+            for dp in DownPayment.objects.filter(project=project)
+        }
+        budget_map = {
+            (b.order_group_id, b.unit_type_id): b
+            for b in ProjectIncBudget.objects.filter(project=project)
+        }
+        pricing_ctx = {
+            'insts_by_type': insts_by_type,
+            'excluded_og_ids_by_inst': excluded_og_ids_by_inst,
+            'sp_map': sp_map,
+            'ppi_map': ppi_map,
+            'dp_map': dp_map,
+            'budget_map': budget_map,
+        }
+
+        og_pk = getattr(order_group, 'pk', order_group) if order_group else None
+        ut_sort = getattr(unit_type, 'sort', None) if unit_type else None
+        insts = [
+            inst for inst in all_project_insts
+            if (not og_pk or og_pk not in excluded_og_ids_by_inst.get(inst.pk, set()))
+            and (not ut_sort or inst.type_sort == ut_sort)
+        ]
+
         summaries = {i.id: {'installment_order': i, 'total_amount': 0, 'contract_count': 0,
                             'source_breakdown': {'calculated': 0, 'payment_per_installment': 0}} for i in insts}
         total, processed = 0, 0
         for c in contracts:
+            c._project_pricing_ctx = pricing_ctx
             try:
                 plan = get_contract_payment_plan(c)
                 has_pay = False

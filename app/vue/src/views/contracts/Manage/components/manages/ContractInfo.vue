@@ -53,9 +53,7 @@ const revealPurpose = ref('')
 const isRevealingRrn = ref(false)
 const revealedResult = ref<ContractorRevealResult | null>(null)
 
-const canCollectContractorRrn = computed(
-  () => !(props.contractor.status === '1' && props.contractor.qualification === '1'),
-)
+const canCollectContractorRrn = computed(() => props.contractor.status !== '1')
 
 const openRrnEditModal = () => {
   rrnForm.rrn = ''
@@ -410,7 +408,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             <span class="ms-2">{{ contractor.reservation_date || '-' }}</span>
           </CCol>
         </CRow>
-        <CRow class="align-items-center">
+        <CRow v-if="canCollectContractorRrn || contractor.has_rrn" class="align-items-center">
           <CCol :sm="12" class="d-flex flex-wrap align-items-center gap-2">
             <strong>주민등록번호 :</strong>
             <span v-if="contractor.has_rrn" class="font-monospace">

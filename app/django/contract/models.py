@@ -320,17 +320,22 @@ class ContractPrice(models.Model):
             # InstallmentPaymentOrder 직접 조회하여 납부 계획 계산 (상단 import 사용)
             from _utils.contract_price import get_payment_amount
 
-            # 임시 계약 객체 생성 - get_payment_amount 함수용
+            # 임시 계약 객체 생성 - get_payment_amount 함수용 (세대 층별 SalesPriceByGT 및 폴백 가격 연결)
             class TempContract:
-                def __init__(self, _project, order_group, unit_type):
+                def __init__(self, _project, order_group, unit_type, house_unit, fallback_price):
                     self.project = _project
                     self.order_group = order_group
                     self.unit_type = unit_type
+                    self.key_unit = getattr(house_unit, 'key_unit', None)
+                    self._temp_houseunit = house_unit
+                    self._fallback_price = fallback_price
 
             temp_contract = TempContract(
                 project,
                 default_order_group,
-                self.house_unit.unit_type
+                self.house_unit.unit_type,
+                self.house_unit,
+                self.price,
             )
 
             # 해당 프로젝트와 타입의 분할납부차수 조회
@@ -398,11 +403,14 @@ class ContractPrice(models.Model):
             return 0
 
         # pay_sort와 매칭되는 모든 pay_time의 금액 합계
-        # 해당 계약의 프로젝트에서 pay_sort에 해당하는 모든 pay_time 조회
-        pay_times = InstallmentPaymentOrder.objects.filter(
+        # 해당 계약의 프로젝트 및 유닛 타입(type_sort)에서 pay_sort에 해당하는 모든 pay_time 조회
+        qs = InstallmentPaymentOrder.objects.filter(
             project=self.contract.project,
-            pay_sort=pay_sort
-        ).values_list('pay_time', flat=True)
+            pay_sort=pay_sort,
+        )
+        if getattr(self.contract, 'unit_type', None) and getattr(self.contract.unit_type, 'sort', None):
+            qs = qs.filter(type_sort=self.contract.unit_type.sort)
+        pay_times = qs.values_list('pay_time', flat=True)
 
         total_amount = 0
         for pay_time in pay_times:

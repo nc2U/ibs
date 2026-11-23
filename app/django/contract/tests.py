@@ -1732,15 +1732,15 @@ class ContractorSensitiveInfoTests(APITestCase):
         import openpyxl
         from contract.models import ContractorSensitiveAccessLog, ContractorSensitiveInfo
 
-        # 1. 단순 일반 청약자는 수집 차단
+        # 1. 청약자(status='1', 일반/조합 무관)는 수집 차단
         subs_contract = Contract.objects.create(
             project=self.project,
             serial_number='SUB-001',
-            order_group=OrderGroup.objects.create(project=self.project, order_number=2, sort='2', name='일반'),
+            order_group=self.order_group_coop,
             unit_type=self.unit_type,
         )
         subs_contractor = Contractor.objects.create(
-            contract=subs_contract, name='청약자', qualification='1', status='1', is_active=True
+            contract=subs_contract, name='청약자', qualification='2', status='1', is_active=True
         )
         self.client.force_authenticate(user=self.staff_user)
         res_subs = self.client.post(f'/api/v1/contractor/{subs_contractor.pk}/sensitive-info/', {
@@ -1962,6 +1962,248 @@ class ContractorSensitiveInfoTests(APITestCase):
                 purpose__contains='보존기한 만료 자동 파기',
             ).exists()
         )
+
+    def test_second_pass_audit_fixes(self):
+        """Admin XSS/RLS, 다중 주소 이력 수정, 유닛 할당/타프로젝트 계좌 검증, 잠금프로젝트 PDF 차단 검증"""
+        from django.contrib.admin.sites import AdminSite
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import RequestFactory
+        from rest_framework import serializers
+        from contract.admin import ContactorAdmin, ContractDocumentInline, OrderGroupAdmin
+        from contract.models import (
+            ContractDocument,
+            ContractDocumentFile,
+            ContractorSensitiveInfo,
+            DocumentType,
+            RequiredDocument,
+        )
+        from contract.services import (
+            ContractorRegistrationService,
+            ContractorSensitiveService,
+            PaymentProcessingService,
+            UnitAssignmentService,
+        )
+
+        # 1. Admin ContractDocumentInline.files_info: '<script>' 및 '{brace}' 포함 파일명 안전 이스케이프
+        doc_type = DocumentType.objects.create(name='주민등록등본_테스트')
+        req_doc = RequiredDocument.objects.create(project=self.project, document_type=doc_type, quantity=1)
+        cd = ContractDocument.objects.create(contractor=self.contractor, required_document=req_doc, submitted_quantity=1)
+        cdf = ContractDocumentFile.objects.create(
+            contract_document=cd,
+            file=SimpleUploadedFile('test.pdf', b'%PDF-1.4'),
+        )
+        ContractDocumentFile.objects.filter(pk=cdf.pk).update(file_name='<script>{evil}</script>.pdf')
+        inline = ContractDocumentInline(Contractor, AdminSite())
+        rendered_html = str(inline.files_info(cd))
+        self.assertNotIn('<script>', rendered_html)
+        self.assertIn('&lt;script&gt;{evil}', rendered_html)
+        cdf.delete()
+
+        # 2. Admin get_queryset 프로젝트 권한 격리(RLS) 검증
+        other_ip = IssueProject.objects.create(
+            company=self.company, name='Other IP', slug='other-ip', creator=self.superuser
+        )
+        other_proj = Project.objects.create(
+            issue_project=other_ip,
+            name='Other Project',
+            order=2,
+            kind='1',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24,
+        )
+        other_og = OrderGroup.objects.create(project=other_proj, order_number=1, sort='1', name='타현장차수')
+        rf = RequestFactory()
+        req = rf.get('/admin/contract/ordergroup/')
+        req.user = self.staff_user
+        og_admin = OrderGroupAdmin(OrderGroup, AdminSite())
+        self.assertNotIn(other_og, og_admin.get_queryset(req))
+        self.assertIn(self.order_group_coop, og_admin.get_queryset(req))
+
+        cont_admin = ContactorAdmin(Contractor, AdminSite())
+        self.assertIn(self.contractor, cont_admin.get_queryset(req))
+
+        # 3. 다중 주소 이력(is_current=False + is_current=True) 보유 계약자 수정 시 MultipleObjectsReturned 없이 현주소 갱신
+        ContractorAddress.objects.create(
+            contractor=self.contractor,
+            id_zipcode='01000',
+            id_address1='서울 종로구 구주소',
+            dm_zipcode='01000',
+            dm_address1='서울 종로구 구주소',
+            is_current=False,
+        )
+        ContractorRegistrationService.update_contractor(
+            self.contractor,
+            {
+                'name': '홍길동',
+                'gender': 'M',
+                'status': '2',
+                'id_zipcode': '06500',
+                'id_address1': '서울 서초구 신주소',
+                'dm_zipcode': '06500',
+                'dm_address1': '서울 서초구 신주소',
+                'cell_phone': '010-1111-2222',
+            },
+        )
+        self.assertEqual(self.contractor.contractoraddress.id_address1, '서울 서초구 신주소')
+
+        # 4. UnitAssignmentService: 존재하지 않는 유닛 / 타 프로젝트 유닛 할당 시 400 ValidationError
+        with self.assertRaises(serializers.ValidationError):
+            UnitAssignmentService.assign_unit(self.contract, 999999)
+
+        other_ut = UnitType.objects.create(
+            project=other_proj, name='84B', sort='1', color='#000000', average_price=100, num_unit=1
+        )
+        other_ku = KeyUnit.objects.create(project=other_proj, unit_type=other_ut, unit_code='O-1')
+        with self.assertRaises(serializers.ValidationError):
+            UnitAssignmentService.assign_unit(self.contract, other_ku.pk)
+
+        # 5. PaymentProcessingService: 타 프로젝트 입금 계좌 전달 시 400 ValidationError
+        ProjectAccount.objects.get_or_create(
+            name='분양수입테스트',
+            defaults={'direction': 'deposit', 'category': 'equity', 'is_payment': True},
+        )
+        bank_code, _ = BankCode.objects.get_or_create(code='004', defaults={'name': 'KB국민은행'})
+        other_bank_acc = ProjectBankAccount.objects.create(
+            project=other_proj, bankcode=bank_code, alias_name='타현장계좌', number='123-456'
+        )
+        with self.assertRaises(serializers.ValidationError):
+            PaymentProcessingService.process_initial_payment(
+                self.contract,
+                self.contractor,
+                {
+                    'deal_date': '2026-02-01',
+                    'project': self.project.pk,
+                    'order_group_sort': '1',
+                    'bank_account': other_bank_acc.pk,
+                    'amount': 1000000,
+                },
+                self.superuser,
+            )
+
+        # 6. 잠금 보관 프로젝트(IssueProject.status == '9')는 입주증명서 PDF 발급 차단 (403)
+        self.issue_project.status = '9'
+        self.issue_project.save(update_fields=['status'])
+        self.client.force_login(user=self.superuser)
+        res_pdf_locked = self.client.get(f'/pdf/cert-occupancy/?contract={self.contract.pk}')
+        self.assertEqual(res_pdf_locked.status_code, http_status.HTTP_403_FORBIDDEN)
+        self.issue_project.status = '1'
+        self.issue_project.save(update_fields=['status'])
+
+        # 7. 해지 신청 취소(status='9') 복구 시 retention_until 초기화 검증
+        ContractorSensitiveService.upsert_rrn(
+            contractor=self.contractor, raw_rrn='900512-1234567', actor=self.superuser
+        )
+        ContractorSensitiveService.schedule_retention(self.contractor, base_date=date(2026, 2, 1))
+        self.assertIsNotNone(ContractorSensitiveInfo.objects.get(contractor=self.contractor).retention_until)
+
+        release = ContractorRelease.objects.create(
+            project=self.project,
+            contractor=self.contractor,
+            request_date=date(2026, 2, 10),
+            release_type='1',
+            status='1',
+        )
+        self.client.force_authenticate(user=self.superuser)
+        res_rel_cancel = self.client.patch(f'/api/v1/contractor-release/{release.pk}/', {
+            'status': '9',
+            'request_date': '2026-02-10',
+        }, format='json')
+        self.assertEqual(res_rel_cancel.status_code, http_status.HTTP_200_OK)
+        self.assertIsNone(ContractorSensitiveInfo.objects.get(contractor=self.contractor).retention_until)
+
+    def test_third_pass_pricing_n_plus_1_cache_and_limits(self):
+        """미계약 세대 자체 price 반영, type_sort 분리 합산, payment-summary N+1 제거·캐시 무효화, non_conts_num, 파일 50MB 제한 검증"""
+        from types import SimpleNamespace
+        from _utils.contract_price import (
+            bump_payment_summary_cache_version,
+            get_payment_summary_cache_version,
+            get_project_payment_summary,
+        )
+        from apiV1.serializers.contract import ContractDocumentFileSerializer, ContractFileSerializer
+
+        # 기본 미계약 차수 및 납부회차 설정
+        self.order_group_coop.is_default_for_uncontracted = True
+        self.order_group_coop.save(update_fields=['is_default_for_uncontracted'])
+        InstallmentPaymentOrder.objects.create(
+            project=self.project, type_sort='1', pay_sort='1', pay_code=1, pay_time=1, pay_name='계약금', pay_ratio=10.0
+        )
+        InstallmentPaymentOrder.objects.create(
+            project=self.project, type_sort='1', pay_sort='3', pay_code=2, pay_time=2, pay_name='잔금', pay_ratio=90.0
+        )
+        # 타 타입(type_sort='2')의 동일 pay_sort='3' 회차 추가 (get_payment_amount_by_sort 혼입 방지 확인용)
+        InstallmentPaymentOrder.objects.create(
+            project=self.project, type_sort='2', pay_sort='3', pay_code=99, pay_time=99, pay_name='상가잔금', pay_ratio=100.0
+        )
+
+        # 1. 미계약 세대 ContractPrice가 세대 floor_type 기준 SalesPriceByGT(4.2억)를 정상 참조하는지 검증
+        floor_type = UnitFloorType.objects.create(project=self.project, sort='1', start_floor=1, end_floor=5, alias_name='저층')
+        SalesPriceByGT.objects.create(
+            project=self.project,
+            order_group=self.order_group_coop,
+            unit_type=self.unit_type,
+            unit_floor_type=floor_type,
+            price=420000000,
+        )
+        bldg = BuildingUnit.objects.create(project=self.project, name='201동')
+        hu_uncont = HouseUnit.objects.create(
+            unit_type=self.unit_type, building_unit=bldg, floor_type=floor_type, name='201호', bldg_line=1, floor_no=2
+        )
+        cp_uncont = ContractPrice.objects.create(contract=None, house_unit=hu_uncont, price=420000000)
+        self.assertTrue(cp_uncont.is_cache_valid)
+        self.assertEqual(cp_uncont.payment_amounts.get('1'), 42000000)
+        self.assertEqual(cp_uncont.payment_amounts.get('2'), 378000000)
+        self.assertEqual(sum(cp_uncont.payment_amounts.values()), 420000000)
+
+        # 2. 계약 세대 get_payment_amount_by_sort('3')가 타 타입(type_sort='2', pay_time='99')을 제외하고 합산하는지 검증
+        cp_cont = ContractPrice.objects.create(contract=self.contract, price=500000000)
+        cp_cont.payment_amounts['99'] = 99999999
+        cp_cont.save(update_fields=['payment_amounts'])
+        self.assertEqual(cp_cont.get_payment_amount_by_sort('3'), 450000000)
+
+        # 3. get_project_payment_summary N+1 제거 검증 (계약 수와 무관하게 고정 쿼리 8회 이하)
+        for idx in range(2, 7):
+            c_extra = Contract.objects.create(
+                project=self.project,
+                serial_number=f'RRN-00{idx}',
+                order_group=self.order_group_coop,
+                unit_type=self.unit_type,
+                is_active=True,
+            )
+            Contractor.objects.create(
+                contract=c_extra, name=f'계약자{idx}', status='2', contract_date=date(2026, 2, 1), is_active=True
+            )
+            ContractPrice.objects.create(contract=c_extra, price=500000000)
+
+        with self.assertNumQueries(7):
+            summary = get_project_payment_summary(self.project)
+        self.assertEqual(summary['total_contracts'], 6)
+        self.assertEqual(summary['grand_total'], 500000000 * 6)
+
+        # 4. 캐시 버전 증가(무효화) 검증
+        v1 = get_payment_summary_cache_version(self.project.pk)
+        bump_payment_summary_cache_version(self.project.pk)
+        v2 = get_payment_summary_cache_version(self.project.pk)
+        self.assertGreater(v2, v1)
+
+        # 5. ContractAggregateSerializer의 non_conts_num 노출 검증
+        self.project.num_unit = 100
+        self.project.save(update_fields=['num_unit'])
+        self.client.force_authenticate(user=self.superuser)
+        res_agg = self.client.get(f'/api/v1/cont-aggregate/{self.project.pk}/')
+        self.assertEqual(res_agg.status_code, http_status.HTTP_200_OK)
+        self.assertIn('non_conts_num', res_agg.data)
+        self.assertEqual(res_agg.data['non_conts_num'], 94)
+
+        # 6. 첨부파일 50MB 초과 시 ValidationError 검증
+        oversized = SimpleNamespace(size=51 * 1024 * 1024)
+        with self.assertRaises(Exception):
+            ContractFileSerializer.validate_file(oversized)
+        with self.assertRaises(Exception):
+            ContractDocumentFileSerializer.validate_file(oversized)
+
+
 
 
 

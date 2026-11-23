@@ -267,6 +267,7 @@ const setKeyCode = () => {
 const unitReset = () => {
   nextTick(() => {
     if (!form.status) formDataReset()
+    else if (form.status !== '2') form.rrn = ''
   })
 }
 
@@ -559,11 +560,8 @@ onMounted(() => {
   formDataSetup()
 })
 
-const canInputRrn = computed(
-  () => isContract.value || (!!form.status && form.qualification !== '1'),
-)
-
 const applyRrnMeta = () => {
+  if (!isContract.value) return
   const parsed = parseRrnMeta(form.rrn)
   if (!parsed) return
   form.birth_date = parsed.birthDate
@@ -778,7 +776,9 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid> {{ contLabel }}자명을 입력하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 생년월일</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label" :class="{ required: isContract }">
+          생년월일
+        </CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <DatePicker
             v-model="form.birth_date"
@@ -830,7 +830,7 @@ onBeforeRouteLeave(() => formDataReset())
         </CCol>
       </CRow>
 
-      <CRow v-if="canInputRrn" class="mb-3">
+      <CRow v-if="isContract" class="mb-3">
         <CFormLabel class="col-sm-2 col-lg-1 col-form-label">주민번호</CFormLabel>
         <CCol sm="10" lg="3" class="mb-sm-3 mb-lg-0">
           <input
@@ -840,6 +840,7 @@ onBeforeRouteLeave(() => formDataReset())
             class="form-control"
             maxlength="14"
             autocomplete="off"
+            :disabled="!isContract"
             :placeholder="
               contractor?.has_rrn
                 ? `기존 등록: ${contractor.rrn_masked} (변경 시 재입력)`
@@ -942,7 +943,7 @@ onBeforeRouteLeave(() => formDataReset())
                       [{{ i + 1 }}]
                     </CTableDataCell>
                     <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
-                    <CTableDataCell class="text-right">
+                    <CTableDataCell class="text-end">
                       <router-link
                         v-c-tooltip="'건별 납부 관리'"
                         :to="{
@@ -1146,7 +1147,7 @@ onBeforeRouteLeave(() => formDataReset())
             :disabled="!isContract || !!address?.dm_zipcode"
           />
         </CCol>
-        <CCol sm="12" lg="1" class="mb-3 pl-0">
+        <CCol sm="12" lg="1" class="mb-3 ps-0">
           <v-checkbox-btn
             v-if="!address?.id_zipcode || !address?.dm_zipcode"
             id="to-same"
@@ -1188,14 +1189,14 @@ onBeforeRouteLeave(() => formDataReset())
       />
     </CCardBody>
 
-    <CCardFooter class="text-right">
+    <CCardFooter class="text-end">
       <v-btn
         v-if="canContractManage"
         type="submit"
         :color="contract ? 'success' : 'primary'"
         :disabled="!form.status || formsCheck"
       >
-        <v-icon icon="mdi-check-circle-outline" class="mr-2" />
+        <v-icon icon="mdi-check-circle-outline" class="me-2" />
         저장
       </v-btn>
       <v-btn type="button" color="light" @click="$emit('close')" flat>닫기</v-btn>
