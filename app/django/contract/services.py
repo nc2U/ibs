@@ -585,7 +585,7 @@ class ContractorSensitiveService:
         try:
             plain_rrn = decrypt_rrn(info.encrypted_rrn, formatted=formatted)
         except DjangoValidationError as exc:
-            raise serializers.ValidationError({'detail': exc.messages[0] if exc.messages else str(exc)}) from exc
+            raise serializers.ValidationError({'detail': '주민등록번호를 복호화할 수 없습니다.'}) from exc
 
         project_id, serial_number = ContractorSensitiveService._contractor_context_snapshot(contractor)
         ContractorSensitiveAccessLog.objects.create(
