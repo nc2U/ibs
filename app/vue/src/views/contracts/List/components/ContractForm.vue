@@ -412,7 +412,7 @@ const formDataSetup = () => {
     form.contract_date = contractor.value?.contract_date ?? null
     form.note = contractor.value?.note ?? ''
     form.rrn = ''
-    form.rrn_legal_basis = (contractor.value?.rrn_legal_basis as '1' | '2' | '3') || '1'
+    form.rrn_legal_basis = contractor.value?.rrn_legal_basis || '1'
 
     // address
     if (contractor.value?.status === '2') {

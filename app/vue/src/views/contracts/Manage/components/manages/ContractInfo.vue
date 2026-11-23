@@ -57,7 +57,7 @@ const canCollectContractorRrn = computed(() => props.contractor.status !== '1')
 
 const openRrnEditModal = () => {
   rrnForm.rrn = ''
-  rrnForm.legal_basis = (props.contractor.rrn_legal_basis as '1' | '2' | '3') || '1'
+  rrnForm.legal_basis = props.contractor.rrn_legal_basis || '1'
   rrnForm.purpose = '계약자 식별정보 등록/갱신'
   refRrnEditModal.value?.callModal()
 }
