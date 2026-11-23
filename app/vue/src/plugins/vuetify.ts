@@ -4,24 +4,22 @@ import 'vuetify/styles'
 
 // Vuetify
 import { createVuetify } from 'vuetify'
+import { ko } from 'vuetify/locale'
 
 const myCustomLightTheme = {
-  // dark: false,
+  dark: false,
   colors: {
-    // background: '#FFFFFF',
-    // surface: '#FFFFFF',
-    // primary: '#6200EE',
-    // 'primary-darken-1': '#3700B3',
     secondary: '#CCCDCE',
-    // 'secondary-darken-1': '#018786',
-    // error: '#B00020',
-    // info: '#2196F3',
-    // success: '#4CAF50',
-    // warning: '#FB8C00',
+    danger: '#B00020',
   },
 }
 
 export default createVuetify({
+  locale: {
+    locale: 'ko',
+    fallback: 'en',
+    messages: { ko },
+  },
   theme: {
     defaultTheme: 'myCustomLightTheme',
     themes: {
@@ -29,4 +27,3 @@ export default createVuetify({
     },
   },
 })
-// https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
