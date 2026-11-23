@@ -3,14 +3,30 @@ import { defineStore } from 'pinia'
 
 export type ThemeType = 'default' | 'dark' | 'auto'
 
+const readStorage = (key: string): string | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+const writeStorage = (key: string, value: string) => {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // ignore storage access or quota errors
+  }
+}
+
 export const useStore = defineStore('store', () => {
   const asideVisible = ref(false)
-  const sidebarVisible = ref(
-    !localStorage?.getItem?.('sidebarVisible') ||
-      localStorage?.getItem?.('sidebarVisible') === 'true',
-  )
-  const sidebarUnfoldable = ref(localStorage?.getItem?.('sidebarUnfoldable') === 'true')
-  const theme = ref<ThemeType>((localStorage?.getItem?.('theme') as ThemeType) || 'default')
+  const storedSidebarVisible = readStorage('sidebarVisible')
+  const sidebarVisible = ref(!storedSidebarVisible || storedSidebarVisible === 'true')
+  const sidebarUnfoldable = ref(readStorage('sidebarUnfoldable') === 'true')
+  const theme = ref<ThemeType>((readStorage('theme') as ThemeType) || 'default')
   const systemDark = ref(
     typeof window !== 'undefined' && window.matchMedia
       ? window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -26,9 +42,12 @@ export const useStore = defineStore('store', () => {
     return false
   })
 
+  let themeListenerInitialized = false
+
   // OS 다크모드 미디어 쿼리 리스너 초기화
   const initThemeListener = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return
+    if (themeListenerInitialized || typeof window === 'undefined' || !window.matchMedia) return
+    themeListenerInitialized = true
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     systemDark.value = mediaQuery.matches
 
@@ -42,19 +61,19 @@ export const useStore = defineStore('store', () => {
 
   const toggleSidebar = () => {
     sidebarVisible.value = !sidebarVisible.value
-    localStorage.setItem('sidebarVisible', String(sidebarVisible.value))
+    writeStorage('sidebarVisible', String(sidebarVisible.value))
   }
   const toggleTheme = (payload: ThemeType) => {
     theme.value = payload
-    localStorage.setItem('theme', payload)
+    writeStorage('theme', payload)
   }
   const toggleUnfoldable = () => {
     sidebarUnfoldable.value = !sidebarUnfoldable.value
-    localStorage.setItem('sidebarUnfoldable', String(sidebarUnfoldable.value))
+    writeStorage('sidebarUnfoldable', String(sidebarUnfoldable.value))
   }
   const updateSidebarVisible = (payload: boolean) => {
     sidebarVisible.value = payload
-    localStorage.setItem('sidebarVisible', String(payload))
+    writeStorage('sidebarVisible', String(payload))
   }
   const startSpinner = () => (LoadingStatus.value = true)
 

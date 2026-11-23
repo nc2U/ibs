@@ -38,7 +38,7 @@ export const useSchedule = defineStore('schedule', () => {
     return await api
       .get(`/schedule/?search=${mon}`)
       .then(res => (scheduleList.value = res.data.results))
-      .catch(err => errorHandle(err.response))
+      .catch(err => errorHandle(err))
   }
 
   const createSchedule = async (payload: Event) => {
@@ -46,19 +46,20 @@ export const useSchedule = defineStore('schedule', () => {
     return await api
       .post('/schedule/', eventData)
       .then(res => {
-        const mon = res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
+        const mon =
+          res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
         return fetchScheduleList(mon)
           .then(() => fetchSchedule(res.data.pk))
           .then(() => message())
       })
-      .catch(err => errorHandle(err.response))
+      .catch(err => errorHandle(err))
   }
 
   const fetchSchedule = (pk: number) =>
     api
       .get(`/schedule/${pk}/`)
       .then(res => (schedule.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateSchedule = async (payload: { pk: string; data: Event }) => {
     const { pk, data } = payload
@@ -66,23 +67,24 @@ export const useSchedule = defineStore('schedule', () => {
     return await api
       .put(`/schedule/${pk}/`, eventData)
       .then(res => {
-        const mon = res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
+        const mon =
+          res.data.start_date?.substring(0, 7) || res.data.start_time?.substring(0, 7) || ''
         return fetchScheduleList(mon)
           .then(() => fetchSchedule(res.data.pk))
           .then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteSchedule = (pk: string, mon: string) => {
     api
-      .delete(`/schedule/${pk}`)
+      .delete(`/schedule/${pk}/`)
       .then(() =>
         fetchScheduleList(mon).then(() =>
           message('warning', '알림!', '해당 일정이 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   return {

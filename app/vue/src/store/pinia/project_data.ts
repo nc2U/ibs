@@ -48,19 +48,19 @@ export const useProjectData = defineStore('projectData', () => {
       .then(res => {
         unitTypeList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createType = (payload: UnitType) =>
     api
       .post(`/type/`, payload)
       .then(res => fetchTypeList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateType = (payload: UnitType) =>
     api
       .put(`/type/${payload.pk}/`, payload)
       .then(res => fetchTypeList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteType = (pk: number, project: number) =>
     api
@@ -70,7 +70,7 @@ export const useProjectData = defineStore('projectData', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const floorTypeList = ref<UnitFloorType[]>([])
@@ -93,19 +93,19 @@ export const useProjectData = defineStore('projectData', () => {
     api
       .get(`/floor/?project=${projId}&sort=${sort || ''}`)
       .then(res => (floorTypeList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createFloorType = (payload: UnitFloorType) =>
     api
       .post(`/floor/`, payload)
       .then(res => fetchFloorTypeList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateFloorType = (payload: UnitFloorType) =>
     api
       .put(`/floor/${payload.pk}/`, payload)
       .then(res => fetchFloorTypeList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteFloorType = (pk: number, project: number) =>
     api
@@ -115,7 +115,7 @@ export const useProjectData = defineStore('projectData', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const buildingList = ref<BuildingUnit[]>([])
@@ -125,19 +125,19 @@ export const useProjectData = defineStore('projectData', () => {
     api
       .get(`/bldg/?project=${projId}`)
       .then(res => (buildingList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createBuilding = (payload: BuildingUnit) =>
     api
       .post(`/bldg/`, payload)
       .then(res => fetchBuildingList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateBuilding = (payload: BuildingUnit) =>
     api
       .put(`/bldg/${payload.pk}/`, payload)
       .then(res => fetchBuildingList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteBuilding = (pk: number, project: number) =>
     api
@@ -147,7 +147,7 @@ export const useProjectData = defineStore('projectData', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const houseUnitList = ref<AllHouseUnit[]>([])
@@ -198,21 +198,21 @@ export const useProjectData = defineStore('projectData', () => {
         houseUnitList.value = res.data.results
         isLoading.value = false
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchNumUnitByType = (project: number, unit_type: number) =>
     api
       .get(`/house-unit/?building_unit__project=${project || ''}&unit_type=${unit_type}`)
       .then(res => (numUnitByType.value = res.data.count))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createUnit = async (payload: CreateUnit) => {
     const { project, unit_type, ...restPayload } = payload
     const { unit_code, ...unitPayload } = restPayload
     const houseUnits = { ...{ project, unit_type }, ...unitPayload, unit_code }
 
-    await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err.response.data))
+    await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err))
     await fetchNumUnitByType(project, unit_type)
   }
 
@@ -221,7 +221,7 @@ export const useProjectData = defineStore('projectData', () => {
     return await api
       .put(`/house-unit/${pk}/`, unitData)
       .then(res => fetchNumUnitByType(project, res.data.unit_type).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchUnit = async (payload: HouseUnit & { bldg: number }) => {
@@ -229,7 +229,7 @@ export const useProjectData = defineStore('projectData', () => {
     return await api
       .put(`/house-unit/${pk}/`, unitData)
       .then(() => fetchHouseUnitList(project, bldg).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteUnit = (pk: number, project: number, unit_type: number) =>
@@ -240,7 +240,7 @@ export const useProjectData = defineStore('projectData', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const optionItemList = ref<OptionItem[]>([])
@@ -250,19 +250,19 @@ export const useProjectData = defineStore('projectData', () => {
     api
       .get(`/option-item/?project=${proj}`)
       .then(res => (optionItemList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   // const fetchOptionItem = (pk: number) => api.get(`/option-item/${pk}/`)
 
   const createOptionItem = (payload: OptionItem) =>
     api
       .post(`/option-item/`, payload)
       .then(res => fetchOptionItemList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   const updateOptionItem = (payload: OptionItem) =>
     api
       .put(`/option-item/${payload.pk}/`, payload)
       .then(res => fetchOptionItemList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   const deleteOptionItem = (pk: number, proj: number) =>
     api
       .delete(`/option-item/${pk}/`)
@@ -271,7 +271,7 @@ export const useProjectData = defineStore('projectData', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     unitTypeList,

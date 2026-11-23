@@ -8,6 +8,8 @@ import { usePermission } from '@/store/pinia/work_permission'
 import { useLogging } from '@/store/pinia/work_logging'
 import { useSearch } from '@/store/pinia/work_search'
 import { useInform } from '@/store/pinia/work_inform'
+import { useApproval } from '@/store/pinia/approval'
+import { useChat } from '@/store/pinia/chat'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
 import type { LocationQueryValue } from 'vue-router'
@@ -28,11 +30,17 @@ export type UserByAdmin = {
 }
 type LoginUser = { email: string; password: string; redirect?: string }
 
-const extractId = (token: string) => {
-  const base64Payload = token.split('.')[1]
-  const payload = Buffer.from(base64Payload, 'base64')
-  const result = JSON.parse(payload.toString())
-  return result.user_id ? result.user_id : null
+const extractId = (token: string): number | null => {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2 || !parts[1]) return null
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = Buffer.from(base64, 'base64')
+    const result = JSON.parse(payload.toString())
+    return result?.user_id ?? null
+  } catch {
+    return null
+  }
 }
 
 export const useAccount = defineStore('account', () => {
@@ -135,6 +143,7 @@ export const useAccount = defineStore('account', () => {
 
       // 사용자 정보 요청
       const userId = extractId(accessToken)
+      if (!userId) throw new Error('Invalid access token')
       const userResponse = await api.get(`/user/${userId}/`)
 
       // API 응답을 확인하고 처리
@@ -155,21 +164,31 @@ export const useAccount = defineStore('account', () => {
     }
   }
 
+  const clearAuthSession = () => {
+    userInfo.value = null
+    profile.value = null
+    todoList.value = []
+    accessToken.value = ''
+    delete api.defaults.headers.common.Authorization
+    Cookies.remove('accessToken')
+  }
+
   const loginByToken = async (token?: string) => {
-    if (token) {
-      setToken(token)
-      return await api
-        .get(`/user/${extractId(token)}/`)
-        .then(res => setUser(res.data))
-        .catch(() => {
-          userInfo.value = null
-          profile.value = null
-          todoList.value = []
-          accessToken.value = ''
-          delete api.defaults.headers.common.Authorization
-          Cookies.remove('accessToken')
-        })
-    } else return await Promise.resolve()
+    if (!token) return await Promise.resolve()
+
+    const userId = extractId(token)
+    if (!userId) {
+      clearAuthSession()
+      return null
+    }
+
+    setToken(token)
+    return await api
+      .get(`/user/${userId}/`)
+      .then(res => setUser(res.data))
+      .catch(() => {
+        clearAuthSession()
+      })
   }
 
   const logout = () => {
@@ -178,15 +197,17 @@ export const useAccount = defineStore('account', () => {
     const loggingStore = useLogging()
     const searchStore = useSearch()
     const informStore = useInform()
+    const approvalStore = useApproval()
+    const chatStore = useChat()
     workStore.reset()
     permStore.reset()
     loggingStore.reset()
     searchStore.reset()
     informStore.reset()
+    approvalStore.reset()
+    chatStore.reset()
     user.value = null
     usersList.value = []
-    userInfo.value = null
-    profile.value = null
     passChecked.value = false
     docScrape.value = null
     docScrapeList.value = []
@@ -194,10 +215,7 @@ export const useAccount = defineStore('account', () => {
     scrape.value = null
     scrapeList.value = []
     scrapeCount.value = 0
-    todoList.value = []
-    accessToken.value = ''
-    delete api.defaults.headers.common.Authorization
-    Cookies.remove('accessToken')
+    clearAuthSession()
     message('info', '', '로그아웃 완료 알림!')
   }
 

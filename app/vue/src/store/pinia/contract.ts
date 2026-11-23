@@ -40,7 +40,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/order-group/?project=${project}&&sort=${sort}`)
       .then(res => (orderGroupList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createOrderGroup = (payload: OrderGroup) =>
     api
@@ -48,13 +48,13 @@ export const useContract = defineStore('contract', () => {
       .then(res => {
         fetchOrderGroupList(res.data.project).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateOrderGroup = (payload: OrderGroup) =>
     api
       .put(`/order-group/${payload.pk}/`, payload)
       .then(res => fetchOrderGroupList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteOrderGroup = (payload: { pk: number; project: number }) =>
     api
@@ -64,7 +64,7 @@ export const useContract = defineStore('contract', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters
   const documentTypeList = ref<{ pk: number; name: string }[]>([])
@@ -72,7 +72,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/document-type/`)
       .then(res => (documentTypeList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters
   const requiredDocsList = ref<RequiredDocs[]>([])
@@ -80,7 +80,7 @@ export const useContract = defineStore('contract', () => {
     await api
       .get(`/required-docs/?project=${project}`)
       .then(res => (requiredDocsList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createRequiredDoc = async (payload: RequiredDocs) => {
     return await api
@@ -91,7 +91,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -105,7 +105,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -118,7 +118,7 @@ export const useContract = defineStore('contract', () => {
         message('warning', '알림!', '구비 서류가 삭제되었습니다.')
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -149,7 +149,7 @@ export const useContract = defineStore('contract', () => {
         `/key-unit/?project=${project}&unit_type=${unit_type}&contract=${contract}&available=${available}`,
       )
       .then(res => (keyUnitList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
   const fetchHouseUnitList = async (payload: {
     project: number
@@ -164,7 +164,7 @@ export const useContract = defineStore('contract', () => {
     return await api
       .get(url)
       .then(res => (houseUnitList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
   const fetchSalePriceList = async (payload: {
     project: number
@@ -179,7 +179,7 @@ export const useContract = defineStore('contract', () => {
     return await api
       .get(url)
       .then(res => (salesPriceList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
   const fetchDownPayList = async (payload: {
     project: number
@@ -194,7 +194,7 @@ export const useContract = defineStore('contract', () => {
     return await api
       .get(url)
       .then(res => (downPaymentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters
@@ -206,20 +206,18 @@ export const useContract = defineStore('contract', () => {
   const getContracts = ref<{ value: number; label: string }[]>([])
   const getAllContractors = ref<{ value: number; label: string; contract: number | null }[]>([])
 
-  const contractLogs = ref([])
-
   // actions
   const fetchAllContracts = async (project: number) =>
     await api
       .get(`/simple-contract/?project=${project}`)
       .then(res => (getContracts.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchAllContractors = async (project: number) =>
     await api
       .get(`/simple-contractor/?project=${project}`)
       .then(res => (getAllContractors.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const contractPages = (itemsPerPage: number) => Math.ceil(contractsCount.value / itemsPerPage)
 
@@ -227,7 +225,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contract-set/${pk}/`)
       .then(res => (contract.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeContract = () => (contract.value = null)
 
@@ -279,7 +277,7 @@ export const useContract = defineStore('contract', () => {
         contractsCount.value = res.data.count
         isLoading.value = false
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findContractPage = async (highlightId: number, filters: ContFilter) => {
@@ -314,7 +312,7 @@ export const useContract = defineStore('contract', () => {
         await fetchContractList(filter)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateContractSet = (pk: number, payload: FormData) =>
     api
@@ -325,7 +323,7 @@ export const useContract = defineStore('contract', () => {
         await fetchContractList({ ...contractFilter.value, page: currentPage })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const contractor = ref<Contractor | null>(null)
   const contractorList = ref<Contractor[]>([])
@@ -335,7 +333,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contractor/${pk}/?project=${project || ''}`)
       .then(res => (contractor.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeContractor = () => (contractor.value = null)
 
@@ -343,7 +341,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contractor/?contract__project=${project}&search=${search}&is_active=true`)
       .then(res => (contractorList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchContractor = (
@@ -356,7 +354,7 @@ export const useContract = defineStore('contract', () => {
       .then(res => {
         contractor.value = res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters
   const createContractFile = async (contractorId: number, file: File, contract: number) => {
@@ -374,7 +372,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -393,7 +391,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -406,7 +404,7 @@ export const useContract = defineStore('contract', () => {
         message('warning', '파일이 삭제되었습니다.')
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -419,7 +417,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contract-docs/?contractor=${contractor}&sort=${sort || ''}&limit=1000`)
       .then(res => (contractDocumentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createContractDocument = async (payload: ContractDocument) => {
     return await api
@@ -430,7 +428,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -444,7 +442,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -457,7 +455,7 @@ export const useContract = defineStore('contract', () => {
         message('warning', '알림!', '서류 기록이 삭제되었습니다.')
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -492,7 +490,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -505,7 +503,7 @@ export const useContract = defineStore('contract', () => {
         message('warning', '파일이 삭제되었습니다.')
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -517,9 +515,11 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contractor-address/?contractor=${contractor}&is_current=${is_current}`)
       .then(res => (contAddressList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const createContAddress = (payload: Omit<AddressInContractor, 'pk'> | Partial<ContractorAddress>) =>
+  const createContAddress = (
+    payload: Omit<AddressInContractor, 'pk'> | Partial<ContractorAddress>,
+  ) =>
     api
       .post(`/contractor-address/`, payload)
       .then(async res => {
@@ -533,7 +533,7 @@ export const useContract = defineStore('contract', () => {
           message('danger', '데이터 갱신 에러', `${error}`, 5000)
         }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchContAddress = (
     pk: number,
@@ -552,7 +552,7 @@ export const useContract = defineStore('contract', () => {
           message('danger', '데이터 갱신 에러', `${error}`, 5000)
         }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // Consultation Logs
   const consultationLogList = ref<ConsultationLog[]>([])
@@ -598,7 +598,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -616,7 +616,7 @@ export const useContract = defineStore('contract', () => {
         return res.data
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -631,7 +631,7 @@ export const useContract = defineStore('contract', () => {
         message('warning', '알림!', '상담 내역이 삭제되었습니다.')
       })
       .catch(err => {
-        errorHandle(err.response.data)
+        errorHandle(err)
         throw err
       })
   }
@@ -648,7 +648,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/succession/${pk}/`)
       .then(res => (succession.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchSuccessionList = (project: number, page = 1) =>
     api
@@ -657,7 +657,7 @@ export const useContract = defineStore('contract', () => {
         successionList.value = res.data.results
         successionCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createSuccession = async (
     payload: Succession & BuyerForm & { project: number; page: number },
@@ -670,7 +670,7 @@ export const useContract = defineStore('contract', () => {
           fetchContractor(res.data.buyer.pk).then(() => message()),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchSuccession = async (
@@ -684,7 +684,7 @@ export const useContract = defineStore('contract', () => {
           fetchContractor(res.data.buyer.pk).then(() => message()),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteSuccession = async (pk: number, project: number, page = 1) => {
@@ -698,7 +698,7 @@ export const useContract = defineStore('contract', () => {
           message('warning', '', '해당 승계 건이 삭제되었습니다.')
         }),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findSuccessionPage = async (highlightId: number, projectId: number) => {
@@ -743,7 +743,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/contractor-release/${pk}/`)
       .then(res => (contRelease.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchContReleaseList = (project: number, page = 1) =>
     api
@@ -752,7 +752,7 @@ export const useContract = defineStore('contract', () => {
         contReleaseList.value = res.data.results
         contReleaseCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createRelease = (payload: ContractRelease) =>
     api
@@ -762,7 +762,7 @@ export const useContract = defineStore('contract', () => {
         await fetchContReleaseList(payload.project)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateRelease = (payload: ContractRelease & { page: number }) =>
     api
@@ -772,7 +772,7 @@ export const useContract = defineStore('contract', () => {
         await fetchContReleaseList(payload.project, payload.page)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteRelease = (pk: number, project: number, page = 1) =>
     api
@@ -783,7 +783,7 @@ export const useContract = defineStore('contract', () => {
         await fetchContReleaseList(project, page)
         message('warning', '', '해당 해지 건이 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // 일괄 가격 업데이트 미리보기
   const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {
@@ -875,13 +875,13 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/subs-sum/?project=${project}`)
       .then(res => (subsSummaryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchContSummaryList = (project: number, date = '') =>
     api
       .get(`/cont-sum/?project=${project}&to_contract_date=${date}`)
       .then(res => (contSummaryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeContAggregate = () => (contAggregate.value = null)
 
@@ -889,7 +889,7 @@ export const useContract = defineStore('contract', () => {
     api
       .get(`/cont-aggregate/${project}/`)
       .then(res => (contAggregate.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     orderGroupList,

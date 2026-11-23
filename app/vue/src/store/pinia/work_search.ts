@@ -62,7 +62,9 @@ export const useSearch = defineStore('work_search', () => {
       if (
         seq !== searchSeq ||
         (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) ||
-        (typeof err === 'object' && err !== null && (err as { code?: string }).code === 'ERR_CANCELED')
+        (typeof err === 'object' &&
+          err !== null &&
+          (err as { code?: string }).code === 'ERR_CANCELED')
       ) {
         return
       }

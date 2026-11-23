@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
+import type { AxiosRequestConfig } from 'axios'
 import { ref, computed } from 'vue'
 import api from '@/api'
 import Cookies from 'js-cookie'
 import type {
+  ChatUser,
   ChatRoom,
   ChatMessage,
   ChatSearchResult,
@@ -10,6 +12,8 @@ import type {
   ChatContextResult,
 } from '@/store/types/chat'
 import { useAccount } from '@/store/pinia/account'
+
+type SilentRequestConfig = AxiosRequestConfig & { hideProgress?: boolean }
 
 export const useChat = defineStore('chat', () => {
   const accountStore = useAccount()
@@ -22,7 +26,7 @@ export const useChat = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
   const totalUnreadCount = ref(0)
   const isConnecting = ref(false)
-  const usersList = ref<any[]>([])
+  const usersList = ref<ChatUser[]>([])
   const isLoadingUsers = ref(false)
 
   // 📜 커서 기반 페이지네이션 & 윈도우잉 상태
@@ -32,7 +36,7 @@ export const useChat = defineStore('chat', () => {
   const atLatest = ref(true)
 
   let ws: WebSocket | null = null
-  let reconnectTimer: any = null
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let reconnectAttempts = 0
   let hasConnectedOnce = false
 
@@ -73,24 +77,27 @@ export const useChat = defineStore('chat', () => {
 
   const fetchRooms = async () => {
     try {
-      const res = await api.get('/chat-room/', { hideProgress: true } as any)
+      const config: SilentRequestConfig = { hideProgress: true }
+      const res = await api.get('/chat-room/', config)
       rooms.value = res.data.results || res.data
       // rooms 목록의 unread_count를 기반으로 실시간 즉각 합산 반영
       const sum = rooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0)
       if (sum > 0 || totalUnreadCount.value === 0) {
         totalUnreadCount.value = sum
       }
-    } catch (_) {}
+    } catch {
+      // silent polling error
+    }
   }
 
   const fetchUsers = async () => {
     isLoadingUsers.value = true
     try {
-      const res = await api.get('/chat-room/available-users/', {
-        hideProgress: true,
-      } as any)
+      const config: SilentRequestConfig = { hideProgress: true }
+      const res = await api.get('/chat-room/available-users/', config)
       usersList.value = res.data.results || res.data
-    } catch (_) {
+    } catch {
+      // silent error
     } finally {
       isLoadingUsers.value = false
     }
@@ -98,9 +105,12 @@ export const useChat = defineStore('chat', () => {
 
   const fetchTotalUnread = async () => {
     try {
-      const res = await api.get('/chat-room/total-unread/', { hideProgress: true } as any)
+      const config: SilentRequestConfig = { hideProgress: true }
+      const res = await api.get('/chat-room/total-unread/', config)
       totalUnreadCount.value = res.data.total_unread || 0
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
   }
 
   const getOrCreateDm = async (targetUserId: number) => {
@@ -133,21 +143,31 @@ export const useChat = defineStore('chat', () => {
     options: { beforeId?: number; afterId?: number } = {},
   ): Promise<{ results: ChatMessage[]; has_more: boolean }> => {
     try {
-      const res = await api.get('/chat-message/', {
+      const config: SilentRequestConfig = {
         params: {
           room: roomId,
           ...(options.beforeId ? { before_id: options.beforeId } : {}),
           ...(!options.beforeId && options.afterId ? { after_id: options.afterId } : {}),
         },
         hideProgress: true,
-      } as any)
+      }
+      const res = await api.get('/chat-message/', config)
       const data = res.data
       const results: ChatMessage[] = data.results || data || []
       const has_more: boolean = data.has_more ?? false
       return { results, has_more }
-    } catch (_) {
+    } catch {
       return { results: [], has_more: false }
     }
+  }
+
+  const closeSocket = (socket: WebSocket | null) => {
+    if (!socket) return
+    socket.onopen = null
+    socket.onmessage = null
+    socket.onclose = null
+    socket.onerror = null
+    socket.close()
   }
 
   const enterRoom = async (room: ChatRoom) => {
@@ -164,25 +184,29 @@ export const useChat = defineStore('chat', () => {
       // 읽음 처리 (마지막 메시지 ID 전달)
       const lastMsg = messages.value.length ? messages.value[messages.value.length - 1] : null
       const lastId = lastMsg?.id || 0
-      await api.post(`/chat-room/${room.id}/read/`, { last_message_id: lastId }, {
-        hideProgress: true,
-      } as any)
+      const config: SilentRequestConfig = { hideProgress: true }
+      await api.post(`/chat-room/${room.id}/read/`, { last_message_id: lastId }, config)
       room.unread_count = 0
       fetchTotalUnread()
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
 
     connectWebSocket(room.id)
   }
 
   const leaveRoom = () => {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
     reconnectAttempts = 0
     hasConnectedOnce = false
     if (ws) {
-      ws.close()
+      closeSocket(ws)
       ws = null
     }
+    isConnecting.value = false
     currentRoom.value = null
     messages.value = []
     hasMoreOlder.value = false
@@ -191,7 +215,12 @@ export const useChat = defineStore('chat', () => {
 
   /// ⬆️ 더 오래된 메시지 불러오기 (위로 스크롤 시)
   const loadOlder = async (): Promise<boolean> => {
-    if (isLoadingOlder.value || !hasMoreOlder.value || !messages.value.length || !currentRoom.value) {
+    if (
+      isLoadingOlder.value ||
+      !hasMoreOlder.value ||
+      !messages.value.length ||
+      !currentRoom.value
+    ) {
       return false
     }
     isLoadingOlder.value = true
@@ -206,7 +235,7 @@ export const useChat = defineStore('chat', () => {
         messages.value = [...older, ...messages.value]
       }
       return older.length > 0
-    } catch (_) {
+    } catch {
       return false
     } finally {
       isLoadingOlder.value = false
@@ -231,12 +260,11 @@ export const useChat = defineStore('chat', () => {
       }
       if (atLatest.value && messages.value.length) {
         const last = messages.value[messages.value.length - 1]
-        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, {
-          hideProgress: true,
-        } as any)
+        const config: SilentRequestConfig = { hideProgress: true }
+        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, config)
       }
       return newer.length > 0
-    } catch (_) {
+    } catch {
       return false
     } finally {
       isLoadingNewer.value = false
@@ -256,7 +284,7 @@ export const useChat = defineStore('chat', () => {
         return messages.value.some(m => m.id === messageId)
       }
       return false
-    } catch (_) {
+    } catch {
       return false
     }
   }
@@ -271,11 +299,12 @@ export const useChat = defineStore('chat', () => {
       messages.value = page.results
       const last = messages.value.length ? messages.value[messages.value.length - 1] : null
       if (last) {
-        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, {
-          hideProgress: true,
-        } as any)
+        const config: SilentRequestConfig = { hideProgress: true }
+        api.post(`/chat-room/${currentRoom.value.id}/read/`, { last_message_id: last.id }, config)
       }
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
   }
 
   /// 최신 메시지 갱신 (삭제 등 반영)
@@ -292,20 +321,18 @@ export const useChat = defineStore('chat', () => {
       const kept = messages.value.filter(m => m.id < firstId)
       if (!kept.length) hasMoreOlder.value = page.has_more
       messages.value = [...kept, ...fetched]
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
   }
 
   const exitAndHideRoom = async (roomId: number) => {
-    try {
-      await api.post(`/chat-room/${roomId}/leave/`, {})
-      if (currentRoom.value?.id === roomId) {
-        leaveRoom()
-      }
-      await fetchRooms()
-      await fetchTotalUnread()
-    } catch (e) {
-      throw e
+    await api.post(`/chat-room/${roomId}/leave/`, {})
+    if (currentRoom.value?.id === roomId) {
+      leaveRoom()
     }
+    await fetchRooms()
+    await fetchTotalUnread()
   }
 
   /// 재연결 직후 끊겨 있던 동안 놓친 메시지를 보충
@@ -324,23 +351,36 @@ export const useChat = defineStore('chat', () => {
         }
         if (!page.has_more || !newer.length) break
       }
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
   }
 
   const scheduleReconnect = (roomId: number) => {
     if (!currentRoom.value || currentRoom.value.id !== roomId) return
-    clearTimeout(reconnectTimer)
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
     const delaySeconds = Math.min(20, Math.max(2, Math.pow(2, reconnectAttempts)))
     reconnectAttempts++
     reconnectTimer = setTimeout(() => {
-      if (currentRoom.value && currentRoom.value.id === roomId && (!ws || ws.readyState === WebSocket.CLOSED)) {
+      reconnectTimer = null
+      if (
+        currentRoom.value &&
+        currentRoom.value.id === roomId &&
+        (!ws || ws.readyState === WebSocket.CLOSED)
+      ) {
         connectWebSocket(roomId)
       }
     }, delaySeconds * 1000)
   }
 
   const connectWebSocket = (roomId: number) => {
-    if (ws) ws.close()
+    if (ws) {
+      closeSocket(ws)
+      ws = null
+    }
 
     const token = Cookies.get('accessToken')
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -348,9 +388,11 @@ export const useChat = defineStore('chat', () => {
     const wsUrl = `${protocol}//${host}/ws/chat/${roomId}/?token=${token || ''}`
 
     isConnecting.value = true
-    ws = new WebSocket(wsUrl)
+    const socket = new WebSocket(wsUrl)
+    ws = socket
 
-    ws.onopen = () => {
+    socket.onopen = () => {
+      if (ws !== socket) return
       isConnecting.value = false
       reconnectAttempts = 0
       if (hasConnectedOnce) {
@@ -359,7 +401,8 @@ export const useChat = defineStore('chat', () => {
       hasConnectedOnce = true
     }
 
-    ws.onmessage = event => {
+    socket.onmessage = event => {
+      if (ws !== socket) return
       try {
         const payload = JSON.parse(event.data)
         if (payload.type === 'chat_message') {
@@ -379,9 +422,8 @@ export const useChat = defineStore('chat', () => {
 
             // 내가 보낸 메시지가 아닐 때(상대방 메시지)에만 읽음 처리 전송
             if (!isMe && currentRoom.value && currentRoom.value.id === roomId) {
-              api.post(`/chat-room/${roomId}/read/`, { last_message_id: msg.id }, {
-                hideProgress: true,
-              } as any)
+              const config: SilentRequestConfig = { hideProgress: true }
+              api.post(`/chat-room/${roomId}/read/`, { last_message_id: msg.id }, config)
               if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(
                   JSON.stringify({
@@ -428,17 +470,20 @@ export const useChat = defineStore('chat', () => {
         } else if (payload.type === 'error') {
           console.error('[WebSocket Chat Error]', payload.message)
         }
-      } catch (_) {}
+      } catch {
+        // ignore invalid ws payload
+      }
     }
 
-    ws.onclose = () => {
+    socket.onclose = () => {
+      if (ws !== socket) return
       isConnecting.value = false
       scheduleReconnect(roomId)
     }
 
-    ws.onerror = () => {
+    socket.onerror = () => {
+      if (ws !== socket) return
       isConnecting.value = false
-      scheduleReconnect(roomId)
     }
   }
 
@@ -479,7 +524,9 @@ export const useChat = defineStore('chat', () => {
       if (!messages.value.some(m => m.id === savedMsg.id)) {
         messages.value.push(savedMsg)
       }
-    } catch (_) {}
+    } catch {
+      // silent error
+    }
   }
 
   const uploadFile = async (file: File, comment = '', replyToId?: number) => {
@@ -499,34 +546,28 @@ export const useChat = defineStore('chat', () => {
       formData.append('reply_to', String(replyToId))
     }
 
-    try {
-      const res = await api.post('/chat-message/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        hideProgress: true,
-      } as any)
-      const savedMsg = res.data
-      if (!messages.value.some(m => m.id === savedMsg.id)) {
-        messages.value.push(savedMsg)
-      }
-      return savedMsg
-    } catch (e) {
-      throw e
+    const config: SilentRequestConfig = {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      hideProgress: true,
     }
+    const res = await api.post('/chat-message/', formData, config)
+    const savedMsg = res.data
+    if (!messages.value.some(m => m.id === savedMsg.id)) {
+      messages.value.push(savedMsg)
+    }
+    return savedMsg
   }
 
   const deleteMessage = async (messageId: number, roomId?: number) => {
-    try {
-      const targetRoomId = roomId || currentRoom.value?.id
-      await api.delete(`/chat-message/${messageId}/`, {
-        params: targetRoomId ? { room: targetRoomId } : {},
-        hideProgress: true,
-      } as any)
-      // 웹소켓 미연결 시 로컬 동기화 (웹소켓 연결 시에는 ws.onmessage의 delete_message 이벤트가 자동 처리)
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await refreshMessages()
-      }
-    } catch (e) {
-      throw e
+    const targetRoomId = roomId || currentRoom.value?.id
+    const config: SilentRequestConfig = {
+      params: targetRoomId ? { room: targetRoomId } : {},
+      hideProgress: true,
+    }
+    await api.delete(`/chat-message/${messageId}/`, config)
+    // 웹소켓 미연결 시 로컬 동기화 (웹소켓 연결 시에는 ws.onmessage의 delete_message 이벤트가 자동 처리)
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      await refreshMessages()
     }
   }
 
@@ -538,36 +579,27 @@ export const useChat = defineStore('chat', () => {
     page?: number
     pageSize?: number
   }): Promise<ChatSearchResult> => {
-    try {
-      const res = await api.get('/chat-message/search/', {
-        params: {
-          q: params.q,
-          room: params.room,
-          type: params.type || 'all',
-          page: params.page || 1,
-          page_size: params.pageSize || 30,
-        },
-        hideProgress: true,
-      } as any)
-      return res.data
-    } catch (e) {
-      throw e
+    const config: SilentRequestConfig = {
+      params: {
+        q: params.q,
+        room: params.room,
+        type: params.type || 'all',
+        page: params.page || 1,
+        page_size: params.pageSize || 30,
+      },
+      hideProgress: true,
     }
+    const res = await api.get('/chat-message/search/', config)
+    return res.data
   }
 
-  const fetchMessageContext = async (
-    messageId: number,
-    limit = 15,
-  ): Promise<ChatContextResult> => {
-    try {
-      const res = await api.get('/chat-message/context/', {
-        params: { message_id: messageId, limit },
-        hideProgress: true,
-      } as any)
-      return res.data
-    } catch (e) {
-      throw e
+  const fetchMessageContext = async (messageId: number, limit = 15): Promise<ChatContextResult> => {
+    const config: SilentRequestConfig = {
+      params: { message_id: messageId, limit },
+      hideProgress: true,
     }
+    const res = await api.get('/chat-message/context/', config)
+    return res.data
   }
 
   const fetchChatFiles = async (params: {
@@ -576,20 +608,25 @@ export const useChat = defineStore('chat', () => {
     page?: number
     pageSize?: number
   }): Promise<ChatFilesResult> => {
-    try {
-      const res = await api.get('/chat-message/files/', {
-        params: {
-          room: params.room,
-          tab: params.tab || 'all',
-          page: params.page || 1,
-          page_size: params.pageSize || 30,
-        },
-        hideProgress: true,
-      } as any)
-      return res.data
-    } catch (e) {
-      throw e
+    const config: SilentRequestConfig = {
+      params: {
+        room: params.room,
+        tab: params.tab || 'all',
+        page: params.page || 1,
+        page_size: params.pageSize || 30,
+      },
+      hideProgress: true,
     }
+    const res = await api.get('/chat-message/files/', config)
+    return res.data
+  }
+
+  const reset = () => {
+    isDrawerOpen.value = false
+    leaveRoom()
+    rooms.value = []
+    usersList.value = []
+    totalUnreadCount.value = 0
   }
 
   return {
@@ -633,5 +670,6 @@ export const useChat = defineStore('chat', () => {
     loadAround,
     jumpToLatest,
     refreshMessages,
+    reset,
   }
 })

@@ -1,7 +1,13 @@
 import api from '@/api'
+import type { AxiosRequestConfig } from 'axios'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { message, errorHandle } from '@/utils/helper'
+
+type SilentRequestConfig = AxiosRequestConfig & {
+  hideProgress?: boolean
+  skipErrorInterceptor?: boolean
+}
 import type {
   DocCategory,
   DocumentType,
@@ -86,7 +92,7 @@ export const useApproval = defineStore('approval', () => {
     return await api
       .get(`/approval-document/preview_route/?${params}`)
       .then(res => (routePreview.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // ── 결재 문서 ─────────────────────────────────────────
@@ -105,14 +111,14 @@ export const useApproval = defineStore('approval', () => {
         documentList.value = res.data.results ?? res.data
         documentCount.value = res.data.count ?? documentList.value.length
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchDocument = (pk: number) =>
     api
       .get(`/approval-document/${pk}/`)
       .then(res => (document.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createDocument = async (payload: PatchApprovalDocument | FormData) => {
     try {
@@ -123,8 +129,8 @@ export const useApproval = defineStore('approval', () => {
       await fetchMyDrafted()
       message()
       return res.data as ApprovalDocument
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -136,8 +142,8 @@ export const useApproval = defineStore('approval', () => {
       document.value = res.data
       message()
       return res.data as ApprovalDocument
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -146,8 +152,8 @@ export const useApproval = defineStore('approval', () => {
       await api.delete(`/approval-document/${pk}/`)
       await fetchMyDrafted()
       message()
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -158,8 +164,8 @@ export const useApproval = defineStore('approval', () => {
         await fetchDocument(docId)
       }
       message()
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -189,11 +195,12 @@ export const useApproval = defineStore('approval', () => {
   const startPollingMyPending = () => {
     if (pollingTimer) return
     pollingTimer = setInterval(async () => {
+      const config: SilentRequestConfig = {
+        skipErrorInterceptor: true,
+        hideProgress: true,
+      }
       await api
-        .get('/approval-document/my_pending/', {
-          skipErrorInterceptor: true,
-          hideProgress: true,
-        } as any)
+        .get('/approval-document/my_pending/', config)
         .then(res => (pendingList.value = res.data))
         .catch(err => console.warn('Polling my_pending failed:', err?.message))
     }, 60000)
@@ -246,7 +253,7 @@ export const useApproval = defineStore('approval', () => {
         allDocumentList.value = res.data.results ?? res.data
         allDocumentsCount.value = res.data.count ?? allDocumentList.value.length
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // ── 결재 액션 ─────────────────────────────────────────
@@ -257,8 +264,8 @@ export const useApproval = defineStore('approval', () => {
       await fetchMyDrafted()
       message()
       return res.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -269,8 +276,8 @@ export const useApproval = defineStore('approval', () => {
       await fetchDocument(pk)
       message()
       return res.data
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -279,8 +286,8 @@ export const useApproval = defineStore('approval', () => {
       await api.post(`/approval-document/${pk}/cancel/`)
       await fetchMyDrafted()
       message()
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
     }
   }
 
@@ -291,7 +298,7 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-delegation/')
       .then(res => (delegationList.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createDelegation = (payload: Partial<ApprovalDelegation>) =>
     api
@@ -300,7 +307,7 @@ export const useApproval = defineStore('approval', () => {
         message()
         await fetchDelegationList()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateDelegation = (id: number, payload: Partial<ApprovalDelegation>) =>
     api
@@ -309,7 +316,7 @@ export const useApproval = defineStore('approval', () => {
         message()
         await fetchDelegationList()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteDelegation = (id: number) =>
     api
@@ -318,7 +325,26 @@ export const useApproval = defineStore('approval', () => {
         message()
         await fetchDelegationList()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
+
+  const reset = () => {
+    stopPollingMyPending()
+    docCategoryList.value = []
+    docTypeList.value = []
+    forDraftDocTypeList.value = []
+    myAssignments.value = []
+    routePreview.value = []
+    document.value = null
+    documentList.value = []
+    documentCount.value = 0
+    pendingList.value = []
+    draftedList.value = []
+    approvedList.value = []
+    observedList.value = []
+    allDocumentList.value = []
+    allDocumentsCount.value = 0
+    delegationList.value = []
+  }
 
   return {
     // state
@@ -362,8 +388,9 @@ export const useApproval = defineStore('approval', () => {
     createDelegation,
     updateDelegation,
     deleteDelegation,
-    // polling
+    // polling & reset
     startPollingMyPending,
     stopPollingMyPending,
+    reset,
   }
 })

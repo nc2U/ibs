@@ -45,7 +45,7 @@ export const useProject = defineStore('project', () => {
         projectList.value = res.data.results
         projectsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const project = ref<Project | null>(null)
@@ -68,7 +68,7 @@ export const useProject = defineStore('project', () => {
           permStore.setProjectRole(null)
         }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeProject = () => {
     project.value = null
@@ -81,13 +81,13 @@ export const useProject = defineStore('project', () => {
     api
       .post('/project/', payload)
       .then(res => fetchProjectList().then(() => fetchProject(res.data.pk).then(() => message())))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateProject = (payload: Project) =>
     api
       .put(`/project/${payload.pk}/`, payload)
       .then(res => fetchProject(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteProject = (pk: number) =>
     api
@@ -95,7 +95,7 @@ export const useProject = defineStore('project', () => {
       .then(() =>
         fetchProjectList().then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.')),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const proIncBudgetList = ref<ProIncBudget[]>([])
@@ -106,13 +106,13 @@ export const useProject = defineStore('project', () => {
     api
       .get(`/inc-budget/?project=${project}`)
       .then(res => (proIncBudgetList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchIncBudget = (pk: number) =>
     api
       .get(`/inc-budget/${pk}/`)
       .then(res => (proIncBudget.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createIncBudget = (payload: ProIncBudget) =>
     api
@@ -122,7 +122,7 @@ export const useProject = defineStore('project', () => {
           fetchIncBudget(res.data.pk).then(() => message()),
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateIncBudget = (payload: ProIncBudget) =>
     api
@@ -132,7 +132,7 @@ export const useProject = defineStore('project', () => {
           fetchIncBudget(res.data.pk).then(() => message()),
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchIncBudgetList = (project: number, pk: number, budget: number) =>
     api.patch(`/Inc-budget/${pk}/`, { budget }).then(() => fetchIncBudgetList(project))
@@ -145,7 +145,7 @@ export const useProject = defineStore('project', () => {
           message('warning', '', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const proOutBudgetList = ref<ProOutBudget[]>([])
@@ -156,13 +156,13 @@ export const useProject = defineStore('project', () => {
     api
       .get(`/out-budget/?project=${project}`)
       .then(res => (proOutBudgetList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchOutBudget = (pk: number) =>
     api
       .get(`/out-budget/${pk}/`)
       .then(res => (proOutBudget.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createOutBudget = (payload: ProOutBudget) =>
     api
@@ -172,7 +172,7 @@ export const useProject = defineStore('project', () => {
           fetchOutBudget(res.data.pk).then(() => message()),
         )
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateOutBudget = (payload: ProOutBudget) =>
     api
@@ -180,7 +180,7 @@ export const useProject = defineStore('project', () => {
       .then(res => {
         fetchOutBudgetList(res.data.project).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchOutBudget = (project: number, pk: number, budget: number) =>
     api.patch(`/out-budget/${pk}/`, { budget }).then(() => fetchOutBudgetList(project))
@@ -193,7 +193,7 @@ export const useProject = defineStore('project', () => {
           message('warning', '', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const statusOutBudgetList = ref<StatusOutBudget[]>([])
@@ -203,7 +203,7 @@ export const useProject = defineStore('project', () => {
     api
       .get(`/status-budget/?project=${project}&use_ledger=${useLedger}`)
       .then(res => (statusOutBudgetList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchStatusOutBudget = (
     payload: {
@@ -234,7 +234,7 @@ export const useProject = defineStore('project', () => {
           execAmountList.value = res.data.results
         }
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     projectList,

@@ -2,13 +2,38 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { IssueFilter } from '@/store/types/work_issue.ts'
 
+type SavedUserFilterVal = number | 'me' | null
+
+interface SavedIssueQuery {
+  pk?: number
+  filters?: {
+    searchCond?: string[]
+    cond?: Record<string, string>
+    form?: Record<string, string | number | boolean | null | undefined> & {
+      watcher?: SavedUserFilterVal
+      creator?: SavedUserFilterVal
+      author?: SavedUserFilterVal
+      updater?: SavedUserFilterVal
+      assigned_to?: SavedUserFilterVal
+      assignee?: SavedUserFilterVal
+      project?: string
+    }
+    watcher?: SavedUserFilterVal
+    creator?: SavedUserFilterVal
+    author?: SavedUserFilterVal
+    updater?: SavedUserFilterVal
+    assigned_to?: SavedUserFilterVal
+    assignee?: SavedUserFilterVal
+  }
+}
+
 export const useIssueFilter = defineStore('issueFilter', () => {
   // 1. 활성화된 필터 조건 및 체크박스 상태
   const searchCond = ref<string[]>(['status'])
   const enabledFields = ref<string[]>(['status'])
 
   // 2. 연산자 조건 (is, exclude, gte, lte, between, none, any 등)
-  const defaultCond: Record<string, any> = {
+  const defaultCond: Record<string, string> = {
     status: 'open',
     project: 'is',
     tracker: 'is',
@@ -45,10 +70,10 @@ export const useIssueFilter = defineStore('issueFilter', () => {
     parent: 'is',
   }
 
-  const cond = ref<Record<string, any>>({ ...defaultCond })
+  const cond = ref<Record<string, string>>({ ...defaultCond })
 
   // 3. 폼 필드 입력값
-  const defaultForm: IssueFilter & Record<string, any> = {
+  const defaultForm: IssueFilter & Record<string, unknown> = {
     status__closed: '',
     status: null,
     status__exclude: null,
@@ -158,14 +183,14 @@ export const useIssueFilter = defineStore('issueFilter', () => {
     sub_project__isnull: '0',
   }
 
-  const form = ref<IssueFilter & Record<string, any>>({ ...defaultForm })
+  const form = ref<IssueFilter & Record<string, unknown>>({ ...defaultForm })
 
   // 4. 활성화된 저장 검색양식 ID
   const activeQueryId = ref<number | null>(null)
 
   // 5. 필터 파라미터 빌드 로직 (DRF API 쿼리 파라미터 생성)
   const buildFilterPayload = (currentProjectSlug = ''): IssueFilter => {
-    const filterData: IssueFilter & Record<string, any> = {
+    const filterData: IssueFilter & Record<string, unknown> = {
       status__closed: '0',
       project_status: '1',
     }
@@ -253,7 +278,12 @@ export const useIssueFilter = defineStore('issueFilter', () => {
           const exclRaw = form.value[`${fieldKey}__exclude`]
           const exclVal =
             exclRaw !== undefined && exclRaw !== null && exclRaw !== '' ? exclRaw : val
-          if (key === 'project_status' && exclVal !== undefined && exclVal !== null && exclVal !== '') {
+          if (
+            key === 'project_status' &&
+            exclVal !== undefined &&
+            exclVal !== null &&
+            exclVal !== ''
+          ) {
             delete filterData.project_status
           }
           filterData[`${fieldKey}__exclude`] = exclVal
@@ -264,7 +294,9 @@ export const useIssueFilter = defineStore('issueFilter', () => {
         filterData[`${fieldKey}__isnull`] = '0'
       } else if (operator === 'contains') {
         if (fieldKey === 'parent_issue' || fieldKey === 'parent') {
-          filterData[`${fieldKey}__contains`] = form.value[`${fieldKey}__contains`] || val
+          const containsVal = form.value[`${fieldKey}__contains`] ?? val
+          filterData[`${fieldKey}__contains`] =
+            containsVal !== null && containsVal !== undefined ? String(containsVal) : undefined
         } else {
           filterData[fieldKey] = val
         }
@@ -317,7 +349,7 @@ export const useIssueFilter = defineStore('issueFilter', () => {
 
   // 7. 저장된 쿼리 복원
   const applySavedQuery = (
-    query: any,
+    query: SavedIssueQuery | null | undefined,
     currentUserId?: number,
     _defaultUserId?: number,
     currentProjectSlug = '',
@@ -347,13 +379,19 @@ export const useIssueFilter = defineStore('issueFilter', () => {
     }
 
     const myId: number | string = currentUserId ?? 'me'
+    const resolveUser = (v: SavedUserFilterVal | undefined): number | null => {
+      const resolved = v === 'me' ? myId : v
+      return (resolved ?? null) as number | null
+    }
 
     if (f.form) {
-      const formPayload = { ...f.form }
-      if (formPayload.watcher === 'me') formPayload.watcher = myId
-      if (formPayload.author === 'me' || formPayload.creator === 'me') formPayload.author = myId
-      if (formPayload.updater === 'me') formPayload.updater = myId
-      if (formPayload.assignee === 'me' || formPayload.assigned_to === 'me') {
+      const formPayload: Record<string, string | number | boolean | null | undefined> = {
+        ...f.form,
+      }
+      if (f.form.watcher === 'me') formPayload.watcher = myId
+      if (f.form.author === 'me' || f.form.creator === 'me') formPayload.author = myId
+      if (f.form.updater === 'me') formPayload.updater = myId
+      if (f.form.assignee === 'me' || f.form.assigned_to === 'me') {
         formPayload.assignee = myId
       }
 
@@ -376,27 +414,27 @@ export const useIssueFilter = defineStore('issueFilter', () => {
         if (!searchCond.value.includes('watcher')) searchCond.value.push('watcher')
         if (!enabledFields.value.includes('watcher')) enabledFields.value.push('watcher')
         cond.value.watcher = 'is'
-        form.value.watcher = f.watcher === 'me' ? myId : f.watcher
+        form.value.watcher = resolveUser(f.watcher)
       }
       if (f.creator !== undefined || f.author !== undefined) {
         const creatorVal = f.creator ?? f.author
         if (!searchCond.value.includes('author')) searchCond.value.push('author')
         if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
         cond.value.author = 'is'
-        form.value.author = creatorVal === 'me' ? myId : creatorVal
+        form.value.author = resolveUser(creatorVal)
       }
       if (f.updater !== undefined) {
         if (!searchCond.value.includes('updater')) searchCond.value.push('updater')
         if (!enabledFields.value.includes('updater')) enabledFields.value.push('updater')
         cond.value.updater = 'is'
-        form.value.updater = f.updater === 'me' ? myId : f.updater
+        form.value.updater = resolveUser(f.updater)
       }
       if (f.assigned_to !== undefined || f.assignee !== undefined) {
         const assigneeVal = f.assigned_to ?? f.assignee
         if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
         if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
         cond.value.assignee = 'is'
-        form.value.assignee = assigneeVal === 'me' ? myId : assigneeVal
+        form.value.assignee = resolveUser(assigneeVal)
       }
     }
 

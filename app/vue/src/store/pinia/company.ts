@@ -1,8 +1,7 @@
 import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { useAccount } from '@/store/pinia/account'
-import { errorHandle, message } from '@/utils/helper'
+import { errorHandle, getErrorData, message } from '@/utils/helper'
 import { type Company, type Logo, type CompanySeal } from '@/store/types/settings'
 import {
   type Staff,
@@ -35,8 +34,6 @@ import {
 } from '@/store/types/company'
 
 export const useCompany = defineStore('company', () => {
-  const accountStore = useAccount()
-
   // states & getters
   const companyList = ref<Company[]>([])
   const company = ref<Company | null>(null)
@@ -63,16 +60,20 @@ export const useCompany = defineStore('company', () => {
     api
       .get('/company/')
       .then(res => (companyList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchCompany = async (pk: number) => {
     try {
       const res = await api.get(`/company/${pk}/`)
       company.value = res.data
       // Update the localStorage to prevent future errors
-      localStorage.setItem('curr-company', res.data.pk.toString())
+      try {
+        localStorage.setItem('curr-company', res.data.pk.toString())
+      } catch {
+        // ignore storage errors
+      }
       console.log(`Switched to company: ${res.data.name} (ID: ${res.data.pk})`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn(`Company with ID ${pk} not found, trying to fetch first available company`)
 
       // If company fetch fails, try to get the first available company
@@ -83,13 +84,19 @@ export const useCompany = defineStore('company', () => {
           company.value = firstCompany
 
           // Update the localStorage to prevent future errors
-          localStorage.setItem('curr-company', firstCompany.pk.toString())
+          try {
+            localStorage.setItem('curr-company', firstCompany.pk.toString())
+          } catch {
+            // ignore storage errors
+          }
           console.log(`Switched to company: ${firstCompany.name} (ID: ${firstCompany.pk})`)
         } else {
-          errorHandle(err.response?.data || { detail: 'No companies available' })
+          const errData = getErrorData(err)
+          errorHandle(errData === err ? { detail: 'No companies available' } : errData)
         }
-      } catch (fallbackErr: any) {
-        errorHandle(fallbackErr.response?.data || { detail: 'Failed to fetch companies' })
+      } catch (fallbackErr: unknown) {
+        const errData = getErrorData(fallbackErr)
+        errorHandle(errData === fallbackErr ? { detail: 'Failed to fetch companies' } : errData)
       }
     }
   }
@@ -100,13 +107,13 @@ export const useCompany = defineStore('company', () => {
     api
       .post(`/company/`, payload)
       .then(res => fetchCompanyList().then(() => fetchCompany(res.data.pk).then(() => message())))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateCompany = (payload: Company) =>
     api
       .put(`/company/${payload.pk}/`, payload)
       .then(res => fetchCompany(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteCompany = (pk: number) =>
     api
@@ -114,7 +121,7 @@ export const useCompany = defineStore('company', () => {
       .then(() =>
         fetchCompanyList().then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.')),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters
   const logo = ref<Logo | null>(null)
@@ -123,25 +130,25 @@ export const useCompany = defineStore('company', () => {
     api
       .get(`/logo/${pk}/`)
       .then(res => (logo.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createLogo = (payload: Logo) =>
     api
       .post(`/logo/`, payload)
       .then(res => fetchLogo(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateLogo = (payload: Logo) =>
     api
       .put(`/logo/${payload.pk}/`, payload)
       .then(res => fetchLogo(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteLogo = (pk: number) =>
     api
       .delete(`/logo/${pk}/`)
       .then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.'))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // states & getters - CompanySeal
   const sealList = ref<CompanySeal[]>([])
@@ -155,14 +162,14 @@ export const useCompany = defineStore('company', () => {
     return api
       .get(url)
       .then(res => (sealList.value = res.data.results || res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchCompanySeal = (pk: number) =>
     api
       .get(`/company-seal/${pk}/`)
       .then(res => (seal.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createCompanySeal = (payload: FormData | CompanySeal) =>
     api
@@ -170,7 +177,7 @@ export const useCompany = defineStore('company', () => {
         headers: payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
       })
       .then(() => fetchCompanySealList().then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateCompanySeal = (pk: number, payload: FormData | CompanySeal) =>
     api
@@ -178,7 +185,7 @@ export const useCompany = defineStore('company', () => {
         headers: payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
       })
       .then(() => fetchCompanySealList().then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteCompanySeal = (pk: number) =>
     api
@@ -186,7 +193,7 @@ export const useCompany = defineStore('company', () => {
       .then(() =>
         fetchCompanySealList().then(() => message('warning', '', '해당 인장이 삭제되었습니다.')),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const departmentList = ref<Department[]>([])
   const allDepartList = ref<Department[]>([])
@@ -227,7 +234,7 @@ export const useCompany = defineStore('company', () => {
         departmentList.value = res.data.results
         departmentsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllDepartList = (com = 1) =>
@@ -236,13 +243,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allDepartList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchDepartment = (pk: number) =>
     api
       .get(`/department/${pk}/`)
       .then(res => (department.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createDepartment = (payload: Department, page = 1, com = 1) =>
     api
@@ -253,7 +260,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDepartment(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateDepartment = (payload: Department, page = 1, com = 1) =>
     api
@@ -264,7 +271,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDepartment(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteDepartment = (pk: number, com = 1) =>
     api
@@ -274,7 +281,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDepartmentList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const gradeList = ref<Grade[]>([])
   const allGradeList = ref<Grade[]>([])
@@ -308,7 +315,7 @@ export const useCompany = defineStore('company', () => {
         gradeList.value = res.data.results
         gradesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllGradeList = (com = 1) =>
@@ -317,13 +324,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allGradeList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchGrade = (pk: number) =>
     api
       .get(`/grade/${pk}/`)
       .then(res => (grade.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createGrade = (payload: Grade, page = 1, com = 1) =>
     api
@@ -334,7 +341,7 @@ export const useCompany = defineStore('company', () => {
         await fetchGrade(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateGrade = (payload: Grade, page = 1, com = 1) =>
     api
@@ -345,7 +352,7 @@ export const useCompany = defineStore('company', () => {
         await fetchGrade(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteGrade = (pk: number, com = 1) =>
     api
@@ -355,7 +362,7 @@ export const useCompany = defineStore('company', () => {
         await fetchGradeList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const positionList = ref<Position[]>([])
   const allPositionList = ref<Position[]>([])
@@ -389,7 +396,7 @@ export const useCompany = defineStore('company', () => {
         positionList.value = res.data.results
         positionsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllPositionList = (com = 1) =>
@@ -398,13 +405,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allPositionList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchPosition = (pk: number) =>
     api
       .get(`/position/${pk}/`)
       .then(res => (position.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createPosition = (payload: Position, page = 1, com = 1) =>
     api
@@ -415,7 +422,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPosition(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePosition = (payload: Position, page = 1, com = 1) =>
     api
@@ -426,7 +433,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPosition(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePosition = (pk: number, com = 1) =>
     api
@@ -436,7 +443,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPositionList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const dutyList = ref<Duty[]>([])
   const allDutyList = ref<Duty[]>([])
@@ -470,7 +477,7 @@ export const useCompany = defineStore('company', () => {
         dutyList.value = res.data.results
         dutysCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllDutyList = (com = 1) =>
@@ -479,13 +486,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allDutyList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchDuty = (pk: number) =>
     api
       .get(`/duty-title/${pk}/`)
       .then(res => (duty.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createDuty = (payload: Duty, page = 1, com = 1) =>
     api
@@ -496,7 +503,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDuty(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateDuty = (payload: Duty, page = 1, com = 1) =>
     api
@@ -507,7 +514,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDuty(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteDuty = (pk: number, com = 1) =>
     api
@@ -517,7 +524,7 @@ export const useCompany = defineStore('company', () => {
         await fetchDutyList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // ExecutiveRank ----------------------------------------------------
   const executiveRankList = ref<ExecutiveRank[]>([])
@@ -551,7 +558,7 @@ export const useCompany = defineStore('company', () => {
         executiveRankList.value = res.data.results
         executiveRanksCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllExecutiveRankList = (com = 1) =>
@@ -560,13 +567,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allExecutiveRankList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchExecutiveRank = (pk: number) =>
     api
       .get(`/executive-rank/${pk}/`)
       .then(res => (executiveRank.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createExecutiveRank = (payload: ExecutiveRank, page = 1, com = 1) =>
     api
@@ -577,7 +584,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutiveRank(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateExecutiveRank = (payload: ExecutiveRank, page = 1, com = 1) =>
     api
@@ -588,7 +595,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutiveRank(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteExecutiveRank = (pk: number, com = 1) =>
     api
@@ -598,7 +605,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutiveRankList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // Executive --------------------------------------------------------
   const executiveList = ref<Executive[]>([])
@@ -632,7 +639,7 @@ export const useCompany = defineStore('company', () => {
         executiveList.value = res.data.results
         executivesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllExecutiveList = (com = 1) =>
@@ -641,13 +648,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allExecutiveList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchExecutive = (pk: number) =>
     api
       .get(`/executive/${pk}/`)
       .then(res => (executive.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createExecutive = (payload: Executive, page = 1, com = 1) =>
     api
@@ -658,7 +665,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutive(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateExecutive = (payload: Executive, page = 1, com = 1) =>
     api
@@ -669,7 +676,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutive(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteExecutive = (pk: number, com = 1) =>
     api
@@ -679,7 +686,7 @@ export const useCompany = defineStore('company', () => {
         await fetchExecutiveList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // PromotionPolicy --------------------------------------------------
   const promotionPolicyList = ref<PromotionPolicy[]>([])
@@ -710,7 +717,7 @@ export const useCompany = defineStore('company', () => {
         promotionPolicyList.value = res.data.results
         promotionPoliciesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllPromotionPolicyList = (com = 1) =>
@@ -719,13 +726,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allPromotionPolicyList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchPromotionPolicy = (pk: number) =>
     api
       .get(`/promotion-policy/${pk}/`)
       .then(res => (promotionPolicy.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createPromotionPolicy = (payload: PromotionPolicy, page = 1, com = 1) =>
     api
@@ -736,7 +743,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionPolicy(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePromotionPolicy = (payload: PromotionPolicy, page = 1, com = 1) =>
     api
@@ -747,7 +754,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionPolicy(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePromotionPolicy = (pk: number, com = 1) =>
     api
@@ -757,7 +764,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionPolicyList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffEvaluation --------------------------------------------------
   const staffEvaluationList = ref<StaffEvaluation[]>([])
@@ -789,7 +796,7 @@ export const useCompany = defineStore('company', () => {
         staffEvaluationList.value = res.data.results
         staffEvaluationsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffEvaluationList = (com = 1, year?: number) => {
@@ -800,14 +807,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffEvaluationList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffEvaluation = (pk: number) =>
     api
       .get(`/staff-evaluation/${pk}/`)
       .then(res => (staffEvaluation.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffEvaluation = (payload: StaffEvaluation, page = 1, com = 1) =>
     api
@@ -818,7 +825,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffEvaluation(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffEvaluation = (payload: StaffEvaluation, page = 1, com = 1) =>
     api
@@ -829,7 +836,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffEvaluation(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffEvaluation = (pk: number, com = 1) =>
     api
@@ -839,7 +846,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffEvaluationList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // PromotionCandidate -----------------------------------------------
   const promotionCandidateList = ref<PromotionCandidate[]>([])
@@ -872,7 +879,7 @@ export const useCompany = defineStore('company', () => {
         promotionCandidateList.value = res.data.results
         promotionCandidatesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllPromotionCandidateList = (com = 1, year?: number) => {
@@ -883,14 +890,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allPromotionCandidateList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchPromotionCandidate = (pk: number) =>
     api
       .get(`/promotion-candidate/${pk}/`)
       .then(res => (promotionCandidate.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createPromotionCandidate = (payload: PromotionCandidate, page = 1, com = 1) =>
     api
@@ -901,7 +908,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionCandidate(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePromotionCandidate = (payload: PromotionCandidate, page = 1, com = 1) =>
     api
@@ -912,7 +919,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionCandidate(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePromotionCandidate = (pk: number, com = 1) =>
     api
@@ -922,7 +929,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPromotionCandidateList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const staffList = ref<Staff[]>([])
   const allStaffList = ref<Staff[]>([])
@@ -945,7 +952,7 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchStaffList = async (payload: StaffFilter) => {
     const {
@@ -967,14 +974,14 @@ export const useCompany = defineStore('company', () => {
         staffList.value = res.data.results
         staffsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaff = (pk: number) =>
     api
       .get(`/staff/${pk}/`)
       .then(res => (staff.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaff = (payload: Staff, page = 1, com = 1) =>
     api
@@ -982,7 +989,7 @@ export const useCompany = defineStore('company', () => {
       .then(res =>
         fetchStaffList({ page, com }).then(() => fetchStaff(res.data.pk).then(() => message())),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaff = (payload: Staff, page = 1, com = 1) =>
     api
@@ -990,7 +997,7 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         fetchStaffList({ page, com }).then(() => fetchStaff(res.data.pk).then(() => message()))
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaff = (pk: number, com = 1) =>
     api
@@ -1000,7 +1007,7 @@ export const useCompany = defineStore('company', () => {
           message('warning', '', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // PersonnelOrder ---------------------------------------------------
   const personnelOrderList = ref<PersonnelOrder[]>([])
@@ -1033,7 +1040,7 @@ export const useCompany = defineStore('company', () => {
         personnelOrderList.value = res.data.results
         personnelOrdersCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllPersonnelOrderList = (com = 1) =>
@@ -1042,13 +1049,13 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allPersonnelOrderList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchPersonnelOrder = (pk: number) =>
     api
       .get(`/personnel-order/${pk}/`)
       .then(res => (personnelOrder.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createPersonnelOrder = (payload: PersonnelOrder, page = 1, com = 1) =>
     api
@@ -1061,7 +1068,7 @@ export const useCompany = defineStore('company', () => {
         await fetchAllStaffList(com)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePersonnelOrder = (payload: PersonnelOrder, page = 1, com = 1) =>
     api
@@ -1073,7 +1080,7 @@ export const useCompany = defineStore('company', () => {
         await fetchAllStaffList(com)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePersonnelOrder = (pk: number, com = 1) =>
     api
@@ -1083,7 +1090,7 @@ export const useCompany = defineStore('company', () => {
         await fetchPersonnelOrderList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffCareer ------------------------------------------------------
   const staffCareerList = ref<StaffCareer[]>([])
@@ -1105,7 +1112,7 @@ export const useCompany = defineStore('company', () => {
         staffCareerList.value = res.data.results
         staffCareersCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffCareerList = (com = 1, staffId?: number) => {
@@ -1116,14 +1123,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffCareerList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffCareer = (pk: number) =>
     api
       .get(`/staff-career/${pk}/`)
       .then(res => (staffCareer.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffCareer = (payload: StaffCareer, page = 1, com = 1) =>
     api
@@ -1134,7 +1141,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCareer(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffCareer = (payload: StaffCareer, page = 1, com = 1) =>
     api
@@ -1145,7 +1152,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCareer(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffCareer = (pk: number, com = 1) =>
     api
@@ -1155,7 +1162,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCareerList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffCertificate -------------------------------------------------
   const staffCertificateList = ref<StaffCertificate[]>([])
@@ -1177,7 +1184,7 @@ export const useCompany = defineStore('company', () => {
         staffCertificateList.value = res.data.results
         staffCertificatesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffCertificateList = (com = 1, staffId?: number) => {
@@ -1188,14 +1195,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffCertificateList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffCertificate = (pk: number) =>
     api
       .get(`/staff-certificate/${pk}/`)
       .then(res => (staffCertificate.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffCertificate = (payload: StaffCertificate, page = 1, com = 1) =>
     api
@@ -1206,7 +1213,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCertificate(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffCertificate = (payload: StaffCertificate, page = 1, com = 1) =>
     api
@@ -1217,7 +1224,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCertificate(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffCertificate = (pk: number, com = 1) =>
     api
@@ -1227,7 +1234,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffCertificateList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffRewardPunishment --------------------------------------------
   const staffRewardPunishmentList = ref<StaffRewardPunishment[]>([])
@@ -1250,7 +1257,7 @@ export const useCompany = defineStore('company', () => {
         staffRewardPunishmentList.value = res.data.results
         staffRewardPunishmentsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffRewardPunishmentList = (com = 1, staffId?: number) => {
@@ -1261,14 +1268,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffRewardPunishmentList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffRewardPunishment = (pk: number) =>
     api
       .get(`/staff-reward-punishment/${pk}/`)
       .then(res => (staffRewardPunishment.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffRewardPunishment = (payload: StaffRewardPunishment, page = 1, com = 1) =>
     api
@@ -1279,7 +1286,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffRewardPunishment(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffRewardPunishment = (payload: StaffRewardPunishment, page = 1, com = 1) =>
     api
@@ -1290,7 +1297,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffRewardPunishment(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffRewardPunishment = (pk: number, com = 1) =>
     api
@@ -1300,7 +1307,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffRewardPunishmentList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffLeaveQuota --------------------------------------------------
   const staffLeaveQuotaList = ref<StaffLeaveQuota[]>([])
@@ -1323,7 +1330,7 @@ export const useCompany = defineStore('company', () => {
         staffLeaveQuotaList.value = res.data.results
         staffLeaveQuotasCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffLeaveQuotaList = (com = 1, year?: number) => {
@@ -1334,14 +1341,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffLeaveQuotaList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffLeaveQuota = (pk: number) =>
     api
       .get(`/staff-leave-quota/${pk}/`)
       .then(res => (staffLeaveQuota.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffLeaveQuota = (payload: StaffLeaveQuota, page = 1, com = 1) =>
     api
@@ -1352,7 +1359,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuota(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffLeaveQuota = (payload: StaffLeaveQuota, page = 1, com = 1) =>
     api
@@ -1363,7 +1370,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuota(res.data.pk)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffLeaveQuota = (pk: number, com = 1) =>
     api
@@ -1373,7 +1380,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuotaList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // StaffLeaveUsage --------------------------------------------------
   const staffLeaveUsageList = ref<StaffLeaveUsage[]>([])
@@ -1408,7 +1415,7 @@ export const useCompany = defineStore('company', () => {
         staffLeaveUsageList.value = res.data.results
         staffLeaveUsagesCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllStaffLeaveUsageList = (com = 1, staffId?: number) => {
@@ -1419,14 +1426,14 @@ export const useCompany = defineStore('company', () => {
       .then(res => {
         allStaffLeaveUsageList.value = res.data.results ?? res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchStaffLeaveUsage = (pk: number) =>
     api
       .get(`/staff-leave-usage/${pk}/`)
       .then(res => (staffLeaveUsage.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createStaffLeaveUsage = (payload: StaffLeaveUsage, page = 1, com = 1) =>
     api
@@ -1440,7 +1447,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuotaList({ com })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateStaffLeaveUsage = (payload: StaffLeaveUsage, page = 1, com = 1) =>
     api
@@ -1454,7 +1461,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuotaList({ com })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteStaffLeaveUsage = (pk: number, com = 1) =>
     api
@@ -1467,7 +1474,7 @@ export const useCompany = defineStore('company', () => {
         await fetchStaffLeaveQuotaList({ com })
         message('warning', '', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     companyList,

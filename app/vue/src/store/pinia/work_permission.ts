@@ -163,15 +163,15 @@ export const usePermission = defineStore('permission', () => {
     if (userId !== undefined && userId === accountStore.userInfo?.pk) return true
     if (visibility === 'NOP') return false
     if (visibility === 'PRJ' && userId !== undefined) {
-      return workStore.myProjects.some(p =>
-        p.all_members?.some(m => m.user?.pk === userId),
-      )
+      return workStore.myProjects.some(p => p.all_members?.some(m => m.user?.pk === userId))
     }
     return true
   }
 
   const isReadOnlyPerm = (c: PermissionCode) => {
-    return c.endsWith('.read') || c.includes('.view') || c.includes('.download') || c === PERM.NEWS_READ
+    return (
+      c.endsWith('.read') || c.includes('.view') || c.includes('.download') || c === PERM.NEWS_READ
+    )
   }
 
   // 본사 관리(HQ Manage) 보안 권한 여부 확인 (hq.* 프리픽스 기준: workManager보다 우선하여 실제 권한 검증 필수)

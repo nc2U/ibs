@@ -66,7 +66,7 @@ export const useNotice = defineStore('notice', () => {
     api
       .post('/sales-bill-issue/', payload)
       .then(() => message())
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchSalesBillIssue = (payload: SalesBillIssue) =>
     api
@@ -75,19 +75,19 @@ export const useNotice = defineStore('notice', () => {
         await payStore.fetchPayOrder(res.data.now_payment_order || 3)
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateSalesBillIssue = (payload: SalesBillIssue) =>
     api
       .put(`/sales-bill-issue/${payload.pk}/`, payload)
       .then(() => message())
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteSalesBillIssue = (pk: number) =>
     api
       .delete(`/sales-bill-issue/${pk}/`)
       .then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.'))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // SMS/LMS 발송
   const sendSMS = async (payload: SMSMessage): Promise<SMSResponse> => {

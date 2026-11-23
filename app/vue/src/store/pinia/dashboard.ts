@@ -284,14 +284,18 @@ export const useDashboard = defineStore('dashboard', () => {
         layouts.value = config.layouts
         visibleWidgets.value = config.visible_widgets
         // Update LocalStorage to keep in sync
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            layouts: config.layouts,
-            visibleWidgets: config.visible_widgets,
-            version: config.version,
-          }),
-        )
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              layouts: config.layouts,
+              visibleWidgets: config.visible_widgets,
+              version: config.version,
+            }),
+          )
+        } catch {
+          // ignore storage access or quota errors
+        }
         return true
       } else {
         configPk.value = null
@@ -310,7 +314,11 @@ export const useDashboard = defineStore('dashboard', () => {
       visibleWidgets: visibleWidgets.value,
       version: CURRENT_VERSION,
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      // ignore storage access or quota errors
+    }
 
     // 2. Debounced sync to DB
     if (syncToDB) {
@@ -336,8 +344,8 @@ export const useDashboard = defineStore('dashboard', () => {
         const res = await api.post('/user-widget-config/', payload)
         configPk.value = res.data.pk
       }
-    } catch (e: any) {
-      errorHandle(e.response?.data)
+    } catch (e: unknown) {
+      errorHandle(e)
     } finally {
       isSyncing.value = false
     }

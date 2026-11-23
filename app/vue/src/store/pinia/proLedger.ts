@@ -26,13 +26,13 @@ export const useProLedger = defineStore('proLedger', () => {
     await api
       .get(`/ledger/project-bank-account/?project=${project}&is_hide=false&inactive=false`)
       .then(res => (proBankList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchAllProBankAccList = async (project: number) =>
     await api
       .get(`/ledger/project-bank-account/?project=${project}`)
       .then(res => (allProBankList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createProBankAcc = async (payload: ProjectBank) =>
     await api
@@ -41,7 +41,7 @@ export const useProLedger = defineStore('proLedger', () => {
         await fetchAllProBankAccList(res.data.project)
         await fetchProBankAccList(res.data.project).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateProBankAcc = async (payload: ProjectBank) =>
     await api
@@ -50,7 +50,7 @@ export const useProLedger = defineStore('proLedger', () => {
         await fetchAllProBankAccList(res.data.project)
         await fetchProBankAccList(res.data.project).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchProBankAcc = async (payload: ProjectBank) =>
     await api
@@ -59,7 +59,7 @@ export const useProLedger = defineStore('proLedger', () => {
         await fetchAllProBankAccList(res.data.project)
         await fetchProBankAccList(res.data.project).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters
   const proAccountFilter = ref<ProAccountFilter>({})
@@ -101,7 +101,7 @@ export const useProLedger = defineStore('proLedger', () => {
       .then(res => {
         proAccountList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters - proBankTrans
@@ -118,7 +118,7 @@ export const useProLedger = defineStore('proLedger', () => {
       .then(res => {
         proBankTrans.value = res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchProBankTransList = async (payload: DataFilter = {}) => {
     const params = cleanupParams({
@@ -143,7 +143,7 @@ export const useProLedger = defineStore('proLedger', () => {
         proBankTransList.value = res.data.results
         proBankTransCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findProBankTransPage = async (highlightId: number, filters: DataFilter) => {
@@ -161,8 +161,8 @@ export const useProLedger = defineStore('proLedger', () => {
     try {
       const response = await api.get('/ledger/project-transaction/find_page/', { params })
       return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return 1
     }
   }
@@ -172,10 +172,10 @@ export const useProLedger = defineStore('proLedger', () => {
   ) =>
     await api
       .post(`/ledger/project-composite-transaction/`, payload)
-      .then(async res => {
+      .then(async () => {
         return await fetchProBankTransList(proBankTransFilter.value).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateProBankTrans = async (
     payload: ProBankTrans & { accData: ProAccountingEntry | null },
@@ -183,10 +183,10 @@ export const useProLedger = defineStore('proLedger', () => {
     const { pk, ...formData } = payload
     return await api
       .put(`/ledger/project-composite-transaction/${pk}/`, formData)
-      .then(async res => {
+      .then(async () => {
         return await fetchProBankTransList(proBankTransFilter.value).then(() => message())
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchProBankTrans = async (
@@ -195,10 +195,10 @@ export const useProLedger = defineStore('proLedger', () => {
     const { pk, ...formData } = payload
     return await api
       .patch(`/ledger/project-composite-transaction/${pk}/`, formData)
-      .then(async res => {
+      .then(async () => {
         return await fetchProBankTransList(proBankTransFilter.value)
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteProBankTrans = async (pk: number) => {
@@ -209,7 +209,7 @@ export const useProLedger = defineStore('proLedger', () => {
           message('warning', '알림!', '거래 내역 데이터가 삭제되었습니다.'),
         )
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   // ============================================
@@ -256,7 +256,7 @@ export const useProLedger = defineStore('proLedger', () => {
         `/ledger/project-transaction/balance_by_account/?project=${project}&date=${date}&is_balance=${is_balance}`,
       )
       .then(res => (proLedgerBalanceByAccList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchDateLedgerTransactionList = async (payload: { project: number; date: string }) => {
@@ -264,32 +264,32 @@ export const useProLedger = defineStore('proLedger', () => {
     return await api
       .get(`/ledger/project-transaction/daily_transactions/?project=${project}&date=${date}`)
       .then(res => (dateLedgerTransactions.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchProLedgerCalculation = async (pro: number) =>
     await api
       .get(`/ledger/project-calculation/?project=${pro}`)
       .then(res => (proLedgerCalculation.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createProLedgerCalculation = async (payload: ProCalculated) =>
     await api
       .post(`/ledger/project-calculation/`, payload)
       .then(res => fetchProLedgerCalculation(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchProLedgerCalculation = async (payload: ProCalculated) =>
     await api
       .patch(`/ledger/project-calculation/${payload.pk}/`, payload)
       .then(res => fetchProLedgerCalculation(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchProLedgerLastDealDate = async (pro: number) =>
     await api
       .get(`/ledger/project-last-deal-date/?project=${pro}`)
       .then(res => (proLedgerLastDealList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // --- Picker 공유 상태 및 로직 ---
   const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)

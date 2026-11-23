@@ -1,7 +1,3 @@
-import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import api from '@/api'
-
 export interface ContFilter {
   project?: number | null
   order_group?: string

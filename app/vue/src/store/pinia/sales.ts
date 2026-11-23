@@ -287,7 +287,7 @@ export const useSales = defineStore('sales', () => {
       })
   }
 
-    const updatePeriod = (id: number, payload: Partial<SettlementPeriod>) =>
+  const updatePeriod = (id: number, payload: Partial<SettlementPeriod>) =>
     api
       .patch('/sales-settlement-period/' + id + '/', payload)
       .then(res => {
@@ -296,7 +296,7 @@ export const useSales = defineStore('sales', () => {
       })
       .catch(err => errorHandle(err))
 
-const createPeriod = (payload: Partial<SettlementPeriod>) =>
+  const createPeriod = (payload: Partial<SettlementPeriod>) =>
     api
       .post('/sales-settlement-period/', payload)
       .then(res => {

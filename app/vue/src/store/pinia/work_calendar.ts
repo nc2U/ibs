@@ -2,6 +2,7 @@ import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle } from '@/utils/helper.ts'
+import type { IssueFilter } from '@/store/types/work_issue.ts'
 
 export interface CalendarEvent {
   id: string
@@ -22,15 +23,15 @@ export const useCalendar = defineStore('calendar', () => {
   const loading = ref<boolean>(false)
 
   const fetchCalendarEvents = async (
-    projectOrFilters?: string | Record<string, any>,
+    projectOrFilters?: string | IssueFilter | Record<string, unknown>,
     start?: string,
     end?: string,
   ) => {
-    if (
-      projectOrFilters &&
-      typeof projectOrFilters === 'object' &&
-      projectOrFilters.event_type === 'none'
-    ) {
+    const filterObj =
+      projectOrFilters && typeof projectOrFilters === 'object'
+        ? (projectOrFilters as Record<string, unknown>)
+        : null
+    if (filterObj?.event_type === 'none') {
       events.value = []
       return
     }
@@ -40,17 +41,15 @@ export const useCalendar = defineStore('calendar', () => {
       if (start) params.append('start', start)
       if (end) params.append('end', end)
 
-      if (projectOrFilters) {
-        if (typeof projectOrFilters === 'string') {
-          params.append('project', projectOrFilters)
-        } else if (typeof projectOrFilters === 'object') {
-          Object.keys(projectOrFilters).forEach(key => {
-            const val = projectOrFilters[key]
-            if (val !== null && val !== undefined && val !== '') {
-              params.append(key, String(val))
-            }
-          })
-        }
+      if (typeof projectOrFilters === 'string' && projectOrFilters) {
+        params.append('project', projectOrFilters)
+      } else if (filterObj) {
+        Object.keys(filterObj).forEach(key => {
+          const val = filterObj[key]
+          if (val !== null && val !== undefined && val !== '') {
+            params.append(key, String(val))
+          }
+        })
       }
 
       const url = `/work-calendar/?${params.toString()}`

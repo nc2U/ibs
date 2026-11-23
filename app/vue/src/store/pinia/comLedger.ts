@@ -52,19 +52,19 @@ export const useComLedger = defineStore('comLedger', () => {
     await api
       .get('/ledger/bank-code/')
       .then(res => (bankCodeList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchComBankAccList = async (company: number) =>
     await api
       .get(`/ledger/company-bank-account/?company=${company}&is_hide=false&inactive=false`)
       .then(res => (comBankList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchAllComBankAccList = async (company: number) =>
     await api
       .get(`/ledger/company-bank-account/?company=${company}`)
       .then(res => (allComBankList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createComBankAcc = async (payload: CompanyBank) =>
     await api
@@ -73,7 +73,7 @@ export const useComLedger = defineStore('comLedger', () => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateComBankAcc = async (payload: CompanyBank) =>
     await api
@@ -82,7 +82,7 @@ export const useComLedger = defineStore('comLedger', () => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchComBankAcc = async (payload: CompanyBank) =>
     await api
@@ -91,7 +91,7 @@ export const useComLedger = defineStore('comLedger', () => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteComBankAcc = async (pk: number, company: number) =>
     await api
@@ -101,7 +101,7 @@ export const useComLedger = defineStore('comLedger', () => {
         await fetchComBankAccList(company)
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters - Accounts
   const comAccountList = ref<CompanyAccount[]>([])
@@ -138,7 +138,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => {
         comAccountList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters - Affiliate
@@ -157,7 +157,7 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .get('/ledger/affiliate/', { params })
       .then(res => (affiliateList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters - bankTransaction
@@ -174,7 +174,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(res => {
         bankTransaction.value = res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchBankTransactionList = async (payload: DataFilter = {}) => {
     const params = cleanupParams({
@@ -197,7 +197,7 @@ export const useComLedger = defineStore('comLedger', () => {
         bankTransactionList.value = res.data.results
         bankTransactionCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
@@ -214,8 +214,8 @@ export const useComLedger = defineStore('comLedger', () => {
     try {
       const response = await api.get(url)
       return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return 1
     }
   }
@@ -225,10 +225,10 @@ export const useComLedger = defineStore('comLedger', () => {
   ) =>
     await api
       .post(`/ledger/company-composite-transaction/`, payload)
-      .then(async res => {
+      .then(async () => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateBankTransaction = async (
     payload: BankTransaction & { accData: AccountingEntry | null },
@@ -236,10 +236,10 @@ export const useComLedger = defineStore('comLedger', () => {
     const { pk, ...formData } = payload
     return await api
       .put(`/ledger/company-composite-transaction/${pk}/`, formData)
-      .then(async res => {
+      .then(async () => {
         return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchBankTransaction = async (
@@ -248,10 +248,10 @@ export const useComLedger = defineStore('comLedger', () => {
     const { pk, ...formData } = payload
     return await api
       .patch(`/ledger/company-composite-transaction/${pk}/`, formData)
-      .then(async res => {
+      .then(async () => {
         return await fetchBankTransactionList(bankTransactionFilter.value)
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteBankTransaction = async (pk: number) => {
@@ -262,7 +262,7 @@ export const useComLedger = defineStore('comLedger', () => {
           message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
         )
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
   }
 
   // ============================================
@@ -310,7 +310,7 @@ export const useComLedger = defineStore('comLedger', () => {
         `/ledger/company-transaction/balance_by_account/?company=${company}&date=${date}&is_balance=${is_balance}`,
       )
       .then(res => (comLedgerBalanceByAccList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchDateLedgerTransactionList = async (payload: { company: number; date: string }) => {
@@ -318,7 +318,7 @@ export const useComLedger = defineStore('comLedger', () => {
     return await api
       .get(`/ledger/company-transaction/daily_transactions/?company=${company}&date=${date}`)
       .then(res => (dateLedgerTransactions.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // 월별 자금 집계 (수입/지출, 전월·누계 비교)
@@ -365,25 +365,25 @@ export const useComLedger = defineStore('comLedger', () => {
     await api
       .get(`/ledger/company-calculation/?company=${com}`)
       .then(res => (comLedgerCalculation.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createComLedgerCalculation = async (payload: ComCalculated) =>
     await api
       .post(`/ledger/company-calculation/`, payload)
       .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchComLedgerCalculation = async (payload: ComCalculated) =>
     await api
       .patch(`/ledger/company-calculation/${payload.pk}/`, payload)
       .then(res => fetchComLedgerCalculation(res.data.company).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchComLedgerLastDealDate = async (com: number) =>
     await api
       .get(`/ledger/company-last-deal-date/?company=${com}`)
       .then(res => (comLedgerLastDealList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // --- Picker 공유 상태 및 로직 ---
   const sharedEditingState = ref<{ type: 'tran' | 'entry'; pk: number; field: string } | null>(null)

@@ -36,20 +36,20 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(`/price/?project=${project}&order_group=${order_group}&unit_type=${unit_type}`)
       .then(res => (priceList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createPrice = (payload: Price) =>
     api
       .post(`/price/`, payload)
       .then(() => fetchPriceList(payload).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePrice = (payload: Price) =>
     api
       .put(`/price/${payload.pk}/`, payload)
       .then(() => fetchPriceList(payload).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePrice = (payload: PriceFilter & { pk: number }) =>
     api
@@ -59,7 +59,7 @@ export const usePayment = defineStore('payment', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // state & getters
   const payOrder = ref<PayOrder | null>(null)
@@ -70,31 +70,31 @@ export const usePayment = defineStore('payment', () => {
     api
       .get(`/pay-order/${pk}/`)
       .then(res => (payOrder.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchPayOrderList = (project: number, pay_sort__in?: string) =>
     api
       .get(`/pay-order/?project=${project}&pay_sort__in=${pay_sort__in ?? ''}`)
       .then(res => (payOrderList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const createPayOrder = (payload: PayOrder) =>
     api
       .post(`/pay-order/`, payload)
       .then(res => fetchPayOrderList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchPayOrder = (payload: PayOrder) =>
     api
       .patch(`/pay-order/${payload.pk}/`, payload)
       .then(res => fetchPayOrderList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePayOrder = (payload: PayOrder) =>
     api
       .put(`/pay-order/${payload.pk}/`, payload)
       .then(res => fetchPayOrderList(res.data.project).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePayOrder = (pk: number, project: number) =>
     api
@@ -104,7 +104,7 @@ export const usePayment = defineStore('payment', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // PaymentPerInstallment state & getters
   const paymentPerInstallmentList = ref<PaymentPerInstallment[]>([])
@@ -128,7 +128,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (paymentPerInstallmentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createPaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
@@ -137,7 +137,7 @@ export const usePayment = defineStore('payment', () => {
       .then(() =>
         fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updatePaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
@@ -145,7 +145,7 @@ export const usePayment = defineStore('payment', () => {
       .then(() =>
         fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deletePaymentPerInstallment = (pk: number, salesPriceId: number) =>
     api
@@ -155,7 +155,7 @@ export const usePayment = defineStore('payment', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // 컴포넌트용 PaymentPerInstallment 데이터 조회 (전역 상태 업데이트 없음)
   const getPaymentPerInstallmentData = async (
@@ -195,20 +195,20 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (downPayList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createDownPay = (payload: DownPay) =>
     api
       .post(`/down-payment/`, payload)
       .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateDownPay = (payload: DownPay) =>
     api
       .put(`/down-payment/${payload.pk}/`, payload)
       .then(res => fetchDownPayList({ project: res.data.project }).then(() => message()))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteDownPay = (pk: number, project: number) =>
     api
@@ -218,7 +218,7 @@ export const usePayment = defineStore('payment', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   /////////////////////////////// old payment ///////////////////////////////
   // state & getters
@@ -268,7 +268,7 @@ export const usePayment = defineStore('payment', () => {
         paymentList.value = res.data.results
         paymentsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchAllPaymentList = async (payload: CashBookFilter) => {
@@ -279,7 +279,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (AllPaymentList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
@@ -294,7 +294,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (paymentSummaryList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters
@@ -307,7 +307,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (overallSummary.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters
@@ -320,7 +320,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (paymentStatusByUnitType.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   /////////////////////////////// old payment ///////////////////////////////
@@ -392,7 +392,7 @@ export const usePayment = defineStore('payment', () => {
         ledgerPaymentList.value = res.data.results
         ledgerPaymentsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchLedgerAllPaymentList = async (payload: ContPayFilter) => {
@@ -406,7 +406,7 @@ export const usePayment = defineStore('payment', () => {
         ledgerPaymentFilter.value = payload
         ledgerAllPaymentList.value = res.data.results
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters - PaymentSummary Component
@@ -419,7 +419,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (ledgerPaymentSummaryList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters
@@ -432,7 +432,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (ledgerOverallSummary.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // state & getters
@@ -445,7 +445,7 @@ export const usePayment = defineStore('payment', () => {
     return await api
       .get(url)
       .then(res => (ledgerPaymentStatusByUnitType.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // ============================================

@@ -17,7 +17,23 @@ export interface MeetingFilterForm {
   agenda: string
   content: string
   decisions: string
-  [key: string]: any
+  [key: string]: unknown
+}
+
+interface SavedMeetingQuery {
+  pk?: number
+  filters?: {
+    searchCond?: string[]
+    cond?: Record<string, string>
+    form?: Omit<Partial<MeetingFilterForm>, 'creator' | 'attendees'> & {
+      creator?: number | 'me' | null
+      attendees?: number | 'me' | null
+      project?: string
+    }
+    creator?: number | 'me' | null
+    author?: number | 'me' | null
+    attendees?: number | 'me' | null
+  }
 }
 
 export const useMeetingFilter = defineStore('meetingFilter', () => {
@@ -197,7 +213,7 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
 
   // 7. 저장된 쿼리 복원
   const applySavedQuery = (
-    query: any,
+    query: SavedMeetingQuery | null | undefined,
     currentUserId?: number,
     defaultUserId?: number,
     currentProjSlug = '',
@@ -223,12 +239,14 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
       cond.value = { ...cond.value, ...f.cond }
     }
 
-    const myId = currentUserId ?? defaultUserId
+    const myId = currentUserId ?? defaultUserId ?? null
 
     if (f.form) {
-      const formPayload = { ...f.form }
-      if (formPayload.creator === 'me') formPayload.creator = myId
-      if (formPayload.attendees === 'me') formPayload.attendees = myId
+      const formPayload: Partial<MeetingFilterForm> = {
+        ...(f.form as Partial<MeetingFilterForm>),
+      }
+      if (f.form.creator === 'me') formPayload.creator = myId
+      if (f.form.attendees === 'me') formPayload.attendees = myId
 
       form.value = { ...form.value, ...formPayload }
 
@@ -244,13 +262,13 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
         if (!searchCond.value.includes('creator')) searchCond.value.push('creator')
         if (!enabledFields.value.includes('creator')) enabledFields.value.push('creator')
         cond.value.creator = 'is'
-        form.value.creator = creatorVal === 'me' ? myId : creatorVal
+        form.value.creator = creatorVal === 'me' ? myId : (creatorVal ?? null)
       }
       if (f.attendees !== undefined) {
         if (!searchCond.value.includes('attendees')) searchCond.value.push('attendees')
         if (!enabledFields.value.includes('attendees')) enabledFields.value.push('attendees')
         cond.value.attendees = 'is'
-        form.value.attendees = f.attendees === 'me' ? myId : f.attendees
+        form.value.attendees = f.attendees === 'me' ? myId : (f.attendees ?? null)
       }
     }
 

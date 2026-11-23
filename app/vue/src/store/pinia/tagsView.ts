@@ -24,14 +24,14 @@ export const useTagsView = defineStore('tags-view', () => {
     if (!view?.meta?.noCache) cachedViews.value.push(view.name)
   }
 
-  const delView = (view: VisitedView) =>
-    new Promise(resolve => {
-      delVisitedView(view).then(() => delCachedView(view))
-      resolve({
-        visitedViews: [...visitedViews.value],
-        cachedViews: [...cachedViews.value],
-      })
-    })
+  const delView = async (view: VisitedView) => {
+    await delVisitedView(view)
+    await delCachedView(view)
+    return {
+      visitedViews: [...visitedViews.value],
+      cachedViews: [...cachedViews.value],
+    }
+  }
 
   const delVisitedView = (view: VisitedView) =>
     new Promise(resolve => {
@@ -47,18 +47,18 @@ export const useTagsView = defineStore('tags-view', () => {
   const delCachedView = (view: VisitedView) =>
     new Promise(resolve => {
       const index = cachedViews.value.indexOf(view.name)
-      index > -1 && cachedViews.value.splice(index, 1)
+      if (index > -1) cachedViews.value.splice(index, 1)
       resolve([...cachedViews.value])
     })
 
-  const delOthersViews = (view: VisitedView) =>
-    new Promise(resolve => {
-      delOthersVisitedViews(view).then(() => delOthersCachedViews(view))
-      resolve({
-        visitedViews: [...visitedViews.value],
-        cachedViews: [...cachedViews.value],
-      })
-    })
+  const delOthersViews = async (view: VisitedView) => {
+    await delOthersVisitedViews(view)
+    await delOthersCachedViews(view)
+    return {
+      visitedViews: [...visitedViews.value],
+      cachedViews: [...cachedViews.value],
+    }
+  }
 
   const delOthersVisitedViews = (view: VisitedView) =>
     new Promise(resolve => {
@@ -74,14 +74,14 @@ export const useTagsView = defineStore('tags-view', () => {
       resolve([...cachedViews.value])
     })
 
-  const delAllViews = () =>
-    new Promise(resolve => {
-      delAllVisitedViews().then(() => delAllCachedViews())
-      resolve({
-        visitedViews: [...visitedViews.value],
-        cachedViews: [...cachedViews.value],
-      })
-    })
+  const delAllViews = async () => {
+    await delAllVisitedViews()
+    await delAllCachedViews()
+    return {
+      visitedViews: [...visitedViews.value],
+      cachedViews: [...cachedViews.value],
+    }
+  }
 
   const delAllVisitedViews = () =>
     new Promise(resolve => {
@@ -96,9 +96,11 @@ export const useTagsView = defineStore('tags-view', () => {
     })
 
   const updateVisitedView = (route: RouteNormal) => {
-    for (let v of visitedViews.value) {
+    for (const v of visitedViews.value) {
       if (v.path === route.path) {
-        v = Object.assign(v, route)
+        if (typeof route.name === 'string') v.name = route.name
+        v.fullPath = route.fullPath
+        v.meta = { ...route.meta }
         break
       }
     }

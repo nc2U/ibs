@@ -210,7 +210,13 @@ export const useIssue = defineStore('issue', () => {
     }
 
     Object.entries(payload).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '' || key === 'page' || key === 'limit')
+      if (
+        value === undefined ||
+        value === null ||
+        value === '' ||
+        key === 'page' ||
+        key === 'limit'
+      )
         return
       const apiParam = paramMap[key] || key
       params.append(apiParam, String(value))
@@ -547,7 +553,9 @@ export const useIssue = defineStore('issue', () => {
   }
 
   const createCategory = (
-    payload: Partial<Omit<IssueCategory, 'project'>> & { project?: number | string | SimpleProject },
+    payload: Partial<Omit<IssueCategory, 'project'>> & {
+      project?: number | string | SimpleProject
+    },
   ) =>
     api
       .post(`/issue-category/`, payload)
@@ -567,7 +575,9 @@ export const useIssue = defineStore('issue', () => {
       })
 
   const updateCategory = (
-    payload: Partial<Omit<IssueCategory, 'project'>> & { project?: number | string | SimpleProject },
+    payload: Partial<Omit<IssueCategory, 'project'>> & {
+      project?: number | string | SimpleProject
+    },
   ) =>
     api
       .put(`/issue-category/${payload.pk}/`, payload)

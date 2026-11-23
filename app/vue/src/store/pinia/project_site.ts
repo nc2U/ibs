@@ -93,7 +93,7 @@ export const useSite = defineStore('site', () => {
         siteCount.value = res.data.count
         fetchSitesTotal(project as number)
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const createSite = (payload: { form: FormData; page?: number; search?: string }) => {
@@ -104,7 +104,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteList({ project: res.data.project, page, search })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const updateSite = (pk: number, payload: { form: FormData; page?: number; search?: string }) => {
@@ -115,7 +115,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteList({ project: res.data.project, page, search })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteSite = (pk: number, project: number) => {
@@ -125,7 +125,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteList({ project })
         message('warning', '', '해당 부지 정보가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const allOwners = ref<AllOwner[]>([])
@@ -162,7 +162,7 @@ export const useSite = defineStore('site', () => {
       .then(res => {
         siteOwner.value = res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const fetchSiteOwnerList = (payload: OwnerFilter) => {
@@ -176,7 +176,7 @@ export const useSite = defineStore('site', () => {
         siteOwnerCount.value = res.data.count
         fetchOwnersTotal(project as number)
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findSiteOwnerPage = async (highlightId: number, filters: OwnerFilter) => {
@@ -189,8 +189,8 @@ export const useSite = defineStore('site', () => {
     try {
       const response = await api.get(url)
       return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return 1
     }
   }
@@ -202,9 +202,8 @@ export const useSite = defineStore('site', () => {
       .then(res => {
         fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
         message()
-        console.log('--->', res.data, res.data.sites)
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const updateSiteOwner = (payload: SiteOwner & OwnerFilter) => {
@@ -215,7 +214,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteSiteOwner = (pk: number, project: number) => {
@@ -225,7 +224,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteOwnerList({ project })
         message('warning', '', '해당 소유자 정보가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const relationList = ref<Relation[]>([])
@@ -238,7 +237,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteOwnerList({ project, limit, page, sort, is_use_consent, search })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const siteContList = ref<SiteContract[]>([])
@@ -249,9 +248,12 @@ export const useSite = defineStore('site', () => {
   }>()
 
   const fetchContsTotal = (project: number) => {
-    api.get(`/conts-total/?project=${project}`).then(res => {
-      getContsTotal.value = res.data.results[0]
-    })
+    api
+      .get(`/conts-total/?project=${project}`)
+      .then(res => {
+        getContsTotal.value = res.data.results?.[0]
+      })
+      .catch(err => errorHandle(err))
   }
 
   const fetchSiteContList = (payload: ContFilter) => {
@@ -265,7 +267,7 @@ export const useSite = defineStore('site', () => {
         siteContCount.value = res.data.count
         fetchContsTotal(project as number)
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const findSiteContractPage = async (highlightId: number, filters: ContFilter) => {
@@ -277,8 +279,8 @@ export const useSite = defineStore('site', () => {
     try {
       const response = await api.get(url)
       return response.data.page
-    } catch (err: any) {
-      errorHandle(err.response.data)
+    } catch (err: unknown) {
+      errorHandle(err)
       return 1
     }
   }
@@ -290,7 +292,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteContList({ project: res.data.project })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const updateSiteCont = (pk: number, payload: FormData) => {
@@ -300,7 +302,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteContList({ project: res.data.project })
         message()
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const deleteSiteCont = (pk: number, project: number) => {
@@ -310,7 +312,7 @@ export const useSite = defineStore('site', () => {
         fetchSiteContList({ project })
         message('warning', '', '해당 부지 매입계약 정보가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   return {

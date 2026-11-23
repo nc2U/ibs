@@ -309,7 +309,6 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
         }
       }
     } else {
-
       if (f.assignee !== undefined || f.assigned_to !== undefined) {
         const val = f.assignee ?? f.assigned_to
         if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')

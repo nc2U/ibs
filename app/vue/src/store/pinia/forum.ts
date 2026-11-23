@@ -59,7 +59,7 @@ export const useForum = defineStore('forum', () => {
         errorHandle(err)
         return null
       })
-  const updateForum = (pk: number, payload: any, projId: string) =>
+  const updateForum = (pk: number, payload: Partial<Forum>, projId: string) =>
     api
       .put(`/forum/${pk}/`, payload)
       .then(async res => {
@@ -319,7 +319,7 @@ export const useForum = defineStore('forum', () => {
         trashPost.value = res.data
         fetchCommentList({ post: pk })
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const fetchTrashPostList = (page = 1) =>
     api
@@ -328,9 +328,9 @@ export const useForum = defineStore('forum', () => {
         trashPostList.value = res.data.results
         trashPostCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const restorePost = (pk: number, isProject = false) =>
+  const restorePost = (pk: number) =>
     api
       .patch(`/post-trash-can/${pk}/`)
       .then(res =>
@@ -343,7 +343,7 @@ export const useForum = defineStore('forum', () => {
           ),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const file = ref<PostFile | null>(null)
 
@@ -351,13 +351,13 @@ export const useForum = defineStore('forum', () => {
     api
       .get(`/post-file/${pk}/`)
       .then(res => (file.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchFile = (payload: PostFile) =>
     api
       .patch(`/post-file/${payload.pk}/`, payload)
       .then(res => fetchPost(res.data.post))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const comment = ref<Cm | null>(null)
   const commentList = ref<Cm[]>([])

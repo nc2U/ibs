@@ -11,7 +11,7 @@ export const useIbs = defineStore('ibs', () => {
     await api
       .get(`/account-sort/`)
       .then(res => (sortList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const listAccD1List = ref<AccountD1[]>([])
 
@@ -19,7 +19,7 @@ export const useIbs = defineStore('ibs', () => {
     await api
       .get(`/account-depth1/`)
       .then(res => (listAccD1List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const listAccD2List = ref<AccountD2[]>([])
 
@@ -27,7 +27,7 @@ export const useIbs = defineStore('ibs', () => {
     await api
       .get(`/account-depth2/`)
       .then(res => (listAccD2List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const listAccD3List = ref<AccountD3[]>([])
 
@@ -35,7 +35,7 @@ export const useIbs = defineStore('ibs', () => {
     await api
       .get(`/account-depth3/`)
       .then(res => (listAccD3List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchAccD3 = async (payload: { pk: number; is_hide: boolean }) => {
     const { pk, ...hideData } = payload
@@ -45,7 +45,7 @@ export const useIbs = defineStore('ibs', () => {
         await fetchAllAccD3List()
         await fetchFormAccD3List(null, null, null).then(() => message())
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const formAccD1List = ref<AccountD1[]>([])
@@ -55,7 +55,7 @@ export const useIbs = defineStore('ibs', () => {
     return await api
       .get(`/account-depth1/${uSort}`)
       .then(res => (formAccD1List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const formAccD2List = ref<AccountD2[]>([])
@@ -66,7 +66,7 @@ export const useIbs = defineStore('ibs', () => {
     return await api
       .get(`/account-depth2/?${uSort}${uD1}`)
       .then(res => (formAccD2List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const formAccD3List = ref<AccountD3[]>([])
@@ -78,7 +78,7 @@ export const useIbs = defineStore('ibs', () => {
     return await api
       .get(`/account-depth3/?${uSort}${uD1}${uD2}&is_hide=false`)
       .then(res => (formAccD3List.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   // states
@@ -94,13 +94,13 @@ export const useIbs = defineStore('ibs', () => {
         wiseWordsList.value = res.data.results
         wiseWordsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
 
   const fetchWiseWord = (pk: number) =>
     api
       .get(`/wise-say/${pk}/`)
       .then(res => (wiseWord.value = res.data))
-      .catch(err => errorHandle(err.response?.data))
+      .catch(err => errorHandle(err))
 
   return {
     sortList,

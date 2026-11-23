@@ -390,7 +390,7 @@ export const useDocs = defineStore('docs', () => {
       .then(res => {
         trashDocs.value = res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeTrashDocs = () => (trashDocs.value = null)
 
@@ -401,9 +401,9 @@ export const useDocs = defineStore('docs', () => {
         trashDocsList.value = res.data.results
         trashDocsCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
-  const restoreDocs = (pk: number, isProject = false) =>
+  const restoreDocs = (pk: number) =>
     api
       .patch(`/docs-trash-can/${pk}/`)
       .then(res =>
@@ -417,7 +417,7 @@ export const useDocs = defineStore('docs', () => {
           ),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteTrashDocs = (pk: number, page = 1) =>
     api
@@ -427,7 +427,7 @@ export const useDocs = defineStore('docs', () => {
           message('warning', '', '해당 게시물이 영구 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // link
   const link = ref<Link | null>(null)
@@ -446,7 +446,7 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err))
 
-  const patchLink = (pk: number, payload: Link | any) =>
+  const patchLink = (pk: number, payload: Partial<Link> | Record<string, unknown>) =>
     api
       .patch(`/link/${pk}/`, payload)
       .then(res => fetchDocs(res.data.docs))
@@ -482,7 +482,7 @@ export const useDocs = defineStore('docs', () => {
       .then(res => fetchDocs(res.data.docs))
       .catch(err => errorHandle(err))
 
-  const patchFile = (pk: number, payload: FormData | any) =>
+  const patchFile = (pk: number, payload: FormData | Partial<DFile> | Record<string, unknown>) =>
     api
       .patch(`/file/${pk}/`, payload, config_headers)
       .then(res => fetchDocs(res.data.docs))
@@ -513,7 +513,7 @@ export const useDocs = defineStore('docs', () => {
     api
       .get(`/official-letter/${pk}/`)
       .then(res => (letter.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeLetter = () => (letter.value = null)
 
@@ -536,7 +536,7 @@ export const useDocs = defineStore('docs', () => {
         letterList.value = res.data.results
         letterCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const removeLetterList = () => (letterList.value = [])
@@ -549,7 +549,7 @@ export const useDocs = defineStore('docs', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const updateLetter = (pk: number, payload: OfficialLetter) =>
     api
@@ -560,13 +560,13 @@ export const useDocs = defineStore('docs', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const patchLetter = async (pk: number, payload: PatchLetter) =>
     api
       .patch(`/official-letter/${pk}/`, payload)
       .then(res => fetchLetter(res.data.pk))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteLetter = (pk: number, filter: LetterFilter) =>
     api
@@ -574,7 +574,7 @@ export const useDocs = defineStore('docs', () => {
       .then(() =>
         fetchLetterList(filter).then(() => message('warning', '', '해당 공문이 삭제되었습니다.')),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const generatePdf = async (pk: number) =>
     api
@@ -584,7 +584,7 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', 'PDF가 생성되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const uploadLetterPdf = async (pk: number, file: File) => {
     const formData = new FormData()
@@ -598,14 +598,14 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '공문 PDF(스캔본) 파일이 성공적으로 업로드되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const getNextDocumentNumber = async (company: number) =>
     api
       .get(`/official-letter/next_document_number/?company=${company}`)
       .then(res => res.data.next_document_number)
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const submitApproval = async (pk: number) =>
     api
@@ -615,7 +615,7 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '전자결재가 성공적으로 상신되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const uploadLetterAttachment = async (letterId: number, formData: FormData) =>
     api
@@ -627,7 +627,7 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '첨부파일이 등록되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteLetterAttachment = async (attachmentId: number, letterId: number) =>
     api
@@ -636,7 +636,7 @@ export const useDocs = defineStore('docs', () => {
         await fetchLetter(letterId)
         message('warning', '', '첨부파일이 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   // Inbound Official Letter (수신 공문)
   const inboundLetter = ref<InboundLetter | null>(null)
@@ -658,7 +658,7 @@ export const useDocs = defineStore('docs', () => {
     api
       .get(`/inbound-letter/${pk}/`)
       .then(res => (inboundLetter.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const removeInboundLetter = () => (inboundLetter.value = null)
 
@@ -694,7 +694,7 @@ export const useDocs = defineStore('docs', () => {
         inboundLetterList.value = res.data.results
         inboundLetterCount.value = res.data.count
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const removeInboundLetterList = () => (inboundLetterList.value = [])
@@ -708,7 +708,7 @@ export const useDocs = defineStore('docs', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const updateInboundLetter = (pk: number, payload: FormData | InboundLetter) => {
@@ -721,14 +721,14 @@ export const useDocs = defineStore('docs', () => {
         message()
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
   }
 
   const patchInboundLetter = async (pk: number, payload: PatchInboundLetter) =>
     api
       .patch(`/inbound-letter/${pk}/`, payload)
       .then(res => fetchInboundLetter(res.data.pk))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteInboundLetter = (pk: number, filter: InboundLetterFilter) =>
     api
@@ -738,13 +738,13 @@ export const useDocs = defineStore('docs', () => {
           message('warning', '', '해당 수신 공문이 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const getNextReceiptNumber = async (company: number) =>
     api
       .get(`/inbound-letter/next_receipt_number/?company=${company}`)
       .then(res => res.data.next_receipt_number)
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const uploadInboundAttachment = async (letterId: number, formData: FormData) =>
     api
@@ -756,7 +756,7 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '첨부파일이 등록되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const deleteInboundAttachment = async (attachmentId: number, letterId: number) =>
     api
@@ -765,7 +765,7 @@ export const useDocs = defineStore('docs', () => {
         await fetchInboundLetter(letterId)
         message('warning', '', '첨부파일이 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   const submitInboundApproval = async (pk: number) =>
     api
@@ -775,7 +775,7 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', res.data.detail || '전자결재가 상신되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => errorHandle(err))
 
   return {
     docTypes,

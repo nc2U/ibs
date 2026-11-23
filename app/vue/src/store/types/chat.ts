@@ -2,6 +2,12 @@ export interface ChatUser {
   pk: number
   username: string
   email?: string
+  name?: string
+  is_system?: boolean
+  profile?: {
+    name?: string
+    cell_phone?: string
+  } | null
 }
 
 export type ChatRoomType = 'channel' | 'group' | 'direct' | 'self'

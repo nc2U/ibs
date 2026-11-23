@@ -2,13 +2,27 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 
+interface SavedProjectQuery {
+  pk?: number
+  filters?: {
+    searchCond?: string[]
+    cond?: Record<string, string>
+    form?: Partial<ProjectFilter> & {
+      project?: number | string
+      parent?: number | string
+    }
+    bookmark?: boolean
+    my_project?: boolean
+  }
+}
+
 export const useProjectFilter = defineStore('projectFilter', () => {
   // 1. 활성화된 검색 조건 태그 및 체크박스 필드
   const searchCond = ref<string[]>(['status'])
   const enabledFields = ref<string[]>(['status'])
 
   // 2. 연산자 조건
-  const defaultCond: Record<string, any> = {
+  const defaultCond: Record<string, string> = {
     status: 'is',
     project: 'is',
     parent: 'all',
@@ -18,10 +32,10 @@ export const useProjectFilter = defineStore('projectFilter', () => {
     name: 'contains',
     description: 'contains',
   }
-  const cond = ref<Record<string, any>>({ ...defaultCond })
+  const cond = ref<Record<string, string>>({ ...defaultCond })
 
   // 3. 폼 입력값
-  const defaultForm: ProjectFilter & Record<string, any> = {
+  const defaultForm: ProjectFilter & Record<string, unknown> = {
     status: '1',
     is_public: '1',
     created_date: '',
@@ -33,7 +47,7 @@ export const useProjectFilter = defineStore('projectFilter', () => {
     bookmark: undefined,
     my_project: undefined,
   }
-  const form = ref<ProjectFilter & Record<string, any>>({ ...defaultForm })
+  const form = ref<ProjectFilter & Record<string, unknown>>({ ...defaultForm })
 
   // 4. 셀렉트 UI 바인딩용 보조 상태 (내 워크스페이스/즐겨찾기/닫힘 및 상위 워크스페이스 선택)
   const selectedProjectVal = ref<number | string>('')
@@ -44,7 +58,7 @@ export const useProjectFilter = defineStore('projectFilter', () => {
 
   // 6. 필터 페이로드 생성 로직
   const buildFilterPayload = (allReadableProjects: selectProject[] = []): ProjectFilter => {
-    const filterData = {} as ProjectFilter & Record<string, any>
+    const filterData = {} as ProjectFilter & Record<string, unknown>
 
     if (enabledFields.value.includes('status')) {
       if (cond.value.status === 'is') filterData.status = form.value.status
@@ -108,10 +122,11 @@ export const useProjectFilter = defineStore('projectFilter', () => {
         } else if (operator === 'any') {
           filterData[`${key}__isnull`] = false
         } else if (val) {
-          if (operator === 'contains') filterData[key] = val
-          else if (operator === 'exclude') filterData[`${key}__exclude`] = val
-          else if (operator === 'startswith') filterData[`${key}__startswith`] = val
-          else if (operator === 'endswith') filterData[`${key}__endswith`] = val
+          const strVal = String(val)
+          if (operator === 'contains') filterData[key] = strVal
+          else if (operator === 'exclude') filterData[`${key}__exclude`] = strVal
+          else if (operator === 'startswith') filterData[`${key}__startswith`] = strVal
+          else if (operator === 'endswith') filterData[`${key}__endswith`] = strVal
         }
       } else if (key === 'created' || key === 'updated') {
         const fieldPrefix = key === 'created' ? 'created' : 'updated'
@@ -152,7 +167,10 @@ export const useProjectFilter = defineStore('projectFilter', () => {
   }
 
   // 8. 저장된 쿼리 복원
-  const applySavedQuery = (query: any, allReadableProjects: selectProject[] = []) => {
+  const applySavedQuery = (
+    query: SavedProjectQuery | null | undefined,
+    allReadableProjects: selectProject[] = [],
+  ) => {
     if (!query || !query.filters) return null
 
     activeQueryId.value = query.pk ?? null

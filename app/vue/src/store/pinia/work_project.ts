@@ -246,7 +246,8 @@ export const useWork = defineStore('work', () => {
     if (payload.member) params.members__user = payload.member
 
     if (payload.description) params.description = payload.description
-    else if (payload.description__exclude) params.description__exclude = payload.description__exclude
+    else if (payload.description__exclude)
+      params.description__exclude = payload.description__exclude
     else if (payload.description__startswith)
       params.description__startswith = payload.description__startswith
     else if (payload.description__endswith)
