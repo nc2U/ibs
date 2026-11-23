@@ -6,12 +6,15 @@ from django.db.models import Sum
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_payment_plan
+from _utils.rrn_crypto import get_client_ip
 from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractPrice,
                              Contractor, ContractFile, ContractDocument, ContractDocumentFile,
                              ContractorAddress, ContractorContact, ContractorConsultationLogs,
-                             Succession, ContractorRelease)
+                             Succession, ContractorRelease,
+                             ContractorSensitiveInfo, ContractorSensitiveAccessLog)
 from contract.services import (ContractPriceUpdateService, ContractCreationService,
-                               ContractUpdateService, ContractorReleaseService)
+                               ContractUpdateService, ContractorReleaseService,
+                               ContractorSensitiveService)
 from items.models import HouseUnit, KeyUnit, UnitType
 from payment.models import InstallmentPaymentOrder
 from .accounts import SimpleUserSerializer
@@ -145,7 +148,32 @@ class ContractPriceWithPaymentPlanSerializer(serializers.ModelSerializer):
         return result
 
 
-class ContractorInContractSerializer(serializers.ModelSerializer):
+class ContractorSensitiveReadMixin(serializers.Serializer):
+    """계약자 민감식별정보 존재 여부·마스킹 필드 공통 믹스인 (평문은 절대 직렬화하지 않음)"""
+    has_rrn = serializers.SerializerMethodField(read_only=True)
+    rrn_masked = serializers.SerializerMethodField(read_only=True)
+    rrn_legal_basis = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    def _get_sensitive_info(obj):
+        try:
+            return obj.sensitive_info
+        except ObjectDoesNotExist:
+            return None
+
+    def get_has_rrn(self, obj) -> bool:
+        return self._get_sensitive_info(obj) is not None
+
+    def get_rrn_masked(self, obj) -> str:
+        info = self._get_sensitive_info(obj)
+        return info.rrn_masked if info else ''
+
+    def get_rrn_legal_basis(self, obj) -> str:
+        info = self._get_sensitive_info(obj)
+        return info.legal_basis if info else ''
+
+
+class ContractorInContractSerializer(ContractorSensitiveReadMixin, serializers.ModelSerializer):
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
     contractoraddress = AddressInContractorSerializer(read_only=True)
     contractorcontact = ContactInContractorSerializer()
@@ -154,7 +182,8 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
         model = Contractor
         fields = ('pk', 'name', 'birth_date', 'gender', 'qualification', 'qualifi_display',
                   'contractoraddress', 'contractorcontact', 'status', 'change_type',
-                  'reservation_date', 'contract_date', 'is_active', 'note')
+                  'reservation_date', 'contract_date', 'is_active', 'note',
+                  'has_rrn', 'rrn_masked', 'rrn_legal_basis')
 
 
 def get_installments(project):
@@ -430,7 +459,7 @@ class SuccessionInContractorSerializer(serializers.ModelSerializer):
         fields = ('pk', 'status')
 
 
-class ContractorSerializer(serializers.ModelSerializer):
+class ContractorSerializer(ContractorSensitiveReadMixin, serializers.ModelSerializer):
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     change_type_display = serializers.CharField(source='get_change_type_display', read_only=True)
@@ -441,7 +470,8 @@ class ContractorSerializer(serializers.ModelSerializer):
         model = Contractor
         fields = ('pk', 'contract', 'name', '__str__', 'birth_date', 'gender', 'qualification',
                   'qualifi_display', 'status', 'status_display', 'change_type', 'change_type_display',
-                  'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
+                  'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease',
+                  'has_rrn', 'rrn_masked', 'rrn_legal_basis')
 
     def validate(self, attrs):
         instance = self.instance
@@ -615,13 +645,14 @@ class BuyerContactSerializer(serializers.ModelSerializer):
         fields = ('pk', 'cell_phone', 'home_phone', 'other_phone', 'email')
 
 
-class BuyerInSuccessionSerializer(serializers.ModelSerializer):
+class BuyerInSuccessionSerializer(ContractorSensitiveReadMixin, serializers.ModelSerializer):
     contractoraddress = BuyerAddressSerializer(read_only=True)
     contractorcontact = BuyerContactSerializer(read_only=True)
 
     class Meta:
         model = Contractor
-        fields = ('pk', 'name', 'birth_date', 'gender', 'contractoraddress', 'contractorcontact')
+        fields = ('pk', 'name', 'birth_date', 'gender', 'contractoraddress', 'contractorcontact',
+                  'has_rrn', 'rrn_masked', 'rrn_legal_basis')
 
 
 class SuccessionSerializer(serializers.ModelSerializer):
@@ -703,7 +734,20 @@ class SuccessionSerializer(serializers.ModelSerializer):
                                           email=self.initial_data.get('email') or '')
         buyer_contact.save()
 
-        # 6. 권리 의무 승계 정보 입력
+        # 6. 양수계약자 주민등록번호 선택 등록
+        raw_rrn = str(self.initial_data.get('rrn') or '').strip()
+        if raw_rrn:
+            request = self.context.get('request')
+            ContractorSensitiveService.upsert_rrn(
+                contractor=buyer,
+                raw_rrn=raw_rrn,
+                legal_basis=str(self.initial_data.get('rrn_legal_basis') or '1'),
+                actor=getattr(request, 'user', None),
+                purpose='권리의무승계 등록 시 양수인 식별정보 등록',
+                ip_address=get_client_ip(request),
+            )
+
+        # 7. 권리 의무 승계 정보 입력
         validated_data['seller'] = seller
         validated_data['buyer'] = buyer
         succession = Succession.objects.create(**validated_data)
@@ -816,6 +860,28 @@ class SuccessionSerializer(serializers.ModelSerializer):
         else:
             buyer.save()
             seller.save()
+
+        request = self.context.get('request')
+        actor = getattr(request, 'user', None)
+        ip_addr = get_client_ip(request)
+        if instance.status == '9':
+            ContractorSensitiveService.purge_rrn(
+                contractor=buyer,
+                actor=actor,
+                purpose='권리의무승계 취소로 인한 양수인 식별정보 파기',
+                ip_address=ip_addr,
+            )
+        else:
+            raw_rrn = str(self.initial_data.get('rrn') or '').strip()
+            if raw_rrn:
+                ContractorSensitiveService.upsert_rrn(
+                    contractor=buyer,
+                    raw_rrn=raw_rrn,
+                    legal_basis=str(self.initial_data.get('rrn_legal_basis') or '1'),
+                    actor=actor,
+                    purpose='권리의무승계 정보 수정 시 양수인 식별정보 등록/갱신',
+                    ip_address=ip_addr,
+                )
 
         return instance
 
@@ -931,3 +997,39 @@ class SimpleContractLogSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'key_unit') and obj.key_unit and obj.key_unit.houseunit:
             return obj.key_unit.houseunit.__str__()
         return None
+
+
+class ContractorSensitiveUpsertSerializer(serializers.Serializer):
+    """계약자 주민등록번호 등록/갱신 요청 Serializer (Write-Only)"""
+    rrn = serializers.CharField(write_only=True, max_length=20)
+    legal_basis = serializers.ChoiceField(
+        choices=ContractorSensitiveInfo.LEGAL_BASIS_CHOICES,
+        default='1',
+        required=False,
+    )
+    purpose = serializers.CharField(max_length=150, required=False, allow_blank=True, default='계약자 식별정보 등록/갱신')
+
+
+class ContractorSensitiveRevealSerializer(serializers.Serializer):
+    """계약자 주민등록번호 평문 열람 요청 Serializer"""
+    purpose = serializers.CharField(max_length=150, required=True, allow_blank=False)
+
+
+class ContractorSensitiveAccessLogSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField(read_only=True)
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+
+    class Meta:
+        model = ContractorSensitiveAccessLog
+        fields = (
+            'pk', 'contractor', 'project_id_snapshot', 'contractor_name_snapshot',
+            'contract_serial_snapshot', 'actor', 'actor_name', 'action', 'action_display',
+            'purpose', 'ip_address', 'accessed_at'
+        )
+
+    @staticmethod
+    def get_actor_name(obj):
+        if not obj.actor:
+            return 'SYSTEM'
+        profile = getattr(obj.actor, 'profile', None)
+        return (profile.name if profile and profile.name else None) or obj.actor.username

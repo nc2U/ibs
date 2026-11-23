@@ -1,5 +1,7 @@
 ### FOR DJANGO APP ----------------------------------------------------------------------------------
 SECRET_KEY=                   # 필수: Django 보안 키 (최소 50자 이상의 무작위 문자열)
+RRN_ENCRYPTION_KEYS=          # 운영 필수: 계약자 주민등록번호 Fernet 암호화 키 (콤마로 다중 키 로테이션 지원)
+RRN_HASH_KEY=                 # 선택: 주민등록번호 중복 확인용 HMAC-SHA256 비밀 키 (미설정 시 RRN_ENCRYPTION_KEYS[0] 사용)
 DEBUG=                        # 디버그 모드 (운영: False, 개발: True, 기본값: False)
 ALLOWED_HOSTS=                # 허용 호스트 (콤마로 구분, 예: localhost,127.0.0.1,ibs.dyibs.com)
 CSRF_TRUSTED_ORIGINS=         # CSRF 신뢰 도메인 (콤마 구분, 예: https://ibs.dyibs.com,https://dev.dyibs.com)

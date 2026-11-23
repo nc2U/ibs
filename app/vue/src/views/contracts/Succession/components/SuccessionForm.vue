@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeMount, reactive, ref, watch } from 'vue'
 import { useContract } from '@/store/pinia/contract'
 import { isValidate } from '@/utils/helper'
+import { parseRrnMeta } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { BuyerForm, Contract, Contractor, Succession } from '@/store/types/contract'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
@@ -83,6 +84,8 @@ const createInitialBuyerData = (): BuyerForm => ({
   home_phone: '',
   other_phone: '',
   email: '',
+  rrn: '',
+  rrn_legal_basis: '1',
 })
 
 const createInitialFormData = () => ({
@@ -129,7 +132,7 @@ const formsCheck = computed(() => {
     const u = buyer_data.other_phone === (cont?.other_phone || '')
     const v = buyer_data.email === (cont?.email || '')
     const fc = a && b && c && d && e && f && g && h && i && j && k
-    const bc = l && m && n && o && p && q && r && s && t && u && v
+    const bc = l && m && n && o && p && q && r && s && t && u && v && !(buyer_data.rrn || '').trim()
     return fc && bc
   }
   return false
@@ -154,7 +157,9 @@ const statusOptions = computed(() => {
 
 const seller = computed(() => ({
   pk: props.isSuccession ? (props.succession?.seller?.pk ?? null) : (contractor.value?.pk ?? null),
-  name: props.isSuccession ? (props.succession?.seller?.name ?? '') : (contractor.value?.name ?? ''),
+  name: props.isSuccession
+    ? (props.succession?.seller?.name ?? '')
+    : (contractor.value?.name ?? ''),
 }))
 
 const onSubmit = (event: Event) => {
@@ -248,6 +253,8 @@ const formDataSet = () => {
     buyer_data.home_phone = cont?.home_phone || ''
     buyer_data.other_phone = cont?.other_phone || ''
     buyer_data.email = cont?.email || ''
+    buyer_data.rrn = ''
+    buyer_data.rrn_legal_basis = (buyer.rrn_legal_basis as '1' | '2' | '3') || '1'
   } else {
     // 신규 등록 모드: 깨끗하게 초기화
     Object.assign(form, createInitialFormData())
@@ -364,6 +371,50 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
+            <CFormLabel class="col-sm-4 col-form-label">주민번호</CFormLabel>
+            <CCol sm="8">
+              <input
+                v-model="buyer_data.rrn"
+                v-maska
+                data-maska="######-#######"
+                class="form-control"
+                maxlength="14"
+                autocomplete="off"
+                :placeholder="
+                  props.succession?.buyer?.has_rrn
+                    ? `기존: ${props.succession.buyer.rrn_masked} (변경 시 입력)`
+                    : '000000-0000000 (암호화 보관)'
+                "
+                @blur="
+                  () => {
+                    const parsed = parseRrnMeta(buyer_data.rrn || '')
+                    if (parsed) {
+                      if (!buyer_data.birth_date) buyer_data.birth_date = parsed.birthDate
+                      if (!buyer_data.gender) buyer_data.gender = parsed.gender
+                    }
+                  }
+                "
+              />
+            </CCol>
+          </CRow>
+        </CCol>
+        <CCol xs="6">
+          <CRow>
+            <CFormLabel class="col-sm-4 col-form-label">수집근거</CFormLabel>
+            <CCol sm="8">
+              <CFormSelect v-model="buyer_data.rrn_legal_basis">
+                <option value="1">조합설립·변경인가 제출</option>
+                <option value="2">부동산 거래신고</option>
+                <option value="3">세무신고·환불지급</option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
+        </CCol>
+      </CRow>
+
+      <CRow class="mb-2">
+        <CCol xs="6">
+          <CRow>
             <CFormLabel class="col-sm-4 col-form-label required">휴대전화</CFormLabel>
             <CCol sm="8">
               <input
@@ -429,7 +480,9 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
             <CFormLabel class="col-sm-2 col-form-label required"> 주민등록주소</CFormLabel>
             <CCol xs="4">
               <CInputGroup>
-                <CInputGroupText style="cursor: pointer" @click="openPostcode(2)"> 우편번호</CInputGroupText>
+                <CInputGroupText style="cursor: pointer" @click="openPostcode(2)">
+                  우편번호</CInputGroupText
+                >
                 <CFormInput
                   v-model="buyer_data.id_zipcode"
                   v-maska
@@ -478,7 +531,9 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
             <CFormLabel class="col-sm-2 col-form-label required"> 우편송달주소</CFormLabel>
             <CCol xs="4">
               <CInputGroup>
-                <CInputGroupText style="cursor: pointer" @click="openPostcode(3)"> 우편번호</CInputGroupText>
+                <CInputGroupText style="cursor: pointer" @click="openPostcode(3)">
+                  우편번호</CInputGroupText
+                >
                 <CFormInput
                   v-model="buyer_data.dm_zipcode"
                   v-maska

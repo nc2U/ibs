@@ -8,7 +8,8 @@ from .excel import (
     ExportContracts,
     ExportSuccessions,
     ExportReleases,
-    ExportUnitStatus
+    ExportUnitStatus,
+    ExportCoopRegistry,
 )
 
 # PDF exports removed - using notice.exports.pdf instead
@@ -17,5 +18,6 @@ __all__ = [
     'ExportContracts',
     'ExportSuccessions',
     'ExportReleases',
-    'ExportUnitStatus'
+    'ExportUnitStatus',
+    'ExportCoopRegistry',
 ]

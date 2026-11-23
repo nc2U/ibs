@@ -6,15 +6,17 @@ import uuid
 from datetime import date
 from datetime import datetime
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from django.db import transaction, IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_price, get_sales_price_by_gt
+from _utils.rrn_crypto import decrypt_rrn, encrypt_rrn, hash_rrn, normalize_and_parse_rrn
 from apiV1.serializers.ledger import ProjectCompositeTransactionSerializer
 from contract.models import (Contract, ContractPrice, OrderGroup, ContractFile,
-                             Contractor, ContractorAddress, ContractorContact)
+                             Contractor, ContractorAddress, ContractorContact,
+                             ContractorSensitiveInfo, ContractorSensitiveAccessLog)
 from items.models import KeyUnit, HouseUnit
 from ledger.models import ProjectAccount, ProjectBankAccount
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
@@ -466,11 +468,169 @@ class UnitAssignmentService:
         }
 
 
+class ContractorSensitiveService:
+    """계약자 고유식별정보(주민등록번호) 암호화 저장·열람·파기 및 감사 로그 서비스"""
+
+    @staticmethod
+    def can_collect_rrn(contractor: Contractor) -> bool:
+        """단순 일반 청약('1') 단계는 수집 제한 (본계약 또는 조합원만 허용)"""
+        return not (contractor.status == '1' and contractor.qualification == '1')
+
+    @staticmethod
+    def _contractor_context_snapshot(contractor: Contractor) -> tuple[int | None, str]:
+        rel_contract = getattr(contractor, 'contract', None) or getattr(contractor, 'prev_contract', None)
+        if not rel_contract:
+            return None, ''
+        return rel_contract.project_id, rel_contract.serial_number or ''
+
+    @staticmethod
+    @transaction.atomic
+    def upsert_rrn(
+        contractor: Contractor,
+        raw_rrn: str,
+        legal_basis: str = '1',
+        actor=None,
+        purpose: str = '계약자 식별정보 등록/갱신',
+        ip_address: str | None = None,
+        retention_until=None,
+    ) -> ContractorSensitiveInfo:
+        if not ContractorSensitiveService.can_collect_rrn(contractor):
+            raise serializers.ValidationError({
+                'rrn': '일반 청약 단계에서는 주민등록번호를 수집할 수 없습니다. 계약 전환 후 입력해 주십시오.'
+            })
+
+        try:
+            digits, parsed_birth_date, parsed_gender, masked = normalize_and_parse_rrn(raw_rrn)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'rrn': exc.messages[0] if exc.messages else str(exc)}) from exc
+
+        valid_bases = {choice[0] for choice in ContractorSensitiveInfo.LEGAL_BASIS_CHOICES}
+        basis = legal_basis if legal_basis in valid_bases else '1'
+
+        # 기존 birth_date / gender 와 교차 검증 및 미입력 시 자동 보완
+        existing_birth = contractor.birth_date
+        if isinstance(existing_birth, str) and existing_birth:
+            try:
+                existing_birth = date.fromisoformat(existing_birth)
+            except ValueError:
+                existing_birth = None
+
+        update_fields = []
+        if existing_birth and existing_birth != parsed_birth_date:
+            raise serializers.ValidationError({
+                'rrn': f'입력한 주민등록번호 생년월일({parsed_birth_date})이 계약자 생년월일({existing_birth})과 일치하지 않습니다.'
+            })
+        if not existing_birth:
+            contractor.birth_date = parsed_birth_date
+            update_fields.append('birth_date')
+
+        if contractor.gender and contractor.gender != parsed_gender:
+            raise serializers.ValidationError({
+                'rrn': '입력한 주민등록번호의 성별이 계약자 성별과 일치하지 않습니다.'
+            })
+        if not contractor.gender:
+            contractor.gender = parsed_gender
+            update_fields.append('gender')
+
+        if update_fields:
+            contractor.save(update_fields=update_fields)
+
+        has_existing = ContractorSensitiveInfo.objects.filter(contractor=contractor).exists()
+        defaults = {
+            'encrypted_rrn': encrypt_rrn(digits),
+            'rrn_hash': hash_rrn(digits),
+            'rrn_masked': masked,
+            'legal_basis': basis,
+            'updator': actor,
+        }
+        if retention_until is not None:
+            defaults['retention_until'] = clean_date_value(retention_until)
+        if not has_existing:
+            defaults['creator'] = actor
+
+        info, _ = ContractorSensitiveInfo.objects.update_or_create(
+            contractor=contractor,
+            defaults=defaults,
+        )
+
+        project_id, serial_number = ContractorSensitiveService._contractor_context_snapshot(contractor)
+        ContractorSensitiveAccessLog.objects.create(
+            contractor=contractor,
+            project_id_snapshot=project_id,
+            contractor_name_snapshot=contractor.name,
+            contract_serial_snapshot=serial_number,
+            actor=actor,
+            action='CREATE_UPDATE',
+            purpose=(purpose or '계약자 식별정보 등록/갱신')[:150],
+            ip_address=ip_address,
+        )
+        return info
+
+    @staticmethod
+    def reveal_rrn(
+        contractor: Contractor,
+        actor,
+        purpose: str,
+        ip_address: str | None = None,
+        formatted: bool = True,
+    ) -> str:
+        clean_purpose = str(purpose or '').strip()
+        if not clean_purpose:
+            raise serializers.ValidationError({'purpose': '주민등록번호 열람 사유를 입력해 주십시오.'})
+
+        info = getattr(contractor, 'sensitive_info', None)
+        if not info:
+            raise serializers.ValidationError({'detail': '등록된 주민등록번호 정보가 없습니다.'})
+
+        try:
+            plain_rrn = decrypt_rrn(info.encrypted_rrn, formatted=formatted)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'detail': exc.messages[0] if exc.messages else str(exc)}) from exc
+
+        project_id, serial_number = ContractorSensitiveService._contractor_context_snapshot(contractor)
+        ContractorSensitiveAccessLog.objects.create(
+            contractor=contractor,
+            project_id_snapshot=project_id,
+            contractor_name_snapshot=contractor.name,
+            contract_serial_snapshot=serial_number,
+            actor=actor,
+            action='VIEW_PLAIN',
+            purpose=clean_purpose[:150],
+            ip_address=ip_address,
+        )
+        return plain_rrn
+
+    @staticmethod
+    @transaction.atomic
+    def purge_rrn(
+        contractor: Contractor,
+        actor=None,
+        purpose: str = '계약자 민감정보 파기',
+        ip_address: str | None = None,
+    ) -> bool:
+        deleted, _ = ContractorSensitiveInfo.objects.filter(contractor=contractor).delete()
+        if not deleted:
+            return False
+
+        project_id, serial_number = ContractorSensitiveService._contractor_context_snapshot(contractor)
+        ContractorSensitiveAccessLog.objects.create(
+            contractor=contractor,
+            project_id_snapshot=project_id,
+            contractor_name_snapshot=contractor.name,
+            contract_serial_snapshot=serial_number,
+            actor=actor,
+            action='PURGE',
+            purpose=(purpose or '계약자 민감정보 파기')[:150],
+            ip_address=ip_address,
+        )
+        return True
+
+
 class ContractorRegistrationService:
     """계약자 등록/수정 관리 서비스"""
 
     @staticmethod
-    def register_contractor(contract, data):
+    def register_contractor(contract, data, user=None, ip_address=None):
         """
         새 계약자 등록 (계약 생성 시)
 
@@ -525,11 +685,22 @@ class ContractorRegistrationService:
                 dm_address3=data.get('dm_address3', '')
             )
 
+        raw_rrn = str(data.get('rrn') or '').strip()
+        if raw_rrn:
+            ContractorSensitiveService.upsert_rrn(
+                contractor=contractor,
+                raw_rrn=raw_rrn,
+                legal_basis=str(data.get('rrn_legal_basis') or '1'),
+                actor=user,
+                purpose='계약 등록 시 식별정보 등록',
+                ip_address=ip_address,
+            )
+
         return contractor
 
     @staticmethod
     @transaction.atomic  # [H-2] Contractor/Contact/Address 복합 수정을 원자적 트랜잭션으로 보호
-    def update_contractor(contractor, data):
+    def update_contractor(contractor, data, user=None, ip_address=None):
         """
         기존 계약자 정보 수정
 
@@ -588,6 +759,17 @@ class ContractorRegistrationService:
                     dm_address2=data.get('dm_address2', ''),
                     dm_address3=data.get('dm_address3', '')
                 )
+
+        raw_rrn = str(data.get('rrn') or '').strip()
+        if raw_rrn:
+            ContractorSensitiveService.upsert_rrn(
+                contractor=contractor,
+                raw_rrn=raw_rrn,
+                legal_basis=str(data.get('rrn_legal_basis') or '1'),
+                actor=user,
+                purpose='계약 정보 수정 시 식별정보 등록/갱신',
+                ip_address=ip_address,
+            )
 
     @staticmethod
     def _has_address_data(data):
@@ -848,7 +1030,7 @@ class ContractCreationService:
             self.price_service.update_single_contract_price(contract)
 
         # 4. 계약자 등록
-        contractor = self.contractor_service.register_contractor(contract, data)
+        contractor = self.contractor_service.register_contractor(contract, data, user=user)
 
         # 5. 파일 처리
         self.file_service.handle_new_file(contractor, data.get('newFile'), user)
@@ -1028,7 +1210,7 @@ class ContractUpdateService:
 
         # 4. 계약자 정보 수정
         contractor = instance.contractor
-        self.contractor_service.update_contractor(contractor, data)
+        self.contractor_service.update_contractor(contractor, data, user=user)
 
         # 5. 파일 관리
         self.file_service.handle_file_operations(data, contractor, user)

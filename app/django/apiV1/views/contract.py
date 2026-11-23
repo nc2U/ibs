@@ -16,13 +16,14 @@ from rest_framework.views import APIView
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
     get_contract_price, get_contract_payment_plan
+from _utils.rrn_crypto import get_client_ip
 from apiV1.permissions._utils import get_project_ids_with_permission
-from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from contract.models import OrderGroup, DocumentType, RequiredDocument, Contractor, Contract, ContractPrice, \
     ContractFile, ContractDocument, ContractDocumentFile, ContractorAddress, ContractorContact, \
-    ContractorConsultationLogs, Succession, ContractorRelease
-from contract.services import ContractPriceBulkUpdateService
+    ContractorConsultationLogs, Succession, ContractorRelease, ContractorSensitiveAccessLog
+from contract.services import ContractPriceBulkUpdateService, ContractorSensitiveService
 from items.models import BuildingUnit, UnitType
 from ledger.models import ProjectBankTransaction
 from payment.models import ContractPayment
@@ -35,7 +36,8 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
     SubsSummarySerializer, ContSummarySerializer, ContractAggregateSerializer, ContractorSerializer, \
     SimpleContractorSerializer, ContractFileSerializer, ContractDocumentSerializer, ContractDocumentFileSerializer, \
     ContractorAddressSerializer, ContractorContactSerializer, ContractorConsultationLogsSerializer, \
-    SuccessionSerializer, ContractorReleaseSerializer, SimpleContractLogSerializer
+    SuccessionSerializer, ContractorReleaseSerializer, SimpleContractLogSerializer, \
+    ContractorSensitiveUpsertSerializer, ContractorSensitiveRevealSerializer, ContractorSensitiveAccessLogSerializer
 
 
 def get_accessible_project_ids(user, required_perm: str = 'contract.read'):
@@ -495,6 +497,7 @@ class ContractSetViewSet(ContractViewSet):
             'key_unit__houseunit__floor_type',
             'contractprice',
             'contractor__contractorcontact',
+            'contractor__sensitive_info',
             'updator',
         ).prefetch_related(
             'contractor__addresses',  # contractoraddress property N+1 방지
@@ -751,11 +754,11 @@ class ContractorViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in ('list', 'retrieve', 'reveal_rrn', 'sensitive_logs'):
             return 'contract.read'
         if self.action == 'create':
             return 'contract.create'
-        if self.action in ('update', 'partial_update'):
+        if self.action in ('update', 'partial_update', 'sensitive_info'):
             return 'contract.update'
         if self.action == 'destroy':
             return 'contract.delete'
@@ -770,6 +773,7 @@ class ContractorViewSet(viewsets.ModelViewSet):
             'contract__unit_type',
             'prev_contract__project',
             'contractorcontact',
+            'sensitive_info',
         ).prefetch_related(
             'addresses',
         )
@@ -780,6 +784,106 @@ class ContractorViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    @action(detail=True, methods=['post', 'delete'], url_path='sensitive-info')
+    def sensitive_info(self, request, pk=None):
+        """
+        계약자 고유식별정보(주민등록번호) 등록/갱신(POST) 및 파기(DELETE)
+        - 계약 담당자(contract.update) 이상 입력 가능, 응답에는 마스킹 값만 반환(Write-Only)
+        """
+        contractor = self.get_object()
+        ensure_contractor_project_access(request.user, contractor, 'contract.update')
+
+        if request.method == 'DELETE':
+            purpose = str(request.data.get('purpose') or request.query_params.get('purpose') or '담당자 요청에 의한 식별정보 파기')
+            ContractorSensitiveService.purge_rrn(
+                contractor=contractor,
+                actor=request.user,
+                purpose=purpose,
+                ip_address=get_client_ip(request),
+            )
+            return Response({
+                'pk': contractor.pk,
+                'has_rrn': False,
+                'rrn_masked': '',
+                'rrn_legal_basis': '',
+            }, status=status.HTTP_200_OK)
+
+        req_serializer = ContractorSensitiveUpsertSerializer(data=request.data)
+        req_serializer.is_valid(raise_exception=True)
+        info = ContractorSensitiveService.upsert_rrn(
+            contractor=contractor,
+            raw_rrn=req_serializer.validated_data['rrn'],
+            legal_basis=req_serializer.validated_data.get('legal_basis', '1'),
+            actor=request.user,
+            purpose=req_serializer.validated_data.get('purpose') or '계약자 식별정보 등록/갱신',
+            ip_address=get_client_ip(request),
+        )
+        contractor.refresh_from_db()
+        return Response({
+            'pk': contractor.pk,
+            'birth_date': contractor.birth_date,
+            'gender': contractor.gender,
+            'has_rrn': True,
+            'rrn_masked': info.rrn_masked,
+            'rrn_legal_basis': info.legal_basis,
+        }, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='reveal-rrn',
+        permission_classes=[permissions.IsAuthenticated, IsWorkManagerOnly, IbsModulePermission],
+    )
+    def reveal_rrn(self, request, pk=None):
+        """
+        계약자 주민등록번호 평문 단건 열람
+        - 슈퍼유저(is_superuser) 및 업무관리자(work_manager)만 허용
+        - 열람 사유(purpose) 필수 및 감사 로그 영구 기록
+        """
+        contractor = self.get_object()
+        req_serializer = ContractorSensitiveRevealSerializer(data=request.data)
+        req_serializer.is_valid(raise_exception=True)
+        plain_rrn = ContractorSensitiveService.reveal_rrn(
+            contractor=contractor,
+            actor=request.user,
+            purpose=req_serializer.validated_data['purpose'],
+            ip_address=get_client_ip(request),
+        )
+        info = contractor.sensitive_info
+        return Response({
+            'pk': contractor.pk,
+            'rrn': plain_rrn,
+            'rrn_masked': info.rrn_masked,
+            'legal_basis': info.legal_basis,
+            'legal_basis_display': info.get_legal_basis_display(),
+        }, status=status.HTTP_200_OK)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='sensitive-logs',
+        permission_classes=[permissions.IsAuthenticated, IsWorkManagerOnly, IbsModulePermission],
+    )
+    def sensitive_logs(self, request):
+        """고유식별정보 열람/등록/출력/파기 감사 로그 조회 (슈퍼유저/업무관리자 전용)"""
+        qs = ContractorSensitiveAccessLog.objects.select_related('actor__profile')
+        project_id = request.query_params.get('project')
+        contractor_id = request.query_params.get('contractor')
+        if project_id:
+            try:
+                qs = qs.filter(project_id_snapshot=int(project_id))
+            except (TypeError, ValueError):
+                pass
+        if contractor_id:
+            try:
+                qs = qs.filter(contractor_id=int(contractor_id))
+            except (TypeError, ValueError):
+                pass
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            return self.get_paginated_response(ContractorSensitiveAccessLogSerializer(page, many=True).data)
+        return Response(ContractorSensitiveAccessLogSerializer(qs[:200], many=True).data)
 
 
 class SimpleContractorViewSet(ContractorViewSet):
@@ -1176,7 +1280,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         # [M-2] SuccessionSerializer 직렬화 시 seller/buyer/contract/project 접근으로 발생하는 N+1 방지
         queryset = Succession.objects.select_related(
             'seller',
-            'buyer',
+            'buyer__sensitive_info',
             'contract__project',
             'contract__order_group',
             'contract__unit_type',
@@ -1235,8 +1339,14 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         # 2. Succession 레코드 삭제
         instance.delete()
 
-        # 3. 양수인(buyer) 개인정보 완전 파기 (Contractor, Address, Contact 연쇄 삭제)
+        # 3. 양수인(buyer) 개인정보 완전 파기 (Contractor, Address, Contact, SensitiveInfo 연쇄 삭제 + 파기 로그)
         if buyer:
+            ContractorSensitiveService.purge_rrn(
+                contractor=buyer,
+                actor=self.request.user,
+                purpose='권리의무승계 진행 중 건 삭제로 인한 양수인 식별정보 파기',
+                ip_address=get_client_ip(self.request),
+            )
             buyer.delete()
 
     @action(detail=False, methods=['get'], url_path='find-page')

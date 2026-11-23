@@ -5,7 +5,7 @@ from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, Expor
                              ExportStaffCareers, ExportStaffCertificates, ExportStaffRewards,
                              ExportStaffLeaveQuotas, ExportStaffLeaveUsages, ExportStaffAttendanceStatus,
                              ExportStaffEvaluations, ExportPromotionCandidates, ExportPromotionPolicies)
-from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
+from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus, ExportCoopRegistry
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, ExportCompanyTransactions,
                             ExportCompanyMonthlySummary,
@@ -44,6 +44,7 @@ urlpatterns = [
 
     # Contract 관련 (새 모듈)
     path('contracts/', ExportContracts.as_view(), name='contracts'),
+    path('coop-registry/', ExportCoopRegistry.as_view(), name='coop-registry'),
     path('successions/', ExportSuccessions.as_view(), name='successions'),
     path('releases/', ExportReleases.as_view(), name='releases'),
     path('status/', ExportUnitStatus.as_view(), name='unit-status'),

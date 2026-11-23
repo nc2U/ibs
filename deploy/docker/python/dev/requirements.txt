@@ -1,5 +1,6 @@
 boto3
 celery[redis]
+cryptography
 crispy-bootstrap4
 Django
 

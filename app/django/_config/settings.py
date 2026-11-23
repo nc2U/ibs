@@ -62,6 +62,8 @@ ALLOWED_HOSTS = _resolve_allowed_hosts(DEBUG, _RAW_ALLOWED_HOSTS, _DOMAIN_NAME)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='SECRET_KEY')
 _validate_production_secret_key(DEBUG, SECRET_KEY, sys.argv)
+RRN_ENCRYPTION_KEYS = config('RRN_ENCRYPTION_KEYS', default='', cast=Csv())
+RRN_HASH_KEY = config('RRN_HASH_KEY', default='')
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',
                               default='http://localhost:8000,http://127.0.0.1:8000',
                               cast=lambda v: [s.strip() for s in v.split(",") if s.strip()], )

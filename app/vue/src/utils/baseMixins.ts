@@ -145,3 +145,43 @@ export const getMeetingStatusColor = (status: string): string => {
   if (status === '2') return 'success'
   return 'secondary'
 }
+
+export const parseRrnMeta = (rawRrn: string): { birthDate: string; gender: 'M' | 'F' } | null => {
+  const digits = String(rawRrn || '').replace(/\D/g, '')
+  if (digits.length !== 13) return null
+
+  const yy = Number(digits.slice(0, 2))
+  const mm = Number(digits.slice(2, 4))
+  const dd = Number(digits.slice(4, 6))
+  const genderCode = digits[6]
+
+  const centuryMap: Record<string, number> = {
+    '1': 1900,
+    '2': 1900,
+    '5': 1900,
+    '6': 1900,
+    '3': 2000,
+    '4': 2000,
+    '7': 2000,
+    '8': 2000,
+    '9': 1800,
+    '0': 1800,
+  }
+  const century = centuryMap[genderCode]
+  if (century === undefined) return null
+
+  const fullYear = century + yy
+  const dt = new Date(fullYear, mm - 1, dd)
+  if (
+    Number.isNaN(dt.getTime()) ||
+    dt.getFullYear() !== fullYear ||
+    dt.getMonth() !== mm - 1 ||
+    dt.getDate() !== dd
+  ) {
+    return null
+  }
+
+  const gender: 'M' | 'F' = ['1', '3', '5', '7', '9'].includes(genderCode) ? 'M' : 'F'
+  const birthDate = `${fullYear}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+  return { birthDate, gender }
+}

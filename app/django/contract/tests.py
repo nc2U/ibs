@@ -1602,5 +1602,259 @@ class ContractAndPaymentSecurityTests(APITestCase):
         self.assertEqual(sum(cp_comm.payment_amounts.values()), 400000000)
 
 
+class ContractorSensitiveInfoTests(APITestCase):
+    """계약자 고유식별정보(주민등록번호) 분리 보관·암호화·권한 분리·감사 로그·제출용 엑셀 검증"""
+
+    def setUp(self):
+        from cryptography.fernet import Fernet
+        from django.test import override_settings
+
+        self.key1 = Fernet.generate_key().decode('utf-8')
+        self.key2 = Fernet.generate_key().decode('utf-8')
+        self.settings_cm = override_settings(
+            DEBUG=False,
+            RRN_ENCRYPTION_KEYS=[self.key1, self.key2],
+            RRN_HASH_KEY='unit-test-hmac-secret',
+        )
+        self.settings_cm.enable()
+        self.addCleanup(self.settings_cm.disable)
+
+        self.superuser = User.objects.create_superuser(
+            username='rrn_super', email='rrn_super@test.com', password='pw'
+        )
+        self.work_manager = User.objects.create_user(
+            username='rrn_wm', email='rrn_wm@test.com', password='pw', work_manager=True, is_staff=True
+        )
+        self.staff_user = User.objects.create_user(
+            username='rrn_staff', email='rrn_staff@test.com', password='pw', is_staff=True
+        )
+
+        self.company = Company.objects.create(name='RRN Test Co')
+        self.issue_project = IssueProject.objects.create(
+            company=self.company, name='RRN Issue Proj', slug='rrn-proj', creator=self.superuser
+        )
+        self.project = Project.objects.create(
+            issue_project=self.issue_project,
+            name='RRN 분양현장',
+            order=1,
+            kind='1',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24,
+        )
+
+        perm_read, _ = Permission.objects.get_or_create(
+            code='contract.read', defaults={'name': '계약 조회', 'module': 'contract'}
+        )
+        perm_upd, _ = Permission.objects.get_or_create(
+            code='contract.update', defaults={'name': '계약 수정', 'module': 'contract'}
+        )
+        perm_cre, _ = Permission.objects.get_or_create(
+            code='contract.create', defaults={'name': '계약 등록', 'module': 'contract'}
+        )
+        self.role = Role.objects.create(name='계약담당자', creator=self.superuser)
+        self.role.permissions.add(perm_read, perm_upd, perm_cre)
+        self.member = Member.objects.create(user=self.staff_user, project=self.issue_project)
+        self.member.roles.add(self.role)
+
+        self.order_group_coop = OrderGroup.objects.create(
+            project=self.project, order_number=1, sort='1', name='1차 조합'
+        )
+        self.unit_type = UnitType.objects.create(
+            project=self.project, name='84A', sort='1', color='#123456', average_price=500000000, num_unit=10
+        )
+        self.contract = Contract.objects.create(
+            project=self.project,
+            serial_number='RRN-001',
+            order_group=self.order_group_coop,
+            unit_type=self.unit_type,
+            is_active=True,
+        )
+        self.contractor = Contractor.objects.create(
+            contract=self.contract,
+            name='홍길동',
+            birth_date=date(1990, 5, 12),
+            gender='M',
+            qualification='2',
+            status='2',
+            contract_date=date(2026, 2, 1),
+            is_active=True,
+        )
+        ContractorContact.objects.create(contractor=self.contractor, cell_phone='010-1111-2222')
+        ContractorAddress.objects.create(
+            contractor=self.contractor,
+            id_zipcode='06000',
+            id_address1='서울 강남구 테헤란로 1',
+            dm_zipcode='06000',
+            dm_address1='서울 강남구 테헤란로 1',
+        )
+
+    def test_rrn_crypto_validation_and_key_rotation(self):
+        """주민번호 정규화/생년월일·성별 파생/미래일 차단 및 MultiFernet 키 로테이션 검증"""
+        from cryptography.fernet import Fernet
+        from django.core.exceptions import ImproperlyConfigured, ValidationError as DjangoValidationError
+        from django.test import override_settings
+        from _utils.rrn_crypto import decrypt_rrn, encrypt_rrn, hash_rrn, normalize_and_parse_rrn
+
+        digits, birth, gender, masked = normalize_and_parse_rrn('900512-1234567')
+        self.assertEqual(digits, '9005121234567')
+        self.assertEqual(birth, date(1990, 5, 12))
+        self.assertEqual(gender, 'M')
+        self.assertEqual(masked, '900512-1******')
+
+        # 2020년 이후 뒷자리 임의번호(체크섬 불일치 가능 번호)도 정상 허용
+        _, birth_2022, gender_2022, _ = normalize_and_parse_rrn('220315-4000000')
+        self.assertEqual(birth_2022, date(2022, 3, 15))
+        self.assertEqual(gender_2022, 'F')
+
+        # 잘못된 날짜 / 미래 날짜 차단
+        with self.assertRaises(DjangoValidationError):
+            normalize_and_parse_rrn('900230-1234567')
+        with self.assertRaises(DjangoValidationError):
+            normalize_and_parse_rrn('291231-3123456')
+
+        # 구 키(key2)로 암호화된 데이터도 새 키([key_new, key2]) 목록으로 복호화 가능
+        with override_settings(DEBUG=False, RRN_ENCRYPTION_KEYS=[self.key2]):
+            old_token = encrypt_rrn('9005121234567')
+        key_new = Fernet.generate_key().decode('utf-8')
+        with override_settings(DEBUG=False, RRN_ENCRYPTION_KEYS=[key_new, self.key2]):
+            self.assertEqual(decrypt_rrn(old_token), '900512-1234567')
+
+        # DEBUG=False에서 키 미설정 시 차단
+        with override_settings(DEBUG=False, RRN_ENCRYPTION_KEYS=[], RRN_HASH_KEY=''):
+            with self.assertRaises(ImproperlyConfigured):
+                hash_rrn('9005121234567')
+
+    def test_sensitive_api_role_split_audit_and_coop_excel_export(self):
+        """담당자 Write-Only 입력 vs 업무관리자/슈퍼유저 평문 열람·인가명부 엑셀·감사로그·잠금프로젝트 차단"""
+        from io import BytesIO
+        import openpyxl
+        from contract.models import ContractorSensitiveAccessLog, ContractorSensitiveInfo
+
+        # 1. 단순 일반 청약자는 수집 차단
+        subs_contract = Contract.objects.create(
+            project=self.project,
+            serial_number='SUB-001',
+            order_group=OrderGroup.objects.create(project=self.project, order_number=2, sort='2', name='일반'),
+            unit_type=self.unit_type,
+        )
+        subs_contractor = Contractor.objects.create(
+            contract=subs_contract, name='청약자', qualification='1', status='1', is_active=True
+        )
+        self.client.force_authenticate(user=self.staff_user)
+        res_subs = self.client.post(f'/api/v1/contractor/{subs_contractor.pk}/sensitive-info/', {
+            'rrn': '910101-2000000',
+            'legal_basis': '1',
+        }, format='json')
+        self.assertEqual(res_subs.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        # 2. 담당자(contract.update)는 본계약/조합원 주민번호 입력 가능 (응답/조회는 마스킹만 노출)
+        res_mismatch = self.client.post(f'/api/v1/contractor/{self.contractor.pk}/sensitive-info/', {
+            'rrn': '910101-1234567',
+            'legal_basis': '1',
+        }, format='json')
+        self.assertEqual(res_mismatch.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        res_upsert = self.client.post(f'/api/v1/contractor/{self.contractor.pk}/sensitive-info/', {
+            'rrn': '900512-1234567',
+            'legal_basis': '1',
+            'purpose': '조합설립 변경인가 서류 확인 입력',
+        }, format='json')
+        self.assertEqual(res_upsert.status_code, http_status.HTTP_200_OK)
+        self.assertTrue(res_upsert.data['has_rrn'])
+        self.assertEqual(res_upsert.data['rrn_masked'], '900512-1******')
+        self.assertNotIn('1234567', str(res_upsert.data))
+
+        # DB 평문 미저장 확인
+        info = ContractorSensitiveInfo.objects.get(contractor=self.contractor)
+        self.assertNotIn('900512', info.encrypted_rrn)
+
+        # 3. 일반 조회(/contractor/<pk>/)에는 담당자/슈퍼유저 모두 마스킹만 노출
+        res_get = self.client.get(f'/api/v1/contractor/{self.contractor.pk}/')
+        self.assertEqual(res_get.status_code, http_status.HTTP_200_OK)
+        self.assertTrue(res_get.data['has_rrn'])
+        self.assertEqual(res_get.data['rrn_masked'], '900512-1******')
+        self.assertNotIn('rrn', res_get.data)
+
+        # 4. 담당자는 평문 열람(reveal-rrn) 및 제출용 엑셀(/excel/coop-registry/) 접근 불가 (403)
+        res_staff_reveal = self.client.post(
+            f'/api/v1/contractor/{self.contractor.pk}/reveal-rrn/',
+            {'purpose': '임의 열람'},
+            format='json',
+        )
+        self.assertEqual(res_staff_reveal.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        self.client.force_login(user=self.staff_user)
+        res_staff_excel = self.client.get(
+            f'/excel/coop-registry/?project={self.project.pk}&purpose=임의출력'
+        )
+        self.assertEqual(res_staff_excel.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 5. 업무관리자(work_manager)는 사유 입력 후 평문 열람 + 제출용 엑셀 출력 가능 + 감사로그 기록
+        self.client.force_authenticate(user=self.work_manager)
+        self.client.force_login(user=self.work_manager)
+        res_wm_no_purpose = self.client.post(
+            f'/api/v1/contractor/{self.contractor.pk}/reveal-rrn/',
+            {'purpose': '  '},
+            format='json',
+        )
+        self.assertEqual(res_wm_no_purpose.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+        res_wm_reveal = self.client.post(
+            f'/api/v1/contractor/{self.contractor.pk}/reveal-rrn/',
+            {'purpose': '조합원 자격 확인'},
+            format='json',
+        )
+        self.assertEqual(res_wm_reveal.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_wm_reveal.data['rrn'], '900512-1234567')
+
+        res_wm_excel = self.client.get(
+            f'/excel/coop-registry/?project={self.project.pk}&purpose=조합설립변경인가'
+        )
+        self.assertEqual(res_wm_excel.status_code, http_status.HTTP_200_OK)
+        wb = openpyxl.load_workbook(BytesIO(res_wm_excel.content))
+        sheet = wb.active
+        exported_cells = [cell.value for row in sheet.iter_rows(values_only=False) for cell in row]
+        self.assertIn('900512-1234567', exported_cells)
+
+        actions = list(ContractorSensitiveAccessLog.objects.values_list('action', flat=True))
+        self.assertIn('CREATE_UPDATE', actions)
+        self.assertIn('VIEW_PLAIN', actions)
+        self.assertIn('EXPORT_EXCEL', actions)
+
+        # 6. 잠금 보관 프로젝트(IssueProject status='9')는 슈퍼유저/업무관리자라도 접근 차단
+        self.issue_project.status = '9'
+        self.issue_project.save(update_fields=['status'])
+        self.client.force_authenticate(user=self.superuser)
+        self.client.force_login(user=self.superuser)
+        res_locked_reveal = self.client.post(
+            f'/api/v1/contractor/{self.contractor.pk}/reveal-rrn/',
+            {'purpose': '잠금 테스트'},
+            format='json',
+        )
+        self.assertEqual(res_locked_reveal.status_code, http_status.HTTP_403_FORBIDDEN)
+        res_locked_excel = self.client.get(
+            f'/excel/coop-registry/?project={self.project.pk}&purpose=잠금테스트'
+        )
+        self.assertEqual(res_locked_excel.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 잠금 해제 후 담당자가 삭제(파기) 요청하면 정보 삭제 + PURGE 감사로그(스냅샷) 보존
+        self.issue_project.status = '1'
+        self.issue_project.save(update_fields=['status'])
+        self.client.force_authenticate(user=self.staff_user)
+        res_purge = self.client.delete(
+            f'/api/v1/contractor/{self.contractor.pk}/sensitive-info/?purpose=동의철회 파기'
+        )
+        self.assertEqual(res_purge.status_code, http_status.HTTP_200_OK)
+        self.assertFalse(ContractorSensitiveInfo.objects.filter(contractor=self.contractor).exists())
+        self.assertTrue(
+            ContractorSensitiveAccessLog.objects.filter(
+                action='PURGE', contractor_name_snapshot='홍길동'
+            ).exists()
+        )
+
+
+
 
 

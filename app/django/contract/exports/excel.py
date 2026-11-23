@@ -12,9 +12,9 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from _excel.mixins import ExcelExportMixin
-from apiV1.permissions._utils import get_project_ids_with_permission
-from contract.models import Contract, Succession, ContractorRelease
-from contract.models import ContractorAddress
+from _utils.rrn_crypto import decrypt_rrn, get_client_ip
+from apiV1.permissions._utils import get_project_ids_with_permission, is_project_locked
+from contract.models import Contract, Succession, ContractorRelease, ContractorAddress, ContractorSensitiveAccessLog
 from items.models import HouseUnit, BuildingUnit
 from project.models import Project
 
@@ -757,3 +757,205 @@ class ExportUnitStatus(ContractExportMixin):
         filename = request.GET.get('filename') or 'unit-status-board'
         filename = f'{filename}-{today_str}'
         return self.create_response(output, workbook, filename)
+
+
+class ExportCoopRegistry(ContractExportMixin):
+    """
+    조합설립/변경인가·행정청 제출용 명부 엑셀 다운로드 (주민등록번호 포함)
+    - 슈퍼유저(is_superuser) 및 업무관리자(work_manager)만 허용
+    - 다운로드 사유(purpose) 필수 및 감사 로그 영구 기록
+    """
+
+    def get(self, request):
+        project, err_response = self.get_project_or_error(request)
+        if err_response:
+            return err_response
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            return HttpResponse(
+                '슈퍼유저 또는 업무관리자만 주민등록번호가 포함된 명부를 출력할 수 있습니다.',
+                status=403,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        issue_project = getattr(project, 'issue_project', None)
+        if is_project_locked(issue_project):
+            return HttpResponse(
+                '잠금 보관된 프로젝트의 민감정보는 출력할 수 없습니다.',
+                status=403,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        purpose = str(request.GET.get('purpose') or '').strip()
+        if not purpose:
+            return HttpResponse(
+                "다운로드 사유('purpose') 파라미터가 필요합니다.",
+                status=400,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        quali = request.GET.get('quali')
+        group = request.GET.get('group')
+        unit_type = request.GET.get('type')
+
+        queryset = (
+            Contract.objects.filter(
+                project=project,
+                is_active=True,
+                contractor__status__in=['2', '3'],
+            )
+            .select_related(
+                'order_group',
+                'unit_type',
+                'key_unit__houseunit__building_unit',
+                'contractor',
+                'contractor__contractorcontact',
+                'contractor__sensitive_info',
+            )
+            .prefetch_related('contractor__addresses')
+            .order_by('contractor__contract_date', 'serial_number')
+        )
+        if quali:
+            queryset = queryset.filter(contractor__qualification=quali)
+        if group:
+            queryset = queryset.filter(order_group_id=group)
+        if unit_type:
+            queryset = queryset.filter(unit_type_id=unit_type)
+
+        contracts = list(queryset)
+        today_str = get_today_str()
+        output, workbook, worksheet = self.create_workbook('행정제출용_명부')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+        fmt_center = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'center', 'num_format': '@'})
+        fmt_num = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'center', 'num_format': '#,##0'})
+        fmt_left = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'left', 'num_format': '@'})
+        fmt_date = workbook.add_format({'border': True, 'valign': 'vcenter', 'align': 'center', 'num_format': 'yyyy-mm-dd'})
+
+        headers = [
+            ('No', 6),
+            ('일련번호', 14),
+            ('차수', 14),
+            ('등록상태', 10),
+            ('타입', 10),
+            ('동', 8),
+            ('호수', 8),
+            ('성명', 12),
+            ('주민등록번호', 18),
+            ('생년월일', 12),
+            ('휴대전화', 15),
+            ('주민등록주소', 45),
+            ('우편송달주소', 45),
+            ('계약일자', 12),
+        ]
+
+        row_num = 0
+        worksheet.set_row(row_num, 45)
+        worksheet.merge_range(row_num, 0, row_num, len(headers) - 1, f'{project.name} 조합원·계약자 명부 (제출용)', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, 0, f'출력사유: {purpose}', workbook.add_format({'align': 'left'}))
+        worksheet.write(row_num, len(headers) - 1, f'{today_str} 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 24)
+        for idx, (label, width) in enumerate(headers):
+            worksheet.set_column(idx, idx, width)
+            worksheet.write(row_num, idx, label, h_format)
+
+        quali_str = {'1': '일반분양', '2': '미인가', '3': '인가', '4': '부적격'}
+        ip_addr = get_client_ip(request)
+        audit_logs = []
+
+        for seq, cont in enumerate(contracts, start=1):
+            row_num += 1
+            contractor = getattr(cont, 'contractor', None)
+            if not contractor:
+                continue
+
+            house_unit = getattr(getattr(cont, 'key_unit', None), 'houseunit', None)
+            building_name = house_unit.building_unit.name if (house_unit and house_unit.building_unit) else ''
+            unit_name = house_unit.name if house_unit else ''
+
+            try:
+                sensitive = contractor.sensitive_info
+            except ObjectDoesNotExist:
+                sensitive = None
+
+            if sensitive:
+                rrn_value = decrypt_rrn(sensitive.encrypted_rrn, formatted=True)
+            else:
+                rrn_value = '미등록'
+
+            try:
+                contact = contractor.contractorcontact
+                cell_phone = contact.cell_phone if contact else ''
+            except ObjectDoesNotExist:
+                cell_phone = ''
+
+            curr_addr = contractor.contractoraddress
+            id_addr = (
+                f'({curr_addr.id_zipcode}) {curr_addr.id_address1} {curr_addr.id_address2} {curr_addr.id_address3}'.strip()
+                if curr_addr else ''
+            )
+            dm_addr = (
+                f'({curr_addr.dm_zipcode}) {curr_addr.dm_address1} {curr_addr.dm_address2} {curr_addr.dm_address3}'.strip()
+                if curr_addr else ''
+            )
+
+            values = [
+                (seq, fmt_num),
+                (cont.serial_number, fmt_center),
+                (cont.order_group.name if cont.order_group else '', fmt_center),
+                (quali_str.get(contractor.qualification, ''), fmt_center),
+                (cont.unit_type.name if cont.unit_type else '', fmt_center),
+                (building_name, fmt_center),
+                (unit_name, fmt_center),
+                (contractor.name, fmt_center),
+                (rrn_value, fmt_center),
+                (contractor.birth_date or '', fmt_date),
+                (cell_phone, fmt_center),
+                (id_addr, fmt_left),
+                (dm_addr, fmt_left),
+                (contractor.contract_date or '', fmt_date),
+            ]
+            for col_idx, (val, cell_fmt) in enumerate(values):
+                worksheet.write(row_num, col_idx, val, cell_fmt)
+
+            if sensitive:
+                audit_logs.append(ContractorSensitiveAccessLog(
+                    contractor=contractor,
+                    project_id_snapshot=project.pk,
+                    contractor_name_snapshot=contractor.name,
+                    contract_serial_snapshot=cont.serial_number,
+                    actor=user,
+                    action='EXPORT_EXCEL',
+                    purpose=purpose[:150],
+                    ip_address=ip_addr,
+                ))
+
+        if audit_logs:
+            ContractorSensitiveAccessLog.objects.bulk_create(audit_logs)
+        else:
+            ContractorSensitiveAccessLog.objects.create(
+                contractor=None,
+                project_id_snapshot=project.pk,
+                contractor_name_snapshot=f'[{project.name}] 명부일괄',
+                contract_serial_snapshot='',
+                actor=user,
+                action='EXPORT_EXCEL',
+                purpose=f'{purpose} (식별정보 포함 0건)'[:150],
+                ip_address=ip_addr,
+            )
+
+        workbook.close()
+        output.seek(0)
+
+        filename = request.GET.get('filename') or 'coop-registry'
+        response = self.create_response(output, workbook, f'{filename}-{today_str}')
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        return response

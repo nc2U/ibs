@@ -11,7 +11,13 @@ import {
   setLocalStorage,
   stripMarkdown,
 } from '@/utils/helper'
-import { dateFormat, elapsedTime, humanizeFileSize, numFormat } from '@/utils/baseMixins'
+import {
+  dateFormat,
+  elapsedTime,
+  humanizeFileSize,
+  numFormat,
+  parseRrnMeta,
+} from '@/utils/baseMixins'
 import { formatMailMergePreview } from '@/views/notices/Mailing/preview'
 
 describe('utils/helper', () => {
@@ -130,6 +136,13 @@ describe('utils/baseMixins', () => {
     expect(humanizeFileSize(-100)).toBe('')
     expect(humanizeFileSize(1024)).toBe('1 KB')
     expect(humanizeFileSize(1024 ** 10)).toContain('PB')
+  })
+
+  it('parseRrnMeta extracts birthDate and gender safely for valid 13-digit RRN', () => {
+    expect(parseRrnMeta('900512-1234567')).toEqual({ birthDate: '1990-05-12', gender: 'M' })
+    expect(parseRrnMeta('030820-4123456')).toEqual({ birthDate: '2003-08-20', gender: 'F' })
+    expect(parseRrnMeta('900230-1234567')).toBeNull()
+    expect(parseRrnMeta('12345')).toBeNull()
   })
 })
 

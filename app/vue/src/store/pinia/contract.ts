@@ -14,6 +14,7 @@ import type {
   ContractorAddress,
   ContractPriceWithPaymentPlan,
   ContractRelease,
+  ContractorRevealResult,
   ContSummary,
   DownPayment,
   HouseUnit,
@@ -355,6 +356,89 @@ export const useContract = defineStore('contract', () => {
         contractor.value = res.data
       })
       .catch(err => errorHandle(err))
+
+  const upsertContractorSensitiveInfo = async (
+    pk: number,
+    payload: { rrn: string; legal_basis?: '1' | '2' | '3'; purpose?: string },
+  ) => {
+    try {
+      const res = await api.post(`/contractor/${pk}/sensitive-info/`, payload)
+      if (contractor.value && contractor.value.pk === pk) {
+        contractor.value = {
+          ...contractor.value,
+          birth_date: res.data.birth_date ?? contractor.value.birth_date,
+          gender: res.data.gender ?? contractor.value.gender,
+          has_rrn: res.data.has_rrn,
+          rrn_masked: res.data.rrn_masked,
+          rrn_legal_basis: res.data.rrn_legal_basis,
+        }
+      }
+      if (contract.value?.contractor && contract.value.contractor.pk === pk) {
+        contract.value = {
+          ...contract.value,
+          contractor: {
+            ...contract.value.contractor,
+            birth_date: res.data.birth_date ?? contract.value.contractor.birth_date,
+            gender: res.data.gender ?? contract.value.contractor.gender,
+            has_rrn: res.data.has_rrn,
+            rrn_masked: res.data.rrn_masked,
+            rrn_legal_basis: res.data.rrn_legal_basis,
+          },
+        }
+      }
+      message('success', '알림', '주민등록번호가 암호화되어 저장되었습니다.')
+      return res.data
+    } catch (err) {
+      errorHandle(err)
+      throw err
+    }
+  }
+
+  const purgeContractorSensitiveInfo = async (
+    pk: number,
+    purpose = '담당자 요청에 의한 식별정보 파기',
+  ) => {
+    try {
+      const res = await api.delete(`/contractor/${pk}/sensitive-info/`, { data: { purpose } })
+      if (contractor.value && contractor.value.pk === pk) {
+        contractor.value = {
+          ...contractor.value,
+          has_rrn: false,
+          rrn_masked: '',
+          rrn_legal_basis: '',
+        }
+      }
+      if (contract.value?.contractor && contract.value.contractor.pk === pk) {
+        contract.value = {
+          ...contract.value,
+          contractor: {
+            ...contract.value.contractor,
+            has_rrn: false,
+            rrn_masked: '',
+            rrn_legal_basis: '',
+          },
+        }
+      }
+      message('warning', '알림', '저장된 주민등록번호가 안전하게 파기되었습니다.')
+      return res.data
+    } catch (err) {
+      errorHandle(err)
+      throw err
+    }
+  }
+
+  const revealContractorRrn = async (
+    pk: number,
+    purpose: string,
+  ): Promise<ContractorRevealResult> => {
+    try {
+      const res = await api.post(`/contractor/${pk}/reveal-rrn/`, { purpose })
+      return res.data
+    } catch (err) {
+      errorHandle(err)
+      throw err
+    }
+  }
 
   // state & getters
   const createContractFile = async (contractorId: number, file: File, contract: number) => {
@@ -946,6 +1030,9 @@ export const useContract = defineStore('contract', () => {
     removeContractor,
     fetchContractorList,
     patchContractor,
+    upsertContractorSensitiveInfo,
+    purgeContractorSensitiveInfo,
+    revealContractorRrn,
 
     createContractFile,
     updateContractFile,

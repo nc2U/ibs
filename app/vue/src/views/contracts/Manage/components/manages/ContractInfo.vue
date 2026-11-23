@@ -1,11 +1,18 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useStore } from '@/store'
+import { useAccount } from '@/store/pinia/account'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
+import { message } from '@/utils/helper'
 import { timeFormat } from '@/utils/baseMixins.ts'
-import type { Contract, Contractor, ContractorAddress } from '@/store/types/contract'
+import type {
+  Contract,
+  Contractor,
+  ContractorAddress,
+  ContractorRevealResult,
+} from '@/store/types/contract'
 import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -28,7 +35,98 @@ const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
+const accountStore = useAccount()
+const isWorkManager = computed(() => !!accountStore.workManager)
 const contStore = useContract()
+
+// 주민등록번호 등록/갱신/파기 및 열람 모달 상태
+const refRrnEditModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refRrnRevealModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refRrnPurgeConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const rrnForm = reactive({
+  rrn: '',
+  legal_basis: '1' as '1' | '2' | '3',
+  purpose: '계약자 식별정보 등록/갱신',
+})
+const isSavingRrn = ref(false)
+const revealPurpose = ref('')
+const isRevealingRrn = ref(false)
+const revealedResult = ref<ContractorRevealResult | null>(null)
+
+const canCollectContractorRrn = computed(
+  () => !(props.contractor.status === '1' && props.contractor.qualification === '1'),
+)
+
+const openRrnEditModal = () => {
+  rrnForm.rrn = ''
+  rrnForm.legal_basis = (props.contractor.rrn_legal_basis as '1' | '2' | '3') || '1'
+  rrnForm.purpose = '계약자 식별정보 등록/갱신'
+  refRrnEditModal.value?.callModal()
+}
+
+const submitRrnEdit = async () => {
+  if (!props.contractor?.pk || !rrnForm.rrn.trim()) return
+  isSavingRrn.value = true
+  try {
+    await contStore.upsertContractorSensitiveInfo(props.contractor.pk, {
+      rrn: rrnForm.rrn,
+      legal_basis: rrnForm.legal_basis,
+      purpose: rrnForm.purpose,
+    })
+    emit('file-uploaded')
+    refRrnEditModal.value?.close()
+  } finally {
+    rrnForm.rrn = ''
+    isSavingRrn.value = false
+  }
+}
+
+const requestRrnPurge = () => {
+  refRrnPurgeConfirm.value?.callModal(
+    '주민등록번호 파기',
+    `${props.contractor.name} 계약자의 암호화된 주민등록번호를 즉시 파기하시겠습니까? (파기 이력은 감사 로그에 보존됩니다)`,
+    'mdi-shield-remove',
+    'warning',
+  )
+}
+
+const confirmRrnPurge = async () => {
+  if (!props.contractor?.pk) return
+  await contStore.purgeContractorSensitiveInfo(props.contractor.pk, '관리 화면에서 수동 파기')
+  refRrnPurgeConfirm.value?.close()
+  refRrnEditModal.value?.close()
+  emit('file-uploaded')
+}
+
+const openRrnRevealModal = () => {
+  revealPurpose.value = ''
+  revealedResult.value = null
+  refRrnRevealModal.value?.callModal()
+}
+
+const clearRevealedRrn = () => {
+  revealedResult.value = null
+  revealPurpose.value = ''
+}
+
+const submitRevealRrn = async () => {
+  if (!props.contractor?.pk || !revealPurpose.value.trim()) return
+  isRevealingRrn.value = true
+  try {
+    revealedResult.value = await contStore.revealContractorRrn(
+      props.contractor.pk,
+      revealPurpose.value.trim(),
+    )
+  } finally {
+    isRevealingRrn.value = false
+  }
+}
+
+const copyRevealedRrn = async () => {
+  if (!revealedResult.value?.rrn || typeof navigator === 'undefined' || !navigator.clipboard) return
+  await navigator.clipboard.writeText(revealedResult.value.rrn)
+  message('info', '알림', '주민등록번호가 클립보드에 복사되었습니다.')
+}
 
 // 과거 주소 히스토리 표시 토글
 const showPastAddresses = ref(false)
@@ -288,11 +386,11 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             </v-chip>
           </CCol>
         </CRow>
-        <CRow>
+        <CRow class="mb-2">
           <CCol :sm="6">
             <strong>상태 :</strong>
             <span
-              class="ml-2 strong"
+              class="ms-2 strong"
               :class="contractor.status !== '1' ? 'text-muted underline' : 'text-primary'"
             >
               {{ contractor.status_display }}
@@ -302,14 +400,51 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               color="danger"
               variant="flat"
               size="x-small"
-              class="ml-2"
+              class="ms-2"
             >
               {{ contractor.change_type_display }}
             </v-chip>
           </CCol>
           <CCol :sm="6">
             <strong>청약일 :</strong>
-            <span class="ml-2">{{ contractor.reservation_date || '-' }}</span>
+            <span class="ms-2">{{ contractor.reservation_date || '-' }}</span>
+          </CCol>
+        </CRow>
+        <CRow class="align-items-center">
+          <CCol :sm="12" class="d-flex flex-wrap align-items-center gap-2">
+            <strong>주민등록번호 :</strong>
+            <span v-if="contractor.has_rrn" class="font-monospace">
+              {{ contractor.rrn_masked }}
+            </span>
+            <span v-else class="text-medium-emphasis">미등록</span>
+            <v-chip
+              v-if="contractor.has_rrn"
+              color="success"
+              variant="tonal"
+              size="x-small"
+              prepend-icon="mdi-shield-lock-outline"
+            >
+              암호화 보관
+            </v-chip>
+            <v-btn
+              v-if="canContractUpdate && canCollectContractorRrn"
+              size="x-small"
+              color="primary"
+              variant="tonal"
+              @click="openRrnEditModal"
+            >
+              {{ contractor.has_rrn ? '변경 / 파기' : '등록' }}
+            </v-btn>
+            <v-btn
+              v-if="isWorkManager && contractor.has_rrn"
+              size="x-small"
+              color="warning"
+              variant="tonal"
+              prepend-icon="mdi-eye-outline"
+              @click="openRrnRevealModal"
+            >
+              전체 열람
+            </v-btn>
           </CCol>
         </CRow>
       </div>
@@ -651,9 +786,142 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
   <ConfirmModal ref="confirmModal">
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteFile">
-        <v-icon icon="mdi-delete" size="small" class="mr-1" />
+        <v-icon icon="mdi-delete" size="small" class="me-1" />
         삭제
       </v-btn>
+    </template>
+  </ConfirmModal>
+
+  <!-- 주민등록번호 등록/변경 모달 (담당자 Write-Only) -->
+  <FormModal ref="refRrnEditModal" @close="rrnForm.rrn = ''">
+    <template #icon>
+      <v-icon icon="mdi-shield-lock-outline" size="small" color="primary" class="me-2" />
+    </template>
+    <template #header>계약자 주민등록번호 {{ contractor.has_rrn ? '변경' : '등록' }}</template>
+    <template #default>
+      <CForm @submit.prevent="submitRrnEdit">
+        <CModalBody class="text-body">
+          <div class="mb-3">
+            <CFormLabel class="required">주민등록번호 (새 번호 입력)</CFormLabel>
+            <input
+              v-model="rrnForm.rrn"
+              v-maska
+              data-maska="######-#######"
+              class="form-control"
+              maxlength="14"
+              autocomplete="off"
+              required
+              :placeholder="
+                contractor.has_rrn
+                  ? `기존: ${contractor.rrn_masked} (재입력 시 덮어쓰기)`
+                  : '000000-0000000'
+              "
+            />
+            <div class="form-text text-muted">
+              보안을 위해 기존 번호는 조회되지 않으며, 저장 즉시 암호화 및 마스킹 처리됩니다.
+            </div>
+          </div>
+          <div class="mb-3">
+            <CFormLabel>수집 법적 근거</CFormLabel>
+            <CFormSelect v-model="rrnForm.legal_basis">
+              <option value="1">조합설립·변경인가 제출 (주택법)</option>
+              <option value="2">부동산 거래신고 (부동산거래신고법)</option>
+              <option value="3">세무신고·환불지급 (소득세법 등)</option>
+            </CFormSelect>
+          </div>
+          <div>
+            <CFormLabel>처리 사유</CFormLabel>
+            <CFormInput v-model="rrnForm.purpose" maxlength="150" placeholder="등록/변경 사유" />
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn
+            v-if="contractor.has_rrn"
+            color="error"
+            variant="tonal"
+            size="small"
+            class="me-auto"
+            @click="requestRrnPurge"
+          >
+            즉시 파기
+          </v-btn>
+          <v-btn
+            color="primary"
+            size="small"
+            type="submit"
+            :disabled="!rrnForm.rrn.trim() || isSavingRrn"
+            :loading="isSavingRrn"
+          >
+            암호화 저장
+          </v-btn>
+          <v-btn color="light" size="small" flat @click="refRrnEditModal?.close()">닫기</v-btn>
+        </CModalFooter>
+      </CForm>
+    </template>
+  </FormModal>
+
+  <!-- 주민등록번호 전체 열람 모달 (슈퍼유저 / 업무관리자 전용) -->
+  <FormModal ref="refRrnRevealModal" @close="clearRevealedRrn">
+    <template #icon>
+      <v-icon icon="mdi-shield-key-outline" size="small" color="warning" class="me-2" />
+    </template>
+    <template #header>주민등록번호 전체 열람 (책임자 전용)</template>
+    <template #default>
+      <CForm @submit.prevent="submitRevealRrn">
+        <CModalBody class="text-body">
+          <CAlert color="warning" class="py-2 text-xs">
+            열람 내역(사용자·일시·IP·열람 사유)은 개인정보보호법 안전성 확보조치에 따라 감사 로그에
+            영구 기록됩니다.
+          </CAlert>
+
+          <div v-if="!revealedResult" class="mb-2">
+            <CFormLabel class="required">열람 사유</CFormLabel>
+            <CFormInput
+              v-model="revealPurpose"
+              maxlength="150"
+              required
+              placeholder="예: 조합설립 변경인가 명부 대조 확인"
+            />
+          </div>
+
+          <div v-else class="p-3 rounded border text-center">
+            <div class="text-xs text-medium-emphasis mb-1">
+              {{ contractor.name }} ({{ revealedResult.legal_basis_display }})
+            </div>
+            <div class="fs-5 fw-bold font-monospace mb-2">
+              {{ revealedResult.rrn }}
+            </div>
+            <v-btn
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-content-copy"
+              @click="copyRevealedRrn"
+            >
+              복사
+            </v-btn>
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn
+            v-if="!revealedResult"
+            color="warning"
+            size="small"
+            type="submit"
+            :disabled="!revealPurpose.trim() || isRevealingRrn"
+            :loading="isRevealingRrn"
+          >
+            감사로그 기록 후 열람
+          </v-btn>
+          <v-btn color="light" size="small" flat @click="refRrnRevealModal?.close()">닫기</v-btn>
+        </CModalFooter>
+      </CForm>
+    </template>
+  </FormModal>
+
+  <ConfirmModal ref="refRrnPurgeConfirm">
+    <template #footer>
+      <v-btn color="error" size="small" @click="confirmRrnPurge">파기 확인</v-btn>
     </template>
   </ConfirmModal>
 </template>

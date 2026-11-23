@@ -2,11 +2,13 @@
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
+import { useAccount } from '@/store/pinia/account'
 import { useProject } from '@/store/pinia/project'
 import { useProLedger } from '@/store/pinia/proLedger'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
 import { usePerms } from '@/composables/usePerms'
+import { useDownload } from '@/utils/useDownload'
 import type { Project } from '@/store/types/project'
 import type { ContFilter, UnitFilter } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,6 +16,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContractAuthGuard from '@/components/AuthGuard/ContractAuthGuard.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 import ContractSummary from './components/ContractSummary.vue'
 import ListController from './components/ListController.vue'
 import AddContract from './components/AddContract.vue'
@@ -47,6 +50,37 @@ const defaultPrintItems = ['1', '3', '4', '5', '8', '13', '14']
 const printItems = ref<string[]>([...defaultPrintItems])
 
 // 스토어
+const accountStore = useAccount()
+const isWorkManager = computed(() => !!accountStore.workManager)
+const { downloadExcel, downloadState } = useDownload()
+const refCoopRegistryModal = ref<InstanceType<typeof FormModal> | null>(null)
+const coopExportPurpose = ref('조합설립·변경인가 제출')
+
+const openCoopRegistryModal = () => {
+  coopExportPurpose.value = '조합설립·변경인가 제출'
+  refCoopRegistryModal.value?.callModal()
+}
+
+const submitCoopRegistryExport = async () => {
+  const pk = project.value?.pk
+  const purpose = coopExportPurpose.value.trim()
+  if (!pk || !purpose) return
+
+  const params = new URLSearchParams()
+  params.set('project', String(pk))
+  params.set('purpose', purpose)
+  const f = currentFilters.value
+  if (f.order_group) params.set('group', String(f.order_group))
+  if (f.unit_type) params.set('type', String(f.unit_type))
+  if (f.qualification) params.set('quali', String(f.qualification))
+
+  await downloadExcel(
+    `/excel/coop-registry/?${params.toString()}`,
+    `${project.value?.name || 'project'}_인가제출용_명부.xlsx`,
+  )
+  refCoopRegistryModal.value?.close()
+}
+
 const projStore = useProject()
 const contStore = useContract()
 const proDataStore = useProjectData()
@@ -173,7 +207,11 @@ const loadHighlightPage = async (projectId: number) => {
     await contStore.fetchContractList(filters)
   } catch (error) {
     console.error('Error finding highlight page:', error)
-    await contStore.fetchContractList({ project: projectId, limit: limit.value, status: curr_status.value })
+    await contStore.fetchContractList({
+      project: projectId,
+      limit: limit.value,
+      status: curr_status.value,
+    })
   }
 }
 
@@ -196,7 +234,11 @@ const dataSetup = async (projId: number, initialPage?: number) => {
   }
 
   if (highlightId.value && contStore.contractList.length === 0) {
-    await contStore.fetchContractList({ project: projId, limit: limit.value, status: curr_status.value })
+    await contStore.fetchContractList({
+      project: projId,
+      limit: limit.value,
+      status: curr_status.value,
+    })
   }
 
   await scrollToHighlight()
@@ -346,6 +388,18 @@ onBeforeMount(async () => {
           >
             [엑셀 출력항목 선택]
           </v-btn>
+          <v-btn
+            v-if="isWorkManager && curr_status === '2'"
+            size="small"
+            color="warning"
+            variant="tonal"
+            prepend-icon="mdi-shield-account-outline"
+            class="mt-1 ms-2"
+            :disabled="!project?.pk || downloadState.isDownloading"
+            @click="openCoopRegistryModal"
+          >
+            인가 제출용 명부
+          </v-btn>
         </TableTitleRow>
         <SelectItems :visible="visible" :unit-set="unitSet" v-model:print-items="printItems" />
         <ContractList
@@ -359,5 +413,46 @@ onBeforeMount(async () => {
         />
       </CCardBody>
     </ContentBody>
+
+    <!-- 조합 인가/행정청 제출용 명부 다운로드 모달 (슈퍼유저 / 업무관리자 전용) -->
+    <FormModal ref="refCoopRegistryModal">
+      <template #icon>
+        <v-icon icon="mdi-file-excel-outline" size="small" color="warning" class="me-2" />
+      </template>
+      <template #header>인가 제출용 조합원·계약자 명부 다운로드</template>
+      <template #default>
+        <CForm @submit.prevent="submitCoopRegistryExport">
+          <CModalBody class="text-body">
+            <CAlert color="warning" class="py-2 text-xs">
+              본 엑셀 파일에는 계약자 주민등록번호 원문이 포함되며, 출력자·일시·IP·사유가 감사
+              로그에 영구 기록됩니다.
+            </CAlert>
+            <div>
+              <CFormLabel class="required">출력 사유</CFormLabel>
+              <CFormInput
+                v-model="coopExportPurpose"
+                maxlength="150"
+                required
+                placeholder="예: 조합설립 변경인가 신청서 제출"
+              />
+            </div>
+          </CModalBody>
+          <CModalFooter>
+            <v-btn
+              color="warning"
+              size="small"
+              type="submit"
+              :disabled="!coopExportPurpose.trim() || downloadState.isDownloading"
+              :loading="downloadState.isDownloading"
+            >
+              감사로그 기록 후 다운로드
+            </v-btn>
+            <v-btn color="light" size="small" flat @click="refCoopRegistryModal?.close()">
+              닫기
+            </v-btn>
+          </CModalFooter>
+        </CForm>
+      </template>
+    </FormModal>
   </ContractAuthGuard>
 </template>

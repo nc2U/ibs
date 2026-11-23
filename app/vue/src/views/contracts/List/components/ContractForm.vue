@@ -18,7 +18,7 @@ import { useContract } from '@/store/pinia/contract'
 import { isValidate } from '@/utils/helper'
 import { onBeforeRouteLeave } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
-import { diffDate, numFormat } from '@/utils/baseMixins'
+import { diffDate, numFormat, parseRrnMeta } from '@/utils/baseMixins'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import type { Contract, ContractFile, Payment, UnitFilter } from '@/store/types/contract'
 import { type PayOrder } from '@/store/types/payment'
@@ -91,6 +91,8 @@ const form = reactive({
   reservation_date: null as string | null, // 6-1
   contract_date: null as string | null, // 6-2
   note: '', // 28
+  rrn: '',
+  rrn_legal_basis: '1' as '1' | '2' | '3',
 
   // address
   id_zipcode: '', // 20
@@ -207,7 +209,8 @@ const formsCheck = computed(() => {
     const cond1 = a && b && c && d && e && e_comp && f && g && h && i && j && u
     const cond2 = k && l && m && n && o && p && q && r && s && t && v
     const cond3 = w && x && y && z && a1 && b1 && c1 && d1 && e1 && f1 && g1 && h1
-    return cond1 && cond2 && cond3
+    const cond4 = !form.rrn.trim()
+    return cond1 && cond2 && cond3 && cond4
   } else return false
 })
 
@@ -342,6 +345,8 @@ const formDataReset = () => {
   form.reservation_date = null
   form.contract_date = null
   form.note = ''
+  form.rrn = ''
+  form.rrn_legal_basis = '1'
 
   form.payment = null
   form.deal_date = null
@@ -405,6 +410,8 @@ const formDataSetup = () => {
     form.reservation_date = contractor.value?.reservation_date ?? null
     form.contract_date = contractor.value?.contract_date ?? null
     form.note = contractor.value?.note ?? ''
+    form.rrn = ''
+    form.rrn_legal_basis = (contractor.value?.rrn_legal_basis as '1' | '2' | '3') || '1'
 
     // address
     if (contractor.value?.status === '2') {
@@ -551,6 +558,17 @@ onBeforeMount(() => paymentStore.fetchPayOrderList(props.project, '1'))
 onMounted(() => {
   formDataSetup()
 })
+
+const canInputRrn = computed(
+  () => isContract.value || (!!form.status && form.qualification !== '1'),
+)
+
+const applyRrnMeta = () => {
+  const parsed = parseRrnMeta(form.rrn)
+  if (!parsed) return
+  if (!form.birth_date) form.birth_date = parsed.birthDate
+  if (!form.gender) form.gender = parsed.gender
+}
 
 watch(
   () => props.contract,
@@ -809,6 +827,38 @@ onBeforeRouteLeave(() => formDataReset())
             <option value="4">부적격</option>
           </CFormSelect>
           <CFormFeedback invalid> 등록상태를 선택하세요.</CFormFeedback>
+        </CCol>
+      </CRow>
+
+      <CRow v-if="canInputRrn" class="mb-3">
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label">주민번호</CFormLabel>
+        <CCol sm="10" lg="3" class="mb-sm-3 mb-lg-0">
+          <input
+            v-model="form.rrn"
+            v-maska
+            data-maska="######-#######"
+            class="form-control"
+            maxlength="14"
+            autocomplete="off"
+            :placeholder="
+              contractor?.has_rrn
+                ? `기존 등록: ${contractor.rrn_masked} (변경 시 재입력)`
+                : '000000-0000000 (암호화 보관)'
+            "
+            @blur="applyRrnMeta"
+          />
+          <div class="form-text text-muted">
+            암호화 보관 · 저장 후에는 마스킹(`******`) 처리됩니다.
+          </div>
+        </CCol>
+
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label">수집근거</CFormLabel>
+        <CCol sm="10" lg="3" class="mb-sm-3 mb-lg-0">
+          <CFormSelect v-model="form.rrn_legal_basis">
+            <option value="1">조합설립·변경인가 제출 (주택법)</option>
+            <option value="2">부동산 거래신고 (부동산거래신고법)</option>
+            <option value="3">세무신고·환불지급 (소득세법 등)</option>
+          </CFormSelect>
         </CCol>
       </CRow>
 

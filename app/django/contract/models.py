@@ -755,3 +755,94 @@ class ContractorRelease(models.Model):
     class Meta:
         verbose_name = '10. 계약 해지 정보'
         verbose_name_plural = '10. 계약 해지 정보'
+
+
+class ContractorSensitiveInfo(models.Model):
+    """계약자 고유식별정보(주민등록번호) 분리 보관 모델"""
+    LEGAL_BASIS_CHOICES = (
+        ('1', '조합설립·변경인가 제출 (주택법)'),
+        ('2', '부동산 거래신고 (부동산거래신고법)'),
+        ('3', '세무신고·환불지급 (소득세법 등)'),
+    )
+
+    contractor = models.OneToOneField(
+        'Contractor',
+        on_delete=models.CASCADE,
+        related_name='sensitive_info',
+        verbose_name='계약자',
+    )
+    encrypted_rrn = models.TextField('암호화된 주민등록번호')
+    rrn_hash = models.CharField('식별 해시(중복검사용)', max_length=64, db_index=True)
+    rrn_masked = models.CharField('마스킹 주민등록번호', max_length=14)
+    legal_basis = models.CharField('수집 법적 근거', max_length=1, choices=LEGAL_BASIS_CHOICES, default='1')
+    retention_until = models.DateField('보존 만료일', null=True, blank=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_sensitive_infos',
+        verbose_name='등록자',
+    )
+    updator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_sensitive_infos',
+        verbose_name='편집자',
+    )
+
+    def __str__(self):
+        return f'{self.contractor.name} ({self.rrn_masked})'
+
+    class Meta:
+        db_table = 'contract_contractor_sensitive_info'
+        verbose_name = '11. 계약자 민감식별정보'
+        verbose_name_plural = '11. 계약자 민감식별정보'
+
+
+class ContractorSensitiveAccessLog(models.Model):
+    """고유식별정보 등록/열람/엑셀출력/파기 감사 로그"""
+    ACTION_CHOICES = (
+        ('CREATE_UPDATE', '등록/수정'),
+        ('VIEW_PLAIN', '단건 평문 열람'),
+        ('EXPORT_EXCEL', '제출용 엑셀 다운로드'),
+        ('PURGE', '파기'),
+    )
+
+    contractor = models.ForeignKey(
+        'Contractor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sensitive_access_logs',
+        verbose_name='계약자',
+    )
+    project_id_snapshot = models.PositiveIntegerField('프로젝트 ID 스냅샷', null=True, blank=True, db_index=True)
+    contractor_name_snapshot = models.CharField('계약자명 스냅샷', max_length=20)
+    contract_serial_snapshot = models.CharField('계약번호 스냅샷', max_length=30, blank=True, default='')
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contractor_sensitive_logs',
+        verbose_name='처리자',
+    )
+    action = models.CharField('수행 작업', max_length=20, choices=ACTION_CHOICES, db_index=True)
+    purpose = models.CharField('조회/처리 사유', max_length=150)
+    ip_address = models.GenericIPAddressField('접속 IP', null=True, blank=True)
+    accessed_at = models.DateTimeField('처리일시', auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        actor_name = self.actor.username if self.actor else 'SYSTEM'
+        return f'[{self.get_action_display()}] {self.contractor_name_snapshot} by {actor_name}'
+
+    class Meta:
+        db_table = 'contract_sensitive_access_log'
+        ordering = ['-accessed_at', '-id']
+        verbose_name = '12. 계약자 민감정보 접속기록'
+        verbose_name_plural = '12. 계약자 민감정보 접속기록'

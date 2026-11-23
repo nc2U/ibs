@@ -7,7 +7,8 @@ from import_export.admin import ImportExportMixin
 from apiV1.permissions._utils import get_project_ids_with_permission
 from .models import (OrderGroup, DocumentType, RequiredDocument, Contract, ContractDocument,
                      ContractDocumentFile, ContractPrice, ContractFile, Contractor, ContractorAddress,
-                     ContractorContact, ContractorConsultationLogs, Succession, ContractorRelease)
+                     ContractorContact, ContractorConsultationLogs, Succession, ContractorRelease,
+                     ContractorSensitiveInfo, ContractorSensitiveAccessLog)
 
 
 @admin.register(OrderGroup)
@@ -393,3 +394,52 @@ class ContractorReleaseAdmin(ImportExportMixin, admin.ModelAdmin):
             return qs
         accessible_projects = get_project_ids_with_permission(request.user, 'contract.read')
         return qs.filter(project_id__in=accessible_projects)
+
+
+@admin.register(ContractorSensitiveInfo)
+class ContractorSensitiveInfoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'contractor', 'rrn_masked', 'legal_basis', 'retention_until', 'updated')
+    list_filter = ('legal_basis',)
+    search_fields = ('contractor__name', 'rrn_masked')
+    list_select_related = ('contractor', 'creator', 'updator')
+    exclude = ('encrypted_rrn', 'rrn_hash')
+    readonly_fields = ('contractor', 'rrn_masked', 'creator', 'updator', 'created', 'updated')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        return qs.none()
+
+
+@admin.register(ContractorSensitiveAccessLog)
+class ContractorSensitiveAccessLogAdmin(admin.ModelAdmin):
+    list_display = ('id', 'accessed_at', 'action', 'contractor_name_snapshot', 'contract_serial_snapshot', 'actor', 'purpose', 'ip_address')
+    list_filter = ('action', 'accessed_at')
+    search_fields = ('contractor_name_snapshot', 'contract_serial_snapshot', 'purpose', 'actor__username')
+    list_select_related = ('contractor', 'actor')
+    readonly_fields = (
+        'contractor', 'project_id_snapshot', 'contractor_name_snapshot',
+        'contract_serial_snapshot', 'actor', 'action', 'purpose', 'ip_address', 'accessed_at'
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return qs
+        return qs.none()

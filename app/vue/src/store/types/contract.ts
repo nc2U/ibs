@@ -105,6 +105,9 @@ export interface ContractorInContract {
   contract_date: string | null
   is_active: boolean
   note: string
+  has_rrn?: boolean
+  rrn_masked?: string
+  rrn_legal_basis?: '1' | '2' | '3' | ''
 }
 
 export interface Contract {
@@ -172,6 +175,17 @@ export interface Contractor {
   note: string
   succession: Succession | null
   contractorrelease: number | null
+  has_rrn?: boolean
+  rrn_masked?: string
+  rrn_legal_basis?: '1' | '2' | '3' | ''
+}
+
+export interface ContractorRevealResult {
+  pk: number
+  rrn: string
+  rrn_masked: string
+  legal_basis: '1' | '2' | '3'
+  legal_basis_display: string
 }
 
 export interface AddressInContractor {
@@ -321,6 +335,9 @@ export interface Buyer {
   name: string
   birth_date: string
   gender: 'M' | 'F'
+  has_rrn?: boolean
+  rrn_masked?: string
+  rrn_legal_basis?: '1' | '2' | '3' | ''
   contractoraddress: {
     pk?: number
     id_zipcode: string
@@ -357,6 +374,8 @@ export interface BuyerForm {
   home_phone: string
   other_phone: string
   email: string
+  rrn?: string
+  rrn_legal_basis?: '1' | '2' | '3'
 }
 
 export interface ContractRelease {
