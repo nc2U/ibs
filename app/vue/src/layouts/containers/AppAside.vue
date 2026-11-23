@@ -197,7 +197,7 @@ const openExternal = (url: string) => {
               v-for="doc in pendingApprovals.slice(0, 3)"
               :key="doc.id"
               class="cursor-pointer p-2 hover-bg"
-              @click="navigateAndClose(`/approval/document/${doc.id}`)"
+              @click="navigateAndClose(`/approval/pending/${doc.id}`)"
             >
               <div class="d-flex justify-content-between align-items-center">
                 <span class="text-truncate fw-medium small" style="max-width: 200px">
@@ -380,7 +380,7 @@ const openExternal = (url: string) => {
             v-for="doc in myDraftedDocs.slice(0, 8)"
             :key="doc.id"
             class="cursor-pointer p-2 hover-bg"
-            @click="navigateAndClose(`/approval/document/${doc.id}`)"
+            @click="navigateAndClose(`/approval/drafted/${doc.id}`)"
           >
             <div class="d-flex justify-content-between align-items-center">
               <span class="text-truncate fw-medium small" style="max-width: 210px">

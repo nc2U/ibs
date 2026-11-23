@@ -29,19 +29,14 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'dashboard',
         name: '대 시 보 드',
-        component: () =>
-          import(
-            /* webpackChunkName: "dashboard" */
-            /* webpackPreload: true */
-            '@/views/_Dashboard/Index.vue'
-          ),
+        component: () => import('@/views/_Dashboard/Index.vue'),
         meta: { title: '대 시 보 드', auth: true, affix: true },
       },
       workProject as RouteRecordRaw,
       workSetting as RouteRecordRaw,
       comLedger as unknown as RouteRecordRaw,
       hrManage,
-      approval,
+      approval as unknown as RouteRecordRaw,
       officialLetter,
       contracts,
       sales,
@@ -56,7 +51,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         component: () => import('@/components/NotFound.vue'),
-        meta: { title: 'Not-Found', except: true },
+        meta: { title: 'Not-Found', except: true, auth: true },
       },
     ],
   },
@@ -73,7 +68,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: { title: '회원가입', except: true },
     beforeEnter: (to, from, next) => {
       const store = useStore()
-      if (from.name === 'RegisterCode' && to.query.id == hashCode(store.registerCode).toString()) {
+      if (from.name === 'RegisterCode' && to.query.id === hashCode(store.registerCode).toString()) {
         next()
       } else {
         next({

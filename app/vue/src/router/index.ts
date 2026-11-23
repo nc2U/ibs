@@ -26,8 +26,8 @@ router.beforeEach(async (to, from, next) => {
       }
 
       if (!accountStore.userInfo) {
-        localStorage.setItem('redirectPath', to.path)
-        return next({ name: 'Login' })
+        localStorage.setItem('redirectPath', to.fullPath)
+        return next({ name: 'Login', query: { redirect: to.fullPath } })
       }
     }
   }
@@ -55,16 +55,29 @@ router.beforeEach(async (to, from, next) => {
 function handleChunkLoadError(targetPath?: string) {
   const pathKey = targetPath || window.location.hash.replace(/^#/, '') || '/'
   const reloadKey = `chunk_reload_${pathKey}`
-  const hasReloaded = sessionStorage.getItem(reloadKey)
+  let hasReloaded: string | null = null
+  try {
+    hasReloaded = sessionStorage.getItem(reloadKey)
+  } catch {
+    hasReloaded = null
+  }
 
   if (!hasReloaded) {
-    sessionStorage.setItem(reloadKey, 'true')
+    try {
+      sessionStorage.setItem(reloadKey, 'true')
+    } catch {
+      // ignore storage errors
+    }
     if (targetPath) {
       window.location.hash = `#${targetPath}`
     }
     window.location.reload()
   } else {
-    sessionStorage.removeItem(reloadKey)
+    try {
+      sessionStorage.removeItem(reloadKey)
+    } catch {
+      // ignore storage errors
+    }
     console.error('청크 로드 실패: 새로고침 후에도 모듈을 불러오지 못했습니다.')
   }
 }
@@ -93,11 +106,15 @@ router.onError((error, to) => {
 
 // 3. 페이지 이동 정상 완료 시 재시도 플래그 정리
 router.afterEach(() => {
-  for (let i = sessionStorage.length - 1; i >= 0; i--) {
-    const key = sessionStorage.key(i)
-    if (key?.startsWith('chunk_reload_')) {
-      sessionStorage.removeItem(key)
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i)
+      if (key?.startsWith('chunk_reload_')) {
+        sessionStorage.removeItem(key)
+      }
     }
+  } catch {
+    // ignore storage errors
   }
 })
 

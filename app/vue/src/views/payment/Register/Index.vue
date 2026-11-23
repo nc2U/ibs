@@ -171,7 +171,7 @@ const dataReset = () => {
 }
 
 const projSelect = (target: number | null) => {
-  router.replace({ name: '건별 수납 관리' })
+  router.replace({ name: '건별 납부 관리' })
   dataReset()
   if (target) dataSetup(target)
 }

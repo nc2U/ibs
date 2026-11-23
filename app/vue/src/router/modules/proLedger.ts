@@ -36,7 +36,7 @@ const proLedger = {
           meta: {
             title: '거래 내역 관리',
             auth: true,
-            requiresCompanyCashAuth: true,
+            requiresProjectCashAuth: true,
           },
         },
         {
@@ -45,7 +45,7 @@ const proLedger = {
           meta: {
             title: '거래 내역 관리',
             auth: true,
-            requiresCompanyCashAuth: true,
+            requiresProjectCashAuth: true,
           },
         },
       ],
@@ -66,7 +66,7 @@ const proLedger = {
           meta: {
             title: '운영비 내역 관리',
             auth: true,
-            requiresCompanyCashAuth: true,
+            requiresProjectCashAuth: true,
           },
         },
         {
@@ -75,7 +75,7 @@ const proLedger = {
           meta: {
             title: '운영비 내역 관리',
             auth: true,
-            requiresCompanyCashAuth: true,
+            requiresProjectCashAuth: true,
           },
         },
       ],
