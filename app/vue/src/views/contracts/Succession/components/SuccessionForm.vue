@@ -389,8 +389,8 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
                   () => {
                     const parsed = parseRrnMeta(buyer_data.rrn || '')
                     if (parsed) {
-                      if (!buyer_data.birth_date) buyer_data.birth_date = parsed.birthDate
-                      if (!buyer_data.gender) buyer_data.gender = parsed.gender
+                      buyer_data.birth_date = parsed.birthDate
+                      buyer_data.gender = parsed.gender
                     }
                   }
                 "

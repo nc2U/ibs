@@ -1299,6 +1299,12 @@ class SuccessionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         contract = serializer.validated_data.get('contract')
+        if not contract:
+            raw_cid = self.request.data.get('contract')
+            try:
+                contract = Contract.objects.filter(pk=int(raw_cid)).first() if raw_cid else None
+            except (TypeError, ValueError):
+                contract = None
         user = self.request.user
         if contract and not (user.is_superuser or getattr(user, 'work_manager', False)):
             allowed_ids = get_accessible_project_ids(user, self.required_permission or 'contract.succession')

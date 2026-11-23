@@ -1854,6 +1854,116 @@ class ContractorSensitiveInfoTests(APITestCase):
             ).exists()
         )
 
+    def test_excel_formula_injection_blocked_and_corrupted_rrn_fallback(self):
+        """엑셀 출력 시 수식/하이퍼링크 주입(=HYPERLINK, http://) 차단 및 복호화 오류 폴백 검증"""
+        from io import BytesIO
+        import zipfile
+        import openpyxl
+        from contract.models import ContractorSensitiveInfo
+
+        self.contractor.name = '=SUM(1,2)'
+        self.contractor.save(update_fields=['name'])
+        self.contractor.addresses.filter(is_current=True).update(id_address1='http://evil.example/payload')
+
+        ContractorSensitiveInfo.objects.create(
+            contractor=self.contractor,
+            encrypted_rrn='corrupted-cipher-token',
+            rrn_hash='dummyhash',
+            rrn_masked='900512-1******',
+            legal_basis='1',
+        )
+
+        self.client.force_login(user=self.work_manager)
+        res = self.client.get(
+            f'/excel/coop-registry/?project={self.project.pk}&purpose=수식주입차단검증'
+        )
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        with zipfile.ZipFile(BytesIO(res.content)) as zf:
+            sheet_xml = zf.read('xl/worksheets/sheet1.xml').decode('utf-8')
+        self.assertNotIn('<f>', sheet_xml)
+        self.assertNotIn('<hyperlinks>', sheet_xml)
+
+        wb = openpyxl.load_workbook(BytesIO(res.content))
+        sheet = wb.active
+        exported_cells = [cell.value for row in sheet.iter_rows(values_only=False) for cell in row]
+        self.assertIn('복호화오류', exported_cells)
+
+    def test_succession_female_rrn_retention_schedule_and_expired_purge(self):
+        """승계 양수인 여성 주민번호 성별 자동 파생, 승계완료/해지확정 시 보존만료일 설정 및 만료 자동 파기 검증"""
+        from django.core.management import call_command
+        from rest_framework import serializers
+        from contract.models import ContractorSensitiveAccessLog, ContractorSensitiveInfo
+        from contract.services import ContractorSensitiveService, PaymentProcessingService
+
+        # 0. 수납 계정/입금계좌 미설정 시 500 대신 ValidationError 반환 검증
+        with self.assertRaises(serializers.ValidationError):
+            PaymentProcessingService.process_initial_payment(
+                self.contract,
+                self.contractor,
+                {'deal_date': '2026-02-01', 'project': self.project.pk},
+                self.superuser,
+            )
+
+        # 1. 기존 계약자(매도인) 주민번호 등록
+        ContractorSensitiveService.upsert_rrn(
+            contractor=self.contractor,
+            raw_rrn='900512-1234567',
+            legal_basis='1',
+            actor=self.superuser,
+            purpose='매도인 초기 등록',
+        )
+
+        # 2. 권리의무승계 등록: 생년월일 없이 기본 gender='M'과 여성 주민번호가 함께 전송되어도 여성('F')으로 정상 생성
+        self.client.force_authenticate(user=self.superuser)
+        res_succ = self.client.post('/api/v1/succession/', {
+            'contract': self.contract.pk,
+            'seller': self.contractor.pk,
+            'apply_date': '2026-03-01',
+            'trading_date': '2026-03-01',
+            'name': '이영희',
+            'gender': 'M',
+            'rrn': '950718-2234567',
+            'rrn_legal_basis': '1',
+            'cell_phone': '010-2222-3333',
+            'id_zipcode': '06000',
+            'id_address1': '서울 강남구',
+            'dm_zipcode': '06000',
+            'dm_address1': '서울 강남구',
+        }, format='json')
+        self.assertEqual(res_succ.status_code, http_status.HTTP_201_CREATED)
+        succ_id = res_succ.data['pk']
+        self.assertEqual(res_succ.data['buyer']['gender'], 'F')
+        self.assertEqual(res_succ.data['buyer']['birth_date'], '1995-07-18')
+        self.assertTrue(res_succ.data['buyer']['has_rrn'])
+        self.assertEqual(res_succ.data['buyer']['rrn_masked'], '950718-2******')
+
+        # 3. 승계 완료(status='3') 시 종전 매도인(seller)의 보존 만료일(retention_until)이 5년 뒤로 설정됨
+        res_complete = self.client.patch(f'/api/v1/succession/{succ_id}/', {
+            'status': '3',
+            'approval_date': '2026-03-10',
+            'apply_date': '2026-03-01',
+            'trading_date': '2026-03-01',
+        }, format='json')
+        self.assertEqual(res_complete.status_code, http_status.HTTP_200_OK)
+
+        seller_info = ContractorSensitiveInfo.objects.get(contractor=self.contractor)
+        self.assertIsNotNone(seller_info.retention_until)
+        self.assertEqual(seller_info.retention_until, date(2026, 3, 10) + __import__('datetime').timedelta(days=365 * 5))
+
+        # 4. 보존기한 도래 전에는 파기되지 않고, 만료일 도래 후 purge_expired_rrns 실행 시 파기 + 감사로그 기록
+        self.assertEqual(ContractorSensitiveService.purge_expired_rrns(as_of_date=date(2030, 1, 1)), 0)
+        call_command('purge_expired_rrns', '--as-of=2031-03-15')
+        self.assertFalse(ContractorSensitiveInfo.objects.filter(contractor=self.contractor).exists())
+        self.assertTrue(
+            ContractorSensitiveAccessLog.objects.filter(
+                contractor=self.contractor,
+                action='PURGE',
+                purpose__contains='보존기한 만료 자동 파기',
+            ).exists()
+        )
+
+
 
 
 

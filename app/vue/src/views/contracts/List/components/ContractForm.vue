@@ -566,8 +566,8 @@ const canInputRrn = computed(
 const applyRrnMeta = () => {
   const parsed = parseRrnMeta(form.rrn)
   if (!parsed) return
-  if (!form.birth_date) form.birth_date = parsed.birthDate
-  if (!form.gender) form.gender = parsed.gender
+  form.birth_date = parsed.birthDate
+  form.gender = parsed.gender
 }
 
 watch(

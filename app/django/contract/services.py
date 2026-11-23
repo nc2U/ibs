@@ -4,13 +4,15 @@ Contract 관련 비즈니스 로직 서비스
 import os
 import uuid
 import logging
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from django.db import transaction, IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 from _utils.contract_price import get_contract_price, get_sales_price_by_gt
 from _utils.rrn_crypto import decrypt_rrn, encrypt_rrn, hash_rrn, normalize_and_parse_rrn
@@ -87,24 +89,25 @@ class ContractPriceBulkUpdateService:
         # Phase 1: 계약이 있는 ContractPrice 업데이트
         for contract in contracts:
             try:
-                # 동호수 지정 여부 확인
-                try:
-                    house_unit = contract.key_unit.houseunit if contract.key_unit else None
-                except ObjectDoesNotExist:
-                    house_unit = None
+                with transaction.atomic():
+                    # 동호수 지정 여부 확인
+                    try:
+                        house_unit = contract.key_unit.houseunit if contract.key_unit else None
+                    except ObjectDoesNotExist:
+                        house_unit = None
 
-                # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져오기
-                price = get_contract_price(contract, house_unit, True)
+                    # 1. 기준 공급가, 2. 수입 예산 평균가, 3. 타입 평균가 순 참조 공급가 가져오기
+                    price = get_contract_price(contract, house_unit, True)
 
-                # ContractPrice 업데이트/생성 (house_unit도 함께 설정)
-                cont_price, created = self._update_or_create_contract_price(contract, price, house_unit)
+                    # ContractPrice 업데이트/생성 (house_unit도 함께 설정)
+                    cont_price, created = self._update_or_create_contract_price(contract, price, house_unit)
 
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
 
-                updated_contracts.append(contract.pk)
+                    updated_contracts.append(contract.pk)
 
             except Exception as e:
                 errors.append({
@@ -629,6 +632,82 @@ class ContractorSensitiveService:
         )
         return True
 
+    @staticmethod
+    def _coerce_base_date(base_date=None) -> date:
+        if isinstance(base_date, datetime):
+            return base_date.date()
+        if isinstance(base_date, date):
+            return base_date
+        if isinstance(base_date, str) and base_date.strip():
+            try:
+                return date.fromisoformat(base_date.strip())
+            except ValueError:
+                pass
+        return timezone.localdate()
+
+    @staticmethod
+    def schedule_retention(contractor: Contractor, base_date=None) -> date | None:
+        """계약 종결/해지 확정/승계 양도 완료 시 법정 보존기한(기본 5년) 만료일 설정"""
+        if not contractor:
+            return None
+        retention_days = max(1, int(getattr(settings, 'RRN_RETENTION_DAYS', 365 * 5)))
+        retention_until = ContractorSensitiveService._coerce_base_date(base_date) + timedelta(days=retention_days)
+        updated = ContractorSensitiveInfo.objects.filter(contractor=contractor).update(
+            retention_until=retention_until
+        )
+        return retention_until if updated else None
+
+    @staticmethod
+    def clear_retention(contractor: Contractor) -> None:
+        """정상 계약 상태('2') 복원 시 보존 만료 예정일 해제"""
+        if not contractor:
+            return
+        ContractorSensitiveInfo.objects.filter(
+            contractor=contractor,
+            retention_until__isnull=False,
+        ).update(retention_until=None)
+
+    @staticmethod
+    @transaction.atomic
+    def purge_expired_rrns(
+        as_of_date: date | None = None,
+        actor=None,
+        purpose: str = '보존기한 만료 자동 파기',
+    ) -> int:
+        """보존기한(retention_until)이 도래한 주민등록번호 일괄 파기 및 감사 로그 기록"""
+        target_date = ContractorSensitiveService._coerce_base_date(as_of_date)
+        expired_qs = ContractorSensitiveInfo.objects.select_related(
+            'contractor__contract',
+            'contractor__prev_contract',
+        ).filter(
+            retention_until__isnull=False,
+            retention_until__lte=target_date,
+        )
+        expired_items = list(expired_qs)
+        if not expired_items:
+            return 0
+
+        logs = []
+        info_ids = []
+        for info in expired_items:
+            info_ids.append(info.pk)
+            contractor = info.contractor
+            project_id, serial_number = ContractorSensitiveService._contractor_context_snapshot(contractor)
+            logs.append(ContractorSensitiveAccessLog(
+                contractor=contractor,
+                project_id_snapshot=project_id,
+                contractor_name_snapshot=contractor.name if contractor else '',
+                contract_serial_snapshot=serial_number,
+                actor=actor,
+                action='PURGE',
+                purpose=f'{purpose} (만료일: {info.retention_until})'[:150],
+                ip_address=None,
+            ))
+
+        ContractorSensitiveAccessLog.objects.bulk_create(logs)
+        ContractorSensitiveInfo.objects.filter(pk__in=info_ids).delete()
+        return len(info_ids)
+
 
 class ContractorRegistrationService:
     """계약자 등록/수정 관리 서비스"""
@@ -657,7 +736,7 @@ class ContractorRegistrationService:
             contract=contract,
             name=data.get('name'),
             birth_date=clean_date_value(data.get('birth_date')),
-            gender=data.get('gender'),
+            gender=data.get('gender') or '',
             qualification=qualification,
             status=data.get('status', '1'),  # 프론트에서 'status' 키로 전송
             change_type=data.get('change_type'),
@@ -714,15 +793,19 @@ class ContractorRegistrationService:
         """
 
         # 계약자 기본 정보 수정
-        contractor.name = data.get('name')
-        contractor.gender = data.get('gender')
+        if data.get('name') is not None:
+            contractor.name = data.get('name')
+        if data.get('gender') is not None:
+            contractor.gender = data.get('gender')
         if contractor.contract and contractor.contract.order_group and contractor.contract.order_group.sort == '2':
             contractor.qualification = '1'
         else:
             contractor.qualification = data.get('qualification') or contractor.qualification or '2'
-        contractor.status = data.get('status', '1')  # 프론트에서 'status' 키로 전송
-        contractor.change_type = data.get('change_type')
-        contractor.note = data.get('note', '')
+        contractor.status = data.get('status') or contractor.status or '1'  # 프론트에서 'status' 키로 전송
+        if 'change_type' in data:
+            contractor.change_type = data.get('change_type') or None
+        if 'note' in data:
+            contractor.note = data.get('note') or ''
 
         # 날짜 필드 처리 - 빈 문자열은 None으로, 값이 있으면 업데이트
         birth_date_value = clean_date_value(data.get('birth_date'))
@@ -738,6 +821,11 @@ class ContractorRegistrationService:
             contractor.contract_date = contract_date_value
 
         contractor.save()
+
+        if contractor.status == '4':
+            ContractorSensitiveService.schedule_retention(contractor)
+        elif contractor.status == '2':
+            ContractorSensitiveService.clear_retention(contractor)
 
         # 연락처 정보 수정 (없으면 생성)
         contact, _ = ContractorContact.objects.get_or_create(contractor=contractor)
@@ -813,28 +901,26 @@ class FileManagementService:
         if edit_file_pk and change_file:
             try:
                 file_to_edit = ContractFile.objects.get(pk=edit_file_pk, contractor=contractor)
-                if file_to_edit.file:
-                    file_to_edit.file.delete(save=False)
+                old_storage = file_to_edit.file.storage if file_to_edit.file else None
+                old_name = file_to_edit.file.name if file_to_edit.file else None
                 file_to_edit.file = change_file
                 file_to_edit.save()
+                if old_storage and old_name and old_name != file_to_edit.file.name:
+                    transaction.on_commit(lambda s=old_storage, n=old_name: s.delete(n))
             except ContractFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {edit_file_pk} does not exist.")
+                raise serializers.ValidationError({'editFile': f'수정할 계약서 파일(ID: {edit_file_pk})을 찾을 수 없습니다.'})
             except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'Error while replacing file: {str(e)}')
-                raise serializers.ValidationError('An error occurred while replacing the file.')
+                logger.error('Error while replacing file (pk=%s): %s', edit_file_pk, e)
+                raise serializers.ValidationError({'editFile': '계약서 파일 교체 중 오류가 발생했습니다.'})
 
         # 파일 삭제
         del_file_pk = data.get('delFile')
         if del_file_pk:
             try:
                 file_to_delete = ContractFile.objects.get(pk=del_file_pk, contractor=contractor)
-                if file_to_delete.file:
-                    file_to_delete.file.delete(save=False)
                 file_to_delete.delete()
             except ContractFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {del_file_pk} does not exist.")
+                raise serializers.ValidationError({'delFile': f'삭제할 계약서 파일(ID: {del_file_pk})을 찾을 수 없습니다.'})
 
 
 class PaymentProcessingService:
@@ -871,8 +957,16 @@ class PaymentProcessingService:
             return
 
         # 기본 정보 조회
-        project = Project.objects.get(pk=data.get('project'))
-        order_group_sort = int(data.get('order_group_sort'))
+        project_id = clean_id_value(data.get('project')) or getattr(contract, 'project_id', None)
+        project = Project.objects.filter(pk=project_id).first() if project_id else getattr(contract, 'project', None)
+        if not project:
+            raise serializers.ValidationError({'project': '유효한 프로젝트 정보가 필요합니다.'})
+
+        raw_sort = data.get('order_group_sort') or getattr(getattr(contract, 'order_group', None), 'sort', None) or '1'
+        try:
+            order_group_sort = int(raw_sort)
+        except (TypeError, ValueError):
+            order_group_sort = 1
 
         # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 매출금=분양대금)
         category = ('equity', 'revenue')
@@ -881,16 +975,24 @@ class PaymentProcessingService:
         account = payment_accounts.filter(category=target_category).first()
         if not account and payment_accounts.exists():
             account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+        if not account:
+            raise serializers.ValidationError({'account': '수납 처리용 프로젝트 회계 계정(is_payment=True)이 설정되어 있지 않습니다.'})
 
         # 납부 정보
-        bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
+        bank_acc_id = clean_id_value(data.get('bank_account'))
+        bank_account = ProjectBankAccount.objects.filter(pk=bank_acc_id).first() if bank_acc_id else None
+        if not bank_account:
+            raise serializers.ValidationError({'bank_account': '유효한 입금 계좌를 선택해 주십시오.'})
 
         # deal_date 유효성 검사 및 조정 (미래 날짜 방지)
         deal_date_input = data.get('deal_date')
         if deal_date_input:
             # 문자열 날짜를 date 객체로 변환
             if isinstance(deal_date_input, str):
-                deal_date_obj = date.fromisoformat(deal_date_input)
+                try:
+                    deal_date_obj = date.fromisoformat(deal_date_input)
+                except ValueError as exc:
+                    raise serializers.ValidationError({'deal_date': '유효한 거래일자(YYYY-MM-DD) 형식이 아닙니다.'}) from exc
             else:
                 deal_date_obj = deal_date_input
 
@@ -969,10 +1071,19 @@ class PaymentProcessingService:
                 account = payment_accounts.filter(category=target_category).first()
                 if not account and payment_accounts.exists():
                     account = payment_accounts.first() if order_group_sort == 1 else payment_accounts.last()
+                if not account:
+                    raise serializers.ValidationError({'account': '수납 처리용 프로젝트 회계 계정(is_payment=True)이 설정되어 있지 않습니다.'})
 
                 # 납부 정보
-                installment_order = InstallmentPaymentOrder.objects.get(pk=data.get('installment_order'))
-                bank_account = ProjectBankAccount.objects.get(pk=data.get('bank_account'))
+                inst_id = clean_id_value(data.get('installment_order'))
+                installment_order = InstallmentPaymentOrder.objects.filter(pk=inst_id).first() if inst_id else None
+                if not installment_order:
+                    raise serializers.ValidationError({'installment_order': '유효한 납부 회차를 선택해 주십시오.'})
+
+                bank_acc_id = clean_id_value(data.get('bank_account'))
+                bank_account = ProjectBankAccount.objects.filter(pk=bank_acc_id).first() if bank_acc_id else None
+                if not bank_account:
+                    raise serializers.ValidationError({'bank_account': '유효한 입금 계좌를 선택해 주십시오.'})
 
                 # 은행 거래 업데이트
                 bank_tx.bank_account = bank_account
@@ -1457,3 +1568,9 @@ class ContractorReleaseService:
         contractor.status = '4'  # 계약종결로 변경
         contractor.change_type = contractor_release.release_type  # ContractorRelease의 해지유형으로 대입
         contractor.save()
+
+        # 해지 확정 시 법정 보존기간(기본 5년) 후 자동 파기되도록 보존 만료일 설정
+        ContractorSensitiveService.schedule_retention(
+            contractor,
+            base_date=contractor_release.completion_date or contractor_release.refund_completion_date,
+        )

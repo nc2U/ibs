@@ -886,7 +886,10 @@ class ExportCoopRegistry(ContractExportMixin):
                 sensitive = None
 
             if sensitive:
-                rrn_value = decrypt_rrn(sensitive.encrypted_rrn, formatted=True)
+                try:
+                    rrn_value = decrypt_rrn(sensitive.encrypted_rrn, formatted=True)
+                except Exception:
+                    rrn_value = '복호화오류'
             else:
                 rrn_value = '미등록'
 

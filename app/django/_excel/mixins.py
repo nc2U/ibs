@@ -143,9 +143,16 @@ class ExcelExportMixin(LoginRequiredMixin, View):
 
     @classmethod
     def create_workbook(cls, sheet_name=None, in_memory=False, default_row=20):
-        """워크북과 워크시트 생성"""
+        """워크북과 워크시트 생성 (수식/URL 자동 변환 비활성화로 수식 주입 차단)"""
         output = io.BytesIO()
-        workbook = xlsxwriter.Workbook(output, {'in_memory': in_memory})
+        workbook = xlsxwriter.Workbook(
+            output,
+            {
+                'in_memory': in_memory,
+                'strings_to_formulas': False,
+                'strings_to_urls': False,
+            },
+        )
         worksheet = workbook.add_worksheet(cls.sanitize_sheet_name(sheet_name))
         worksheet.set_default_row(default_row)
         return output, workbook, worksheet

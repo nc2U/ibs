@@ -667,10 +667,14 @@ class SuccessionSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        # 1. contract 데이터 추출
-        validated_data['contract_id'] = self.initial_data.get('contract')
-        # [H-4] 행 락을 통해 동일 계약에 대한 동시 승계 생성 차단
-        contract = Contract.objects.select_for_update().get(pk=validated_data['contract_id'])
+        # 1. contract 데이터 추출 및 유효성 검증
+        raw_contract_id = self.initial_data.get('contract')
+        try:
+            validated_data['contract_id'] = int(raw_contract_id)
+            # [H-4] 행 락을 통해 동일 계약에 대한 동시 승계 생성 차단
+            contract = Contract.objects.select_for_update().get(pk=validated_data['contract_id'])
+        except (Contract.DoesNotExist, TypeError, ValueError) as exc:
+            raise serializers.ValidationError({'contract': '유효한 계약 정보를 선택해 주십시오.'}) from exc
 
         # [M-3] 이미 진행 중인 승계(신청접수 1, 변경인가대기 2)가 있는 경우 중복 신청 차단
         if Succession.objects.filter(contract=contract, status__in=['1', '2']).exists():
@@ -700,12 +704,20 @@ class SuccessionSerializer(serializers.ModelSerializer):
 
         # 3. 양수계약자 데이터 생성 (접수 시점에는 contract와 연결 안함)
         qualification = '1' if contract.order_group.sort == '2' else '2'  # 일반분양이면 일반('1') 조합이면 미인가('2')
+        raw_rrn = str(self.initial_data.get('rrn') or '').strip()
+        raw_birth_date = self.initial_data.get('birth_date') or None
+        raw_gender = self.initial_data.get('gender')
+        if raw_rrn and not raw_birth_date:
+            # 주민등록번호만 입력되고 생년월일이 비어 있는 경우 기본값 'M' 강제 주입으로 인한 성별 충돌 방지
+            initial_gender = ''
+        else:
+            initial_gender = raw_gender or ('' if raw_rrn else 'M')
 
         buyer = Contractor(contract=None,
                            prev_contract=None,
                            name=self.initial_data.get('name') or '',
-                           birth_date=self.initial_data.get('birth_date'),
-                           gender=self.initial_data.get('gender') or 'M',
+                           birth_date=raw_birth_date,
+                           gender=initial_gender,
                            qualification=qualification,
                            status='3',
                            change_type='3',
@@ -882,6 +894,13 @@ class SuccessionSerializer(serializers.ModelSerializer):
                     purpose='권리의무승계 정보 수정 시 양수인 식별정보 등록/갱신',
                     ip_address=ip_addr,
                 )
+            if instance.status == '3':
+                # 승계 완료 시 종전 계약자(양도인)는 계약종결 상태가 되므로 법정 보존기한 만료일 설정
+                ContractorSensitiveService.schedule_retention(
+                    seller,
+                    base_date=instance.approval_date or instance.apply_date,
+                )
+                ContractorSensitiveService.clear_retention(buyer)
 
         return instance
 

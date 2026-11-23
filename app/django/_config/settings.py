@@ -64,6 +64,7 @@ SECRET_KEY = config('SECRET_KEY', default='SECRET_KEY')
 _validate_production_secret_key(DEBUG, SECRET_KEY, sys.argv)
 RRN_ENCRYPTION_KEYS = config('RRN_ENCRYPTION_KEYS', default='', cast=Csv())
 RRN_HASH_KEY = config('RRN_HASH_KEY', default='')
+RRN_RETENTION_DAYS = config('RRN_RETENTION_DAYS', default=365 * 5, cast=int)
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS',
                               default='http://localhost:8000,http://127.0.0.1:8000',
                               cast=lambda v: [s.strip() for s in v.split(",") if s.strip()], )
