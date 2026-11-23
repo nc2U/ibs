@@ -3,6 +3,7 @@ Contract 관련 비즈니스 로직 서비스
 """
 import os
 import uuid
+import logging
 from datetime import date
 from datetime import datetime
 
@@ -21,6 +22,8 @@ from items.models import KeyUnit, HouseUnit
 from ledger.models import ProjectAccount, ProjectBankAccount
 from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPayment
 from project.models import Project
+
+logger = logging.getLogger(__name__)
 
 
 def clean_date_value(value):
@@ -502,7 +505,8 @@ class ContractorSensitiveService:
         try:
             digits, parsed_birth_date, parsed_gender, masked = normalize_and_parse_rrn(raw_rrn)
         except DjangoValidationError as exc:
-            raise serializers.ValidationError({'rrn': exc.messages[0] if exc.messages else str(exc)}) from exc
+            logger.warning("RRN validation failed in upsert_rrn", exc_info=True)
+            raise serializers.ValidationError({'rrn': '주민등록번호 형식이 올바르지 않습니다.'}) from exc
 
         valid_bases = {choice[0] for choice in ContractorSensitiveInfo.LEGAL_BASIS_CHOICES}
         basis = legal_basis if legal_basis in valid_bases else '1'
