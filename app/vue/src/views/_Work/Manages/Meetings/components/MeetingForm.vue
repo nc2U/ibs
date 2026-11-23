@@ -189,12 +189,14 @@ const parseActionItemsFromText = () => {
 const projId = computed(() => route.params.projId as string | undefined)
 const selectedProjectSlug = computed(() => {
   const byForm = meetingProjects.value.find(p => p.value === form.value.project)?.slug
-  return byForm || meeting.value?.project_desc?.slug || projId.value || workStore.currentProject?.slug
+  return (
+    byForm || meeting.value?.project_desc?.slug || projId.value || workStore.currentProject?.slug
+  )
 })
 
 const isCreator = computed(() => meeting.value?.creator?.pk === accStore.userInfo?.pk)
-const isAttendee = computed(() =>
-  meeting.value?.attendees_desc?.some(user => user.pk === accStore.userInfo?.pk) ?? false,
+const isAttendee = computed(
+  () => meeting.value?.attendees_desc?.some(user => user.pk === accStore.userInfo?.pk) ?? false,
 )
 
 const { can, PERM } = usePerms()
@@ -1291,8 +1293,7 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
-              <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end">
-              </CFormLabel>
+              <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end"> </CFormLabel>
               <CCol sm="5">
                 <CFormInput
                   v-model="newLinks[i].link"
@@ -1377,11 +1378,7 @@ onBeforeMount(async () => {
                             class="me-1"
                             color="success"
                           />
-                          <a
-                            v-if="canIssueRead"
-                            href="#"
-                            @click.prevent="callIssueModal(issue.pk)"
-                          >
+                          <a v-if="canIssueRead" href="#" @click.prevent="callIssueModal(issue.pk)">
                             {{ issue.subject }}
                           </a>
                           <span v-else>{{ issue.subject }}</span>
@@ -1607,14 +1604,15 @@ onBeforeMount(async () => {
                     :key="idx"
                     size="x-small"
                     color="blue-grey-lighten-4"
-                    class="text-dark me-1 mb-1"
+                    class="text-body me-1 mb-1"
                   >
                     <v-icon start icon="mdi-account-outline" size="12" />
                     {{ name }}
                   </v-chip>
                 </div>
                 <div v-else class="form-text text-muted small mt-1">
-                  * 회의에 참석한 외부 인원을 쉼표(,), 세미콜론(;) 또는 줄바꿈으로 구분해 입력해 주세요.
+                  * 회의에 참석한 외부 인원을 쉼표(,), 세미콜론(;) 또는 줄바꿈으로 구분해 입력해
+                  주세요.
                 </div>
               </CCol>
             </CRow>
@@ -1952,10 +1950,7 @@ onBeforeMount(async () => {
               />
             </div>
 
-            <div
-              class="display-6 fw-bold mb-2"
-              :class="isRecording ? 'text-danger' : 'text-muted'"
-            >
+            <div class="display-6 fw-bold mb-2" :class="isRecording ? 'text-danger' : 'text-muted'">
               {{ formattedRecordingTime }}
             </div>
 
