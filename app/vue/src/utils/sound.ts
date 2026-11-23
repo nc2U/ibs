@@ -7,10 +7,13 @@
 let audioCtx: AudioContext | null = null
 let lastPlayTime = 0
 
+type WindowWithWebkitAudio = Window & { webkitAudioContext?: typeof AudioContext }
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null
   if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    const AudioContextClass =
+      window.AudioContext || (window as WindowWithWebkitAudio).webkitAudioContext
     if (AudioContextClass) {
       audioCtx = new AudioContextClass()
     }

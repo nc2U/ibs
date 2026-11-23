@@ -7,9 +7,11 @@ import {
   getErrorMessage,
   getOrderedList,
   markdownRender,
+  sanitizeExternalUrl,
   setLocalStorage,
   stripMarkdown,
 } from '@/utils/helper'
+import { dateFormat, elapsedTime, humanizeFileSize, numFormat } from '@/utils/baseMixins'
 import { formatMailMergePreview } from '@/views/notices/Mailing/preview'
 
 describe('utils/helper', () => {
@@ -88,6 +90,46 @@ describe('utils/helper', () => {
 
     consoleSpy.mockRestore()
     consoleErrSpy.mockRestore()
+  })
+
+  it('sanitizeExternalUrl allows safe relative and http(s) URLs and rejects protocol-relative or dangerous schemes', () => {
+    expect(sanitizeExternalUrl('/dashboard')).toBe('/dashboard')
+    expect(sanitizeExternalUrl('https://example.com/path?a=1')).toBe('https://example.com/path?a=1')
+    expect(sanitizeExternalUrl('//evil.com/phish')).toBe('#')
+    expect(sanitizeExternalUrl('javascript:alert(1)')).toBe('#')
+    expect(sanitizeExternalUrl('')).toBe('#')
+  })
+
+  it('getOrderedList falls back to original order when localStorage has malformed JSON', () => {
+    const items = [
+      { pk: 1, name: 'A' },
+      { pk: 2, name: 'B' },
+    ]
+    localStorage.setItem('broken-order', '{invalid-json')
+    expect(getOrderedList(items, 'broken-order').map(i => i.pk)).toEqual([1, 2])
+  })
+})
+
+describe('utils/baseMixins', () => {
+  it('numFormat handles valid, zero, and invalid numeric strings safely', () => {
+    expect(numFormat(1234.56, 1)).toBe('1,234.6')
+    expect(numFormat(0, 0, '-')).toBe('-')
+    expect(numFormat(0, 0, 0)).toBe(0)
+    expect(numFormat('abc')).toBe('-')
+  })
+
+  it('dateFormat and elapsedTime handle invalid dates and future timestamps gracefully', () => {
+    expect(dateFormat('not-a-date')).toBe('')
+    expect(dateFormat('2026-01-05', '/')).toBe('2026/01/05')
+    expect(elapsedTime('not-a-date')).toBe('')
+    expect(elapsedTime(Date.now() + 60_000)).toBe('방금 전')
+  })
+
+  it('humanizeFileSize handles zero, negative, and huge byte sizes without NaN or undefined units', () => {
+    expect(humanizeFileSize(0)).toBe('0 Bytes')
+    expect(humanizeFileSize(-100)).toBe('')
+    expect(humanizeFileSize(1024)).toBe('1 KB')
+    expect(humanizeFileSize(1024 ** 10)).toContain('PB')
   })
 })
 

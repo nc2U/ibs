@@ -1,41 +1,19 @@
 import { computed } from 'vue'
 import { message } from '@/utils/helper'
-import { timeFormat } from '@/utils/baseMixins'
+import { timeFormat, toPrint } from '@/utils/baseMixins'
 import type { PatchDocs } from '@/store/types/docs'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 
-const docStore = useDocs()
-const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
+export { toPrint }
+
+const getDocStore = () => useDocs()
+const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => getDocStore().patchDocs(payload)
 
 const copyCreateDocs = (payload: { docs: number; doc_type: number; issue_project: number }) =>
-  docStore.copyDocs(payload)
-const deleteDocs = (pk: number, filter: DocsFilter) => docStore.deleteDocs(pk, filter)
+  getDocStore().copyDocs(payload)
+const deleteDocs = (pk: number, filter: DocsFilter) => getDocStore().deleteDocs(pk, filter)
 
-export const toPrint = (title: string) => {
-  // Clone the specific area to be printed
-  const printContent: any = document.getElementById('print-area')?.cloneNode(true)
-
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank')
-  if (printWindow) {
-    printWindow.document.open()
-
-    // Add the cloned content to the new window
-    printWindow.document.write(`<html><head><title>${title}</title></head><body>`)
-    printWindow.document.write(printContent?.innerHTML)
-    printWindow.document.write('</body></html>')
-
-    // Close the document for writing
-    printWindow.document.close()
-
-    // Print the new window
-    printWindow.print()
-    // Close the new window after printing
-    printWindow.close()
-  }
-}
-
-const securityLevel = computed(() => docStore.docs?.security_level ?? '3')
+const securityLevel = computed(() => getDocStore().docs?.security_level ?? '3')
 
 /** 1등급(비공개) 문서인지 여부 */
 const isPrivate = computed(() => securityLevel.value === '1')
@@ -44,7 +22,7 @@ const securityTitle = computed(() =>
 )
 const securityIcon = computed(() => (isPrivate.value ? 'lock-open-variant' : 'lock'))
 
-const is_blind = computed(() => docStore.docs?.is_blind)
+const is_blind = computed(() => getDocStore().docs?.is_blind)
 
 export const docsManageItems = computed(() => [
   { title: '복사하기', icon: 'content-copy' },
@@ -63,22 +41,26 @@ const toChangeSecurityLevel = (docs: number, state: boolean, filter: DocsFilter)
     pk: docs,
     security_level: state ? '3' : '1',
     filter,
-  }).then(() =>
-    message(
-      'info',
-      '',
-      `이 문서를 ${state ? '3등급 (프로젝트 공개)' : '1등급 (비공개)'}로 변경하였습니다.`,
-    ),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message(
+        'info',
+        '',
+        `이 문서를 ${state ? '3등급 (프로젝트 공개)' : '1등급 (비공개)'}로 변경하였습니다.`,
+      )
+    }
+  })
 
 const toBlind = (docs: number, state: boolean, filter: DocsFilter) =>
   patchDocs({
     pk: docs,
     is_blind: !state,
     filter,
-  }).then(() =>
-    message('info', '', `이 게시글을 블라인드${!is_blind.value ? ' 해제' : ' 처리'}하였습니다.`),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message('info', '', `이 게시글을 블라인드${!is_blind.value ? ' 해제' : ' 처리'}하였습니다.`)
+    }
+  })
 
 const toTrashCan = async (docs: number, state: boolean, filter: DocsFilter) => {
   if (!state) await deleteDocs(docs, filter)
@@ -108,7 +90,7 @@ export const toDocsManage = (fn: number, payload: ManagePayload) => {
     state,
     filter,
   } = payload
-  if (fn === 11) return copyDocs(issue_project as number, docs, doc_type as number)
+  if (fn === 11) return copyDocs(docs, doc_type as number, issue_project as number)
   if (fn === 22)
     return moveDocs(
       docs,
@@ -140,13 +122,12 @@ const moveDocs = (
   const description = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${type_name} 에서 이동됨]</p>`
-  patchDocs({ pk: docs, doc_type, issue_project, description, filter }).then(() =>
-    message('success', '', '게시물 이동이 완료되었습니다.'),
-  )
+  patchDocs({ pk: docs, doc_type, issue_project, description, filter }).then(res => {
+    if (res !== undefined) message('success', '', '게시물 이동이 완료되었습니다.')
+  })
 }
 const changeCate = (docs: number, cate: number | undefined, filter: DocsFilter) => {
-  console.log(docs, cate)
-  patchDocs({ pk: docs, category: cate, filter }).then(() =>
-    message('success', '', '카테고리가 변경되었습니다.'),
-  )
+  patchDocs({ pk: docs, category: cate, filter }).then(res => {
+    if (res !== undefined) message('success', '', '카테고리가 변경되었습니다.')
+  })
 }

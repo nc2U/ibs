@@ -1,8 +1,9 @@
 export const numFormat = (val: number | string, n = 0, zero: string | 0 = '-') => {
-  const value = Number.isNaN(val) ? 0 : Number(val)
+  const parsed = Number(val)
+  const value = Number.isFinite(parsed) ? parsed : 0
   const parts = value.toFixed(n).split('.')
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return !value || value === 0 ? zero : parts.join('.')
+  return !value ? zero : parts.join('.')
 }
 
 export const cutString = (str: string | null | undefined = '', len = 20, abb = '...') => {
@@ -37,7 +38,8 @@ export const addDaysToDate = (dateString: Date | string, days: number) => {
 }
 
 export const dateFormat = (date: Date | string, split: string = '-') => {
-  const d = new Date(date instanceof Date ? date : new Date(date))
+  const d = date instanceof Date ? new Date(date.getTime()) : new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
@@ -52,7 +54,8 @@ export const timeFormat = (
   dp: 'short' | 'min' | 'full' = 'full',
   split: string = '-',
 ) => {
-  const d = new Date(date instanceof Date ? date : new Date(date))
+  const d = date instanceof Date ? new Date(date.getTime()) : new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
@@ -68,9 +71,11 @@ export const timeFormat = (
 export const elapsedTime = (input?: Date | number | string): string => {
   if (!input) return ''
   const start = new Date(input)
+  if (Number.isNaN(start.getTime())) return ''
   const now = new Date()
 
   const diff = Math.floor((now.getTime() - start.getTime()) / 1000)
+  if (diff < 0) return '방금 전'
 
   const units = [
     { name: '년', seconds: 60 * 60 * 24 * 365 },
@@ -98,15 +103,41 @@ export const numberToHour = (digit: number | string) => {
 
 export const humanizeFileSize = (bytes?: number, decimals = 2) => {
   if (bytes === 0) return '0 Bytes'
-  else if (!bytes) return ''
+  if (bytes === undefined || bytes === null || !Number.isFinite(bytes) || bytes < 0) return ''
 
   const k = 1024
   const dm = decimals < 0 ? 0 : decimals
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
 
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1)
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+const escapeHtml = (str: string): string =>
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+export const toPrint = (title: string) => {
+  const printContent = document.getElementById('print-area')?.cloneNode(true)
+  const html = printContent instanceof Element ? printContent.innerHTML : ''
+
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.opener = null
+    printWindow.document.open()
+    printWindow.document.write(`<html><head><title>${escapeHtml(title)}</title></head><body>`)
+    printWindow.document.write(html)
+    printWindow.document.write('</body></html>')
+    printWindow.document.close()
+
+    printWindow.print()
+    printWindow.close()
+  }
 }
 
 export const getMeetingStatusColor = (status: string): string => {

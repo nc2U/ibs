@@ -1,5 +1,20 @@
 import { reactive } from 'vue'
 import Cookies from 'js-cookie'
+import { createToast } from 'mosha-vue-toastify'
+
+const notifyDownloadError = (description: string) => {
+  createToast(
+    { title: '다운로드 오류', description },
+    {
+      type: 'danger',
+      position: 'top-right',
+      transition: 'slide',
+      hideProgressBar: true,
+      showIcon: true,
+      timeout: 5000,
+    },
+  )
+}
 
 // 파일 타입 정의
 export const FILE_TYPES = {
@@ -15,11 +30,14 @@ export type FileType = (typeof FILE_TYPES)[keyof typeof FILE_TYPES]
 // MIME 타입 매핑
 const MIME_TYPES: Record<string, string> = {
   pdf: 'application/pdf',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   xls: 'application/vnd.ms-excel',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   doc: 'application/msword',
   jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
   png: 'image/png',
 }
 
@@ -155,22 +173,22 @@ export function useDownload(): UseDownloadReturn {
         a.click()
         document.body.removeChild(a)
         window.URL.revokeObjectURL(blobUrl)
-      } catch (fetchError: any) {
+      } catch (fetchError: unknown) {
         console.warn('Fetch download failed:', fetchError)
+        const errMsg = fetchError instanceof Error ? fetchError.message : ''
         if (
-          fetchError?.message &&
-          (fetchError.message.includes('401') ||
-            fetchError.message.includes('403') ||
-            fetchError.message.includes('형식'))
+          errMsg &&
+          (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('형식'))
         ) {
           throw fetchError
         }
         // 실패 시 기존 방식으로 fallback
         window.location.href = finalUrl
+      } finally {
+        clearInterval(progressInterval)
       }
 
       // 다운로드 완료 후 정리
-      clearInterval(progressInterval)
       downloadState.progress = 100
 
       setTimeout(() => {
@@ -183,7 +201,11 @@ export function useDownload(): UseDownloadReturn {
     } catch (error) {
       console.error('다운로드 오류:', error)
       downloadState.isDownloading = false
-      alert('파일 다운로드 중 오류가 발생했습니다.')
+      downloadState.downloadUrl = null
+      downloadState.fileName = null
+      downloadState.fileType = null
+      downloadState.progress = 0
+      notifyDownloadError('파일 다운로드 중 오류가 발생했습니다.')
     }
   }
 
@@ -277,7 +299,11 @@ export function useDownload(): UseDownloadReturn {
     } catch (error) {
       console.error('다운로드 오류:', error)
       downloadState.isDownloading = false
-      alert('파일 다운로드 중 오류가 발생했습니다.')
+      downloadState.downloadUrl = null
+      downloadState.fileName = null
+      downloadState.fileType = null
+      downloadState.progress = 0
+      notifyDownloadError('파일 다운로드 중 오류가 발생했습니다.')
     }
   }
 
@@ -303,7 +329,7 @@ export function useDownload(): UseDownloadReturn {
       }
     }, 150)
 
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
 
     setTimeout(() => {
       clearInterval(progressInterval)

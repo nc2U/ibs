@@ -1,44 +1,24 @@
 import { computed } from 'vue'
 import { message } from '@/utils/helper'
-import { timeFormat } from '@/utils/baseMixins'
+import { timeFormat, toPrint } from '@/utils/baseMixins'
 import type { PatchPost } from '@/store/types/forum'
 import { type PostFilter, useForum } from '@/store/pinia/forum'
 
-const forumStore = useForum()
-const patchPost = (payload: PatchPost & { filter: PostFilter }) => forumStore.patchPost(payload)
-const patchPostLike = (pk: number) => forumStore.patchPostLike(pk)
-const patchPostBlame = (pk: number) => forumStore.patchPostBlame(pk)
+export { toPrint }
+
+const getForumStore = () => useForum()
+const patchPost = (payload: PatchPost & { filter: PostFilter }) =>
+  getForumStore().patchPost(payload)
+const patchPostLike = (pk: number) => getForumStore().patchPostLike(pk)
+const patchPostBlame = (pk: number) => getForumStore().patchPostBlame(pk)
 
 const patchCommentLike = (pk: number, post: number, page?: number) =>
-  forumStore.patchCommentLike(pk, post, page)
+  getForumStore().patchCommentLike(pk, post, page)
 const patchCommentBlame = (pk: number, post: number, page?: number) =>
-  forumStore.patchCommentBlame(pk, post, page)
-const copyCreatePost = (payload: { post: number; forum: number }) => forumStore.copyPost(payload)
-const deletePost = (pk: number, filter: PostFilter) => forumStore.deletePost(pk, filter)
-
-export const toPrint = (title: string) => {
-  // Clone the specific area to be printed
-  const printContent: any = document.getElementById('print-area')?.cloneNode(true)
-
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank')
-  if (printWindow) {
-    printWindow.document.open()
-
-    // Add the cloned content to the new window
-    printWindow.document.write(`<html><head><title>${title}</title></head><body>`)
-    printWindow.document.write(printContent?.innerHTML)
-    printWindow.document.write('</body></html>')
-
-    // Close the document for writing
-    printWindow.document.close()
-
-    // Print the new window
-    printWindow.print()
-    // Close the new window after printing
-    printWindow.close()
-  }
-}
+  getForumStore().patchCommentBlame(pk, post, page)
+const copyCreatePost = (payload: { post: number; forum: number }) =>
+  getForumStore().copyPost(payload)
+const deletePost = (pk: number, filter: PostFilter) => getForumStore().deletePost(pk, filter)
 
 export const toPostLike = (pk: number) => patchPostLike(pk)
 
@@ -50,17 +30,17 @@ export const toCommentLike = (pk: number, post: number, page = 1) =>
 export const toCommentBlame = (pk: number, post: number, page = 1) =>
   patchCommentBlame(pk, post, page)
 
-const is_secret = computed(() => forumStore.post?.is_secret)
+const is_secret = computed(() => getForumStore().post?.is_secret)
 const secretTitle = computed(() => (is_secret.value ? '비밀글 해제' : '비밀글로'))
 const secretIcon = computed(() => (is_secret.value ? 'lock-open-variant' : 'lock'))
 
-const is_hide_cmt = computed(() => forumStore.post?.is_hide_comment)
+const is_hide_cmt = computed(() => getForumStore().post?.is_hide_comment)
 const hideCmtTitle = computed(() => (is_hide_cmt.value ? '댓글숨김 해제' : '댓글숨김'))
 
-const is_notice = computed(() => forumStore.post?.is_notice)
+const is_notice = computed(() => getForumStore().post?.is_notice)
 const notiTitle = computed(() => (is_notice.value ? '공지내림' : '공지올림'))
 
-const is_blind = computed(() => forumStore.post?.is_blind)
+const is_blind = computed(() => getForumStore().post?.is_blind)
 
 export const postManageItems = computed(() => [
   { title: '복사하기', icon: 'content-copy' },
@@ -81,48 +61,56 @@ const toSecretPost = (post: number, state: boolean, filter: PostFilter) =>
     pk: post,
     is_secret: !state,
     filter,
-  }).then(() =>
-    message(
-      'info',
-      '',
-      `이 게시글을 비밀글${!is_secret.value ? '에서 해제' : '로 변경'}하였습니다.`,
-    ),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message(
+        'info',
+        '',
+        `이 게시글을 비밀글${!is_secret.value ? '에서 해제' : '로 변경'}하였습니다.`,
+      )
+    }
+  })
 
 const hideComments = (post: number, state: boolean, filter: PostFilter) =>
   patchPost({
     pk: post,
     is_hide_comment: !state,
     filter,
-  }).then(() =>
-    message(
-      'info',
-      '',
-      `이 게시물의 댓글을 숨김${!is_hide_cmt.value ? ' 해제' : ' 처리'}하였습니다.`,
-    ),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message(
+        'info',
+        '',
+        `이 게시물의 댓글을 숨김${!is_hide_cmt.value ? ' 해제' : ' 처리'}하였습니다.`,
+      )
+    }
+  })
 
 const toNoticeUp = (post: number, state: boolean, filter: PostFilter) =>
   patchPost({
     pk: post,
     is_notice: !state,
     filter,
-  }).then(() =>
-    message(
-      'info',
-      '',
-      `이 게시글을 공지글${!is_notice.value ? '에서 해제' : '로 등록'}하였습니다.`,
-    ),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message(
+        'info',
+        '',
+        `이 게시글을 공지글${!is_notice.value ? '에서 해제' : '로 등록'}하였습니다.`,
+      )
+    }
+  })
 
 const toBlind = (post: number, state: boolean, filter: PostFilter) =>
   patchPost({
     pk: post,
     is_blind: !state,
     filter,
-  }).then(() =>
-    message('info', '', `이 게시글을 블라인드${!is_blind.value ? ' 해제' : ' 처리'}하였습니다.`),
-  )
+  }).then(res => {
+    if (res !== undefined) {
+      message('info', '', `이 게시글을 블라인드${!is_blind.value ? ' 해제' : ' 처리'}하였습니다.`)
+    }
+  })
 
 const toTrashCan = async (post: number, state: boolean, filter: PostFilter) => {
   if (!state) await deletePost(post, filter)
@@ -164,13 +152,12 @@ const movePost = (
   const content = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${forum_name} 에서 이동됨]</p>`
-  patchPost({ pk: post, forum, content, filter }).then(() =>
-    message('success', '', '게시물 이동이 완료되었습니다.'),
-  )
+  patchPost({ pk: post, forum, content, filter }).then(res => {
+    if (res !== undefined) message('success', '', '게시물 이동이 완료되었습니다.')
+  })
 }
 const changeCate = (post: number, cate: number | undefined, filter: PostFilter) => {
-  console.log(post, cate)
-  patchPost({ pk: post, category: cate, filter }).then(() =>
-    message('success', '', '카테고리가 변경되었습니다.'),
-  )
+  patchPost({ pk: post, category: cate, filter }).then(res => {
+    if (res !== undefined) message('success', '', '카테고리가 변경되었습니다.')
+  })
 }

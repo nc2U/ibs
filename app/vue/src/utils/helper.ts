@@ -131,6 +131,7 @@ export const sanitizeExternalUrl = (url?: string | null): string => {
   if (!url) return '#'
   const trimmed = String(url).trim()
   if (!trimmed) return '#'
+  if (trimmed.startsWith('//')) return '#'
   if (trimmed.startsWith('/')) return trimmed
   try {
     const parsed = new URL(trimmed, window.location.origin)
@@ -195,10 +196,15 @@ export const stripMarkdown = (content: string): string => {
 
 // localStorage 에 저장된 순서가 있을 경우, 그 순서에 맞게 정렬
 export const getOrderedList = <T extends { pk: number }>(objectList: T[], key: string): T[] => {
-  const savedOrder = JSON.parse(localStorage.getItem(key) || '[]') as {
-    pk: number
-    order: number
-  }[]
+  let savedOrder: { pk: number; order: number }[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || '[]')
+      if (Array.isArray(parsed)) savedOrder = parsed
+    } catch {
+      savedOrder = []
+    }
+  }
 
   if (savedOrder.length) {
     // pk -> Forum 매핑
@@ -215,11 +221,16 @@ export const getOrderedList = <T extends { pk: number }>(objectList: T[], key: s
 
 // 순서가 바뀌면 저장
 export const setLocalStorage = <T extends { pk: number }>(orderedList: T[], key: string) => {
+  if (typeof window === 'undefined') return
   const order = orderedList.map((obj, idx) => ({
     pk: obj.pk,
     order: idx,
   }))
-  localStorage.setItem(key, JSON.stringify(order))
+  try {
+    localStorage.setItem(key, JSON.stringify(order))
+  } catch {
+    // ignore storage access or quota errors
+  }
 }
 
 // 파일 다운로드
