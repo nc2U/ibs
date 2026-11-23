@@ -24,7 +24,10 @@ const comSelect = async (com: number | null) => {
   if (!!com) {
     localStorage.setItem('curr-company', `${com}`)
     await companyStore.fetchCompany(com)
-  } else companyStore.removeCompany()
+  } else {
+    localStorage.removeItem('curr-company')
+    companyStore.removeCompany()
+  }
   emit('com-select', com)
 }
 

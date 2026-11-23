@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 
 import CoreuiVue from '@coreui/vue'
@@ -15,7 +15,7 @@ const mockRoute = {
 }
 
 describe('Content Body Testing', () => {
-  let wrapper: any
+  let wrapper: VueWrapper
   beforeEach(() => {
     wrapper = mount(ContentBody, {
       global: {

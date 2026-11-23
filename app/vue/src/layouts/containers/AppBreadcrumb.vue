@@ -1,21 +1,33 @@
 <script setup lang="ts">
-import { ref, onBeforeMount } from 'vue'
-import { type RouteLocationMatched } from 'vue-router'
-import router from '@/router'
+import { ref, watch } from 'vue'
+import { type RouteLocationMatched, useRoute, useRouter } from 'vue-router'
 
-const breadcrumbs = ref()
+interface BreadcrumbItem {
+  active: boolean
+  name: RouteLocationMatched['name']
+  path: string
+}
 
-const getBreadcrumbs = () => {
-  return router.currentRoute.value.matched.map((route: RouteLocationMatched) => ({
-    active: route.path === router.currentRoute.value.fullPath || route.path.includes(':'),
-    name: route.name,
-    path: `${router.options.history.base}${route.path}`,
+const route = useRoute()
+const router = useRouter()
+const breadcrumbs = ref<BreadcrumbItem[]>([])
+
+const getBreadcrumbs = (): BreadcrumbItem[] => {
+  const base = router.options.history.base || ''
+  return route.matched.map((matched: RouteLocationMatched) => ({
+    active: matched.path === route.fullPath || matched.path.includes(':'),
+    name: matched.name,
+    path: `${base}${matched.path}`,
   }))
 }
 
-router.afterEach(() => (breadcrumbs.value = getBreadcrumbs()))
-
-onBeforeMount(() => (breadcrumbs.value = getBreadcrumbs()))
+watch(
+  () => route.fullPath,
+  () => {
+    breadcrumbs.value = getBreadcrumbs()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

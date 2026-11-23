@@ -14,10 +14,10 @@ const refsTodoModal = ref()
 
 const avatarSrc = computed(() => (props.profile?.image ? props.profile?.image : ''))
 const avatarText = computed(() =>
-  props.userInfo ? props.userInfo.username.substring(0, 2).toUpperCase() : 'AB',
+  props.userInfo?.username ? props.userInfo.username.substring(0, 2).toUpperCase() : 'AB',
 )
 
-const locationBlank = (url: string) => window.open(url, '_blank')
+const locationBlank = (url: string) => window.open(url, '_blank', 'noopener,noreferrer')
 
 const account = useAccount()
 const itemsCount = computed(() => account.myTodos.length)
@@ -25,7 +25,7 @@ const itemsCount = computed(() => account.myTodos.length)
 const [route, router] = [useRoute(), useRouter()]
 const logout = () => {
   account.logout()
-  router.push({ name: 'Login', query: { redirect: route.fullPath } })
+  router.push({ name: 'Login', query: { redirect: route?.fullPath } })
 }
 </script>
 
@@ -33,7 +33,7 @@ const logout = () => {
   <CDropdown>
     <CDropdownToggle class="py-0" color="link" :caret="false">
       <CAvatar
-        color="blue-accent-1"
+        color="info"
         text-color="white"
         size="md"
         :src="avatarSrc as string"
@@ -54,7 +54,7 @@ const logout = () => {
           color="deep-purple-lighten-1"
           variant="flat"
           size="x-small"
-          class="ml-2"
+          class="ms-2"
         >
           시스템관리자
         </v-chip>
@@ -69,7 +69,7 @@ const logout = () => {
         </v-chip>
       </CDropdownHeader>
 
-      <CDropdownItem @click="refsTodoModal.callModal()">
+      <CDropdownItem @click="refsTodoModal?.callModal()">
         <v-icon icon="mdi-calendar-check-outline" size="small" />
         할일 관리
         <v-chip color="danger" variant="flat" size="x-small" class="ms-auto">

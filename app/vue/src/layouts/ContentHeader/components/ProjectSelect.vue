@@ -30,22 +30,23 @@ const loadProject = async () => {
 }
 
 // 1. 초기 데이터 로드 및 초기 프로젝트 설정
+const stopWaitList = watch(
+  () => projSelectList.value,
+  newList => {
+    if (newList.length > 0) {
+      loadProject()
+      stopWaitList() // 한 번만 실행하고 감시 종료
+    }
+  },
+)
+
 onBeforeMount(async () => {
   await projStore.fetchProjectList()
 
-  // 데이터가 로드된 상태에 따라 바로 로드하거나 watch를 통해 대기
+  // 이미 데이터가 로드되어 있으면 바로 로드하고 대기 watcher 종료
   if (projSelectList.value.length > 0) {
+    stopWaitList()
     await loadProject()
-  } else {
-    const unwatch = watch(
-      () => projSelectList.value,
-      newList => {
-        if (newList.length > 0) {
-          loadProject()
-          unwatch() // 한 번만 실행하고 감시 종료
-        }
-      },
-    )
   }
 })
 
@@ -80,7 +81,7 @@ watch(
         icon="mdi-plus-thick"
         color="success"
         :disabled="!canProjectCreate"
-        @click="router.push({ name: '프로젝트 등록' })"
+        @click="canProjectCreate && router.push({ name: '프로젝트 등록' })"
       />
       <v-tooltip v-if="!canProjectCreate" activator="parent" location="end">
         프로젝트 생성 권한이 필요합니다.

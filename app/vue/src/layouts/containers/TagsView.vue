@@ -18,13 +18,6 @@ watch(
   },
 )
 
-const visible = ref(false)
-watch(visible, value =>
-  value
-    ? document.body.addEventListener('click', closeMenu)
-    : document.body.removeEventListener('click', closeMenu),
-)
-
 const affixTags = ref<VisitedView[]>([]) // 고정 태그
 
 const tagsViewStore = useTagsView()
@@ -110,8 +103,6 @@ const closeSelectedTag = (view: VisitedView) =>
     if (isActive(view)) toLastView() // 현재 페이지를 닫았다면 이전 페이지로 이동
   })
 
-const closeMenu = () => (visible.value = false)
-
 onMounted(() => {
   initTags()
   addTags()
@@ -136,13 +127,13 @@ onMounted(() => {
           :color="isActive(view) ? 'green-darken-1' : btnColor"
           :to="{ path: view.fullPath }"
         >
-          <v-icon v-if="isActive(view)" icon="mdi-circle" size="x-small" class="mr-2" />
+          <v-icon v-if="isActive(view)" icon="mdi-circle" size="x-small" class="me-2" />
           {{ view.meta.title }}
           <v-icon
             v-if="!isAffix(view)"
             icon="mdi-close"
             size="x-small"
-            class="pa-2 ml-1 close"
+            class="pa-2 ms-1 close"
             @click.prevent.stop="closeSelectedTag(view)"
           />
         </v-btn>

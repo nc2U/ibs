@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
@@ -48,12 +48,23 @@ const openConvertModal = (todo: TodoType) => {
   convertModalVisible.value = true
 }
 
+let noticeTimer: ReturnType<typeof setTimeout> | null = null
+
 const onConverted = (payload: { todo: TodoType; issue: TodoIssueInfo }) => {
   successNotice.value = { visible: true, issue: payload.issue }
-  setTimeout(() => {
+  if (noticeTimer) clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
     if (successNotice.value) successNotice.value.visible = false
+    noticeTimer = null
   }, 6000)
 }
+
+onUnmounted(() => {
+  if (noticeTimer) {
+    clearTimeout(noticeTimer)
+    noticeTimer = null
+  }
+})
 
 const navigateToIssue = (issueInfo: TodoIssueInfo) => {
   const projId = issueInfo.project_slug || issueInfo.project_id
@@ -64,7 +75,8 @@ const navigateToIssue = (issueInfo: TodoIssueInfo) => {
   })
 }
 
-const handleAddTodo = async () => {
+const handleAddTodo = async (e?: Event) => {
+  if (e && (e as KeyboardEvent).isComposing) return
   const title = newTodoTitle.value.trim()
   if (!title || !userInfo.value?.pk) return
   await accountStore.createTodo({ user: userInfo.value.pk, title })
@@ -100,7 +112,7 @@ const navigateAndClose = (path: string) => {
 }
 
 const openExternal = (url: string) => {
-  window.open(url, '_blank')
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 </script>
 
@@ -515,8 +527,12 @@ const openExternal = (url: string) => {
 <style lang="scss" scoped>
 :global(.app-aside-sidebar) {
   border-left: 1px solid #d8dbe0 !important;
-  box-shadow: -8px 0 24px -4px rgba(0, 0, 0, 0.16), -2px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
-  transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  box-shadow:
+    -8px 0 24px -4px rgba(0, 0, 0, 0.16),
+    -2px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
+  transition:
+    box-shadow 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
 }
 
 :global(.app-aside-sidebar.dark-theme),

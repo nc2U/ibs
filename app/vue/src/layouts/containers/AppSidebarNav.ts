@@ -245,7 +245,7 @@ const AppSidebarNav = defineComponent({
           RouterLink,
           { to: item.to, custom: true },
           {
-            default: (props: any) => {
+            default: (props: { isActive: boolean; href: string; navigate: () => void }) => {
               const component =
                 typeof item.component === 'string'
                   ? resolveComponent(item.component)

@@ -25,7 +25,7 @@ const urlCompanyId = computed(() => {
   return id ? parseInt(id as string, 10) : null
 })
 
-const comSelect = (e: { originalEvent: Event; value: any; option: any }) => emit('com-select', e)
+const comSelect = (val: number) => emit('com-select', val)
 const comClear = () => emit('com-select', null)
 
 onBeforeMount(async () => {
@@ -43,7 +43,7 @@ onBeforeMount(async () => {
     <CCol md="6" lg="3">
       <Multiselect
         :value="company"
-        :options="comSelectList as any[]"
+        :options="comSelectList"
         placeholder="회사선택"
         autocomplete="label"
         :classes="{ search: 'form-control multiselect-search' }"
@@ -59,7 +59,7 @@ onBeforeMount(async () => {
         icon="mdi-plus-thick"
         color="primary"
         :disabled="!canProjectCreate"
-        @click="router.push({ name: '회사 정보 관리' })"
+        @click="canProjectCreate && router.push({ name: '회사 정보 관리' })"
       />
       <v-tooltip v-if="!canProjectCreate" activator="parent" location="end">
         회사 및 프로젝트 생성 권한이 필요합니다.

@@ -48,12 +48,14 @@ const fetchAllCounts = () => {
   }
 }
 
-let pollTimer: any = null
+let initTimer: ReturnType<typeof setTimeout> | null = null
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   fetchAllCounts()
-  setTimeout(() => {
+  initTimer = setTimeout(() => {
     isInitial = false
+    initTimer = null
   }, 2000)
 
   // 15초 주기로 헤더 알림 & 메신저 미확인 배지 자동 갱신
@@ -66,6 +68,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (initTimer) {
+    clearTimeout(initTimer)
+    initTimer = null
+  }
   if (pollTimer) {
     clearInterval(pollTimer)
     pollTimer = null

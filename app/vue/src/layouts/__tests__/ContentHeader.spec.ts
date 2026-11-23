@@ -9,7 +9,7 @@ const mockRouter = {
 
 // Mock Vue Router composables
 vi.mock('vue-router', async importOriginal => {
-  const actual = (await importOriginal()) as Record<string, any>
+  const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
     useRoute: () => ({
@@ -28,14 +28,6 @@ import CompanySelect from '../ContentHeader/components/CompanySelect.vue'
 import ProjectSelect from '../ContentHeader/components/ProjectSelect.vue'
 
 const vuetify = createVuetify()
-
-const mockRoute = {
-  name: 'some-title',
-  meta: {
-    title: 'some-title',
-  },
-  query: {},
-}
 
 describe('ContentHeader Test', () => {
   it('header main select test', async () => {
