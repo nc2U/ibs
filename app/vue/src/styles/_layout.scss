@@ -1,16 +1,5 @@
-body:fullscreen {
-  overflow: auto !important;
-}
-
-body:-ms-fullscreen {
-  overflow: auto !important;
-}
-
+body:fullscreen,
 body:-webkit-full-screen {
-  overflow: auto !important;
-}
-
-body:-moz-full-screen {
   overflow: auto !important;
 }
 
@@ -26,11 +15,7 @@ body:-moz-full-screen {
 }
 
 .sidebar-nav {
-  // Firefox
-  overflow: -moz-scrollbars-none;
-  // IE 10+
-  -ms-overflow-style: none;
-  // Chrome, Edge, Safari, Opera
+  scrollbar-width: none;
   &::-webkit-scrollbar {
     width: 0 !important;
   }
@@ -50,7 +35,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family:
+    'Helvetica Neue', Helvetica, Arial, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   font-weight: bold;
   color: #5b5c5d;
 }
@@ -62,7 +48,8 @@ h6 {
   h4,
   h5,
   h6 {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
     font-weight: bold;
     color: #ddd;
   }

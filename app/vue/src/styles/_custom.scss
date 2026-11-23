@@ -114,118 +114,6 @@ body.dark-theme,
   box-shadow: none !important;
 }
 
-.example {
-  &:not(:first-child) {
-    margin-top: 1.5rem;
-  }
-
-  .tab-content {
-    background-color: $light-50 !important;
-  }
-
-  code[class*='language-'],
-  pre[class*='language-'] {
-    font-size: 0.875rem !important;
-  }
-
-  :not(pre) > code[class*='language-'],
-  pre[class*='language-'] {
-    background: transparent;
-  }
-
-  & + p,
-  & + h2,
-  & + h3,
-  & + h4,
-  & + h5,
-  & + h6 {
-    margin-top: 1.5rem;
-  }
-
-  // Components examples
-  .preview,
-  .preview .col {
-    + p {
-      margin-top: 2rem;
-    }
-
-    > .form-control {
-      + .form-control {
-        margin-top: 0.5rem;
-      }
-    }
-
-    > .nav + .nav,
-    > .alert + .alert,
-    > .navbar + .navbar,
-    > .progress + .progress {
-      margin-top: 1rem;
-    }
-
-    > .dropdown-menu {
-      position: static;
-      display: block;
-    }
-
-    > :last-child {
-      margin-bottom: 0;
-    }
-
-    // Images
-    > svg + svg,
-    > img + img {
-      margin-left: 0.5rem;
-    }
-
-    // Buttons
-    > .btn,
-    > .btn-group {
-      margin: 0.25rem 0.125rem;
-    }
-
-    > .btn-toolbar + .btn-toolbar {
-      margin-top: 0.5rem;
-    }
-
-    // List groups
-    > .list-group {
-      max-width: 400px;
-    }
-
-    > [class*='list-group-horizontal'] {
-      max-width: 100%;
-    }
-
-    // Navbars
-    .fixed-top,
-    .sticky-top {
-      position: static;
-      margin: -1rem -1rem 1rem;
-    }
-
-    .fixed-bottom {
-      position: static;
-      margin: 1rem -1rem -1rem;
-    }
-
-    @include media-breakpoint-up(sm) {
-      .fixed-top,
-      .sticky-top {
-        margin: -1.5rem -1.5rem 1rem;
-      }
-      .fixed-bottom {
-        margin: 1rem -1.5rem -1.5rem;
-      }
-    }
-
-    // Pagination
-    .pagination {
-      margin-top: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-  }
-}
-
 .underline {
   text-decoration: underline !important;
 }
@@ -825,7 +713,7 @@ label.required::after {
   text-decoration: line-through;
 }
 
-body.dark-theme .hljs {
+body.dark-theme {
   /* atom-one-dark-reasonable.css 스타일이 우선 적용 */
   /* 추가적인 다크 테마 커스터마이징 가능 */
   pre code.hljs {
@@ -957,7 +845,7 @@ body.dark-theme .hljs {
   }
 }
 
-body:not(.dark-theme) .hljs {
+body:not(.dark-theme) {
   /* atom-one-light.css 스타일이 우선 적용 */
   /* 추가적인 라이트 테마 커스터마이징 가능 */
   pre code.hljs {
