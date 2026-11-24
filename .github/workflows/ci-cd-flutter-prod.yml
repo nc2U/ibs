@@ -176,5 +176,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
-          releaseNotes: ${{ inputs.release_note != '' && inputs.release_note || format('Prod Release Build #{0} ({1})', github.run_number, github.sha) }}
+          releaseNotes: "${{ inputs.release_note != '' && inputs.release_note || format('Prod Release Build #{0} ({1})', github.run_number, github.sha) }}"
           file: app/flutter/build/ios/ipa/mobile_ibs.ipa
