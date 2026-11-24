@@ -478,6 +478,7 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
         res.sort(key=lambda x: (x['installment_order'].pay_code, x['installment_order'].pay_time))
         return {'installment_summaries': res, 'grand_total': total, 'total_contracts': processed}
     except Exception:
+        logger.exception('get_project_payment_summary 계산 실패 (project_pk=%s)', getattr(project, 'pk', None))
         return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
 
 

@@ -347,17 +347,35 @@ class ContractPriceUtilsTestCase(TestCase):
         result = get_down_payment_settlement(mock_contract, mock_order)
         self.assertEqual(result, 0)
 
+    @patch("_utils.contract_price.ProjectIncBudget")
+    @patch("_utils.contract_price.DownPayment")
+    @patch("_utils.contract_price.PaymentPerInstallment")
+    @patch("_utils.contract_price.SalesPriceByGT")
     @patch("_utils.contract_price.get_contract_payment_plan")
     @patch("_utils.contract_price.InstallmentPaymentOrder")
-    def test_get_project_payment_summary_all_installments_counted(self, mock_inst_cls, mock_get_plan):
+    def test_get_project_payment_summary_all_installments_counted(
+        self,
+        mock_inst_cls,
+        mock_get_plan,
+        mock_sp_cls,
+        mock_ppi_cls,
+        mock_dp_cls,
+        mock_budget_cls,
+    ):
         mock_project = MagicMock()
         mock_c1 = MagicMock()
         mock_c2 = MagicMock()
         mock_project.contract_set.filter.return_value.select_related.return_value = [mock_c1, mock_c2]
 
-        inst1 = MagicMock(id=101, pay_code=1, pay_time=1)
-        inst2 = MagicMock(id=102, pay_code=2, pay_time=1)
-        mock_inst_cls.objects.filter.return_value.order_by.return_value = [inst1, inst2]
+        inst1 = MagicMock(id=101, pk=101, type_sort="1", pay_code=1, pay_time=1)
+        inst1.excluded_order_groups.all.return_value = []
+        inst2 = MagicMock(id=102, pk=102, type_sort="1", pay_code=2, pay_time=1)
+        inst2.excluded_order_groups.all.return_value = []
+        mock_inst_cls.objects.filter.return_value.prefetch_related.return_value.order_by.return_value = [inst1, inst2]
+        mock_sp_cls.objects.filter.return_value = []
+        mock_ppi_cls.objects.filter.return_value = []
+        mock_dp_cls.objects.filter.return_value = []
+        mock_budget_cls.objects.filter.return_value = []
 
         # 각 계약에 2개의 회차 계획이 있는 경우
         mock_get_plan.side_effect = [
