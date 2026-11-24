@@ -606,8 +606,8 @@ class ContractorSensitiveService:
         ContractorSensitiveAccessLog.objects.create(
             contractor=contractor,
             project_id_snapshot=project_id,
-            contractor_name_snapshot=contractor.name,
-            contract_serial_snapshot=serial_number,
+            contractor_name_snapshot=(contractor.name or '')[:50],
+            contract_serial_snapshot=(serial_number or '')[:30],
             actor=actor,
             action='CREATE_UPDATE',
             purpose=(purpose or '계약자 식별정보 등록/갱신')[:150],
@@ -640,8 +640,8 @@ class ContractorSensitiveService:
         ContractorSensitiveAccessLog.objects.create(
             contractor=contractor,
             project_id_snapshot=project_id,
-            contractor_name_snapshot=contractor.name,
-            contract_serial_snapshot=serial_number,
+            contractor_name_snapshot=(contractor.name or '')[:50],
+            contract_serial_snapshot=(serial_number or '')[:30],
             actor=actor,
             action='VIEW_PLAIN',
             purpose=clean_purpose[:150],
@@ -665,8 +665,8 @@ class ContractorSensitiveService:
         ContractorSensitiveAccessLog.objects.create(
             contractor=contractor,
             project_id_snapshot=project_id,
-            contractor_name_snapshot=contractor.name,
-            contract_serial_snapshot=serial_number,
+            contractor_name_snapshot=(contractor.name or '')[:50],
+            contract_serial_snapshot=(serial_number or '')[:30],
             actor=actor,
             action='PURGE',
             purpose=(purpose or '계약자 민감정보 파기')[:150],
@@ -738,8 +738,8 @@ class ContractorSensitiveService:
             logs.append(ContractorSensitiveAccessLog(
                 contractor=contractor,
                 project_id_snapshot=project_id,
-                contractor_name_snapshot=contractor.name if contractor else '',
-                contract_serial_snapshot=serial_number,
+                contractor_name_snapshot=(contractor.name if contractor else '')[:50],
+                contract_serial_snapshot=(serial_number or '')[:30],
                 actor=actor,
                 action='PURGE',
                 purpose=f'{purpose} (만료일: {info.retention_until})'[:150],

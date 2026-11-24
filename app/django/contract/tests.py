@@ -2203,6 +2203,63 @@ class ContractorSensitiveInfoTests(APITestCase):
         with self.assertRaises(Exception):
             ContractDocumentFileSerializer.validate_file(oversized)
 
+    def test_coop_registry_export_zero_sensitive_records_long_project_name(self):
+        """식별정보 0건 프로젝트(긴 프로젝트명 포함)에서 /excel/coop-registry/ 감사 로그 저장 시 DataError 미발생 검증"""
+        from urllib.parse import quote
+        from contract.models import ContractorSensitiveAccessLog
+
+        long_name = '동춘1구역9블럭 지역주택조합 최대30자테스트명'[:30]
+        long_ip = IssueProject.objects.create(
+            company=self.company, name='Long Name IP', slug='long-name-ip', creator=self.superuser
+        )
+        long_project = Project.objects.create(
+            issue_project=long_ip,
+            name=long_name,
+            order=3,
+            kind='1',
+            start_year='2026',
+            monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01',
+            construction_period_months=24,
+        )
+        long_og = OrderGroup.objects.create(project=long_project, order_number=1, sort='1', name='1차 조합')
+        long_ut = UnitType.objects.create(
+            project=long_project, name='84A', sort='1', color='#123456', average_price=500000000, num_unit=10
+        )
+        long_contract = Contract.objects.create(
+            project=long_project,
+            serial_number='LONG-001',
+            order_group=long_og,
+            unit_type=long_ut,
+            is_active=True,
+        )
+        Contractor.objects.create(
+            contract=long_contract,
+            name='김조합',
+            qualification='2',
+            status='2',
+            contract_date=date(2026, 2, 1),
+            is_active=True,
+        )
+
+        self.client.force_login(user=self.work_manager)
+        purpose = '조합설립·변경인가 제출'
+        res = self.client.get(
+            f'/excel/coop-registry/?project={long_project.pk}&purpose={quote(purpose)}'
+        )
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+
+        expected_snapshot = f'[{long_project.name}] 명부일괄'
+        self.assertGreater(len(expected_snapshot), 20)
+        log = ContractorSensitiveAccessLog.objects.filter(
+            project_id_snapshot=long_project.pk,
+            action='EXPORT_EXCEL',
+        ).first()
+        self.assertIsNotNone(log)
+        self.assertIsNone(log.contractor)
+        self.assertEqual(log.contractor_name_snapshot, expected_snapshot)
+        self.assertEqual(log.purpose, f'{purpose} (식별정보 포함 0건)')
+
 
 
 

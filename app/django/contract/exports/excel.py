@@ -932,8 +932,8 @@ class ExportCoopRegistry(ContractExportMixin):
                 audit_logs.append(ContractorSensitiveAccessLog(
                     contractor=contractor,
                     project_id_snapshot=project.pk,
-                    contractor_name_snapshot=contractor.name,
-                    contract_serial_snapshot=cont.serial_number,
+                    contractor_name_snapshot=(contractor.name or '')[:50],
+                    contract_serial_snapshot=(cont.serial_number or '')[:30],
                     actor=user,
                     action='EXPORT_EXCEL',
                     purpose=purpose[:150],
@@ -946,7 +946,7 @@ class ExportCoopRegistry(ContractExportMixin):
             ContractorSensitiveAccessLog.objects.create(
                 contractor=None,
                 project_id_snapshot=project.pk,
-                contractor_name_snapshot=f'[{project.name}] 명부일괄',
+                contractor_name_snapshot=f'[{project.name}] 명부일괄'[:50],
                 contract_serial_snapshot='',
                 actor=user,
                 action='EXPORT_EXCEL',

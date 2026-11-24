@@ -830,7 +830,7 @@ class ContractorSensitiveAccessLog(models.Model):
         verbose_name='계약자',
     )
     project_id_snapshot = models.PositiveIntegerField('프로젝트 ID 스냅샷', null=True, blank=True, db_index=True)
-    contractor_name_snapshot = models.CharField('계약자명 스냅샷', max_length=20)
+    contractor_name_snapshot = models.CharField('계약자명 스냅샷', max_length=50)
     contract_serial_snapshot = models.CharField('계약번호 스냅샷', max_length=30, blank=True, default='')
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
