@@ -8,6 +8,14 @@ on:
 
   workflow_dispatch:
     inputs:
+      target_env:
+        description: '백업 대상 환경'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - dev
       backup_name:
         description: '백업 식별 이름 (예: pre-deploy, emergency)'
         required: false
@@ -22,44 +30,53 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v4
 
-      - name: Setup kubeconfig
+      - name: Trigger & Wait for CNPG Backup
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            set -euo pipefail
             export KUBECONFIG=$HOME/.kube/config
 
-            BACKUP_NAME="manual-${{ github.event.inputs.backup_name }}-$(date +%Y%m%d-%H%M%S)"
+            TARGET_NS="ibs-${{ inputs.target_env }}"
+            SAFE_NAME=$(printf '%s' "${{ inputs.backup_name }}" | tr -cs 'a-z0-9-' '-' | sed 's/^-//;s/-$//' | cut -c1-20)
+            [ -n "$SAFE_NAME" ] || SAFE_NAME="manual"
+            BACKUP_NAME="manual-${SAFE_NAME}-$(date +%Y%m%d-%H%M%S)"
 
-            echo "🚀 Triggering CNPG manual backup: ${BACKUP_NAME}"
+            echo "🚀 Triggering CNPG manual backup in ${TARGET_NS}: ${BACKUP_NAME}"
 
             kubectl create -f - <<EOF
             apiVersion: postgresql.cnpg.io/v1
             kind: Backup
             metadata:
               name: ${BACKUP_NAME}
-              namespace: ibs-prod
+              namespace: ${TARGET_NS}
             spec:
               method: barmanObjectStore
               cluster:
                 name: postgres
             EOF
 
-            echo "⏳ Waiting for backup to complete..."
-            sleep 10
+            echo "⏳ Waiting for backup to complete (timeout: 10m)..."
+            for i in $(seq 1 60); do
+              BACKUP_STATUS=$(kubectl get backup "${BACKUP_NAME}" -n "${TARGET_NS}" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+              if [ "$BACKUP_STATUS" = "completed" ]; then
+                echo "✅ Backup completed successfully: ${BACKUP_NAME}"
+                exit 0
+              elif [ "$BACKUP_STATUS" = "failed" ]; then
+                echo "❌ Backup failed: ${BACKUP_NAME}"
+                kubectl describe backup "${BACKUP_NAME}" -n "${TARGET_NS}" || true
+                exit 1
+              fi
+              echo "  [${i}/60] status=${BACKUP_STATUS:-pending}..."
+              sleep 10
+            done
 
-            # 백업 상태 확인
-            kubectl get backup ${BACKUP_NAME} -n ibs-prod -o jsonpath='{.status.phase}'
-            BACKUP_STATUS=$(kubectl get backup ${BACKUP_NAME} -n ibs-prod -o jsonpath='{.status.phase}')
-
-            if [ "$BACKUP_STATUS" = "completed" ]; then
-              echo "✅ Backup completed successfully: ${BACKUP_NAME}"
-            else
-              echo "⏳ Backup is running (status: ${BACKUP_STATUS}). Check with:"
-              echo "   kubectl get backup ${BACKUP_NAME} -n ibs-prod"
-            fi
+            echo "❌ Backup timed out after 10 minutes: ${BACKUP_NAME}"
+            kubectl describe backup "${BACKUP_NAME}" -n "${TARGET_NS}" || true
+            exit 1
 
       - name: Send slack when failed
         if: ${{ failure() }}

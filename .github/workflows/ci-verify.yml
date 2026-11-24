@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: ibs
           POSTGRES_PASSWORD: ibs
@@ -64,6 +64,8 @@ jobs:
     env:
       DEBUG: "True"
       SECRET_KEY: ci-dummy-secret-key-at-least-32-chars-long-for-jwt-security
+      RRN_ENCRYPTION_KEYS: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      RRN_HASH_KEY: ci-dummy-rrn-hash-key
       DATABASE_TYPE: postgres
       DATABASE_NAME: ibs
       DATABASE_USER: ibs

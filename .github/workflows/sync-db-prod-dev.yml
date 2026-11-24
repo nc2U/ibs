@@ -17,37 +17,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Sync S3 DB Backup (postgres-backup -> postgres-backup-dev)
-      - name: Mirror S3 DB Backup (Production -> Dev)
+      # 1. Sync S3 DB Backup & Media Files (Production -> Dev)
+      - name: Mirror S3 DB Backup & Media Files (Production -> Dev)
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
+            set -euo pipefail
             export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
+            # MC_HOST_* 환경변수를 사용하여 쉘 인용부호/명령행 노출 방지
+            NFS_USER_VAL=$(cat <<'EOF_USER'
+            ${{ secrets.NFS_USER }}
+            EOF_USER
+            )
+            NFS_PASS_VAL=$(cat <<'EOF_PASS'
+            ${{ secrets.NFS_PASS }}
+            EOF_PASS
+            )
+            mc alias set minio-s3 https://s3.dyibs.com "$NFS_USER_VAL" "$NFS_PASS_VAL"
+
             echo "🔄 Mirroring S3 DB Backup buckets (postgres-backup -> postgres-backup-dev)..."
-            mc alias set minio-s3 https://s3.dyibs.com ${{ secrets.NFS_USER }} '${{ secrets.NFS_PASS }}'
             mc mb minio-s3/postgres-backup-dev --ignore-existing
             mc mirror minio-s3/postgres-backup minio-s3/postgres-backup-dev --overwrite
             echo "✅ S3 DB Backup sync completed successfully"
 
-      # 2. Sync S3 Media Files (ibs-media -> ibs-media-dev)
-      - name: Mirror S3 Media Files (Production -> Dev)
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          host: ${{ secrets.NFS_HOST }}
-          username: ${{ secrets.NFS_USER }}
-          password: ${{ secrets.NFS_PASS }}
-          command: |
-            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
             echo "🔄 Mirroring S3 media buckets (ibs-media -> ibs-media-dev)..."
-            mc alias set minio-s3 https://s3.dyibs.com ${{ secrets.NFS_USER }} '${{ secrets.NFS_PASS }}'
             mc mb minio-s3/ibs-media-dev --ignore-existing
             mc mirror minio-s3/ibs-media minio-s3/ibs-media-dev --overwrite --remove
             echo "✅ S3 media sync completed successfully"
 
-      # 3. CloudNativePG Restore DB to Dev environment
+      # 2. CloudNativePG Restore DB to Dev environment & purge Prod RRN ciphertexts
       - name: Restore DB to Dev environment
         uses: garygrossgarten/github-action-ssh@release
         with:
@@ -55,17 +56,20 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            set -euo pipefail
             export KUBECONFIG=$HOME/.kube/config
             cd ${{ secrets.CICD_PATH }}/dev/deploy/helm/scripts
 
             echo "Restoring production data to dev environment..."
-            sh manual-s3-restore.sh dev "" restore --auto
+            bash manual-s3-restore.sh dev "" restore --auto
+            echo "✅ Database restore to dev completed successfully"
 
-            if [ $? -eq 0 ]; then
-              echo "✅ Database restore to dev completed successfully"
-            else
-              echo "❌ Database restore to dev failed"
-              exit 1
+            echo "🧹 Sanitizing encrypted RRN table in ibs-dev (removing prod ciphertexts)..."
+            PRIMARY_POD=$(kubectl get pod -n ibs-dev -l "cnpg.io/cluster=postgres,role=primary" -o name 2>/dev/null | head -1 || true)
+            if [ -n "$PRIMARY_POD" ]; then
+              kubectl exec -n ibs-dev "$PRIMARY_POD" -c postgres -- psql -U postgres -d ibs -c \
+                "DO \$\$ BEGIN IF to_regclass('ibs.contract_contractor_sensitive_info') IS NOT NULL THEN TRUNCATE TABLE ibs.contract_contractor_sensitive_info; END IF; END \$\$;"
+              echo "✅ Dev RRN sanitization completed"
             fi
 
       # 4. Slack notification on failure

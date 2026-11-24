@@ -15,11 +15,16 @@ runs:
   steps:
     - name: Send slack
       shell: bash
+      env:
+        INPUT_STATUS: ${{ inputs.status }}
+        SLACK_INCOMING_URL: ${{ inputs.slack_incoming_url }}
       run: |
-        if [ "${{ inputs.status }}" = "success" ]; then
+        if [ "$INPUT_STATUS" = "success" ]; then
           EMOTICON="✅"
         else
           EMOTICON="⛔"
         fi
-        MSG="{ \"text\":\">${EMOTICON} workflow (<https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW}>) in <https://github.com/${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}>\n><https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}/checks|${GITHUB_JOB}> job ${{ inputs.status }}, branch=\`${GITHUB_REF#refs/heads/}\`\"}"
-        curl -X POST -H 'Content-type: application/json' --data "${MSG}" "${{ inputs.slack_incoming_url }}"
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        TEXT=">${EMOTICON} workflow (<https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW}>) in <https://github.com/${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}>"$'\n'"> <https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}/checks|${GITHUB_JOB}> job ${INPUT_STATUS}, branch=\`${BRANCH_NAME}\`"
+        PAYLOAD=$(jq -n --arg text "$TEXT" '{text: $text}')
+        curl -fsS -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_INCOMING_URL"

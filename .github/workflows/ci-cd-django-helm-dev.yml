@@ -8,6 +8,7 @@ on:
       - 'app/django/**'
       - 'deploy/docker/**'
       - 'deploy/helm/**'
+      - 'deploy/kubectl/**'
   workflow_dispatch:
 
 # Prevent concurrent deployments to the same environment
@@ -31,6 +32,7 @@ jobs:
       django: ${{ steps.filter.outputs.django }}
       docker: ${{ steps.filter.outputs.docker }}
       helm: ${{ steps.filter.outputs.helm }}
+      kubectl: ${{ steps.filter.outputs.kubectl }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,6 +49,8 @@ jobs:
               - 'deploy/docker/**'
             helm:
               - 'deploy/helm/**'
+            kubectl:
+              - 'deploy/kubectl/**'
 
   # 2. 검증: Django 또는 Docker 변경(또는 수동 실행) 시 시스템 체크·테스트 통과 필수
   verify:
@@ -205,7 +209,7 @@ jobs:
 
             cd helm
             echo "Running scripts/dev-deploy.sh..."
-            IMAGE_TAG="${{ needs.build.outputs.image_tag || 'dev-latest' }}" sh scripts/dev-deploy.sh
+            IMAGE_TAG="${{ needs.build.outputs.image_tag }}" bash scripts/dev-deploy.sh
 
       - name: Wait for rollout completion
         run: |
@@ -215,9 +219,12 @@ jobs:
 
       - name: Send Slack notification
         if: always()
+        env:
+          SLACK_INCOMING_URL: ${{ secrets.SLACK_INCOMING_URL }}
         run: |
           STATUS_TEXT="✅ Django Development Deployment Successful"
           if [ "${{ job.status }}" != "success" ]; then STATUS_TEXT="❌ Django Development Deployment Failed"; fi
-          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+          PAYLOAD=$(jq -n --arg text "$STATUS_TEXT" '{text: $text}')
+          curl -fsS -X POST "$SLACK_INCOMING_URL" \
             -H 'Content-Type: application/json' \
-            -d "{\"text\": \"$STATUS_TEXT\"}"
+            -d "$PAYLOAD"

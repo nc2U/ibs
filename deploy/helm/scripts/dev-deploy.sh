@@ -21,8 +21,8 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
       ''|\#*) ;; # Ignore blank lines or comments
       *)
         # Remove quotes and export
-        clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
-        clean_value=$(echo "$value" | sed -e 's/^\\s*[\"\\'\\']//' -e 's/[\"\\'\\']\\s*$//')
+        clean_key="$(echo "$key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        clean_value="$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^["'\'']//' -e 's/["'\'']$//')"
         export "$clean_key=$clean_value"
         ;;
     esac
@@ -54,17 +54,25 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
-    # IMAGE_TAG가 전달된 경우 --set으로 이미지 태그를 주입하여 Pod 롤아웃을 강제합니다.
-    IMAGE_TAG_ARG=""
+    # IMAGE_TAG가 미지정된 경우(예: Helm 전용 변경) 기존 실행 중인 web 태그를 유지하여 의도치 않은 태그 변경을 방지합니다.
+    if [ -z "${IMAGE_TAG:-}" ]; then
+      CURRENT_WEB_IMAGE=$(kubectl get deployment web -n ibs-dev -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+      if [ -n "$CURRENT_WEB_IMAGE" ] && echo "$CURRENT_WEB_IMAGE" | grep -q ':'; then
+        IMAGE_TAG="${CURRENT_WEB_IMAGE##*:}"
+        echo "Detected active web image tag: ${IMAGE_TAG}"
+      fi
+    fi
+
+    IMAGE_TAG_ARGS=""
     if [ -n "${IMAGE_TAG:-}" ]; then
-      IMAGE_TAG_ARG="--set web.image.tag=${IMAGE_TAG}"
+      IMAGE_TAG_ARGS="--set web.image.tag=${IMAGE_TAG} --set nginx.web.image.tag=${IMAGE_TAG}"
       echo "Using image tag: ${IMAGE_TAG}"
     else
-      echo "IMAGE_TAG not set, using default tag from values (latest)"
+      echo "IMAGE_TAG not set, using default tag from values"
     fi
     helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
-      ${IMAGE_TAG_ARG} \
-      --install -n ibs-dev --create-namespace --history-max 5
+      ${IMAGE_TAG_ARGS} \
+      --install -n ibs-dev --create-namespace --history-max 5 --timeout 20m
   else
     echo "values-dev-custom.yaml file not found in Current directory."
     exit 1

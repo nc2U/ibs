@@ -9,6 +9,11 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# 동일 환경에 대한 동시 정적 배포 경합 방지 (symlink swap 및 구 빌드 삭제 충돌 차단)
+concurrency:
+  group: ibs-vue-prod-deployment
+  cancel-in-progress: false
+
 # job은 사용자가 정한 플랫폼을 통해 steps 라는 일련의 과정을 실행.
 # 여러 개의 job 을 사용할 수 있으며, 여러 개의 job 을 사용할 때는 서로 정보도 교환 가능.
 # 각각 독립적으로도 실행 가능.
@@ -135,13 +140,6 @@ jobs:
           echo "  - index.html: $(wc -c < index.html) bytes"
           echo "  - Total assets: $(find assets -type f | wc -l) files"
           echo "  - Total size: $(du -sh assets | cut -f1)"
-
-      # docs 배포
-      - name: DocsItem Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: app/vue/docs/.vitepress/dist
 
       # 새 빌드만 업로드 (전체 static이 아닌)
       - name: Upload new build to server
@@ -389,6 +387,13 @@ jobs:
             fi
 
             echo "✅ Cleanup complete"
+
+      # 앱 롤아웃 및 검증 완료 후 매뉴얼(VitePress) 배포
+      - name: DocsItem Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: app/vue/docs/.vitepress/dist
 
       # slack --> notification
       - name: Send slack when failed

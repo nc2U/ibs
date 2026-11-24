@@ -61,7 +61,7 @@ jobs:
           appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
-          releaseNotes: "${{ inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}"
+          releaseNotes: ${{ inputs.release_note != '' && inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}
           file: app/flutter/build/app/outputs/flutter-apk/app-release.apk
 
   build-and-deploy-ios:
@@ -93,8 +93,17 @@ jobs:
           pod install --repo-update
           cd ..
 
+      - name: Check iOS signing & distribution secrets
+        id: ios_secrets
+        env:
+          APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          FIREBASE_IOS_APP_ID: ${{ secrets.FIREBASE_IOS_APP_ID }}
+        run: |
+          echo "has_cert=$([ -n "$APPLE_CERT" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_firebase=$([ -n "$FIREBASE_IOS_APP_ID" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
       - name: Setup iOS Provisioning Profile & Certificate
-        if: ${{ env.BUILD_CERTIFICATE_BASE64 != '' }}
+        if: steps.ios_secrets.outputs.has_cert == 'true'
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -120,17 +129,19 @@ jobs:
       - name: Build iOS IPA
         working-directory: app/flutter
         run: |
-          flutter build ipa --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com || flutter build ios --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com
+          if [ "${{ steps.ios_secrets.outputs.has_cert }}" = "true" ]; then
+            flutter build ipa --release --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com
+          else
+            echo "ℹ️ Apple signing certificate not configured; running unsigned iOS build verification only."
+            flutter build ios --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com
+          fi
 
       - name: Deploy to Firebase App Distribution (iOS)
-        if: ${{ env.FIREBASE_IOS_APP_ID != '' && env.APPLE_CERTIFICATE_BASE64 != '' }}
-        env:
-          FIREBASE_IOS_APP_ID: ${{ secrets.FIREBASE_IOS_APP_ID }}
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+        if: steps.ios_secrets.outputs.has_cert == 'true' && steps.ios_secrets.outputs.has_firebase == 'true'
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
-          releaseNotes: "${{ inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}"
+          releaseNotes: ${{ inputs.release_note != '' && inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}
           file: app/flutter/build/ios/ipa/mobile_ibs.ipa

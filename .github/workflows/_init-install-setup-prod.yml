@@ -35,10 +35,14 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
-            cd ${{ secrets.NFS_PATH }}/prod && \
-            mkdir -p ./app/django/media && \
-            mkdir -p ./volume/backups && \
-            echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
+            set -euo pipefail
+            NFS_PASS_VAL=$(cat <<'EOF_PASS'
+            ${{ secrets.NFS_PASS }}
+            EOF_PASS
+            )
+            cd ${{ secrets.NFS_PATH }}/prod
+            mkdir -p ./app/django/media ./volume/backups
+            printf '%s\n' "$NFS_PASS_VAL" | sudo -S chmod -R 775 ./app/django
 
       # Step 3: Build and push Django Docker image
       - name: Set up Docker Buildx
@@ -232,7 +236,7 @@ jobs:
                 enabled: true
                 bucket: "postgres-backup"
                 region: "ap-northeast-2"
-                endpoint: "http://${{ secrets.NFS_HOST }}:9000"
+                endpoint: "https://s3.dyibs.com"
                 accessKeyId: "${{ secrets.NFS_USER }}"
                 secretAccessKey: "${{ secrets.NFS_PASS }}"
 
@@ -323,44 +327,63 @@ jobs:
 
       - name: Send Slack notification on success
         if: success()
+        env:
+          SLACK_INCOMING_URL: ${{ secrets.SLACK_INCOMING_URL }}
         run: |
-          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "text": "✅ Production Initial Setup Successful",
-              "attachments": [{
-                "color": "good",
-                "fields": [
-                  {"title": "Environment", "value": "Production", "short": true},
-                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
-                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
-                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
-                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
-                  {"title": "Author", "value": "${{ github.actor }}", "short": true}
+          PAYLOAD=$(jq -n \
+            --arg tag "${{ steps.meta.outputs.image_tag }}" \
+            --arg ns "${{ env.KUBE_NAMESPACE }}" \
+            --arg rel "${{ env.HELM_RELEASE_NAME }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg actor "${{ github.actor }}" \
+            '{
+              text: "✅ Production Initial Setup Successful",
+              attachments: [{
+                color: "good",
+                fields: [
+                  {title: "Environment", value: "Production", short: true},
+                  {title: "Image Tag", value: $tag, short: true},
+                  {title: "Namespace", value: $ns, short: true},
+                  {title: "Release", value: $rel, short: true},
+                  {title: "Commit", value: $sha, short: false},
+                  {title: "Author", value: $actor, short: true}
                 ]
               }]
-            }'
+            }')
+          curl -fsS -X POST "$SLACK_INCOMING_URL" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD"
 
       - name: Send Slack notification on failure
         if: failure()
+        env:
+          SLACK_INCOMING_URL: ${{ secrets.SLACK_INCOMING_URL }}
         run: |
-          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "text": "❌ Production Initial Setup Failed",
-              "attachments": [{
-                "color": "danger",
-                "fields": [
-                  {"title": "Environment", "value": "Production", "short": true},
-                  {"title": "Image Tag", "value": "${{ steps.meta.outputs.image_tag }}", "short": true},
-                  {"title": "Namespace", "value": "${{ env.KUBE_NAMESPACE }}", "short": true},
-                  {"title": "Release", "value": "${{ env.HELM_RELEASE_NAME }}", "short": true},
-                  {"title": "Commit", "value": "${{ github.sha }}", "short": false},
-                  {"title": "Author", "value": "${{ github.actor }}", "short": true},
-                  {"title": "Workflow", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false}
+          PAYLOAD=$(jq -n \
+            --arg tag "${{ steps.meta.outputs.image_tag }}" \
+            --arg ns "${{ env.KUBE_NAMESPACE }}" \
+            --arg rel "${{ env.HELM_RELEASE_NAME }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{
+              text: "❌ Production Initial Setup Failed",
+              attachments: [{
+                color: "danger",
+                fields: [
+                  {title: "Environment", value: "Production", short: true},
+                  {title: "Image Tag", value: $tag, short: true},
+                  {title: "Namespace", value: $ns, short: true},
+                  {title: "Release", value: $rel, short: true},
+                  {title: "Commit", value: $sha, short: false},
+                  {title: "Author", value: $actor, short: true},
+                  {title: "Workflow", value: $url, short: false}
                 ]
               }]
-            }'
+            }')
+          curl -fsS -X POST "$SLACK_INCOMING_URL" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD"
 
       - name: Check migration job logs on failure
         if: failure()

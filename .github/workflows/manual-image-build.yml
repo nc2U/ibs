@@ -26,19 +26,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name:  Set environment variables & Prepare requirements
+      - name: Set environment variables & Prepare requirements
         run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
           if [ "${{ inputs.target_env }}" = "prod" ]; then
             echo "ENV_NAMESPACE=ibs-prod" >> $GITHUB_ENV
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-            echo "SHA_TAG=${{ github.sha }}" >> $GITHUB_ENV
+            echo "SHA_TAG=${SHORT_SHA}" >> $GITHUB_ENV
             echo "DEPLOY_SCRIPT=prod-deploy.sh" >> $GITHUB_ENV
           else
             echo "ENV_NAMESPACE=ibs-dev" >> $GITHUB_ENV
             echo "IMAGE_TAG=dev-latest" >> $GITHUB_ENV
-            echo "SHA_TAG=dev-${{ github.sha }}" >> $GITHUB_ENV
+            echo "SHA_TAG=dev-${SHORT_SHA}" >> $GITHUB_ENV
             echo "DEPLOY_SCRIPT=dev-deploy.sh" >> $GITHUB_ENV
-          
+
             # Dev 환경: ci-verify 및 Prod 와 동일하게 고정된 requirements.txt 버전 사용
             echo "ℹ️ Using pinned requirements.txt for dev build (matching ci-verify and prod)."
           fi
@@ -70,10 +71,10 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            set -e
+            set -euo pipefail
             export KUBECONFIG=$HOME/.kube/config
             cd ${{ secrets.CICD_PATH }}/${{ inputs.target_env }}/deploy/helm/scripts
-            sh ${{ env.DEPLOY_SCRIPT }}
+            IMAGE_TAG="${{ env.SHA_TAG }}" bash "${{ env.DEPLOY_SCRIPT }}"
             kubectl rollout restart deployment/web -n ${{ env.ENV_NAMESPACE }}
             kubectl rollout restart deployment/web-celery -n ${{ env.ENV_NAMESPACE }}
             kubectl rollout restart deployment/nginx -n ${{ env.ENV_NAMESPACE }}
