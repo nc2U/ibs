@@ -3,7 +3,6 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import ResetForm from '@/views/_Accounts/components/ResetForm.vue'
-import SocialLogin from '@/views/_Accounts/components/SocialLogin.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher/Index.vue'
 
@@ -13,25 +12,39 @@ const accStore = useAccount()
 const [route, router] = [useRoute(), useRouter()]
 
 const isLoading = ref(true)
+const isSubmitting = ref(false)
 
 const isTokenValid = ref(false)
 const isExpired = computed(() => !isLoading.value && !isTokenValid.value)
 
 const onSubmit = async (new_password: string) => {
-  const payload = {
-    user_id: route.query.uidb64,
-    token: route.query.token,
-    new_password,
+  if (isSubmitting.value) return
+  const { uidb64, token } = route.query
+  if (typeof uidb64 !== 'string' || typeof token !== 'string') return
+
+  isSubmitting.value = true
+  try {
+    const res = await accStore.passResetConfirm({
+      user_id: uidb64,
+      token,
+      new_password,
+    })
+    if (res) {
+      refAlertModal.value?.callModal('', '', 'mdi-check-circle', 'success')
+    }
+  } finally {
+    isSubmitting.value = false
   }
-  const res = await accStore.passResetConfirm(payload)
-  if (res) {
-    await refAlertModal.value?.callModal('', '', '', 'success')
-  }
+}
+
+const goToLogin = () => {
+  refAlertModal.value?.close()
+  router.push({ name: 'Login' })
 }
 
 onBeforeMount(async () => {
   const { uidb64, token } = route.query
-  if (uidb64 && token) {
+  if (typeof uidb64 === 'string' && typeof token === 'string' && uidb64 && token) {
     isTokenValid.value = await accStore.checkPassResetToken(uidb64, token)
   }
   isLoading.value = false
@@ -39,7 +52,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+  <div class="bg-more-light min-vh-100 d-flex flex-row align-items-center">
     <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
       <ThemeSwitcher size="lg" tooltip-location="bottom" />
     </div>
@@ -56,7 +69,7 @@ onBeforeMount(async () => {
               <div class="text-start pt-3">
                 <p class="text-muted">
                   이 토큰의 비밀번호 재설정 가능시간이 만료되었습니다. 비밀번호를 재설정 하려면 다시
-                  요청해 주십시요.
+                  요청해 주십시오.
                 </p>
               </div>
               <div class="text-end pt-2">
@@ -64,9 +77,7 @@ onBeforeMount(async () => {
               </div>
             </CCardBody>
             <CCardBody v-else class="text-body">
-              <ResetForm @on-submit="onSubmit" />
-
-              <SocialLogin />
+              <ResetForm :loading="isSubmitting" @on-submit="onSubmit" />
             </CCardBody>
           </CCard>
         </CCol>
@@ -78,7 +89,7 @@ onBeforeMount(async () => {
     <template #header>비밀번호 재설정!</template>
     <template #default>비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하십시오.</template>
     <template #footer>
-      <v-btn color="light" @click="router.push({ name: 'Login' })">로그인 화면</v-btn>
+      <v-btn color="light" @click="goToLogin">로그인 화면</v-btn>
     </template>
   </AlertModal>
 </template>

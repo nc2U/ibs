@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from '@/utils/helper'
+import { isValidate, message } from '@/utils/helper'
 
-const emit = defineEmits(['onSubmit'])
+defineProps({
+  loading: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['on-submit'])
 
 const showPassword = ref(false)
 
@@ -17,18 +21,20 @@ const form = reactive({
 const validated = ref(false)
 
 const onSubmit = (event: Event) => {
-  const el = event.currentTarget as HTMLInputElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
   } else {
     if (form.password !== form.passwordConfirm) {
+      validated.value = false
       message('warning', '', '비밀번호가 일치하지 않습니다.')
       return
     }
-    emit('onSubmit', { ...form })
+    emit('on-submit', {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      passwordConfirm: form.passwordConfirm,
+    })
     validated.value = false
   }
 }
@@ -46,11 +52,11 @@ const router = useRouter()
       </CInputGroupText>
       <CFormInput
         v-model="form.username"
-        autocomplete="username"
+        autocomplete="name"
         placeholder="실명을 입력해주세요"
         required
       />
-      <CFormFeedback invalid>아이디를 입력하세요.</CFormFeedback>
+      <CFormFeedback invalid>실명(사용자명)을 입력하세요.</CFormFeedback>
     </CInputGroup>
 
     <CInputGroup class="mb-3">
@@ -71,8 +77,8 @@ const router = useRouter()
       </CInputGroupText>
       <CFormInput
         v-model="form.password"
-        :type="!showPassword ? 'password' : ''"
-        autocomplete="password"
+        :type="showPassword ? 'text' : 'password'"
+        autocomplete="new-password"
         placeholder="비밀번호를 입력해주세요"
         required
       />
@@ -94,8 +100,8 @@ const router = useRouter()
       </CInputGroupText>
       <CFormInput
         v-model="form.passwordConfirm"
-        :type="!showPassword ? 'password' : ''"
-        autocomplete="password-confirm"
+        :type="showPassword ? 'text' : 'password'"
+        autocomplete="new-password"
         placeholder="비밀번호 확인"
         required
       />
@@ -113,12 +119,14 @@ const router = useRouter()
 
     <CRow>
       <CCol class="d-grid">
-        <v-btn type="submit" size="large" color="primary">회원 가입</v-btn>
+        <v-btn type="submit" size="large" color="primary" :loading="loading" :disabled="loading">
+          회원 가입
+        </v-btn>
       </CCol>
     </CRow>
 
     <CRow>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <CButton type="button" color="link" class="px-0" @click="router.push({ name: 'Login' })">
           로그인하러 가기
         </CButton>

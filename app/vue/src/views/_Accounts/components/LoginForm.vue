@@ -1,26 +1,27 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { isValidate } from '@/utils/helper'
+
+defineProps({
+  loading: { type: Boolean, default: false },
+})
 
 const [route, router] = [useRoute(), useRouter()]
-const emit = defineEmits(['on-submit', 'find-email', 'find-pass'])
+const emit = defineEmits(['on-submit', 'find-pass'])
 
 const email = ref('')
 const password = ref('')
-const redirect = ref()
+const redirect = ref('')
 const validated = ref(false)
 const showPassword = ref(false)
 
 const onSubmit = (event: Event) => {
-  const el = event.currentTarget as HTMLInputElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
   } else {
     emit('on-submit', {
-      email: email.value,
+      email: email.value.trim(),
       password: password.value,
       redirect: redirect.value,
     })
@@ -32,11 +33,11 @@ const toRegister = () => {
   router.push({ name: 'Register' })
 }
 
-const toFindEmail = () => emit('find-email')
-
 const toFindPassword = () => emit('find-pass')
 
-onMounted(() => (redirect.value = route.query?.redirect))
+onMounted(() => {
+  redirect.value = typeof route.query?.redirect === 'string' ? route.query.redirect : ''
+})
 </script>
 
 <template>
@@ -50,7 +51,7 @@ onMounted(() => (redirect.value = route.query?.redirect))
       <CFormInput
         v-model="email"
         type="email"
-        auto-complete="username email"
+        autocomplete="username email"
         placeholder="이메일주소를 입력해주세요"
         required
       />
@@ -62,8 +63,8 @@ onMounted(() => (redirect.value = route.query?.redirect))
       </CInputGroupText>
       <CFormInput
         v-model="password"
-        :type="!showPassword ? 'password' : ''"
-        auto-complete="current-password"
+        :type="showPassword ? 'text' : 'password'"
+        autocomplete="current-password"
         placeholder="비밀번호를 입력해주세요"
         required
       />
@@ -84,13 +85,15 @@ onMounted(() => (redirect.value = route.query?.redirect))
           비밀번호 찾기
         </CButton>
       </CCol>
-      <CCol class="text-right">
+      <CCol class="text-end">
         <CButton type="button" color="link" class="px-0" @click="toRegister">
           회원가입 하기
         </CButton>
       </CCol>
       <CCol xs="12" class="d-grid">
-        <v-btn color="primary" size="large" type="submit">로그인</v-btn>
+        <v-btn color="primary" size="large" type="submit" :loading="loading" :disabled="loading">
+          로그인
+        </v-btn>
       </CCol>
     </CRow>
   </CForm>

@@ -4,8 +4,9 @@ import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import { useRouter } from 'vue-router'
-import { hashCode } from '@/utils/helper'
+import { hashCode, isValidate } from '@/utils/helper'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher/Index.vue'
 
 const alertModal = ref()
 
@@ -19,30 +20,30 @@ const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 
 const onSubmit = (event: Event) => {
-  const form = event.currentTarget as HTMLInputElement
-  if (!form.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  if (isValidate(event)) {
     validated.value = true
   } else {
     if (registerCode.value === store.registerCode) {
+      validated.value = false
       router.push({
         name: 'Register',
         query: { id: hashCode(registerCode.value).toString() },
       })
-    } else
-      alertModal.value.callModal(
+    } else {
+      alertModal.value?.callModal(
         '계정 생성코드 오류',
-        '계정 생성코드가 맞지 않습니다. 계정 생성코드를 확인 후 다시 시도하여\n' +
-          '          주십시요.',
+        '계정 생성코드가 맞지 않습니다. 계정 생성코드를 확인 후 다시 시도하여 주십시오.',
       )
+    }
   }
 }
 </script>
 
 <template>
-  <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+  <div class="bg-more-light min-vh-100 d-flex flex-row align-items-center">
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+      <ThemeSwitcher size="lg" tooltip-location="bottom" />
+    </div>
     <CContainer>
       <CRow class="justify-content-center">
         <CCol md="8" lg="6" xl="4">
@@ -54,7 +55,8 @@ const onSubmit = (event: Event) => {
               <CRow>
                 <CCol>
                   <p class="text-medium-emphasis">
-                    이 사이트는 {{ company?.name }}의 업무관리 시스템입니다.
+                    이 사이트는 {{ company?.name ? `${company.name}의` : 'IBS' }} 업무관리
+                    시스템입니다.
                   </p>
                   <p class="text-medium-emphasis">
                     계정 등록을 위하여 <u>계정 생성코드</u>가 필요합니다.
@@ -73,14 +75,16 @@ const onSubmit = (event: Event) => {
                     <CFormInput
                       v-model="registerCode"
                       type="password"
+                      autocomplete="off"
                       required
                       placeholder="계정 생성코드"
                     />
+                    <CFormFeedback invalid>계정 생성코드를 입력하세요.</CFormFeedback>
                   </CCol>
                 </CRow>
                 <CRow>
                   <CCol class="d-grid gap-2 mb-2">
-                    <v-btn size="large" color="primary" type="submit"> 제출하기</v-btn>
+                    <v-btn size="large" color="primary" type="submit">제출하기</v-btn>
                   </CCol>
                 </CRow>
               </CForm>
@@ -88,16 +92,16 @@ const onSubmit = (event: Event) => {
               <CRow>
                 <CCol xs="12">
                   <p class="text-medium-emphasis">
-                    계정 생성코드 발급 및 가입 후 시스템 이용 관련 권한 관련 사항은 관리자에게
-                    문의하여 주시기 바랍니다.
+                    계정 생성코드 발급 및 가입 후 시스템 이용 관련 권한 사항은 관리자에게 문의하여
+                    주시기 바랍니다.
                   </p>
                 </CCol>
               </CRow>
 
               <CRow>
                 <CCol>
-                  <p>
-                    <router-link :to="{ name: 'Login' }"> 로그인 화면으로 돌아가기</router-link>
+                  <p class="mb-0">
+                    <router-link :to="{ name: 'Login' }">로그인 화면으로 돌아가기</router-link>
                   </p>
                 </CCol>
               </CRow>
