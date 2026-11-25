@@ -1,19 +1,24 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from '@/utils/helper'
 import { usePerms } from '@/composables/usePerms'
 import { addDaysToDate, getToday } from '@/utils/baseMixins'
 import { useStore } from '@/store'
 import { useCalendar } from '@/store/pinia/work_calendar'
-import type { CalendarOptions } from '@fullcalendar/core'
+import type {
+  CalendarOptions,
+  EventClickArg,
+  EventContentArg,
+  EventMountArg,
+} from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 
 const props = defineProps({
   projectSlug: { type: String, default: undefined },
-  issueFilters: { type: Object as PropType<Record<string, any>>, default: () => ({}) },
+  issueFilters: { type: Object as PropType<Record<string, unknown>>, default: () => ({}) },
 })
 
 const router = useRouter()
@@ -40,17 +45,19 @@ const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed:
       default: '#cfd8dc',
     },
     dark: {
-      1: '#f87171',
-      2: '#38bdf8',
-      3: '#fbbf24',
-      4: '#94a3b8',
-      5: '#4ade80',
-      6: '#64748b',
-      default: '#64748b',
+      1: '#dc2626',
+      2: '#0284c7',
+      3: '#d97706',
+      4: '#475569',
+      5: '#16a34a',
+      6: '#475569',
+      default: '#475569',
     },
   }
-  const palette = isDark.value ? colors.dark : colors.light
-  return (palette as any)[status.pk] || palette.default
+  const palette: Record<number, string> & { default: string } = isDark.value
+    ? colors.dark
+    : colors.light
+  return palette[status.pk] || palette.default
 }
 
 const calendarEvents = computed(() => {
@@ -93,29 +100,42 @@ const calendarEvents = computed(() => {
   })
 })
 
-const handleEventClick = (info: any) => {
+const handleEventClick = (info: EventClickArg) => {
   if (!canCalendarRead.value) return
 
-  const { type, project, pk } = info.event.extendedProps
+  const { type, project, pk } = info.event.extendedProps as {
+    type?: string
+    project?: string
+    pk?: number
+  }
   if (type === 'issue') {
-    router.push({
-      name: '(업무) - 보기',
-      params: { projId: project, issueId: pk },
-    })
+    if (project && pk && !Number.isNaN(pk)) {
+      router.push({
+        name: '(업무) - 보기',
+        params: { projId: project, issueId: pk },
+      })
+    }
   } else if (type === 'meeting') {
-    if (project) {
+    if (project && pk && !Number.isNaN(pk)) {
       router.push({
         name: '(회의) - 보기',
         params: { projId: project, meetingId: pk },
       })
     } else {
-      message('warning', '', '소속 워크스페이스 슬러그가 없어 회의록 상세 페이지로 이동할 수 없습니다.')
+      message(
+        'warning',
+        '',
+        '소속 워크스페이스 슬러그가 없어 회의록 상세 페이지로 이동할 수 없습니다.',
+      )
     }
   }
 }
 
-const renderEventContent = (eventInfo: any) => {
-  const { type, status } = eventInfo.event.extendedProps
+const renderEventContent = (eventInfo: EventContentArg) => {
+  const { type, status } = eventInfo.event.extendedProps as {
+    type?: string
+    status?: { closed?: boolean }
+  }
   if (type === 'meeting') {
     const frame = document.createElement('div')
     frame.className = 'fc-event-main-frame d-flex align-items-center'
@@ -193,7 +213,7 @@ const renderEventContent = (eventInfo: any) => {
 // 캘린더의 현재 조회 범위를 기록해두고 외부 필터에서 쓸 수 있도록 노출
 const currentRange = ref({ start: '', end: '' })
 
-const handleDatesSet = (dateInfo: any) => {
+const handleDatesSet = (dateInfo: { startStr: string; endStr: string }) => {
   const startStr = dateInfo.startStr.split('T')[0]
   const endStr = dateInfo.endStr.split('T')[0]
   currentRange.value = { start: startStr, end: endStr }
@@ -205,7 +225,7 @@ const handleDatesSet = (dateInfo: any) => {
   calendarStore.fetchCalendarEvents(reqFilters, startStr, endStr)
 }
 
-const handleEventDidMount = (info: any) => {
+const handleEventDidMount = (info: EventMountArg) => {
   // 권한이 있는 경우에만 pointer 클래스 추가
   if (canCalendarRead.value) info.el.classList.add('pointer')
   else info.el.style.cursor = 'not-allowed' // 권한이 없으면 기본 커서로 강제 지정
@@ -231,7 +251,7 @@ defineExpose({ calendarOptions, currentRange })
 </script>
 
 <template>
-  <FullCalendar :key="String(canCalendarRead)" :options="calendarOptions" />
+  <FullCalendar :options="calendarOptions" />
 </template>
 
 <style lang="scss" scoped>

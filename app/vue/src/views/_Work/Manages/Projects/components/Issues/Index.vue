@@ -11,6 +11,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject } from '@/store/types/work_project'
 import type { Issue, IssueFilter } from '@/store/types/work_issue'
+import type { CustomQuery } from '@/store/types/work_inform'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from '@/views/_Work/Manages/Issues/automics/IssueHeader.vue'
 import IssueTable from '@/views/_Work/Manages/Issues/components/IssueTable.vue'
@@ -25,9 +26,8 @@ import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
 
 const props = defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: any
 }>()
 
 const viewMode = ref<'list' | 'kanban'>(
@@ -69,7 +69,6 @@ const currentProject = computed<IssueProject | null>(
 const issueStore = useIssue()
 const issue = computed<Issue | null>(() => issueStore.issue)
 const issueList = computed(() => issueStore.issueList)
-const issueCommentList = computed(() => issueStore.issueCommentList)
 
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
@@ -81,7 +80,7 @@ const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 const issueFilterStore = useIssueFilter()
 const activeQueryId = computed(() => issueFilterStore.activeQueryId)
 
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   querySectionRef.value?.applyQuery(query)
 }
 
@@ -89,18 +88,19 @@ const onResetQuery = () => {
   querySectionRef.value?.resetFilter()
 }
 
-const onSubmit = async (payload: any, done?: (ok: boolean) => void) => {
+const onSubmit = async (payload: Record<string, unknown>, done?: (ok: boolean) => void) => {
   const { pk, commentOnly, ...getData } = payload
+  const issuePk = typeof pk === 'number' ? pk : null
 
   // 댓글 작성 전용 권한자(issue.comment_create만 보유)는 직접 댓글 엔드포인트 호출
-  if (pk && commentOnly) {
+  if (issuePk && commentOnly) {
     const content = String(getData.comment_content ?? '').trim()
     if (!content) {
       done?.(false)
       return
     }
     const createdComment = await issueStore.createIssueComment({
-      issue: pk,
+      issue: issuePk,
       content,
       is_private: Boolean(getData.comment_is_private),
     })
@@ -123,35 +123,39 @@ const onSubmit = async (payload: any, done?: (ok: boolean) => void) => {
 
   for (const key in getData) {
     // 수정 모드에서 parent 값이 기존과 동일하면 불필요한 parent 필드 전송을 생략 (sub_manage 오판 방지)
-    if (pk && key === 'parent') {
+    if (issuePk && key === 'parent') {
       const nextParent = getData.parent === '' ? null : (getData.parent ?? null)
       if (String(nextParent ?? '') === String(currentParentPk ?? '')) continue
     }
-    if (pk && nullableClearable.includes(key) && (getData[key] === null || getData[key] === '')) {
+    if (
+      issuePk &&
+      nullableClearable.includes(key) &&
+      (getData[key] === null || getData[key] === '')
+    ) {
       form.append(key, '')
-    } else if (key === 'watchers') {
-      getData[key]?.forEach((val: any) => form.append(key, String(val)))
-    } else if (key === 'files' || key === 'links') {
-      getData[key]?.forEach((val: any) => form.append(key, JSON.stringify(val)))
-    } else if (key === 'newFiles') {
-      getData[key].forEach((val: any) => {
-        form.append('new_files', val.file as string | Blob)
+    } else if (key === 'watchers' && Array.isArray(getData[key])) {
+      getData[key].forEach(val => form.append(key, String(val)))
+    } else if ((key === 'files' || key === 'links') && Array.isArray(getData[key])) {
+      getData[key].forEach(val => form.append(key, JSON.stringify(val)))
+    } else if (key === 'newFiles' && Array.isArray(getData[key])) {
+      ;(getData[key] as { file: string | Blob; description?: string }[]).forEach(val => {
+        form.append('new_files', val.file)
         form.append('descriptions', val.description ?? '')
       })
-    } else if (key === 'newLinks') {
-      getData[key].forEach((val: any) => {
+    } else if (key === 'newLinks' && Array.isArray(getData[key])) {
+      ;(getData[key] as { link?: string; name?: string }[]).forEach(val => {
         if (val.link && val.link.trim()) {
           form.append('newLinks', val.link.trim())
           form.append('newLinkNames', val.name ?? '')
         }
       })
     } else if (getData[key] !== null && getData[key] !== undefined) {
-      form.append(key, getData[key])
+      form.append(key, getData[key] as string | Blob)
     }
   }
 
-  if (pk) {
-    const updated = await issueStore.updateIssue(pk, form)
+  if (issuePk) {
+    const updated = await issueStore.updateIssue(issuePk, form)
     done?.(Boolean(updated))
   } else {
     const newIssue = await issueStore.createIssue(form)
@@ -327,11 +331,9 @@ onBeforeMount(async () => {
         :key="issue.pk"
         :current-project="currentProject as IssueProject"
         :issue="issue"
-        :all-readable-projects="allReadableProjects"
         :my-projects="myProjects"
         :status-list="statusList"
         :priority-list="priorityList"
-        :issue-comment-list="issueCommentList"
         @on-submit="onSubmit"
       />
 

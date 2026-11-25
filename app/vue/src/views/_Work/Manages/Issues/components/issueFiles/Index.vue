@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useIssue } from '@/store/pinia/work_issue'
-import { downloadFile } from '@/utils/helper'
+import { downloadFile, sanitizeExternalUrl } from '@/utils/helper'
 import type { IssueFile } from '@/store/types/work_issue'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 
@@ -43,14 +43,17 @@ const editFileSubmit = async (payload: IssueFile) => {
   const form = new FormData()
   form.append('edit_file', JSON.stringify(payload.pk))
   if (payload.cngFile) form.append('cng_file', payload.cngFile)
-  form.append('edit_file_desc', payload.description)
+  form.append('edit_file_desc', payload.description ?? '')
   const ok = await fileControl(form)
   if (ok) editMode.value = false
 }
 
 const downloadAllFiles = async () => {
   for (const file of props.issueFiles) {
-    await downloadFile(file.file, file.file_name)
+    const safeUrl = sanitizeExternalUrl(file.file)
+    if (safeUrl && safeUrl !== '#') {
+      await downloadFile(safeUrl, file.file_name)
+    }
   }
 }
 
@@ -72,10 +75,18 @@ onBeforeMount(async () => {
         <CCol class="title">파일</CCol>
       </CRow>
       <CRow v-for="(file, i) in issueFiles" :key="file.pk">
-        <FileDisplay :file="file" :can-delete="canEdit && projStatus === '1'" @delete-file="deleteFile" />
+        <FileDisplay
+          :file="file"
+          :can-delete="canEdit && projStatus === '1'"
+          @delete-file="deleteFile"
+        />
 
         <CCol v-if="i === 0" class="text-end form-text col-2">
-          <span v-if="canEdit && projStatus === '1'" class="me-2 pointer" @click="editMode = !editMode">
+          <span
+            v-if="canEdit && projStatus === '1'"
+            class="me-2 pointer"
+            @click="editMode = !editMode"
+          >
             <v-icon icon="mdi-pencil" color="amber" size="18" />
             <v-tooltip activator="parent" location="top">첨부파일 편집</v-tooltip>
           </span>

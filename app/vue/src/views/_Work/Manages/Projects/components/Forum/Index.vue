@@ -5,7 +5,6 @@ import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
 import { useForum } from '@/store/pinia/forum'
 import type { IssueProject } from '@/store/types/work_project'
-import type { Post } from '@/store/types/forum'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ForumIndex from './components/ForumIndex.vue'
@@ -15,10 +14,9 @@ import PostForm from './components/PostForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
-defineProps<{
-  navMenu?: any
+const props = defineProps<{
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: any
 }>()
 
 const loading = ref(true)
@@ -26,9 +24,13 @@ const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 const toggle = () => cBody.value?.toggle()
 defineExpose({ toggle })
 
+const [route, router] = [useRoute(), useRouter()]
+const projId = computed(() => route.params.projId as string | undefined)
+const isProjectActive = computed(() => props.currentProject?.status === '1')
+
 const { can, PERM } = usePerms()
-const canForumRead = computed(() => can(PERM.FORUM_READ))
-const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
+const canForumRead = computed(() => can(PERM.FORUM_READ, projId.value))
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE, projId.value))
 
 const accStore = useAccount()
 const forumStore = useForum()
@@ -41,7 +43,8 @@ const isForumManager = computed(() => {
 })
 
 const canForumCreate = computed(() => {
-  if (!can(PERM.FORUM_CREATE)) return false
+  if (!isProjectActive.value) return false
+  if (!can(PERM.FORUM_CREATE, projId.value)) return false
   if (forum.value?.manager_only && !isForumManager.value) return false
   return true
 })
@@ -50,8 +53,6 @@ const categoryList = computed(() => forumStore.categoryList)
 const postList = computed(() => forumStore.postList)
 const post = computed(() => forumStore.post)
 const commentList = computed(() => forumStore.commentList)
-
-const [route, router] = [useRoute(), useRouter()]
 
 const page = ref(1)
 
@@ -70,7 +71,12 @@ const delPk = ref<number | null>(null)
 
 const onDeletePost = (pk: number) => {
   delPk.value = pk
-  refConfirmModal.value?.callModal('게시물 삭제', '이 게시물을 정말 삭제하시겠습니까?', '', 'danger')
+  refConfirmModal.value?.callModal(
+    '게시물 삭제',
+    '이 게시물을 정말 삭제하시겠습니까?',
+    '',
+    'danger',
+  )
 }
 
 const deletePostConfirm = async () => {
@@ -156,6 +162,8 @@ watch(
         } finally {
           loading.value = false
         }
+      } else {
+        forumStore.clearForumViewState()
       }
     }
   },
@@ -169,7 +177,7 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="query">
+  <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -301,6 +309,7 @@ onBeforeMount(async () => {
   </ContentBody>
 
   <ConfirmModal ref="refConfirmModal">
+    <template #header>게시물 삭제</template>
     <template #footer>
       <v-btn color="error" @click="deletePostConfirm">삭제</v-btn>
     </template>

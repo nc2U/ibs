@@ -15,25 +15,28 @@ const props = defineProps({
 const issueStore = useIssue()
 
 const { can, canViewUser, PERM } = usePerms()
-const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
-const canMeetingRead = computed(() => can(PERM.MEETING_READ))
+const canReadBySlug = (slug?: string) => !!slug && can(PERM.ISSUE_READ, slug)
+const canIssueRead = computed(() => canReadBySlug(props.issue.project?.slug))
+const canMeetingRead = computed(
+  () => !!props.issue.project?.slug && can(PERM.MEETING_READ, props.issue.project.slug),
+)
 
 const priorityColor = computed(() => {
   let color = 'blue-grey-lighten-2'
-  if (props.issue?.priority.pk === 2) color = 'cyan-accent-4'
-  if (props.issue?.priority.pk === 3) color = 'deep-orange-lighten-1'
-  if (props.issue?.priority.pk === 4) color = 'deep-orange-darken-4'
-  if (props.issue?.priority.pk === 5) color = 'pink-darken-4'
+  if (props.issue?.priority?.pk === 2) color = 'cyan-accent-4'
+  if (props.issue?.priority?.pk === 3) color = 'deep-orange-lighten-1'
+  if (props.issue?.priority?.pk === 4) color = 'deep-orange-darken-4'
+  if (props.issue?.priority?.pk === 5) color = 'pink-darken-4'
   return color
 })
 
 const statusColor = computed(() => {
   let color = 'lime-accent-2'
-  if (props.issue?.status.pk === 2) color = 'info'
-  if (props.issue?.status.pk === 3) color = 'warning'
-  if (props.issue?.status.pk === 4) color = 'grey'
-  if (props.issue?.status.pk === 5) color = 'success'
-  if (props.issue?.status.pk === 6) color = 'secondary'
+  if (props.issue?.status?.pk === 2) color = 'info'
+  if (props.issue?.status?.pk === 3) color = 'warning'
+  if (props.issue?.status?.pk === 4) color = 'grey'
+  if (props.issue?.status?.pk === 5) color = 'success'
+  if (props.issue?.status?.pk === 6) color = 'secondary'
   return color
 })
 </script>
@@ -95,7 +98,10 @@ const statusColor = computed(() => {
           v-if="canIssueRead"
           :to="{
             name: '(업무) - 보기',
-            params: { projId: issue.project.slug, issueId: issue?.parent?.pk },
+            params: {
+              projId: issue.project.slug,
+              issueId: issue?.parent?.pk,
+            },
           }"
         >
           {{ cutString(issue?.parent?.subject, 16) }}
@@ -107,19 +113,19 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 유형 -->
-    <CTableDataCell v-else-if="colKey === 'tracker'">{{ issue.tracker.name }}</CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'tracker'">{{ issue.tracker?.name }}</CTableDataCell>
 
     <!-- 우선순위 -->
     <CTableDataCell v-else-if="colKey === 'priority'">
       <v-chip size="x-small" :color="priorityColor" variant="flat" border>
-        {{ issue.priority.name }}
+        {{ issue.priority?.name }}
       </v-chip>
     </CTableDataCell>
 
     <!-- 상태 -->
     <CTableDataCell v-else-if="colKey === 'status'" class="text-start">
       <v-chip size="x-small" :color="statusColor" variant="flat" border>
-        {{ issue.status.name }}
+        {{ issue.status?.name }}
       </v-chip>
     </CTableDataCell>
 
@@ -215,10 +221,10 @@ const statusColor = computed(() => {
       <template v-if="issue.sub_issues?.length">
         <template v-for="(sub, i) in issue.sub_issues" :key="sub.pk">
           <router-link
-            v-if="canIssueRead"
+            v-if="canReadBySlug(sub.project?.slug || issue.project?.slug)"
             :to="{
               name: '(업무) - 보기',
-              params: { projId: issue.project.slug, issueId: sub.pk },
+              params: { projId: sub.project?.slug || issue.project?.slug, issueId: sub.pk },
             }"
           >
             #{{ sub.pk }}
@@ -234,10 +240,13 @@ const statusColor = computed(() => {
       <div v-if="issue.incoming_relation?.issue" class="d-flex align-center ga-1 text-truncate">
         <v-chip size="x-small" color="info" variant="flat">선행</v-chip>
         <router-link
-          v-if="canIssueRead"
+          v-if="canReadBySlug(issue.incoming_relation.issue.project?.slug || issue.project?.slug)"
           :to="{
             name: '(업무) - 보기',
-            params: { projId: issue.project.slug, issueId: issue.incoming_relation.issue.pk },
+            params: {
+              projId: issue.incoming_relation.issue.project?.slug || issue.project?.slug,
+              issueId: issue.incoming_relation.issue.pk,
+            },
           }"
         >
           #{{ issue.incoming_relation.issue.pk }} {{ issue.incoming_relation.issue.subject }}
@@ -255,10 +264,13 @@ const statusColor = computed(() => {
         >
           <v-chip size="x-small" color="secondary" variant="flat">후행</v-chip>
           <router-link
-            v-if="rel.issue && canIssueRead"
+            v-if="rel.issue && canReadBySlug(rel.issue.project?.slug || issue.project?.slug)"
             :to="{
               name: '(업무) - 보기',
-              params: { projId: issue.project.slug, issueId: rel.issue.pk },
+              params: {
+                projId: rel.issue.project?.slug || issue.project?.slug,
+                issueId: rel.issue.pk,
+              },
             }"
           >
             #{{ rel.issue.pk }} {{ rel.issue.subject }}

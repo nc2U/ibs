@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import type { IssueProject } from '@/store/types/work_project'
+import type { IssueProject, SimpleMember } from '@/store/types/work_project'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 
@@ -33,10 +33,10 @@ const flattenedProjects = computed<FlatProjectRow[]>(() => {
   return rows
 })
 
-const getMemberInfo = (members: any[]) => {
+const getMemberInfo = (members: SimpleMember[]) => {
   const member = members.find(m => Number(m.user?.pk) === userId.value)
   return {
-    roleNames: member?.roles?.map((r: any) => r.name).join(', ') || '-',
+    roleNames: member?.roles?.map(r => r.name).join(', ') || '-',
     created: member?.created ? dateFormat(member.created, '/') : '-',
   }
 }

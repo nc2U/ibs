@@ -28,6 +28,7 @@ const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 
 const { can, PERM } = usePerms()
+const projSlug = computed(() => props.issue.project?.slug)
 
 // 1. 본인이 생성자인지 여부
 const isCreator = computed(() => props.issue.creator?.pk === userInfo.value?.pk)
@@ -37,12 +38,12 @@ const isAssignee = computed(() => props.issue.assigned_to?.pk === userInfo.value
 
 // 3. 일감 수정 권한
 const canEditIssue = computed(() => {
-  if (can(PERM.ISSUE_UPDATE)) return true
-  return can(PERM.ISSUE_OWN_UPDATE) && (isCreator.value || isAssignee.value)
+  if (can(PERM.ISSUE_UPDATE, projSlug.value)) return true
+  return can(PERM.ISSUE_OWN_UPDATE, projSlug.value) && (isCreator.value || isAssignee.value)
 })
 
 // 4. 댓글 작성 권한
-const canCreateComment = computed(() => can(PERM.ISSUE_COMMENT_CREATE))
+const canCreateComment = computed(() => can(PERM.ISSUE_COMMENT_CREATE, projSlug.value))
 
 // 5. 편집 버튼 노출 조건 (일감을 편집할 수 있거나 댓글을 달 수 있다면 활성화)
 const showEditButton = computed(
@@ -50,10 +51,14 @@ const showEditButton = computed(
 )
 
 // 6. 복사 버튼 노출 조건
-const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && props.projStatus === '1')
+const showCopyButton = computed(
+  () => can(PERM.ISSUE_COPY, projSlug.value) && props.projStatus === '1',
+)
 
 // 7. 삭제 버튼 노출 조건
-const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus === '1')
+const showDeleteButton = computed(
+  () => can(PERM.ISSUE_DELETE, projSlug.value) && props.projStatus === '1',
+)
 
 const isWatcher = computed(() =>
   (props.watchers || []).map(w => w.pk).includes(userInfo?.value?.pk as number),
@@ -114,7 +119,7 @@ const callDeleteIssue = () => emit('call-delete-issue')
       <TextButton name="편집" icon="mdi-pencil" icon-color="amber" @click="callEditForm" />
     </span>
 
-    <span>
+    <span v-if="props.projStatus === '1'">
       <TextButton
         :name="isWatcher ? '관심끄기' : '지켜보기'"
         icon="mdi-star"

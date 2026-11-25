@@ -6,6 +6,7 @@ import { useWork } from '@/store/pinia/work_project'
 import type { Version } from '@/store/types/work_project'
 import RoadmapItem from './RoadmapItem.vue'
 import RoadmapGantt from './RoadmapGantt.vue'
+import NoData from '@/components/NoData/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import { CRow } from '@coreui/vue'
 
@@ -17,7 +18,9 @@ defineProps({
 const workStore = useWork()
 const { can, PERM } = usePerms()
 const canManageVersions = computed(
-  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
+  () =>
+    workStore.currentProject?.status === '1' &&
+    can(PERM.PROJECT_VERSION, workStore.currentProject?.slug),
 )
 const [route, router] = [useRoute(), useRouter()]
 
@@ -97,7 +100,8 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
     </CCol>
   </CRow>
 
-  <template v-if="viewMode === 'list'">
+  <NoData v-if="!versionList.length" />
+  <template v-else-if="viewMode === 'list'">
     <RoadmapItem
       v-for="ver in versionList"
       :key="ver.pk"

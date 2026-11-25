@@ -13,7 +13,9 @@ const emit = defineEmits(['delete-category'])
 
 const route = useRoute()
 const { can, PERM } = usePerms()
-const canManageCategories = computed(() => can(PERM.ISSUE_CATEGORY_MANAGE))
+const canManageCategories = computed(() =>
+  can(PERM.ISSUE_CATEGORY_MANAGE, route.params.projId as string),
+)
 
 const RefCateDelConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
@@ -98,6 +100,7 @@ const deleteCategory = () => {
   </CRow>
 
   <ConfirmModal ref="RefCateDelConfirm">
+    <template #header>업무 범주 삭제</template>
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteCategory">삭제</v-btn>
     </template>

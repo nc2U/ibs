@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '@/api'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import { useMeeting } from '@/store/pinia/work_meeting'
@@ -26,8 +27,13 @@ const meetingStore = useMeeting()
 const issueStore = useIssue()
 
 const meeting = computed<Meeting | null>(() => meetingStore.meeting)
-const myProjects = computed(() => workStore.getMyProjects)
-const meetingProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.meeting))
+const isAdminMemberManager = computed(() =>
+  Boolean(accStore.userInfo?.is_superuser || accStore.workManager),
+)
+const myProjects = computed(() =>
+  isAdminMemberManager.value ? workStore.getAllReadableProjects : workStore.getMyProjects,
+)
+const meetingProjects = computed(() => myProjects.value.filter(pjt => pjt.module?.meeting))
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
 
@@ -201,7 +207,9 @@ const isAttendee = computed(
 
 const { can, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ, selectedProjectSlug.value))
+const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE, selectedProjectSlug.value))
 const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE, selectedProjectSlug.value))
+const canCategoryManage = computed(() => can(PERM.PROJECT_UPDATE, selectedProjectSlug.value))
 
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE, selectedProjectSlug.value))
 const canMeetingUpdate = computed(() => {
@@ -230,8 +238,10 @@ const MAX_TOTAL_SIZE = 100 * 1024 * 1024 // 전체 첨부파일 합계 최대 10
 
 const fileErrorMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
-const newFiles = ref<{ file: File; description: string }[]>([])
-const newLinks = ref<{ link: string; name: string }[]>([])
+let fileKeySeq = 0
+let linkKeySeq = 0
+const newFiles = ref<{ _key: number; file: File; description: string }[]>([])
+const newLinks = ref<{ _key: number; link: string; name: string }[]>([])
 const files_del = ref<string[]>([])
 
 const totalFileSize = computed(() => {
@@ -281,7 +291,9 @@ const loadFile = (event: Event, index?: number) => {
     if (index !== undefined && newFiles.value[index]) {
       newFiles.value[index].file = selectedFiles[0]
     } else {
-      newFiles.value.push(...selectedFiles.map(file => ({ file, description: '' })))
+      newFiles.value.push(
+        ...selectedFiles.map(file => ({ _key: ++fileKeySeq, file, description: '' })),
+      )
     }
   }
 }
@@ -292,7 +304,7 @@ const removeFile = (index: number) => {
 }
 
 const addLink = () => {
-  newLinks.value.push({ link: '', name: '' })
+  newLinks.value.push({ _key: ++linkKeySeq, link: '', name: '' })
 }
 
 const removeLink = (index: number) => {
@@ -300,6 +312,20 @@ const removeLink = (index: number) => {
 }
 
 const isSubmitting = ref(false)
+
+const goCancel = () => {
+  const targetSlug = selectedProjectSlug.value || projId.value
+  if (form.value.pk && targetSlug) {
+    router.push({
+      name: '(회의) - 보기',
+      params: { projId: targetSlug, meetingId: form.value.pk },
+    })
+  } else if (targetSlug) {
+    router.push({ name: '(회의)', params: { projId: targetSlug } })
+  } else {
+    router.push({ name: '회의' })
+  }
+}
 
 const onSubmit = async (event: Event) => {
   if (isValidate(event)) {
@@ -352,22 +378,28 @@ const onSubmit = async (event: Event) => {
 
       let meetingPk = form.value.pk
       let targetSlug = projId.value
+      let savedMeeting: Meeting | null = null
 
       if (meetingPk) {
-        const updated = await meetingStore.updateMeeting(meetingPk, formData)
-        if (!updated?.pk) return
-        if (updated.project_desc?.slug) targetSlug = updated.project_desc.slug
+        savedMeeting = (await meetingStore.updateMeeting(meetingPk, formData)) as Meeting | null
+        if (!savedMeeting?.pk) return
+        if (savedMeeting.project_desc?.slug) targetSlug = savedMeeting.project_desc.slug
       } else {
-        const created = await meetingStore.createMeeting(formData)
-        if (!created?.pk) return
-        meetingPk = created.pk
-        form.value.pk = created.pk
-        if (created.project_desc?.slug) targetSlug = created.project_desc.slug
+        savedMeeting = (await meetingStore.createMeeting(formData)) as Meeting | null
+        if (!savedMeeting?.pk) return
+        meetingPk = savedMeeting.pk
+        form.value.pk = savedMeeting.pk
+        if (savedMeeting.project_desc?.slug) targetSlug = savedMeeting.project_desc.slug
       }
 
-      // Process pending inline action items in parallel with error handling
-      if (meetingPk && pendingActionItems.value.length > 0) {
-        // Resolve project slug or pk safely
+      // 회의록 본문/첨부 저장 완료 후 재시도 시 중복 업로드/삭제 방지
+      newFiles.value = []
+      newLinks.value = []
+      files_del.value = []
+      form.value.links = savedMeeting.links ? JSON.parse(JSON.stringify(savedMeeting.links)) : []
+
+      // Process pending inline action items without triggering N parallel store refreshes
+      if (meetingPk && pendingActionItems.value.length > 0 && canIssueCreate.value) {
         const selectedProjectObj = meetingProjects.value.find(p => p.value === form.value.project)
         const projectVal =
           selectedProjectObj?.slug ||
@@ -386,17 +418,28 @@ const onSubmit = async (event: Event) => {
             if (item.assigned_to) issueData.append('assigned_to', item.assigned_to.toString())
             if (item.due_date) issueData.append('due_date', item.due_date)
             if (item.priority) issueData.append('priority', item.priority.toString())
-            return issueStore.createIssue(issueData)
+            return api.post('/issue/', issueData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            })
           })
 
           const results = await Promise.allSettled(creationPromises)
-          const isFailed = (r: PromiseSettledResult<unknown>) =>
-            r.status === 'rejected' || !(r.value as { pk?: number } | undefined)?.pk
+          const isFailed = (r: PromiseSettledResult<{ data?: { pk?: number } }>) =>
+            r.status === 'rejected' || !r.value?.data?.pk
           const failedCount = results.filter(isFailed).length
+          const succeededCount = validItems.length - failedCount
+
+          if (succeededCount > 0) {
+            await Promise.allSettled([
+              meetingStore.fetchMeeting(meetingPk),
+              typeof projectVal === 'string' && projectVal
+                ? issueStore.fetchAllIssueList(projectVal)
+                : Promise.resolve(),
+            ])
+          }
 
           if (failedCount > 0) {
             console.error(`Failed to create ${failedCount} action item issues`)
-            // Keep only failed items in pending list if any
             pendingActionItems.value = validItems.filter((_, idx) => isFailed(results[idx]))
             alertMessage.value = `회의록은 저장되었으나, 후속 조치 업무 중 ${failedCount}건의 등록에 실패하였습니다.`
             refAlertModal.value?.callModal()
@@ -412,8 +455,10 @@ const onSubmit = async (event: Event) => {
           name: '(회의) - 보기',
           params: { projId: targetSlug, meetingId: meetingPk },
         })
+      } else if (targetSlug) {
+        await router.push({ name: '(회의)', params: { projId: targetSlug } })
       } else {
-        router.back()
+        await router.push({ name: '회의' })
       }
     } catch (err: unknown) {
       console.error('Error during meeting submit:', err)
@@ -554,6 +599,19 @@ const createRelatedIssue = async (payload: RelatedIssuePayload) => {
   }
 }
 
+const isInitializing = ref(true)
+const loadedMetaSlug = ref('')
+
+const loadProjectMeta = async (slug: string) => {
+  if (!slug || loadedMetaSlug.value === slug) return
+  loadedMetaSlug.value = slug
+  await Promise.all([
+    issueStore.fetchAllIssueList(slug),
+    meetingStore.fetchCategoryList(slug),
+    workStore.fetchProjectMembers(slug),
+  ])
+}
+
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
   if (meeting.value) {
@@ -570,29 +628,27 @@ const fetchMeeting = async (pk: number) => {
       action_items: meeting.value.action_items,
       meeting_date: meeting.value.meeting_date ? timeFormat(meeting.value.meeting_date, 'min') : '',
       location: meeting.value.location ?? '',
-      attendees: meeting.value.attendees,
+      attendees: [...(meeting.value.attendees ?? [])],
       other_attendees: meeting.value.other_attendees,
       links: meeting.value.links ? JSON.parse(JSON.stringify(meeting.value.links)) : [],
     }
-    if (meeting.value.project_desc)
-      await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
+    if (meeting.value.project_desc?.slug) {
+      await loadProjectMeta(meeting.value.project_desc.slug)
+    }
   }
 }
 
 watch(
   () => form.value.project,
   async (newProjPk, oldProjPk) => {
+    if (isInitializing.value) return
     if (newProjPk) {
       if (oldProjPk && newProjPk !== oldProjPk) {
         form.value.category = null
       }
       const proj = meetingProjects.value.find(p => p.value === newProjPk)
       if (proj) {
-        await Promise.all([
-          issueStore.fetchAllIssueList(proj.slug),
-          meetingStore.fetchCategoryList(proj.slug),
-          workStore.fetchProjectMembers(proj.slug),
-        ])
+        await loadProjectMeta(proj.slug)
       }
     }
   },
@@ -832,8 +888,16 @@ const aiStatusText = ref('')
 const audioFileInput = ref<HTMLInputElement | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
+let activeStream: MediaStream | null = null
 let audioChunks: Blob[] = []
 let recordingTimer: ReturnType<typeof setInterval> | null = null
+let isRecordingAborted = false
+let isUnmounted = false
+
+const stopActiveStream = () => {
+  activeStream?.getTracks().forEach(track => track.stop())
+  activeStream = null
+}
 
 const formattedRecordingTime = computed(() => {
   const mins = Math.floor(recordingSeconds.value / 60)
@@ -842,16 +906,26 @@ const formattedRecordingTime = computed(() => {
 })
 
 const openAiRecordModal = () => {
+  isRecordingAborted = false
   isRecording.value = false
   recordingSeconds.value = 0
   audioChunks = []
-  if (recordingTimer) clearInterval(recordingTimer)
+  if (recordingTimer) {
+    clearInterval(recordingTimer)
+    recordingTimer = null
+  }
   refAiRecordModal.value?.callModal()
 }
 
 const startRecording = async () => {
+  isRecordingAborted = false
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    if (isUnmounted || isRecordingAborted) {
+      stream.getTracks().forEach(track => track.stop())
+      return
+    }
+    activeStream = stream
     audioChunks = []
 
     // 지원하는 mimeType 확인
@@ -867,8 +941,11 @@ const startRecording = async () => {
     }
 
     mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(track => track.stop())
-      if (recordingTimer) clearInterval(recordingTimer)
+      stopActiveStream()
+      if (recordingTimer) {
+        clearInterval(recordingTimer)
+        recordingTimer = null
+      }
     }
 
     mediaRecorder.start(1000) // 1초 단위 청크 수집
@@ -900,25 +977,35 @@ const stopRecordingAndAnalyze = async () => {
 
   recorder.stop()
   isRecording.value = false
-  if (recordingTimer) clearInterval(recordingTimer)
+  if (recordingTimer) {
+    clearInterval(recordingTimer)
+    recordingTimer = null
+  }
 
   await stopPromise
+  if (isUnmounted || isRecordingAborted) return
   const audioBlob = new Blob(audioChunks, { type: mimeType })
 
   await processAudioWithAi(audioBlob, `meeting_record_${Date.now()}.webm`)
 }
 
 const cancelRecording = () => {
+  isRecordingAborted = true
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop()
   }
+  stopActiveStream()
   isRecording.value = false
-  if (recordingTimer) clearInterval(recordingTimer)
+  if (recordingTimer) {
+    clearInterval(recordingTimer)
+    recordingTimer = null
+  }
   recordingSeconds.value = 0
   audioChunks = []
 }
 
 onUnmounted(() => {
+  isUnmounted = true
   cancelRecording()
 })
 
@@ -987,6 +1074,7 @@ const populateFormFromAiSummary = (aiData: AiMeetingSummary) => {
 }
 
 watch(projId, newVal => {
+  if (isInitializing.value || form.value.pk) return
   if (newVal)
     form.value.project = meetingProjects.value.find(p => p.slug === newVal)?.value as number
 })
@@ -994,6 +1082,7 @@ watch(projId, newVal => {
 watch(
   meetingProjects,
   projects => {
+    if (isInitializing.value || form.value.pk) return
     if (!form.value.project && projects.length > 0) {
       const target = projId.value
         ? projects.find(p => p.slug === projId.value)
@@ -1005,37 +1094,48 @@ watch(
 )
 
 onBeforeMount(async () => {
-  if (!route.params.meetingId) {
-    meetingStore.removeMeeting()
-  }
-  await accStore.fetchUsersList()
-  await workStore.fetchAllProjectList()
-  await issueStore.fetchStatusList()
-  await issueStore.fetchPriorityList()
-  await issueStore.fetchTrackerList()
-  if (projId.value) {
-    const proj = meetingProjects.value.find(p => p.slug === projId.value)
-    if (proj) {
-      form.value.project = proj.value as number
-      await Promise.all([
-        issueStore.fetchAllIssueList(proj.slug),
-        workStore.fetchProjectMembers(proj.slug),
-      ])
+  try {
+    if (!route.params.meetingId) {
+      meetingStore.removeMeeting()
     }
-    await meetingStore.fetchCategoryList(projId.value as string)
-  } else {
-    if (!form.value.project && meetingProjects.value.length > 0) {
-      const current = meetingProjects.value.find(p => p.slug === workStore.currentProject?.slug)
-      form.value.project = current
-        ? (current.value as number)
-        : (meetingProjects.value[0]?.value as number)
+    await Promise.all([
+      accStore.fetchUsersList(),
+      workStore.fetchAllProjectList(),
+      issueStore.fetchStatusList(),
+      issueStore.fetchPriorityList(),
+      issueStore.fetchTrackerList(),
+    ])
+    loadMeetingTemplates()
+
+    if (route.params.meetingId) {
+      await fetchMeeting(Number(route.params.meetingId))
+      if (!meeting.value?.project_desc?.slug) {
+        await meetingStore.fetchCategoryList(projId.value)
+      }
+    } else if (projId.value) {
+      const proj = meetingProjects.value.find(p => p.slug === projId.value)
+      if (proj) {
+        form.value.project = proj.value as number
+        await loadProjectMeta(proj.slug)
+      } else {
+        await meetingStore.fetchCategoryList(projId.value)
+      }
+    } else {
+      if (!form.value.project && meetingProjects.value.length > 0) {
+        const current = meetingProjects.value.find(p => p.slug === workStore.currentProject?.slug)
+        const target = current ?? meetingProjects.value[0]
+        if (target) {
+          form.value.project = target.value as number
+          await loadProjectMeta(target.slug)
+        }
+      } else {
+        await meetingStore.fetchCategoryList()
+      }
     }
-    await meetingStore.fetchCategoryList()
+  } finally {
+    await nextTick()
+    isInitializing.value = false
   }
-
-  loadMeetingTemplates()
-
-  if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
 })
 </script>
 
@@ -1053,7 +1153,7 @@ onBeforeMount(async () => {
                 <span class="text-primary fw-bold">회의 템플릿</span>
               </CFormLabel>
               <CCol sm="10">
-                <div class="p-2 border rounded bg-light d-flex flex-wrap align-items-center">
+                <div class="p-2 border rounded bg-more-light d-flex flex-wrap align-items-center">
                   <span class="text-muted small me-2">
                     <v-icon icon="mdi-magic-staff" size="14" color="primary" class="me-1" />
                     자주 쓰는 양식 자동 채우기:
@@ -1224,7 +1324,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <CRow v-for="(f, i) in newFiles" :key="i" class="mb-2">
+            <CRow v-for="(f, i) in newFiles" :key="f._key" class="mb-2">
               <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-end">
               </CFormLabel>
               <CCol sm="5">
@@ -1292,7 +1392,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
+            <CRow v-for="(l, i) in newLinks" :key="l._key" class="mb-2">
               <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end"> </CFormLabel>
               <CCol sm="5">
                 <CFormInput
@@ -1344,7 +1444,7 @@ onBeforeMount(async () => {
                     />
                     회의록 저장 시 등록된 업무가 해당 회의와 연동되어 일괄 생성됩니다.
                   </span>
-                  <div class="d-flex gap-2">
+                  <div v-if="canIssueCreate" class="d-flex gap-2">
                     <v-btn
                       v-if="form.action_items"
                       color="secondary"
@@ -1421,8 +1521,8 @@ onBeforeMount(async () => {
                     <v-icon icon="mdi-playlist-plus" size="14" class="me-1" />
                     새로 등록할 후속 조치 업무 ({{ pendingActionItems.length }}건)
                   </div>
-                  <CTable small bordered hover responsive class="align-middle mb-1 bg-white">
-                    <CTableHead color="light">
+                  <CTable small bordered hover responsive class="align-middle mb-1">
+                    <CTableHead>
                       <CTableRow class="text-center small">
                         <CTableHeaderCell style="width: 45%">업무 제목 (필수)</CTableHeaderCell>
                         <CTableHeaderCell style="width: 22%">담당자</CTableHeaderCell>
@@ -1545,7 +1645,11 @@ onBeforeMount(async () => {
                       {{ cat.name }}
                     </option>
                   </CFormSelect>
-                  <CInputGroupText @click="callCategoryModal" style="cursor: pointer">
+                  <CInputGroupText
+                    v-if="canCategoryManage"
+                    @click="callCategoryModal"
+                    style="cursor: pointer"
+                  >
                     <v-icon icon="mdi-plus-circle" color="success" size="18" />
                   </CInputGroupText>
                 </CInputGroup>
@@ -1603,8 +1707,9 @@ onBeforeMount(async () => {
                     v-for="(name, idx) in parsedOtherAttendees"
                     :key="idx"
                     size="x-small"
-                    color="blue-grey-lighten-4"
-                    class="text-body me-1 mb-1"
+                    color="secondary"
+                    variant="tonal"
+                    class="me-1 mb-1"
                   >
                     <v-icon start icon="mdi-account-outline" size="12" />
                     {{ name }}
@@ -1644,7 +1749,7 @@ onBeforeMount(async () => {
             >
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>
-            <v-btn color="light" @click="router.back()" flat>취소</v-btn>
+            <v-btn color="grey" variant="tonal" @click="goCancel">취소</v-btn>
           </CCol>
         </CRow>
       </CForm>
@@ -1715,14 +1820,16 @@ onBeforeMount(async () => {
         <CRow class="mb-3">
           <CFormLabel for="cat-order" class="col-sm-3 col-form-label">정렬</CFormLabel>
           <CCol sm="9">
-            <CFormInput v-model="categoryForm.order" id="cat-order" type="number" min="0" />
+            <CFormInput v-model.number="categoryForm.order" id="cat-order" type="number" min="0" />
           </CCol>
         </CRow>
 
         <CRow>
           <CCol class="text-end">
             <v-btn type="submit" color="primary" size="small"> 저장</v-btn>
-            <v-btn color="light" size="small" @click="refCategoryModal?.close()" flat> 취소</v-btn>
+            <v-btn color="grey" variant="tonal" size="small" @click="refCategoryModal?.close()">
+              취소
+            </v-btn>
           </CCol>
         </CRow>
       </CForm>
@@ -1752,7 +1859,7 @@ onBeforeMount(async () => {
         </div>
 
         <CTable small bordered hover responsive class="align-middle bg-more-white">
-          <CTableHead color="light">
+          <CTableHead>
             <CTableRow class="text-center small">
               <CTableHeaderCell style="width: 22%">템플릿명</CTableHeaderCell>
               <CTableHeaderCell style="width: 15%">연결 카테고리</CTableHeaderCell>
@@ -1897,11 +2004,11 @@ onBeforeMount(async () => {
           <CCol class="text-end">
             <v-btn type="submit" color="primary" size="small">저장</v-btn>
             <v-btn
-              color="light"
+              color="grey"
+              variant="tonal"
               size="small"
               class="ms-2"
               @click="refTemplateEditModal?.close()"
-              flat
             >
               취소
             </v-btn>

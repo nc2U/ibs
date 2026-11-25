@@ -33,16 +33,17 @@ const { can, PERM } = usePerms()
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 const canAccessSetting = computed(() => {
+  const slug = currentProject.value?.slug
   const isForumEnabled = !currentProject.value?.module || currentProject.value.module.forum
   return (
     !!workManager.value ||
-    can(PERM.PROJECT_UPDATE) ||
-    can(PERM.PROJECT_PUBLIC) ||
-    can(PERM.PROJECT_MODULE) ||
-    can(PERM.PROJECT_MEMBER) ||
-    can(PERM.PROJECT_VERSION) ||
-    can(PERM.ISSUE_CATEGORY_MANAGE) ||
-    (isForumEnabled && can(PERM.FORUM_MANAGE))
+    can(PERM.PROJECT_UPDATE, slug) ||
+    can(PERM.PROJECT_PUBLIC, slug) ||
+    can(PERM.PROJECT_MODULE, slug) ||
+    can(PERM.PROJECT_MEMBER, slug) ||
+    can(PERM.PROJECT_VERSION, slug) ||
+    can(PERM.ISSUE_CATEGORY_MANAGE, slug) ||
+    (isForumEnabled && can(PERM.FORUM_MANAGE, slug))
   )
 })
 
@@ -127,12 +128,6 @@ onBeforeMount(async () => {
   />
 
   <router-view v-slot="{ Component }">
-    <component
-      :is="Component"
-      :current-project="currentProject"
-      :nav-menu="navMenu"
-      :query="route?.query"
-      ref="cBody"
-    />
+    <component :is="Component" :current-project="currentProject" :nav-menu="navMenu" ref="cBody" />
   </router-view>
 </template>

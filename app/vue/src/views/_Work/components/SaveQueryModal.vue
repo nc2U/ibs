@@ -134,9 +134,7 @@ defineExpose({ callModal, closeModal })
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-end">
-            설명
-          </CFormLabel>
+          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-end"> 설명 </CFormLabel>
           <CCol class="col-sm-9">
             <CFormInput
               id="query-desc"
@@ -164,7 +162,7 @@ defineExpose({ callModal, closeModal })
         >
           저장
         </v-btn>
-        <v-btn color="light" size="small" @click="closeModal" flat>취소</v-btn>
+        <v-btn color="grey" variant="tonal" size="small" @click="closeModal">취소</v-btn>
       </CModalFooter>
     </CForm>
   </FormModal>

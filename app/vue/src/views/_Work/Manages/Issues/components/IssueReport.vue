@@ -29,6 +29,7 @@ const loadReport = async () => {
     issueStore.fetchStatusList(),
     issueStore.fetchPriorityList(),
   ])
+  if (seq !== fetchSeq) return
 
   if (projSlug.value) {
     await Promise.all([
@@ -39,6 +40,7 @@ const loadReport = async () => {
   } else {
     await Promise.all([workStore.fetchVersionList({}), issueStore.fetchCategoryList()])
   }
+  if (seq !== fetchSeq) return
 
   try {
     const res = await api.get('/issue/', {

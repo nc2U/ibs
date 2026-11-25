@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { computed, type PropType, reactive, ref, watch } from 'vue'
+import { computed, nextTick, type PropType, reactive, ref, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import type { selectProject } from '@/store/types/work_project'
-import type { IssueStatus, Tracker } from '@/store/types/work_issue'
+import type { CodeValue, IssueStatus, Tracker } from '@/store/types/work_issue'
 import type { MeetingCategory } from '@/store/types/work_meeting'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
@@ -26,7 +27,7 @@ const props = defineProps({
   searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
-  priorityList: { type: Array as PropType<any[]>, default: () => [] },
+  priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
   meetingCategories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   targetType: {
@@ -269,12 +270,44 @@ const filterFieldsConfig = computed(() => [
   },
 ])
 
-const activeFields = computed(() =>
-  filterFieldsConfig.value.filter(f => searchCond.value.includes(f.key)),
+interface CalendarFieldOption {
+  value: string | number
+  label: string
+}
+
+interface CalendarFilterField {
+  key: string
+  label: string
+  type: string
+  condOptions: { value: string; label: string }[]
+  options?: CalendarFieldOption[]
+  placeholder?: string
+}
+
+const activeFields = computed<CalendarFilterField[]>(() =>
+  (filterFieldsConfig.value as CalendarFilterField[]).filter(f => searchCond.value.includes(f.key)),
 )
+
+let suppressWatch = false
+
+const syncSelectDefaults = () => {
+  if (props.statusList.length && !form.value.issue_status) {
+    form.value.issue_status = props.statusList[0]?.pk
+  }
+  if (props.trackerList.length && !form.value.tracker) {
+    form.value.tracker = props.trackerList[0]?.pk
+  }
+  if (props.priorityList.length && !form.value.priority) {
+    form.value.priority = props.priorityList[0]?.pk
+  }
+  if (props.meetingCategories.length && !form.value.meeting_category) {
+    form.value.meeting_category = props.meetingCategories[0]?.pk
+  }
+}
 
 // ----- filterSubmit: 통합 필터 객체 emit -----
 const filterSubmit = () => {
+  if (suppressWatch) return
   const currentProj = (route.params.projId as string) ?? ''
   const payload = calendarFilterStore.buildFilterPayload(currentProj)
   emit('filter-submit', payload)
@@ -282,9 +315,14 @@ const filterSubmit = () => {
 
 // ----- 초기화 -----
 const resetFilter = () => {
+  suppressWatch = true
   const currentProj = (route.params.projId as string) ?? ''
   const payload = calendarFilterStore.resetFilter(currentProj)
+  syncSelectDefaults()
   emit('filter-submit', payload)
+  nextTick(() => {
+    suppressWatch = false
+  })
 }
 
 // 업무 상태 변경 시 즉시 제출
@@ -294,36 +332,21 @@ watch(eventTypes, filterSubmit)
 
 // props 초기값 반영
 watch(
-  () => props.statusList,
-  list => {
-    if (list.length && !form.value.issue_status) form.value.issue_status = list[0]?.pk
-  },
-  { immediate: true },
-)
-watch(
-  () => props.trackerList,
-  list => {
-    if (list.length && !form.value.tracker) form.value.tracker = list[0]?.pk
-  },
-  { immediate: true },
-)
-watch(
-  () => props.priorityList,
-  list => {
-    if (list.length && !form.value.priority) form.value.priority = list[0]?.pk
-  },
-  { immediate: true },
-)
-watch(
-  () => props.meetingCategories,
-  list => {
-    if (list.length && !form.value.meeting_category) form.value.meeting_category = list[0]?.pk
+  [
+    () => props.statusList,
+    () => props.trackerList,
+    () => props.priorityList,
+    () => props.meetingCategories,
+  ],
+  () => {
+    syncSelectDefaults()
   },
   { immediate: true },
 )
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
-const applyQuery = (query: any) => {
+const applyQuery = (query: CustomQuery) => {
+  suppressWatch = true
   const currentProj = (route.params.projId as string) ?? ''
   const payload = calendarFilterStore.applySavedQuery(
     query,
@@ -331,9 +354,13 @@ const applyQuery = (query: any) => {
     props.getUsers[0]?.value,
     currentProj,
   )
+  syncSelectDefaults()
   if (payload) {
     emit('filter-submit', payload)
   }
+  nextTick(() => {
+    suppressWatch = false
+  })
 }
 
 defineExpose({ applyQuery, resetFilter })
@@ -377,10 +404,7 @@ defineExpose({ applyQuery, resetFilter })
                 @change="toggleField('issue_status', $event)"
               />
             </CCol>
-            <CCol
-              v-if="enabledFields.includes('issue_status')"
-              class="col-4 col-lg-3 col-xl-2"
-            >
+            <CCol v-if="enabledFields.includes('issue_status')" class="col-4 col-lg-3 col-xl-2">
               <CFormSelect v-model="cond.issue_status" size="sm">
                 <option value="open">진행중</option>
                 <option value="is">이다</option>
@@ -390,9 +414,12 @@ defineExpose({ applyQuery, resetFilter })
               </CFormSelect>
             </CCol>
             <CCol v-if="enabledFields.includes('issue_status')" class="col-4 col-lg-3">
+              <CFormSelect v-if="cond.issue_status === 'is'" v-model="form.issue_status" size="sm">
+                <option v-for="s in statusList" :key="s.pk" :value="s.pk">{{ s.name }}</option>
+              </CFormSelect>
               <CFormSelect
-                v-if="cond.issue_status === 'is' || cond.issue_status === 'exclude'"
-                v-model="form.issue_status"
+                v-else-if="cond.issue_status === 'exclude'"
+                v-model="form.issue_status__exclude"
                 size="sm"
               >
                 <option v-for="s in statusList" :key="s.pk" :value="s.pk">{{ s.name }}</option>
@@ -434,16 +461,17 @@ defineExpose({ applyQuery, resetFilter })
 
                 <!-- 일반 셀렉트 -->
                 <template v-else-if="field.type === 'select'">
+                  <CFormSelect v-if="cond[field.key] === 'is'" v-model="form[field.key]" size="sm">
+                    <option v-for="opt in field.options ?? []" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </CFormSelect>
                   <CFormSelect
-                    v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
-                    v-model="form[field.key]"
+                    v-else-if="cond[field.key] === 'exclude'"
+                    v-model="form[`${field.key}__exclude`]"
                     size="sm"
                   >
-                    <option
-                      v-for="opt in (field as any).options"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
+                    <option v-for="opt in field.options ?? []" :key="opt.value" :value="opt.value">
                       {{ opt.label }}
                     </option>
                   </CFormSelect>
@@ -454,16 +482,16 @@ defineExpose({ applyQuery, resetFilter })
                   <Multiselect
                     v-if="cond[field.key] === 'is'"
                     v-model="form[field.key]"
-                    :options="(field as any).options"
-                    :placeholder="(field as any).placeholder"
+                    :options="field.options ?? []"
+                    :placeholder="field.placeholder"
                     searchable
                     @keydown.enter="filterSubmit"
                   />
                   <Multiselect
                     v-else-if="cond[field.key] === 'exclude'"
                     v-model="form[`${field.key}__exclude`]"
-                    :options="(field as any).options"
-                    :placeholder="(field as any).placeholder"
+                    :options="field.options ?? []"
+                    :placeholder="field.placeholder"
                     searchable
                     @keydown.enter="filterSubmit"
                   />
@@ -474,14 +502,14 @@ defineExpose({ applyQuery, resetFilter })
                   <CFormInput
                     v-if="cond[field.key] === 'contains'"
                     v-model="form[field.key]"
-                    :placeholder="(field as any).placeholder"
+                    :placeholder="field.placeholder"
                     style="height: 30px"
                     @keydown.enter="filterSubmit"
                   />
                   <CFormInput
                     v-else-if="cond[field.key] === 'exclude'"
                     v-model="form[`${field.key}__exclude`]"
-                    :placeholder="'제외할 ' + (field as any).placeholder"
+                    :placeholder="'제외할 ' + (field.placeholder ?? '')"
                     style="height: 30px"
                     @keydown.enter="filterSubmit"
                   />

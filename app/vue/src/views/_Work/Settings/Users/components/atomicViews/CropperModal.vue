@@ -17,7 +17,6 @@ export default defineComponent({
     const cropper = ref()
 
     const close = () => {
-      ctx.emit('image-del')
       visible.value = false
     }
 
@@ -35,7 +34,7 @@ export default defineComponent({
     }
 
     watch(visible, val => {
-      if (!val) close()
+      if (!val) ctx.emit('image-del')
     })
 
     return {
@@ -54,10 +53,10 @@ export default defineComponent({
       <CModalTitle component="h6"> Crop your new profile picture</CModalTitle>
       <v-btn
         icon="mdi-close"
-        size="sm"
-        type="button"
+        variant="text"
+        size="small"
         aria-label="Close"
-        class="btn btn-close"
+        class="ms-auto"
         @click="close"
       />
     </CModalHeader>
@@ -83,7 +82,8 @@ export default defineComponent({
 <style lang="scss" scoped>
 .cropper {
   height: 320px;
-  width: 470px;
+  width: 100%;
+  max-width: 470px;
   background: #ddd;
 }
 

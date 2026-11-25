@@ -108,11 +108,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
                 {{ project?.status === '1' ? '닫기' : '다시 열기' }}
               </span>
             </CDropdownItem>
-            <CDropdownItem
-              v-if="canProjectDelete"
-              class="form-text"
-              @click="openDeleteModal"
-            >
+            <CDropdownItem v-if="canProjectDelete" class="form-text" @click="openDeleteModal">
               <span class="text-primary">
                 <v-icon icon="mdi-trash-can-outline" color="error" size="small" class="me-1" />
                 삭제
@@ -142,6 +138,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
         class="me-2"
       />
     </template>
+    <template #header> 워크스페이스 {{ project?.status === '1' ? '닫기' : '다시 열기' }} </template>
     <template #default>
       <span v-if="project?.status === '1'">
         '{{ project?.name }}' 워크스페이스를 닫고 읽기 전용 워크스페이스로 만드시겠습니까?
@@ -163,15 +160,19 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
     <template #icon>
       <v-icon icon="mdi-arrow-right-bold-box" color="error" class="me-2" />
     </template>
+    <template #header>워크스페이스 삭제</template>
     <template #default>
-      <div class="bg-amber-lighten-4 p-4 text-center">
+      <div class="bg-warning-subtle p-4 text-center rounded">
         <h6>{{ project?.name }}</h6>
         <p class="mb-1">이 워크스페이스를 삭제 처리하시겠습니까?</p>
         <p class="text-caption text-medium-emphasis mb-3">
-          (단, 회의/업무/문서/소송 이력이 존재하는 워크스페이스는 삭제되지 않고 '잠금보관' 처리됩니다.)
+          (단, 회의/업무/문서/소송 이력이 존재하는 워크스페이스는 삭제되지 않고 '잠금보관'
+          처리됩니다.)
         </p>
         <p>
-          진행하려면 이 워크스페이스의 식별자 (<strong class="text-danger">{{ project?.slug }}</strong
+          진행하려면 이 워크스페이스의 식별자 (<strong class="text-danger">{{
+            project?.slug
+          }}</strong
           >)를 입력하여 주십시오.
         </p>
         <CRow>

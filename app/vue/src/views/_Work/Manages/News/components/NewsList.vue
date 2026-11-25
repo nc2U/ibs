@@ -11,7 +11,7 @@ interface Props {
   newsList?: News[]
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   page: 1,
   viewForm: false,
   newsList: () => [],

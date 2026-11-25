@@ -3,6 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
+import type { Issue, SimpleIssue } from '@/store/types/work_issue'
 import type { Version } from '@/store/types/work_project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import VersionSummary from './automics/VersionSummary.vue'
@@ -16,16 +17,20 @@ const workStore = useWork()
 
 // 권한 설정 추가
 const { can, PERM } = usePerms()
+const targetProjSlug = computed(
+  () => props.version?.project?.slug || workStore.currentProject?.slug,
+)
 const canManageVersions = computed(
-  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION),
+  () => workStore.currentProject?.status === '1' && can(PERM.PROJECT_VERSION, targetProjSlug.value),
 )
 const canCreateIssues = computed(
-  () => workStore.currentProject?.status === '1' && can(PERM.ISSUE_CREATE),
+  () => workStore.currentProject?.status === '1' && can(PERM.ISSUE_CREATE, targetProjSlug.value),
 )
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
-const isIssueClosed = (issue: any) => !!(issue?.closed || issue?.status?.closed)
+const isIssueClosed = (issue: SimpleIssue | Issue) =>
+  Boolean(issue?.closed || (typeof issue?.status === 'object' && issue.status?.closed))
 
 const closedNum = computed(() => props.version?.issues?.filter(isIssueClosed).length ?? 0)
 const closedStr = computed(() => {
@@ -34,7 +39,9 @@ const closedStr = computed(() => {
   else return `${closedNum.value} 건 완료`
 })
 
-const progressNum = computed(() => props.version?.issues?.filter(i => !isIssueClosed(i)).length ?? 0)
+const progressNum = computed(
+  () => props.version?.issues?.filter(i => !isIssueClosed(i)).length ?? 0,
+)
 const progressStr = computed(() => {
   if (progressNum.value === 0) return '모두 완료'
   else if (progressNum.value === 1) return '한 건 진행 중'
@@ -193,6 +200,7 @@ const deleteSubmit = async () => {
   </template>
 
   <ConfirmModal ref="RefVersionConfirm">
+    <template #header>단계 삭제</template>
     <template #footer>
       <v-btn color="warning" @click="deleteSubmit">삭제</v-btn>
     </template>

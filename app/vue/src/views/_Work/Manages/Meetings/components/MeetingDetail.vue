@@ -6,7 +6,7 @@ import { useMeeting } from '@/store/pinia/work_meeting'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
-import { diffDate, elapsedTime, timeFormat, getMeetingStatusColor } from '@/utils/baseMixins'
+import { elapsedTime, getMeetingStatusColor, getOverdueDays, timeFormat } from '@/utils/baseMixins'
 import { markdownRender, sanitizeExternalUrl } from '@/utils/helper'
 import { markNotificationReadByTarget } from '@/utils/notification'
 import type { SimpleIssueInMeeting } from '@/store/types/work_meeting'
@@ -37,13 +37,13 @@ watch(
   { immediate: true },
 )
 
-const isCreator = computed(() => meeting.value?.creator.pk === accountStore.userInfo?.pk)
+const isCreator = computed(() => meeting.value?.creator?.pk === accountStore.userInfo?.pk)
 const isAttendee = computed(() =>
-  meeting.value?.attendees_desc.some(user => user.pk === accountStore.userInfo?.pk),
+  (meeting.value?.attendees_desc ?? []).some(user => user.pk === accountStore.userInfo?.pk),
 )
 
 const attendeesCount = computed(
-  () => meeting.value?.attendees_count ?? meeting.value?.attendees.length ?? 0,
+  () => meeting.value?.attendees_count ?? meeting.value?.attendees?.length ?? 0,
 )
 
 const otherAttendeesList = computed(() => {
@@ -107,7 +107,7 @@ const needConfirm = computed(() => {
     meeting.value?.status === '2' &&
     meeting.value?.meeting_date &&
     !meeting.value?.is_confirmed &&
-    diffDate(meeting.value.meeting_date) > 5
+    getOverdueDays(meeting.value.meeting_date) > 5
   )
 })
 
@@ -116,14 +116,12 @@ const confirmAlertColor = computed(() => {
 
   if (!meetingDate) return ''
 
-  const diff = diffDate(meetingDate)
-
-  return diff > 10 ? 'error' : 'warning'
+  return getOverdueDays(meetingDate) > 10 ? 'error' : 'warning'
 })
 
-const completedIssues = computed(() => meeting.value?.issues.filter(i => i.closed).length ?? 0)
+const completedIssues = computed(() => (meeting.value?.issues ?? []).filter(i => i.closed).length)
 const completedRatio = computed(() => {
-  const total = meeting.value?.issues.length ?? 0
+  const total = meeting.value?.issues?.length ?? 0
   return total === 0 ? 0 : Math.round((completedIssues.value / total) * 100)
 })
 
@@ -142,7 +140,9 @@ const fetchMeeting = async (pk: number) => {
         params: { projId: realSlug, meetingId: meeting.value.pk },
       })
     }
-    await workStore.fetchIssueProject(realSlug)
+    if (workStore.currentProject?.slug !== realSlug) {
+      await workStore.fetchIssueProject(realSlug)
+    }
     await issueStore.fetchAllIssueList(realSlug)
   }
 }
@@ -262,12 +262,12 @@ const openNormalIssueModal = () => {
 const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 const alertMessage = ref('')
 
-const createRelatedIssue = async (payload: any) => {
+const createRelatedIssue = async (payload: Record<string, unknown>) => {
   if (!meeting.value) return
   try {
     const formData = new FormData()
     const projectSlug = meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
-    const payloadData = {
+    const payloadData: Record<string, unknown> = {
       ...payload,
       meeting: meeting.value.pk,
       ...(projectSlug ? { project: projectSlug } : {}),
@@ -290,22 +290,22 @@ const createRelatedIssue = async (payload: any) => {
       ]
       if (fkFields.includes(key) && val === '') continue
 
-      if (key === 'watchers' || key === 'files' || key === 'links') {
-        val?.forEach((v: any) => formData.append(key, JSON.stringify(v)))
-      } else if (key === 'newFiles') {
-        val.forEach((v: any) => {
-          formData.append('new_files', v.file as string | Blob)
+      if ((key === 'watchers' || key === 'files' || key === 'links') && Array.isArray(val)) {
+        val.forEach(v => formData.append(key, JSON.stringify(v)))
+      } else if (key === 'newFiles' && Array.isArray(val)) {
+        ;(val as { file: string | Blob; description?: string }[]).forEach(v => {
+          formData.append('new_files', v.file)
           formData.append('descriptions', v.description ?? '')
         })
-      } else if (key === 'newLinks') {
-        val.forEach((v: any) => {
+      } else if (key === 'newLinks' && Array.isArray(val)) {
+        ;(val as { link: string; name?: string }[]).forEach(v => {
           if (v.link && v.link.trim()) {
             formData.append('newLinks', v.link.trim())
             formData.append('newLinkNames', v.name ?? '')
           }
         })
       } else {
-        formData.append(key, val as string)
+        formData.append(key, String(val))
       }
     }
 
@@ -431,7 +431,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
               >
                 {{ meeting.creator.username }}
               </router-link>
-              <strong v-else>{{ meeting.creator.username }}</strong>
+              <strong v-else>{{ meeting.creator?.username }}</strong>
               이(가)
               <span>
                 {{ elapsedTime(meeting.created) }}
@@ -544,8 +544,9 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                     v-for="(other, idx) in otherAttendeesList"
                     :key="'other-' + idx"
                     size="x-small"
-                    color="blue-grey-lighten-4"
-                    class="me-1 mb-1 text-muted"
+                    color="secondary"
+                    variant="tonal"
+                    class="me-1 mb-1"
                   >
                     <v-icon start icon="mdi-account-outline" size="12" />
                     {{ other }}
@@ -653,7 +654,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                 <div
                   v-for="(item, idx) in parsedActionItems"
                   :key="idx"
-                  class="d-flex align-items-center justify-content-between p-2 mb-1 rounded bg-light border"
+                  class="d-flex align-items-center justify-content-between p-2 mb-1 rounded bg-more-light border"
                 >
                   <div class="d-flex align-items-center flex-grow-1 me-2 text-truncate">
                     <v-icon
@@ -690,22 +691,38 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   </div>
 
                   <div class="flex-shrink-0">
-                    <router-link
-                      v-if="item.linkedIssue"
-                      :to="{
-                        name: '(업무) - 보기',
-                        params: { projId: item.linkedIssue.project, issueId: item.linkedIssue.pk },
-                      }"
-                      class="text-decoration-none"
-                    >
+                    <template v-if="item.linkedIssue">
+                      <router-link
+                        v-if="
+                          (item.linkedIssue.project || meetingSlug) &&
+                          can(PERM.ISSUE_READ, item.linkedIssue.project || meetingSlug)
+                        "
+                        :to="{
+                          name: '(업무) - 보기',
+                          params: {
+                            projId: item.linkedIssue.project || meetingSlug,
+                            issueId: item.linkedIssue.pk,
+                          },
+                        }"
+                        class="text-decoration-none"
+                      >
+                        <v-chip
+                          size="x-small"
+                          :color="item.linkedIssue.closed ? 'success' : 'primary'"
+                          label
+                        >
+                          #{{ item.linkedIssue.pk }} {{ item.linkedIssue.status }}
+                        </v-chip>
+                      </router-link>
                       <v-chip
+                        v-else
                         size="x-small"
                         :color="item.linkedIssue.closed ? 'success' : 'primary'"
                         label
                       >
                         #{{ item.linkedIssue.pk }} {{ item.linkedIssue.status }}
                       </v-chip>
-                    </router-link>
+                    </template>
                     <v-btn
                       v-else-if="canIssueCreate"
                       color="warning"
@@ -722,7 +739,7 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
           </CCol>
         </CRow>
 
-        <div v-if="meeting.files.length" class="my-5">
+        <div v-if="meeting.files?.length" class="my-5">
           <h6 class="title mb-3">
             <v-icon icon="mdi-paperclip" color="blue-grey-lighten-1" size="small" class="me-1" />
             첨부 파일 ({{ meeting.files.length }}건)
@@ -798,13 +815,18 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
                   </CTableDataCell>
                   <CTableDataCell>
                     <router-link
+                      v-if="
+                        (issue.project || meetingSlug) &&
+                        can(PERM.ISSUE_READ, issue.project || meetingSlug)
+                      "
                       :to="{
                         name: '(업무) - 보기',
-                        params: { projId: issue.project, issueId: issue.pk },
+                        params: { projId: issue.project || meetingSlug, issueId: issue.pk },
                       }"
                     >
                       {{ issue.subject }}
                     </router-link>
+                    <span v-else>{{ issue.subject }}</span>
                   </CTableDataCell>
                   <CTableDataCell class="text-center">
                     <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">
@@ -838,12 +860,13 @@ const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
         <v-btn v-if="canMeetingDelete" color="warning" @click="refConfirmModal?.callModal()">
           삭제
         </v-btn>
-        <v-btn color="light" @click="goList" flat> 목록으로 </v-btn>
+        <v-btn color="grey" variant="tonal" @click="goList"> 목록으로 </v-btn>
       </CCol>
     </CRow>
   </div>
 
   <ConfirmModal ref="refConfirmModal">
+    <template #header>회의록 삭제</template>
     이 회의록을 정말 삭제하시겠습니까?
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteMeeting">삭제</v-btn>

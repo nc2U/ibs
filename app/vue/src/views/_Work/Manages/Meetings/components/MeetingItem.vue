@@ -3,7 +3,8 @@ import { computed, type PropType } from 'vue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import { DEFAULT_MEETING_COLUMNS } from '../constants'
 import { useRoute } from 'vue-router'
-import { timeFormat, diffDate, getMeetingStatusColor } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms'
+import { timeFormat, getOverdueDays, getMeetingStatusColor } from '@/utils/baseMixins'
 import type { Meeting } from '@/store/types/work_meeting'
 
 const props = defineProps({
@@ -12,16 +13,17 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const { can, PERM } = usePerms()
 const meetingStore = useMeeting()
 
 const meetingDate = computed(() =>
   props.meeting.meeting_date ? props.meeting.meeting_date.substring(0, 10) : '',
 )
 
-const createdDate = computed(() => props.meeting.created.substring(0, 10))
+const createdDate = computed(() => props.meeting.created?.substring(0, 10) ?? '')
 
 const attendeesCount = computed(
-  () => props.meeting.attendees_count ?? props.meeting.attendees.length,
+  () => props.meeting.attendees_count ?? props.meeting.attendees?.length ?? 0,
 )
 
 const otherAttendeesCount = computed(() => {
@@ -48,7 +50,7 @@ const needConfirm = computed(() => {
     meeting.status === '2' &&
     !meeting?.is_confirmed &&
     meetingDate.value &&
-    diffDate(meetingDate.value) > 5
+    getOverdueDays(meetingDate.value) > 5
   )
 })
 
@@ -57,9 +59,7 @@ const confirmAlertColor = computed(() => {
 
   if (!meetingDate) return ''
 
-  const diff = diffDate(meetingDate)
-
-  return diff > 10 ? 'error' : 'warning'
+  return getOverdueDays(meetingDate) > 10 ? 'error' : 'warning'
 })
 
 const downloadPdf = (event: Event) => {
@@ -115,14 +115,18 @@ const downloadPdf = (event: Event) => {
       :class="{ closed: meeting.status === '3' }"
     >
       <router-link
-        v-if="meeting.project_desc?.slug"
+        v-if="
+          (meeting.project_desc?.slug || route.params.projId) &&
+          can(PERM.MEETING_READ, meeting.project_desc?.slug || (route.params.projId as string))
+        "
         :to="{
           name: '(회의) - 보기',
           params: {
-            projId: meeting.project_desc.slug || (route.params.projId as string),
+            projId: meeting.project_desc?.slug || (route.params.projId as string),
             meetingId: meeting.pk,
           },
         }"
+        @click.stop
       >
         {{ meeting.title }}
       </router-link>
@@ -141,7 +145,7 @@ const downloadPdf = (event: Event) => {
 
     <!-- 작성자 -->
     <CTableDataCell v-else-if="colKey === 'creator'">
-      {{ meeting.creator.username }}
+      {{ meeting.creator?.username }}
     </CTableDataCell>
 
     <!-- 참석 -->

@@ -12,7 +12,7 @@ const props = defineProps({
 })
 
 const store = useStore()
-const isDark = computed(() => store.theme === 'dark')
+const isDark = computed(() => store.isDark)
 
 const { canViewUser } = usePerms()
 

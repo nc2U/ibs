@@ -11,6 +11,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { Company } from '@/store/types/settings'
 import type { MeetingFilter } from '@/store/types/work_meeting'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import MeetingTable from './components/MeetingTable.vue'
@@ -70,7 +71,7 @@ const onPageSelect = (p: number) => {
   meetingStore.fetchMeetingList({ ...listFilter.value, page: p })
 }
 
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   querySectionRef.value?.applyQuery(query)
 }
 
@@ -109,8 +110,8 @@ onBeforeMount(initData)
 watch(
   () => route.name,
   (newName, oldName) => {
-    const isMeetingRoute = (name: any) =>
-      name && (name.includes('회의') || name.includes('Meeting'))
+    const isMeetingRoute = (name: unknown) =>
+      typeof name === 'string' && (name.includes('회의') || name.includes('Meeting'))
     if (isMeetingRoute(newName) && !isMeetingRoute(oldName)) {
       initData()
     } else if (newName === '회의' && oldName !== '회의') {
@@ -167,7 +168,6 @@ watch(
       <MeetingTable
         v-else
         :meeting-list="meetingList"
-        :categories="categories"
         :columns="selectedColumns"
         :page="page"
         @page-select="onPageSelect"

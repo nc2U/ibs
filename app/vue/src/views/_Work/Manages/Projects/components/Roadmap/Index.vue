@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
-import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
-import type { IssueProject, Version } from '@/store/types/work_project'
+import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
+import type { FormVersion, IssueProject, Version } from '@/store/types/work_project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import RoadmapList from './components/RoadmapList.vue'
@@ -11,9 +12,8 @@ import VersionForm from './components/VersionForm.vue'
 import RoadmapAside from './components/RoadmapAside.vue'
 
 const props = defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: LocationQueryRaw
 }>()
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -25,8 +25,13 @@ const [route, router] = [useRoute(), useRouter()]
 const aside = computed(() => route.name === '(로드맵)')
 
 const workStore = useWork()
+const { can, PERM } = usePerms()
 
 const currentProject = computed(() => props.currentProject ?? workStore.currentProject)
+const canManageVersions = computed(
+  () =>
+    currentProject.value?.status === '1' && can(PERM.PROJECT_VERSION, currentProject.value?.slug),
+)
 const version = computed(() => workStore.version)
 const rawVersionList = computed(() => workStore.versionList)
 const trackerList = computed(() => currentProject.value?.trackers ?? [])
@@ -99,7 +104,7 @@ const onApplyFilter = async (filter: { completed: boolean; trackerIds: number[] 
   }
 }
 
-const onSubmit = async (payload: any, back = false) => {
+const onSubmit = async (payload: FormVersion, back = false) => {
   const projId = route.params.projId as string
   if (!payload.pk) {
     payload.project = projId
@@ -166,13 +171,7 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-    :aside="aside"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="aside">
     <template v-slot:default>
       <RoadmapList
         v-if="route.name === '(로드맵)'"
@@ -185,10 +184,10 @@ onBeforeMount(async () => {
         :version="version as Version"
       />
 
-      <VersionForm
-        v-if="route.name === '(로드맵) - 추가' || route.name === '(로드맵) - 수정'"
-        @on-submit="onSubmit"
-      />
+      <template v-if="route.name === '(로드맵) - 추가' || route.name === '(로드맵) - 수정'">
+        <VersionForm v-if="canManageVersions" @on-submit="onSubmit" />
+        <CAlert v-else color="warning"> 권한이 없거나 닫혀 있는 워크스페이스입니다. </CAlert>
+      </template>
     </template>
 
     <template v-slot:aside>

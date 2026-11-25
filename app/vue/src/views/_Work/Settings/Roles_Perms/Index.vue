@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import { storeToRefs } from 'pinia'
-import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useAccount } from '@/store/pinia/account'
 import type { Role } from '@/store/types/work_project'
-import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import RoleList from './components/RoleList.vue'
@@ -14,8 +12,6 @@ import PermissionReport from './components/PermissionReport.vue'
 import RoleFormModal from './components/RoleFormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-
-const route = useRoute()
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
@@ -28,7 +24,6 @@ const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 const sideNavCAll = () => cBody.value?.toggle()
 
 const activeTab = ref(0)
-const loading = ref(true)
 
 const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const pkToDelete = ref<number | null>(null)
@@ -76,17 +71,12 @@ const roleDelete = async () => {
     if (ok) refConfirmModal.value?.close()
   }
 }
-
-onBeforeMount(async () => {
-  loading.value = false
-})
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
   <Header :page-title="pageTitle" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :aside="false" :nav-menu="navMenu" :query="route?.query">
+  <ContentBody ref="cBody" :aside="false" :nav-menu="navMenu">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -163,12 +153,14 @@ onBeforeMount(async () => {
         @close="roleModal = false"
       />
 
-      <CCol class="text-end">
-        <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="me-2" />
-        <span class="text-secondary">
-          역할 및 권한은 시스템 관리자가 생성 및 수정할 수 있습니다.
-        </span>
-      </CCol>
+      <CRow class="mt-2">
+        <CCol class="text-end">
+          <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="me-2" />
+          <span class="text-secondary">
+            역할 및 권한은 시스템 관리자가 생성 및 수정할 수 있습니다.
+          </span>
+        </CCol>
+      </CRow>
 
       <ConfirmModal ref="refConfirmModal">
         <template #footer>

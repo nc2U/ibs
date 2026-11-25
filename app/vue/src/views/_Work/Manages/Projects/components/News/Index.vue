@@ -1,10 +1,14 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform'
 import type { News } from '@/store/types/work_inform'
 import type { IssueProject } from '@/store/types/work_project'
+import {
+  buildNewsFormData,
+  type NewsFormPayload,
+} from '@/views/_Work/Manages/News/components/newsFormHelper'
 import Loading from '@/components/Loading/Index.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -14,8 +18,8 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import { useWork } from '@/store/pinia/work_project'
 
-const props = defineProps<{
-  navMenu?: any
+defineProps<{
+  navMenu?: string[]
   currentProject?: IssueProject | null
   query?: LocationQueryRaw
 }>()
@@ -36,37 +40,18 @@ const infStore = useInform()
 const news = computed(() => infStore.news as News | null)
 const newsList = computed(() => infStore.newsList as News[])
 
-const createNews = (payload: any, proj?: string) => infStore.createNews(payload, proj)
-const updateNews = (pk: number, payload: any) => infStore.updateNews(pk, payload)
+const createNews = (payload: FormData, proj?: string) => infStore.createNews(payload, proj)
+const updateNews = (pk: number, payload: FormData) => infStore.updateNews(pk, payload)
 const deleteNews = (pk: number, proj: null | string) => infStore.deleteNews(pk, proj)
 
-const onSubmit = async (payload: any) => {
-  payload.project = route.params.projId
-  const { pk, ...rest } = payload
-  const getData: Record<string, any> = { ...rest }
-
-  const form = new FormData()
-
-  for (const key in getData) {
-    if (key === 'files') {
-      ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-    } else if (key === 'newFiles')
-      getData[key]?.forEach((val: { file: File | Blob; description: string }) => {
-        form.append('new_files', val.file)
-        form.append('new_descs', val.description)
-      })
-    else if (key === 'cngFiles') {
-      getData[key]?.forEach((val: { pk: number; file: File | Blob }) => {
-        form.append('cngPks', String(val.pk))
-        form.append('cngFiles', val.file)
-      })
-    } else {
-      const formValue = getData[key] === null ? '' : getData[key]
-      form.append(key, formValue as string)
-    }
+const onSubmit = async (payload: NewsFormPayload) => {
+  const projSlug = String(route.params.projId ?? '')
+  const form = buildNewsFormData({ ...payload, project: projSlug })
+  const ok = payload.pk ? await updateNews(payload.pk, form) : await createNews(form, projSlug)
+  if (ok) {
+    viewForm.value = false
+    if (!payload.pk) page.value = 1
   }
-  const ok = pk ? await updateNews(pk, form) : await createNews(form, payload.project)
-  if (ok) viewForm.value = false
 }
 
 const newsDelConfirm = async () => {
@@ -111,6 +96,13 @@ watch(
   },
 )
 
+watch(
+  () => route.query.viewForm,
+  nVal => {
+    if (nVal && canNewsManage.value && route.name === '(공지)') viewForm.value = true
+  },
+)
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   try {
@@ -122,17 +114,16 @@ onBeforeMount(async () => {
     loading.value = false
   }
 })
+
+onBeforeUnmount(() => {
+  infStore.removeNews()
+  infStore.newsList = []
+})
 </script>
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-    :aside="false"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <span v-if="route.name !== '(공지)'">
         <router-link :to="{ name: '(공지)', params: { projId: route.params.projId } }">

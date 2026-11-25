@@ -164,6 +164,50 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
     isVisible: width > 0,
   }
 }
+
+interface BarCoords {
+  left: string
+  width: string
+  isVisible: boolean
+}
+
+const versionBarMap = computed(() => {
+  const map = new Map<number, BarCoords>()
+  props.versionList.forEach(ver => {
+    if (ver.pk && ver.effective_date) {
+      map.set(ver.pk, getBarCoordinates(null, ver.effective_date))
+    }
+  })
+  return map
+})
+
+const issueBarMap = computed(() => {
+  const map = new Map<string, BarCoords>()
+  props.versionList.forEach(ver => {
+    const issues = ver.recent_issues || ver.issues || []
+    issues.forEach(issue => {
+      map.set(
+        `${ver.pk}-${issue.pk}`,
+        getBarCoordinates(issue.start_date, issue.due_date || ver.effective_date),
+      )
+    })
+  })
+  return map
+})
+
+const getVersionBar = (verPk?: number): BarCoords =>
+  (verPk !== undefined ? versionBarMap.value.get(verPk) : undefined) ?? {
+    left: '0%',
+    width: '0%',
+    isVisible: false,
+  }
+
+const getIssueBar = (verPk: number | undefined, issuePk: number): BarCoords =>
+  issueBarMap.value.get(`${verPk}-${issuePk}`) ?? {
+    left: '0%',
+    width: '0%',
+    isVisible: false,
+  }
 </script>
 
 <template>
@@ -296,11 +340,11 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
               <div class="gantt-timeline-area position-relative flex-grow-1 p-2">
                 <template v-if="ver.effective_date">
                   <div
-                    v-if="getBarCoordinates(null, ver.effective_date).isVisible"
+                    v-if="getVersionBar(ver.pk).isVisible"
                     class="gantt-bar version-bar"
                     :style="{
-                      left: getBarCoordinates(null, ver.effective_date).left,
-                      width: getBarCoordinates(null, ver.effective_date).width,
+                      left: getVersionBar(ver.pk).left,
+                      width: getVersionBar(ver.pk).width,
                     }"
                   >
                     <div
@@ -341,7 +385,7 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                     <router-link
                       :to="{
                         name: '(업무) - 보기',
-                        params: { projId, issueId: issue.pk },
+                        params: { projId: issue.project?.slug || projId, issueId: issue.pk },
                       }"
                       class="text-truncate text-decoration-none small text-body"
                     >
@@ -361,12 +405,7 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                 <!-- Issue Timeline Bar -->
                 <div class="gantt-timeline-area position-relative flex-grow-1 p-2">
                   <div
-                    v-if="
-                      getBarCoordinates(
-                        issue.start_date,
-                        issue.due_date || ver.effective_date,
-                      ).isVisible
-                    "
+                    v-if="getIssueBar(ver.pk, issue.pk).isVisible"
                     class="gantt-bar issue-bar"
                     :class="{
                       'is-closed': issue.closed || issue.status?.closed,
@@ -374,14 +413,8 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                         !(issue.closed || issue.status?.closed) && isOverdue(issue.due_date),
                     }"
                     :style="{
-                      left: getBarCoordinates(
-                        issue.start_date,
-                        issue.due_date || ver.effective_date,
-                      ).left,
-                      width: getBarCoordinates(
-                        issue.start_date,
-                        issue.due_date || ver.effective_date,
-                      ).width,
+                      left: getIssueBar(ver.pk, issue.pk).left,
+                      width: getIssueBar(ver.pk, issue.pk).width,
                     }"
                   >
                     <div

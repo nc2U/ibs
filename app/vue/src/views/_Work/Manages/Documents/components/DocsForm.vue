@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account'
@@ -9,7 +9,7 @@ import { colorLight } from '@/utils/cssMixins'
 import { isValidate } from '@/utils/helper'
 import type { CodeValue } from '@/store/types/work_issue'
 import type { selectProject } from '@/store/types/work_project'
-import type { AFile, Attatches, Docs, Link, SuitCase } from '@/store/types/docs'
+import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -28,6 +28,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close-form'])
 
+const route = useRoute()
 const router = useRouter()
 
 const docStore = useDocs()
@@ -41,7 +42,7 @@ const refModalCaseForm = ref<InstanceType<typeof ModalCaseForm> | null>(null)
 const openCaseModal = () => refModalCaseForm.value?.callModal()
 const onCaseCreated = async (payload: SuitCase) => {
   payload.issue_project = Number(form.value.issue_project) || props.projectPk || null
-  const res = (await docStore.createSuitCase(payload)) as any
+  const res = (await docStore.createSuitCase(payload)) as { pk?: number } | null
   await docStore.fetchAllSuitCaseList({})
   if (res?.pk) {
     form.value.lawsuit = res.pk
@@ -60,7 +61,9 @@ const targetProjectSlug = computed(() => {
   return fromList || props.docs?.project?.slug || undefined
 })
 const canDocsCreate = computed(() =>
-  targetProjectSlug.value ? can(PERM.DOCS_CREATE, targetProjectSlug.value) : props.myProjects.length > 0,
+  targetProjectSlug.value
+    ? can(PERM.DOCS_CREATE, targetProjectSlug.value)
+    : props.myProjects.length > 0,
 )
 const canDocsUpdate = computed(
   () =>
@@ -99,8 +102,8 @@ const cngFiles = ref<
   }[]
 >([])
 
-const newLinks = ref<Link[]>([])
-const newLinkPush = (payload: Link[]) => payload.forEach(link => newLinks.value.push(link))
+const newLinks = ref<string[]>([])
+const newLinkPush = (payload: string[]) => payload.forEach(link => newLinks.value.push(link))
 
 const fileUpload = (file: File) => newFiles.value.push(file)
 
@@ -112,6 +115,15 @@ const filesUpdate = (payload: AFile[]) => {
 
 const linksUpdate = (payload: Link[]) => (form.value.links = payload)
 
+interface DocsSubmitPayload {
+  pk?: number
+  files?: Docs['files']
+  links?: Docs['links']
+  newFiles?: File[]
+  newLinks?: string[]
+  [key: string]: unknown
+}
+
 const submitCheck = (event: Event) => {
   // @vueform/multiselect의 fake-input은 브라우저 native validation이 동작하지 않으므로 직접 검증
   lawsuitError.value = form.value.doc_type === 2 && !form.value.lawsuit
@@ -121,59 +133,69 @@ const submitCheck = (event: Event) => {
     validated.value = true
   } else {
     validated.value = false
-    refLinkForms.value?.newLinkPush()
+    const activeNewLinks = refLinkForms.value?.getNewLinks() ?? newLinks.value
     const activeNewFiles = refFileForms.value?.getNewFiles() ?? newFiles.value
-    onSubmit({ ...form.value, newFiles: activeNewFiles, newLinks: newLinks.value })
-    refFileForms.value?.checkRelease()
+    const payload: DocsSubmitPayload = {
+      ...form.value,
+      newFiles: activeNewFiles,
+      newLinks: activeNewLinks,
+    }
+    onSubmit(payload)
   }
 }
 
-const onSubmit = async (payload: Docs & Attatches) => {
-  const { pk, ...rest } = payload
-  const getData: Record<string, any> = { ...rest }
-
-  getData.newFiles = (payload.newFiles as File[] | undefined) ?? newFiles.value
-  getData.cngFiles = cngFiles.value
-
+const onSubmit = async (payload: DocsSubmitPayload) => {
+  const {
+    pk,
+    files: docFiles,
+    links: docLinks,
+    newFiles: nextNewFiles,
+    newLinks: nextNewLinks,
+    ...scalars
+  } = payload
   const formData = new FormData()
 
-  for (const key in getData) {
-    if (key === 'links' || key === 'files') {
-      ;(getData[key] as any[]).forEach(val => formData.append(key, JSON.stringify(val)))
-    } else if (key === 'newLinks' || key === 'newFiles' || key === 'cngFiles') {
-      if (key === 'cngFiles') {
-        getData[key]?.forEach((val: any) => {
-          formData.append('cngPks', val.pk as any)
-          formData.append('cngFiles', val.file as Blob)
-        })
-      } else if (key === 'newFiles') {
-        ;(getData[key] as any[]).forEach(val => {
-          if (val) formData.append('new_files', val as Blob)
-        })
-      } else {
-        ;(getData[key] as any[]).forEach(val => {
-          if (val) formData.append(key, val as string)
-        })
-      }
-    } else {
-      const val = getData[key]
-      if (val !== undefined && val !== null && val !== 'undefined') {
-        formData.append(key, String(val))
-      } else if (val === null) {
-        formData.append(key, '')
-      }
+  if (Array.isArray(docFiles)) {
+    docFiles.forEach(val => formData.append('files', JSON.stringify(val)))
+  }
+  if (Array.isArray(docLinks)) {
+    docLinks.forEach(val => formData.append('links', JSON.stringify(val)))
+  }
+  cngFiles.value.forEach(val => {
+    formData.append('cngPks', String(val.pk))
+    formData.append('cngFiles', val.file as Blob)
+  })
+  ;(nextNewFiles ?? newFiles.value).forEach(val => {
+    if (val) formData.append('new_files', val as Blob)
+  })
+  ;(nextNewLinks ?? newLinks.value).forEach(val => {
+    if (val) formData.append('newLinks', val)
+  })
+
+  for (const [key, val] of Object.entries(scalars)) {
+    if (val !== undefined && val !== null && val !== 'undefined') {
+      formData.append(key, String(val))
+    } else if (val === null) {
+      formData.append(key, '')
     }
   }
 
   let saved: Docs | null = null
-  if (pk) {
+  if (typeof pk === 'number' && pk) {
     saved = await updateDocs({ pk, form: formData })
     if (!saved) return
-    await router.replace({ name: `(문서) - 보기`, params: { docId: pk } })
+    const projSlug = String(route.params.projId ?? props.docs?.project?.slug ?? '')
+    if (projSlug) {
+      await router.replace({ name: '(문서) - 보기', params: { projId: projSlug, docId: pk } })
+    } else {
+      await router.replace({ name: '문서' })
+    }
   } else {
     saved = await createDocs({ form: formData })
     if (!saved) return
   }
+  refLinkForms.value?.clearNewLinks()
+  refFileForms.value?.checkRelease()
   newFiles.value = []
   cngFiles.value = []
   newLinks.value = []
@@ -403,7 +425,7 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn color="light" variant="flat" @click="emit('close-form')"> 취소</v-btn>
+        <v-btn color="grey" variant="tonal" @click="emit('close-form')">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

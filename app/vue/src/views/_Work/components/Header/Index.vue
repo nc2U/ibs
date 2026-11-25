@@ -24,7 +24,7 @@ watch(route, () => (visible.value = false))
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 
-const isDark = computed(() => useStore().theme === 'dark')
+const isDark = computed(() => useStore().isDark)
 const backGround = computed(() => (isDark.value ? '' : 'bg-blue-grey-lighten-5'))
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
@@ -66,11 +66,7 @@ const chkModules = (slug: string) => {
   if (routeName.includes('회의') && !project.module?.meeting) return false
   if (routeName.includes('로드맵') && !(project.has_versions || project.versions?.length))
     return false
-  if (
-    routeName.includes('업무') &&
-    !routeName.includes('업무실행내역') &&
-    !project.module?.issue
-  ) {
+  if (routeName.includes('업무') && !routeName.includes('업무실행내역') && !project.module?.issue) {
     return false
   }
   if (routeName.includes('캘린더') && !project.module?.calendar) return false
@@ -153,10 +149,7 @@ const cngProject = async (slug: string | number | null | undefined) => {
               </v-chip>
             </CCol>
 
-            <CCol
-              class="text-body d-lg-none pointer"
-              @click="visible = !visible"
-            >
+            <CCol class="text-body d-lg-none pointer" @click="visible = !visible">
               <div class="d-flex align-items-center">
                 <v-icon
                   v-if="route.path.startsWith('/work/')"

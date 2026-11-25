@@ -11,6 +11,9 @@ const menu = ref<'일반' | '워크스페이스'>('일반')
 
 const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
+const isSuperuserBlocked = computed(() =>
+  Boolean(user.value?.pk && user.value.is_superuser && !accStore.superAuth),
+)
 
 const route = useRoute()
 
@@ -19,10 +22,8 @@ watch(
   async rawId => {
     if (rawId) {
       const uid = Number(rawId)
-      const savedTab = localStorage.getItem('admin-user-menu-tab') as
-        | '일반'
-        | '워크스페이스'
-        | null
+      if (Number.isNaN(uid)) return
+      const savedTab = localStorage.getItem('admin-user-menu-tab') as '일반' | '워크스페이스' | null
       menu.value = savedTab === '일반' || savedTab === '워크스페이스' ? savedTab : '일반'
       if (accStore.user?.pk !== uid) {
         await accStore.fetchUser(uid)
@@ -63,21 +64,27 @@ watch(menu, newVal => {
     </CCol>
   </CRow>
 
-  <!-- Edit Mode Tabs -->
-  <CRow v-if="user?.pk" class="mb-3">
-    <CCol>
-      <v-tabs v-model="menu" density="compact">
-        <v-tab value="일반" variant="tonal"> 일반</v-tab>
-        <v-tab value="워크스페이스" variant="tonal"> 워크스페이스</v-tab>
-      </v-tabs>
-    </CCol>
-  </CRow>
+  <CAlert v-if="isSuperuserBlocked" color="warning" class="mt-2">
+    슈퍼유저 계정은 슈퍼유저만 수정할 수 있습니다.
+  </CAlert>
 
-  <CRow v-if="menu === '일반' || !user?.pk">
-    <UserForm :user="user" />
-  </CRow>
+  <template v-else>
+    <!-- Edit Mode Tabs -->
+    <CRow v-if="user?.pk" class="mb-3">
+      <CCol>
+        <v-tabs v-model="menu" density="compact">
+          <v-tab value="일반" variant="tonal"> 일반</v-tab>
+          <v-tab value="워크스페이스" variant="tonal"> 워크스페이스</v-tab>
+        </v-tabs>
+      </CCol>
+    </CRow>
 
-  <CRow v-else>
-    <UserProjects v-if="menu === '워크스페이스' && user?.pk" :user-pk="user.pk" />
-  </CRow>
+    <CRow v-if="menu === '일반' || !user?.pk">
+      <UserForm :user="user" />
+    </CRow>
+
+    <CRow v-else>
+      <UserProjects v-if="menu === '워크스페이스' && user?.pk" :user-pk="user.pk" />
+    </CRow>
+  </template>
 </template>

@@ -85,7 +85,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="d-flex flex-column gap-4">
     <CAccordion :active-item-key="1" class="shadow-sm mb-4">
       <!-- 1. 워크스페이스 관리 권한 (work_space) 아코디언 -->
       <CAccordionItem :item-key="1">
@@ -98,7 +98,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
         <CAccordionBody class="p-3">
           <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle mb-0">
-              <thead class="table-light">
+              <thead>
                 <tr>
                   <th
                     scope="col"
@@ -161,7 +161,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
         <CAccordionBody class="p-3">
           <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle mb-0">
-              <thead class="table-light">
+              <thead>
                 <tr>
                   <th
                     scope="col"
@@ -197,12 +197,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
                       <span class="fw-semibold me-2">{{ perm.name }}</span>
-                      <v-chip
-                        v-if="perm.is_confidential"
-                        color="error"
-                        size="x-small"
-                        class="me-2"
-                      >
+                      <v-chip v-if="perm.is_confidential" color="error" size="x-small" class="me-2">
                         보안
                       </v-chip>
                       <small class="text-muted">{{ perm.description }}</small>
@@ -238,7 +233,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
         <CAccordionBody class="p-3">
           <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle mb-0">
-              <thead class="table-light">
+              <thead>
                 <tr>
                   <th
                     scope="col"

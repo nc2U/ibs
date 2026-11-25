@@ -11,11 +11,31 @@ export const cutString = (str: string | null | undefined = '', len = 20, abb = '
   return str.length > len ? `${str.substring(0, len)}${abb}` : str
 }
 
+const parseDateValue = (input: Date | string): Date => {
+  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const [y, m, d] = input.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return input instanceof Date ? input : new Date(input)
+}
+
 export const diffDate = (date1: Date | string, date2?: Date | string) => {
-  const start = typeof date1 === 'string' ? new Date(date1) : date1
-  const now = !date2 ? new Date() : typeof date2 === 'string' ? new Date(date2) : date2
+  const start = parseDateValue(date1)
+  const now = !date2 ? new Date() : parseDateValue(date2)
   const between = now.getTime() - start.getTime()
   return between / 1000 / 60 / 60 / 24
+}
+
+export const getOverdueDays = (dueDate?: string | null): number => {
+  if (!dueDate) return 0
+  const datePart = dueDate.slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return 0
+  const [dy, dm, dd] = datePart.split('-').map(Number)
+  const [ty, tm, td] = getToday().split('-').map(Number)
+  const dueMs = new Date(dy, dm - 1, dd).getTime()
+  const todayMs = new Date(ty, tm - 1, td).getTime()
+  const days = Math.floor((todayMs - dueMs) / (1000 * 60 * 60 * 24))
+  return days > 0 ? days : 0
 }
 
 export const addDays = (date: Date, days: number) => date.setDate(date.getDate() + days)

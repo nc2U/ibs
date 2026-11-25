@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform'
 import { useProjectFilter } from '@/store/pinia/work_project_filter'
 import type { selectProject } from '@/store/types/work_project'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
@@ -216,8 +217,11 @@ const openSaveModal = () => {
   refQuerySaveModal.value?.callModal()
 }
 
-const applyQuery = (query: any) => {
-  const payload = projectFilterStore.applySavedQuery(query, props.allReadableProjects)
+const applyQuery = (query: CustomQuery) => {
+  const payload = projectFilterStore.applySavedQuery(
+    query as unknown as Parameters<typeof projectFilterStore.applySavedQuery>[0],
+    props.allReadableProjects,
+  )
   if (payload) {
     emit('filter-submit', payload)
   }
@@ -247,7 +251,7 @@ defineExpose({ applyQuery, resetFilter })
 
     <CCollapse :visible="condVisible">
       <slot name="condition">
-        <CRow class="m-2" color="light">
+        <CRow class="m-2">
           <CCol class="col-12 col-md-8">
             <!-- 고정 필터: 상태 -->
             <CRow>
@@ -259,10 +263,7 @@ defineExpose({ applyQuery, resetFilter })
                   @change="toggleField('status', $event)"
                 />
               </CCol>
-              <CCol
-                v-if="enabledFields.includes('status')"
-                class="col-4 col-lg-3 col-xl-2"
-              >
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>

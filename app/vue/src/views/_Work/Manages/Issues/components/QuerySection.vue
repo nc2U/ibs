@@ -10,7 +10,8 @@ import {
   watch,
 } from 'vue'
 import type { selectProject } from '@/store/types/work_project'
-import type { IssueStatus, Tracker } from '@/store/types/work_issue'
+import type { CodeValue, IssueCategory, IssueStatus, Tracker } from '@/store/types/work_issue'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Multiselect from '@vueform/multiselect'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
@@ -27,8 +28,8 @@ const props = defineProps({
   searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
-  priorityList: { type: Array as PropType<any[]>, default: () => [] },
-  categoryList: { type: Array as PropType<any[]>, default: () => [] },
+  priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
+  categoryList: { type: Array as PropType<IssueCategory[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
@@ -536,9 +537,13 @@ const filterFieldsConfig = computed(() => {
 })
 
 const activeFields = computed(() => {
+  const isProjRoute = Boolean(route.params.projId)
   return filterFieldsConfig.value.filter(
     field =>
-      searchCond.value.includes(field.key) && (field.key !== 'sub_project' || hasSubProjects.value),
+      searchCond.value.includes(field.key) &&
+      (field.key !== 'sub_project' || hasSubProjects.value) &&
+      (!isProjRoute || field.key !== 'project') &&
+      (isProjRoute || field.key !== 'category'),
   )
 })
 
@@ -567,28 +572,56 @@ watch(
   { immediate: true },
 )
 
-watch(searchCond, newVal => {
-  newVal.forEach(key => {
-    if (!enabledFields.value.includes(key)) {
-      enabledFields.value.push(key)
-    }
-  })
-  enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
+watch(
+  searchCond,
+  newVal => {
+    newVal.forEach(key => {
+      if (!enabledFields.value.includes(key)) {
+        enabledFields.value.push(key)
+      }
+    })
+    enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
 
-  if (newVal.includes('project') && form.value.project === undefined) form.value.project = ''
-  if (newVal.includes('tracker') && !form.value.tracker)
-    form.value.tracker = props.trackerList[0]?.pk
-  if (newVal.includes('priority') && !form.value.priority)
-    form.value.priority = props.priorityList[0]?.pk
-  if (newVal.includes('category') && !form.value.category)
-    form.value.category = props.categoryList[0]?.pk
-  if (newVal.includes('watcher') && !form.value.watcher)
-    form.value.watcher = props.getUsers[0]?.value
-  if (newVal.includes('updater') && !form.value.updater)
-    form.value.updater = props.getUsers[0]?.value
-  if (newVal.includes('last_updater') && !form.value.last_updater)
-    form.value.last_updater = props.getUsers[0]?.value
-})
+    if (newVal.includes('project') && form.value.project === undefined) form.value.project = ''
+    if (newVal.includes('tracker')) {
+      if (!form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
+      if (!form.value.tracker__exclude) form.value.tracker__exclude = props.trackerList[0]?.pk
+    }
+    if (newVal.includes('priority')) {
+      if (!form.value.priority) form.value.priority = props.priorityList[0]?.pk
+      if (!form.value.priority__exclude) form.value.priority__exclude = props.priorityList[0]?.pk
+    }
+    if (newVal.includes('category')) {
+      if (!form.value.category) form.value.category = props.categoryList[0]?.pk
+      if (!form.value.category__exclude) form.value.category__exclude = props.categoryList[0]?.pk
+    }
+    if (newVal.includes('watcher') && !form.value.watcher)
+      form.value.watcher = props.getUsers[0]?.value
+    if (newVal.includes('updater') && !form.value.updater)
+      form.value.updater = props.getUsers[0]?.value
+    if (newVal.includes('last_updater') && !form.value.last_updater)
+      form.value.last_updater = props.getUsers[0]?.value
+    if (newVal.includes('creator_role')) {
+      if (!form.value.creator_role) form.value.creator_role = roleList.value[0]?.pk ?? null
+      if (!form.value.creator_role__exclude)
+        form.value.creator_role__exclude = roleList.value[0]?.pk ?? null
+    }
+    if (newVal.includes('assignee_role')) {
+      if (!form.value.assignee_role) form.value.assignee_role = roleList.value[0]?.pk ?? null
+      if (!form.value.assignee_role__exclude)
+        form.value.assignee_role__exclude = roleList.value[0]?.pk ?? null
+    }
+    if (newVal.includes('project_status')) {
+      if (!form.value.project_status) form.value.project_status = '1'
+      if (!form.value.project_status__exclude) form.value.project_status__exclude = '1'
+    }
+    if (newVal.includes('version_status')) {
+      if (!form.value.version_status) form.value.version_status = '1'
+      if (!form.value.version_status__exclude) form.value.version_status__exclude = '1'
+    }
+  },
+  { deep: true },
+)
 
 const toggleField = (key: string, e: Event) => {
   const target = e.target as HTMLInputElement
@@ -629,17 +662,26 @@ watch(
   { immediate: true },
 )
 
+const applyNumericRouteQuery = (fieldKey: string, rawVal: unknown) => {
+  const numVal = Number(rawVal)
+  if (Number.isNaN(numVal)) return
+  if (!searchCond.value.includes(fieldKey)) searchCond.value.push(fieldKey)
+  if (!enabledFields.value.includes(fieldKey)) enabledFields.value.push(fieldKey)
+  form.value[fieldKey] = numVal
+  cond.value[fieldKey] = 'is'
+}
+
 const syncRouteQueryToFilter = () => {
   const hasRouteQuery = Boolean(
     route.query.status ||
-      route.query.tracker ||
-      route.query.author ||
-      route.query.assignee ||
-      route.query.version ||
-      route.query.parent_issue ||
-      route.query.parent ||
-      route.query.precedes_issue ||
-      route.query.follows_issue,
+    route.query.tracker ||
+    route.query.author ||
+    route.query.assignee ||
+    route.query.version ||
+    route.query.parent_issue ||
+    route.query.parent ||
+    route.query.precedes_issue ||
+    route.query.follows_issue,
   )
   if (!hasRouteQuery) return
 
@@ -648,62 +690,49 @@ const syncRouteQueryToFilter = () => {
 
   if (route.query.status)
     cond.value.status = route.query.status as 'open' | 'is' | 'exclude' | 'closed' | 'any'
-  if (route.query.tracker) {
-    if (!searchCond.value.includes('tracker')) searchCond.value.push('tracker')
-    if (!enabledFields.value.includes('tracker')) enabledFields.value.push('tracker')
-    form.value.tracker = Number(route.query.tracker)
-    cond.value.tracker = 'is'
-  }
-  if (route.query.author) {
-    if (!searchCond.value.includes('author')) searchCond.value.push('author')
-    if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
-    form.value.author = Number(route.query.author)
-    cond.value.author = 'is'
-  }
-  if (route.query.assignee) {
-    if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
-    if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
-    form.value.assignee = Number(route.query.assignee)
-    cond.value.assignee = 'is'
-  }
-  if (route.query.version) {
-    if (!searchCond.value.includes('version')) searchCond.value.push('version')
-    if (!enabledFields.value.includes('version')) enabledFields.value.push('version')
-    form.value.version = Number(route.query.version)
-    cond.value.version = 'is'
-  }
+  if (route.query.tracker) applyNumericRouteQuery('tracker', route.query.tracker)
+  if (route.query.author) applyNumericRouteQuery('author', route.query.author)
+  if (route.query.assignee) applyNumericRouteQuery('assignee', route.query.assignee)
+  if (route.query.version) applyNumericRouteQuery('version', route.query.version)
   const parentVal = route.query.parent_issue || route.query.parent
-  if (parentVal) {
-    if (!searchCond.value.includes('parent_issue')) searchCond.value.push('parent_issue')
-    if (!enabledFields.value.includes('parent_issue')) enabledFields.value.push('parent_issue')
-    form.value.parent_issue = Number(parentVal)
-    cond.value.parent_issue = 'is'
-  }
-  if (route.query.precedes_issue) {
-    if (!searchCond.value.includes('precedes_issue')) searchCond.value.push('precedes_issue')
-    if (!enabledFields.value.includes('precedes_issue')) enabledFields.value.push('precedes_issue')
-    form.value.precedes_issue = Number(route.query.precedes_issue)
-    cond.value.precedes_issue = 'is'
-  }
-  if (route.query.follows_issue) {
-    if (!searchCond.value.includes('follows_issue')) searchCond.value.push('follows_issue')
-    if (!enabledFields.value.includes('follows_issue')) enabledFields.value.push('follows_issue')
-    form.value.follows_issue = Number(route.query.follows_issue)
-    cond.value.follows_issue = 'is'
+  if (parentVal) applyNumericRouteQuery('parent_issue', parentVal)
+  if (route.query.precedes_issue)
+    applyNumericRouteQuery('precedes_issue', route.query.precedes_issue)
+  if (route.query.follows_issue) applyNumericRouteQuery('follows_issue', route.query.follows_issue)
+}
+
+const syncRouteSearchOptions = (projSlug?: string) => {
+  const isProjRoute = Boolean(projSlug)
+  const categoryIdx = searchOptions[0].options.findIndex(o => o.value === 'category')
+  const projectIdx = searchOptions[0].options.findIndex(o => o.value === 'project')
+
+  if (isProjRoute) {
+    if (categoryIdx === -1) {
+      const versionIdx = searchOptions[0].options.findIndex(o => o.value === 'version')
+      searchOptions[0].options.splice(versionIdx > -1 ? versionIdx + 1 : 0, 0, {
+        value: 'category',
+        label: '범주',
+      })
+    } else {
+      delete searchOptions[0].options[categoryIdx].disabled
+    }
+    if (projectIdx > -1) searchOptions[0].options.splice(projectIdx, 1)
+    searchCond.value = searchCond.value.filter(k => k !== 'project')
+    enabledFields.value = enabledFields.value.filter(k => k !== 'project')
+  } else {
+    if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
+    if (projectIdx === -1 && route.name === '업무') {
+      searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
+    }
+    searchCond.value = searchCond.value.filter(k => k !== 'category' && k !== 'sub_project')
+    enabledFields.value = enabledFields.value.filter(k => k !== 'category' && k !== 'sub_project')
   }
 }
 
 onBeforeMount(async () => {
   if (!!props.statusList.length && !form.value.status) form.value.status = props.statusList[0]?.pk
 
-  // 프로젝트 환경인지 체크하여 범주(category) 옵션 제어
-  if (route.params.projId) {
-    const categoryOpt = searchOptions[0].options.find(o => o.value === 'category')
-    if (categoryOpt) delete categoryOpt.disabled
-  } else {
-    const categoryIdx = searchOptions[0].options.findIndex(o => o.value === 'category')
-    if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
-  }
+  syncRouteSearchOptions(route.params.projId as string | undefined)
 
   // 비공개 업무 권한 검사 (issue.private 권한) - 비동기 권한 로드에 대응하여 반응형 watch로 처리
   watch(
@@ -729,11 +758,15 @@ onBeforeMount(async () => {
     { immediate: true },
   )
 
-  if (route.name === '업무')
-    searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
-
   syncRouteQueryToFilter()
 })
+
+watch(
+  () => route.params.projId,
+  newProj => {
+    syncRouteSearchOptions(newProj as string | undefined)
+  },
+)
 
 watch(
   () => route.query,
@@ -745,10 +778,10 @@ watch(
 )
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
-const applyQuery = (query: any) => {
+const applyQuery = (query: CustomQuery) => {
   const currentProj = (route.params.projId as string) ?? ''
   const payload = issueFilterStore.applySavedQuery(
-    query,
+    query as unknown as Parameters<typeof issueFilterStore.applySavedQuery>[0],
     currentUserId.value,
     props.getUsers[0]?.value,
     currentProj,
@@ -789,10 +822,7 @@ defineExpose({ applyQuery, resetFilter })
                   @change="toggleField('status', $event)"
                 />
               </CCol>
-              <CCol
-                v-if="enabledFields.includes('status')"
-                class="col-4 col-lg-3 col-xl-2"
-              >
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="open">진행중</option>
                   <option value="is">이다</option>
@@ -858,8 +888,18 @@ defineExpose({ applyQuery, resetFilter })
                   <!-- 일반 셀렉트 -->
                   <template v-else-if="field.type === 'select'">
                     <CFormSelect
-                      v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
+                      v-if="cond[field.key] === 'is'"
                       v-model="form[field.key]"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </CFormSelect>
+                    <CFormSelect
+                      v-if="cond[field.key] === 'exclude'"
+                      v-model="form[`${field.key}__exclude`]"
                       size="sm"
                       @change="filterSubmit"
                     >
@@ -922,8 +962,18 @@ defineExpose({ applyQuery, resetFilter })
                   <!-- 멀티 셀렉트 (Multiselect) -->
                   <template v-else-if="field.type === 'multiselect'">
                     <Multiselect
-                      v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
+                      v-if="cond[field.key] === 'is'"
+                      :key="`${field.key}-is`"
                       v-model="form[field.key]"
+                      :options="field.options"
+                      :placeholder="field.placeholder"
+                      searchable
+                      @keydown.enter="filterSubmit"
+                    />
+                    <Multiselect
+                      v-if="cond[field.key] === 'exclude'"
+                      :key="`${field.key}-exclude`"
+                      v-model="form[`${field.key}__exclude`]"
                       :options="field.options"
                       :placeholder="field.placeholder"
                       searchable
@@ -954,7 +1004,7 @@ defineExpose({ applyQuery, resetFilter })
                     <CFormInput
                       v-if="cond[field.key] === 'is'"
                       v-model="form[field.key === 'issue' ? 'id' : field.key]"
-                      placeholder="ID"
+                      :placeholder="field.key === 'done_ratio' ? '진척도 (%)' : 'ID'"
                       style="height: 30px"
                       @keydown.enter="filterSubmit"
                     />

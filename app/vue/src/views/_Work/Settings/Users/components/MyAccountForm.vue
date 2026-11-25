@@ -84,7 +84,9 @@ const formDataSetup = async () => {
 
     if (userInfo.value.pk) {
       await workStore.fetchSubscribedProjects(userInfo.value.pk)
-      form.subscribed_projects = (subscribedProjects.value ?? []).map((item: any) => item.project)
+      form.subscribed_projects = (subscribedProjects.value ?? []).map(
+        (item: { project: number }) => item.project,
+      )
     } else {
       form.subscribed_projects = []
     }
@@ -129,7 +131,7 @@ const onSubmitConfirm = async () => {
 
     Object.entries(profileFields).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
-        submitData.append(key, value as any)
+        submitData.append(key, String(value))
       }
     })
 
@@ -155,7 +157,7 @@ const onSubmitConfirm = async () => {
 
     validated.value = false
     refConfirmModal.value?.close()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error during onSubmitConfirm:', err)
     refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   } finally {
@@ -226,7 +228,11 @@ onBeforeRouteUpdate(async () => {
               <CRow class="mb-3">
                 <CFormLabel for="password" class="col-sm-3 col-form-label">비밀번호</CFormLabel>
                 <CCol sm="5">
-                  <v-btn color="light" @click="router.push({ name: '사용자 - 비밀번호 변경' })">
+                  <v-btn
+                    color="grey"
+                    variant="tonal"
+                    @click="router.push({ name: '사용자 - 비밀번호 변경' })"
+                  >
                     비밀번호 변경
                   </v-btn>
                 </CCol>
@@ -245,7 +251,6 @@ onBeforeRouteUpdate(async () => {
                 <CFormLabel for="avatar" class="col-sm-3 col-form-label"></CFormLabel>
                 <CCol sm="9">
                   <AvatarInput
-                    ref="avatar"
                     :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
                     :filename="userInfo?.username || 'profile'"
                     id="avatar"
@@ -370,7 +375,7 @@ onBeforeRouteUpdate(async () => {
                 <CFormLabel class="col-sm-3 col-form-label">업무 알림 설정</CFormLabel>
                 <CCol sm="9" class="pt-2">
                   <CRow>
-                    <CCol xs="12" class="mb-4" style="width: 420px">
+                    <CCol xs="12" class="mb-4" style="max-width: 420px; width: 100%">
                       <v-autocomplete
                         v-model="form.subscribed_projects"
                         :items="allActiveProjects"
@@ -408,7 +413,12 @@ onBeforeRouteUpdate(async () => {
           <!-- Submit & Cancel Footer -->
           <div class="text-end mb-4">
             <v-btn type="submit" color="primary"> 저장</v-btn>
-            <v-btn color="light" class="ms-2" @click="router.push({ name: '사용자' })" flat>
+            <v-btn
+              color="grey"
+              variant="tonal"
+              class="ms-2"
+              @click="router.push({ name: '사용자' })"
+            >
               취소
             </v-btn>
           </div>

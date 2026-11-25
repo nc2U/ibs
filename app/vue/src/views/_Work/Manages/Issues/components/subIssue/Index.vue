@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, type PropType, watchEffect, onUnmounted } from 'vue'
-import { cutString, diffDate } from '@/utils/baseMixins'
+import { cutString, getOverdueDays } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import type { SubIssue } from '@/store/types/work_issue'
@@ -48,28 +48,30 @@ const unlinkSubIssue = () => {
   delSubRef.value?.close()
 }
 
-const projId = computed(() => route.params.projId as string)
-const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
-const detailRouteParams = (id: number) =>
-  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
+const projId = computed(() => route.params.projId as string | undefined)
+const targetProjSlug = computed(() => props.sub.project?.slug || projId.value)
+const detailRouteName = computed(() => '(업무) - 보기')
+const detailRouteParams = (id: number) => ({ projId: targetProjSlug.value, issueId: id })
 </script>
 
 <template>
   <CRow
     class="sub-issue cursor-menu"
     :id="`sub-issue-${sub.pk}`"
-    :class="{ 'bg-amber-lighten-3': selected === sub.pk }"
+    :class="{ 'selected-row': selected === sub.pk }"
     @click="selected = sub.pk"
   >
     <CCol md="6" lg="4" class="pt-1">
       <router-link
-        v-if="can(PERM.ISSUE_READ)"
+        v-if="targetProjSlug && can(PERM.ISSUE_READ, targetProjSlug)"
         :to="{ name: detailRouteName, params: detailRouteParams(sub.pk) }"
         :class="{ closed: sub.closed }"
       >
         {{ sub.tracker?.name || '업무' }} #{{ sub.pk }}
       </router-link>
-      <span v-else :class="{ closed: sub.closed }">{{ sub.tracker?.name || '업무' }} #{{ sub.pk }}</span>
+      <span v-else :class="{ closed: sub.closed }"
+        >{{ sub.tracker?.name || '업무' }} #{{ sub.pk }}</span
+      >
       : {{ sub.subject }}
     </CCol>
 
@@ -87,7 +89,7 @@ const detailRouteParams = (id: number) =>
       <span class="me-3">
         {{ sub?.start_date }}
       </span>
-      <span class="me-3" :class="{ 'text-danger': sub.due_date && diffDate(sub.due_date) > 0 }">
+      <span class="me-3" :class="{ 'text-danger': getOverdueDays(sub.due_date) > 0 }">
         {{ sub.due_date }}
       </span>
     </CCol>
@@ -102,7 +104,7 @@ const detailRouteParams = (id: number) =>
         />
       </span>
       <v-btn
-        v-if="can(PERM.ISSUE_SUB_MANAGE)"
+        v-if="can(PERM.ISSUE_SUB_MANAGE, targetProjSlug)"
         variant="plain"
         class="me-3"
         @click="parentUnlink(sub.pk)"
@@ -110,9 +112,7 @@ const detailRouteParams = (id: number) =>
         <v-icon icon="mdi-link-variant-off" size="16" />
         <v-tooltip activator="parent" location="start"> 관계 지우기 </v-tooltip>
       </v-btn>
-      <span v-if="can(PERM.ISSUE_SUB_MANAGE)">
-        <IssueDropDown :issue="sub" />
-      </span>
+      <IssueDropDown :issue="sub" />
     </CCol>
   </CRow>
 
@@ -124,3 +124,9 @@ const detailRouteParams = (id: number) =>
     </template>
   </ConfirmModal>
 </template>
+
+<style lang="scss" scoped>
+.selected-row {
+  background-color: rgba(var(--v-theme-warning), 0.16);
+}
+</style>

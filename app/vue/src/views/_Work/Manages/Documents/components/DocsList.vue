@@ -9,12 +9,10 @@ import DocsItem from './DocsItem.vue'
 defineProps({
   limit: { type: Number, default: 10 },
   page: { type: Number, default: 1 },
-  category: { type: Number, default: 0 },
-  categoryList: { type: Array, default: () => [] },
   docsList: { type: Array as PropType<Document[]>, default: () => [] },
 })
 
-const emit = defineEmits(['page-select', 'select-cate'])
+const emit = defineEmits(['page-select'])
 
 const docsStore = useDocs()
 const docsPages = (num: number) => docsStore.docsPages(num)
@@ -29,6 +27,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   </CRow>
 
   <Pagination
+    v-if="docsPages(limit) > 1"
     :active-page="page"
     :pages="docsPages(limit)"
     class="mt-3"

@@ -7,6 +7,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useMeetingFilter } from '@/store/pinia/work_meeting_filter'
 import type { selectProject } from '@/store/types/work_project'
 import type { MeetingCategory, MeetingFilter } from '@/store/types/work_meeting'
+import type { CustomQuery } from '@/store/types/work_inform'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
@@ -53,10 +54,10 @@ const openSaveQueryModal = () => {
 
 const currentUserId = computed(() => accStore.userInfo?.pk)
 
-const applyQuery = (query: any) => {
+const applyQuery = (query: CustomQuery) => {
   const currentProjSlug = (route.params.projId as string) || ''
   const payload = meetingFilterStore.applySavedQuery(
-    query,
+    query as unknown as Parameters<typeof meetingFilterStore.applySavedQuery>[0],
     currentUserId.value,
     getUsers.value[0]?.value,
     currentProjSlug,
@@ -111,9 +112,17 @@ const searchOptions = reactive<SearchOptionGroup[]>([
   },
 ])
 
+interface MeetingFilterField {
+  key: string
+  label: string
+  type: 'project' | 'select' | 'text' | 'date'
+  condOptions: { value: string; label: string }[]
+  options?: { value: string | number; label: string }[]
+}
+
 // 동적 필드 정보 계산
-const activeFields = computed(() => {
-  const fields: any[] = []
+const activeFields = computed<MeetingFilterField[]>(() => {
+  const fields: MeetingFilterField[] = []
 
   if (searchCond.value.includes('project') && !route.params.projId) {
     fields.push({
@@ -275,11 +284,29 @@ watch(
   { deep: true },
 )
 
-onBeforeMount(() => {
-  if (!route.params.projId) {
-    searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
+const syncRouteFilterOptions = (projSlug?: string) => {
+  const idx = searchOptions[0].options.findIndex(o => o.value === 'project')
+  if (!projSlug) {
+    if (idx === -1) {
+      searchOptions[0].options.splice(1, 0, { value: 'project', label: '워크스페이스' })
+    }
+  } else {
+    if (idx > -1) searchOptions[0].options.splice(idx, 1)
+    searchCond.value = searchCond.value.filter(k => k !== 'project')
+    enabledFields.value = enabledFields.value.filter(k => k !== 'project')
   }
+}
+
+onBeforeMount(() => {
+  syncRouteFilterOptions(route.params.projId as string | undefined)
 })
+
+watch(
+  () => route.params.projId,
+  newProj => {
+    syncRouteFilterOptions(newProj as string | undefined)
+  },
+)
 
 defineExpose({ applyQuery, resetFilter })
 </script>
@@ -306,10 +333,7 @@ defineExpose({ applyQuery, resetFilter })
                   @change="toggleField('status', $event)"
                 />
               </CCol>
-              <CCol
-                v-if="enabledFields.includes('status')"
-                class="col-4 col-lg-3 col-xl-2"
-              >
+              <CCol v-if="enabledFields.includes('status')" class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.status" size="sm" @change="filterSubmit">
                   <option value="open">준비중</option>
                   <option value="is">이다</option>
@@ -437,6 +461,7 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
               <CCol class="col-8 col-sm-9 col-md-7 col-lg-8 col-xl-9">
                 <Multiselect
+                  id="add_filter"
                   v-model="searchCond"
                   :options="searchOptions"
                   mode="tags"

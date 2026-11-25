@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeMount, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import type { ActLogEntryFilter } from '@/store/types/work_logging'
+import type { ProjectFilter } from '@/store/types/work_project'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
@@ -40,7 +41,7 @@ const usersList = computed(() => accStore.usersList)
 
 const workStore = useWork()
 const projectResultsTree = computed(() => workStore.projectResultsTree)
-const fetchIssueProjectList = (payload: any) => workStore.fetchIssueProjectList(payload)
+const fetchIssueProjectList = (payload: ProjectFilter) => workStore.fetchIssueProjectList(payload)
 
 const issueStore = useIssue()
 const issueNumByMember = computed(() => issueStore.issueNumByMember)
@@ -101,23 +102,25 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <Header :page-title="pageTitle" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
-      <UserList v-if="component === '목록보기'" :user-list="usersList" />
+      <template v-if="!loading">
+        <UserList v-if="component === '목록보기'" :user-list="usersList" />
 
-      <UserDetail
-        v-else-if="component === '상세보기'"
-        :project-results="projectResultsTree"
-        :issue-num="issueNumByMember"
-      />
+        <UserDetail
+          v-else-if="component === '상세보기'"
+          :project-results="projectResultsTree"
+          :issue-num="issueNumByMember"
+        />
 
-      <AdminUserManage v-else-if="component === '관리자 메뉴'" />
+        <AdminUserManage v-else-if="component === '관리자 메뉴'" />
 
-      <MyAccountForm v-else-if="component === '내 계정'" />
-      <MyPasswordForm v-else-if="component === '비밀번호 변경'" />
-      <MyProjectView v-else-if="component === '프로젝트 보기'" />
-      <MyScrapView v-else-if="component === '내 스크랩'" />
-      <MyActivityView v-else-if="component === '내 활동'" />
+        <MyAccountForm v-else-if="component === '내 계정'" />
+        <MyPasswordForm v-else-if="component === '비밀번호 변경'" />
+        <MyProjectView v-else-if="component === '프로젝트 보기'" />
+        <MyScrapView v-else-if="component === '내 스크랩'" />
+        <MyActivityView v-else-if="component === '내 활동'" />
+      </template>
     </template>
   </ContentBody>
 </template>

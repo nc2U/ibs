@@ -3,7 +3,7 @@ import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform'
 import { useRouter } from 'vue-router'
 import { markdownRender } from '@/utils/helper'
-import { elapsedTime } from '@/utils/baseMixins'
+import { dateFormat, elapsedTime } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
@@ -54,26 +54,30 @@ const deleteFile = (pk: number) => {
             <v-icon icon="mdi-account" size="18" />
           </v-avatar>
           <router-link
-            v-if="canViewUser(news.author?.pk)"
-            :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
+            v-if="news.author?.pk && canViewUser(news.author.pk)"
+            :to="{ name: '사용자 - 보기', params: { userId: news.author.pk } }"
             class="text-decoration-none text-primary fw-medium"
           >
-            {{ news.author?.username }}
+            {{ news.author?.username || '알 수 없음' }}
           </router-link>
-          <span v-else class="text-primary fw-medium">{{ news.author?.username }}</span>
+          <span v-else class="text-primary fw-medium">
+            {{ news.author?.username || '알 수 없음' }}
+          </span>
         </div>
         <div class="d-flex align-center me-4">
           <v-icon icon="mdi-clock-outline" size="18" class="me-1" />
           <router-link
+            v-if="news.project?.slug && news.created"
             :to="{
               name: '(업무실행내역)',
-              params: { projId: news.project?.slug },
-              query: { from: news.created.substring(0, 10) },
+              params: { projId: news.project.slug },
+              query: { from: dateFormat(news.created) },
             }"
             class="text-decoration-none"
           >
             {{ elapsedTime(news.created) }}
           </router-link>
+          <span v-else>{{ elapsedTime(news.created) }}</span>
           <span class="ms-1">에 추가됨</span>
         </div>
         <div v-if="news.updated !== news.created" class="d-flex align-center">
@@ -91,7 +95,7 @@ const deleteFile = (pk: number) => {
           {{ news.summary }}
         </div>
       </div>
-      <div v-else class="my-6 text-grey-lighten-2 fst-italic text-center small">
+      <div v-else class="my-6 text-medium-emphasis fst-italic text-center small">
         요약 내용이 없습니다.
       </div>
 
@@ -99,7 +103,7 @@ const deleteFile = (pk: number) => {
       <div class="content-body ps-4 py-4 mb-6" v-html="markdownRender(news.content)" />
 
       <!-- Files Section -->
-      <div v-if="news.files.length" class="files-section mt-6 pt-6">
+      <div v-if="news.files?.length" class="files-section mt-6 pt-6">
         <div class="d-flex align-center mb-4">
           <v-icon icon="mdi-attachment" size="20" class="me-2 text-grey" />
           <span class="fw-bold"> 첨부 파일 ({{ news.files.length }}) </span>
@@ -116,9 +120,13 @@ const deleteFile = (pk: number) => {
       <CCol>
         <v-btn
           size="small"
-          color="light"
-          variant="flat"
-          @click="router.push({ name: '(공지)', params: { projId: news.project?.slug } })"
+          color="grey"
+          variant="tonal"
+          @click="
+            news.project?.slug
+              ? router.push({ name: '(공지)', params: { projId: news.project.slug } })
+              : router.push({ name: '공지' })
+          "
         >
           목록으로
         </v-btn>

@@ -6,6 +6,7 @@ import { isValidate } from '@/utils/helper'
 import { useWork } from '@/store/pinia/work_project'
 import { usePerms } from '@/composables/usePerms'
 import type { News } from '@/store/types/work_inform'
+import type { NewsFormFile, NewsFormPayload, NewsNewFileItem } from './newsFormHelper'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
@@ -17,16 +18,16 @@ const emit = defineEmits(['on-submit', 'close-form'])
 
 const route = useRoute()
 const validated = ref(false)
-const form = ref({
-  pk: null as number | null,
-  project: null as string | null,
+const form = ref<NewsFormPayload>({
+  pk: null,
+  project: null,
   title: '',
   summary: '',
   content: '',
   is_important: false,
-  files: [] as any,
-  newFiles: [] as File[],
-  cngFiles: [] as { pk: number; file: File }[],
+  files: [],
+  newFiles: [],
+  cngFiles: [],
 })
 
 const { can, PERM } = usePerms()
@@ -42,10 +43,14 @@ const canSubmitNews = computed(() => {
 })
 
 const RefNewFiles = ref<InstanceType<typeof FileUpload> | null>(null)
-const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)
-const fileChange = (payload: { pk: number; file: File }) => form.value.cngFiles.push(payload)
+const fileUpload = (newFiles: NewsNewFileItem[]) => (form.value.newFiles = newFiles)
+const fileChange = (payload: { pk: number; file: File }) => {
+  const idx = form.value.cngFiles.findIndex(item => item.pk === payload.pk)
+  if (idx >= 0) form.value.cngFiles[idx] = payload
+  else form.value.cngFiles.push(payload)
+}
 const fileDelete = (payload: { pk: number; del: boolean }): void => {
-  const file = form.value.files.find((f: any) => f.pk === payload.pk)
+  const file = form.value.files.find((f: NewsFormFile) => f.pk === payload.pk)
   if (file) file.del = payload.del
 }
 
@@ -150,7 +155,9 @@ onBeforeMount(() => {
       <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!canSubmitNews">
         저장
       </v-btn>
-      <v-btn color="light" type="button" class="ms-2" @click="emit('close-form')" flat>취소</v-btn>
+      <v-btn color="grey" variant="tonal" type="button" class="ms-2" @click="emit('close-form')">
+        취소
+      </v-btn>
     </CCol>
   </CForm>
 </template>

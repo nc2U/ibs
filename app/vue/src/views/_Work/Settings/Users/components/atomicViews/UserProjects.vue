@@ -38,13 +38,14 @@ const manageableActiveProjects = computed(() =>
   workStore.allActiveProjects.filter(p => can(PERM.PROJECT_MEMBER, p.slug)),
 )
 
-const isProjectActive = (projPk: number) => {
-  const proj = workStore.allReadableProjects.find(p => Number(p.pk) === Number(projPk))
-  return !proj || proj.status === '1'
-}
+const getProjectStatus = (mem: Member) =>
+  mem.project?.status ??
+  workStore.allReadableProjects.find(p => Number(p.pk) === Number(mem.project.pk))?.status
+
+const isProjectActive = (mem: Member) => getProjectStatus(mem) === '1'
 
 const canManageMemberRow = (mem: Member) =>
-  isProjectActive(mem.project.pk) && can(PERM.PROJECT_MEMBER, mem.project.slug)
+  isProjectActive(mem) && can(PERM.PROJECT_MEMBER, mem.project.slug)
 
 const hasAnyManageableRow = computed(() => memberList.value.some(m => canManageMemberRow(m)))
 
@@ -118,14 +119,28 @@ const activeProject = computed(() =>
   manageableActiveProjects.value.find(p => Number(p.pk) === Number(selectedProject.value)),
 )
 const allowedRoleIds = computed<number[]>(
-  () => activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? [],
+  () => activeProject.value?.allowed_roles?.map((r: { pk: number }) => r.pk) ?? [],
 )
 
 watch(selectedProject, () => {
   selectedRoles.value = []
 })
 
-const callModal = () => formModal.value?.callModal()
+const resetModalForm = () => {
+  validated.value = false
+  selectedProject.value = null
+  selectedRoles.value = []
+}
+
+const callModal = () => {
+  resetModalForm()
+  formModal.value?.callModal()
+}
+
+const closeModal = () => {
+  resetModalForm()
+  formModal.value?.close()
+}
 
 const onSubmit = async (event: Event) => {
   if (isValidate(event)) {
@@ -133,8 +148,7 @@ const onSubmit = async (event: Event) => {
   } else {
     const ok = await modalAction()
     if (ok) {
-      validated.value = false
-      formModal.value?.close()
+      closeModal()
     }
   }
 }
@@ -168,7 +182,7 @@ const addComma = (total: number, i: number) => total > i + 1
 
 const getAllowedRoleIdsByProject = (projPk: number) => {
   const proj = workStore.allReadableProjects.find(p => Number(p.pk) === Number(projPk))
-  return proj?.allowed_roles?.map((r: any) => Number(r.pk)) ?? []
+  return proj?.allowed_roles?.map((r: { pk: number }) => Number(r.pk)) ?? []
 }
 
 // ────────────────────────────────────────────────────
@@ -184,8 +198,8 @@ watch(
 
 onBeforeMount(async () => {
   await Promise.all([
-    workStore.fetchAllProjectList(),
-    workStore.fetchRoleList(),
+    workStore.allReadableProjects.length ? Promise.resolve() : workStore.fetchAllProjectList(),
+    workStore.roleList.length ? Promise.resolve() : workStore.fetchRoleList(),
     props.userPk ? workStore.fetchMemberList(props.userPk) : Promise.resolve(),
   ])
 })
@@ -227,10 +241,17 @@ onBeforeMount(async () => {
             <CTableRow v-for="mem in memberList" :key="mem.pk" align="middle">
               <!-- 워크스페이스명 -->
               <CTableDataCell class="ps-5">
-                <router-link :to="{ name: '(개요)', params: { projId: mem.project.slug } }">
+                <router-link
+                  v-if="getProjectStatus(mem) !== '9'"
+                  :to="{ name: '(개요)', params: { projId: mem.project.slug } }"
+                >
                   {{ mem.project.name }}
                 </router-link>
-                <span v-if="!isProjectActive(mem.project.pk)" class="text-caption text-grey ms-2">
+                <span v-else class="text-muted">{{ mem.project.name }}</span>
+                <span v-if="getProjectStatus(mem) === '9'" class="text-caption text-danger ms-2">
+                  [잠금보관]
+                </span>
+                <span v-else-if="!isProjectActive(mem)" class="text-caption text-grey ms-2">
                   [닫힘]
                 </span>
               </CTableDataCell>
@@ -287,7 +308,12 @@ onBeforeMount(async () => {
                     <a href="#" @click.prevent="toEdit(mem)">편집</a>
                   </span>
                   <span v-else-if="editMode === mem.pk" class="me-2">
-                    <v-icon icon="mdi-close-octagon-outline" color="grey" size="small" class="me-1" />
+                    <v-icon
+                      icon="mdi-close-octagon-outline"
+                      color="grey"
+                      size="small"
+                      class="me-1"
+                    />
                     <a href="#" @click.prevent="cancelEdit">취소</a>
                   </span>
 
@@ -304,7 +330,7 @@ onBeforeMount(async () => {
     </CRow>
 
     <!-- 새 워크스페이스 추가 모달 -->
-    <FormModal ref="formModal" size="xl">
+    <FormModal ref="formModal" size="xl" @close="resetModalForm">
       <template #icon></template>
       <template #header>워크스페이스 추가</template>
       <template #default>
@@ -381,7 +407,7 @@ onBeforeMount(async () => {
 
           <CModalFooter>
             <v-btn color="primary" size="small" type="submit">추가</v-btn>
-            <v-btn color="light" size="small" @click="formModal?.close()" flat>닫기</v-btn>
+            <v-btn color="grey" variant="tonal" size="small" @click="closeModal">닫기</v-btn>
           </CModalFooter>
         </CForm>
       </template>
@@ -389,6 +415,7 @@ onBeforeMount(async () => {
 
     <!-- 삭제 확인 모달 -->
     <ConfirmModal ref="confirmModal">
+      <template #header>구성원 제거</template>
       <template #footer>
         <v-btn color="warning" size="small" @click="deleteSubmit">삭제</v-btn>
       </template>

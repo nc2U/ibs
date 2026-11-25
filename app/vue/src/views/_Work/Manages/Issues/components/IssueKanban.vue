@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { computed, ref, type PropType } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { usePerms } from '@/composables/usePerms'
-import { diffDate } from '@/utils/baseMixins'
+import { getOverdueDays } from '@/utils/baseMixins'
 import type { Issue, IssueStatus, CodeValue, Tracker } from '@/store/types/work_issue'
 import IssueDropDown from './IssueDropDown.vue'
 import NoData from '@/components/NoData/Index.vue'
@@ -15,17 +16,24 @@ const props = defineProps({
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
 })
 
+const route = useRoute()
 const accStore = useAccount()
 const issueStore = useIssue()
 const { can, PERM } = usePerms()
+
+const getIssueRoute = (issue: Issue) => {
+  const projSlug = issue.project?.slug || (route.params.projId as string | undefined)
+  return projSlug
+    ? { name: '(업무) - 보기', params: { projId: projSlug, issueId: issue.pk } }
+    : null
+}
 
 const canDragIssue = (issue: Issue) => {
   if (issue.project?.status !== '1') return false
   const slug = issue.project?.slug
   if (can(PERM.ISSUE_UPDATE, slug)) return true
   const myPk = accStore.userInfo?.pk
-  const isOwn =
-    myPk !== undefined && (issue.creator?.pk === myPk || issue.assigned_to?.pk === myPk)
+  const isOwn = myPk !== undefined && (issue.creator?.pk === myPk || issue.assigned_to?.pk === myPk)
   return can(PERM.ISSUE_OWN_UPDATE, slug) && isOwn
 }
 
@@ -135,7 +143,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
 
   const issue = draggedIssue.value
   draggedIssue.value = null
-  if (issue.status.pk === targetStatus.pk) return
+  if (issue.status?.pk === targetStatus.pk) return
 
   const formData = new FormData()
   formData.append('status', targetStatus.pk.toString())
@@ -267,24 +275,23 @@ const onDrop = async (targetStatus: IssueStatus) => {
                 <!-- Card Title & Link -->
                 <div class="mb-1">
                   <router-link
-                    :to="{
-                      name: '(업무) - 보기',
-                      params: {
-                        projId: issue.project?.slug || ($route.params.projId as string),
-                        issueId: issue.pk,
-                      },
-                    }"
+                    v-if="getIssueRoute(issue)"
+                    :to="getIssueRoute(issue)!"
                     class="issue-subject-link text-decoration-none"
                   >
                     <span class="issue-id me-1">#{{ issue.pk }}</span>
                     {{ issue.subject }}
                   </router-link>
+                  <span v-else class="issue-subject-link">
+                    <span class="issue-id me-1">#{{ issue.pk }}</span>
+                    {{ issue.subject }}
+                  </span>
                 </div>
 
                 <!-- Project & Meeting Tags -->
                 <div class="d-flex flex-wrap gap-1 mb-2">
                   <span
-                    v-if="!$route.params.projId && issue.project?.name"
+                    v-if="!route.params.projId && issue.project?.name"
                     class="badge bg-secondary-subtle text-secondary small"
                     style="font-size: 10px"
                   >
@@ -328,8 +335,8 @@ const onDrop = async (targetStatus: IssueStatus) => {
                   <span
                     v-if="issue.due_date"
                     :class="{
-                      'text-danger fw-bold': !issue.closed && diffDate(issue.due_date) > 0,
-                      'text-muted': issue.closed || diffDate(issue.due_date) <= 0,
+                      'text-danger fw-bold': !issue.closed && getOverdueDays(issue.due_date) > 0,
+                      'text-muted': issue.closed || getOverdueDays(issue.due_date) <= 0,
                     }"
                   >
                     <v-icon icon="mdi-calendar-clock" size="11" class="me-1" />

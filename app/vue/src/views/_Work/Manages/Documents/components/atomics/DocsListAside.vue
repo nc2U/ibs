@@ -141,7 +141,7 @@ const onCaseFilterChange = (patch: Partial<SuitCaseFilter>) => {
         <h6 class="text-subtitle-1 mb-2">사건 유형</h6>
         <v-divider class="mt-0" />
         <CFormSelect
-          :value="caseFilter.sort ?? ''"
+          :model-value="caseFilter.sort ?? ''"
           size="sm"
           @change="
             onCaseFilterChange({
@@ -165,7 +165,7 @@ const onCaseFilterChange = (patch: Partial<SuitCaseFilter>) => {
         <h6 class="text-subtitle-1 mb-2">심급</h6>
         <v-divider class="mt-0" />
         <CFormSelect
-          :value="caseFilter.level ?? ''"
+          :model-value="caseFilter.level ?? ''"
           size="sm"
           @change="
             onCaseFilterChange({
@@ -192,7 +192,7 @@ const onCaseFilterChange = (patch: Partial<SuitCaseFilter>) => {
         <h6 class="text-subtitle-1 mb-2">관할 법원</h6>
         <v-divider class="mt-0" />
         <CFormSelect
-          :value="caseFilter.court ?? ''"
+          :model-value="caseFilter.court ?? ''"
           size="sm"
           @change="onCaseFilterChange({ court: ($event.target as HTMLSelectElement).value })"
         >
@@ -210,7 +210,7 @@ const onCaseFilterChange = (patch: Partial<SuitCaseFilter>) => {
         <h6 class="text-subtitle-1 mb-2">진행 상태</h6>
         <v-divider class="mt-0" />
         <CFormSelect
-          :value="
+          :model-value="
             caseFilter.in_progress === true
               ? 'true'
               : caseFilter.in_progress === false

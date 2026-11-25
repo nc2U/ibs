@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useLogging } from '@/store/pinia/work_logging'
@@ -48,6 +48,10 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
 )
 
 const toMove = (date: Date) => (toDate.value = date)
+
+onBeforeUnmount(() => {
+  logStore.activityLogList = []
+})
 
 const loading = ref<boolean>(true)
 </script>

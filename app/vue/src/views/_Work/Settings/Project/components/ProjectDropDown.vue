@@ -54,7 +54,7 @@ const projectDelete = async () => {
     icon
     variant="text"
     size="x-small"
-    color="grey darken-1"
+    color="grey-darken-1"
   >
     <v-icon icon="mdi-dots-horizontal" />
     <v-tooltip activator="parent" location="top">Actions</v-tooltip>
@@ -99,6 +99,9 @@ const projectDelete = async () => {
         class="me-2"
       />
     </template>
+    <template #header>
+      {{ project.status === '9' ? '잠금보관 해제' : '잠금보관' }}
+    </template>
     <template #default>
       <span v-if="project.status === '9'">
         '{{ project.name }}' 워크스페이스의 잠금보관을 해제하고 정상 상태로 다시 전환하시겠습니까?
@@ -122,8 +125,9 @@ const projectDelete = async () => {
     <template #icon>
       <v-icon icon="mdi-trash-can" color="error" class="me-2" />
     </template>
+    <template #header>워크스페이스 삭제</template>
     <template #default>
-      <div class="bg-amber-lighten-4 p-4 text-center">
+      <div class="bg-warning-subtle p-4 text-center rounded">
         <h6>{{ project.name }}</h6>
         <p class="mb-1">이 워크스페이스를 삭제 처리하시겠습니까?</p>
         <p class="text-caption text-medium-emphasis mb-3">

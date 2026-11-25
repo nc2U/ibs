@@ -121,9 +121,7 @@ const hasProjectBodyChanges = computed(() => {
   const n = form.is_inherit_members === props.project.is_inherit_members
   const o =
     JSON.stringify([...form.allowed_roles].sort((x, y) => x - y)) ===
-    JSON.stringify(
-      [...(props.project.allowed_roles?.map(r => r.pk) ?? [])].sort((x, y) => x - y),
-    )
+    JSON.stringify([...(props.project.allowed_roles?.map(r => r.pk) ?? [])].sort((x, y) => x - y))
   const p =
     JSON.stringify([...form.trackers].sort((x, y) => x - y)) ===
     JSON.stringify([...(props.project.trackers?.map(t => t.pk) ?? [])].sort((x, y) => x - y))
@@ -157,23 +155,17 @@ const formsCheck = computed(() => {
 
 const tempSpace = ref('')
 
-const getSlug = (event: { key: string; code: string }) => {
+const getSlug = (event: KeyboardEvent) => {
   if (!props.project?.slug) {
-    const pattern = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/ //한글
-
-    let slug = form.slug.length === 0 ? '' : form.slug
+    let slug = form.slug
 
     if (event.code === 'Backspace') {
       if (slug.length >= form.name.length) slug = slug.slice(0, -1)
-    } else if (event.code === 'Space') tempSpace.value = !!slug.length ? '-' : ''
-    else if (
-      event.code.includes('Digit') ||
-      (event.code.includes('Key') && event.key.length === 1 && !pattern.test(event.key))
-    ) {
-      if (event.key !== 'Process') {
-        slug = slug + tempSpace.value + event.key.toLowerCase()
-        tempSpace.value = ''
-      }
+    } else if (event.code === 'Space') {
+      tempSpace.value = slug.length ? '-' : ''
+    } else if (/^[a-z0-9_-]$/i.test(event.key)) {
+      slug = slug + tempSpace.value + event.key.toLowerCase()
+      tempSpace.value = ''
     }
 
     form.slug = slug
@@ -196,20 +188,21 @@ const onSubmit = async (event: Event) => {
 
       // 1. 일반 워크스페이스 정보 업데이트 (is_public은 제외, 모듈은 권한+변경 시에만 포함)
       if (canProjectUpdate.value && hasProjectBodyChanges.value) {
-        const { is_public: _unusedPublic, ...projectData } = form
         const payload: Record<string, unknown> = {
-          ...projectData,
+          ...form,
           parent: parentVal,
           is_inherit_members: parentVal ? form.is_inherit_members : false,
           ...(canProjectModule.value && hasModuleChanges.value ? { ...module } : {}),
         }
+        delete payload.is_public
         const updated = await workStore.updateIssueProject(payload as unknown as IssueProject)
         if (!updated) return
       }
 
       // 2. 공개 여부 변경 시 별도 액션 호출
       if (targetPublic !== originPublic && canProjectPublic.value) {
-        await workStore.toggleProjectPublic(props.project.slug as string)
+        const toggled = await workStore.toggleProjectPublic(props.project.slug as string)
+        if (!toggled) form.is_public = originPublic
       }
     } else {
       const payload: Record<string, unknown> = {
@@ -280,8 +273,7 @@ const dataSetup = () => {
 
     module.meeting =
       props.project.module?.meeting !== undefined ? !!props.project.module?.meeting : true
-    module.issue =
-      props.project.module?.issue !== undefined ? !!props.project.module?.issue : true
+    module.issue = props.project.module?.issue !== undefined ? !!props.project.module?.issue : true
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
     module.forum = !!props.project.module?.forum
@@ -399,7 +391,9 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-name" class="required col-form-label text-end col-2">이름</CFormLabel>
+          <CFormLabel for="project-name" class="required col-form-label text-end col-2"
+            >이름</CFormLabel
+          >
           <CCol>
             <CFormInput
               id="project-name"
@@ -420,7 +414,9 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-slug" class="required col-form-label text-end col-2">식별자</CFormLabel>
+          <CFormLabel for="project-slug" class="required col-form-label text-end col-2"
+            >식별자</CFormLabel
+          >
           <CCol>
             <CFormInput
               id="project-slug"
@@ -436,9 +432,16 @@ onBeforeMount(async () => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="project-homepage" class="col-form-label text-end col-2">홈페이지</CFormLabel>
+          <CFormLabel for="project-homepage" class="col-form-label text-end col-2"
+            >홈페이지</CFormLabel
+          >
           <CCol>
-            <CFormInput id="project-homepage" v-model="form.homepage" maxlength="255" placeholder="홈페이지 URL" />
+            <CFormInput
+              id="project-homepage"
+              v-model="form.homepage"
+              maxlength="255"
+              placeholder="홈페이지 URL"
+            />
           </CCol>
         </CRow>
 

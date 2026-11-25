@@ -79,7 +79,7 @@ onMounted(() => {
     <CRow class="align-items-center">
       <CCol xs="auto">
         <div
-          class="sign-preview-box border rounded d-flex align-items-center justify-content-center bg-light"
+          class="sign-preview-box border rounded d-flex align-items-center justify-content-center bg-more-light"
           @click="browse"
         >
           <img v-if="previewSrc" :src="previewSrc" alt="Sign/Stamp" class="sign-preview-img" />

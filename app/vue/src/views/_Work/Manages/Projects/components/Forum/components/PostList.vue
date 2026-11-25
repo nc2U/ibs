@@ -34,7 +34,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <col style="width: 10%" />
       </colgroup>
       <CTableHead>
-        <CTableRow color="light" class="text-center border-top">
+        <CTableRow class="text-center border-top">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
           <CTableHeaderCell scope="col">제목</CTableHeaderCell>
           <CTableHeaderCell scope="col">작성자</CTableHeaderCell>

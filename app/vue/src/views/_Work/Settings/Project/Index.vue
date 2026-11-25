@@ -3,7 +3,6 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/_Work/_menu/headermixin2'
 import { ALL_PROJECT_COLUMNS, DEFAULT_PROJECT_COLUMNS } from './constants'
 import { useWork } from '@/store/pinia/work_project'
-import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project'
@@ -23,7 +22,6 @@ const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 const { canGlobal, PERM } = usePerms()
 const canProjectCreate = computed(() => canGlobal(PERM.PROJECT_CREATE))
 
-const route = useRoute()
 const workStore = useWork()
 
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
@@ -57,7 +55,7 @@ onBeforeMount(async () => {
 <template>
   <Loading v-model:active="loading" />
   <Header :pageTitle="pageTitle" :navMenu="navMenu" @side-nav-call="sideNavCall" />
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -73,7 +71,7 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-if="canProjectCreate" class="text-end form-text">
-          <span v-show="route.name !== '워크스페이스 - 추가'" class="me-2">
+          <span class="me-2">
             <TextButton name="새 워크스페이스" :to="{ name: '워크스페이스 - 추가' }" />
           </span>
         </CCol>

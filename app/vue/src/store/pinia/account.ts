@@ -28,6 +28,7 @@ export type UserByAdmin = {
   is_staff?: boolean
   work_manager?: boolean
 }
+export type UserUpdateByAdmin = Pick<UserByAdmin, 'email'> & Partial<Omit<UserByAdmin, 'email'>>
 type LoginUser = { email: string; password: string; redirect?: string }
 
 const extractId = (token: string): number | null => {
@@ -88,7 +89,7 @@ export const useAccount = defineStore('account', () => {
         return null
       })
 
-  const adminUpdateUser = (payload: UserByAdmin) =>
+  const adminUpdateUser = (payload: UserUpdateByAdmin) =>
     api
       .put(`/admin-create-user/`, payload)
       .then(async res => {

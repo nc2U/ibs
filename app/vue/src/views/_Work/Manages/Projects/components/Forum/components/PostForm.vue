@@ -5,8 +5,9 @@ import { usePerms } from '@/composables/usePerms'
 import { isValidate } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
 import { useForum } from '@/store/pinia/forum'
+import { useWork } from '@/store/pinia/work_project'
 import { colorLight } from '@/utils/cssMixins'
-import type { Post, PostCategory } from '@/store/types/forum'
+import type { Post, PostCategory, PostFile } from '@/store/types/forum'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -25,6 +26,10 @@ const projId = computed(() => route.params.projId as string)
 
 const accStore = useAccount()
 const frmStore = useForum()
+const workStore = useWork()
+const isProjectActive = computed(
+  () => !workStore.currentProject || workStore.currentProject.status === '1',
+)
 
 const isForumManager = computed(() => {
   if (accStore.userInfo?.is_superuser || accStore.workManager) return true
@@ -35,20 +40,22 @@ const isForumManager = computed(() => {
 
 const { can, PERM } = usePerms()
 const canForumCreate = computed(() => {
+  if (!isProjectActive.value) return false
   if (isForumManager.value) return true
   const forum = frmStore.forumList.find(f => f.pk === props.forumId) || frmStore.forum
   if (forum?.manager_only) return false
-  return can(PERM.FORUM_CREATE)
+  return can(PERM.FORUM_CREATE, projId.value)
 })
 const canForumUpdate = computed(() => {
+  if (!isProjectActive.value) return false
   if (isForumManager.value) return true
-  if (can(PERM.FORUM_UPDATE)) return true
-  if (can(PERM.FORUM_OWN_UPDATE)) {
+  if (can(PERM.FORUM_UPDATE, projId.value)) return true
+  if (can(PERM.FORUM_OWN_UPDATE, projId.value)) {
     return !!props.post?.creator?.pk && props.post.creator.pk === accStore.userInfo?.pk
   }
   return false
 })
-const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
+const canForumManage = computed(() => isProjectActive.value && can(PERM.FORUM_MANAGE, projId.value))
 
 const availableCategories = computed(() => {
   return props.categories.filter(cate => !cate.is_manager_only || isForumManager.value)
@@ -122,7 +129,7 @@ const cngFiles = ref<{ pk: number; file: File }[]>([])
 
 const fileUpload = (file: File) => newFiles.value.push(file)
 const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
-const filesUpdate = (payload: any[]) => (form.value.files = payload)
+const filesUpdate = (payload: PostFile[]) => (form.value.files = payload)
 
 const submitCheck = (event: Event) => {
   if (isValidate(event)) {
@@ -138,7 +145,7 @@ const onSubmit = async () => {
 
   Object.keys(form.value).forEach(key => {
     if (key === 'files') {
-      ;(form.value[key] as any[]).forEach(val => formData.append(key, JSON.stringify(val)))
+      ;(form.value.files ?? []).forEach(val => formData.append(key, JSON.stringify(val)))
     } else if (key !== 'pk') {
       const val = form.value[key] === null ? '' : form.value[key]
       formData.append(key, val as string)
@@ -293,7 +300,7 @@ watch(
 
         <FileForms
           ref="refFileForms"
-          :files="(post?.files as any[]) ?? []"
+          :files="post?.files ?? []"
           @files-update="filesUpdate"
           @file-upload="fileUpload"
           @file-change="fileChange"
@@ -311,7 +318,7 @@ watch(
         >
           저장
         </v-btn>
-        <v-btn color="light" @click="router.back()" flat>취소</v-btn>
+        <v-btn color="grey" variant="tonal" @click="router.back()">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>
@@ -346,7 +353,6 @@ watch(
                 v-model="newCategory.color"
                 id="cat-color"
                 type="color"
-                :value="newCategory.color"
                 placeholder="색상 코드"
               />
             </CCol>
@@ -359,7 +365,6 @@ watch(
                 type="number"
                 id="cat-order"
                 placeholder="출력 순서"
-                maxlength="255"
               />
             </CCol>
           </CRow>
@@ -377,7 +382,7 @@ watch(
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn variant="flat" color="light" size="small" @click="categoryForm?.close()">
+          <v-btn variant="tonal" color="grey" size="small" @click="categoryForm?.close()">
             닫기
           </v-btn>
           <v-btn type="submit" color="primary" size="small" :loading="isSubmittingCategory">

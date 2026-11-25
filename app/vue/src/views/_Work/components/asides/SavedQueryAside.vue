@@ -30,8 +30,7 @@ const pubQueries = computed(() =>
 )
 
 const canDeletePublicQuery = (q: CustomQuery) =>
-  !SYSTEM_QUERY_PKS.includes(q.pk) &&
-  (props.canProjectPubQuery || q.user === accStore.userInfo?.pk)
+  !SYSTEM_QUERY_PKS.includes(q.pk) && (props.canProjectPubQuery || q.user === accStore.userInfo?.pk)
 
 const delPk = ref<number | null>(null)
 const delName = ref('')
@@ -117,7 +116,7 @@ onMounted(async () => {
           class="rounded-lg mb-1 px-2 query-item pe-3"
         >
           <template v-slot:prepend>
-            <v-icon icon="mdi-filter-variant" size="small" class="me-0" color="brown-darken-4" />
+            <v-icon icon="mdi-filter-variant" size="small" class="me-0" color="amber-darken-2" />
           </template>
           <v-list-item-title class="text-primary">{{ q.name }}</v-list-item-title>
           <template v-slot:append v-if="canDeletePublicQuery(q)">
@@ -145,7 +144,7 @@ onMounted(async () => {
       v-if="activeQueryId !== null"
       block
       variant="tonal"
-      color="bg-more-light"
+      color="grey"
       min-height="38"
       size="small"
       class="mt-5"

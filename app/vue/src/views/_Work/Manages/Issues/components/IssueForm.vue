@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
@@ -73,10 +73,11 @@ const form = ref({
   links: [] as IssueLink[],
 })
 
-const newLinks = ref<{ link: string; name: string }[]>([])
+const newLinks = ref<{ _key: number; link: string; name: string }[]>([])
+let linkKeySeq = 0
 
 const addLink = () => {
-  newLinks.value.push({ link: '', name: '' })
+  newLinks.value.push({ _key: ++linkKeySeq, link: '', name: '' })
 }
 
 const removeLink = (index: number) => {
@@ -90,7 +91,11 @@ const route = useRoute()
 const projId = computed(() => route.params.projId as string | undefined)
 const { can, PERM } = usePerms()
 const targetProjectSlug = computed(
-  () => props.issue?.project?.slug || form.value.project || props.currentProject?.slug || projId.value,
+  () =>
+    props.issue?.project?.slug || form.value.project || props.currentProject?.slug || projId.value,
+)
+const targetProjStatus = computed(
+  () => props.issue?.project?.status || props.currentProject?.status || '1',
 )
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE, targetProjectSlug.value))
 
@@ -109,10 +114,11 @@ const canSetPrivateComment = computed(() =>
 )
 const canManageWatchers = computed(
   () =>
-    workManager.value ||
-    can(PERM.ISSUE_WATCHER_CREATE, targetProjectSlug.value) ||
-    isCreator.value ||
-    isAssignee.value,
+    targetProjStatus.value === '1' &&
+    (workManager.value ||
+      can(PERM.ISSUE_WATCHER_CREATE, targetProjectSlug.value) ||
+      isCreator.value ||
+      isAssignee.value),
 )
 
 const canSetPrivate = computed(() => {
@@ -228,17 +234,18 @@ const formsCheck = computed(() => {
   const canSubmit = props.issue ? canEditIssue.value : canIssueCreate.value
   if (!canSubmit) return true
   if (props.issue) {
-    const a = form.value.project === props.issue.project.slug
+    const a = form.value.project === (props.issue.project?.slug ?? '')
     const b = form.value.is_private === props.issue.is_private
-    const c = Number(form.value.tracker) === props.issue.tracker.pk
+    const c = Number(form.value.tracker) === props.issue.tracker?.pk
     const d = form.value.subject === props.issue.subject
     const e = form.value.description === props.issue.description
-    const f = Number(form.value.status) === props.issue.status.pk
+    const f = Number(form.value.status) === props.issue.status?.pk
     const g = form.value.parent === (props.issue.parent?.pk ?? null)
-    const h = Number(form.value.priority) === props.issue.priority.pk
+    const h = Number(form.value.priority) === props.issue.priority?.pk
     const i = form.value.start_date === dateFormat(props.issue.start_date)
     const j = (form.value.assigned_to || null) === (props.issue.assigned_to?.pk ?? null)
-    const k = form.value.due_date === (props.issue.due_date ? dateFormat(props.issue.due_date) : null)
+    const k =
+      form.value.due_date === (props.issue.due_date ? dateFormat(props.issue.due_date) : null)
     const l = (form.value.category || null) === (props.issue.category ?? null)
     const m = form.value.expected_duration === (props.issue.expected_duration ?? '')
     const n = (form.value.fixed_version || null) === (props.issue.fixed_version?.pk ?? null)
@@ -335,10 +342,13 @@ const defaultOpenStatusPk = computed(
   () => props.statusList.find(s => !s.closed)?.pk ?? props.statusList[0]?.pk ?? 1,
 )
 
+const isInitializing = ref(true)
+
 // form.status 변경 감시
 watch(
   () => form.value.status,
   newStatus => {
+    if (isInitializing.value) return
     // 새로운 상태가 완료(closed) 상태이고 진척도가 100이 아니면 진척도를 100으로 설정
     if (isClosedStatus(newStatus) && form.value.done_ratio !== 100) {
       form.value.done_ratio = 100
@@ -350,6 +360,7 @@ watch(
 watch(
   () => form.value.done_ratio,
   newDoneRatio => {
+    if (isInitializing.value) return
     // 진척도가 100이고 현재 상태가 완료(closed)가 아니면 첫 번째 완료 상태로 설정
     if (newDoneRatio === 100 && !isClosedStatus(form.value.status) && firstClosedStatusPk.value) {
       form.value.status = firstClosedStatusPk.value
@@ -455,10 +466,7 @@ watch(
   () => versions.value,
   newVersions => {
     if (!props.issue && !route.query.copy) {
-      if (
-        form.value.fixed_version &&
-        !newVersions.some(v => v.pk === form.value.fixed_version)
-      ) {
+      if (form.value.fixed_version && !newVersions.some(v => v.pk === form.value.fixed_version)) {
         form.value.fixed_version = null
       }
       // 신규 생성 모드이면서 fixed_version이 설정되지 않았을 때만 자동 설정
@@ -525,7 +533,7 @@ const onSubmit = (event: Event) => {
       category: form.value.category || null,
       done_ratio: clampedDoneRatio,
       newFiles: newFiles.value,
-      newLinks: newLinks.value,
+      newLinks: newLinks.value.map(({ link, name }) => ({ link, name })),
       comment_content: comment.value.content,
       comment_is_private: canSetPrivateComment.value ? comment.value.is_private : false,
       commentOnly: isCommentOnly,
@@ -619,10 +627,7 @@ watch(
       if (form.value.category && !categories.value.some(c => c.pk === form.value.category)) {
         form.value.category = null
       }
-      if (
-        form.value.assigned_to &&
-        !memberList.value.some(m => m.pk === form.value.assigned_to)
-      ) {
+      if (form.value.assigned_to && !memberList.value.some(m => m.pk === form.value.assigned_to)) {
         form.value.assigned_to = null
       }
       const memberPks = memberList.value.map(m => m.pk)
@@ -632,79 +637,100 @@ watch(
 )
 
 onBeforeMount(async () => {
-  const copyId = route.query.copy ? Number(route.query.copy) : null
-  const copyIssueObj =
-    !props.issue && copyId && !Number.isNaN(copyId)
-      ? await issueStore.fetchIssueDetail(copyId)
-      : null
+  try {
+    const copyId = route.query.copy ? Number(route.query.copy) : null
+    const copyIssueObj =
+      !props.issue && copyId && !Number.isNaN(copyId)
+        ? await issueStore.fetchIssueDetail(copyId)
+        : null
 
-  const initialProjSlug =
-    props.issue?.project?.slug ||
-    copyIssueObj?.project?.slug ||
-    props.currentProject?.slug ||
-    projId.value
-  if (initialProjSlug) {
-    lastFetchedMemberSlug.value = initialProjSlug
-    await workStore.fetchProjectMembers(initialProjSlug)
-  }
-
-  if (props.issue) {
-    form.value.pk = props.issue.pk
-    form.value.project = props.issue.project.slug
-    form.value.tracker = props.issue.tracker.pk
-    form.value.is_private = props.issue.is_private
-    form.value.subject = props.issue.subject
-    form.value.description = props.issue.description
-    form.value.status = props.issue.status.pk
-    form.value.parent = props.issue?.parent?.pk ?? null
-    form.value.priority = props.issue.priority.pk
-    form.value.start_date = dateFormat(props.issue.start_date)
-    form.value.due_date = props.issue.due_date ? dateFormat(props.issue.due_date) : null
-    form.value.assigned_to = props.issue.assigned_to?.pk ?? null
-    form.value.fixed_version = props.issue.fixed_version?.pk ?? null
-    form.value.category = props.issue.category
-    form.value.expected_duration = props.issue.expected_duration ?? ''
-    form.value.done_ratio = props.issue.done_ratio
-    form.value.watchers = props.issue.watchers.map(w => w.pk)
-    props.issue.watchers.forEach(w => {
-      if (!watcherList.value.some(existing => existing.pk === w.pk)) {
-        watcherList.value.push({ pk: w.pk, username: w.username })
-      }
-    })
-    form.value.files = (props.issue.files ?? []).map(f => ({ ...f }))
-    form.value.links = (props.issue.links ?? []).map(l => ({ ...l }))
-  } else if (copyIssueObj) {
-    form.value.project = copyIssueObj.project.slug
-    form.value.tracker = copyIssueObj.tracker.pk
-    form.value.is_private = copyIssueObj.is_private
-    form.value.subject = copyIssueObj.subject
-    form.value.description = copyIssueObj.description
-    // 복사 원본이 완료 상태이면 신규 생성 시 기본 진행중 상태로 초기화
-    form.value.status = copyIssueObj.status?.closed
-      ? defaultOpenStatusPk.value
-      : copyIssueObj.status.pk
-    form.value.parent = copyIssueObj?.parent?.pk ?? null
-    form.value.priority = copyIssueObj.priority.pk
-    form.value.start_date = dateFormat(copyIssueObj.start_date)
-    form.value.due_date = copyIssueObj.due_date ? dateFormat(copyIssueObj.due_date) : null
-    form.value.assigned_to = copyIssueObj.assigned_to?.pk ?? null
-    form.value.fixed_version = copyIssueObj.fixed_version?.pk ?? null
-    form.value.category = copyIssueObj.category
-    form.value.expected_duration = copyIssueObj.expected_duration ?? ''
-    form.value.done_ratio = copyIssueObj.status?.closed ? 0 : copyIssueObj.done_ratio
-    form.value.watchers = (copyIssueObj.watchers ?? []).map(w => w.pk)
-    ;(copyIssueObj.watchers ?? []).forEach(w => {
-      if (!watcherList.value.some(existing => existing.pk === w.pk)) {
-        watcherList.value.push({ pk: w.pk, username: w.username })
-      }
-    })
-  } else {
-    const targetSlug = props.currentProject?.slug || projId.value
-    if (targetSlug) form.value.project = targetSlug
-    if (route.query.parent) {
-      form.value.parent = Number(route.query.parent)
-      if (route.query.tracker) form.value.tracker = Number(route.query.tracker)
+    const initialProjSlug =
+      props.issue?.project?.slug ||
+      copyIssueObj?.project?.slug ||
+      props.currentProject?.slug ||
+      projId.value
+    if (initialProjSlug) {
+      lastFetchedMemberSlug.value = initialProjSlug
+      await workStore.fetchProjectMembers(initialProjSlug)
     }
+
+    if (props.issue) {
+      form.value.pk = props.issue.pk
+      form.value.project = props.issue.project?.slug ?? ''
+      form.value.tracker = props.issue.tracker?.pk ?? null
+      form.value.is_private = props.issue.is_private
+      form.value.subject = props.issue.subject
+      form.value.description = props.issue.description
+      form.value.status = props.issue.status?.pk ?? defaultOpenStatusPk.value
+      form.value.parent = props.issue?.parent?.pk ?? null
+      form.value.priority =
+        props.issue.priority?.pk ??
+        props.priorityList.find(p => p.name === '보통')?.pk ??
+        props.priorityList[0]?.pk ??
+        2
+      form.value.start_date = dateFormat(props.issue.start_date)
+      form.value.due_date = props.issue.due_date ? dateFormat(props.issue.due_date) : null
+      form.value.assigned_to = props.issue.assigned_to?.pk ?? null
+      form.value.fixed_version = props.issue.fixed_version?.pk ?? null
+      form.value.category = props.issue.category
+      form.value.expected_duration = props.issue.expected_duration ?? ''
+      form.value.done_ratio = props.issue.done_ratio
+      form.value.watchers = (props.issue.watchers ?? []).map(w => w.pk)
+      ;(props.issue.watchers ?? []).forEach(w => {
+        if (!watcherList.value.some(existing => existing.pk === w.pk)) {
+          watcherList.value.push({ pk: w.pk, username: w.username })
+        }
+      })
+      form.value.files = (props.issue.files ?? []).map(f => ({ ...f }))
+      form.value.links = (props.issue.links ?? []).map(l => ({ ...l }))
+    } else if (copyIssueObj) {
+      form.value.project = copyIssueObj.project?.slug ?? ''
+      form.value.tracker = copyIssueObj.tracker?.pk ?? null
+      form.value.is_private = copyIssueObj.is_private
+      form.value.subject = copyIssueObj.subject
+      form.value.description = copyIssueObj.description
+      // 복사 원본이 완료 상태이면 신규 생성 시 기본 진행중 상태로 초기화
+      form.value.status = copyIssueObj.status?.closed
+        ? defaultOpenStatusPk.value
+        : (copyIssueObj.status?.pk ?? defaultOpenStatusPk.value)
+      form.value.parent = copyIssueObj?.parent?.pk ?? null
+      form.value.priority =
+        copyIssueObj.priority?.pk ??
+        props.priorityList.find(p => p.name === '보통')?.pk ??
+        props.priorityList[0]?.pk ??
+        2
+      form.value.start_date = dateFormat(copyIssueObj.start_date)
+      form.value.due_date = copyIssueObj.due_date ? dateFormat(copyIssueObj.due_date) : null
+      form.value.assigned_to = copyIssueObj.assigned_to?.pk ?? null
+      form.value.fixed_version = copyIssueObj.fixed_version?.pk ?? null
+      form.value.category = copyIssueObj.category
+      form.value.expected_duration = copyIssueObj.expected_duration ?? ''
+      form.value.done_ratio = copyIssueObj.status?.closed ? 0 : copyIssueObj.done_ratio
+      form.value.watchers = (copyIssueObj.watchers ?? []).map(w => w.pk)
+      ;(copyIssueObj.watchers ?? []).forEach(w => {
+        if (!watcherList.value.some(existing => existing.pk === w.pk)) {
+          watcherList.value.push({ pk: w.pk, username: w.username })
+        }
+      })
+    } else {
+      const targetSlug = props.currentProject?.slug || projId.value
+      if (targetSlug) form.value.project = targetSlug
+      if (props.statusList.length && !props.statusList.some(s => s.pk === form.value.status)) {
+        form.value.status = defaultOpenStatusPk.value
+      } else if (props.statusList.length && form.value.status === 1) {
+        form.value.status = defaultOpenStatusPk.value
+      }
+      const defaultPriorityPk =
+        props.priorityList.find(p => p.name === '보통')?.pk ?? props.priorityList[0]?.pk
+      if (defaultPriorityPk) form.value.priority = defaultPriorityPk
+      if (route.query.parent) {
+        form.value.parent = Number(route.query.parent)
+        if (route.query.tracker) form.value.tracker = Number(route.query.tracker)
+      }
+    }
+  } finally {
+    await nextTick()
+    isInitializing.value = false
   }
 })
 
@@ -792,9 +818,7 @@ defineExpose({ callComment, callReply })
 
                 <!-- Existing Links (Edit Mode) -->
                 <CCol v-if="issue && form.links?.length" sm="10" class="offset-sm-2 mb-2">
-                  <div class="small fw-bold text-muted mb-1">
-                    등록된 외부 클라우드 링크
-                  </div>
+                  <div class="small fw-bold text-muted mb-1">등록된 외부 클라우드 링크</div>
                   <CTable small striped hover>
                     <CTableBody>
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
@@ -834,9 +858,7 @@ defineExpose({ callComment, callReply })
                       <v-icon icon="mdi-paperclip" size="14" class="me-1" />
                       첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
                     </span>
-                    <span
-                      :class="{ 'text-danger fw-bold': totalFileSize > MAX_TOTAL_SIZE }"
-                    >
+                    <span :class="{ 'text-danger fw-bold': totalFileSize > MAX_TOTAL_SIZE }">
                       {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
                     </span>
                   </div>
@@ -883,7 +905,7 @@ defineExpose({ callComment, callReply })
 
                 <!-- 외부 클라우드 링크 섹션 -->
                 <div class="w-100 mt-2">
-                  <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
+                  <CRow v-for="(l, i) in newLinks" :key="l._key" class="mb-2">
                     <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-end">
                       <span v-if="i === 0">외부 링크</span>
                     </CFormLabel>
@@ -1086,7 +1108,7 @@ defineExpose({ callComment, callReply })
                       </option>
                     </CFormSelect>
                     <CInputGroupText
-                      v-if="can(PERM.PROJECT_VERSION)"
+                      v-if="can(PERM.PROJECT_VERSION, targetProjectSlug)"
                       class="pointer"
                       @click="RefVersionModal?.callModal()"
                     >
@@ -1109,7 +1131,7 @@ defineExpose({ callComment, callReply })
                       </option>
                     </CFormSelect>
                     <CInputGroupText
-                      v-if="can(PERM.ISSUE_CATEGORY_MANAGE)"
+                      v-if="can(PERM.ISSUE_CATEGORY_MANAGE, targetProjectSlug)"
                       class="pointer"
                       @click="RefCategoryModal?.callModal()"
                     >
@@ -1189,7 +1211,7 @@ defineExpose({ callComment, callReply })
                 <CFormLabel
                   for="expected_duration"
                   class="col-sm-4 col-form-label text-end"
-                  :class="{ required: form.status !== 1 }"
+                  :class="{ required: form.status !== defaultOpenStatusPk }"
                 >
                   예상 처리기간
                 </CFormLabel>
@@ -1197,7 +1219,7 @@ defineExpose({ callComment, callReply })
                   <CFormSelect
                     v-model="form.expected_duration"
                     id="expected_duration"
-                    :required="form.status !== 1"
+                    :required="form.status !== defaultOpenStatusPk"
                   >
                     <option value="">---------</option>
                     <option v-for="dur in durationOptions" :value="dur.value" :key="dur.value">
@@ -1274,7 +1296,9 @@ defineExpose({ callComment, callReply })
             >
               확인
             </v-btn>
-            <v-btn color="light" :size="btnSize" @click="emit('close-form')" flat> 취소</v-btn>
+            <v-btn color="grey" variant="tonal" :size="btnSize" @click="emit('close-form')">
+              취소</v-btn
+            >
           </CCol>
         </CRow>
       </CForm>

@@ -12,6 +12,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject } from '@/store/types/work_project'
 import type { MeetingFilter } from '@/store/types/work_meeting'
+import type { CustomQuery } from '@/store/types/work_inform'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import QuerySection from '@/views/_Work/Manages/Meetings/components/QuerySection.vue'
@@ -20,12 +21,12 @@ import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue
 import MeetingDetail from '@/views/_Work/Manages/Meetings/components/MeetingDetail.vue'
 import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import Loading from '@/components/Loading/Index.vue'
 import NoData from '@/components/NoData/Index.vue'
 
 const props = defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: any
 }>()
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -33,6 +34,7 @@ const toggle = () => cBody.value?.toggle()
 defineExpose({ toggle })
 
 const route = useRoute()
+const loading = ref(false)
 
 const workStore = useWork()
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
@@ -47,7 +49,7 @@ const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 const canMeetingCreate = computed(() => {
   const opened = props.currentProject?.status === '1'
   const isList = viewMode.value === 'list'
-  return opened && can(PERM.MEETING_CREATE) && isList
+  return opened && can(PERM.MEETING_CREATE, route.params.projId as string) && isList
 })
 
 const viewMode = computed(() => {
@@ -81,7 +83,7 @@ const onPageSelect = (p: number) => {
   })
 }
 
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   querySectionRef.value?.applyQuery(query)
 }
 
@@ -90,7 +92,9 @@ const onResetQuery = () => {
 }
 
 const fetchMeetings = async () => {
-  if (route.params.projId) {
+  if (!route.params.projId) return
+  loading.value = true
+  try {
     if (viewMode.value === 'list') {
       const projSlug = route.params.projId as string
       const initialFilter = meetingFilterStore.buildFilterPayload(projSlug)
@@ -102,6 +106,8 @@ const fetchMeetings = async () => {
       })
     }
     await meetingStore.fetchCategoryList(route.params.projId as string)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -113,7 +119,7 @@ watch(
       fetchMeetings()
       return
     }
-    const isMeetingRoute = (name: any) => name && name.includes('(회의)')
+    const isMeetingRoute = (name: unknown) => typeof name === 'string' && name.includes('(회의)')
     if (
       (newName === '(회의)' && oldName !== '(회의)') ||
       (isMeetingRoute(newName) && !isMeetingRoute(oldName))
@@ -135,7 +141,8 @@ onBeforeMount(fetchMeetings)
 </script>
 
 <template>
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="query" :aside="viewMode === 'list'">
+  <Loading v-model:active="loading" />
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="viewMode === 'list'">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -178,11 +185,8 @@ onBeforeMount(fetchMeetings)
         <MeetingTable
           v-else
           :meeting-list="meetingList"
-          :categories="categories"
           :columns="selectedColumns"
-          :search-projects="allReadableProjects"
           :page="page"
-          @filter-submit="onFilterSubmit"
           @page-select="onPageSelect"
         />
       </template>

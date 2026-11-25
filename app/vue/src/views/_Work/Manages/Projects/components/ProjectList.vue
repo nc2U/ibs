@@ -6,10 +6,11 @@ import {
   ALL_PROJECT_COLUMNS,
   DEFAULT_PROJECT_COLUMNS,
 } from '@/views/_Work/Settings/Project/constants'
-import { useRoute, type LocationQueryRaw } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project'
+import type { CustomQuery } from '@/store/types/work_inform'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
@@ -20,9 +21,8 @@ import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
 
 defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: LocationQueryRaw
 }>()
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -70,10 +70,6 @@ const { selectedColumns } = useTableColumns(
 // Columns Selector End!
 
 const filterSubmit = (payload: ProjectFilter) => {
-  if (activeQueryId.value) {
-    // 사용자가 임의의 다른 필터 제출 시 하이라이트 지우기 (단, payload가 쿼리에 의한 것이 아닐 때)
-    // 여기서는 간단히 두겠습니다.
-  }
   workStore.fetchIssueProjectList(payload)
 }
 
@@ -119,7 +115,7 @@ const projectFilterStore = useProjectFilter()
 const activeQueryId = computed(() => projectFilterStore.activeQueryId)
 const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   if (querySectionRef.value) {
     querySectionRef.value.applyQuery(query)
   }
@@ -145,12 +141,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -173,7 +164,7 @@ onBeforeMount(() => {
         @change-view-mode="onChangeViewMode"
       >
         <template #option>
-          <CRow class="m-2" color="light">
+          <CRow class="m-2">
             <CCol>
               <span class="me-3">결과 표시 </span>
               <CFormCheck
@@ -235,7 +226,7 @@ onBeforeMount(() => {
           </span>
         </CCol>
       </CRow>
-      <CRow class="text-end text">
+      <CRow class="text-end">
         <div class="my-5"></div>
         <CCol class="mt-4 p-3 bg-more-light text-muted">
           <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="me-2" />

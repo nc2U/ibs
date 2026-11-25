@@ -7,17 +7,23 @@ import { useIssue } from '@/store/pinia/work_issue'
 import { useRoute, useRouter } from 'vue-router'
 import { isValidate } from '@/utils/helper'
 
-defineProps({
+const props = defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },
 })
 
 const emit = defineEmits(['category-submit'])
 
+const route = useRoute()
+const router = useRouter()
+
 const { can, PERM } = usePerms()
-const canManageCategories = computed(() => can(PERM.ISSUE_CATEGORY_MANAGE))
+const canManageCategories = computed(() =>
+  can(PERM.ISSUE_CATEGORY_MANAGE, route.params.projId as string),
+)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
+const filteredMemberList = computed(() => props.memberList.filter(u => u.pk !== userInfo.value?.pk))
 
 const validated = ref(false)
 
@@ -43,9 +49,6 @@ const formsCheck = computed(() => {
   } else return false
 })
 
-const route = useRoute()
-const router = useRouter()
-
 const categorySubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
@@ -62,6 +65,7 @@ const issueStore = useIssue()
 const category = computed(() => issueStore.category)
 
 const loadCategory = async () => {
+  validated.value = false
   if (route.params.cateId) await issueStore.fetchCategory(Number(route.params.cateId))
   else issueStore.removeCategory()
 
@@ -108,7 +112,12 @@ watch(
           </CFormLabel>
 
           <CCol sm="10" lg="6">
-            <CFormInput id="category-name" v-model="form.name" placeholder="업무 범주 이름" required />
+            <CFormInput
+              id="category-name"
+              v-model="form.name"
+              placeholder="업무 범주 이름"
+              required
+            />
           </CCol>
         </CRow>
 
@@ -119,8 +128,8 @@ watch(
           <CCol sm="10" lg="6">
             <CFormSelect id="category-assigned" v-model.number="form.assigned_to">
               <option value="">---------</option>
-              <option :value="userInfo?.pk">&lt;&lt; 나 &gt;&gt;</option>
-              <option v-for="user in memberList" :value="user.pk" :key="user.pk">
+              <option v-if="userInfo?.pk" :value="userInfo.pk">&lt;&lt; 나 &gt;&gt;</option>
+              <option v-for="user in filteredMemberList" :value="user.pk" :key="user.pk">
                 {{ user.username }}
               </option>
             </CFormSelect>
@@ -135,8 +144,8 @@ watch(
           저장
         </v-btn>
         <v-btn
-          color="light"
-          flat
+          color="grey"
+          variant="tonal"
           @click="
             router.push({
               name: '(설정)',

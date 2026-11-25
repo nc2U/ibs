@@ -2,7 +2,7 @@
 import { computed, type PropType, ref, watchEffect, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { cutString, diffDate } from '@/utils/baseMixins'
+import { cutString, getOverdueDays } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
@@ -47,10 +47,10 @@ const deleteRelConfirm = () => {
   delRelRef.value?.close()
 }
 
-const projId = computed(() => route.params.projId as string)
-const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
-const detailRouteParams = (id: number) =>
-  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
+const projId = computed(() => route.params.projId as string | undefined)
+const targetProjSlug = computed(() => props.rel.issue?.project?.slug || projId.value)
+const detailRouteName = computed(() => '(업무) - 보기')
+const detailRouteParams = (id: number) => ({ projId: targetProjSlug.value, issueId: id })
 </script>
 
 <template>
@@ -58,19 +58,19 @@ const detailRouteParams = (id: number) =>
     v-if="rel.issue"
     class="rel-issue cursor-menu"
     :id="`rel-issue-${rel.issue.pk}`"
-    :class="{ 'bg-amber-lighten-2': selected === rel.issue.pk }"
+    :class="{ 'selected-row': selected === rel.issue.pk }"
     @click="selected = rel.issue.pk"
   >
     <CCol md="6" lg="4" class="pt-1">
       <span>{{ type }} : </span>
       <span v-if="rel.issue">
         <router-link
-          v-if="can(PERM.ISSUE_READ)"
+          v-if="targetProjSlug && can(PERM.ISSUE_READ, targetProjSlug)"
           :to="{ name: detailRouteName, params: detailRouteParams(rel.issue.pk) }"
         >
-          {{ rel.issue.tracker.name }} #{{ rel.issue.pk }}
+          {{ rel.issue.tracker?.name || '업무' }} #{{ rel.issue.pk }}
         </router-link>
-        <span v-else>{{ rel.issue.tracker.name }} #{{ rel.issue.pk }}</span>
+        <span v-else>{{ rel.issue.tracker?.name || '업무' }} #{{ rel.issue.pk }}</span>
         : {{ rel.issue.subject }}
       </span>
     </CCol>
@@ -88,10 +88,7 @@ const detailRouteParams = (id: number) =>
         <span v-else>{{ cutString(rel.issue.assigned_to.username, 9) }}</span>
       </span>
       <span class="me-3">{{ rel.issue.start_date }}</span>
-      <span
-        class="me-3"
-        :class="{ 'text-danger': rel.issue.due_date && diffDate(rel.issue.due_date) > 0 }"
-      >
+      <span class="me-3" :class="{ 'text-danger': getOverdueDays(rel.issue.due_date) > 0 }">
         {{ rel.issue.due_date }}
       </span>
     </CCol>
@@ -99,13 +96,17 @@ const detailRouteParams = (id: number) =>
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-end">
       <span v-if="rel.issue">
         <CProgress
-          color="green-lighten-3"
-          :value="rel.issue.done_ratio"
+          color="success"
+          :value="rel.issue.done_ratio ?? 0"
           style="width: 100px; float: left; margin-top: 7px"
           height="14"
         />
       </span>
-      <v-btn v-if="can(PERM.ISSUE_REL_MANAGE)" variant="plain" @click="deleteRelation">
+      <v-btn
+        v-if="can(PERM.ISSUE_REL_MANAGE, targetProjSlug)"
+        variant="plain"
+        @click="deleteRelation"
+      >
         <v-icon icon="mdi-link-variant-off" size="16" />
         <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>
@@ -121,3 +122,9 @@ const detailRouteParams = (id: number) =>
     </template>
   </ConfirmModal>
 </template>
+
+<style lang="scss" scoped>
+.selected-row {
+  background-color: rgba(var(--v-theme-warning), 0.16);
+}
+</style>

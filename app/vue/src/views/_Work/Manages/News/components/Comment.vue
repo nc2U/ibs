@@ -21,14 +21,14 @@ const { canViewUser } = usePerms()
         <v-card variant="flat" border class="pa-3 rounded-lg card-deep">
           <div class="d-flex justify-space-between align-center mb-1">
             <router-link
-              v-if="canViewUser(comment.creator?.pk)"
-              :to="{ name: '사용자 - 보기', params: { userId: comment.creator?.pk } }"
+              v-if="comment.creator?.pk && canViewUser(comment.creator.pk)"
+              :to="{ name: '사용자 - 보기', params: { userId: comment.creator.pk } }"
               class="text-decoration-none text-subtitle-2 fw-bold"
             >
-              {{ comment.creator?.username }}
+              {{ comment.creator?.username || '알 수 없음' }}
             </router-link>
             <span v-else class="text-subtitle-2 fw-bold">
-              {{ comment.creator?.username }}
+              {{ comment.creator?.username || '알 수 없음' }}
             </span>
             <span class="text-caption text-grey">{{ elapsedTime(comment.created) }}</span>
           </div>

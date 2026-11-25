@@ -35,8 +35,12 @@ const updateMembers = async (payload: {
 const createMember = async (payload: { user?: number; roles?: number[]; slug: string }) =>
   await workStore.createMember(payload)
 
-const patchMember = async (payload: { pk: number; user?: number; roles?: number[]; slug?: string }) =>
-  await workStore.patchMember(payload)
+const patchMember = async (payload: {
+  pk: number
+  user?: number
+  roles?: number[]
+  slug?: string
+}) => await workStore.patchMember(payload)
 
 const accStore = useAccount()
 const userList = computed(() => {
@@ -71,27 +75,28 @@ const editSubmit = async (mem: SimpleMember, roles: number[]) => {
   const parent_roles = mem.roles.filter(r => r.inherited).map(r => r.pk)
   const calc_roles = roles.filter(r => !parent_roles.includes(r))
   const me = getLocalMemberPk(mem.user.pk)
+  let ok: unknown = true
 
   if (me !== null) {
     if (calc_roles.length === 0) {
       if (parent_roles.length > 0) {
-        await updateMembers({ slug, users: [], roles: [], del_mem: me })
+        ok = await updateMembers({ slug, users: [], roles: [], del_mem: me })
       } else {
         message('warning', '입력 확인', '최소 1개 이상의 역할을 선택해야 합니다.')
         return
       }
     } else {
-      await patchMember({ pk: me, roles: calc_roles })
+      ok = await patchMember({ pk: me, roles: calc_roles })
     }
   } else {
     if (calc_roles.length === 0) {
       cancelEdit()
       return
     }
-    await createMember({ user: mem.user.pk, roles: calc_roles, slug })
+    ok = await createMember({ user: mem.user.pk, roles: calc_roles, slug })
   }
 
-  cancelEdit()
+  if (ok) cancelEdit()
 }
 
 const toDelete = (mem: SimpleMember) => {
@@ -109,13 +114,13 @@ const toDelete = (mem: SimpleMember) => {
 const deleteMember = ref<number | null>(null)
 
 const deleteSubmit = async () => {
-  await updateMembers({
+  const ok = await updateMembers({
     slug: currentProject?.value.slug as string,
     users: [],
     roles: [],
     del_mem: deleteMember.value ?? undefined,
   })
-  memberConfirmModal.value?.close()
+  if (ok) memberConfirmModal.value?.close()
 }
 
 const mergedMembers = (
@@ -125,7 +130,7 @@ const mergedMembers = (
 
 const addComma = (n: number, i: number) => n > i + 1
 
-const isInherit = (memRoles: any[], role: number) =>
+const isInherit = (memRoles: SimpleMember['roles'], role: number) =>
   memRoles
     .filter(r => r.pk === role)
     .map(r => r.inherited)
@@ -341,13 +346,16 @@ onBeforeMount(() => accStore.fetchUsersList())
           <v-btn :disabled="!canManageMembers" color="primary" size="small" type="submit">
             추가
           </v-btn>
-          <v-btn color="light" size="small" @click="memberFormModal?.close()" flat> 닫기</v-btn>
+          <v-btn color="grey" variant="tonal" size="small" @click="memberFormModal?.close()">
+            닫기</v-btn
+          >
         </CModalFooter>
       </CForm>
     </template>
   </FormModal>
 
   <ConfirmModal ref="memberConfirmModal">
+    <template #header>구성원 삭제</template>
     <template #footer>
       <v-btn color="warning" size="small" :disabled="!canManageMembers" @click="deleteSubmit">
         삭제

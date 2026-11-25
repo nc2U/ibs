@@ -27,13 +27,16 @@ const plainDescription = computed(() => {
 <template>
   <v-card
     :to="
-      canDocsRead
-        ? { name: '(문서) - 보기', params: { projId: docs.project?.slug, docId: docs.pk } }
+      canDocsRead && docs.project?.slug && docs.pk
+        ? { name: '(문서) - 보기', params: { projId: docs.project.slug, docId: docs.pk } }
         : undefined
     "
     border
     class="mb-2 w-100 docs-item card-white no-underline"
-    :class="[canDocsRead ? 'pointer' : 'cursor-not-allowed', docs.is_pinned ? 'card-yellow' : '']"
+    :class="[
+      canDocsRead && docs.project?.slug && docs.pk ? 'pointer' : 'cursor-not-allowed',
+      docs.is_pinned ? 'card-yellow' : '',
+    ]"
     flat
   >
     <v-card-text class="pa-3">

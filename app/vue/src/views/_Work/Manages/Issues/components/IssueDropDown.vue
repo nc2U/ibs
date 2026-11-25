@@ -7,7 +7,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useWork } from '@/store/pinia/work_project'
 import type { Issue, SimpleIssue, SubIssue } from '@/store/types/work_issue'
-import type { SimpleUser } from '@/store/types/work_project'
+import type { ProjectMember, SimpleUser } from '@/store/types/work_project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -85,21 +85,24 @@ const changeStatus = (statusPk: number) => {
 }
 
 const changeTracker = (trackerPk: number) => {
-  if (props.issue.tracker.pk !== trackerPk) {
+  if (props.issue.tracker?.pk !== trackerPk) {
     issueStore.patchIssue(props.issue.pk, { tracker: trackerPk })
   }
 }
 
+const getCurrentPriorityPk = () =>
+  typeof props.issue.priority === 'object' && props.issue.priority !== null
+    ? props.issue.priority.pk
+    : props.issue.priority
+
 const changePriority = (priorityPk: number) => {
-  const currentPriorityPk =
-    typeof props.issue.priority === 'object' ? props.issue.priority.pk : props.issue.priority
-  if (currentPriorityPk !== priorityPk) {
+  if (getCurrentPriorityPk() !== priorityPk) {
     issueStore.patchIssue(props.issue.pk, { priority: priorityPk })
   }
 }
 
 // 담당자 변경 관련 로직 추가
-const members = ref<any[]>([])
+const members = ref<ProjectMember[]>([])
 const loadedProjSlug = ref('')
 const loadingMembers = ref(false)
 const assignableMembers = computed(() => members.value.filter(m => m.is_assignable))
@@ -150,7 +153,7 @@ const changeProgress = (ratio: number) => {
 
 // 업무 관람자 변경 관련 로직 추가
 const isWatcherMember = (userPk: number) => {
-  return props.issue.watchers.map(w => w.pk).includes(userPk)
+  return (props.issue.watchers ?? []).map(w => w.pk).includes(userPk)
 }
 
 const toggleWatcher = (userPk: number) => {
@@ -189,10 +192,11 @@ const fallbackCopy = (text: string) => {
 }
 
 const issueLinkCopy = () => {
-  const projSlug = props.issue.project?.slug || (route.params.projId as string)
+  const targetSlug = props.issue.project?.slug || (route.params.projId as string)
+  if (!targetSlug) return
   const resolved = router.resolve({
     name: '(업무) - 보기',
-    params: { projId: projSlug, issueId: props.issue.pk },
+    params: { projId: targetSlug, issueId: props.issue.pk },
   })
   const url = `${window.location.origin}/${resolved.href.replace(/^\/?/, '')}`
   if (navigator.clipboard && window.isSecureContext) {
@@ -219,6 +223,26 @@ const copyIssue = () => {
   }
 }
 
+const goEditIssue = () => {
+  const targetSlug = props.issue.project?.slug || (route.params.projId as string)
+  if (!targetSlug) return
+  router.push({
+    name: '(업무) - 보기',
+    params: { projId: targetSlug, issueId: props.issue.pk },
+    query: { edit: '1' },
+  })
+}
+
+const addSubIssue = () => {
+  const targetSlug = props.issue.project?.slug || (route.params.projId as string)
+  if (!targetSlug) return
+  router.push({
+    name: '(업무) - 추가',
+    params: { projId: targetSlug },
+    query: { parent: props.issue.pk, tracker: props.issue.tracker?.pk },
+  })
+}
+
 // 업무 삭제
 const deleteIssue = () => {
   refDelModal.value?.callModal(
@@ -242,18 +266,7 @@ const confirmDelete = async () => {
       <v-tooltip activator="parent" location="top">Actions</v-tooltip>
       <v-menu activator="parent" location="bottom end" transition="scale-transition">
         <v-list density="compact" class="py-1">
-          <v-list-item
-            v-if="canEditIssue"
-            min-height="30px"
-            class="py-0"
-            @click="
-              router.push({
-                name: '(업무) - 보기',
-                params: { projId: issue.project?.slug, issueId: issue.pk },
-                query: { edit: '1' },
-              })
-            "
-          >
+          <v-list-item v-if="canEditIssue" min-height="30px" class="py-0" @click="goEditIssue">
             <template v-slot:prepend>
               <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-n2" />
             </template>
@@ -307,7 +320,7 @@ const confirmDelete = async () => {
               <v-list-item
                 v-for="tracker in trackerList"
                 :key="tracker.pk"
-                :active="issue.tracker.pk === tracker.pk"
+                :active="issue.tracker?.pk === tracker.pk"
                 min-height="30px"
                 min-width="150px"
                 class="py-0"
@@ -335,10 +348,7 @@ const confirmDelete = async () => {
               <v-list-item
                 v-for="priority in priorityList"
                 :key="priority.pk"
-                :active="
-                  (typeof issue.priority === 'object' ? issue.priority.pk : issue.priority) ===
-                  priority.pk
-                "
+                :active="getCurrentPriorityPk() === priority.pk"
                 min-height="30px"
                 min-width="150px"
                 class="py-0"
@@ -493,7 +503,7 @@ const confirmDelete = async () => {
             </v-list>
           </v-menu>
 
-          <v-list-item @click="watchControl" min-height="28px" class="py-0">
+          <v-list-item v-if="!isProjectClosed" @click="watchControl" min-height="28px" class="py-0">
             <template v-slot:prepend>
               <v-icon
                 icon="mdi-star"
@@ -508,16 +518,10 @@ const confirmDelete = async () => {
           </v-list-item>
 
           <v-list-item
-            v-if="canCreateSubIssue"
+            v-if="canCreateSubIssue && (issue.project?.slug || route.params.projId)"
             min-height="28px"
             class="py-0"
-            @click="
-              router.push({
-                name: '(업무) - 추가',
-                params: { projId: issue.project?.slug },
-                query: { parent: issue.pk, tracker: issue.tracker.pk },
-              })
-            "
+            @click="addSubIssue"
           >
             <template v-slot:prepend>
               <v-icon icon="mdi-plus-circle" color="success" size="small" class="mr-n2" />
@@ -551,6 +555,7 @@ const confirmDelete = async () => {
   </span>
 
   <ConfirmModal ref="refDelModal">
+    <template #header>업무 삭제</template>
     <template #footer>
       <v-btn size="small" color="warning" @click="confirmDelete">삭제</v-btn>
     </template>

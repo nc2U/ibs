@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import type { LocationQueryRaw } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project'
 import ProjectForm from './ProjectForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: LocationQueryRaw
 }>()
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -17,13 +15,7 @@ defineExpose({ toggle })
 </script>
 
 <template>
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-    :aside="false"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <ProjectForm />
     </template>

@@ -136,7 +136,9 @@ const getUsers = computed(() =>
 )
 
 onBeforeMount(async () => {
-  await accStore.fetchUsersList()
+  if (!accStore.usersList.length) {
+    await accStore.fetchUsersList()
+  }
 
   if (props.toDate) actFilter.to_act_date = dateFormat(props.toDate)
   if (props.fromDate) actFilter.from_act_date = dateFormat(props.fromDate)
@@ -154,8 +156,8 @@ onBeforeMount(async () => {
 
   if (route.query.user) actFilter.creator = route.query.user as string
 
-  isInitialized.value = true
   await filterActivity()
+  isInitialized.value = true
 })
 </script>
 

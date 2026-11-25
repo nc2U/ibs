@@ -143,15 +143,13 @@ const onSubmitConfirm = async () => {
       }
     } else {
       // Edit User account info
-      const userPayload: any = {
+      const userPayload: Parameters<typeof accStore.adminUpdateUser>[0] = {
         email: form.email,
         is_active: form.is_active,
         work_manager: form.work_manager,
         ...(superAuth.value ? { is_staff: form.is_staff } : {}),
         mail_sending: form.mail_sending,
-        ...(form.mail_sending
-          ? { send_option: form.send_option, expired: form.expired }
-          : {}),
+        ...(form.mail_sending ? { send_option: form.send_option, expired: form.expired } : {}),
         ...(!isEditResetLinkMode.value && form.password ? { password: form.password } : {}),
       }
       const updated = await accStore.adminUpdateUser(userPayload)
@@ -165,7 +163,7 @@ const onSubmitConfirm = async () => {
         await accStore.fetchUser(props.user.pk)
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(err)
     refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   }
@@ -255,7 +253,7 @@ const onSubmitConfirm = async () => {
               </CRow>
 
               <!-- Password Confirm -->
-              <CRow class="mb-3" style="height: 45px">
+              <CRow class="mb-3" style="min-height: 45px">
                 <CFormLabel
                   for="pass_conf"
                   class="col-sm-3 col-form-label"
@@ -276,14 +274,20 @@ const onSubmitConfirm = async () => {
                 </CCol>
                 <CCol v-if="genPass" sm="4">
                   <div
-                    class="p-1 mb-1 bg-yellow-lighten-1 text-center fw-bold"
+                    class="p-1 mb-1 bg-warning-subtle text-body rounded text-center fw-bold"
                     style="width: 120px; display: inline-block; vertical-align: middle"
                   >
                     {{ genPass }}
                   </div>
                   <div style="display: inline-block; vertical-align: middle" class="ms-2">
                     <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
-                    <v-btn color="light" size="small" class="me-1" @click="genPass = ''" flat>
+                    <v-btn
+                      color="grey"
+                      variant="tonal"
+                      size="small"
+                      class="ms-1"
+                      @click="genPass = ''"
+                    >
                       취소
                     </v-btn>
                   </div>
@@ -385,7 +389,7 @@ const onSubmitConfirm = async () => {
                 </CCol>
                 <CCol sm="4">
                   <CFormSelect
-                    v-model.number="form.expired as any"
+                    v-model.number="form.expired"
                     size="sm"
                     :disabled="!form.mail_sending || form.send_option !== '1'"
                   >
@@ -419,7 +423,7 @@ const onSubmitConfirm = async () => {
         <v-btn type="submit" :color="user?.pk ? 'success' : 'primary'" :disabled="formCheck">
           저장
         </v-btn>
-        <v-btn color="light" class="ms-2" @click="router.push({ name: '사용자' })" flat>
+        <v-btn color="grey" variant="tonal" class="ms-2" @click="router.push({ name: '사용자' })">
           취소
         </v-btn>
       </div>

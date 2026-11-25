@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { colorLight } from '@/utils/cssMixins'
 import { useCompany } from '@/store/pinia/company'
@@ -131,6 +131,10 @@ watch(
 onBeforeRouteLeave((to, from, next) => {
   searchStore.reset()
   next()
+})
+
+onBeforeUnmount(() => {
+  searchStore.reset()
 })
 
 // 결과 타입 라벨
@@ -281,7 +285,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       <!-- 에러 -->
       <CRow v-if="searchStore.error" class="mt-3">
         <CCol>
-          <v-alert type="warning" color="#b7721d" icon-size="20" variant="tonal">
+          <v-alert type="warning" variant="tonal">
             {{ searchStore.error }}
           </v-alert>
         </CCol>

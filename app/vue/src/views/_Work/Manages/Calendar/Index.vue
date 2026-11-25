@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, onBeforeMount } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, onBeforeMount } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -12,6 +12,7 @@ import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import QuerySection from './components/QuerySection.vue'
@@ -25,6 +26,11 @@ const sideNavCall = () => cBody.value?.toggle()
 
 const { can, PERM } = usePerms()
 const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
+const canCalendarRead = computed(
+  () =>
+    can(PERM.CALENDAR_READ) ||
+    workStore.allReadableProjectsFlat.some(p => p.is_public && p.module?.calendar),
+)
 
 const route = useRoute()
 provide('navMenu', navMenu)
@@ -49,19 +55,20 @@ const meetingCategories = computed(() => meetingStore.categoryList)
 
 const calendarFilterStore = useCalendarFilter()
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
-const activeFilters = ref<Record<string, any>>(calendarFilterStore.buildFilterPayload())
+const activeFilters = ref<Record<string, unknown>>(calendarFilterStore.buildFilterPayload())
 const calendarRef = ref<InstanceType<typeof SharedCalendar> | null>(null)
 const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 const activeQueryId = computed(() => calendarFilterStore.activeQueryId)
 
 const filterSubmit = (payload: IssueFilter) => {
+  if (!canCalendarRead.value) return
   activeProject.value = payload.project
   activeFilters.value = { ...payload }
   const range = calendarRef.value?.currentRange || { start: '', end: '' }
   calendarStore.fetchCalendarEvents(payload, range.start, range.end)
 }
 
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   querySectionRef.value?.applyQuery(query)
 }
 
@@ -73,13 +80,20 @@ const loading = ref(true)
 onBeforeMount(async () => {
   workStore.removeIssueProject()
   try {
-    await workStore.fetchMemberList()
-    await meetingStore.fetchCategoryList()
+    if (canCalendarRead.value) {
+      await workStore.fetchMemberList()
+      await meetingStore.fetchCategoryList()
+    }
   } catch (err) {
     console.error('Failed to load calendar data:', err)
   } finally {
     loading.value = false
   }
+})
+
+onBeforeUnmount(() => {
+  calendarStore.events = []
+  calendarFilterStore.resetFilter()
 })
 
 const summary = computed(() => {
@@ -97,7 +111,7 @@ const summary = computed(() => {
   <Loading :active="loading || calendarStore.loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCall" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="canCalendarRead">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -108,32 +122,39 @@ const summary = computed(() => {
         </CCol>
       </CRow>
 
-      <QuerySection
-        ref="querySectionRef"
-        :search-projects="allReadableProjects"
-        :status-list="statusList"
-        :tracker-list="trackerList"
-        :priority-list="priorityList"
-        :meeting-categories="meetingCategories"
-        :get-users="getUsers"
-        @filter-submit="filterSubmit"
-      />
+      <template v-if="canCalendarRead">
+        <QuerySection
+          ref="querySectionRef"
+          :search-projects="allReadableProjects"
+          :status-list="statusList"
+          :tracker-list="trackerList"
+          :priority-list="priorityList"
+          :meeting-categories="meetingCategories"
+          :get-users="getUsers"
+          @filter-submit="filterSubmit"
+        />
 
-      <CRow class="mb-3">
-        <CCol>
-          <SharedCalendar
-            ref="calendarRef"
-            :project-slug="activeProject"
-            :issue-filters="activeFilters"
-          />
-        </CCol>
-      </CRow>
+        <CRow class="mb-3">
+          <CCol>
+            <SharedCalendar
+              ref="calendarRef"
+              :project-slug="activeProject"
+              :issue-filters="activeFilters"
+            />
+          </CCol>
+        </CRow>
 
-      <CRow class="mb-3">
-        <CCol>
-          <SummaryStatus :summary="summary" />
-        </CCol>
-      </CRow>
+        <CRow class="mb-3">
+          <CCol>
+            <SummaryStatus :summary="summary" />
+          </CCol>
+        </CRow>
+      </template>
+
+      <v-alert v-else color="warning" class="mt-4" variant="tonal">
+        <v-icon icon="mdi-alert-circle" class="me-2" />
+        캘린더를 조회할 수 있는 권한이 없습니다.
+      </v-alert>
     </template>
 
     <template v-slot:aside>

@@ -6,7 +6,7 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useAccount } from '@/store/pinia/account'
 import { message } from '@/utils/helper'
-import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -18,9 +18,8 @@ import CategoryForm from './category/CategoryForm.vue'
 import Forum from './components/Forum.vue'
 
 const props = defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: LocationQueryRaw
 }>()
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
@@ -36,12 +35,17 @@ const workManager = computed(() => accStore.workManager)
 
 const canAccessProject = computed(() => {
   if (workManager.value) return true
-  return can(PERM.PROJECT_UPDATE) || can(PERM.PROJECT_PUBLIC) || can(PERM.PROJECT_MODULE)
+  const slug = currentProject.value?.slug
+  return (
+    can(PERM.PROJECT_UPDATE, slug) ||
+    can(PERM.PROJECT_PUBLIC, slug) ||
+    can(PERM.PROJECT_MODULE, slug)
+  )
 })
 
 const canAccessForum = computed(() => {
   if (workManager.value) return true
-  return can(PERM.FORUM_MANAGE)
+  return can(PERM.FORUM_MANAGE, currentProject.value?.slug)
 })
 
 const [route, router] = [useRoute(), useRouter()]
@@ -56,14 +60,16 @@ const isProjectActive = computed(() => !currentProject.value || currentProject.v
 const settingMenus = computed(() => {
   if (!isProjectActive.value) return []
   const menus: { no: number; menu: string }[] = []
+  const slug = currentProject.value?.slug
 
   const isForumEnabled = !currentProject.value?.module || currentProject.value.module.forum
 
   // PERM 상수를 기반으로 권한 체크 + 워크스페이스 모듈 활성화 여부 반영
   if (canAccessProject.value) menus.push({ no: 1, menu: '메인설정' })
-  if (workManager.value || can(PERM.PROJECT_MEMBER)) menus.push({ no: 2, menu: '구성원' })
-  if (workManager.value || can(PERM.PROJECT_VERSION)) menus.push({ no: 4, menu: '단계' })
-  if (workManager.value || can(PERM.ISSUE_CATEGORY_MANAGE)) menus.push({ no: 5, menu: '업무범주' })
+  if (workManager.value || can(PERM.PROJECT_MEMBER, slug)) menus.push({ no: 2, menu: '구성원' })
+  if (workManager.value || can(PERM.PROJECT_VERSION, slug)) menus.push({ no: 4, menu: '단계' })
+  if (workManager.value || can(PERM.ISSUE_CATEGORY_MANAGE, slug))
+    menus.push({ no: 5, menu: '업무범주' })
   if (isForumEnabled && canAccessForum.value) menus.push({ no: 7, menu: '게시판' })
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
@@ -87,11 +93,7 @@ const syncAllowedMenu = () => {
   }
 }
 
-watch(
-  [() => route.query?.menu, settingMenus],
-  () => syncAllowedMenu(),
-  { immediate: true },
-)
+watch([() => route.query?.menu, settingMenus], () => syncAllowedMenu(), { immediate: true })
 
 const versionList = computed(() => workStore.versionList)
 const memberList = computed(() => {
@@ -100,7 +102,7 @@ const memberList = computed(() => {
         (m.roles ?? []).some(r => r.assignable !== false),
       )
     : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]
-  return (members as any[]).map(m => m.user).filter(Boolean)
+  return members.map(m => m.user).filter((u): u is { pk: number; username: string } => Boolean(u))
 })
 
 const deleteVersion = async (pk: number) => {
@@ -168,13 +170,7 @@ const handleMenuClick = (m: string) => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-    :aside="false"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <template v-if="route.name === '(설정)'">
         <CRow class="py-2">
@@ -216,7 +212,9 @@ const handleMenuClick = (m: string) => {
           <Version
             v-if="menu === '단계'"
             :versions="versionList"
-            :current-project-slug="(currentProject?.slug as string) || (route.params.projId as string)"
+            :current-project-slug="
+              (currentProject?.slug as string) || (route.params.projId as string)
+            "
             @version-filter="versionFilter"
             @delete-version="deleteVersion"
           />
@@ -232,7 +230,15 @@ const handleMenuClick = (m: string) => {
       </template>
 
       <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">
-        <CategoryForm :member-list="memberList" @category-submit="categorySubmit" />
+        <CategoryForm
+          v-if="
+            isProjectActive &&
+            (workManager || can(PERM.ISSUE_CATEGORY_MANAGE, currentProject?.slug))
+          "
+          :member-list="memberList"
+          @category-submit="categorySubmit"
+        />
+        <CAlert v-else color="warning"> 권한이 없거나 닫혀 있는 워크스페이스입니다. </CAlert>
       </template>
     </template>
 

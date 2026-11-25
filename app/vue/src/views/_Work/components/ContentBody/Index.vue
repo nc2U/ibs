@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, provide, ref, watch } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
@@ -10,15 +11,23 @@ defineProps({
 })
 
 const visible = ref(false)
+const isDesktop =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? useMediaQuery('(min-width: 992px)')
+    : ref(true)
 
 const [route, router] = [useRoute(), useRouter()]
 
-const isDark = computed(() => useStore().theme === 'dark')
+const isDark = computed(() => useStore().isDark)
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 
 const getTitle = (title: string) => (title ?? '').replace(/[() ]/gim, '')
-const menuName = computed(() => String(route.name ?? '').split(/\s*-\s*/)[0].trim())
+const menuName = computed(() =>
+  String(route.name ?? '')
+    .split(/\s*-\s*/)[0]
+    .trim(),
+)
 
 const isActive = (menu: string) => {
   const current = menuName.value
@@ -131,18 +140,13 @@ onBeforeMount(() => {
 
       <CRow v-show="sidebarVisible">
         <CCol class="px-3" style="position: relative">
-          <slot name="aside"></slot>
+          <slot v-if="aside && isDesktop" name="aside"></slot>
         </CCol>
       </CRow>
     </CCol>
 
     <!--    Off canvas-->
-    <COffcanvas
-      placement="end"
-      class="px-2 pt-4"
-      :visible="visible"
-      @hide="visible = false"
-    >
+    <COffcanvas placement="end" class="px-2 pt-4" :visible="visible" @hide="visible = false">
       <COffcanvasHeader class="mb-4">
         <COffcanvasTitle class="w-100 pe-2">
           <v-text-field
@@ -191,7 +195,7 @@ onBeforeMount(() => {
           </v-list>
         </v-card>
 
-        <slot v-if="aside && visible" name="aside"></slot>
+        <slot v-if="aside && !isDesktop && visible" name="aside"></slot>
       </COffcanvasBody>
     </COffcanvas>
   </CRow>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, type PropType, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
 import { useAccount } from '@/store/pinia/account'
 import { useRoute, useRouter } from 'vue-router'
@@ -59,6 +59,7 @@ const canDocsDelete = computed(
     activeProject.value?.status === '1' &&
     (can(PERM.DOCS_DELETE) || (can(PERM.DOCS_OWN_DELETE) && isDocOwner.value)),
 )
+const canCaseUpdate = computed(() => activeProject.value?.status === '1' && can(PERM.DOCS_UPDATE))
 
 const viewForm = ref(false)
 
@@ -159,9 +160,10 @@ const getDocsList = (target: unknown) => {
 const goToSuitCase = () => {
   caseFilter.value.company = activeProject.value?.company ?? ''
   caseFilter.value.issue_project = activeProject.value?.pk ?? docsFilter.value.issue_project ?? ''
-  fetchSuitCaseList(caseFilter.value)
   if (route.name !== '(문서 사건)' && !String(route.name ?? '').startsWith('(문서 사건) -')) {
     router.push({ name: '(문서 사건)', params: { projId: projId.value } })
+  } else {
+    fetchSuitCaseList(caseFilter.value)
   }
 }
 
@@ -178,6 +180,24 @@ const selectCate = (cate: number) => {
 const pageSelect = (page: number) => {
   docsFilter.value.page = page
   fetchDocsList(docsFilter.value)
+}
+
+const onDocsSearch = (payload?: DocsFilter) => {
+  if (payload) {
+    docsFilter.value = { ...payload, page: 1 }
+  } else {
+    docsFilter.value.page = 1
+  }
+  fetchDocsList(docsFilter.value)
+}
+
+const onCaseSearch = (payload?: SuitCaseFilter) => {
+  if (payload) {
+    caseFilter.value = { ...payload, page: 1 }
+  } else {
+    caseFilter.value.page = 1
+  }
+  fetchSuitCaseList(caseFilter.value)
 }
 
 const casePageSelect = (page: number) => {
@@ -221,7 +241,8 @@ const caseReset = () => {
 
 const onCaseSubmit = async (payload: SuitCase) => {
   if (payload.pk) {
-    await updateSuitCase(payload)
+    const ok = await updateSuitCase(payload)
+    if (!ok) return
     await router.replace({
       name: `${mainViewName.value} - 보기`,
       params: { projId: projId.value, caseId: payload.pk },
@@ -231,13 +252,15 @@ const onCaseSubmit = async (payload: SuitCase) => {
       payload.issue_project =
         (activeProject.value?.pk as number) || (docsFilter.value.issue_project as number) || null
     }
-    await createSuitCase(payload)
+    const created = await createSuitCase(payload)
+    if (!created) return
     await router.replace({ name: mainViewName.value, params: { projId: projId.value } })
   }
 }
 
 const onCaseDelete = async (pk: number) => {
-  await deleteSuitCase(pk)
+  const ok = await deleteSuitCase(pk)
+  if (!ok) return
   await router.replace({ name: mainViewName.value, params: { projId: projId.value } })
 }
 
@@ -251,24 +274,7 @@ const docsHit = async (pk: number) => {
 }
 
 const projId = computed(() => route.params.projId)
-
-watch(
-  () => projId.value,
-  async nVal => {
-    if (nVal) {
-      await dataSetup(nVal as string, docId.value)
-    }
-  },
-)
-
 const docId = computed(() => route.params.docId)
-
-watch(
-  () => docId.value,
-  nVal => {
-    if (nVal) dataSetup(projId.value as string, nVal)
-  },
-)
 
 const docsDelConfirm = async () => {
   const targetDocId = docs.value?.pk
@@ -300,7 +306,7 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
     caseFilter.value.company = activeProject.value?.company ?? ''
     caseFilter.value.issue_project = currentProjPk
 
-    const tasks: Promise<any>[] = [fetchAllSuitCaseList({ issue_project: currentProjPk })]
+    const tasks: Promise<unknown>[] = [fetchAllSuitCaseList({ issue_project: currentProjPk })]
 
     if (isSuitCase.value) {
       if (route.params.caseId) {
@@ -345,21 +351,45 @@ onBeforeMount(async () => {
   if (route.query.viewForm && canDocsCreate.value) viewForm.value = true
 })
 
+onBeforeUnmount(() => {
+  docStore.removeDocs()
+  docStore.removeSuitcase()
+})
+
 watch(
-  () => route.name,
-  async newName => {
+  [() => route.name, () => projId.value, () => docId.value, () => route.params.caseId],
+  async ([newName, newProjId, newDocId, newCaseId], [oldName, oldProjId, oldDocId, oldCaseId]) => {
+    viewForm.value = false
     const nameStr = String(newName ?? '')
-    if (nameStr === '(문서)') {
-      await dataSetup(projId.value as string, docId.value)
-    } else if (nameStr.startsWith('(문서 사건)')) {
-      if (route.params.caseId) {
-        await fetchSuitCase(Number(route.params.caseId))
+    if (newProjId !== oldProjId) {
+      if (newProjId) await dataSetup(newProjId as string, newDocId)
+      return
+    }
+    if (newDocId !== oldDocId && newDocId) {
+      await dataSetup(newProjId as string, newDocId)
+      return
+    }
+    if (nameStr === '(문서)' && newName !== oldName) {
+      await dataSetup(newProjId as string, newDocId)
+    } else if (
+      nameStr.startsWith('(문서 사건)') &&
+      (newName !== oldName || newCaseId !== oldCaseId)
+    ) {
+      if (newCaseId) {
+        await fetchSuitCase(Number(newCaseId))
       } else {
         docStore.removeSuitcase()
         caseFilter.value.issue_project = activeProject.value?.pk ?? ''
         await fetchSuitCaseList(caseFilter.value)
       }
     }
+  },
+)
+
+watch(
+  () => route.query.viewForm,
+  nVal => {
+    if (nVal && canDocsCreate.value && route.name === '(문서)') viewForm.value = true
   },
 )
 </script>
@@ -505,22 +535,32 @@ watch(
           <!-- 사건 신규 등록 -->
           <div v-else-if="String(route.name ?? '').includes('작성')">
             <CaseForm
+              v-if="canDocsCreate"
               :sort-name="activeProject?.name ?? '[워크스페이스]'"
               :get-suit-case="getSuitCase"
               :view-route="mainViewName"
               @on-submit="onCaseSubmit"
             />
+            <v-alert v-else color="warning" class="mt-4" variant="tonal">
+              <v-icon icon="mdi-alert-circle" class="me-2" />
+              소송 사건을 등록할 수 있는 권한이 없습니다.
+            </v-alert>
           </div>
 
           <!-- 사건 수정 -->
           <div v-else-if="String(route.name ?? '').includes('수정')">
             <CaseForm
+              v-if="canCaseUpdate"
               :sort-name="activeProject?.name ?? '[워크스페이스]'"
               :get-suit-case="getSuitCase"
               :suitcase="suitcase"
               :view-route="mainViewName"
               @on-submit="onCaseSubmit"
             />
+            <v-alert v-else color="warning" class="mt-4" variant="tonal">
+              <v-icon icon="mdi-alert-circle" class="me-2" />
+              소송 사건을 수정할 수 있는 권한이 없습니다.
+            </v-alert>
           </div>
         </template>
 
@@ -595,16 +635,10 @@ watch(
         :filter="docsFilter"
         :case-filter="caseFilter"
         @select-cate="selectCate"
-        @search="
-          $event ? (docsFilter = { ...$event, page: 1 }) : (docsFilter.page = 1);
-          fetchDocsList(docsFilter)
-        "
+        @search="onDocsSearch"
         @update:filter="docsFilter = $event"
         @update:caseFilter="caseFilter = $event"
-        @case-search="
-          $event ? (caseFilter = { ...$event, page: 1 }) : (caseFilter.page = 1);
-          fetchSuitCaseList(caseFilter)
-        "
+        @case-search="onCaseSearch"
         @case-reset="caseReset"
       />
     </template>

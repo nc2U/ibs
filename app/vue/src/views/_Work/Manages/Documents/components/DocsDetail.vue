@@ -236,7 +236,19 @@ onMounted(() => {
 
     <CRow class="mt-1 pe-0">
       <CCol class="text-end pe-0">
-        <v-btn color="light" variant="flat" @click="router.push({ name: '(문서)' })" size="small">
+        <v-btn
+          color="grey"
+          variant="tonal"
+          @click="
+            $route.params.projId || docs?.project?.slug
+              ? router.push({
+                  name: '(문서)',
+                  params: { projId: $route.params.projId || docs.project?.slug },
+                })
+              : router.push({ name: '문서' })
+          "
+          size="small"
+        >
           목록으로
         </v-btn>
       </CCol>

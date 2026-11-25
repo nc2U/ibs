@@ -4,7 +4,7 @@ import type { IssueLogEntry } from '@/store/types/work_logging'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { markdownRender, message } from '@/utils/helper'
-import { elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -20,6 +20,7 @@ const delPk = ref<null | number>(null)
 const route = useRoute()
 
 const { can, canViewUser, PERM } = usePerms()
+const issueSlug = computed(() => props.log?.issue?.project?.slug)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -37,7 +38,7 @@ const content = ref('')
 const isPrivate = ref(false)
 
 const isLockedByAdmin = computed(
-  () => !can(PERM.ISSUE_PRIVATE_COMMENT_SET) && !!props.log.comment?.is_blocked,
+  () => !can(PERM.ISSUE_PRIVATE_COMMENT_SET, issueSlug.value) && !!props.log.comment?.is_blocked,
 )
 
 const toEdit = (commentVal: string) => {
@@ -50,10 +51,12 @@ const issueStore = useIssue()
 const commentSubmit = async () => {
   const pk = props.log?.comment?.pk
   const issue = props.log?.issue?.pk
+  const trimmed = content.value.trim()
+  if (!pk || !issue || !trimmed) return
   const updated = await issueStore.patchIssueComment({
     pk,
     issue,
-    content: content.value,
+    content: trimmed,
     is_private: isPrivate.value,
   })
   if (updated) editMode.value = false
@@ -109,7 +112,7 @@ const delSubmit = () => {
       <CRow
         :id="`note-${log.log_id}`"
         :class="{
-          'bg-blue-lighten-5':
+          'note-highlight':
             route.hash === `#note-${log.log_id}` ||
             (!!log.comment?.pk && route.hash === `#comment-${log.comment.pk}`),
         }"
@@ -127,12 +130,15 @@ const delSubmit = () => {
           <span>
             <router-link
               :to="{
-                name: route.params.projId || log.issue?.project?.slug ? '(업무실행내역)' : '업무실행내역',
+                name:
+                  route.params.projId || log.issue?.project?.slug
+                    ? '(업무실행내역)'
+                    : '업무실행내역',
                 params:
                   route.params.projId || log.issue?.project?.slug
                     ? { projId: (route.params.projId as string) || log.issue?.project?.slug }
                     : {},
-                query: { from: log.timestamp.substring(0, 10) },
+                query: { from: dateFormat(log.timestamp) },
               }"
             >
               {{ elapsedTime(log.timestamp) }}
@@ -146,7 +152,7 @@ const delSubmit = () => {
           </span>
         </CCol>
         <CCol class="text-end">
-          <span v-if="can(PERM.ISSUE_COMMENT_CREATE)">
+          <span v-if="can(PERM.ISSUE_COMMENT_CREATE, issueSlug)">
             <v-icon
               icon="mdi-comment-processing-outline"
               color="info"
@@ -164,8 +170,9 @@ const delSubmit = () => {
           </span>
           <span
             v-if="
-              can(PERM.ISSUE_COMMENT_UPDATE) ||
-              (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator?.pk)
+              can(PERM.ISSUE_COMMENT_UPDATE, issueSlug) ||
+              (can(PERM.ISSUE_COMMENT_OWN_UPDATE, issueSlug) &&
+                userInfo?.pk === log.comment?.creator?.pk)
             "
           >
             <v-icon
@@ -199,8 +206,9 @@ const delSubmit = () => {
                 </CDropdownItem>
                 <CDropdownItem
                   v-if="
-                    can(PERM.ISSUE_COMMENT_UPDATE) ||
-                    (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator?.pk)
+                    can(PERM.ISSUE_COMMENT_UPDATE, issueSlug) ||
+                    (can(PERM.ISSUE_COMMENT_OWN_UPDATE, issueSlug) &&
+                      userInfo?.pk === log.comment?.creator?.pk)
                   "
                   class="form-text pointer"
                   @click="delConfirm(log.comment?.pk as number)"
@@ -232,15 +240,16 @@ const delSubmit = () => {
             관리자에 의해 비공개로 전환된 댓글입니다. 설정을 변경할 수 없습니다.
           </span>
           <div class="my-3">
-            <v-btn color="success" size="small" @click="commentSubmit">
-              저장
-            </v-btn>
-            <v-btn color="light" size="small" @click="() => (editMode = false)" flat>취소</v-btn>
+            <v-btn color="success" size="small" @click="commentSubmit"> 저장 </v-btn>
+            <v-btn color="grey" variant="tonal" size="small" @click="() => (editMode = false)"
+              >취소</v-btn
+            >
           </div>
         </span>
       </div>
 
       <ConfirmModal ref="RefDelConfirm">
+        <template #header>댓글 삭제</template>
         <template #footer>
           <v-btn color="warning" @click="delSubmit">확인</v-btn>
         </template>
@@ -248,3 +257,9 @@ const delSubmit = () => {
     </CCol>
   </CRow>
 </template>
+
+<style lang="scss" scoped>
+.note-highlight {
+  background-color: rgba(var(--v-theme-info), 0.14);
+}
+</style>

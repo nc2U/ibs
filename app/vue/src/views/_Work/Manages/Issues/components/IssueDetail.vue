@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, type PropType, ref, watch } from 'vue'
 import type { selectProject, IssueProject } from '@/store/types/work_project'
-import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue'
+import type { CodeValue, Issue, IssueStatus, SubIssue as RelIssue } from '@/store/types/work_issue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { markdownRender, sanitizeExternalUrl } from '@/utils/helper'
-import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { dateFormat, elapsedTime, getOverdueDays, timeFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useLogging } from '@/store/pinia/work_logging'
@@ -26,7 +26,6 @@ const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   currentProject: { type: Object as PropType<IssueProject>, default: null },
   myProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
-  issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })
@@ -49,7 +48,9 @@ const editForm = ref(false)
 
 const { can, canViewUser, PERM } = usePerms()
 const canCommentCreate = computed(
-  () => props.currentProject?.status === '1' && can(PERM.ISSUE_COMMENT_CREATE),
+  () =>
+    props.currentProject?.status === '1' &&
+    can(PERM.ISSUE_COMMENT_CREATE, props.issue?.project?.slug || props.currentProject?.slug),
 )
 
 const isClosed = computed(() => props.issue?.closed)
@@ -97,11 +98,25 @@ const doneRatio = computed(() => {
   return props.issue?.done_ratio || 0
 })
 
-const onSubmit = (payload: any) => {
+const onSubmit = (payload: Record<string, unknown>) => {
   emit('on-submit', payload, (ok: boolean) => {
     if (ok) editForm.value = false
   })
 }
+
+const scrollTimers = new Set<ReturnType<typeof setTimeout>>()
+const scheduleScroll = (fn: () => void) => {
+  const id = setTimeout(() => {
+    scrollTimers.delete(id)
+    fn()
+  }, 100)
+  scrollTimers.add(id)
+}
+
+onBeforeUnmount(() => {
+  scrollTimers.forEach(clearTimeout)
+  scrollTimers.clear()
+})
 
 const scrollToId = (id: string) => {
   const el = document.getElementById(id)
@@ -111,41 +126,40 @@ const scrollToId = (id: string) => {
 const callEditForm = () => {
   editForm.value = !editForm.value
   if (editForm.value) {
-    setTimeout(() => {
-      scrollToId('edit-form')
-    }, 100)
+    scheduleScroll(() => scrollToId('edit-form'))
   }
 }
 
 const openEditForm = () => {
   editForm.value = true
-  setTimeout(() => {
-    scrollToId('edit-form')
-  }, 100)
+  scheduleScroll(() => scrollToId('edit-form'))
 }
 
 const callComment = () => {
   editForm.value = true
-  setTimeout(() => {
+  scheduleScroll(() => {
     scrollToId('edit-form')
     if (issueFormRef.value) issueFormRef.value.callComment()
-  }, 100)
+  })
 }
 
 const callReply = (payload?: { id: number; user: string; content: string }) => {
   editForm.value = true
-  setTimeout(() => {
+  scheduleScroll(() => {
     scrollToId('edit-form')
     if (issueFormRef.value) issueFormRef.value.callReply(payload)
-  }, 100)
+  })
 }
 
 const goMeeting = () => {
   if (props.issue?.meeting_desc) {
     const meetingId = props.issue.meeting_desc.pk
     const projId = props.issue.project?.slug || props.currentProject?.slug
-    if (projId) router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
-    else router.push({ name: '회의' })
+    if (projId && can(PERM.MEETING_READ, projId)) {
+      router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
+    } else if (can(PERM.MEETING_READ)) {
+      router.push({ name: '회의' })
+    }
   }
 }
 
@@ -159,7 +173,7 @@ const unlinkSubIssue = (del_child: number) =>
 // 연결된 업무 관련 코드
 const addRIssue = ref(false)
 const addFormCtl = (bool: boolean) => (addRIssue.value = bool)
-const addRelIssue = async (payload: any) => {
+const addRelIssue = async (payload: Parameters<typeof issueStore.createIssueRelation>[0]) => {
   const created = await issueStore.createIssueRelation(payload)
   if (created) addRIssue.value = false
 }
@@ -196,10 +210,15 @@ watch(
 
 const projId = computed(() => route.params.projId as string)
 const listRouteName = computed(() => (projId.value ? '(업무)' : '업무'))
-const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
+const detailRouteName = computed(() => '(업무) - 보기')
 
-const getLinkParams = (id: number) =>
-  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
+const getLinkParams = (id: number) => {
+  const targetSlug =
+    issueStore.issueList.find(i => i.pk === id)?.project?.slug ||
+    projId.value ||
+    props.issue?.project?.slug
+  return { projId: targetSlug, issueId: id }
+}
 
 const getListParams = () => (projId.value ? { projId: projId.value } : {})
 
@@ -214,7 +233,7 @@ const categoryName = computed(() => {
 })
 
 const relatedIssues = computed(() => {
-  const list: any[] = []
+  const list: RelIssue[] = []
   if (props.issue?.outgoing_relations) {
     props.issue.outgoing_relations.forEach(r => {
       if (r.issue) list.push(r.issue)
@@ -315,23 +334,25 @@ onBeforeMount(async () => {
         <CCol>
           <p class="mt-1 form-text">
             <router-link
-              v-if="canViewUser(issue.creator.pk)"
+              v-if="issue.creator?.pk && canViewUser(issue.creator.pk)"
               :to="{ name: '사용자 - 보기', params: { userId: issue.creator.pk } }"
             >
-              {{ issue.creator.username }}
+              {{ issue.creator?.username }}
             </router-link>
-            <span v-else>{{ issue.creator.username }}</span>
+            <span v-else>{{ issue.creator?.username ?? '알 수 없음' }}</span>
             이(가)
             <span>
               <router-link
+                v-if="issue.project?.slug"
                 :to="{
                   name: '(업무실행내역)',
                   params: { projId: issue.project.slug },
-                  query: { from: issue?.created.substring(0, 10) },
+                  query: { from: dateFormat(issue.created) },
                 }"
               >
                 {{ elapsedTime(issue.created) }}
               </router-link>
+              <span v-else>{{ elapsedTime(issue.created) }}</span>
               <v-tooltip activator="parent" location="top">
                 {{ timeFormat(issue.created) }}
               </v-tooltip>
@@ -339,14 +360,16 @@ onBeforeMount(async () => {
             전에 추가함.
             <span>
               <router-link
+                v-if="issue.project?.slug"
                 :to="{
                   name: '(업무실행내역)',
                   params: { projId: issue.project.slug },
-                  query: { from: issue.updated.substring(0, 10) },
+                  query: { from: dateFormat(issue.updated) },
                 }"
               >
                 {{ elapsedTime(issue.updated) }}
               </router-link>
+              <span v-else>{{ elapsedTime(issue.updated) }}</span>
               <v-tooltip activator="parent" location="top">
                 {{ timeFormat(issue?.updated as string) }}
               </v-tooltip>
@@ -360,11 +383,11 @@ onBeforeMount(async () => {
         <CCol md="6">
           <CRow>
             <CCol class="title">상태 :</CCol>
-            <CCol>{{ issue?.status.name }}</CCol>
+            <CCol>{{ issue?.status?.name }}</CCol>
           </CRow>
           <CRow>
             <CCol class="title">우선순위 :</CCol>
-            <CCol>{{ issue?.priority.name }}</CCol>
+            <CCol>{{ issue?.priority?.name }}</CCol>
           </CRow>
           <CRow>
             <CCol class="title">담당자 :</CCol>
@@ -390,6 +413,7 @@ onBeforeMount(async () => {
             <CCol class="title">목표단계 :</CCol>
             <CCol>
               <router-link
+                v-if="issue.project?.slug"
                 :to="{
                   name: '(로드맵) - 보기',
                   params: { projId: issue.project.slug, verId: issue.fixed_version.pk },
@@ -397,6 +421,7 @@ onBeforeMount(async () => {
               >
                 {{ issue.fixed_version?.name }}
               </router-link>
+              <span v-else>{{ issue.fixed_version?.name }}</span>
               <span v-if="issue.fixed_version.description">
                 ({{ issue.fixed_version.description }})
               </span>
@@ -413,12 +438,12 @@ onBeforeMount(async () => {
             <CCol class="title">완료기한 :</CCol>
             <CCol
               :class="{
-                'text-danger': !isClosed && !!issue.due_date && diffDate(issue.due_date) > 0,
+                'text-danger': !isClosed && getOverdueDays(issue?.due_date) > 0,
               }"
             >
               {{ issue?.due_date }}
-              <span v-if="!isClosed && !!issue?.due_date && diffDate(issue.due_date) > 0">
-                ({{ Math.floor(diffDate(issue.due_date as string)) }} 일 지연)
+              <span v-if="!isClosed && getOverdueDays(issue?.due_date) > 0">
+                ({{ getOverdueDays(issue?.due_date) }} 일 지연)
               </span>
             </CCol>
           </CRow>
@@ -461,7 +486,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <v-divider v-if="currentProject?.status !== '9' || issue.files.length" />
+      <v-divider v-if="currentProject?.status !== '9' || !!issue.files?.length" />
 
       <IssueFiles
         v-if="issue.files?.length"
@@ -497,22 +522,25 @@ onBeforeMount(async () => {
         <CCol class="col-10">
           <span class="title me-2">하위 업무</span>
           <SubSummary
-            v-if="issue.sub_issues.length"
+            v-if="issue.sub_issues?.length"
             :issue-pk="issue.pk"
             :sub-issues="issue.sub_issues"
           />
         </CCol>
         <CCol
           v-if="
-            currentProject?.status === '1' && can(PERM.ISSUE_CREATE) && can(PERM.ISSUE_SUB_MANAGE)
+            currentProject?.status === '1' &&
+            (projId || issue.project?.slug) &&
+            can(PERM.ISSUE_CREATE, issue.project?.slug || projId) &&
+            can(PERM.ISSUE_SUB_MANAGE, issue.project?.slug || projId)
           "
           class="text-end form-text"
         >
           <router-link
             :to="{
               name: '(업무) - 추가',
-              params: { projId: projId || issue.project.slug },
-              query: { parent: issue.pk, tracker: issue.tracker.pk },
+              params: { projId: projId || issue.project?.slug },
+              query: { parent: issue.pk, tracker: issue.tracker?.pk },
             }"
           >
             추가
@@ -530,15 +558,18 @@ onBeforeMount(async () => {
         <CCol class="col-10">
           <span class="title me-2">연결된 업무</span>
           <RelSummary
-            v-if="issue?.outgoing_relations.length || issue?.incoming_relation"
+            v-if="issue?.outgoing_relations?.length || issue?.incoming_relation"
             :issue-pk="issue.pk"
             :relations="relatedIssues"
-            :has-outgoing="issue.outgoing_relations.length > 0"
+            :has-outgoing="(issue.outgoing_relations?.length ?? 0) > 0"
             :has-incoming="!!issue.incoming_relation"
           />
         </CCol>
         <CCol
-          v-if="currentProject?.status === '1' && can(PERM.ISSUE_REL_MANAGE)"
+          v-if="
+            currentProject?.status === '1' &&
+            can(PERM.ISSUE_REL_MANAGE, issue.project?.slug || projId)
+          "
           class="text-end form-text"
         >
           <a href="#" @click.prevent="addRIssue = !addRIssue">추가</a>
@@ -572,9 +603,14 @@ onBeforeMount(async () => {
       <CRow v-if="issue.meeting_desc">
         <CCol>
           <span class="title me-2">관련 회의</span>
-          <a href="#" @click.prevent="goMeeting">
+          <a
+            v-if="can(PERM.MEETING_READ, issue.project?.slug || currentProject?.slug)"
+            href="#"
+            @click.prevent="goMeeting"
+          >
             {{ issue.meeting_desc?.title }}
           </a>
+          <span v-else>{{ issue.meeting_desc?.title }}</span>
         </CCol>
       </CRow>
     </CCardBody>
@@ -584,8 +620,8 @@ onBeforeMount(async () => {
     <CCol class="text-end my-2">
       <v-btn
         size="small"
-        color="light"
-        flat
+        color="grey"
+        variant="tonal"
         @click="router.push({ name: listRouteName, params: getListParams() })"
       >
         목록으로
@@ -596,7 +632,6 @@ onBeforeMount(async () => {
   <IssueHistory
     v-if="issueLogList.length"
     :issue-log-list="issueLogList"
-    :issue-comment-list="issueCommentList"
     @call-reply="callReply"
     @del-submit="delSubmit"
   />
@@ -627,6 +662,7 @@ onBeforeMount(async () => {
   </div>
 
   <ConfirmModal ref="refDelModal">
+    <template #header>업무 삭제</template>
     <template #footer>
       <v-btn size="small" color="warning" @click="confirmDelete">삭제</v-btn>
     </template>

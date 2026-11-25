@@ -25,13 +25,19 @@ const ctlLinkNum = (idx: number) => {
   }
 }
 
-const newLinkPush = () => {
-  const validLinks = newLinkSlots.value.map(s => s.value.trim()).filter(Boolean)
-  emit('new-link-push', validLinks)
+const getNewLinks = (): string[] => newLinkSlots.value.map(s => s.value.trim()).filter(Boolean)
+
+const clearNewLinks = () => {
   newLinkSlots.value = [{ id: linkSlotSeq++, value: '' }]
 }
 
-defineExpose({ newLinkPush })
+const newLinkPush = () => {
+  const validLinks = getNewLinks()
+  emit('new-link-push', validLinks)
+  clearNewLinks()
+}
+
+defineExpose({ newLinkPush, getNewLinks, clearNewLinks })
 
 const dataSetup = () => {
   if (props.links) {

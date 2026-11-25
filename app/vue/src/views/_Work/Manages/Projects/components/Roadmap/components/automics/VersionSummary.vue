@@ -4,7 +4,7 @@ import type { Issue, SimpleIssue } from '@/store/types/work_issue'
 
 const props = defineProps({
   issues: {
-    type: Array as PropType<(SimpleIssue | Issue | any)[]>,
+    type: Array as PropType<(SimpleIssue | Issue)[]>,
     default: () => [],
   },
 })
@@ -56,7 +56,7 @@ const groupedSummary = computed<SummaryItem[]>(() => {
       case 'creator':
         key =
           issue.creator && typeof issue.creator === 'object'
-            ? issue.creator.username || issue.creator.name || '미지정'
+            ? issue.creator.username || '미지정'
             : issue.creator
               ? String(issue.creator)
               : '미지정'
@@ -64,17 +64,18 @@ const groupedSummary = computed<SummaryItem[]>(() => {
       case 'assigned_to':
         key =
           issue.assigned_to && typeof issue.assigned_to === 'object'
-            ? issue.assigned_to.username || issue.assigned_to.name || '미지정'
+            ? issue.assigned_to.username || '미지정'
             : issue.assigned_to
               ? String(issue.assigned_to)
               : '미지정'
         break
-      case 'category':
-        key =
-          issue.category && typeof issue.category === 'object'
-            ? issue.category.name || '미지정'
-            : (issue as any).category_name || '미지정'
+      case 'category': {
+        const cat = issue.category as { name?: string } | number | null | undefined
+        const catName =
+          'category_name' in issue ? (issue as { category_name?: string }).category_name : ''
+        key = cat && typeof cat === 'object' ? cat.name || '미지정' : catName || '미지정'
         break
+      }
     }
 
     if (!key || key === 'undefined' || key === 'null' || key.trim() === '') {

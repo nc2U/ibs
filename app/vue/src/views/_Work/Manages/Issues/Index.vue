@@ -12,6 +12,7 @@ import { useRoute } from 'vue-router'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue'
+import type { CustomQuery } from '@/store/types/work_inform'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from './automics/IssueHeader.vue'
@@ -88,7 +89,7 @@ const pageSelect = (p: number) => {
 
 const querySectionRef = ref<InstanceType<typeof QuerySection> | null>(null)
 const activeQueryId = computed(() => issueFilterStore.activeQueryId)
-const onQueryClick = (query: any) => {
+const onQueryClick = (query: CustomQuery) => {
   querySectionRef.value?.applyQuery(query)
 }
 const onResetQuery = () => {

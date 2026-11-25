@@ -2,7 +2,7 @@
 import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { IssueLogEntry } from '@/store/types/work_logging'
-import { elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
 import { usePerms } from '@/composables/usePerms'
 import { CCol, CRow } from '@coreui/vue'
@@ -20,7 +20,7 @@ const { canViewUser } = usePerms()
     <CCol class="ps-0">
       <CRow
         :id="`note-${log.log_id}`"
-        :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
+        :class="{ 'note-highlight': route.hash == `#note-${log.log_id}` }"
       >
         <CCol v-if="log.creator" class="ms-2">
           <router-link
@@ -34,12 +34,15 @@ const { canViewUser } = usePerms()
           <span>
             <router-link
               :to="{
-                name: route.params.projId || log.issue?.project?.slug ? '(업무실행내역)' : '업무실행내역',
+                name:
+                  route.params.projId || log.issue?.project?.slug
+                    ? '(업무실행내역)'
+                    : '업무실행내역',
                 params:
                   route.params.projId || log.issue?.project?.slug
                     ? { projId: (route.params.projId as string) || log.issue?.project?.slug }
                     : {},
-                query: { from: log.timestamp.substring(0, 10) },
+                query: { from: dateFormat(log.timestamp) },
               }"
             >
               {{ elapsedTime(log.timestamp) }}
@@ -71,3 +74,9 @@ const { canViewUser } = usePerms()
     </CCol>
   </CRow>
 </template>
+
+<style lang="scss" scoped>
+.note-highlight {
+  background-color: rgba(var(--v-theme-info), 0.14);
+}
+</style>

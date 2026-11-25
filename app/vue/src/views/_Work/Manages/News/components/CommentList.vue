@@ -17,14 +17,14 @@ const infStore = useInform()
 const news = computed(() => infStore.news as News | null)
 const canComment = computed(
   () =>
-    workStore.currentProject?.status === '1' &&
-    can(PERM.NEWS_COMMENT, news.value?.project?.slug),
+    workStore.currentProject?.status === '1' && can(PERM.NEWS_COMMENT, news.value?.project?.slug),
 )
 
 const commentContent = ref('')
+const submitting = ref(false)
 
 const onSubmit = async () => {
-  if (!commentContent.value.trim() || !news.value?.pk) return
+  if (submitting.value || !commentContent.value.trim() || !news.value?.pk) return
 
   const payload: NewsComment = {
     news: news.value.pk,
@@ -34,8 +34,13 @@ const onSubmit = async () => {
     updated: '',
   }
 
-  const ok = await infStore.createNewsComment(payload)
-  if (ok) commentContent.value = ''
+  submitting.value = true
+  try {
+    const ok = await infStore.createNewsComment(payload)
+    if (ok) commentContent.value = ''
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -59,7 +64,8 @@ const onSubmit = async () => {
             variant="flat"
             size="small"
             class="ms-2"
-            :disabled="!commentContent.trim() || !userInfo"
+            :disabled="submitting || !commentContent.trim() || !userInfo"
+            :loading="submitting"
             @click="onSubmit"
           >
             등록
@@ -72,7 +78,7 @@ const onSubmit = async () => {
     <div v-if="news && news.comments && news.comments.length" class="comments-wrapper">
       <Comment v-for="comment in news.comments" :key="comment.pk" :comment="comment" />
     </div>
-    <div v-else class="text-center py-6 text-grey-lighten-1 italic small">
+    <div v-else class="text-center py-6 text-medium-emphasis fst-italic small">
       {{
         canComment
           ? '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!'

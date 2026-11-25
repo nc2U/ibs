@@ -19,7 +19,7 @@ const RefForumForm = ref<InstanceType<typeof FormModal> | null>(null)
 const RefDelConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const { can, PERM } = usePerms()
-const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE, route.params.projId as string))
 
 const validated = ref(false)
 const form = ref<Forum>({
@@ -41,7 +41,8 @@ const resetForm = () => {
 const frmStore = useForum()
 // 1. 원본 목록
 const forumList = computed(() => frmStore.forumList as Forum[])
-const fetchForumList = (payload: any) => frmStore.fetchForumList(payload)
+const fetchForumList = (payload: Parameters<typeof frmStore.fetchForumList>[0]) =>
+  frmStore.fetchForumList(payload)
 
 // 상위 게시판 선택 시 본인 및 하위 게시판 제외 (순환 참조 방지)
 const availableParentForums = computed(() => {
@@ -87,18 +88,30 @@ const orderedList = ref<Forum[]>([])
 watch(
   [forumList, storageKey],
   ([nVal, key]) => {
-    orderedList.value = getOrderedList(nVal as any[], key)
+    orderedList.value = getOrderedList(
+      nVal.filter((f): f is Forum & { pk: number } => typeof f.pk === 'number'),
+      key,
+    )
   },
   { immediate: true },
 )
 
+const saveForumOrder = () => {
+  setLocalStorage(
+    orderedList.value.filter((f): f is Forum & { pk: number } => typeof f.pk === 'number'),
+    storageKey.value,
+  )
+}
+
 // 게시판 등록 수정
 const createForum = () => {
+  validated.value = false
   resetForm()
   RefForumForm.value?.callModal()
 }
 
 const modifyCall = (frm: Forum) => {
+  validated.value = false
   form.value.pk = frm.pk
   form.value.project = frm.project
   form.value.name = frm.name
@@ -175,12 +188,7 @@ onBeforeMount(async () => {
           </CTableRow>
         </CTableHead>
 
-        <Draggable
-          v-model="orderedList"
-          tag="tbody"
-          item-key="pk"
-          @end="setLocalStorage(orderedList as any[], storageKey)"
-        >
+        <Draggable v-model="orderedList" tag="tbody" item-key="pk" @end="saveForumOrder">
           <template #item="{ element }">
             <CTableRow>
               <CTableDataCell class="ps-3">
@@ -273,7 +281,7 @@ onBeforeMount(async () => {
           >
             확인
           </v-btn>
-          <v-btn color="light" size="small" flat @click="RefForumForm?.close()">
+          <v-btn color="grey" variant="tonal" size="small" @click="RefForumForm?.close()">
             닫기
           </v-btn>
         </CModalFooter>
@@ -282,6 +290,7 @@ onBeforeMount(async () => {
   </FormModal>
 
   <ConfirmModal ref="RefDelConfirm">
+    <template #header>게시판 삭제</template>
     <template #default>
       이 게시판을 삭제하면 해당 게시물 등 관련된 데이터가 전부 삭제됩니다.<br />
       계속 진행 하시겠습니까?

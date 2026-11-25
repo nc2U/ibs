@@ -7,7 +7,7 @@ import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
-defineProps({
+const props = defineProps({
   versions: { type: Array as PropType<Version[]>, default: () => [] },
   currentProjectSlug: { type: String, required: true },
 })
@@ -16,7 +16,7 @@ const emit = defineEmits(['version-filter', 'delete-version'])
 
 // 권한 설정
 const { can, PERM } = usePerms()
-const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
+const canManageVersions = computed(() => can(PERM.PROJECT_VERSION, props.currentProjectSlug))
 
 const RefVersionConfirm = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
@@ -38,12 +38,7 @@ const formReset = () => {
 
 const toDelete = (ver: number) => {
   deleteVersion.value = ver
-  RefVersionConfirm.value?.callModal(
-    '',
-    '이 단계 삭제를 계속 진행 하시겠습니까?',
-    '',
-    'warning',
-  )
+  RefVersionConfirm.value?.callModal('', '이 단계 삭제를 계속 진행 하시겠습니까?', '', 'warning')
 }
 
 const deleteSubmit = () => {
@@ -218,6 +213,7 @@ const deleteSubmit = () => {
   </CRow>
 
   <ConfirmModal ref="RefVersionConfirm">
+    <template #header>단계 삭제</template>
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteSubmit">삭제</v-btn>
     </template>

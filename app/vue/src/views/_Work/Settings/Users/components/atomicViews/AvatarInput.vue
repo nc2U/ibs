@@ -18,10 +18,10 @@ const imgSource = ref<string | File>('') // 화면에 표시되는 이미지 소
 
 const modalImg = ref()
 const cropModal = ref()
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const browse = () => {
-  const fu = document.getElementById('file')
-  if (!!fu) fu.click()
+  fileInputRef.value?.click()
 }
 
 const loadFile = (payload: Event) => {
@@ -33,7 +33,7 @@ const loadFile = (payload: Event) => {
     reader.readAsDataURL(img) // 주소 데이터화
     reader.onload = e => {
       modalImg.value = e.target?.result // 크로퍼에 할당
-      if (!!modalImg.value) cropModal.value.visible = true
+      if (modalImg.value && cropModal.value) cropModal.value.visible = true
     }
   }
 }
@@ -64,6 +64,7 @@ onMounted(() => (imgSource.value = props.image || '/static/dist/img/NoImage.jpeg
       <h6>프로필 이미지</h6>
       <input
         id="file"
+        ref="fileInputRef"
         type="file"
         class="form-control"
         accept="image/*"
@@ -76,7 +77,7 @@ onMounted(() => (imgSource.value = props.image || '/static/dist/img/NoImage.jpeg
             <CDropdownToggle class="py-0 btn-link" :caret="false">
               <CImage rounded thumbnail fluid :src="imgSource" />
               <CCol
-                class="bg-white text-high-emphasis position-absolute rounded-2 px-2 py-1 left-0 bottom-0 ms-1 mb-1 border"
+                class="bg-more-white text-high-emphasis position-absolute rounded-2 px-2 py-1 start-0 bottom-0 ms-1 mb-1 border"
               >
                 <CIcon name="cilPencil" />
                 Edit

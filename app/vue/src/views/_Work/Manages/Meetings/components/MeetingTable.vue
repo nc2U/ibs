@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import { type PropType, ref, watchEffect, onUnmounted } from 'vue'
+import { type PropType } from 'vue'
 import { DEFAULT_MEETING_COLUMNS, MEETING_COLUMN_LABEL_MAP } from '../constants'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import { useRoute, useRouter } from 'vue-router'
-import type { Meeting, MeetingCategory } from '@/store/types/work_meeting'
+import { usePerms } from '@/composables/usePerms'
+import type { Meeting } from '@/store/types/work_meeting'
 import Pagination from '@/components/Pagination'
 import MeetingItem from './MeetingItem.vue'
 
 defineProps({
   meetingList: { type: Array as PropType<Meeting[]>, default: () => [] },
-  categories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
   columns: {
     type: Array as PropType<string[]>,
     default: () => DEFAULT_MEETING_COLUMNS,
@@ -17,32 +17,18 @@ defineProps({
   page: { type: Number, default: 1 },
 })
 
-const emit = defineEmits(['filter-submit', 'page-select'])
+const emit = defineEmits(['page-select'])
 
 const route = useRoute()
 const router = useRouter()
+const { can, PERM } = usePerms()
 
 const meetingStore = useMeeting()
 const meetingPages = (limit: number) => meetingStore.meetingPages(limit)
 
-const selectedRow = ref<number | null>(null)
-const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as HTMLElement | null
-  if (!target?.closest('.table-row')) selectedRow.value = null
-}
-
-watchEffect(() => {
-  if (selectedRow.value) document.addEventListener('click', handleClickOutside)
-  else document.removeEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
 const goDetail = (meeting: Meeting) => {
   const projId = meeting.project_desc?.slug || (route.params.projId as string)
-  if (projId && meeting.pk) {
+  if (projId && meeting.pk && can(PERM.MEETING_READ, projId)) {
     router.push({ name: '(회의) - 보기', params: { projId, meetingId: meeting.pk } })
   }
 }
@@ -74,7 +60,6 @@ const pageSelect = (page: number) => emit('page-select', page)
         <CTableRow
           v-for="meeting in meetingList"
           @click="goDetail(meeting)"
-          @mouseover="selectedRow = meeting.pk"
           class="text-center table-row pointer"
           :key="meeting.pk"
         >

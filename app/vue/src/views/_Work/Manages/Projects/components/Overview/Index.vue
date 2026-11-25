@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { useRouter, type LocationQueryRaw } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useInform } from '@/store/pinia/work_inform'
@@ -15,9 +15,8 @@ import SubProjects from './components/SubProjects.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const props = defineProps<{
-  navMenu?: any
+  navMenu?: string[]
   currentProject?: IssueProject | null
-  query?: LocationQueryRaw
 }>()
 
 const router = useRouter()
@@ -109,13 +108,7 @@ const deleteProject = async (slug: string) => {
 
 <template>
   <Loading v-model:active="loading" />
-  <ContentBody
-    ref="cBody"
-    :nav-menu="navMenu"
-    :current-project="currentProject"
-    :query="query"
-    :aside="false"
-  >
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="false">
     <template v-slot:default>
       <OverViewHeader
         v-if="currentProject"
@@ -129,15 +122,21 @@ const deleteProject = async (slug: string) => {
       </CAlert>
 
       <CRow v-if="renderedDescription" class="my-2">
-        <CCol class="text-muted" v-html="renderedDescription" />
+        <CCol class="text-muted">
+          <div v-html="renderedDescription" />
+        </CCol>
       </CRow>
 
-      <CRow v-if="safeHomepage" class="ps-2 my-2">
-        <li>
-          <a :href="safeHomepage" target="_blank" rel="noopener noreferrer">
-            {{ currentProject?.homepage }}
-          </a>
-        </li>
+      <CRow v-if="safeHomepage && safeHomepage !== '#'" class="ps-2 my-2">
+        <CCol>
+          <ul class="ps-4 mb-0">
+            <li>
+              <a :href="safeHomepage" target="_blank" rel="noopener noreferrer">
+                {{ currentProject?.homepage }}
+              </a>
+            </li>
+          </ul>
+        </CCol>
       </CRow>
 
       <CRow>

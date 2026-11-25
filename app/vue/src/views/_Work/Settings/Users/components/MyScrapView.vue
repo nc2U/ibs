@@ -134,6 +134,7 @@ const submitTitle = async (item: Scrape) => {
   } else {
     await accStore.patchScrape(item.pk, nextTitle)
   }
+  if (page.value > 1) await fetchCurrentList(page.value)
   editingId.value = null
   editTitle.value = ''
 }
@@ -159,6 +160,7 @@ const confirmDelete = async () => {
   } else {
     await accStore.deleteScrape(pk)
   }
+  if (page.value > 1) await fetchCurrentList(page.value)
   pendingDeletePk.value = null
   refConfirmModal.value?.close()
 }

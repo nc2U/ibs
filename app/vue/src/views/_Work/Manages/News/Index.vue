@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useInform } from '@/store/pinia/work_inform'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings'
+import { buildNewsFormData, type NewsFormPayload } from './components/newsFormHelper'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import Loading from '@/components/Loading/Index.vue'
@@ -25,9 +26,7 @@ const route = useRoute()
 const { can, PERM } = usePerms()
 const workStore = useWork()
 const activeNewsProjects = computed(() =>
-  workStore.getMyActiveProjects.filter(
-    pjt => pjt.module?.news && can(PERM.NEWS_MANAGE, pjt.slug),
-  ),
+  workStore.getMyActiveProjects.filter(pjt => pjt.module?.news && can(PERM.NEWS_MANAGE, pjt.slug)),
 )
 
 const canNewsRead = computed(
@@ -46,26 +45,15 @@ const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
 const importantNews = computed(() => newsList.value.filter(n => n.is_important))
 
-const createNews = (payload: any) => infStore.createNews(payload)
+const createNews = (payload: FormData) => infStore.createNews(payload)
 
-const onSubmit = async (payload: any) => {
-  const getData: Record<string, any> = { ...payload }
-
-  const form = new FormData()
-
-  for (const key in getData) {
-    if (key === 'newFiles')
-      (getData[key] as any[]).forEach(val => {
-        form.append('new_files', val.file as Blob)
-        form.append('new_descs', val.description as string)
-      })
-    else {
-      const formValue = getData[key] === null ? '' : getData[key]
-      form.append(key, formValue as string)
-    }
-  }
+const onSubmit = async (payload: NewsFormPayload) => {
+  const form = buildNewsFormData(payload)
   const ok = await createNews(form)
-  if (ok) viewForm.value = false
+  if (ok) {
+    viewForm.value = false
+    page.value = 1
+  }
 }
 
 const page = ref(1)
@@ -77,6 +65,7 @@ const pageSelect = (p: number) => {
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   workStore.removeIssueProject()
+  if (route.query.viewForm && canNewsManage.value) viewForm.value = true
   try {
     await infStore.fetchNewsList({ page: page.value })
   } catch (err) {
@@ -85,13 +74,24 @@ onBeforeMount(async () => {
     loading.value = false
   }
 })
+
+watch(
+  () => route.query.viewForm,
+  nVal => {
+    if (nVal && canNewsManage.value && route.name === '공지') viewForm.value = true
+  },
+)
+
+onBeforeUnmount(() => {
+  infStore.newsList = []
+})
 </script>
 
 <template>
   <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCall" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :aside="true">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -139,10 +139,10 @@ onBeforeMount(async () => {
             <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">
               <v-icon icon="mdi-chevron-right" size="x-small" class="me-1" />
               <router-link
-                v-if="canNewsRead"
+                v-if="news.project?.slug && news.pk && can(PERM.NEWS_READ, news.project.slug)"
                 :to="{
                   name: '(공지) - 보기',
-                  params: { projId: news.project?.slug, newsId: news.pk },
+                  params: { projId: news.project.slug, newsId: news.pk },
                 }"
                 class="text-body-2"
               >
