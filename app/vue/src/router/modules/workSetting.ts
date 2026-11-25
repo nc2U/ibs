@@ -41,6 +41,14 @@ const workSetting = {
           path: 'my/project-view',
           name: '사용자 - 프로젝트 보기',
         },
+        {
+          path: 'my/scrap',
+          name: '사용자 - 내 스크랩',
+        },
+        {
+          path: 'my/activity',
+          name: '사용자 - 내 활동',
+        },
       ],
     },
     {

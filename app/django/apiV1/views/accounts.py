@@ -190,7 +190,7 @@ class PostScrapeViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return PostScrape.objects.none()
-        qs = PostScrape.objects.select_related('post__forum').order_by('-id')
+        qs = PostScrape.objects.select_related('post__forum__project').order_by('-id')
         if user.is_superuser:
             return qs
         return qs.filter(user=user)

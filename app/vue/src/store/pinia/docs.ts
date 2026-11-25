@@ -394,27 +394,21 @@ export const useDocs = defineStore('docs', () => {
 
   const removeTrashDocs = () => (trashDocs.value = null)
 
-  const fetchTrashDocsList = (page = 1) =>
+  const fetchTrashDocsList = (page = 1, limit = 10) =>
     api
-      .get(`/docs-trash-can/?page=${page}`)
+      .get(`/docs-trash-can/?limit=${limit}&page=${page}`)
       .then(res => {
         trashDocsList.value = res.data.results
         trashDocsCount.value = res.data.count
       })
       .catch(err => errorHandle(err))
 
-  const restoreDocs = (pk: number) =>
+  const restoreDocs = (pk: number, page = 1) =>
     api
       .patch(`/docs-trash-can/${pk}/`)
-      .then(res =>
-        fetchDocsList({
-          issue_project: res.data.issue_project,
-          doc_type: res.data.doc_type,
-          page: 1,
-        }).then(() =>
-          fetchTrashDocsList().then(() =>
-            message('success', '', '해당 게시물이 휴지통에서 복원되었습니다.'),
-          ),
+      .then(() =>
+        fetchTrashDocsList(page).then(() =>
+          message('success', '', '해당 문서가 휴지통에서 복원되었습니다.'),
         ),
       )
       .catch(err => errorHandle(err))
@@ -424,7 +418,7 @@ export const useDocs = defineStore('docs', () => {
       .delete(`/docs-trash-can/${pk}/?hard=1`)
       .then(() =>
         fetchTrashDocsList(page).then(() =>
-          message('warning', '', '해당 게시물이 영구 삭제되었습니다.'),
+          message('warning', '', '해당 문서가 영구 삭제되었습니다.'),
         ),
       )
       .catch(err => errorHandle(err))

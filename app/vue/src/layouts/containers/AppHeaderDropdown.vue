@@ -77,6 +77,16 @@ const logout = () => {
         </v-chip>
       </CDropdownItem>
 
+      <CDropdownItem @click="router.push({ name: '사용자 - 내 스크랩' })">
+        <v-icon icon="mdi-bookmark-multiple-outline" size="small" />
+        내 스크랩
+      </CDropdownItem>
+
+      <CDropdownItem @click="router.push({ name: '사용자 - 내 활동' })">
+        <v-icon icon="mdi-file-document-edit-outline" size="small" />
+        내 작성 활동
+      </CDropdownItem>
+
       <CDropdownHeader component="h6" class="fw-semibold py-2 bg-more-secondary">
         Settings
       </CDropdownHeader>

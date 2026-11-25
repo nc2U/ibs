@@ -49,7 +49,7 @@ export default defineComponent({
 </script>
 
 <template>
-  <CModal :visible="visible" @close="() => close">
+  <CModal :visible="visible" @close="close">
     <CModalHeader :close-button="false">
       <CModalTitle component="h6"> Crop your new profile picture</CModalTitle>
       <v-btn

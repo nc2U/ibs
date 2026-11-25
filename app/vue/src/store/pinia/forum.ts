@@ -376,7 +376,7 @@ export const useForum = defineStore('forum', () => {
       params.append('post', String(payload.post))
       params.append('is_comment', 'true')
     }
-    if (payload.user) params.append('user', String(payload.user))
+    if (payload.user) params.append('creator', String(payload.user))
 
     return await api
       .get(`/comment/?${params.toString()}`)

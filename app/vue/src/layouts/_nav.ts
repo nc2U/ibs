@@ -405,6 +405,11 @@ const projectDocs = {
       name: '소송 사건 관리',
       to: '/project-docs/lawsuit/case',
     },
+    {
+      component: 'CNavItem',
+      name: '문서 휴지통',
+      to: '/project-docs/trash-can',
+    },
   ],
 }
 

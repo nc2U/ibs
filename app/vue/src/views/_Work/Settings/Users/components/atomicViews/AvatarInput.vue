@@ -27,7 +27,7 @@ const browse = () => {
 const loadFile = (payload: Event) => {
   // 이미지 선택 시 동작 -> 원본이미지를 데이터화해서 cropperModal로 로드
   const inputEl = payload.target as HTMLInputElement
-  if (inputEl.files) {
+  if (inputEl.files && inputEl.files[0]) {
     const img = inputEl.files[0] // 원본 이미지
     const reader = new FileReader()
     reader.readAsDataURL(img) // 주소 데이터화
@@ -48,11 +48,12 @@ const transAvatarInput = (img: File) => {
 
 const delModalImg = () => (modalImg.value = null)
 
-watch(props, val => {
-  if (val) {
-    imgSource.value = val.image
-  }
-})
+watch(
+  () => props.image,
+  val => {
+    if (val) imgSource.value = val
+  },
+)
 
 onMounted(() => (imgSource.value = props.image || '/static/dist/img/NoImage.jpeg'))
 </script>
@@ -75,13 +76,13 @@ onMounted(() => (imgSource.value = props.image || '/static/dist/img/NoImage.jpeg
             <CDropdownToggle class="py-0 btn-link" :caret="false">
               <CImage rounded thumbnail fluid :src="imgSource" />
               <CCol
-                class="bg-white text-high-emphasis position-absolute rounded-2 px-2 py-1 left-0 bottom-0 ml-1 mb-1 border"
+                class="bg-white text-high-emphasis position-absolute rounded-2 px-2 py-1 left-0 bottom-0 ms-1 mb-1 border"
               >
                 <CIcon name="cilPencil" />
                 Edit
               </CCol>
             </CDropdownToggle>
-            <CDropdownMenu class="ml-2 py-1">
+            <CDropdownMenu class="ms-2 py-1">
               <CDropdownItem @click="browse"> Upload a photo...</CDropdownItem>
             </CDropdownMenu>
           </CDropdown>

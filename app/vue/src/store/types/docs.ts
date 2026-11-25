@@ -187,8 +187,11 @@ export interface PatchDocs {
 
 export interface TrashDocs {
   pk: number
+  doc_type?: number
   type_name: string
   cate_name: string
+  project_name?: string | null
+  project_slug?: string | null
   title: string
   description: string
   creator: string

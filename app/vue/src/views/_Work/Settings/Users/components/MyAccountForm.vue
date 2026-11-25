@@ -5,9 +5,9 @@ import { isValidate } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-import AvatarInput from '@/views/_MyPage/Modify/components/AvatarInput.vue'
-import SignInput from '@/views/_MyPage/Modify/components/SignInput.vue'
+import MyMenuLinks from '@/views/_Work/Settings/Users/components/atomicViews/MyMenuLinks.vue'
+import AvatarInput from '@/views/_Work/Settings/Users/components/atomicViews/AvatarInput.vue'
+import SignInput from '@/views/_Work/Settings/Users/components/atomicViews/SignInput.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -163,11 +163,6 @@ const onSubmitConfirm = async () => {
   }
 }
 
-const setMyAccount = async () => {
-  accStore.user = userInfo.value
-  await router.push({ name: '사용자 - 프로젝트 보기' })
-}
-
 onBeforeMount(async () => {
   await formDataSetup()
 })
@@ -179,29 +174,12 @@ onBeforeRouteUpdate(async () => {
 
 <template>
   <div>
-    <CRow class="py-2">
+    <CRow class="py-2 align-items-center">
       <CCol class="mb-2">
         <span class="h5 me-2"> 내 계정 </span>
       </CCol>
 
-      <CCol class="text-end form-text">
-        <span class="me-2">
-          <TextButton
-            name="내 워크스페이스 목록"
-            @click="setMyAccount"
-            icon="mdi-chart-box-multiple-outline"
-            icon-color="info"
-          />
-        </span>
-        <span class="me-2">
-          <TextButton
-            name="비밀번호 변경"
-            :to="{ name: '사용자 - 비밀번호 변경' }"
-            icon="mdi-key-outline"
-            icon-color="amber"
-          />
-        </span>
-      </CCol>
+      <MyMenuLinks current="account" />
     </CRow>
 
     <CRow>
@@ -325,9 +303,7 @@ onBeforeRouteUpdate(async () => {
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="birth_date" class="col-sm-3 col-form-label">
-                  생년월일
-                </CFormLabel>
+                <CFormLabel for="birth_date" class="col-sm-3 col-form-label"> 생년월일 </CFormLabel>
                 <CCol sm="9">
                   <DatePicker
                     v-model="form.birth_date"

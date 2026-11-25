@@ -107,6 +107,8 @@ class FilesInPostSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     forum_name = serializers.SlugField(source='forum', read_only=True)
+    project_slug = serializers.CharField(source='forum.project.slug', read_only=True)
+    project_name = serializers.CharField(source='forum.project.name', read_only=True)
     cate_name = serializers.SlugField(source='category', read_only=True)
     files = FilesInPostSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
@@ -119,7 +121,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('pk', 'forum', 'forum_name', 'category', 'cate_name', 'title',
+        fields = ('pk', 'forum', 'forum_name', 'project_slug', 'project_name', 'category', 'cate_name', 'title',
                   'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape', 'blame',
                   'my_blame', 'ip', 'device', 'is_secret', 'password', 'is_hide_comment',
                   'is_notice', 'is_faq', 'is_blind', 'deleted', 'files', 'comments', 'creator',
@@ -430,9 +432,13 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class SimplePostInCommentSerializer(serializers.ModelSerializer):
+    forum_name = serializers.SlugField(source='forum', read_only=True)
+    project_slug = serializers.CharField(source='forum.project.slug', read_only=True)
+    project_name = serializers.CharField(source='forum.project.name', read_only=True)
+
     class Meta:
         model = Post
-        fields = ('pk', 'forum', 'is_secret', 'creator')
+        fields = ('pk', 'forum', 'forum_name', 'project_slug', 'project_name', 'is_secret', 'creator')
 
 
 class CommentSerializer(serializers.ModelSerializer):

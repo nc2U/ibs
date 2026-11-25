@@ -40,6 +40,8 @@ export type Post = {
   pk?: number
   forum: number | null
   forum_name?: string
+  project_slug?: string | null
+  project_name?: string | null
   category: number | null
   cate_name?: string
   title: string
@@ -108,6 +110,9 @@ export interface Comment {
   post: {
     pk?: number
     forum: number | null
+    forum_name?: string
+    project_slug?: string | null
+    project_name?: string | null
   }
   content: string
   parent: number | null

@@ -245,10 +245,12 @@ class ProfileSerializer(serializers.ModelSerializer):
 class DocsInScrapeSerializer(serializers.ModelSerializer):
     type_name = serializers.SerializerMethodField(read_only=True)
     proj_sort = serializers.SerializerMethodField(read_only=True)
+    project_slug = serializers.CharField(source='issue_project.slug', read_only=True)
+    project_name = serializers.CharField(source='issue_project.name', read_only=True)
 
     class Meta:
         model = Document
-        fields = ('pk', 'doc_type', 'type_name', 'issue_project', 'proj_sort', 'title')
+        fields = ('pk', 'doc_type', 'type_name', 'issue_project', 'project_slug', 'project_name', 'proj_sort', 'title')
 
     @staticmethod
     def get_type_name(obj):
@@ -285,10 +287,12 @@ class DocScrapeSerializer(serializers.ModelSerializer):
 
 class PostInScrapeSerializer(serializers.ModelSerializer):
     forum_name = serializers.SlugField(source='forum', read_only=True)
+    project_slug = serializers.CharField(source='forum.project.slug', read_only=True)
+    project_name = serializers.CharField(source='forum.project.name', read_only=True)
 
     class Meta:
         model = Post
-        fields = ('pk', 'forum', 'forum_name', 'title')
+        fields = ('pk', 'forum', 'forum_name', 'project_slug', 'project_name', 'title')
 
 
 class PostScrapeSerializer(serializers.ModelSerializer):

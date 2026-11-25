@@ -82,6 +82,22 @@ const proDocs = {
         },
       ],
     },
+    {
+      path: 'trash-can',
+      name: '문서 휴지통',
+      component: () => import('@/views/proDocs/TrashCan/Index.vue'),
+      meta: {
+        title: '문서 휴지통',
+        auth: true,
+        requiresProjectDocsAuth: true,
+      },
+      children: [
+        {
+          path: ':docsId(\\d+)',
+          name: '문서 휴지통 - 보기',
+        },
+      ],
+    },
   ],
 }
 

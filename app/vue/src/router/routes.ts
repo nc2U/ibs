@@ -17,7 +17,6 @@ import proLedger from '@/router/modules/proLedger.ts'
 import proDocs from '@/router/modules/proDocs'
 import projects from '@/router/modules/projects'
 import settings from '@/router/modules/settings'
-// import myPage from '@/router/modules/mypage'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -46,7 +45,6 @@ const routes: Array<RouteRecordRaw> = [
       proDocs as unknown as RouteRecordRaw,
       projects,
       settings,
-      // myPage,
       {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',

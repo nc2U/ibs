@@ -427,11 +427,14 @@ class ImageSerializer(serializers.ModelSerializer):
 class DocumentInTrashSerializer(serializers.ModelSerializer):
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
+    project_name = serializers.CharField(source='issue_project.name', read_only=True)
+    project_slug = serializers.CharField(source='issue_project.slug', read_only=True)
     creator = serializers.SlugField(read_only=True)
 
     class Meta:
         model = Document
-        fields = ('pk', 'type_name', 'cate_name', 'title', 'description', 'creator', 'created', 'deleted')
+        fields = ('pk', 'doc_type', 'type_name', 'cate_name', 'project_name', 'project_slug',
+                  'title', 'description', 'creator', 'created', 'deleted')
 
     @staticmethod
     def get_type_name(obj):

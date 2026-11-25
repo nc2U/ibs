@@ -102,7 +102,7 @@ class PostFilterSet(FilterSet):
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.filter(deleted=None).select_related(
-        'forum', 'category', 'creator__profile'
+        'forum__project', 'category', 'creator__profile'
     ).prefetch_related('files', 'forum__manager')
     serializer_class = PostSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)

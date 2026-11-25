@@ -54,7 +54,9 @@ export interface Scrape {
     doc_type: number
     type_name: string
     issue_project: number | null
-    proj_sort: '1' | '2' | '3'
+    project_slug?: string | null
+    project_name?: string | null
+    proj_sort: '1' | '2' | '3' | null
     title: string
   }
   post?: Post
@@ -66,7 +68,9 @@ interface Post {
   pk: number
   forum: number
   forum_name: string
-  project: number | null
+  project?: number | null
+  project_slug?: string | null
+  project_name?: string | null
   title: string
 }
 

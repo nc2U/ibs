@@ -16,6 +16,8 @@ import AdminUserManage from './components/AdminUserManage.vue'
 import MyAccountForm from './components/MyAccountForm.vue'
 import MyPasswordForm from './components/MyPasswordForm.vue'
 import MyProjectView from '@/views/_Work/Settings/Users/components/MyProjectView.vue'
+import MyScrapView from './components/MyScrapView.vue'
+import MyActivityView from './components/MyActivityView.vue'
 
 const cBody = ref<InstanceType<typeof ContentBody> | null>(null)
 
@@ -28,6 +30,8 @@ const component = computed(() => {
   if (route.name === '사용자 - 내 계정') return '내 계정'
   if (route.name === '사용자 - 비밀번호 변경') return '비밀번호 변경'
   if (route.name === '사용자 - 프로젝트 보기') return '프로젝트 보기'
+  if (route.name === '사용자 - 내 스크랩') return '내 스크랩'
+  if (route.name === '사용자 - 내 활동') return '내 활동'
   return '목록'
 })
 
@@ -84,12 +88,9 @@ const loadRouteData = async (name: unknown, rawUserId: unknown) => {
   }
 }
 
-watch(
-  [() => route.name, () => route.params.userId],
-  ([name, userId]) => {
-    loadRouteData(name, userId)
-  },
-)
+watch([() => route.name, () => route.params.userId], ([name, userId]) => {
+  loadRouteData(name, userId)
+})
 
 onBeforeMount(async () => {
   await loadRouteData(route.name, route.params.userId)
@@ -115,6 +116,8 @@ onBeforeMount(async () => {
       <MyAccountForm v-else-if="component === '내 계정'" />
       <MyPasswordForm v-else-if="component === '비밀번호 변경'" />
       <MyProjectView v-else-if="component === '프로젝트 보기'" />
+      <MyScrapView v-else-if="component === '내 스크랩'" />
+      <MyActivityView v-else-if="component === '내 활동'" />
     </template>
   </ContentBody>
 </template>
