@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useDashboard } from '@/store/pinia/dashboard.ts'
 
 const props = defineProps<{
@@ -8,6 +8,7 @@ const props = defineProps<{
   icon?: string
   refreshable?: boolean
   configurable?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -17,34 +18,44 @@ const emit = defineEmits<{
 
 const dashboardStore = useDashboard()
 
-const loading = ref(false)
+const internalLoading = ref(false)
+let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
-const handleRefresh = async () => {
-  loading.value = true
+const handleRefresh = () => {
+  internalLoading.value = true
   emit('refresh')
-  setTimeout(() => {
-    loading.value = false
+  if (refreshTimer) clearTimeout(refreshTimer)
+  refreshTimer = setTimeout(() => {
+    internalLoading.value = false
+    refreshTimer = null
   }, 500)
 }
 
 const handleClose = () => {
   dashboardStore.removeWidget(props.widgetId)
 }
+
+onBeforeUnmount(() => {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+})
 </script>
 
 <template>
   <v-card class="widget-card h-100 d-flex flex-column" elevation="2">
     <v-card-title class="widget-header d-flex align-center py-2 px-3 drag-handle">
-      <v-icon v-if="icon" :icon="icon" size="small" class="mr-2" />
+      <v-icon v-if="icon" :icon="icon" size="small" class="me-2" />
       <span class="text-body-2 font-weight-medium">{{ title }}</span>
       <v-spacer />
-      <div class="widget-actions">
+      <div class="widget-actions" @mousedown.stop @touchstart.stop>
         <v-btn
           v-if="refreshable"
           icon
           size="x-small"
           variant="tonal"
-          :loading="loading"
+          :loading="Boolean(loading || internalLoading)"
           @click.stop="handleRefresh"
         >
           <v-icon icon="mdi-refresh" color="grey" size="16" />

@@ -21,8 +21,9 @@ const accountStore = useAccount()
 const filterMode = ref<'all' | 'my'>('all')
 
 const fetchLogs = async () => {
-  const params: Record<string, any> = { limit: 5 }
-  if (filterMode.value === 'my' && accountStore.userInfo?.pk) {
+  const params: Record<string, string | number> = { limit: 5 }
+  if (filterMode.value === 'my') {
+    if (!accountStore.userInfo?.pk) return
     params.creator = accountStore.userInfo.pk
   }
   await logStore.fetchActivityLogList(params)
@@ -30,8 +31,14 @@ const fetchLogs = async () => {
 
 onMounted(fetchLogs)
 
-// 필터 토글 시 재조회
+// 필터 토글 및 사용자 정보 로드 시 재조회
 watch(filterMode, fetchLogs)
+watch(
+  () => accountStore.userInfo?.pk,
+  pk => {
+    if (filterMode.value === 'my' && pk) fetchLogs()
+  },
+)
 
 const activityLogs = computed<ActLogEntry[]>(() => logStore.activityLogList || [])
 
@@ -172,7 +179,7 @@ const handleLogClick = (log: ActLogEntry) => {
           <div class="flex-grow-1 min-width-0">
             <div class="d-flex align-center justify-space-between mb-1">
               <div class="text-body-2 text-truncate" style="max-width: 75%">
-                <strong>{{ log.creator.username }}</strong>
+                <strong>{{ log.creator?.username || '시스템' }}</strong>
                 &nbsp; -
                 <span class="text-medium-emphasis ml-1">{{ getActionText(log) }}</span>
               </div>
@@ -186,7 +193,7 @@ const handleLogClick = (log: ActLogEntry) => {
             </div>
 
             <div class="text-caption text-grey-darken-1">
-              {{ log.project.name }}
+              {{ log.project?.name || '-' }}
             </div>
           </div>
         </div>

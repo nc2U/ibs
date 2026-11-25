@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount } from 'vue'
-import { useDocs } from '@/store/pinia/docs'
+import api from '@/api'
 import type { Docs } from '@/store/types/docs'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
@@ -10,8 +10,6 @@ defineProps<{
   title: string
   icon?: string
 }>()
-
-const docsStore = useDocs()
 
 const activeTab = ref<1 | 2>(1)
 const loading = ref(true)
@@ -26,13 +24,13 @@ const currentDocsList = computed<Docs[]>(() => {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 1. 일반문서 페치
-    await docsStore.fetchDocsList({ limit: 5, doc_type: 1 })
-    generalDocs.value = [...docsStore.docsList]
-
-    // 2. 소송기록 페치
-    await docsStore.fetchDocsList({ limit: 5, doc_type: 2 })
-    lawsuitDocs.value = [...docsStore.docsList]
+    // 공유 docsStore.docsList 상태를 오염시키지 않도록 위젯 전용 독립 병렬 조회
+    const [genRes, lawRes] = await Promise.all([
+      api.get('/docs/', { params: { limit: 5, page: 1, doc_type: 1 } }),
+      api.get('/docs/', { params: { limit: 5, page: 1, doc_type: 2 } }),
+    ])
+    generalDocs.value = genRes.data?.results ?? []
+    lawsuitDocs.value = lawRes.data?.results ?? []
   } catch (error) {
     console.error('Failed to fetch documents for widget:', error)
   } finally {
@@ -59,8 +57,8 @@ onBeforeMount(() => {
       <v-table v-else density="compact" hover>
         <thead class="bg-more-light border-top border-bottom">
           <tr>
-            <th class="text-left" style="width: 100px">분류</th>
-            <th class="text-left">문서 제목</th>
+            <th class="text-start" style="width: 100px">분류</th>
+            <th class="text-start">문서 제목</th>
             <th class="text-center" style="width: 100px">등록일</th>
           </tr>
         </thead>
@@ -82,16 +80,18 @@ onBeforeMount(() => {
                   [{{ item.proj_name }}]
                 </span>
                 <router-link
+                  v-if="item.project?.slug && item.pk"
                   :to="{
                     name: '(문서) - 보기',
-                    params: { projId: item.project?.slug, docId: item.pk },
+                    params: { projId: item.project.slug, docId: item.pk },
                   }"
                   class="text-body-2"
                 >
                   {{ cutString(item.title, 40) }}
                 </router-link>
+                <span v-else class="text-body-2">{{ cutString(item.title, 40) }}</span>
               </td>
-              <td class="text-right text-medium-emphasis truncate">
+              <td class="text-end text-medium-emphasis truncate">
                 {{ timeFormat(item.created ?? '').substring(0, 10) }}
               </td>
             </tr>

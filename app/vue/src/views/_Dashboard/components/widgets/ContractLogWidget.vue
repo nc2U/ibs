@@ -1,8 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import api from '@/api'
+import { usePerms } from '@/composables/usePerms'
 import { elapsedTime } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
+
+interface RecentContractLog {
+  pk: number
+  project_name?: string
+  contractor_id?: number | null
+  contractor_name?: string
+  contractor_status?: string
+  unit_type_name?: string
+  house_unit_name?: string | null
+  serial_number?: string
+  price?: number | null
+  created?: string
+}
 
 defineProps<{
   widgetId: string
@@ -10,22 +24,27 @@ defineProps<{
   icon?: string
 }>()
 
+const { canGlobal, PERM } = usePerms()
+const canContractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
+
 const loading = ref(false)
-const contractLogs = ref<any[]>([])
+const contractLogs = ref<RecentContractLog[]>([])
 const limitCount = ref<number>(5)
 
 const fetchContractLogs = async () => {
+  if (!canContractRead.value) {
+    contractLogs.value = []
+    return
+  }
   loading.value = true
   try {
     const res = await api.get('/contract/recent-logs/')
-    // 응답이 없는 경우 방어
     if (!res || !res.data) {
       contractLogs.value = []
       return
     }
 
-    // 결과 검사 및 배열 여부 체크
-    let data: any[] = []
+    let data: RecentContractLog[] = []
     if (res.data.results && Array.isArray(res.data.results)) {
       data = res.data.results
     } else if (Array.isArray(res.data)) {
@@ -46,7 +65,7 @@ onMounted(fetchContractLogs)
 // 분양 계약 상태별 뱃지 테마 설정
 const getStatusTheme = (status: string) => {
   const themes: Record<string, { color: string; text: string }> = {
-    '1': { color: '#d4f940', text: '청약' },
+    '1': { color: 'amber-darken-2', text: '청약' },
     '2': { color: 'success', text: '계약' },
     '3': { color: 'blue-grey', text: '청약해지' },
     '4': { color: 'error', text: '계약해지' },
@@ -56,7 +75,7 @@ const getStatusTheme = (status: string) => {
 }
 
 // 금액 천단위 포맷
-const formatPrice = (val: any) => {
+const formatPrice = (val?: number | null) => {
   if (val === undefined || val === null) return '₩ 0'
   return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' })
     .format(Number(val))
@@ -137,11 +156,13 @@ const formatPrice = (val: any) => {
               <span class="text-body-2 font-weight-bold text-slate-800">
                 <span>
                   <router-link
+                    v-if="log?.contractor_id"
                     :to="{ name: '계약 상세 보기', params: { contractorId: log.contractor_id } }"
                   >
                     <span v-if="log?.house_unit_name">{{ log.house_unit_name }}</span>
                     <span v-else>동호수 미정</span>
                   </router-link>
+                  <span v-else>{{ log?.house_unit_name || '동호수 미정' }}</span>
                 </span>
                 <span v-if="log?.contractor_name"> · {{ log.contractor_name }}</span>
               </span>

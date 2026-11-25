@@ -3,8 +3,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
+import { usePerms } from '@/composables/usePerms'
 import WidgetWrapper from '../WidgetWrapper.vue'
-import type { SettlementPeriod, CommissionPayout, AgencyPayout } from '@/store/types/sales'
+import type { SettlementPeriod, CommissionPayout } from '@/store/types/sales'
 
 defineProps<{
   widgetId: string
@@ -15,6 +16,8 @@ defineProps<{
 const router = useRouter()
 const projectStore = useProject()
 const salesStore = useSales()
+const { canGlobal, PERM } = usePerms()
+const canSalesRead = computed(() => canGlobal(PERM.SALES_READ))
 
 const selectedProject = ref<number | null>(null)
 const selectedPeriodId = ref<number | null>(null)
@@ -37,10 +40,9 @@ const currentPeriod = computed<SettlementPeriod | undefined>(() =>
 )
 
 // 개인별 지급 명세 목록
-const currentPayouts = computed<CommissionPayout[]>(() => salesStore.payoutList)
-
-// 대행사별 지급 명세 목록
-const currentAgencyPayouts = computed<AgencyPayout[]>(() => salesStore.agencyPayoutList)
+const currentPayouts = computed<CommissionPayout[]>(() =>
+  selectedPeriodId.value ? salesStore.payoutList : [],
+)
 
 // 통계 계산
 const totalNetPay = computed(() =>
@@ -144,6 +146,7 @@ const getPayStatusColor = (status: string) => {
 
 // 데이터 페치
 const fetchSalesData = async (projectId: number) => {
+  if (!canSalesRead.value) return
   loading.value = true
   try {
     await Promise.all([
@@ -161,8 +164,6 @@ const fetchSalesData = async (projectId: number) => {
       ])
     } else {
       selectedPeriodId.value = null
-      salesStore.payoutList = []
-      salesStore.agencyPayoutList = []
     }
   } catch (error) {
     console.error('Failed to fetch sales dashboard data:', error)
@@ -172,7 +173,7 @@ const fetchSalesData = async (projectId: number) => {
 }
 
 const onPeriodChange = async () => {
-  if (!selectedPeriodId.value) return
+  if (!canSalesRead.value || !selectedPeriodId.value) return
   loading.value = true
   try {
     await Promise.all([
@@ -215,9 +216,6 @@ watch(selectedProject, newProjectId => {
 onMounted(async () => {
   if (!projectStore.projSelect || projectStore.projSelect.length === 0) {
     await projectStore.fetchProjectList()
-  }
-  if (!selectedProject.value && projectStore.projSelect && projectStore.projSelect.length > 0) {
-    selectedProject.value = projectStore.projSelect[0].value ?? null
   }
 })
 </script>
@@ -382,7 +380,7 @@ onMounted(async () => {
               </div>
               <v-table density="compact" class="border rounded-lg text-caption">
                 <thead>
-                  <tr class="bg-light">
+                  <tr class="bg-more-light">
                     <th>성명</th>
                     <th>직책</th>
                     <th>소속팀</th>

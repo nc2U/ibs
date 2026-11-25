@@ -34,8 +34,8 @@ onBeforeMount(() => {
       <v-table v-else density="compact" hover>
         <thead>
           <tr class="bg-more-light border-top border-bottom">
-            <th class="text-left" style="width: 190px">워크스페이스</th>
-            <th class="text-left">제목</th>
+            <th class="text-start" style="width: 190px">워크스페이스</th>
+            <th class="text-start">제목</th>
             <th class="text-center" style="width: 100px">날짜</th>
           </tr>
         </thead>
@@ -44,12 +44,13 @@ onBeforeMount(() => {
             <tr :class="item.is_important ? 'accent' : ''" class="border-bottom">
               <td class="truncate">
                 <router-link
-                  v-if="item.project"
-                  :to="{ name: '(개요)', params: { projId: item.project?.slug } }"
+                  v-if="item.project?.slug"
+                  :to="{ name: '(개요)', params: { projId: item.project.slug } }"
                   class="text-body-2"
                 >
                   {{ item.project?.name }}
                 </router-link>
+                <span v-else class="text-body-2">{{ item.project?.name || '-' }}</span>
               </td>
               <td class="truncate">
                 <v-icon
@@ -60,14 +61,16 @@ onBeforeMount(() => {
                   class="mr-2"
                 />
                 <router-link
+                  v-if="item.project?.slug && item.pk"
                   :to="{
                     name: '(공지) - 보기',
-                    params: { projId: item.project?.slug, newsId: item.pk },
+                    params: { projId: item.project.slug, newsId: item.pk },
                   }"
                   class="text-body-2"
                 >
                   {{ cutString(item.title, 40) }}
                 </router-link>
+                <span v-else class="text-body-2">{{ cutString(item.title, 40) }}</span>
                 <v-chip
                   v-if="item.is_new"
                   color="warning"
@@ -87,7 +90,7 @@ onBeforeMount(() => {
                   +{{ item.comments.length }}
                 </v-chip>
               </td>
-              <td class="text-right text-medium-emphasis truncate">
+              <td class="text-end text-medium-emphasis truncate">
                 {{ timeFormat(item.created ?? '').substring(0, 10) }}
               </td>
             </tr>

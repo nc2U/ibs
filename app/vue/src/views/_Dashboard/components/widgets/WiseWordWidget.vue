@@ -18,26 +18,26 @@ const wiseWord = ref({
 })
 
 const store = useStore()
-const isDark = computed(() => store.theme === 'dark')
+const isDark = computed(() => store.isDark)
 
 const colors = ref([
-  '#E57373',
-  '#F06292',
-  '#CE93D8',
-  '#B39DDB',
-  '#9FA8DA',
-  '#42A5F5',
-  '#039BE5',
-  '#00ACC1',
-  '#4DB6AC',
-  '#66BB6A',
-  '#7CB342',
-  '#9E9D24',
-  '#F57F17',
-  '#FF7043',
-  '#A1887F',
-  '#90A4AE',
-  '#757575',
+  '#D32F2F',
+  '#C2185B',
+  '#8E24AA',
+  '#5E35B1',
+  '#3949AB',
+  '#1E88E5',
+  '#0277BD',
+  '#00838F',
+  '#00796B',
+  '#2E7D32',
+  '#558B2F',
+  '#827717',
+  '#E65100',
+  '#D84315',
+  '#6D4C41',
+  '#455A64',
+  '#616161',
 ])
 
 const currentColor = ref('#9FA8DA')

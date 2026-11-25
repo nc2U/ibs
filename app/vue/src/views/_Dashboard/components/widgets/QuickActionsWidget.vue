@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
+import type { PermissionCode } from '@/store/constants/permissions'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
 defineProps<{
@@ -9,8 +12,17 @@ defineProps<{
 }>()
 
 const router = useRouter()
+const { canGlobal, PERM } = usePerms()
 
-const quickActions = [
+interface QuickActionItem {
+  icon: string
+  label: string
+  color: string
+  routeName: string
+  perm?: PermissionCode
+}
+
+const quickActions: QuickActionItem[] = [
   {
     icon: 'mdi-file-sign',
     label: '기안 작성',
@@ -28,18 +40,21 @@ const quickActions = [
     label: '거래 등록',
     color: 'teal-lighten-2',
     routeName: '거래 내역 관리 - 생성',
+    perm: PERM.LEDGER_CREATE,
   },
   {
     icon: 'mdi-bug-outline',
     label: '업무 등록',
     color: 'teal-darken-1',
     routeName: '업무',
+    perm: PERM.ISSUE_CREATE,
   },
   {
     icon: 'mdi-file-document-plus',
     label: '계약 등록',
     color: 'blue-grey-lighten-1',
     routeName: '계약 등록 조회',
+    perm: PERM.CONTRACT_READ,
   },
   {
     icon: 'mdi-calendar-plus',
@@ -52,26 +67,34 @@ const quickActions = [
     label: '납부 내역',
     color: 'light-green-darken-1',
     routeName: '납부 내역 관리',
+    perm: PERM.PAYMENT_READ,
   },
   {
     icon: 'mdi-clipboard-plus',
     label: '업무실행내역',
     color: 'brown-lighten-2',
     routeName: '업무실행내역',
+    perm: PERM.ISSUE_READ,
   },
   {
     icon: 'mdi-bell-plus',
     label: '공지 작성',
     color: 'blue-darken-2',
     routeName: '공지',
+    perm: PERM.NEWS_READ,
   },
   {
     icon: 'mdi-plus',
     label: '새 워크스페이스',
     color: 'indigo-lighten-2',
     routeName: '워크스페이스 - 추가',
+    perm: PERM.PROJECT_CREATE,
   },
 ]
+
+const visibleActions = computed(() =>
+  quickActions.filter(action => !action.perm || canGlobal(action.perm)),
+)
 
 const handleAction = (routeName: string) => {
   router.push({ name: routeName })
@@ -82,7 +105,7 @@ const handleAction = (routeName: string) => {
   <WidgetWrapper :widget-id="widgetId" :title="title" :icon="icon">
     <div class="quick-actions-widget">
       <v-row dense>
-        <v-col v-for="action in quickActions" :key="action.label" cols="6">
+        <v-col v-for="action in visibleActions" :key="action.label" cols="6">
           <v-btn
             variant="flat"
             :color="action.color"

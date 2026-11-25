@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/api'
 import { useProject } from '@/store/pinia/project'
+import { usePerms } from '@/composables/usePerms'
 import { CChartDoughnut, CChartBar } from '@coreui/vue-chartjs'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
@@ -10,6 +11,9 @@ defineProps<{
   title: string
   icon?: string
 }>()
+
+const { canGlobal, PERM } = usePerms()
+const canContractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
 
 const projectStore = useProject()
 const selectedProject = ref<number | null>(null)
@@ -35,14 +39,18 @@ const projectOptions = computed(() => projectStore.projSelect)
 
 // 가장 마지막에 등록된 계약건의 프로젝트 ID를 초기값으로 설정
 const fetchInitialProject = async () => {
+  if (!canContractRead.value) {
+    if (projectStore.projSelect.length > 0) {
+      selectedProject.value = projectStore.projSelect[0].value ?? null
+    }
+    return
+  }
   try {
     const res = await api.get('/contract-set/?limit=1')
     if (res.data && res.data.results && res.data.results.length > 0) {
       selectedProject.value = res.data.results[0].project ?? null
-    } else {
-      if (projectStore.projSelect.length > 0) {
-        selectedProject.value = projectStore.projSelect[0].value ?? null
-      }
+    } else if (projectStore.projSelect.length > 0) {
+      selectedProject.value = projectStore.projSelect[0].value ?? null
     }
   } catch (error) {
     console.error('Failed to fetch latest contract project:', error)
@@ -54,6 +62,7 @@ const fetchInitialProject = async () => {
 
 // 프로젝트별 계약 데이터 Fetch
 const fetchContractStatusData = async (projectId: number) => {
+  if (!canContractRead.value) return
   loading.value = true
   try {
     // 1. 전체 현황 데이터
@@ -66,7 +75,7 @@ const fetchContractStatusData = async (projectId: number) => {
     // 2. 타입별 현황 데이터
     const statusRes = await api.get(`/payment-status-by-unit-type/?project=${projectId}`)
     if (Array.isArray(statusRes.data)) {
-      unitTypeStatusList.value = statusRes.data.map((item: any) => ({
+      unitTypeStatusList.value = statusRes.data.map((item: Partial<UnitTypeStatus>) => ({
         order_group_name: item.order_group_name || '',
         unit_type_name: item.unit_type_name || '',
         contract_units: item.contract_units || 0,

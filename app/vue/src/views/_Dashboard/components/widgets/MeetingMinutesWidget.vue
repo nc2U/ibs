@@ -38,35 +38,44 @@ onBeforeMount(() => {
         <v-table density="compact" hover>
           <thead class="bg-more-light border-top border-bottom">
             <tr>
-              <th class="text-left project-col">워크스페이스</th>
-              <th class="text-left">제목</th>
-              <th class="text-right date-col">날짜</th>
+              <th class="text-start project-col">워크스페이스</th>
+              <th class="text-start">제목</th>
+              <th class="text-end date-col">날짜</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in meetingList.slice(0, 5)" :key="item.pk ?? 0" class="border-bottom">
               <td>
                 <router-link
-                  v-if="item.project_desc"
-                  :to="{ name: '(회의)', params: { projId: item.project_desc?.slug } }"
+                  v-if="item.project_desc?.slug"
+                  :to="{ name: '(회의)', params: { projId: item.project_desc.slug } }"
                   class="text-body-2 text-decoration-none"
                 >
                   {{ item.project_desc?.name }}
                 </router-link>
+                <span v-else class="text-body-2">{{ item.project_desc?.name || '-' }}</span>
               </td>
               <td>
                 <router-link
+                  v-if="item.project_desc?.slug && item.pk"
                   :to="{
                     name: '(회의) - 보기',
-                    params: { projId: item.project_desc?.slug, meetingId: item.pk },
+                    params: { projId: item.project_desc.slug, meetingId: item.pk },
                   }"
                   class="text-body-2 text-decoration-none text-truncate d-inline-block"
                   style="max-width: 250px"
                 >
                   {{ cutString(item.title, 40) }}
                 </router-link>
+                <span
+                  v-else
+                  class="text-body-2 text-truncate d-inline-block"
+                  style="max-width: 250px"
+                >
+                  {{ cutString(item.title, 40) }}
+                </span>
               </td>
-              <td class="text-right text-medium-emphasis">
+              <td class="text-end text-medium-emphasis">
                 {{ (item.meeting_date || '').substring(0, 10) }}
               </td>
             </tr>

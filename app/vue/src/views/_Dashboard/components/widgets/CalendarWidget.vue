@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useCalendar } from '@/store/pinia/work_calendar'
+import { type CalendarEvent, useCalendar } from '@/store/pinia/work_calendar'
 import { useRouter } from 'vue-router'
 import { cutString, dateFormat, getToday } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
+
+interface WeekDay {
+  dateStr: string
+  dayNum: number
+  dayOfWeek: number
+  isToday: boolean
+}
 
 defineProps<{
   widgetId: string
@@ -16,7 +23,7 @@ const calendarStore = useCalendar()
 const todayStr = getToday()
 
 // 7일간의 날짜 데이터 생성 (월요일 ~ 일요일)
-const getWeekDays = () => {
+const getWeekDays = (): WeekDay[] => {
   const current = new Date()
   const day = current.getDay() // 0: 일, 1: 월, ... 6: 토
 
@@ -25,7 +32,7 @@ const getWeekDays = () => {
   const distanceToMonday = day === 0 ? 6 : day - 1
   monday.setDate(current.getDate() - distanceToMonday)
 
-  const days: any[] = []
+  const days: WeekDay[] = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
@@ -39,16 +46,7 @@ const getWeekDays = () => {
   return days
 }
 
-const weekDays = ref(getWeekDays())
-const weekDaysMap = computed(() => {
-  return weekDays.value.reduce(
-    (acc, curr) => {
-      acc[curr.dateStr] = []
-      return acc
-    },
-    {} as Record<string, any[]>,
-  )
-})
+const weekDays = ref<WeekDay[]>(getWeekDays())
 
 // 요일 한글 매핑
 const dayNames = ['일', '월', '화', '수', '목', '금', '토']
@@ -69,18 +67,23 @@ const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed:
   return colors[status.pk] || 'grey-lighten-1'
 }
 
-// 가져온 일정을 요일별로 분배 (매 렌더링 시 새 배열 생성하여 중복 누적 방지)
-const weekEvents = computed(() => {
-  const map: Record<string, any[]> = {}
+// 가져온 일정을 시작~종료 범위에 맞춰 요일별로 분배 (다일 일정 포함)
+const weekEvents = computed<Record<string, CalendarEvent[]>>(() => {
+  const map: Record<string, CalendarEvent[]> = {}
   weekDays.value.forEach(d => {
     map[d.dateStr] = []
   })
 
   calendarStore.events.forEach(event => {
-    // 캘린더 일정의 날짜(시작일)에 해당하는 요일에 배치
-    if (map[event.start]) {
-      map[event.start].push(event)
-    }
+    const startStr = event.start
+    if (!startStr) return
+    const endStr = event.end && event.end >= startStr ? event.end : startStr
+
+    weekDays.value.forEach(d => {
+      if (d.dateStr >= startStr && d.dateStr <= endStr) {
+        map[d.dateStr].push(event)
+      }
+    })
   })
 
   return map
@@ -96,14 +99,18 @@ const fetchCalendar = async () => {
 
 onMounted(fetchCalendar)
 
-const handleEventClick = (event: any) => {
+const handleEventClick = (event: CalendarEvent) => {
+  if (!event.project) return
   if (event.type === 'issue') {
+    const pk = parseInt(event.id, 10)
+    if (Number.isNaN(pk)) return
     router.push({
       name: '(업무) - 보기',
-      params: { projId: event.project, issueId: parseInt(event.id) },
+      params: { projId: event.project, issueId: pk },
     })
   } else if (event.type === 'meeting') {
-    const pk = parseInt(event.id.replace('m-', ''))
+    const pk = parseInt(event.id.replace('m-', ''), 10)
+    if (Number.isNaN(pk)) return
     router.push({
       name: '(회의) - 보기',
       params: { projId: event.project, meetingId: pk },

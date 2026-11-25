@@ -2,7 +2,27 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/api'
 import { useProject } from '@/store/pinia/project'
+import { usePerms } from '@/composables/usePerms'
+import { getToday } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
+
+interface PayOrderSummary {
+  contract_amount?: number
+  not_due_unpaid?: number
+  collection?: {
+    actual_collected?: number
+  }
+  due_period?: {
+    unpaid_amount?: number
+  }
+}
+
+interface OverallSummaryResponse {
+  pay_orders?: PayOrderSummary[]
+  aggregate?: {
+    contract_rate?: number
+  }
+}
 
 defineProps<{
   widgetId: string
@@ -10,16 +30,20 @@ defineProps<{
   icon?: string
 }>()
 
+const { canGlobal, PERM } = usePerms()
+const canPaymentRead = computed(() => canGlobal(PERM.PAYMENT_READ))
+const canContractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
+
 const projectStore = useProject()
 const selectedProject = ref<number | null>(null)
 const loading = ref(false)
 
-const summaryData = ref<any>(null)
+const summaryData = ref<OverallSummaryResponse | null>(null)
 
 const projectOptions = computed(() => projectStore.projSelect)
 
 // 헬퍼: 수납 통계 변수들 계산
-const payOrderList = computed<any[]>(() => summaryData.value?.pay_orders || [])
+const payOrderList = computed<PayOrderSummary[]>(() => summaryData.value?.pay_orders || [])
 const contAggregate = computed(() => summaryData.value?.aggregate || {})
 
 const totalContAmount = computed(() =>
@@ -29,16 +53,33 @@ const totalActualCollected = computed(() =>
   payOrderList.value.reduce((acc, order) => acc + (order.collection?.actual_collected ?? 0), 0),
 )
 const totalDueUnpaidAmount = computed(() =>
-  payOrderList.value.reduce((acc, order) => acc + (order.due_period?.unpaid_amount ?? 0), 0),
-)
-const totalNotDueUnpaid = computed(() =>
-  payOrderList.value.reduce((acc, order) => acc + (order.not_due_unpaid ?? 0), 0),
+  Math.max(
+    0,
+    payOrderList.value.reduce((acc, order) => acc + (order.due_period?.unpaid_amount ?? 0), 0),
+  ),
 )
 
 const collectionRate = computed(() => {
   if (!totalContAmount.value) return 0
   return (totalActualCollected.value / totalContAmount.value) * 100
 })
+
+const collectedBarPct = computed(() =>
+  totalContAmount.value
+    ? Math.min(100, Math.max(0, (totalActualCollected.value / totalContAmount.value) * 100))
+    : 0,
+)
+const unpaidBarPct = computed(() =>
+  totalContAmount.value
+    ? Math.min(
+        100 - collectedBarPct.value,
+        Math.max(0, (totalDueUnpaidAmount.value / totalContAmount.value) * 100),
+      )
+    : 0,
+)
+const remainingBarPct = computed(() =>
+  totalContAmount.value ? Math.max(0, 100 - collectedBarPct.value - unpaidBarPct.value) : 100,
+)
 
 const formatCurrency = (val: number) => {
   if (!val) return '0원'
@@ -58,14 +99,18 @@ const formatCurrency = (val: number) => {
 }
 
 const fetchInitialProject = async () => {
+  if (!canContractRead.value) {
+    if (projectStore.projSelect.length > 0) {
+      selectedProject.value = projectStore.projSelect[0].value ?? null
+    }
+    return
+  }
   try {
     const res = await api.get('/contract-set/?limit=1')
     if (res.data && res.data.results && res.data.results.length > 0) {
       selectedProject.value = res.data.results[0].project ?? null
-    } else {
-      if (projectStore.projSelect.length > 0) {
-        selectedProject.value = projectStore.projSelect[0].value ?? null
-      }
+    } else if (projectStore.projSelect.length > 0) {
+      selectedProject.value = projectStore.projSelect[0].value ?? null
     }
   } catch (error) {
     console.error('Failed to fetch latest contract project:', error)
@@ -76,9 +121,13 @@ const fetchInitialProject = async () => {
 }
 
 const fetchFinancialSummary = async (projectId: number) => {
+  if (!canPaymentRead.value) {
+    summaryData.value = null
+    return
+  }
   loading.value = true
   try {
-    const todayStr = new Date().toISOString().substring(0, 10)
+    const todayStr = getToday()
     const res = await api.get(`/ledger/overall-summary/?project=${projectId}&date=${todayStr}`)
     summaryData.value = res.data
   } catch (error) {
@@ -204,7 +253,7 @@ onMounted(async () => {
             <div
               class="bar-segment collected"
               :style="{
-                width: `${totalContAmount ? (totalActualCollected / totalContAmount) * 100 : 0}%`,
+                width: `${collectedBarPct}%`,
               }"
             >
               <v-tooltip activator="parent" location="top">수납완료</v-tooltip>
@@ -212,7 +261,7 @@ onMounted(async () => {
             <div
               class="bar-segment unpaid"
               :style="{
-                width: `${totalContAmount ? (totalDueUnpaidAmount / totalContAmount) * 100 : 0}%`,
+                width: `${unpaidBarPct}%`,
               }"
             >
               <v-tooltip activator="parent" location="top">연체미수</v-tooltip>
@@ -220,7 +269,7 @@ onMounted(async () => {
             <div
               class="bar-segment remaining"
               :style="{
-                width: `${totalContAmount ? (totalNotDueUnpaid / totalContAmount) * 100 : 100}%`,
+                width: `${remainingBarPct}%`,
               }"
             >
               <v-tooltip activator="parent" location="top">미도래</v-tooltip>
@@ -231,27 +280,15 @@ onMounted(async () => {
           <div class="d-flex justify-space-between text-muted">
             <div class="d-flex align-center">
               <span class="dot collected mr-1" />
-              <span>
-                수납 ({{
-                  totalContAmount ? ((totalActualCollected / totalContAmount) * 100).toFixed(1) : 0
-                }}%)
-              </span>
+              <span> 수납 ({{ collectedBarPct.toFixed(1) }}%) </span>
             </div>
             <div class="d-flex align-center">
               <span class="dot unpaid mr-1" />
-              <span>
-                연체 ({{
-                  totalContAmount ? ((totalDueUnpaidAmount / totalContAmount) * 100).toFixed(1) : 0
-                }}%)
-              </span>
+              <span> 연체 ({{ unpaidBarPct.toFixed(1) }}%) </span>
             </div>
             <div class="d-flex align-center">
               <span class="dot remaining mr-1" />
-              <span>
-                미도래 ({{
-                  totalContAmount ? ((totalNotDueUnpaid / totalContAmount) * 100).toFixed(1) : 100
-                }}%)
-              </span>
+              <span> 미도래 ({{ remainingBarPct.toFixed(1) }}%) </span>
             </div>
           </div>
         </div>

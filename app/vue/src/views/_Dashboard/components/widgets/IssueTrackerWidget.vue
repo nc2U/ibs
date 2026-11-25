@@ -156,10 +156,14 @@ onMounted(() => {
             :key="issue.pk"
             class="mb-2 rounded-lg list-item pa-2 border-all bg-more-light"
             variant="flat"
-            :to="{
-              name: '(업무) - 보기',
-              params: { projId: issue.project?.slug, issueId: issue.pk },
-            }"
+            :to="
+              issue.project?.slug && issue.pk
+                ? {
+                    name: '(업무) - 보기',
+                    params: { projId: issue.project.slug, issueId: issue.pk },
+                  }
+                : undefined
+            "
           >
             <template #prepend>
               <!-- 우선순위 마커 칩 -->
@@ -189,48 +193,12 @@ onMounted(() => {
               </span>
             </v-list-item-title>
 
-            <!--            <v-list-item-subtitle class="text-caption text-grey mt-1 align-center">-->
-            <!--              <v-chip size="x-small" variant="outlined" color="primary" class="mr-2 py-0">-->
-            <!--                {{ issue.tracker?.name }}-->
-            <!--              </v-chip>-->
-            <!--              <span class="text-truncate mr-2" style="max-width: 100px">-->
-            <!--                {{ issue.project?.name }}-->
-            <!--              </span>-->
-            <!--              <span class="text-grey-lighten-1 mr-2">•</span>-->
-            <!--              <span class="text-truncate">작성: {{ issue.creator?.username }}</span>-->
-            <!--            </v-list-item-subtitle>-->
-
             <template #append>
               <!-- 담당자 정보 표시 -->
               <span v-if="issue.assigned_to" class="text-muted text-caption">
                 담당 : {{ issue.assigned_to.username }}
               </span>
               <v-icon v-else icon="mdi-account-question-outline" size="x-small" color="grey" />
-              <!--              <v-tooltip-->
-              <!--                :text="-->
-              <!--                  issue.assigned_to ? `담당자: ${issue.assigned_to.username}` : '담당자 미지정'-->
-              <!--                "-->
-              <!--                location="top"-->
-              <!--              >-->
-              <!--                <template #activator="{ props }">-->
-              <!--                  <v-avatar-->
-              <!--                    v-bind="props"-->
-              <!--                    size="24"-->
-              <!--                    :color="issue.assigned_to ? 'primary' : 'grey-lighten-2'"-->
-              <!--                    class="text-caption font-weight-bold"-->
-              <!--                  >-->
-              <!--                    <span v-if="issue.assigned_to" class="text-white">-->
-              <!--                      {{ issue.assigned_to.username.substring(0, 1) }}-->
-              <!--                    </span>-->
-              <!--                    <v-icon-->
-              <!--                      v-else-->
-              <!--                      icon="mdi-account-question-outline"-->
-              <!--                      size="x-small"-->
-              <!--                      color="grey"-->
-              <!--                    />-->
-              <!--                  </v-avatar>-->
-              <!--                </template>-->
-              <!--              </v-tooltip>-->
             </template>
           </v-list-item>
         </v-list>

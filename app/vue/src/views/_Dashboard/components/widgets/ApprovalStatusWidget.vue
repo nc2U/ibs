@@ -63,6 +63,7 @@ const getStatusBadge = (status: string) => {
 }
 
 const handleRowClick = (item: ApprovalDocument) => {
+  if (!item?.id) return
   if (activeTab.value === 'pending') {
     router.push({ name: '결재 대기함 - 보기', params: { docId: item.id } })
   } else if (activeTab.value === 'drafted') {
@@ -136,11 +137,11 @@ const handleRowClick = (item: ApprovalDocument) => {
         <v-table density="compact" hover>
           <thead class="bg-more-light border-top border-bottom">
             <tr>
-              <th class="text-left" style="width: 100px">유형</th>
-              <th class="text-left">문서 제목</th>
+              <th class="text-start" style="width: 100px">유형</th>
+              <th class="text-start">문서 제목</th>
               <th v-if="activeTab !== 'drafted'" class="text-center" style="width: 90px">기안자</th>
               <th v-else class="text-center" style="width: 90px">상태</th>
-              <th class="text-right" style="width: 90px">
+              <th class="text-end" style="width: 90px">
                 {{ activeTab === 'pending' ? '도착일' : '일시' }}
               </th>
             </tr>
@@ -183,7 +184,7 @@ const handleRowClick = (item: ApprovalDocument) => {
                   {{ getStatusBadge(item.status).text }}
                 </v-chip>
               </td>
-              <td class="text-right text-caption text-medium-emphasis text-no-wrap">
+              <td class="text-end text-caption text-medium-emphasis text-no-wrap">
                 {{ timeFormat(item.submitted_at || item.created_at || '').substring(5, 10) }}
               </td>
             </tr>

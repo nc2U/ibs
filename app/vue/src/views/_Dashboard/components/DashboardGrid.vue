@@ -58,6 +58,7 @@ const gridLayouts = computed(() =>
     i: l.i,
     minW: l.minW,
     minH: l.minH,
+    dragAllowFrom: '.drag-handle',
   })),
 )
 
@@ -162,6 +163,7 @@ onMounted(async () => {
       <template #item="{ item }">
         <component
           :is="getWidgetComponent(String(item.i))"
+          v-if="getWidgetComponent(String(item.i))"
           :widget-id="String(item.i)"
           :title="getWidgetTitle(String(item.i))"
           :icon="getWidgetIcon(String(item.i))"

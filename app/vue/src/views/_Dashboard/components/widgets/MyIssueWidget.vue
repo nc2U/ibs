@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import type { User } from '@/store/types/accounts.ts'
@@ -59,9 +59,13 @@ const getPriorityColor = (priorityName: string | undefined) => {
   return 'success'
 }
 
-onMounted(() => {
-  fetchMyIssues()
-})
+watch(
+  () => userInfo.value?.pk,
+  pk => {
+    if (pk) fetchMyIssues()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -104,8 +108,8 @@ onMounted(() => {
         <v-table density="compact" hover>
           <thead class="bg-more-light border-top border-bottom">
             <tr>
-              <th class="text-left">워크스페이스</th>
-              <th class="text-left">제목</th>
+              <th class="text-start">워크스페이스</th>
+              <th class="text-start">제목</th>
               <th class="text-center" style="width: 120px">상태</th>
               <th class="text-center" style="width: 120px">우선순위</th>
               <th class="text-center" style="width: 150px">기한</th>
@@ -115,21 +119,27 @@ onMounted(() => {
             <tr v-for="issue in myIssues" :key="issue.pk" class="border-bottom">
               <td>
                 <div class="text-truncate" style="max-width: 150px">
-                  <router-link :to="{ name: '(업무)', params: { projId: issue.project?.slug } }">
+                  <router-link
+                    v-if="issue.project?.slug"
+                    :to="{ name: '(업무)', params: { projId: issue.project.slug } }"
+                  >
                     {{ issue.project?.name }}
                   </router-link>
+                  <span v-else>{{ issue.project?.name || '-' }}</span>
                 </div>
               </td>
               <td>
                 <div class="text-body-2 text-truncate">
                   <router-link
+                    v-if="issue.project?.slug && issue.pk"
                     :to="{
                       name: '(업무) - 보기',
-                      params: { projId: issue.project?.slug, issueId: issue.pk },
+                      params: { projId: issue.project.slug, issueId: issue.pk },
                     }"
                   >
                     {{ issue.subject }}
                   </router-link>
+                  <span v-else>{{ issue.subject }}</span>
                 </div>
               </td>
               <td class="text-center">
