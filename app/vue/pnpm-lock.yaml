@@ -55,9 +55,6 @@ importers:
       '@fullcalendar/interaction':
         specifier: ^6.1.22
         version: 6.1.22(@fullcalendar/core@6.1.22)
-      '@fullcalendar/timegrid':
-        specifier: ^6.1.22
-        version: 6.1.22(@fullcalendar/core@6.1.22)
       '@fullcalendar/vue3':
         specifier: ^6.1.22
         version: 6.1.22(@fullcalendar/core@6.1.22)(vue@3.5.44(typescript@5.8.3))
@@ -788,11 +785,6 @@ packages:
 
   '@fullcalendar/interaction@6.1.22':
     resolution: {integrity: sha512-r8Njw8aPNFGRwDjVAh9NTh3ZJib5tcUoLi/BM4uYJt5Cs9tDiirmImaqxhx56hclVFX7ktd5CdaMX0+ArSbm5A==}
-    peerDependencies:
-      '@fullcalendar/core': ~6.1.22
-
-  '@fullcalendar/timegrid@6.1.22':
-    resolution: {integrity: sha512-gNMtkXrkfN3iszXty+pYbJwGxcozL0xBVKYmEd1lm0DMEbrffpVJyV+vifmtl/eIbWCNRWrMWUtGLbYy/ukykA==}
     peerDependencies:
       '@fullcalendar/core': ~6.1.22
 
@@ -5573,11 +5565,6 @@ snapshots:
   '@fullcalendar/interaction@6.1.22(@fullcalendar/core@6.1.22)':
     dependencies:
       '@fullcalendar/core': 6.1.22
-
-  '@fullcalendar/timegrid@6.1.22(@fullcalendar/core@6.1.22)':
-    dependencies:
-      '@fullcalendar/core': 6.1.22
-      '@fullcalendar/daygrid': 6.1.22(@fullcalendar/core@6.1.22)
 
   '@fullcalendar/vue3@6.1.22(@fullcalendar/core@6.1.22)(vue@3.5.44(typescript@5.8.3))':
     dependencies:
