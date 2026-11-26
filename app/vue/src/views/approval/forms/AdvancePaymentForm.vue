@@ -1,64 +1,65 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import {
+  ADVANCE_TYPE_OPTIONS,
+  RECEIVER_TYPE_OPTIONS,
+  addLocalDays,
+  asBool,
+  asNum,
+  asStr,
+  getLocalToday,
+  parseNonNegativeNumberInput,
+} from '../utils/approvalMeta'
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const advanceTypes = [
-  { value: 'ADVANCE_PAY', label: '가지급금 (업무용 선지급 경비)' },
-  { value: 'PREPAYMENT', label: '선급금 (계약상 대금 선지급)' },
-  { value: 'IMPREST_FUND', label: '전도금 (현장/부서 상비 운영비)' },
-  { value: 'EVENT_FUND', label: '행사 / 프로젝트 진행비' },
-  { value: 'OTHER', label: '기타 선급금' },
-]
-
-const updateField = (key: string, val: any) => {
-  const updated = {
+const updateField = (key: string, val: unknown) => {
+  const updated: ApprovalContent = {
     ...props.modelValue,
     [key]: val,
   }
 
   // advance_amount 변경 시 amount 동기화 (전결 결재선 연동)
   if (key === 'advance_amount') {
-    updated.amount = Number(val) || 0
+    updated.amount = asNum(val)
   }
 
   emit('update:modelValue', updated)
 }
 
 const paymentDueDate = computed({
-  get: () => props.modelValue.payment_due_date ?? '',
+  get: () => asStr(props.modelValue.payment_due_date),
   set: (val: string) => updateField('payment_due_date', val),
 })
 
 const settlementDueDate = computed({
-  get: () => props.modelValue.settlement_due_date ?? '',
+  get: () => asStr(props.modelValue.settlement_due_date),
   set: (val: string) => updateField('settlement_due_date', val),
 })
 
 onMounted(() => {
-  const initial = { ...props.modelValue }
+  const initial: ApprovalContent = { ...props.modelValue }
   let changed = false
 
-  if (!initial.advance_type) {
+  if (!asStr(initial.advance_type)) {
     initial.advance_type = 'ADVANCE_PAY'
     changed = true
   }
-  if (!initial.payment_due_date) {
-    initial.payment_due_date = new Date().toISOString().substring(0, 10)
+  if (!asStr(initial.payment_due_date)) {
+    initial.payment_due_date = getLocalToday()
     changed = true
   }
-  if (!initial.settlement_due_date) {
+  if (!asStr(initial.settlement_due_date)) {
     // 기본 지급일로부터 14일 후
-    const d = new Date()
-    d.setDate(d.getDate() + 14)
-    initial.settlement_due_date = d.toISOString().substring(0, 10)
+    initial.settlement_due_date = addLocalDays(14)
     changed = true
   }
   if (initial.advance_amount === undefined && initial.amount) {
@@ -92,11 +93,11 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">신청 구분</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.advance_type ?? 'ADVANCE_PAY'"
+          :value="asStr(modelValue.advance_type, 'ADVANCE_PAY')"
           required
           @change="updateField('advance_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="t in advanceTypes" :key="t.value" :value="t.value">
+          <option v-for="t in ADVANCE_TYPE_OPTIONS" :key="t.value" :value="t.value">
             {{ t.label }}
           </option>
         </CFormSelect>
@@ -115,13 +116,15 @@ onMounted(() => {
           <CFormInput
             type="number"
             min="0"
-            step="10000"
             class="text-end fw-bold text-danger fs-6"
             :value="modelValue.advance_amount ?? modelValue.amount ?? 0"
             placeholder="0"
             required
             @input="
-              updateField('advance_amount', Number(($event.target as HTMLInputElement).value) || 0)
+              updateField(
+                'advance_amount',
+                parseNonNegativeNumberInput(($event.target as HTMLInputElement).value),
+              )
             "
           />
           <CInputGroupText>원</CInputGroupText>
@@ -138,17 +141,17 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">입금 계좌</CFormLabel>
       <CCol sm="2">
         <CFormSelect
-          :value="modelValue.receiver_type ?? 'EMPLOYEE'"
+          :value="asStr(modelValue.receiver_type, 'EMPLOYEE')"
           @change="updateField('receiver_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option value="EMPLOYEE">임직원 계좌</option>
-          <option value="VENDOR">거래처 직접지급</option>
-          <option value="OTHER">기타 계좌</option>
+          <option v-for="r in RECEIVER_TYPE_OPTIONS" :key="r.value" :value="r.value">
+            {{ r.label }}
+          </option>
         </CFormSelect>
       </CCol>
       <CCol sm="2">
         <CFormInput
-          :value="modelValue.bank_name ?? ''"
+          :value="asStr(modelValue.bank_name)"
           placeholder="은행명"
           required
           @input="updateField('bank_name', ($event.target as HTMLInputElement).value)"
@@ -156,7 +159,7 @@ onMounted(() => {
       </CCol>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.account_number ?? ''"
+          :value="asStr(modelValue.account_number)"
           placeholder="계좌번호"
           required
           @input="updateField('account_number', ($event.target as HTMLInputElement).value)"
@@ -164,7 +167,7 @@ onMounted(() => {
       </CCol>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.account_holder ?? ''"
+          :value="asStr(modelValue.account_holder)"
           placeholder="예금주명"
           required
           @input="updateField('account_holder', ($event.target as HTMLInputElement).value)"
@@ -177,7 +180,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">사용 목적 / 계획</CFormLabel>
       <CCol sm="10">
         <CFormTextarea
-          :value="modelValue.purpose ?? ''"
+          :value="asStr(modelValue.purpose)"
           rows="4"
           placeholder="선급금/가지급금을 신청하는 구체적 사유 및 세부 자금 집행 계획을 상세히 기술해 주세요."
           required
@@ -193,7 +196,7 @@ onMounted(() => {
         <CFormCheck
           id="settlementPromiseCheck"
           label="상기 가지급금/선급금을 수령한 후, 정산 예정일까지 적격 증빙을 첨부하여 전액 정산할 것을 확약합니다."
-          :checked="modelValue.settlement_promise ?? true"
+          :checked="asBool(modelValue.settlement_promise, true)"
           @change="updateField('settlement_promise', ($event.target as HTMLInputElement).checked)"
         />
       </CCol>
@@ -204,7 +207,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label">비고 / 특이사항</CFormLabel>
       <CCol sm="10">
         <CFormInput
-          :value="modelValue.note ?? ''"
+          :value="asStr(modelValue.note)"
           placeholder="추가 전달 사항 또는 계약서 첨부 안내"
           @input="updateField('note', ($event.target as HTMLInputElement).value)"
         />

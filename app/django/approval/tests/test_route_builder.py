@@ -2,7 +2,10 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from company.models import Company, Department, Staff, StaffAssignment, DutyTitle, Position
 from approval.models import DocCategory, DocumentType, ApprovalPolicyRule
-from approval.services.route_builder import build_dynamic_approval_route
+from approval.services.route_builder import (
+    build_dynamic_approval_route,
+    extract_amount_from_content,
+)
 
 User = get_user_model()
 
@@ -251,3 +254,24 @@ class ApprovalRouteBuilderTestCase(TestCase):
         self.assertEqual(routes_5000[1]['approver_ids'], [user_head.id])
         self.assertEqual(routes_5000[2]['approver_ids'], [self.user_ceo.id])
         self.assertIn('대표이사', routes_5000[2]['role_label'])
+
+    def test_extract_amount_from_content_supports_all_form_keys(self):
+        """각 양식별 금액 키(total_cost, advance_amount, financial_impact 등)에서 금액을 일관되게 추출하는지 검증"""
+        for key in (
+            'amount',
+            'total_amount',
+            'contract_amount',
+            'advance_amount',
+            'requested_amount',
+            'approval_budget',
+            'financial_impact',
+            'dispute_amount',
+            'action_budget',
+            'total_cost',
+            'total_budget',
+            'settlement_amount',
+            'budget',
+            'congratulation_amount',
+        ):
+            self.assertEqual(extract_amount_from_content({key: '1,234,500원'}), 1234500.0)
+        self.assertIsNone(extract_amount_from_content({}))

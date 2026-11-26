@@ -425,7 +425,7 @@
 <div class="section-header">1. 상세 품의 내용</div>
 <div class="main-content-box">
   <!-- A. 휴가/연차 (LEAVE) 양식인 경우 -->
-  {% if document.content.leave_type or document.doc_type.form_template_key == 'LEAVE' %}
+  {% if document.content.leave_type or document.doc_type.form_template_key == 'LEAVE' or document.doc_type.form_template_key == 'LEAVE_APPLICATION' %}
     <table class="formatted-table">
       <tr>
         <th style="width:18%;">휴가 구분</th>
@@ -460,91 +460,7 @@
       </tr>
     </table>
 
-  <!-- B. 지출결의서 / 경비정산 (EXPENSE / SETTLEMENT) 양식인 경우 -->
-  {% elif document.content.amount or document.content.budget or document.doc_type.form_template_key == 'EXPENSE' %}
-    <table class="formatted-table">
-      <tr>
-        <th style="width:18%;">청구(집행)금액</th>
-        <td style="width:32%; font-size:10.5pt; font-weight:700; color:#c62828;">
-          {{ document.content.amount|default:"0" }} 원
-        </td>
-        <th style="width:18%;">예산/비목과목</th>
-        <td style="width:32%;">{{ document.content.budget_account|default:"일반관리비" }}</td>
-      </tr>
-      {% if document.content.bank_name or document.content.account_number %}
-      <tr>
-        <th>입금 계좌</th>
-        <td colspan="3">
-          {{ document.content.bank_name|default:"" }} {{ document.content.account_number|default:"" }} (예금주: {{ document.content.account_holder|default:"-" }})
-        </td>
-      </tr>
-      {% endif %}
-      <tr>
-        <th>지출 목적</th>
-        <td colspan="3">{{ document.content.purpose|default:document.title }}</td>
-      </tr>
-      {% if document.content.items %}
-      <tr>
-        <th>지출 세부항목</th>
-        <td colspan="3" style="padding: 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
-            <tr style="background: #f1f3f5;">
-              <th style="border: 1px solid #ccc; padding: 4px;">일자</th>
-              <th style="border: 1px solid #ccc; padding: 4px;">항목/내역</th>
-              <th style="border: 1px solid #ccc; padding: 4px; text-align: right;">금액</th>
-              <th style="border: 1px solid #ccc; padding: 4px;">비고</th>
-            </tr>
-            {% for item in document.content.items %}
-            <tr>
-              <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">{{ item.date|default:"-" }}</td>
-              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.description|default:item.merchant|default:item.name|default:"-" }}</td>
-              <td style="border: 1px solid #ccc; padding: 4px; text-align: right;">{{ item.amount|default:0 }} 원</td>
-              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.note|default:item.purpose|default:"-" }}</td>
-            </tr>
-            {% endfor %}
-          </table>
-        </td>
-      </tr>
-      {% endif %}
-      <tr>
-        <th>상세 내역</th>
-        <td colspan="3" style="min-height:20mm; padding:8px;">
-          {% if document.content.body %}{{ document.content.body|linebreaks }}
-          {% elif document.content.content %}{{ document.content.content|linebreaks }}
-          {% elif document.content.purpose %}{{ document.content.purpose|linebreaks }}
-          {% else %}{{ document.title|linebreaks }}{% endif %}
-        </td>
-      </tr>
-    </table>
-
-  <!-- C. 계약 체결 / 계약 변경 (CONTRACT / CONTRACT_CHANGE) 양식인 경우 -->
-  {% elif document.content.contract_name or document.doc_type.form_template_key == 'CONTRACT' %}
-    <table class="formatted-table">
-      <tr>
-        <th style="width:18%;">계 약 명</th>
-        <td colspan="3"><strong>{{ document.content.contract_name|default:document.title }}</strong></td>
-      </tr>
-      <tr>
-        <th>계약 상대방</th>
-        <td>{{ document.content.contractor_ceo|default:"-" }} (사업자번호: {{ document.content.contractor_reg_number|default:"-" }})</td>
-        <th>계약 금액</th>
-        <td style="font-weight:700; color:#1565c0;">{{ document.content.contract_amount|default:"0" }} 원</td>
-      </tr>
-      <tr>
-        <th>대금 지급조건</th>
-        <td colspan="3">{{ document.content.payment_terms|default:"계약서 조항에 따름" }}</td>
-      </tr>
-      <tr>
-        <th>하자 보증조건</th>
-        <td colspan="3">{{ document.content.warranty_terms|default:"준공 후 2년간" }}</td>
-      </tr>
-      <tr>
-        <th>특약 및 주요내용</th>
-        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.body|default:document.title|linebreaks }}</td>
-      </tr>
-    </table>
-
-  <!-- D. 대외 공문 발송 (OFFICIAL_LETTER) 양식인 경우 -->
+  <!-- B. 대외 공문 발송 (OFFICIAL_LETTER) 양식인 경우 -->
   {% elif document.content.receiver or document.doc_type.form_template_key == 'OFFICIAL_LETTER' %}
     <table class="formatted-table">
       <tr>
@@ -571,7 +487,7 @@
       </tr>
     </table>
 
-  <!-- E. 수신 공문 처리 보고 (INBOUND_REPORT) 양식인 경우 -->
+  <!-- C. 수신 공문 처리 보고 (INBOUND_REPORT) 양식인 경우 -->
   {% elif document.content.inbound_letter_id or document.related_inbound_letter or document.doc_type.form_template_key == 'INBOUND_REPORT' %}
     <table class="formatted-table">
       <tr>
@@ -666,10 +582,95 @@
       {% endif %}
     </table>
 
+  <!-- D. 계약 체결 / 계약 변경 (CONTRACT / CONTRACT_CHANGE) 양식인 경우 -->
+  {% elif document.content.contract_name or document.content.original_contract_name or document.doc_type.form_template_key == 'CONTRACT' or document.doc_type.form_template_key == 'CONTRACT_CHANGE' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">계 약 명</th>
+        <td colspan="3"><strong>{{ document.content.contract_name|default:document.content.original_contract_name|default:document.title }}</strong></td>
+      </tr>
+      <tr>
+        <th>계약 상대방</th>
+        <td>{{ document.content.contractor_name|default:document.content.contractor_ceo|default:"-" }}{% if document.content.contractor_reg_number %} (사업자번호: {{ document.content.contractor_reg_number }}){% endif %}</td>
+        <th>계약 금액</th>
+        <td style="font-weight:700; color:#1565c0;">{{ document.content.final_amount|default:document.content.contract_amount|default:document.content.amount|default:"0" }} 원</td>
+      </tr>
+      <tr>
+        <th>대금 지급조건</th>
+        <td colspan="3">{{ document.content.payment_terms|default:"계약서 조항에 따름" }}</td>
+      </tr>
+      <tr>
+        <th>하자 보증조건</th>
+        <td colspan="3">{{ document.content.warranty_terms|default:"준공 후 2년간" }}</td>
+      </tr>
+      <tr>
+        <th>특약 및 주요내용</th>
+        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.purpose_reason|default:document.content.change_reason|default:document.content.special_terms|default:document.content.body|default:document.title|linebreaks }}</td>
+      </tr>
+    </table>
+
+  <!-- E. 지출결의서 / 경비정산 / 구매 / 선급금 양식인 경우 -->
+  {% elif document.doc_type.form_template_key in 'EXPENSE,EXPENSE_REPORT,EXPENSE_SETTLEMENT,SETTLEMENT,PURCHASE,PURCHASE_ORDER,ADVANCE,ADVANCE_PAY,ADVANCE_REQUEST' or document.content.items or document.content.amount or document.content.budget %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">청구(집행)금액</th>
+        <td style="width:32%; font-size:10.5pt; font-weight:700; color:#c62828;">
+          {{ document.content.amount|default:"0" }} 원
+        </td>
+        <th style="width:18%;">예산/비목과목</th>
+        <td style="width:32%;">{{ document.content.budget_account|default:"일반관리비" }}</td>
+      </tr>
+      {% if document.content.bank_name or document.content.account_number %}
+      <tr>
+        <th>입금 계좌</th>
+        <td colspan="3">
+          {{ document.content.bank_name|default:"" }} {{ document.content.account_number|default:"" }} (예금주: {{ document.content.account_holder|default:"-" }})
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <th>지출 목적</th>
+        <td colspan="3">{{ document.content.purpose|default:document.content.reason|default:document.title }}</td>
+      </tr>
+      {% if document.content.items %}
+      <tr>
+        <th>지출 세부항목</th>
+        <td colspan="3" style="padding: 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
+            <tr style="background: #f1f3f5;">
+              <th style="border: 1px solid #ccc; padding: 4px;">일자</th>
+              <th style="border: 1px solid #ccc; padding: 4px;">항목/내역</th>
+              <th style="border: 1px solid #ccc; padding: 4px; text-align: right;">금액</th>
+              <th style="border: 1px solid #ccc; padding: 4px;">비고</th>
+            </tr>
+            {% for item in document.content.items %}
+            <tr>
+              <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">{{ item.date|default:"-" }}</td>
+              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.description|default:item.merchant|default:item.name|default:"-" }}</td>
+              <td style="border: 1px solid #ccc; padding: 4px; text-align: right;">{{ item.amount|default:item.supply_price|default:0 }} 원</td>
+              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.note|default:item.purpose|default:item.spec|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <th>상세 내역</th>
+        <td colspan="3" style="min-height:20mm; padding:8px;">
+          {% if document.content.body %}{{ document.content.body|linebreaks }}
+          {% elif document.content.content %}{{ document.content.content|linebreaks }}
+          {% elif document.content.purpose %}{{ document.content.purpose|linebreaks }}
+          {% elif document.content.reason %}{{ document.content.reason|linebreaks }}
+          {% else %}{{ document.title|linebreaks }}{% endif %}
+        </td>
+      </tr>
+    </table>
+
   <!-- F. 일반 품의서 및 기타 서식 -->
   {% else %}
     <div style="padding:4px 0 8px;">
-      {{ document.content.body|default:document.title|linebreaks }}
+      {{ document.content.content|default:document.content.body|default:document.title|linebreaks }}
     </div>
   {% endif %}
 </div>

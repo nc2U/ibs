@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { CTable, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell } from '@coreui/vue'
+import type { ApprovalContent, ApprovalDocument } from '@/store/types/approval'
 
 defineProps<{
-  content: Record<string, any>
-  document?: any
+  content: ApprovalContent
+  document?: ApprovalDocument | null
 }>()
+
+const formatValue = (val: unknown): string => {
+  if (val === null || val === undefined) return '-'
+  return typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)
+}
 </script>
 
 <template>
@@ -35,8 +41,8 @@ defineProps<{
           <CTableHeaderCell class="text-center bg-more-light" style="width: 140px">
             {{ String(key) }}
           </CTableHeaderCell>
-          <CTableDataCell class="pl-3" style="white-space: pre-wrap">
-            {{ typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) }}
+          <CTableDataCell class="ps-3" style="white-space: pre-wrap">
+            {{ formatValue(val) }}
           </CTableDataCell>
         </CTableRow>
       </CTableBody>

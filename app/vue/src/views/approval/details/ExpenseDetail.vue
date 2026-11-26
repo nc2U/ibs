@@ -1,8 +1,22 @@
 <script setup lang="ts">
-defineProps<{
-  content: Record<string, any>
-  document?: any
+import { computed } from 'vue'
+import type { ApprovalContent, ApprovalDocument } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import { asList, asNum, asStr, getExpenseTypeLabel } from '../utils/approvalMeta'
+
+interface ExpenseItemDetail {
+  date?: string
+  description?: string
+  amount?: number | string
+  note?: string
+}
+
+const props = defineProps<{
+  content: ApprovalContent
+  document?: ApprovalDocument | null
 }>()
+
+const items = computed(() => asList<ExpenseItemDetail>(props.content.items))
 </script>
 
 <template>
@@ -13,19 +27,19 @@ defineProps<{
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             지출 구분
           </CTableHeaderCell>
-          <CTableDataCell class="pl-3">
+          <CTableDataCell class="ps-3">
             <v-chip color="success" variant="flat" size="x-small">
-              {{ content.expense_type || '법인카드' }}
+              {{ getExpenseTypeLabel(asStr(content.expense_type, 'CARD')) }}
             </v-chip>
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
             지급 요청일
           </CTableHeaderCell>
-          <CTableDataCell class="pl-3">{{ content.payment_due_date || '-' }}</CTableDataCell>
+          <CTableDataCell class="ps-3">{{ content.payment_due_date || '-' }}</CTableDataCell>
         </CTableRow>
         <CTableRow v-if="content.bank_name || content.account_number">
           <CTableHeaderCell class="text-center bg-more-light">입금 계좌</CTableHeaderCell>
-          <CTableDataCell colspan="3" class="pl-3">
+          <CTableDataCell colspan="3" class="ps-3">
             {{ content.bank_name }} {{ content.account_number }} (예금주:
             {{ content.account_holder }})
           </CTableDataCell>
@@ -34,10 +48,10 @@ defineProps<{
     </CTable>
 
     <!-- 품목 내역 그리드 -->
-    <div v-if="content.items?.length" class="mb-2">
+    <div v-if="items.length" class="mb-2">
       <div class="small fw-semibold mb-1">지출 내역 목록</div>
       <CTable small bordered responsive class="mb-0 text-center">
-        <CTableHead color="light">
+        <CTableHead :color="TableSecondary">
           <CTableRow>
             <CTableHeaderCell style="width: 120px">일자</CTableHeaderCell>
             <CTableHeaderCell>사용 내역 / 항목명</CTableHeaderCell>
@@ -46,11 +60,11 @@ defineProps<{
           </CTableRow>
         </CTableHead>
         <CTableBody>
-          <CTableRow v-for="(item, idx) in content.items" :key="idx">
-            <CTableDataCell>{{ item.date }}</CTableDataCell>
-            <CTableDataCell class="text-start">{{ item.description }}</CTableDataCell>
+          <CTableRow v-for="(item, idx) in items" :key="idx">
+            <CTableDataCell>{{ item.date || '-' }}</CTableDataCell>
+            <CTableDataCell class="text-start">{{ item.description || '-' }}</CTableDataCell>
             <CTableDataCell class="text-end fw-semibold">
-              {{ (Number(item.amount) || 0).toLocaleString() }}
+              {{ asNum(item.amount).toLocaleString() }}
             </CTableDataCell>
             <CTableDataCell class="text-start text-muted">{{ item.note || '-' }}</CTableDataCell>
           </CTableRow>
@@ -58,10 +72,10 @@ defineProps<{
       </CTable>
     </div>
 
-    <div class="d-flex justify-content-end align-items-center p-2 bg-light border rounded">
+    <div class="d-flex justify-content-end align-items-center p-2 bg-more-light border rounded">
       <span class="me-2 fw-semibold">총 지출 결의 금액:</span>
       <span class="fs-5 fw-bold text-danger">
-        {{ (Number(content.amount) || 0).toLocaleString() }} 원
+        {{ asNum(content.amount).toLocaleString() }} 원
       </span>
     </div>
   </div>

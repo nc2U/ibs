@@ -79,26 +79,47 @@ export const useApproval = defineStore('approval', () => {
 
   // ── 동적 결재선 미리보기 ───────────────────────────────
   const routePreview = ref<RoutePreviewStep[]>([])
+  let routePreviewReqSeq = 0
+
+  const clearRoutePreview = () => {
+    routePreviewReqSeq++
+    routePreview.value = []
+  }
 
   const fetchRoutePreview = async (
     docTypeId: number,
     assignmentId?: number | null,
     amount?: number | string | null,
+    sealId?: number | null,
   ) => {
+    const reqSeq = ++routePreviewReqSeq
     const params = new URLSearchParams({ doc_type: String(docTypeId) })
     if (assignmentId) params.append('assignment', String(assignmentId))
     if (amount !== undefined && amount !== null && amount !== '')
       params.append('amount', String(amount))
+    if (sealId) params.append('seal', String(sealId))
     return await api
       .get(`/approval-document/preview_route/?${params}`)
-      .then(res => (routePreview.value = res.data))
-      .catch(err => errorHandle(err))
+      .then(res => {
+        if (reqSeq === routePreviewReqSeq) {
+          routePreview.value = res.data
+        }
+        return res.data as RoutePreviewStep[]
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   // ── 결재 문서 ─────────────────────────────────────────
   const document = ref<ApprovalDocument | null>(null)
   const documentList = ref<ApprovalDocument[]>([])
   const documentCount = ref(0)
+
+  const clearDocument = () => {
+    document.value = null
+  }
 
   const fetchDocumentList = async (payload: DocFilter = {}) => {
     const params = new URLSearchParams()
@@ -117,10 +138,18 @@ export const useApproval = defineStore('approval', () => {
   const fetchDocument = (pk: number) =>
     api
       .get(`/approval-document/${pk}/`)
-      .then(res => (document.value = res.data))
-      .catch(err => errorHandle(err))
+      .then(res => {
+        document.value = res.data
+        return res.data as ApprovalDocument
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const createDocument = async (payload: PatchApprovalDocument | FormData) => {
+  const createDocument = async (
+    payload: PatchApprovalDocument | FormData,
+  ): Promise<ApprovalDocument | null> => {
     try {
       const headers =
         payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
@@ -131,10 +160,14 @@ export const useApproval = defineStore('approval', () => {
       return res.data as ApprovalDocument
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
-  const updateDocument = async (pk: number, payload: PatchApprovalDocument | FormData) => {
+  const updateDocument = async (
+    pk: number,
+    payload: PatchApprovalDocument | FormData,
+  ): Promise<ApprovalDocument | null> => {
     try {
       const headers =
         payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
@@ -144,34 +177,39 @@ export const useApproval = defineStore('approval', () => {
       return res.data as ApprovalDocument
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
-  const deleteDocument = async (pk: number) => {
+  const deleteDocument = async (pk: number): Promise<boolean> => {
     try {
       await api.delete(`/approval-document/${pk}/`)
       await fetchMyDrafted()
       message()
+      return true
     } catch (err: unknown) {
       errorHandle(err)
+      return false
     }
   }
 
-  const deleteAttachment = async (attachmentId: number, docId?: number) => {
+  const deleteAttachment = async (attachmentId: number, docId?: number): Promise<boolean> => {
     try {
       await api.delete(`/approval-attachment/${attachmentId}/`)
       if (docId) {
         await fetchDocument(docId)
       }
       message()
+      return true
     } catch (err: unknown) {
       errorHandle(err)
+      return false
     }
   }
 
   // ── 결재 대기함 / 기안함 ─────────────────────────────
-  const pendingList = ref<ApprovalDocument[]>([])
-  const draftedList = ref<ApprovalDocument[]>([])
+  const pendingList = ref<ApprovalDocumentListItem[]>([])
+  const draftedList = ref<ApprovalDocumentListItem[]>([])
 
   const fetchMyPending = () =>
     api
@@ -214,7 +252,7 @@ export const useApproval = defineStore('approval', () => {
   }
 
   // ── 결재 완료(승인) 문서 목록 ─────────────────────────
-  const approvedList = ref<ApprovalDocument[]>([])
+  const approvedList = ref<ApprovalDocumentListItem[]>([])
 
   const fetchMyApproved = () =>
     api
@@ -225,7 +263,7 @@ export const useApproval = defineStore('approval', () => {
       })
 
   // ── 내가 참조된 문서 목록 ─────────────────────────────
-  const observedList = ref<ApprovalDocument[]>([])
+  const observedList = ref<ApprovalDocumentListItem[]>([])
 
   const fetchMyObserved = () =>
     api
@@ -257,37 +295,49 @@ export const useApproval = defineStore('approval', () => {
   }
 
   // ── 결재 액션 ─────────────────────────────────────────
-  const submitDocument = async (pk: number) => {
+  const submitDocument = async (pk: number): Promise<ApprovalDocument | null> => {
     try {
       const res = await api.post(`/approval-document/${pk}/submit/`)
       document.value = res.data
       await fetchMyDrafted()
       message()
-      return res.data
+      return res.data as ApprovalDocument
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
-  const actDocument = async (pk: number, payload: ApprovalActPayload) => {
+  const actDocument = async (
+    pk: number,
+    payload: ApprovalActPayload,
+    options?: { skipRefresh?: boolean },
+  ): Promise<{ detail: string } | null> => {
     try {
       const res = await api.post(`/approval-document/${pk}/act/`, payload)
-      await fetchMyPending()
-      await fetchDocument(pk)
-      message()
-      return res.data
+      if (!options?.skipRefresh) {
+        await fetchMyPending()
+        await fetchDocument(pk)
+      }
+      if (!options?.skipRefresh) {
+        message()
+      }
+      return res.data as { detail: string }
     } catch (err: unknown) {
       errorHandle(err)
+      return null
     }
   }
 
-  const cancelDocument = async (pk: number) => {
+  const cancelDocument = async (pk: number): Promise<boolean> => {
     try {
       await api.post(`/approval-document/${pk}/cancel/`)
       await fetchMyDrafted()
       message()
+      return true
     } catch (err: unknown) {
       errorHandle(err)
+      return false
     }
   }
 
@@ -300,40 +350,52 @@ export const useApproval = defineStore('approval', () => {
       .then(res => (delegationList.value = res.data.results ?? res.data))
       .catch(err => errorHandle(err))
 
-  const createDelegation = (payload: Partial<ApprovalDelegation>) =>
-    api
-      .post('/approval-delegation/', payload)
-      .then(async () => {
-        message()
-        await fetchDelegationList()
-      })
-      .catch(err => errorHandle(err))
+  const createDelegation = async (payload: Partial<ApprovalDelegation>): Promise<boolean> => {
+    try {
+      await api.post('/approval-delegation/', payload)
+      message()
+      await fetchDelegationList()
+      return true
+    } catch (err: unknown) {
+      errorHandle(err)
+      return false
+    }
+  }
 
-  const updateDelegation = (id: number, payload: Partial<ApprovalDelegation>) =>
-    api
-      .patch(`/approval-delegation/${id}/`, payload)
-      .then(async () => {
-        message()
-        await fetchDelegationList()
-      })
-      .catch(err => errorHandle(err))
+  const updateDelegation = async (
+    id: number,
+    payload: Partial<ApprovalDelegation>,
+  ): Promise<boolean> => {
+    try {
+      await api.patch(`/approval-delegation/${id}/`, payload)
+      message()
+      await fetchDelegationList()
+      return true
+    } catch (err: unknown) {
+      errorHandle(err)
+      return false
+    }
+  }
 
-  const deleteDelegation = (id: number) =>
-    api
-      .delete(`/approval-delegation/${id}/`)
-      .then(async () => {
-        message()
-        await fetchDelegationList()
-      })
-      .catch(err => errorHandle(err))
+  const deleteDelegation = async (id: number): Promise<boolean> => {
+    try {
+      await api.delete(`/approval-delegation/${id}/`)
+      message()
+      await fetchDelegationList()
+      return true
+    } catch (err: unknown) {
+      errorHandle(err)
+      return false
+    }
+  }
 
   const reset = () => {
     stopPollingMyPending()
+    clearRoutePreview()
     docCategoryList.value = []
     docTypeList.value = []
     forDraftDocTypeList.value = []
     myAssignments.value = []
-    routePreview.value = []
     document.value = null
     documentList.value = []
     documentCount.value = 0
@@ -370,8 +432,10 @@ export const useApproval = defineStore('approval', () => {
     fetchForDraftDocTypeList,
     fetchMyAssignments,
     fetchRoutePreview,
+    clearRoutePreview,
     fetchDocumentList,
     fetchDocument,
+    clearDocument,
     createDocument,
     updateDocument,
     deleteDocument,

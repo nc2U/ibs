@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import type { FormField } from '@/store/types/approval'
+import type { ApprovalContent, FormField } from '@/store/types/approval'
+import { asStr } from '../utils/approvalMeta'
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
   schema: FormField[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const updateField = (key: string, val: any) => {
+const updateField = (key: string, val: unknown) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: val,
@@ -28,7 +29,7 @@ const updateField = (key: string, val: any) => {
       <CCol sm="9">
         <CFormTextarea
           v-if="field.type === 'textarea'"
-          :value="modelValue[field.key] ?? ''"
+          :value="asStr(modelValue[field.key])"
           :required="field.required"
           rows="4"
           :placeholder="`${field.label}을(를) 입력하세요.`"
@@ -36,7 +37,7 @@ const updateField = (key: string, val: any) => {
         />
         <CFormSelect
           v-else-if="field.type === 'select'"
-          :value="modelValue[field.key] ?? ''"
+          :value="asStr(modelValue[field.key])"
           :required="field.required"
           @change="updateField(field.key, ($event.target as HTMLSelectElement).value)"
         >
@@ -48,7 +49,7 @@ const updateField = (key: string, val: any) => {
         <CFormInput
           v-else
           :type="field.type"
-          :value="modelValue[field.key] ?? ''"
+          :value="asStr(modelValue[field.key])"
           :required="field.required"
           :placeholder="`${field.label}을(를) 입력하세요.`"
           @input="updateField(field.key, ($event.target as HTMLInputElement).value)"

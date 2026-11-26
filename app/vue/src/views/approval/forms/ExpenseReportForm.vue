@@ -1,40 +1,47 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import {
+  EXPENSE_TYPE_OPTIONS,
+  asList,
+  asStr,
+  getLocalToday,
+  parseNonNegativeNumberInput,
+} from '../utils/approvalMeta'
 
 export interface ExpenseItem {
   date: string
   description: string
-  amount: number
+  amount: number | ''
   note?: string
 }
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const items = computed<ExpenseItem[]>(() => {
-  return Array.isArray(props.modelValue.items) ? props.modelValue.items : []
-})
+const items = computed<ExpenseItem[]>(() => asList<ExpenseItem>(props.modelValue.items))
 
 const paymentDueDate = computed({
-  get: () => props.modelValue.payment_due_date ?? '',
+  get: () => asStr(props.modelValue.payment_due_date),
   set: (val: string) => updateField('payment_due_date', val),
 })
 
-const totalAmount = computed(() => {
-  return items.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-})
+const calcExpenseTotal = (list: ExpenseItem[]) =>
+  list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+
+const totalAmount = computed(() => calcExpenseTotal(items.value))
 
 const addItem = () => {
   const currentItems = [...items.value]
-  const today = new Date().toISOString().split('T')[0]
   currentItems.push({
-    date: today,
+    date: getLocalToday(),
     description: '',
     amount: 0,
     note: '',
@@ -42,36 +49,40 @@ const addItem = () => {
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: totalAmount.value,
+    amount: calcExpenseTotal(currentItems),
   })
 }
 
 const removeItem = (index: number) => {
   const currentItems = [...items.value]
   currentItems.splice(index, 1)
-  const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: newTotal,
+    amount: calcExpenseTotal(currentItems),
   })
 }
 
-const updateItem = (index: number, field: keyof ExpenseItem, val: any) => {
+const updateItem = (index: number, field: keyof ExpenseItem, val: string | number) => {
   const currentItems = [...items.value]
-  currentItems[index] = {
-    ...currentItems[index],
-    [field]: field === 'amount' ? parseFloat(val) || 0 : val,
-  }
-  const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const current = currentItems[index]
+  if (!current) return
+  const strVal = String(val)
+  const updatedItem: ExpenseItem = { ...current }
+  if (field === 'amount') updatedItem.amount = parseNonNegativeNumberInput(strVal)
+  else if (field === 'date') updatedItem.date = strVal
+  else if (field === 'description') updatedItem.description = strVal
+  else if (field === 'note') updatedItem.note = strVal
+
+  currentItems[index] = updatedItem
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: newTotal,
+    amount: calcExpenseTotal(currentItems),
   })
 }
 
-const updateField = (key: string, val: any) => {
+const updateField = (key: string, val: unknown) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: val,
@@ -79,7 +90,7 @@ const updateField = (key: string, val: any) => {
 }
 
 onMounted(() => {
-  if (!props.modelValue.items || props.modelValue.items.length === 0) {
+  if (items.value.length === 0) {
     addItem()
   }
 })
@@ -95,16 +106,15 @@ onMounted(() => {
     <!-- 지출 기본 정보 -->
     <CRow class="mb-3">
       <CFormLabel class="col-sm-3 col-form-label required">지출 구분</CFormLabel>
-      <CCol sm="4">
+      <CCol sm="3">
         <CFormSelect
-          :value="modelValue.expense_type ?? 'CARD'"
+          :value="asStr(modelValue.expense_type, 'CARD')"
           required
           @change="updateField('expense_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option value="CARD">법인카드</option>
-          <option value="TAX_INVOICE">세금계산서</option>
-          <option value="RECEIPT">현금영수증/간이영수증</option>
-          <option value="TRANSFER">일반 계좌이체</option>
+          <option v-for="t in EXPENSE_TYPE_OPTIONS" :key="t.value" :value="t.value">
+            {{ t.label }}
+          </option>
         </CFormSelect>
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">지급요청일</CFormLabel>
@@ -118,21 +128,21 @@ onMounted(() => {
       <CFormLabel class="col-sm-3 col-form-label">입금 계좌</CFormLabel>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.bank_name ?? ''"
+          :value="asStr(modelValue.bank_name)"
           placeholder="은행명"
           @input="updateField('bank_name', ($event.target as HTMLInputElement).value)"
         />
       </CCol>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.account_number ?? ''"
+          :value="asStr(modelValue.account_number)"
           placeholder="계좌번호"
           @input="updateField('account_number', ($event.target as HTMLInputElement).value)"
         />
       </CCol>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.account_holder ?? ''"
+          :value="asStr(modelValue.account_holder)"
           placeholder="예금주명"
           @input="updateField('account_holder', ($event.target as HTMLInputElement).value)"
         />
@@ -149,7 +159,7 @@ onMounted(() => {
       </div>
 
       <CTable small bordered responsive class="bg-more-white mb-2">
-        <CTableHead color="light">
+        <CTableHead :color="TableSecondary">
           <CTableRow class="text-center">
             <CTableHeaderCell style="width: 140px">일자</CTableHeaderCell>
             <CTableHeaderCell>사용 내역 / 항목명</CTableHeaderCell>
@@ -182,9 +192,8 @@ onMounted(() => {
                 type="number"
                 size="sm"
                 class="text-end"
-                :value="item.amount"
+                :value="item.amount ?? 0"
                 min="0"
-                step="1000"
                 required
                 @input="updateItem(idx, 'amount', ($event.target as HTMLInputElement).value)"
               />

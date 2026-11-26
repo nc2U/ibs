@@ -4,7 +4,16 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import type { ApprovalDelegation } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import { message } from '@/utils/helper'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import {
+  addLocalDays,
+  filterStaffUserOptions,
+  getLocalToday,
+  getUserDisplayName,
+} from '../utils/approvalMeta'
 
 const approvalStore = useApproval()
 const accStore = useAccount()
@@ -17,6 +26,8 @@ const { fetchUsersList } = accStore
 const isModalOpen = ref(false)
 const editingId = ref<number | null>(null)
 const formValidated = ref(false)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const pendingDeleteId = ref<number | null>(null)
 
 const form = ref({
   delegatee_id: null as number | null,
@@ -26,14 +37,7 @@ const form = ref({
   is_active: true,
 })
 
-const availableUsers = computed(() =>
-  usersList.value
-    .filter(u => u.pk !== userInfo.value?.pk && u.is_active && (u.has_staff || u.is_superuser))
-    .map(u => ({
-      value: u.pk,
-      title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
-    })),
-)
+const availableUsers = computed(() => filterStaffUserOptions(usersList.value, userInfo.value?.pk))
 
 onMounted(async () => {
   await Promise.all([fetchDelegationList(), fetchUsersList()])
@@ -41,8 +45,8 @@ onMounted(async () => {
 
 const openCreateModal = () => {
   editingId.value = null
-  const today = new Date().toISOString().split('T')[0]
-  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const today = getLocalToday()
+  const nextWeek = addLocalDays(7)
   form.value = {
     delegatee_id: null,
     start_date: today,
@@ -76,7 +80,7 @@ const handleSubmit = async () => {
   }
 
   if (form.value.start_date > form.value.end_date) {
-    alert('위임 종료일은 위임 시작일과 같거나 이후여야 합니다.')
+    message('warning', '기간 확인', '위임 종료일은 위임 시작일과 같거나 이후여야 합니다.')
     return
   }
 
@@ -90,36 +94,45 @@ const handleSubmit = async () => {
 
   isSubmitting.value = true
   try {
-    if (editingId.value) {
-      await updateDelegation(editingId.value, payload)
-    } else {
-      await createDelegation(payload)
-    }
-    isModalOpen.value = false
-  } catch (err) {
-    console.error('Failed to save delegation:', err)
+    const ok = editingId.value
+      ? await updateDelegation(editingId.value, payload)
+      : await createDelegation(payload)
+    if (ok) isModalOpen.value = false
   } finally {
     isSubmitting.value = false
   }
 }
 
-const handleDelete = async (id: number) => {
-  if (confirm('해당 결재 위임 설정을 삭제하시겠습니까?')) {
-    try {
-      await deleteDelegation(id)
-    } catch (err) {
-      console.error('Failed to delete delegation:', err)
-    }
-  }
+const handleDelete = (id: number) => {
+  pendingDeleteId.value = id
+  refConfirmModal.value?.callModal(
+    '결재 위임 삭제',
+    '해당 결재 위임 설정을 삭제하시겠습니까?',
+    'mdi-trash-can-outline',
+    'red-lighten-3',
+    '삭제',
+    'error',
+  )
 }
 
+const confirmDelete = async () => {
+  if (!pendingDeleteId.value) return
+  const id = pendingDeleteId.value
+  refConfirmModal.value?.close()
+  pendingDeleteId.value = null
+  await deleteDelegation(id)
+}
+
+const togglingIds = ref<Record<number, boolean>>({})
+
 const toggleActive = async (item: ApprovalDelegation) => {
-  if (item.id) {
-    try {
-      await updateDelegation(item.id, { is_active: !item.is_active })
-    } catch (err) {
-      console.error('Failed to toggle delegation active status:', err)
-    }
+  const id = item.id
+  if (!id || togglingIds.value[id]) return
+  togglingIds.value[id] = true
+  try {
+    await updateDelegation(id, { is_active: !item.is_active })
+  } finally {
+    delete togglingIds.value[id]
   }
 }
 </script>
@@ -155,8 +168,8 @@ const toggleActive = async (item: ApprovalDelegation) => {
 
       <CCardBody class="p-0">
         <CTable hover responsive align="middle">
-          <CTableHead color="light">
-            <CTableRow class="bg-more-light">
+          <CTableHead :color="TableSecondary">
+            <CTableRow>
               <CTableHeaderCell class="text-center" style="width: 70px">No</CTableHeaderCell>
               <CTableHeaderCell class="text-start" style="width: 150px">
                 위임자 (원권한자)
@@ -181,7 +194,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
             <CTableRow v-for="(item, idx) in delegationList" :key="item.id">
               <CTableDataCell class="text-center text-muted small">{{ idx + 1 }}</CTableDataCell>
               <CTableDataCell class="fw-semibold">
-                {{ item.delegator?.full_name || item.delegator?.username || '-' }}
+                {{ getUserDisplayName(item.delegator) }}
                 <v-chip
                   v-if="item.delegator?.id === userInfo?.pk"
                   size="x-small"
@@ -192,7 +205,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
                 </v-chip>
               </CTableDataCell>
               <CTableDataCell class="fw-semibold text-primary">
-                {{ item.delegatee?.full_name || item.delegatee?.username || '-' }}
+                {{ getUserDisplayName(item.delegatee) }}
                 <v-chip
                   v-if="item.delegatee?.id === userInfo?.pk"
                   size="x-small"
@@ -226,6 +239,8 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     variant="elevated"
                     :color="item.is_active ? 'warning' : 'success'"
                     :title="item.is_active ? '위임 일시정지' : '위임 활성화'"
+                    :disabled="!!(item.id && togglingIds[item.id])"
+                    :loading="!!(item.id && togglingIds[item.id])"
                     @click="toggleActive(item)"
                   >
                     {{ item.is_active ? '해제' : '활성' }}
@@ -244,7 +259,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
                     variant="elevated"
                     color="error"
                     title="삭제"
-                    @click="handleDelete(item.id!)"
+                    @click="item.id && handleDelete(item.id)"
                   >
                     삭제
                   </v-btn>
@@ -260,8 +275,8 @@ const toggleActive = async (item: ApprovalDelegation) => {
     <CModal
       :visible="isModalOpen"
       backdrop="static"
-      @close="isModalOpen = false"
       alignment="center"
+      @close="isModalOpen = false"
     >
       <CModalHeader>
         <CModalTitle class="h6 mb-0 fw-bold">
@@ -320,9 +335,9 @@ const toggleActive = async (item: ApprovalDelegation) => {
           </div>
 
           <!-- 활성화 토글 -->
-          <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+          <div class="d-flex align-items-center justify-content-between p-2 bg-more-light rounded">
             <span class="small fw-semibold">대결 권한 즉시 활성화</span>
-            <CFormSwitch v-model="form.is_active" id="delegationActiveSwitch" />
+            <CFormSwitch id="delegationActiveSwitch" v-model="form.is_active" />
           </div>
         </CForm>
       </CModalBody>
@@ -336,10 +351,12 @@ const toggleActive = async (item: ApprovalDelegation) => {
         >
           {{ editingId ? '수정 저장' : '위임 등록' }}
         </v-btn>
-        <v-btn color="light" size="small" :disabled="isSubmitting" @click="isModalOpen = false" flat>
+        <v-btn color="light" size="small" :disabled="isSubmitting" flat @click="isModalOpen = false">
           취소
         </v-btn>
       </CModalFooter>
     </CModal>
+
+    <ConfirmModal ref="refConfirmModal" @confirm-func="confirmDelete" />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
@@ -7,13 +7,27 @@ import { useAccount } from '@/store/pinia/account'
 import type {
   ApprovalStep,
   ApprovalActionRecord,
-  DocumentStatus,
-  StepStatus,
   ApprovalActionType,
+  ApprovalContent,
 } from '@/store/types/approval'
 import { CCard, CCardBody } from '@coreui/vue'
+import { message } from '@/utils/helper'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { STATIC_DETAIL_REGISTRY, FallbackDetail } from '../details'
-import { markNotificationReadByTarget } from '@/utils/notification.ts'
+import { markNotificationReadByTarget } from '@/utils/notification'
+import {
+  DOC_STATUS_CHIP_COLOR,
+  DOC_STATUS_DETAIL_LABEL,
+  SECURITY_LEVEL_META,
+  STEP_STATUS_CHIP_COLOR,
+  STEP_STATUS_LABEL,
+  fmtDatetime,
+  formatFileSize,
+  getLocalToday,
+  getSafeExternalUrl,
+  getUserDisplayName,
+  resolveRegistryEntry,
+} from '../utils/approvalMeta'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,22 +35,17 @@ const approvalStore = useApproval()
 const accountStore = useAccount()
 
 const { document } = storeToRefs(approvalStore)
-const { fetchDocument, fetchDelegationList, submitDocument, actDocument, cancelDocument } =
-  approvalStore
+const {
+  fetchDocument,
+  clearDocument,
+  fetchDelegationList,
+  submitDocument,
+  actDocument,
+  cancelDocument,
+} = approvalStore
 const myUser = computed(() => accountStore.userInfo)
 
 const docId = computed(() => Number(route.params.docId))
-
-// 전자결재 상세 진입 시 해당 결재 문서의 미확인 알림 자동 읽음 처리
-watch(
-  docId,
-  newId => {
-    if (newId) {
-      markNotificationReadByTarget('approval', newId)
-    }
-  },
-  { immediate: true },
-)
 
 const isMyDoc = computed(() => document.value?.drafter?.id === myUser.value?.pk)
 const canSubmit = computed(
@@ -56,44 +65,7 @@ const actComment = ref('')
 const acting = ref(false)
 const submitting = ref(false)
 const cancelling = ref(false)
-
-const fmtDatetime = (d: string | null) => {
-  if (!d) return '-'
-  return new Date(d).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: '임시저장',
-  pending: '결재중',
-  approved: '최종승인',
-  rejected: '반려',
-  cancelled: '취소',
-}
-const STATUS_COLOR: Record<DocumentStatus, string> = {
-  draft: 'blue-grey-lighten-2',
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'danger',
-  cancelled: 'dark',
-}
-const STEP_STATUS_LABEL: Record<StepStatus, string> = {
-  pending: '대기',
-  approved: '승인',
-  rejected: '반려',
-  skipped: '건너뜀',
-}
-const STEP_STATUS_COLOR: Record<StepStatus, string> = {
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'danger',
-  skipped: 'secondary',
-}
+const refCancelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const toList = () => {
   const name = (route.name as string) || ''
@@ -106,10 +78,17 @@ const toList = () => {
 }
 
 const getAction = (step: ApprovalStep, userId: number): ApprovalActionRecord | undefined =>
-  step.actions.find(a => a.approver.id === userId || a.delegated_from?.id === userId)
+  step.actions.find(
+    a =>
+      (a.action === 'approved' || a.action === 'rejected') &&
+      (a.approver.id === userId || a.delegated_from?.id === userId),
+  )
+
+const getStepComments = (step: ApprovalStep): ApprovalActionRecord[] =>
+  step.actions.filter(a => a.action === 'commented')
 
 const isDelegateFor = (approverId: number) => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalToday()
   return approvalStore.delegationList.some(
     d =>
       d.is_active &&
@@ -120,11 +99,15 @@ const isDelegateFor = (approverId: number) => {
   )
 }
 
+const isStepDirectApprover = (step: ApprovalStep) =>
+  step.approvers.some(a => a.id === myUser.value?.pk)
+
 const canAct = (step: ApprovalStep, approverId: number) => {
   if (!document.value || document.value.status !== 'pending') return false
   if (document.value.current_step !== step.step_order) return false
   const isDirect = approverId === myUser.value?.pk
-  const isDelegate = isDelegateFor(approverId)
+  // 백엔드 act()는 직접 결재자인 단계에서 대결 분기로 진입하지 않으므로, 동일 단계 직접 결재자일 경우 타인의 대결 버튼 미노출
+  const isDelegate = !isStepDirectApprover(step) && isDelegateFor(approverId)
   if (!isDirect && !isDelegate) return false
   return !getAction(step, approverId)
 }
@@ -137,13 +120,22 @@ const openActModal = (action: ApprovalActionType) => {
 
 const doAct = async () => {
   if (pendingAction.value === 'rejected' && !actComment.value.trim()) {
-    alert('반려 사유를 입력해 주세요.')
+    message('warning', '입력 확인', '반려 사유를 입력해 주세요.')
+    return
+  }
+  if (pendingAction.value === 'commented' && !actComment.value.trim()) {
+    message('warning', '입력 확인', '등록할 의견을 입력해 주세요.')
     return
   }
   acting.value = true
   try {
-    await actDocument(docId.value, { action: pendingAction.value, comment: actComment.value })
-    showModal.value = false
+    const res = await actDocument(docId.value, {
+      action: pendingAction.value,
+      comment: actComment.value,
+    })
+    if (res) {
+      showModal.value = false
+    }
   } finally {
     acting.value = false
   }
@@ -153,18 +145,30 @@ const confirmSubmit = async () => {
   submitting.value = true
   try {
     await submitDocument(docId.value)
-    await fetchDocument(docId.value)
   } finally {
     submitting.value = false
   }
 }
 
-const confirmCancel = async () => {
-  if (!confirm('결재 진행 중인 기안 문서를 회수(취소)하시겠습니까?')) return
+const confirmCancel = () => {
+  refCancelModal.value?.callModal(
+    '기안 회수 확인',
+    '결재 진행 중인 기안 문서를 회수(취소)하시겠습니까?\n회수된 문서는 임시저장 상태로 전환되어 수정 후 재상신할 수 있습니다.',
+    'mdi-undo',
+    'warning',
+    '회수 확인',
+    'error',
+  )
+}
+
+const doCancel = async () => {
+  refCancelModal.value?.close()
   cancelling.value = true
   try {
-    await cancelDocument(docId.value)
-    await fetchDocument(docId.value)
+    const ok = await cancelDocument(docId.value)
+    if (ok) {
+      await fetchDocument(docId.value)
+    }
   } finally {
     cancelling.value = false
   }
@@ -178,27 +182,33 @@ const progressPercent = computed(() => {
   return Math.round((done / steps.length) * 100)
 })
 
-const formatFileSize = (bytes: number | null | undefined) => {
-  if (!bytes) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const docContent = computed<Record<string, any>>(() => {
-  return (document.value?.content || {}) as Record<string, any>
-})
+const docContent = computed<ApprovalContent>(() => document.value?.content || {})
 
 const detailComponent = computed(() => {
-  const key = document.value?.doc_type_detail?.form_template_key
-  if (key && STATIC_DETAIL_REGISTRY[key]) {
-    return STATIC_DETAIL_REGISTRY[key]
-  }
-  return FallbackDetail
+  return (
+    resolveRegistryEntry(STATIC_DETAIL_REGISTRY, document.value?.doc_type_detail) ?? FallbackDetail
+  )
 })
 
+// 전자결재 상세 진입/전환 시 문서 재조회 및 미확인 알림 자동 읽음 처리
+watch(
+  docId,
+  async newId => {
+    clearDocument()
+    if (Number.isFinite(newId) && newId > 0) {
+      markNotificationReadByTarget('approval_document', newId)
+      await fetchDocument(newId)
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
-  await Promise.all([fetchDocument(docId.value), fetchDelegationList()])
+  await fetchDelegationList()
+})
+
+onUnmounted(() => {
+  clearDocument()
 })
 </script>
 
@@ -217,52 +227,31 @@ onMounted(async () => {
           <v-chip
             variant="elevated"
             size="x-small"
-            :color="STATUS_COLOR[document.status]"
+            :color="DOC_STATUS_CHIP_COLOR[document.status]"
             class="me-2"
           >
-            {{ STATUS_LABEL[document.status] }}
+            {{ DOC_STATUS_DETAIL_LABEL[document.status] }}
           </v-chip>
           <v-chip
             v-if="document.security_level"
             variant="tonal"
             size="x-small"
-            :color="
-              document.security_level === '1'
-                ? 'error'
-                : document.security_level === '2'
-                  ? 'primary'
-                  : 'success'
-            "
+            :color="SECURITY_LEVEL_META[document.security_level].color"
             class="me-2"
           >
-            <v-icon
-              start
-              size="x-small"
-              :icon="
-                document.security_level === '1'
-                  ? 'mdi-lock'
-                  : document.security_level === '2'
-                    ? 'mdi-account-group'
-                    : 'mdi-earth'
-              "
-            />
-            {{
-              document.security_level === '1'
-                ? '1등급 (비공개)'
-                : document.security_level === '2'
-                  ? '2등급 (부서공개)'
-                  : '3등급 (전사공개)'
-            }}
+            <v-icon start size="x-small" :icon="SECURITY_LEVEL_META[document.security_level].icon" />
+            {{ SECURITY_LEVEL_META[document.security_level].label }}
           </v-chip>
           <span class="fw-semibold fs-5">{{ document.title }}</span>
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <v-btn
-            v-if="document.pdf_url"
+            v-if="getSafeExternalUrl(document.pdf_url)"
             size="small"
-            :href="document.pdf_url"
+            :href="getSafeExternalUrl(document.pdf_url)"
             target="_blank"
-            class="no-underline text-dark"
+            rel="noopener noreferrer"
+            class="no-underline text-body"
           >
             <v-icon icon="mdi-download" color="error" class="me-1" />
             PDF 다운로드
@@ -328,19 +317,19 @@ onMounted(async () => {
               <CTableHeaderCell class="text-center bg-more-light" style="width: 100px">
                 문서 번호
               </CTableHeaderCell>
-              <CTableDataCell class="fw-semibold text-primary pl-3">
+              <CTableDataCell class="fw-semibold text-primary ps-3">
                 {{ document.doc_number || '(상신 후 채번)' }}
               </CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light" style="width: 100px">
                 문서 유형
               </CTableHeaderCell>
-              <CTableDataCell class="pl-3">{{ document.doc_type_detail?.name }}</CTableDataCell>
+              <CTableDataCell class="ps-3">{{ document.doc_type_detail?.name }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center bg-more-light">기안자</CTableHeaderCell>
-              <CTableDataCell class="pl-3">
+              <CTableDataCell class="ps-3">
                 <span class="fw-semibold">
-                  {{ document.drafter?.full_name || document.drafter?.username || '-' }}
+                  {{ getUserDisplayName(document.drafter) }}
                 </span>
                 <v-chip
                   v-if="document.drafter_assignment_desc"
@@ -353,17 +342,17 @@ onMounted(async () => {
                 </v-chip>
               </CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light">기안일시</CTableHeaderCell>
-              <CTableDataCell class="pl-3">{{ fmtDatetime(document.created_at) }}</CTableDataCell>
+              <CTableDataCell class="ps-3">{{ fmtDatetime(document.created_at) }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center bg-more-light">상신일시</CTableHeaderCell>
-              <CTableDataCell class="pl-3">{{ fmtDatetime(document.submitted_at) }}</CTableDataCell>
+              <CTableDataCell class="ps-3">{{ fmtDatetime(document.submitted_at) }}</CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light">완료일시</CTableHeaderCell>
-              <CTableDataCell class="pl-3">{{ fmtDatetime(document.completed_at) }}</CTableDataCell>
+              <CTableDataCell class="ps-3">{{ fmtDatetime(document.completed_at) }}</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="document.observers?.length">
               <CTableHeaderCell class="text-center bg-more-light">참조자 (공람)</CTableHeaderCell>
-              <CTableDataCell colspan="3" class="pl-3">
+              <CTableDataCell colspan="3" class="ps-3">
                 <div class="d-flex flex-wrap gap-1 align-items-center">
                   <v-chip
                     v-for="obs in document.observers"
@@ -374,7 +363,7 @@ onMounted(async () => {
                     class="py-1 px-2"
                   >
                     <v-icon icon="mdi-account-check" size="small" class="me-1" />
-                    {{ obs.full_name }}
+                    {{ getUserDisplayName(obs) }}
                   </v-chip>
                 </div>
               </CTableDataCell>
@@ -390,10 +379,9 @@ onMounted(async () => {
         <strong>결재 내용</strong>
         <v-chip
           v-if="document.doc_type_detail?.category_name"
-          color="light"
-          variant="flat"
+          color="secondary"
+          variant="tonal"
           size="x-small"
-          class="text-body"
         >
           {{ document.doc_type_detail.category_name }}
         </v-chip>
@@ -427,24 +415,30 @@ onMounted(async () => {
               </CTableDataCell>
               <CTableDataCell>
                 <a
-                  :href="att.file_url || att.file"
+                  v-if="getSafeExternalUrl(att.file_url || att.file)"
+                  :href="getSafeExternalUrl(att.file_url || att.file)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-decoration-none fw-medium text-body"
                 >
                   {{ att.file_name || '첨부파일' }}
                 </a>
+                <span v-else class="fw-medium text-body">{{ att.file_name || '첨부파일' }}</span>
                 <span class="text-muted small ms-2"> ({{ formatFileSize(att.file_size) }}) </span>
               </CTableDataCell>
               <CTableDataCell class="text-end pe-3" style="width: 120px">
                 <CButton
+                  v-if="getSafeExternalUrl(att.file_url || att.file)"
                   size="sm"
                   color="primary"
                   variant="outline"
-                  :href="att.file_url || att.file"
+                  :href="getSafeExternalUrl(att.file_url || att.file)"
                   target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <CIcon name="cilCloudDownload" class="me-1" />다운로드
                 </CButton>
+                <span v-else class="small text-muted">-</span>
               </CTableDataCell>
             </CTableRow>
 
@@ -458,23 +452,31 @@ onMounted(async () => {
               </CTableDataCell>
               <CTableDataCell>
                 <a
-                  :href="document.attachment"
+                  v-if="getSafeExternalUrl(document.attachment)"
+                  :href="getSafeExternalUrl(document.attachment)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-decoration-none fw-medium text-body"
                 >
                   {{ document.attachment.split('/').pop() || '첨부파일' }}
                 </a>
+                <span v-else class="fw-medium text-body">
+                  {{ document.attachment.split('/').pop() || '첨부파일' }}
+                </span>
               </CTableDataCell>
               <CTableDataCell class="text-end pe-3" style="width: 120px">
                 <CButton
+                  v-if="getSafeExternalUrl(document.attachment)"
                   size="sm"
                   color="primary"
                   variant="outline"
-                  :href="document.attachment"
+                  :href="getSafeExternalUrl(document.attachment)"
                   target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <CIcon name="cilCloudDownload" class="me-1" />다운로드
                 </CButton>
+                <span v-else class="small text-muted">-</span>
               </CTableDataCell>
             </CTableRow>
           </CTableBody>
@@ -531,7 +533,7 @@ onMounted(async () => {
                   </v-chip>
                 </div>
               </div>
-              <v-chip :color="STEP_STATUS_COLOR[step.status]" variant="flat" size="x-small">
+              <v-chip :color="STEP_STATUS_CHIP_COLOR[step.status]" variant="flat" size="x-small">
                 {{ STEP_STATUS_LABEL[step.status] }}
               </v-chip>
             </div>
@@ -548,10 +550,23 @@ onMounted(async () => {
                   'approver-mine': canAct(step, approver.id),
                 }"
               >
-                <div class="fw-semibold small mb-1">{{ approver.full_name }}</div>
+                <div class="fw-semibold small mb-1">
+                  {{ getUserDisplayName(approver) }}
+                  <span
+                    v-if="
+                      approver.id !== myUser?.pk &&
+                      !isStepDirectApprover(step) &&
+                      isDelegateFor(approver.id)
+                    "
+                    class="badge bg-warning text-dark ms-1"
+                    style="font-size: 0.65rem"
+                  >
+                    대결 대상
+                  </span>
+                </div>
 
                 <template v-if="getAction(step, approver.id)">
-                  <div class="d-flex align-items-center gap-1 mb-1">
+                  <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
                     <v-chip
                       :color="
                         getAction(step, approver.id)!.action === 'approved' ? 'success' : 'error'
@@ -570,7 +585,7 @@ onMounted(async () => {
                       variant="flat"
                       title="대리 결재"
                     >
-                      대결: {{ getAction(step, approver.id)!.approver.full_name }}
+                      대결: {{ getUserDisplayName(getAction(step, approver.id)!.approver) }}
                     </v-chip>
                   </div>
                   <div class="text-muted" style="font-size: 0.72rem">
@@ -578,7 +593,12 @@ onMounted(async () => {
                   </div>
                   <div
                     v-if="getAction(step, approver.id)!.comment"
-                    class="mt-1 small fst-italic text-danger"
+                    class="mt-1 small fst-italic"
+                    :class="
+                      getAction(step, approver.id)!.action === 'rejected'
+                        ? 'text-danger'
+                        : 'text-medium-emphasis'
+                    "
                   >
                     "{{ getAction(step, approver.id)!.comment }}"
                   </div>
@@ -588,25 +608,50 @@ onMounted(async () => {
                 </v-chip>
 
                 <!-- 내가 결재할 수 있는 경우 -->
-                <div v-if="canAct(step, approver.id)" class="d-flex gap-1 mt-2">
+                <div v-if="canAct(step, approver.id)" class="d-flex flex-column gap-1 mt-2">
+                  <div class="d-flex gap-1">
+                    <v-btn
+                      size="small"
+                      color="success"
+                      class="flex-fill"
+                      @click="openActModal('approved')"
+                    >
+                      승인
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      class="flex-fill"
+                      @click="openActModal('rejected')"
+                    >
+                      반려
+                    </v-btn>
+                  </div>
                   <v-btn
-                    size="small"
-                    color="success"
-                    class="flex-fill"
-                    @click="openActModal('approved')"
+                    size="x-small"
+                    color="info"
+                    variant="tonal"
+                    block
+                    @click="openActModal('commented')"
                   >
-                    승인
-                  </v-btn>
-                  <v-btn
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                    class="flex-fill"
-                    @click="openActModal('rejected')"
-                  >
-                    반려
+                    의견 등록
                   </v-btn>
                 </div>
+              </div>
+            </div>
+
+            <!-- 단계 의견 내역 (commented) -->
+            <div v-if="getStepComments(step).length" class="mt-2 pt-2 border-top small">
+              <div
+                v-for="cmt in getStepComments(step)"
+                :key="cmt.id"
+                class="text-medium-emphasis mb-1"
+              >
+                <v-icon icon="mdi-comment-text-outline" size="x-small" color="info" class="me-1" />
+                <strong>{{ getUserDisplayName(cmt.approver) }}</strong>
+                <span class="text-muted ms-1">({{ fmtDatetime(cmt.acted_at) }})</span>:
+                {{ cmt.comment }}
               </div>
             </div>
 
@@ -619,42 +664,77 @@ onMounted(async () => {
 
     <CRow>
       <CCol class="text-end">
-        <v-btn color="light" class="text-body" @click="toList" flat> 목록으로 </v-btn>
+        <v-btn color="light" class="text-body" flat @click="toList"> 목록으로 </v-btn>
       </CCol>
     </CRow>
   </template>
 
   <!-- 결재 처리 모달 -->
-  <CModal :visible="showModal" alignment="center" @close="showModal = false">
+  <CModal
+    :visible="showModal"
+    alignment="center"
+    backdrop="static"
+    @close="!acting && (showModal = false)"
+  >
     <CModalHeader>
       <CModalTitle>
-        {{ pendingAction === 'approved' ? '✓ 승인 처리' : '✗ 반려 처리' }}
+        {{
+          pendingAction === 'approved'
+            ? '✓ 승인 처리'
+            : pendingAction === 'rejected'
+              ? '✗ 반려 처리'
+              : '💬 결재 의견 등록'
+        }}
       </CModalTitle>
     </CModalHeader>
     <CModalBody>
       <CFormLabel class="fw-semibold">
-        {{ pendingAction === 'rejected' ? '반려 사유 (필수)' : '결재 의견 (선택)' }}
+        {{
+          pendingAction === 'rejected'
+            ? '반려 사유 (필수)'
+            : pendingAction === 'commented'
+              ? '결재 의견 (필수)'
+              : '결재 의견 (선택)'
+        }}
       </CFormLabel>
       <CFormTextarea
         v-model="actComment"
         rows="4"
         :placeholder="
-          pendingAction === 'rejected' ? '반려 사유를 입력하세요.' : '의견을 입력하세요. (선택)'
+          pendingAction === 'rejected'
+            ? '반려 사유를 입력하세요.'
+            : pendingAction === 'commented'
+              ? '결재 의견을 입력하세요.'
+              : '의견을 입력하세요. (선택)'
         "
       />
     </CModalBody>
     <CModalFooter class="d-flex justify-content-between">
-      <v-btn color="light" @click="showModal = false" flat>닫기</v-btn>
+      <v-btn color="light" flat :disabled="acting" @click="showModal = false">닫기</v-btn>
       <v-btn
-        :color="pendingAction === 'approved' ? 'success' : 'error'"
+        :color="
+          pendingAction === 'approved'
+            ? 'success'
+            : pendingAction === 'rejected'
+              ? 'error'
+              : 'info'
+        "
         :disabled="acting"
         @click="doAct"
       >
         <CSpinner v-if="acting" size="sm" class="me-1" />
-        {{ pendingAction === 'approved' ? '승인 확인' : '반려 확인' }}
+        {{
+          pendingAction === 'approved'
+            ? '승인 확인'
+            : pendingAction === 'rejected'
+              ? '반려 확인'
+              : '의견 등록'
+        }}
       </v-btn>
     </CModalFooter>
   </CModal>
+
+  <ConfirmModal ref="refCancelModal" @confirm-func="doCancel" />
 </template>
 
 <style scoped>
@@ -730,7 +810,7 @@ onMounted(async () => {
   border: 1px solid var(--cui-border-color);
   border-radius: 0.4rem;
   padding: 0.6rem 0.85rem;
-  min-width: 130px;
+  min-width: 140px;
   background: var(--cui-body-bg);
   text-align: center;
 }

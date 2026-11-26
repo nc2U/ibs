@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
-import type { ApprovalDocument } from '@/store/types/approval'
+import type { ApprovalDocumentListItem } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import { message } from '@/utils/helper'
+import { fmtDatetime, getUserDisplayName } from '../utils/approvalMeta'
 
 const router = useRouter()
 const store = useApproval()
@@ -12,7 +15,7 @@ const { fetchMyPending, actDocument } = store
 
 // 단건 결재 모달 상태
 const showModal = ref(false)
-const selectedDoc = ref<ApprovalDocument | null>(null)
+const selectedDoc = ref<ApprovalDocumentListItem | null>(null)
 const actComment = ref('')
 const acting = ref<'approved' | 'rejected' | ''>('')
 const searchText = ref('')
@@ -24,28 +27,46 @@ const batchComment = ref('')
 const isBatchProcessing = ref(false)
 const batchProgress = ref({ current: 0, total: 0 })
 
+watch(pendingList, list => {
+  const validIds = new Set(list.map(d => d.id))
+  const next = selectedDocIds.value.filter(id => validIds.has(id))
+  if (next.length !== selectedDocIds.value.length) {
+    selectedDocIds.value = next
+  }
+})
+
 const filteredList = computed(() => {
   if (!searchText.value) return pendingList.value
   const q = searchText.value.toLowerCase()
   return pendingList.value.filter(
-    d => d.title.toLowerCase().includes(q) || (d.doc_type_name ?? '').toLowerCase().includes(q),
+    d =>
+      d.title.toLowerCase().includes(q) ||
+      (d.doc_type_name ?? '').toLowerCase().includes(q) ||
+      (d.doc_number ?? '').toLowerCase().includes(q) ||
+      getUserDisplayName(d.drafter).toLowerCase().includes(q),
   )
 })
 
 // 전체 선택 관련 계산
 const isAllSelected = computed(() => {
-  return filteredList.value.length > 0 && selectedDocIds.value.length === filteredList.value.length
+  return (
+    filteredList.value.length > 0 &&
+    filteredList.value.every(d => selectedDocIds.value.includes(d.id))
+  )
 })
 
 const isIndeterminate = computed(() => {
-  return selectedDocIds.value.length > 0 && selectedDocIds.value.length < filteredList.value.length
+  const selectedInFiltered = filteredList.value.filter(d => selectedDocIds.value.includes(d.id))
+  return selectedInFiltered.length > 0 && selectedInFiltered.length < filteredList.value.length
 })
 
 const toggleSelectAll = () => {
   if (isAllSelected.value) {
-    selectedDocIds.value = []
+    const visibleIds = new Set(filteredList.value.map(d => d.id))
+    selectedDocIds.value = selectedDocIds.value.filter(id => !visibleIds.has(id))
   } else {
-    selectedDocIds.value = filteredList.value.map(d => d.id)
+    const merged = new Set([...selectedDocIds.value, ...filteredList.value.map(d => d.id)])
+    selectedDocIds.value = Array.from(merged)
   }
 }
 
@@ -62,20 +83,9 @@ const selectedDocuments = computed(() => {
   return pendingList.value.filter(d => selectedDocIds.value.includes(d.id))
 })
 
-const fmtDate = (d: string | null) => {
-  if (!d) return '-'
-  return new Date(d).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 const goDetail = (id: number) => router.push({ name: '결재 대기함 - 보기', params: { docId: id } })
 
-const openActModal = (doc: ApprovalDocument) => {
+const openActModal = (doc: ApprovalDocumentListItem) => {
   selectedDoc.value = doc
   actComment.value = ''
   showModal.value = true
@@ -84,16 +94,17 @@ const openActModal = (doc: ApprovalDocument) => {
 const doAct = async (action: 'approved' | 'rejected') => {
   if (!selectedDoc.value) return
   if (action === 'rejected' && !actComment.value.trim()) {
-    alert('반려 사유를 입력해 주세요.')
+    message('warning', '입력 확인', '반려 사유를 입력해 주세요.')
     return
   }
   acting.value = action
   try {
-    await actDocument(selectedDoc.value.id, { action, comment: actComment.value })
-    showModal.value = false
-    // 목록에서 선택되어 있었다면 제거
-    const idx = selectedDocIds.value.indexOf(selectedDoc.value.id)
-    if (idx > -1) selectedDocIds.value.splice(idx, 1)
+    const res = await actDocument(selectedDoc.value.id, { action, comment: actComment.value })
+    if (res) {
+      showModal.value = false
+      const idx = selectedDocIds.value.indexOf(selectedDoc.value.id)
+      if (idx > -1) selectedDocIds.value.splice(idx, 1)
+    }
   } finally {
     acting.value = ''
   }
@@ -107,40 +118,48 @@ const openBatchModal = () => {
 }
 
 const executeBatchApprove = async () => {
-  if (!selectedDocIds.value.length || isBatchProcessing.value) return
+  const validTargets = selectedDocuments.value.map(d => d.id)
+  if (!validTargets.length || isBatchProcessing.value) return
 
   isBatchProcessing.value = true
-  batchProgress.value = { current: 0, total: selectedDocIds.value.length }
+  batchProgress.value = { current: 0, total: validTargets.length }
 
-  let successCount = 0
+  const succeededIds = new Set<number>()
   let failCount = 0
 
-  for (const docId of [...selectedDocIds.value]) {
-    try {
-      await actDocument(docId, {
+  for (const docId of validTargets) {
+    const res = await actDocument(
+      docId,
+      {
         action: 'approved',
         comment: batchComment.value.trim() || undefined,
-      })
-      successCount++
-    } catch (err) {
-      console.error(`Failed to approve doc #${docId}:`, err)
+      },
+      { skipRefresh: true },
+    )
+    if (res) {
+      succeededIds.add(docId)
+    } else {
       failCount++
-    } finally {
-      batchProgress.value.current++
     }
+    batchProgress.value.current++
   }
 
   isBatchProcessing.value = false
   showBatchModal.value = false
-  selectedDocIds.value = []
+  selectedDocIds.value = selectedDocIds.value.filter(id => !succeededIds.has(id))
 
-  // 결과 안내 및 목록 갱신
-  if (failCount === 0) {
-    alert(`선택한 ${successCount}건의 문서가 모두 정상 승인되었습니다.`)
-  } else {
-    alert(`총 ${successCount}건 승인 완료 (실패 ${failCount}건)`)
-  }
   await fetchMyPending()
+
+  if (failCount === 0) {
+    message('success', '일괄 승인 완료', `선택한 ${succeededIds.size}건의 문서가 모두 정상 승인되었습니다.`)
+  } else {
+    message(
+      'warning',
+      '일괄 승인 결과',
+      `총 ${succeededIds.size}건 승인 완료 (실패 ${failCount}건)`,
+      6000,
+    )
+  }
 }
 
 onMounted(fetchMyPending)
@@ -151,10 +170,10 @@ onMounted(fetchMyPending)
   <CRow class="mb-3 align-items-center">
     <CCol md="5">
       <CInputGroup>
-        <CInputGroupText class="bg-light">
+        <CInputGroupText class="bg-more-light">
           <v-icon icon="mdi-magnify" size="small" />
         </CInputGroupText>
-        <CFormInput v-model="searchText" placeholder="제목 또는 문서 유형 검색..." />
+        <CFormInput v-model="searchText" placeholder="제목, 문서 유형, 기안자, 문서번호 검색..." />
         <CButton
           v-if="searchText"
           color="light"
@@ -192,7 +211,7 @@ onMounted(fetchMyPending)
 
   <!-- 목록 테이블 -->
   <CTable hover responsive bordered align="middle">
-    <CTableHead color="light">
+    <CTableHead :color="TableSecondary">
       <CTableRow>
         <CTableHeaderCell class="text-center" style="width: 45px">
           <input
@@ -200,12 +219,13 @@ onMounted(fetchMyPending)
             class="form-check-input"
             :checked="isAllSelected"
             :indeterminate.prop="isIndeterminate"
-            @change="toggleSelectAll"
+            aria-label="전체 선택 또는 해제"
             title="전체 선택/해제"
+            @change="toggleSelectAll"
           />
         </CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
-        <CTableHeaderCell class="pl-3">제목</CTableHeaderCell>
+        <CTableHeaderCell class="ps-3">제목</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 150px">기안자</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 180px">상신일시</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 80px">단계</CTableHeaderCell>
@@ -223,7 +243,7 @@ onMounted(fetchMyPending)
         v-for="doc in filteredList"
         :key="doc.id"
         style="cursor: pointer"
-        :color="selectedDocIds.includes(doc.id) ? 'success' : ''"
+        :color="selectedDocIds.includes(doc.id) ? 'success' : undefined"
         class="table-row-item"
         @click="goDetail(doc.id)"
       >
@@ -232,18 +252,19 @@ onMounted(fetchMyPending)
             type="checkbox"
             class="form-check-input"
             :checked="selectedDocIds.includes(doc.id)"
+            :aria-label="`${doc.title} 선택`"
             @change="toggleSelect(doc.id)"
           />
         </CTableDataCell>
         <CTableDataCell class="text-center">
           <v-chip color="primary" variant="elevated" size="x-small">{{ doc.doc_type_name }}</v-chip>
         </CTableDataCell>
-        <CTableDataCell class="pl-3 fw-semibold">{{ doc.title }}</CTableDataCell>
+        <CTableDataCell class="ps-3 fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">
-          {{ doc.drafter?.full_name ?? doc.drafter?.username ?? '-' }}
+          {{ getUserDisplayName(doc.drafter) }}
         </CTableDataCell>
         <CTableDataCell class="text-center text-medium-emphasis small">
-          {{ fmtDate(doc.submitted_at) }}
+          {{ fmtDatetime(doc.submitted_at) }}
         </CTableDataCell>
         <CTableDataCell class="text-center">
           <v-chip color="success" variant="flat" size="x-small" class="fw-bold">
@@ -259,7 +280,13 @@ onMounted(fetchMyPending)
   </CTable>
 
   <!-- 단건 결재 처리 모달 -->
-  <CModal size="lg" :visible="showModal" alignment="center" @close="showModal = false">
+  <CModal
+    size="lg"
+    :visible="showModal"
+    alignment="center"
+    backdrop="static"
+    @close="!acting && (showModal = false)"
+  >
     <CModalHeader>
       <CModalTitle>
         <CIcon name="cilTask" class="me-2" />
@@ -271,19 +298,19 @@ onMounted(fetchMyPending)
       <CTable small bordered class="mb-3">
         <CTableBody>
           <CTableRow>
-            <CTableHeaderCell class="light" style="width: 80px">유형</CTableHeaderCell>
+            <CTableHeaderCell class="bg-more-light" style="width: 80px">유형</CTableHeaderCell>
             <CTableDataCell>
               <v-chip color="info" variant="flat" size="x-small">
                 {{ selectedDoc.doc_type_name }}
               </v-chip>
             </CTableDataCell>
-            <CTableHeaderCell class="light" style="width: 80px">기안자</CTableHeaderCell>
+            <CTableHeaderCell class="bg-more-light" style="width: 80px">기안자</CTableHeaderCell>
             <CTableDataCell>
-              {{ selectedDoc.drafter?.full_name ?? selectedDoc.drafter?.username ?? '-' }}
+              {{ getUserDisplayName(selectedDoc.drafter) }}
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
-            <CTableHeaderCell class="light">제목</CTableHeaderCell>
+            <CTableHeaderCell class="bg-more-light">제목</CTableHeaderCell>
             <CTableDataCell colspan="3" class="fw-semibold">{{ selectedDoc.title }}</CTableDataCell>
           </CTableRow>
         </CTableBody>
@@ -300,16 +327,18 @@ onMounted(fetchMyPending)
       />
     </CModalBody>
     <CModalFooter class="d-flex justify-content-between">
-      <v-btn color="secondary" variant="outlined" @click="showModal = false">닫기</v-btn>
+      <v-btn color="secondary" variant="outlined" :disabled="!!acting" @click="showModal = false">
+        닫기
+      </v-btn>
       <div class="d-flex gap-2">
         <v-btn color="success" :disabled="!!acting" @click="doAct('approved')">
           <CSpinner v-if="acting === 'approved'" size="sm" class="me-1" />
-          <span v-else class="mr-2">✓</span>
+          <span v-else class="me-2">✓</span>
           승인
         </v-btn>
         <v-btn color="error" variant="outlined" :disabled="!!acting" @click="doAct('rejected')">
           <CSpinner v-if="acting === 'rejected'" size="sm" class="me-1" />
-          <span v-else class="mr-2">✗</span>
+          <span v-else class="me-2">✗</span>
           반려
         </v-btn>
       </div>
@@ -344,7 +373,7 @@ onMounted(fetchMyPending)
       <!-- 선택된 문서 목록 미리보기 -->
       <div class="mb-3">
         <label class="fw-semibold small text-muted mb-1">선택된 결재 대상 문서 목록:</label>
-        <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto">
+        <div class="border rounded p-2 bg-more-light" style="max-height: 180px; overflow-y: auto">
           <div
             v-for="(doc, idx) in selectedDocuments"
             :key="doc.id"
@@ -358,7 +387,7 @@ onMounted(fetchMyPending)
               <span class="small fw-semibold">{{ doc.title }}</span>
             </div>
             <span class="small text-muted text-nowrap">
-              기안자: {{ doc.drafter?.full_name ?? doc.drafter?.username ?? '-' }}
+              기안자: {{ getUserDisplayName(doc.drafter) }}
             </span>
           </div>
         </div>

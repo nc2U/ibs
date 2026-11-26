@@ -1,7 +1,17 @@
 <script setup lang="ts">
+import type { ApprovalContent, ApprovalDocument } from '@/store/types/approval'
+import {
+  asNum,
+  asStr,
+  getCertTypeLabel,
+  getEventTypeLabel,
+  getHrRequestTypeLabel,
+  getReceiveMethodLabel,
+} from '../utils/approvalMeta'
+
 defineProps<{
-  content: Record<string, any>
-  document?: any
+  content: ApprovalContent
+  document?: ApprovalDocument | null
 }>()
 </script>
 
@@ -12,16 +22,16 @@ defineProps<{
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           신청 구분
         </CTableHeaderCell>
-        <CTableDataCell class="pl-3">
+        <CTableDataCell class="ps-3">
           <v-chip color="info" variant="flat" size="x-small">
-            {{ content.request_type || '제증명서 발급' }}
+            {{ getHrRequestTypeLabel(asStr(content.request_type, 'CERTIFICATE')) }}
           </v-chip>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           수령 방법
         </CTableHeaderCell>
-        <CTableDataCell class="pl-3">
-          {{ content.receive_method || 'PDF 이메일 수신' }}
+        <CTableDataCell class="ps-3">
+          {{ getReceiveMethodLabel(asStr(content.receive_method, 'PDF_EMAIL')) }}
         </CTableDataCell>
       </CTableRow>
 
@@ -29,19 +39,19 @@ defineProps<{
       <template v-if="content.request_type === 'CERTIFICATE' || !content.request_type">
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light">증명서 종류</CTableHeaderCell>
-          <CTableDataCell class="pl-3 fw-semibold text-primary">
-            {{ content.cert_type || '재직증명서' }} ({{
+          <CTableDataCell class="ps-3 fw-semibold text-primary">
+            {{ getCertTypeLabel(asStr(content.cert_type, 'EMPLOYMENT')) }} ({{
               content.cert_language === 'ENGLISH' ? '영문' : '국문'
             }}, {{ content.cert_count ?? 1 }}부)
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light">제출처 / 용도</CTableHeaderCell>
-          <CTableDataCell class="pl-3">
+          <CTableDataCell class="ps-3">
             {{ content.submit_to || '-' }} / {{ content.usage_purpose || '-' }}
           </CTableDataCell>
         </CTableRow>
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light">주민번호 표기</CTableHeaderCell>
-          <CTableDataCell colspan="3" class="pl-3">
+          <CTableDataCell colspan="3" class="ps-3">
             {{ content.include_resident_num ? '뒷자리 전체 표기' : '생년월일만 표기' }}
           </CTableDataCell>
         </CTableRow>
@@ -51,24 +61,24 @@ defineProps<{
       <template v-else-if="content.request_type === 'CONGRATULATION_CONDOLENCE'">
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light">경조 구분</CTableHeaderCell>
-          <CTableDataCell class="pl-3 fw-semibold text-danger">
-            {{ content.event_type || '-' }}
+          <CTableDataCell class="ps-3 fw-semibold text-danger">
+            {{ getEventTypeLabel(content.event_type) }}
           </CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light">경조 일자</CTableHeaderCell>
-          <CTableDataCell class="pl-3">{{ content.event_date || '-' }}</CTableDataCell>
+          <CTableDataCell class="ps-3">{{ content.event_date || '-' }}</CTableDataCell>
         </CTableRow>
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light">경조 장소</CTableHeaderCell>
-          <CTableDataCell class="pl-3">{{ content.event_place || '-' }}</CTableDataCell>
+          <CTableDataCell class="ps-3">{{ content.event_place || '-' }}</CTableDataCell>
           <CTableHeaderCell class="text-center bg-more-light">경조금 신청액</CTableHeaderCell>
-          <CTableDataCell class="pl-3 fw-bold text-danger">
-            {{ (Number(content.congratulation_amount ?? content.amount) || 0).toLocaleString() }}
+          <CTableDataCell class="ps-3 fw-bold text-danger">
+            {{ asNum(content.congratulation_amount ?? content.amount).toLocaleString() }}
             원
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="content.support_items">
           <CTableHeaderCell class="text-center bg-more-light">물품 지원 요청</CTableHeaderCell>
-          <CTableDataCell colspan="3" class="pl-3">{{ content.support_items }}</CTableDataCell>
+          <CTableDataCell colspan="3" class="ps-3">{{ content.support_items }}</CTableDataCell>
         </CTableRow>
       </template>
 
@@ -80,7 +90,7 @@ defineProps<{
       >
         <CTableRow>
           <CTableHeaderCell class="text-center bg-more-light">기간 / 희망일</CTableHeaderCell>
-          <CTableDataCell colspan="3" class="pl-3 fw-semibold">
+          <CTableDataCell colspan="3" class="ps-3 fw-semibold">
             <span v-if="content.request_type === 'LEAVE_OF_ABSENCE'">
               휴직: {{ content.leave_start_date || '-' }} ~
               {{ content.leave_end_date || '-' }}
@@ -95,7 +105,7 @@ defineProps<{
         <CTableHeaderCell class="text-center bg-more-light">신청 사유 / 상세</CTableHeaderCell>
         <CTableDataCell
           colspan="3"
-          class="pl-3 py-3"
+          class="ps-3 py-3"
           style="white-space: pre-wrap; line-height: 1.6"
         >
           {{ content.reason || '-' }}
@@ -103,7 +113,7 @@ defineProps<{
       </CTableRow>
       <CTableRow v-if="content.note">
         <CTableHeaderCell class="text-center bg-more-light">비고 / 특이사항</CTableHeaderCell>
-        <CTableDataCell colspan="3" class="pl-3 text-muted">{{ content.note }}</CTableDataCell>
+        <CTableDataCell colspan="3" class="ps-3 text-muted">{{ content.note }}</CTableDataCell>
       </CTableRow>
     </CTableBody>
   </CTable>

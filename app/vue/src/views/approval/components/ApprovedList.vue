@@ -2,7 +2,16 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApproval } from '@/store/pinia/approval'
-import type { ApprovalDocument, DocumentStatus } from '@/store/types/approval'
+import type { ApprovalDocumentListItem } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import {
+  DOC_STATUS_CHIP_COLOR,
+  DOC_STATUS_LABEL,
+  SECURITY_LEVEL_META,
+  fmtDate,
+  getSafeExternalUrl,
+  getUserDisplayName,
+} from '../utils/approvalMeta'
 
 const router = useRouter()
 const store = useApproval()
@@ -10,14 +19,14 @@ const store = useApproval()
 const activeTab = ref<'approved' | 'observed'>('approved')
 const searchText = ref('')
 
-const approvedList = computed<ApprovalDocument[]>(() => store.approvedList)
-const observedList = computed<ApprovalDocument[]>(() => store.observedList)
+const approvedList = computed<ApprovalDocumentListItem[]>(() => store.approvedList)
+const observedList = computed<ApprovalDocumentListItem[]>(() => store.observedList)
 
-const currentList = computed<ApprovalDocument[]>(() => {
+const currentList = computed<ApprovalDocumentListItem[]>(() => {
   return activeTab.value === 'approved' ? approvedList.value : observedList.value
 })
 
-const filteredList = computed<ApprovalDocument[]>(() => {
+const filteredList = computed<ApprovalDocumentListItem[]>(() => {
   if (!searchText.value) return currentList.value
   const q = searchText.value.toLowerCase()
   return currentList.value.filter(
@@ -28,27 +37,6 @@ const filteredList = computed<ApprovalDocument[]>(() => {
       (d.drafter?.full_name ?? '').toLowerCase().includes(q),
   )
 })
-
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: '임시저장',
-  pending: '결재중',
-  approved: '승인완료',
-  rejected: '반려',
-  cancelled: '취소',
-}
-
-const STATUS_COLOR: Record<DocumentStatus, string> = {
-  draft: 'secondary',
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'danger',
-  cancelled: 'dark',
-}
-
-const fmtDate = (d: string | null) => {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('ko-KR')
-}
 
 const goDetail = (id: number) => {
   router.push({ name: '결재 문서함 - 보기', params: { docId: id } })
@@ -97,7 +85,7 @@ onMounted(() => {
   <CRow class="mb-3">
     <CCol md="5">
       <CInputGroup>
-        <CInputGroupText class="bg-light">
+        <CInputGroupText class="bg-more-light">
           <v-icon icon="mdi-magnify" size="small" />
         </CInputGroupText>
         <CFormInput v-model="searchText" placeholder="제목, 문서유형, 기안자, 문서번호 검색..." />
@@ -125,7 +113,7 @@ onMounted(() => {
 
   <!-- 목록 테이블 -->
   <CTable hover responsive bordered align="middle">
-    <CTableHead color="light">
+    <CTableHead :color="TableSecondary">
       <CTableRow class="text-center">
         <CTableHeaderCell style="width: 180px">문서번호</CTableHeaderCell>
         <CTableHeaderCell style="width: 120px">문서 유형</CTableHeaderCell>
@@ -169,7 +157,7 @@ onMounted(() => {
         @click="goDetail(doc.id)"
       >
         <!-- 문서번호 -->
-        <CTableDataCell class="text-center text-monospace small">
+        <CTableDataCell class="text-center font-monospace small">
           {{ doc.doc_number || '-' }}
         </CTableDataCell>
 
@@ -184,21 +172,9 @@ onMounted(() => {
             v-if="doc.security_level"
             size="x-small"
             variant="tonal"
-            :color="
-              doc.security_level === '1'
-                ? 'error'
-                : doc.security_level === '2'
-                  ? 'primary'
-                  : 'success'
-            "
+            :color="SECURITY_LEVEL_META[doc.security_level].color"
           >
-            {{
-              doc.security_level === '1'
-                ? '🔒 1등급'
-                : doc.security_level === '2'
-                  ? '👥 2등급'
-                  : '🌐 3등급'
-            }}
+            {{ SECURITY_LEVEL_META[doc.security_level].shortLabel }}
           </v-chip>
           <span v-else class="text-muted small">-</span>
         </CTableDataCell>
@@ -210,20 +186,20 @@ onMounted(() => {
 
         <!-- 참조 탭 전용: 상태 뱃지 -->
         <CTableDataCell v-if="activeTab === 'observed'" class="text-center">
-          <v-chip size="x-small" :color="STATUS_COLOR[doc.status]">
-            {{ STATUS_LABEL[doc.status] }}
+          <v-chip size="x-small" :color="DOC_STATUS_CHIP_COLOR[doc.status]">
+            {{ DOC_STATUS_LABEL[doc.status] }}
           </v-chip>
         </CTableDataCell>
 
         <!-- 기안자 -->
         <CTableDataCell class="text-center">
-          <div>{{ doc.drafter?.full_name || doc.drafter?.username || '-' }}</div>
+          <div>{{ getUserDisplayName(doc.drafter) }}</div>
           <small
             v-if="doc.drafter_assignment_desc"
             class="text-muted d-block"
             style="font-size: 0.75rem"
           >
-            {{ doc.drafter_assignment_desc.split('] ')[1] || '' }}
+            {{ doc.drafter_assignment_desc.split('] ')[1] || doc.drafter_assignment_desc }}
           </small>
         </CTableDataCell>
 
@@ -249,12 +225,13 @@ onMounted(() => {
             보기
           </CButton>
           <CButton
-            v-if="doc.pdf_url"
+            v-if="getSafeExternalUrl(doc.pdf_url)"
             size="sm"
             color="danger"
             variant="outline"
-            :href="doc.pdf_url"
+            :href="getSafeExternalUrl(doc.pdf_url)"
             target="_blank"
+            rel="noopener noreferrer"
           >
             <CIcon name="cilCloudDownload" size="sm" />
           </CButton>

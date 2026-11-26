@@ -1,44 +1,54 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import { TableSecondary } from '@/utils/cssMixins'
+import {
+  asList,
+  asNum,
+  asStr,
+  parseNonNegativeNumberInput,
+} from '../utils/approvalMeta'
 
 export interface PurchaseItem {
   name: string
   spec?: string
-  quantity: number
-  unit_price: number
+  quantity: number | ''
+  unit_price: number | ''
   supply_price: number
   vat: number
 }
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const items = computed<PurchaseItem[]>(() => {
-  return Array.isArray(props.modelValue.items) ? props.modelValue.items : []
-})
+const items = computed<PurchaseItem[]>(() => asList<PurchaseItem>(props.modelValue.items))
 
 const deliveryDueDate = computed({
-  get: () => props.modelValue.delivery_due_date ?? '',
+  get: () => asStr(props.modelValue.delivery_due_date),
   set: (val: string) => updateField('delivery_due_date', val),
 })
 
-const totalSupplyPrice = computed(() => {
-  return items.value.reduce((sum, item) => sum + (Number(item.supply_price) || 0), 0)
-})
+const calcTotals = (list: PurchaseItem[]) => {
+  const supply = list.reduce((sum, item) => sum + (Number(item.supply_price) || 0), 0)
+  const vat = list.reduce((sum, item) => sum + (Number(item.vat) || 0), 0)
+  return supply + vat
+}
 
-const totalVat = computed(() => {
-  return items.value.reduce((sum, item) => sum + (Number(item.vat) || 0), 0)
-})
+const totalSupplyPrice = computed(() =>
+  items.value.reduce((sum, item) => sum + (Number(item.supply_price) || 0), 0),
+)
 
-const totalAmount = computed(() => {
-  return totalSupplyPrice.value + totalVat.value
-})
+const totalVat = computed(() =>
+  items.value.reduce((sum, item) => sum + (Number(item.vat) || 0), 0),
+)
+
+const totalAmount = computed(() => totalSupplyPrice.value + totalVat.value)
 
 const addItem = () => {
   const currentItems = [...items.value]
@@ -53,50 +63,53 @@ const addItem = () => {
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: totalAmount.value,
+    amount: calcTotals(currentItems),
   })
 }
 
 const removeItem = (index: number) => {
   const currentItems = [...items.value]
   currentItems.splice(index, 1)
-  const sumSupply = currentItems.reduce((sum, item) => sum + (Number(item.supply_price) || 0), 0)
-  const sumVat = currentItems.reduce((sum, item) => sum + (Number(item.vat) || 0), 0)
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: sumSupply + sumVat,
+    amount: calcTotals(currentItems),
   })
 }
 
-const updateItem = (index: number, field: keyof PurchaseItem, val: any) => {
+const updateItem = (index: number, field: keyof PurchaseItem, val: string | number) => {
   const currentItems = [...items.value]
-  const target = { ...currentItems[index] }
+  const current = currentItems[index]
+  if (!current) return
+  const target: PurchaseItem = { ...current }
+  const strVal = String(val)
 
   if (field === 'quantity') {
-    target.quantity = parseInt(val) || 0
-    target.supply_price = target.quantity * target.unit_price
+    const q = parseNonNegativeNumberInput(strVal)
+    target.quantity = q === '' ? '' : Math.floor(q)
+    const qNum = target.quantity === '' ? 0 : target.quantity
+    target.supply_price = qNum * asNum(target.unit_price)
     target.vat = Math.round(target.supply_price * 0.1)
   } else if (field === 'unit_price') {
-    target.unit_price = parseFloat(val) || 0
-    target.supply_price = target.quantity * target.unit_price
+    target.unit_price = parseNonNegativeNumberInput(strVal)
+    const uNum = target.unit_price === '' ? 0 : target.unit_price
+    target.supply_price = asNum(target.quantity) * uNum
     target.vat = Math.round(target.supply_price * 0.1)
-  } else {
-    ;(target as any)[field] = val
+  } else if (field === 'name') {
+    target.name = strVal
+  } else if (field === 'spec') {
+    target.spec = strVal
   }
 
   currentItems[index] = target
-  const sumSupply = currentItems.reduce((sum, item) => sum + (Number(item.supply_price) || 0), 0)
-  const sumVat = currentItems.reduce((sum, item) => sum + (Number(item.vat) || 0), 0)
-
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
-    amount: sumSupply + sumVat,
+    amount: calcTotals(currentItems),
   })
 }
 
-const updateField = (key: string, val: any) => {
+const updateField = (key: string, val: unknown) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: val,
@@ -104,7 +117,7 @@ const updateField = (key: string, val: any) => {
 }
 
 onMounted(() => {
-  if (!props.modelValue.items || props.modelValue.items.length === 0) {
+  if (items.value.length === 0) {
     addItem()
   }
 })
@@ -122,7 +135,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-3 col-form-label required">구매 목적</CFormLabel>
       <CCol sm="9">
         <CFormInput
-          :value="modelValue.purpose ?? ''"
+          :value="asStr(modelValue.purpose)"
           placeholder="구매 목적 및 사유 (예: 신규 프로젝트 개발용 장비 구매)"
           required
           @input="updateField('purpose', ($event.target as HTMLInputElement).value)"
@@ -138,7 +151,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">납품 장소</CFormLabel>
       <CCol sm="4">
         <CFormInput
-          :value="modelValue.delivery_location ?? ''"
+          :value="asStr(modelValue.delivery_location)"
           placeholder="예: 본사 4층 개발팀"
           @input="updateField('delivery_location', ($event.target as HTMLInputElement).value)"
         />
@@ -155,7 +168,7 @@ onMounted(() => {
       </div>
 
       <CTable small bordered responsive class="bg-more-white mb-2">
-        <CTableHead color="light">
+        <CTableHead :color="TableSecondary">
           <CTableRow class="text-center">
             <CTableHeaderCell>품명</CTableHeaderCell>
             <CTableHeaderCell style="width: 140px">규격 / 모델명</CTableHeaderCell>
@@ -190,7 +203,7 @@ onMounted(() => {
                 type="number"
                 size="sm"
                 class="text-end"
-                :value="item.quantity"
+                :value="item.quantity ?? 1"
                 min="1"
                 required
                 @input="updateItem(idx, 'quantity', ($event.target as HTMLInputElement).value)"
@@ -201,9 +214,8 @@ onMounted(() => {
                 type="number"
                 size="sm"
                 class="text-end"
-                :value="item.unit_price"
+                :value="item.unit_price ?? 0"
                 min="0"
-                step="1000"
                 required
                 @input="updateItem(idx, 'unit_price', ($event.target as HTMLInputElement).value)"
               />

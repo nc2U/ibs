@@ -27,9 +27,7 @@ const isFormView = computed(() => {
   return /기안 문서함 - 작성|기안 문서함 - 수정/.test(name)
 })
 
-const comSelect = async (_target: number | null) => {
-  // 회사 선택 변경 시 필요한 경우 하위 뷰에 전달 또는 스토어 반응 처리
-}
+const isCompanyScopedView = computed(() => route.name === '전체 문서함' || isFormView.value)
 </script>
 
 <template>
@@ -38,7 +36,7 @@ const comSelect = async (_target: number | null) => {
       :page-title="pageTitle"
       :nav-menu="navMenu"
       selector="CompanySelect"
-      @com-select="comSelect"
+      :selectable="isCompanyScopedView"
     />
 
     <ContentBody>
@@ -53,9 +51,9 @@ const comSelect = async (_target: number | null) => {
 
         <DelegationList v-else-if="route.name === '결재 위임 관리'" />
 
-        <DocumentDetail v-else-if="isDetailView" />
+        <DocumentDetail v-else-if="isDetailView" :key="route.fullPath" />
 
-        <DocumentForm v-else-if="isFormView" />
+        <DocumentForm v-else-if="isFormView" :key="route.fullPath" />
       </CCardBody>
     </ContentBody>
   </ComAuthGuard>

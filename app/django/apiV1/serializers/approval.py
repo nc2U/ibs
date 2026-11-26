@@ -167,6 +167,34 @@ class ApprovalStepSerializer(serializers.ModelSerializer):
         fields = ('id', 'step_order', 'role_label', 'approvers', 'condition', 'status', 'actions')
 
 
+def _get_doc_drafter_name(obj) -> str:
+    if obj.drafter:
+        profile = getattr(obj.drafter, 'profile', None)
+        if profile and profile.name:
+            return profile.name
+        return obj.drafter.username
+    return ''
+
+
+def _get_doc_assignment_desc(obj) -> str:
+    if obj.drafter_assignment:
+        dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
+        duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
+            obj.drafter_assignment.staff.position.name if obj.drafter_assignment.staff and obj.drafter_assignment.staff.position else ''
+        )
+        return f'{dept} {duty}'.strip()
+    return ''
+
+
+def _get_doc_pdf_url(obj, context) -> str | None:
+    if hasattr(obj, 'pdf_file') and obj.pdf_file and obj.pdf_file.name:
+        request = context.get('request')
+        return request.build_absolute_uri(obj.pdf_file.url) if request else obj.pdf_file.url
+    # PDF가 아직 없는 경우 null 반환 (동기 렌더링 제거: 목록 조회 시 타임아웃·과부하 위험)
+    # PDF 생성은 최종 승인 시 generate_approval_pdf_task.delay()로 비동기 처리됨
+    return None
+
+
 class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     drafter = SimpleUserSerializer(read_only=True)
     drafter_name = serializers.SerializerMethodField()
@@ -178,6 +206,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
     attachment_count = serializers.SerializerMethodField()
     observer_count = serializers.SerializerMethodField()
+    pdf_url = serializers.SerializerMethodField()
 
     def get_attachment_count(self, obj):
         if hasattr(obj, 'attachment_count'):
@@ -190,28 +219,20 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
         return obj.observers.count()
 
     def get_drafter_name(self, obj):
-        if obj.drafter:
-            profile = getattr(obj.drafter, 'profile', None)
-            if profile and profile.name:
-                return profile.name
-            return obj.drafter.username
-        return ''
+        return _get_doc_drafter_name(obj)
 
     def get_drafter_assignment_desc(self, obj):
-        if obj.drafter_assignment:
-            dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
-            duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
-                obj.drafter_assignment.staff.position.name if obj.drafter_assignment.staff and obj.drafter_assignment.staff.position else ''
-            )
-            return f'{dept} {duty}'.strip()
-        return ''
+        return _get_doc_assignment_desc(obj)
+
+    def get_pdf_url(self, obj):
+        return _get_doc_pdf_url(obj, self.context)
 
     class Meta:
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name', 'drafter',
                   'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
                   'attachment_count', 'observer_count', 'security_level', 'security_level_desc',
-                  'status', 'status_desc', 'current_step', 'related_inbound_letter',
+                  'status', 'status_desc', 'current_step', 'related_inbound_letter', 'pdf_url',
                   'created_at', 'submitted_at', 'completed_at')
 
 
@@ -249,29 +270,13 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         return None
 
     def get_drafter_name(self, obj):
-        if obj.drafter:
-            profile = getattr(obj.drafter, 'profile', None)
-            if profile and profile.name:
-                return profile.name
-            return obj.drafter.username
-        return ''
+        return _get_doc_drafter_name(obj)
 
     def get_drafter_assignment_desc(self, obj):
-        if obj.drafter_assignment:
-            dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
-            duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
-                obj.drafter_assignment.staff.position.name if obj.drafter_assignment.staff and obj.drafter_assignment.staff.position else ''
-            )
-            return f'{dept} {duty}'.strip()
-        return ''
+        return _get_doc_assignment_desc(obj)
 
     def get_pdf_url(self, obj):
-        if hasattr(obj, 'pdf_file') and obj.pdf_file and obj.pdf_file.name:
-            request = self.context.get('request')
-            return request.build_absolute_uri(obj.pdf_file.url) if request else obj.pdf_file.url
-        # PDF가 아직 없는 경우 null 반환 (동기 렌더링 제거: 목록 조회 시 타임아웃·과부하 위험)
-        # PDF 생성은 최종 승인 시 generate_approval_pdf_task.delay()로 비동기 처리됨
-        return None
+        return _get_doc_pdf_url(obj, self.context)
 
     def to_internal_value(self, data):
         # multipart/form-data 요청 시 Django QueryDict가 전달되면 DRF의 DictField가

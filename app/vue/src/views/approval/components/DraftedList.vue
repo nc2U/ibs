@@ -5,6 +5,14 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import type { DocumentStatus } from '@/store/types/approval'
 import { CButton, CTable, CTableBody, CTableDataCell, CTableRow } from '@coreui/vue'
+import { TableSecondary } from '@/utils/cssMixins'
+import {
+  DOC_STATUS_CHIP_COLOR,
+  DOC_STATUS_LABEL,
+  SECURITY_LEVEL_META,
+  fmtDate,
+  getSafeExternalUrl,
+} from '../utils/approvalMeta'
 
 const router = useRouter()
 const store = useApproval()
@@ -27,33 +35,6 @@ const filteredList = computed(() =>
   }),
 )
 
-const statusLabel = (s: DocumentStatus) => {
-  const m: Record<DocumentStatus, string> = {
-    draft: '임시저장',
-    pending: '결재중',
-    approved: '승인완료',
-    rejected: '반려',
-    cancelled: '취소',
-  }
-  return m[s] ?? s
-}
-
-const statusColor = (s: DocumentStatus) => {
-  const m: Record<DocumentStatus, string> = {
-    draft: 'blue-grey-lighten-2',
-    pending: 'warning',
-    approved: 'success',
-    rejected: 'error',
-    cancelled: 'dark',
-  }
-  return m[s] ?? 'secondary'
-}
-
-const fmtDate = (d: string | null) => {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('ko-KR')
-}
-
 const confirmSubmit = (id: number) => {
   targetDocId.value = id
   showSubmitModal.value = true
@@ -68,8 +49,8 @@ const doSubmit = async () => {
   if (!targetDocId.value) return
   processing.value = true
   try {
-    await submitDocument(targetDocId.value)
-    showSubmitModal.value = false
+    const submitted = await submitDocument(targetDocId.value)
+    if (submitted) showSubmitModal.value = false
   } finally {
     processing.value = false
   }
@@ -79,8 +60,8 @@ const doCancel = async () => {
   if (!targetDocId.value) return
   processing.value = true
   try {
-    await cancelDocument(targetDocId.value)
-    showCancelModal.value = false
+    const ok = await cancelDocument(targetDocId.value)
+    if (ok) showCancelModal.value = false
   } finally {
     processing.value = false
   }
@@ -109,7 +90,7 @@ onMounted(fetchMyDrafted)
     </CCol>
     <CCol md="4">
       <CInputGroup>
-        <CInputGroupText class="bg-light">
+        <CInputGroupText class="bg-more-light">
           <v-icon icon="mdi-magnify" size="small" />
         </CInputGroupText>
         <CFormInput v-model="searchText" placeholder="제목 검색..." />
@@ -137,7 +118,7 @@ onMounted(fetchMyDrafted)
 
   <!-- 목록 테이블 -->
   <CTable hover bordered align="middle" responsive>
-    <CTableHead color="light">
+    <CTableHead :color="TableSecondary">
       <CTableRow>
         <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 90px">공개등급</CTableHeaderCell>
@@ -178,28 +159,16 @@ onMounted(fetchMyDrafted)
             v-if="doc.security_level"
             size="x-small"
             variant="tonal"
-            :color="
-              doc.security_level === '1'
-                ? 'error'
-                : doc.security_level === '2'
-                  ? 'primary'
-                  : 'success'
-            "
+            :color="SECURITY_LEVEL_META[doc.security_level].color"
           >
-            {{
-              doc.security_level === '1'
-                ? '🔒 1등급'
-                : doc.security_level === '2'
-                  ? '👥 2등급'
-                  : '🌐 3등급'
-            }}
+            {{ SECURITY_LEVEL_META[doc.security_level].shortLabel }}
           </v-chip>
           <span v-else class="text-muted small">-</span>
         </CTableDataCell>
         <CTableDataCell class="fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">
-          <v-chip size="x-small" variant="elevated" :color="statusColor(doc.status)">{{
-            statusLabel(doc.status)
+          <v-chip size="x-small" variant="elevated" :color="DOC_STATUS_CHIP_COLOR[doc.status]">{{
+            DOC_STATUS_LABEL[doc.status]
           }}</v-chip>
         </CTableDataCell>
         <CTableDataCell class="text-center">
@@ -241,7 +210,12 @@ onMounted(fetchMyDrafted)
               >
                 상신
               </CDropdownItem>
-              <CDropdownItem v-if="doc.pdf_url" :href="doc.pdf_url" target="_blank">
+              <CDropdownItem
+                v-if="getSafeExternalUrl(doc.pdf_url)"
+                :href="getSafeExternalUrl(doc.pdf_url)"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 PDF 다운로드
               </CDropdownItem>
               <template v-if="doc.status !== 'approved' && doc.status !== 'cancelled'">
@@ -258,7 +232,12 @@ onMounted(fetchMyDrafted)
   </CTable>
 
   <!-- 상신 확인 모달 -->
-  <CModal :visible="showSubmitModal" alignment="center" @close="showSubmitModal = false">
+  <CModal
+    :visible="showSubmitModal"
+    alignment="center"
+    backdrop="static"
+    @close="!processing && (showSubmitModal = false)"
+  >
     <CModalHeader>
       <CModalTitle>결재 상신</CModalTitle>
     </CModalHeader>
@@ -269,7 +248,14 @@ onMounted(fetchMyDrafted)
       </CAlert>
     </CModalBody>
     <CModalFooter>
-      <v-btn color="secondary" variant="outlined" @click="showSubmitModal = false">취소</v-btn>
+      <v-btn
+        color="secondary"
+        variant="outlined"
+        :disabled="processing"
+        @click="showSubmitModal = false"
+      >
+        취소
+      </v-btn>
       <v-btn color="primary" :disabled="processing" @click="doSubmit">
         <CSpinner v-if="processing" size="sm" class="me-1" />상신 확인
       </v-btn>
@@ -277,7 +263,12 @@ onMounted(fetchMyDrafted)
   </CModal>
 
   <!-- 취소 확인 모달 -->
-  <CModal :visible="showCancelModal" alignment="center" @close="showCancelModal = false">
+  <CModal
+    :visible="showCancelModal"
+    alignment="center"
+    backdrop="static"
+    @close="!processing && (showCancelModal = false)"
+  >
     <CModalHeader>
       <CModalTitle>결재 취소</CModalTitle>
     </CModalHeader>
@@ -288,8 +279,15 @@ onMounted(fetchMyDrafted)
       </CAlert>
     </CModalBody>
     <CModalFooter>
-      <v-btn color="secondary" variant="outlined" @click="showCancelModal = false">닫기</v-btn>
-      <v-btn color="danger" :disabled="processing" @click="doCancel">
+      <v-btn
+        color="secondary"
+        variant="outlined"
+        :disabled="processing"
+        @click="showCancelModal = false"
+      >
+        닫기
+      </v-btn>
+      <v-btn color="error" :disabled="processing" @click="doCancel">
         <CSpinner v-if="processing" size="sm" class="me-1" />취소 확인
       </v-btn>
     </CModalFooter>

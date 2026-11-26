@@ -1,83 +1,86 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import {
+  CONTRACT_CHANGE_TYPE_OPTIONS,
+  asNum,
+  asStr,
+  firstStr,
+  getLocalToday,
+  parseSignedNumberInput,
+} from '../utils/approvalMeta'
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const changeTypes = [
-  { value: 'COMPREHENSIVE', label: '복합 변경 (금액 + 기간 변경)' },
-  { value: 'AMOUNT_CHANGE', label: '금액 변경 (증액 / 감액)' },
-  { value: 'PERIOD_CHANGE', label: '기간 변경 (공기 / 과업기간 연장)' },
-  { value: 'SCOPE_CHANGE', label: '과업 범위 및 조건 변경' },
-  { value: 'TERMINATION', label: '계약 중도 해지 / 합의 해제' },
-]
-
-const originalAmount = computed(() => Number(props.modelValue.original_amount) || 0)
-const changeAmount = computed(() => Number(props.modelValue.change_amount) || 0)
+const originalAmount = computed(() => asNum(props.modelValue.original_amount))
+const changeAmount = computed(() => asNum(props.modelValue.change_amount))
 
 const finalCalculatedAmount = computed(() => {
   if (props.modelValue.change_type === 'TERMINATION') {
-    return Number(props.modelValue.settlement_amount) || 0
+    return asNum(props.modelValue.settlement_amount)
   }
   return originalAmount.value + changeAmount.value
 })
 
 const originalContractDate = computed({
-  get: () => props.modelValue.original_contract_date ?? '',
+  get: () => asStr(props.modelValue.original_contract_date),
   set: (val: string) => updateField('original_contract_date', val),
 })
 
 const originalEndDate = computed({
-  get: () => props.modelValue.original_end_date ?? '',
+  get: () => asStr(props.modelValue.original_end_date),
   set: (val: string) => updateField('original_end_date', val),
 })
 
 const finalEndDate = computed({
-  get: () => props.modelValue.final_end_date ?? '',
+  get: () => asStr(props.modelValue.final_end_date),
   set: (val: string) => updateField('final_end_date', val),
 })
 
 const terminationDate = computed({
-  get: () => props.modelValue.termination_date ?? '',
+  get: () => asStr(props.modelValue.termination_date),
   set: (val: string) => updateField('termination_date', val),
 })
 
-const updateField = (key: string, val: any) => {
-  const updated = {
+const updateField = (key: string, val: unknown) => {
+  const updated: ApprovalContent = {
     ...props.modelValue,
     [key]: val,
   }
 
-  // 금액 변경 시 final_amount 및 결재선용 amount 자동 계산
-  if (key === 'original_amount' || key === 'change_amount') {
-    const orig = key === 'original_amount' ? Number(val) || 0 : originalAmount.value
-    const chg = key === 'change_amount' ? Number(val) || 0 : changeAmount.value
+  // 금액 또는 변경 구분 변경 시 final_amount 및 결재선용 amount 자동 계산
+  if (['change_type', 'original_amount', 'change_amount', 'settlement_amount'].includes(key)) {
+    const orig = asNum(updated.original_amount)
+    const chg = asNum(updated.change_amount)
     const fin = orig + chg
     updated.final_amount = fin
-    updated.amount = Math.abs(chg) > 0 ? Math.abs(chg) : fin // 변경 증감액 또는 최종액을 결재선 기준으로 반영
-  } else if (key === 'settlement_amount') {
-    updated.amount = Number(val) || 0
+    if (asStr(updated.change_type) === 'TERMINATION') {
+      updated.amount = asNum(updated.settlement_amount)
+    } else {
+      updated.amount = Math.abs(chg) > 0 ? Math.abs(chg) : fin
+    }
   }
 
   emit('update:modelValue', updated)
 }
 
 onMounted(() => {
-  const initial = { ...props.modelValue }
+  const initial: ApprovalContent = { ...props.modelValue }
   let changed = false
 
-  if (!initial.change_type) {
+  if (!asStr(initial.change_type)) {
     initial.change_type = 'COMPREHENSIVE'
     changed = true
   }
-  if (!initial.original_contract_date) {
-    initial.original_contract_date = new Date().toISOString().substring(0, 10)
+  if (!asStr(initial.original_contract_date)) {
+    initial.original_contract_date = getLocalToday()
     changed = true
   }
   if (initial.original_amount === undefined) {
@@ -111,11 +114,11 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">변경/해지 구분</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.change_type ?? 'COMPREHENSIVE'"
+          :value="asStr(modelValue.change_type, 'COMPREHENSIVE')"
           required
           @change="updateField('change_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="t in changeTypes" :key="t.value" :value="t.value">
+          <option v-for="t in CONTRACT_CHANGE_TYPE_OPTIONS" :key="t.value" :value="t.value">
             {{ t.label }}
           </option>
         </CFormSelect>
@@ -123,7 +126,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">계약 상대방</CFormLabel>
       <CCol sm="4">
         <CFormInput
-          :value="modelValue.contractor_name ?? ''"
+          :value="asStr(modelValue.contractor_name)"
           placeholder="상대방 상호/법인명"
           required
           @input="updateField('contractor_name', ($event.target as HTMLInputElement).value)"
@@ -136,7 +139,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">원 계약 건명</CFormLabel>
       <CCol sm="10">
         <CFormInput
-          :value="modelValue.original_contract_name ?? ''"
+          :value="asStr(modelValue.original_contract_name)"
           placeholder="예: 00현장 토공사 및 흙막이 가시설 도급계약"
           required
           @input="updateField('original_contract_name', ($event.target as HTMLInputElement).value)"
@@ -168,13 +171,12 @@ onMounted(() => {
               <CFormInput
                 type="number"
                 min="0"
-                step="10000"
                 class="text-end fw-semibold"
                 :value="modelValue.original_amount ?? 0"
                 @input="
                   updateField(
                     'original_amount',
-                    Number(($event.target as HTMLInputElement).value) || 0,
+                    parseSignedNumberInput(($event.target as HTMLInputElement).value),
                   )
                 "
               />
@@ -185,7 +187,7 @@ onMounted(() => {
           <CCol sm="4">
             <CFormInput
               size="sm"
-              :value="modelValue.original_contract_no ?? ''"
+              :value="asStr(modelValue.original_contract_no)"
               placeholder="관리 계약번호"
               @input="
                 updateField('original_contract_no', ($event.target as HTMLInputElement).value)
@@ -209,7 +211,6 @@ onMounted(() => {
             <CInputGroup size="sm">
               <CFormInput
                 type="number"
-                step="10000"
                 class="text-end fw-bold"
                 :class="changeAmount >= 0 ? 'text-danger' : 'text-primary'"
                 :value="modelValue.change_amount ?? 0"
@@ -217,7 +218,7 @@ onMounted(() => {
                 @input="
                   updateField(
                     'change_amount',
-                    Number(($event.target as HTMLInputElement).value) || 0,
+                    parseSignedNumberInput(($event.target as HTMLInputElement).value),
                   )
                 "
               />
@@ -232,7 +233,7 @@ onMounted(() => {
               <CFormInput
                 type="number"
                 readonly
-                class="text-end fw-bold text-dark bg-light"
+                class="text-end fw-bold text-body bg-more-light"
                 :value="finalCalculatedAmount"
               />
               <CInputGroupText>원</CInputGroupText>
@@ -251,7 +252,7 @@ onMounted(() => {
           <CCol sm="4">
             <CFormInput
               size="sm"
-              :value="modelValue.period_change_desc ?? ''"
+              :value="asStr(modelValue.period_change_desc)"
               placeholder="예: 30일 연장, 2026-12-31까지"
               @input="updateField('period_change_desc', ($event.target as HTMLInputElement).value)"
             />
@@ -280,14 +281,13 @@ onMounted(() => {
               <CFormInput
                 type="number"
                 min="0"
-                step="10000"
                 class="text-end fw-bold text-danger"
                 :value="modelValue.settlement_amount ?? 0"
                 required
                 @input="
                   updateField(
                     'settlement_amount',
-                    Number(($event.target as HTMLInputElement).value) || 0,
+                    parseSignedNumberInput(($event.target as HTMLInputElement).value),
                   )
                 "
               />
@@ -300,7 +300,7 @@ onMounted(() => {
           <CCol sm="10">
             <CFormInput
               size="sm"
-              :value="modelValue.penalty_terms ?? ''"
+              :value="asStr(modelValue.penalty_terms)"
               placeholder="예: 계약보증금 10% 몰취 또는 손해배상 청구 내역"
               @input="updateField('penalty_terms', ($event.target as HTMLInputElement).value)"
             />
@@ -314,7 +314,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">변경/해지 사유</CFormLabel>
       <CCol sm="10">
         <CFormTextarea
-          :value="modelValue.change_reason ?? modelValue.purpose ?? ''"
+          :value="firstStr(modelValue.change_reason, modelValue.purpose)"
           rows="4"
           placeholder="설계 변경, 물량 증감, 공기 연장, 또는 해지 사유 및 귀책사유를 구체적으로 상세히 기술해 주세요."
           required
@@ -328,7 +328,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label">후속 대책 / 비고</CFormLabel>
       <CCol sm="10">
         <CFormTextarea
-          :value="modelValue.subsequent_plan ?? modelValue.note ?? ''"
+          :value="firstStr(modelValue.subsequent_plan, modelValue.note)"
           rows="2"
           placeholder="변경계약 체결 일정, 대체업체 선정 방안 또는 정산서 첨부 안내"
           @input="updateField('subsequent_plan', ($event.target as HTMLTextAreaElement).value)"

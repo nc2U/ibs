@@ -1,50 +1,40 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import {
+  EXPENSE_CATEGORIES,
+  SETTLEMENT_TYPE_OPTIONS,
+  asList,
+  asStr,
+  getLocalToday,
+  parseNonNegativeNumberInput,
+} from '../utils/approvalMeta'
 
 export interface SettlementItem {
   date: string
   merchant: string
   category: string
-  amount: number
+  amount: number | ''
   purpose?: string
 }
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const settlementTypes = [
-  { value: 'CORP_CARD', label: '법인카드 사용 내역 정산' },
-  { value: 'PERSONAL_EXPENSE', label: '개인비용 실비 환급 청구' },
-  { value: 'BUSINESS_TRIP', label: '출장 경비 사후 정산' },
-  { value: 'ADVANCE_PAY', label: '가지급금 사후 정산' },
-  { value: 'OTHER', label: '기타 경비 정산' },
-]
+const items = computed<SettlementItem[]>(() => asList<SettlementItem>(props.modelValue.items))
 
-const expenseCategories = [
-  '복리후생비(식대/음료)',
-  '여비교통비(택시/대중교통/유류)',
-  '회의비/접대비',
-  '소모품비/사무용품',
-  '도서인쇄비/교육훈련비',
-  '지급수수료/통신비',
-  '기타',
-]
+const calcSettlementTotal = (list: SettlementItem[]) =>
+  list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
 
-const items = computed<SettlementItem[]>(() => {
-  return Array.isArray(props.modelValue.items) ? props.modelValue.items : []
-})
+const totalAmount = computed(() => calcSettlementTotal(items.value))
 
-const totalAmount = computed(() => {
-  return items.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-})
-
-const updateField = (key: string, val: any) => {
+const updateField = (key: string, val: unknown) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: val,
@@ -53,26 +43,14 @@ const updateField = (key: string, val: any) => {
 
 const addItem = () => {
   const currentItems = [...items.value]
-  const today = new Date().toISOString().split('T')[0]
   currentItems.push({
-    date: today,
+    date: getLocalToday(),
     merchant: '',
     category: '복리후생비(식대/음료)',
     amount: 0,
     purpose: '',
   })
-  emit('update:modelValue', {
-    ...props.modelValue,
-    items: currentItems,
-    amount: totalAmount.value,
-    total_amount: totalAmount.value,
-  })
-}
-
-const removeItem = (index: number) => {
-  const currentItems = [...items.value]
-  currentItems.splice(index, 1)
-  const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const newTotal = calcSettlementTotal(currentItems)
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
@@ -81,13 +59,32 @@ const removeItem = (index: number) => {
   })
 }
 
-const updateItem = (index: number, field: keyof SettlementItem, val: any) => {
+const removeItem = (index: number) => {
   const currentItems = [...items.value]
-  currentItems[index] = {
-    ...currentItems[index],
-    [field]: field === 'amount' ? parseFloat(val) || 0 : val,
-  }
-  const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  currentItems.splice(index, 1)
+  const newTotal = calcSettlementTotal(currentItems)
+  emit('update:modelValue', {
+    ...props.modelValue,
+    items: currentItems,
+    amount: newTotal,
+    total_amount: newTotal,
+  })
+}
+
+const updateItem = (index: number, field: keyof SettlementItem, val: string | number) => {
+  const currentItems = [...items.value]
+  const current = currentItems[index]
+  if (!current) return
+  const strVal = String(val)
+  const updatedItem: SettlementItem = { ...current }
+  if (field === 'amount') updatedItem.amount = parseNonNegativeNumberInput(strVal)
+  else if (field === 'date') updatedItem.date = strVal
+  else if (field === 'merchant') updatedItem.merchant = strVal
+  else if (field === 'category') updatedItem.category = strVal
+  else if (field === 'purpose') updatedItem.purpose = strVal
+
+  currentItems[index] = updatedItem
+  const newTotal = calcSettlementTotal(currentItems)
   emit('update:modelValue', {
     ...props.modelValue,
     items: currentItems,
@@ -97,21 +94,22 @@ const updateItem = (index: number, field: keyof SettlementItem, val: any) => {
 }
 
 onMounted(() => {
-  const initial = { ...props.modelValue }
+  const initial: ApprovalContent = { ...props.modelValue }
+  const today = getLocalToday()
   let changed = false
 
-  if (!initial.settlement_type) {
+  if (!asStr(initial.settlement_type)) {
     initial.settlement_type = 'CORP_CARD'
     changed = true
   }
-  if (!initial.target_month) {
-    initial.target_month = new Date().toISOString().substring(0, 7) // YYYY-MM
+  if (!asStr(initial.target_month)) {
+    initial.target_month = today.substring(0, 7) // YYYY-MM
     changed = true
   }
-  if (!initial.items || !initial.items.length) {
+  if (!Array.isArray(initial.items) || initial.items.length === 0) {
     initial.items = [
       {
-        date: new Date().toISOString().split('T')[0],
+        date: today,
         merchant: '',
         category: '복리후생비(식대/음료)',
         amount: 0,
@@ -139,11 +137,11 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">정산 구분</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.settlement_type ?? 'CORP_CARD'"
+          :value="asStr(modelValue.settlement_type, 'CORP_CARD')"
           required
           @change="updateField('settlement_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="t in settlementTypes" :key="t.value" :value="t.value">
+          <option v-for="t in SETTLEMENT_TYPE_OPTIONS" :key="t.value" :value="t.value">
             {{ t.label }}
           </option>
         </CFormSelect>
@@ -152,7 +150,7 @@ onMounted(() => {
       <CCol sm="4">
         <CFormInput
           type="month"
-          :value="modelValue.target_month ?? ''"
+          :value="asStr(modelValue.target_month)"
           required
           @input="updateField('target_month', ($event.target as HTMLInputElement).value)"
         />
@@ -164,7 +162,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label">법인카드 정보</CFormLabel>
       <CCol sm="10">
         <CFormInput
-          :value="modelValue.card_number ?? ''"
+          :value="asStr(modelValue.card_number)"
           placeholder="사용 카드명 및 카드번호 뒤 4자리 (예: 국민 법인카드 5678)"
           @input="updateField('card_number', ($event.target as HTMLInputElement).value)"
         />
@@ -176,7 +174,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">환급 입금계좌</CFormLabel>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.bank_name ?? ''"
+          :value="asStr(modelValue.bank_name)"
           placeholder="은행명"
           required
           @input="updateField('bank_name', ($event.target as HTMLInputElement).value)"
@@ -184,7 +182,7 @@ onMounted(() => {
       </CCol>
       <CCol sm="4">
         <CFormInput
-          :value="modelValue.account_number ?? ''"
+          :value="asStr(modelValue.account_number)"
           placeholder="계좌번호"
           required
           @input="updateField('account_number', ($event.target as HTMLInputElement).value)"
@@ -192,7 +190,7 @@ onMounted(() => {
       </CCol>
       <CCol sm="3">
         <CFormInput
-          :value="modelValue.account_holder ?? ''"
+          :value="asStr(modelValue.account_holder)"
           placeholder="예금주명"
           required
           @input="updateField('account_holder', ($event.target as HTMLInputElement).value)"
@@ -205,7 +203,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">정산 개요 / 사유</CFormLabel>
       <CCol sm="10">
         <CFormInput
-          :value="modelValue.reason ?? ''"
+          :value="asStr(modelValue.reason)"
           placeholder="정산 사유 및 주요 사용 목적 (예: 2026년 8월 마케팅팀 법인카드 사용 내역 정산의 건)"
           required
           @input="updateField('reason', ($event.target as HTMLInputElement).value)"
@@ -226,8 +224,8 @@ onMounted(() => {
       </div>
       <div class="card-body p-2">
         <div class="table-responsive">
-          <table class="table table-bordered table-sm mb-0 align-middle">
-            <thead class="table-light text-center small">
+          <table class="table table-bordered table-sm mb-0 align-middle bg-more-white">
+            <thead class="bg-more-light text-center small">
               <tr>
                 <th style="width: 125px">사용일자</th>
                 <th style="width: 160px">계정과목 (구분)</th>
@@ -255,7 +253,7 @@ onMounted(() => {
                       updateItem(idx, 'category', ($event.target as HTMLSelectElement).value)
                     "
                   >
-                    <option v-for="cat in expenseCategories" :key="cat" :value="cat">
+                    <option v-for="cat in EXPENSE_CATEGORIES" :key="cat" :value="cat">
                       {{ cat }}
                     </option>
                   </CFormSelect>
@@ -274,9 +272,8 @@ onMounted(() => {
                     type="number"
                     size="sm"
                     class="text-end fw-semibold"
-                    :value="item.amount"
+                    :value="item.amount ?? 0"
                     min="0"
-                    step="1000"
                     required
                     @input="updateItem(idx, 'amount', ($event.target as HTMLInputElement).value)"
                   />
@@ -284,7 +281,7 @@ onMounted(() => {
                 <td>
                   <CFormInput
                     size="sm"
-                    :value="item.purpose"
+                    :value="item.purpose ?? ''"
                     placeholder="용도 및 참석자 (예: 프로젝트 회의 다과, 4명)"
                     @input="updateItem(idx, 'purpose', ($event.target as HTMLInputElement).value)"
                   />
@@ -321,7 +318,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label">비고 / 증빙 안내</CFormLabel>
       <CCol sm="10">
         <CFormInput
-          :value="modelValue.note ?? ''"
+          :value="asStr(modelValue.note)"
           placeholder="특이사항 또는 실물 영수증 제출 안내 (예: 종이영수증 총무팀 전달 완료)"
           @input="updateField('note', ($event.target as HTMLInputElement).value)"
         />

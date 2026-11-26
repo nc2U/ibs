@@ -1,26 +1,40 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
-import type { DocumentType } from '@/store/types/approval'
+import type { ApprovalContent, DocumentType, SecurityLevel } from '@/store/types/approval'
 import api from '@/api'
-import { STATIC_FORM_REGISTRY } from '@/views/approval/forms'
+import { message } from '@/utils/helper'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { DynamicSchemaForm, STATIC_FORM_REGISTRY } from '@/views/approval/forms'
 import { FORM_GUIDES, DEFAULT_GUIDE, type FormGuide } from '../data/formGuides'
+import {
+  asOptNum,
+  asStr,
+  extractApprovalAmount,
+  filterStaffUserOptions,
+  formatFileSize,
+  getSafeExternalUrl,
+  getUserDisplayName,
+  resolveRegistryEntry,
+} from '../utils/approvalMeta'
 
 const route = useRoute()
 const router = useRouter()
 const store = useApproval()
 const accStore = useAccount()
 const { forDraftDocTypeList, document, myAssignments, routePreview } = storeToRefs(store)
-const { usersList } = storeToRefs(accStore)
+const { usersList, userInfo } = storeToRefs(accStore)
 const {
   fetchDocCategoryList,
   fetchForDraftDocTypeList,
   fetchDocument,
+  clearDocument,
   fetchMyAssignments,
   fetchRoutePreview,
+  clearRoutePreview,
   createDocument,
   updateDocument,
   deleteAttachment,
@@ -31,44 +45,34 @@ const { fetchUsersList } = accStore
 const isEdit = computed(() => !!route.params.docId)
 const saving = ref<'draft' | 'submit' | ''>('')
 const validated = ref(false)
-const formRef = ref<HTMLFormElement | null>(null)
+const formRef = ref<HTMLFormElement | { $el?: HTMLFormElement } | null>(null)
+
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const pendingConfirmType = ref<'delete-attachment' | 'apply-example' | null>(null)
+const pendingAttachmentId = ref<number | null>(null)
+const pendingExampleTitle = ref('')
 
 const form = ref({
-  doc_type: '' as number | '',
-  drafter_assignment: '' as number | '',
+  doc_type: '',
+  drafter_assignment: '',
   title: '',
-  security_level: '2' as '1' | '2' | '3',
+  security_level: '2' as SecurityLevel,
 })
 const relatedInboundLetterId = ref<number | null>(null)
-const dynamicContent = ref<Record<string, string>>({})
+const dynamicContent = ref<ApprovalContent>({})
 const selectedObservers = ref<number[]>([])
 const selectedFiles = ref<File[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const availableUsers = computed(() =>
-  usersList.value
-    .filter(u => u.is_active && (u.has_staff || u.is_superuser))
-    .map(u => ({
-      value: u.pk,
-      title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
-    })),
-)
+const availableUsers = computed(() => filterStaffUserOptions(usersList.value))
 
 const existingAttachments = computed(() => document.value?.attachments || [])
-
-const formatFileSize = (bytes: number | null | undefined) => {
-  if (!bytes) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 const onFileSelected = (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files) {
     for (let i = 0; i < target.files.length; i++) {
       const file = target.files[i]
-      // 중복 체크
       if (!selectedFiles.value.some(f => f.name === file.name && f.size === file.size)) {
         selectedFiles.value.push(file)
       }
@@ -81,32 +85,55 @@ const removeSelectedFile = (idx: number) => {
   selectedFiles.value.splice(idx, 1)
 }
 
-const removeExistingAttachment = async (attachmentId: number) => {
-  if (confirm('첨부파일을 삭제하시겠습니까?')) {
-    try {
-      await deleteAttachment(attachmentId, Number(route.params.docId))
-    } catch (err) {
-      console.error('Failed to delete attachment:', err)
-    }
-  }
+const removeExistingAttachment = (attachmentId: number) => {
+  pendingConfirmType.value = 'delete-attachment'
+  pendingAttachmentId.value = attachmentId
+  refConfirmModal.value?.callModal(
+    '첨부파일 삭제 확인',
+    '첨부파일을 삭제하시겠습니까?',
+    'mdi-trash-can-outline',
+    'red-lighten-3',
+    '삭제',
+    'error',
+  )
 }
 
-const selectedDocType = computed<DocumentType | null>(
-  () => forDraftDocTypeList.value.find(d => d.id === Number(form.value.doc_type)) ?? null,
-)
-
-const currentGuide = computed<FormGuide>(() => {
-  const key = selectedDocType.value?.form_template_key || selectedDocType.value?.code
-  if (key && FORM_GUIDES[key]) {
-    return FORM_GUIDES[key]
-  }
-  return DEFAULT_GUIDE
+const selectedDocType = computed<DocumentType | null>(() => {
+  const docTypeId = Number(form.value.doc_type)
+  if (!docTypeId) return null
+  return (
+    forDraftDocTypeList.value.find(d => d.id === docTypeId) ??
+    (document.value?.doc_type === docTypeId ? (document.value.doc_type_detail ?? null) : null)
+  )
 })
 
-// 카테고리별로 그룹화된 문서 유형 목록
+const currentGuide = computed<FormGuide>(() => {
+  return resolveRegistryEntry(FORM_GUIDES, selectedDocType.value) ?? DEFAULT_GUIDE
+})
+
+const activeFormComponent = computed(() =>
+  resolveRegistryEntry(STATIC_FORM_REGISTRY, selectedDocType.value),
+)
+
+const hasFallbackAssignment = computed(
+  () =>
+    isEdit.value &&
+    !!form.value.drafter_assignment &&
+    !myAssignments.value.some(a => String(a.pk) === form.value.drafter_assignment),
+)
+
+// 카테고리별로 그룹화된 문서 유형 목록 (수정 모드에서 제한/비활성 서식이 목록에 없으면 보조 포함)
 const groupedDocTypes = computed(() => {
   const groups: Record<string, DocumentType[]> = {}
-  forDraftDocTypeList.value.forEach(dt => {
+  const list = [...forDraftDocTypeList.value]
+  if (
+    isEdit.value &&
+    document.value?.doc_type_detail &&
+    !list.some(d => d.id === document.value?.doc_type_detail?.id)
+  ) {
+    list.push(document.value.doc_type_detail)
+  }
+  list.forEach(dt => {
     const catName = dt.category_name || '기타/일반'
     if (!groups[catName]) groups[catName] = []
     groups[catName].push(dt)
@@ -127,14 +154,24 @@ const quickDocTypes = computed(() => {
     {
       label: '💳 지출결의서',
       matcher: (dt: DocumentType) =>
-        (dt.form_template_key || '').toUpperCase().includes('EXPENSE') || dt.name.includes('지출'),
+        (dt.form_template_key || '').toUpperCase() === 'EXPENSE' ||
+        (dt.form_template_key || '').toUpperCase() === 'EXPENSE_REPORT' ||
+        dt.name.includes('지출'),
     },
     {
       label: '💼 일반 업무품의',
-      matcher: (dt: DocumentType) =>
-        (dt.form_template_key || '').toUpperCase().includes('GENERAL') ||
-        (dt.form_template_key || '').toUpperCase().includes('BIZ') ||
-        dt.name.includes('품의'),
+      matcher: (dt: DocumentType) => {
+        const key = (dt.form_template_key || '').toUpperCase()
+        return (
+          key === 'GENERAL' ||
+          key === 'GENERAL_PROPOSAL' ||
+          key === 'BIZ_APPROVAL' ||
+          key === 'PROPOSAL' ||
+          key === 'GENERAL_DRAFT' ||
+          dt.name === '업무품의서' ||
+          (dt.name.includes('일반') && dt.name.includes('품의'))
+        )
+      },
     },
     {
       label: '🚗 출장신청서',
@@ -153,16 +190,16 @@ const quickDocTypes = computed(() => {
 
 const selectQuickDocType = (dt: DocumentType) => {
   if (isEdit.value) return
-  form.value.doc_type = dt.id
+  if (Number(form.value.doc_type) === dt.id) return
+  form.value.doc_type = String(dt.id)
   onDocTypeChange()
 }
 
 const onDocTypeChange = () => {
   dynamicContent.value = {}
-  if (selectedDocType.value && selectedDocType.value.default_security_level) {
+  if (selectedDocType.value?.default_security_level) {
     form.value.security_level = selectedDocType.value.default_security_level
   }
-  updateRoutePreview()
 }
 
 const onAssignmentChange = async () => {
@@ -172,55 +209,38 @@ const onAssignmentChange = async () => {
   if (!forDraftDocTypeList.value.some(d => d.id === Number(form.value.doc_type))) {
     form.value.doc_type = ''
     dynamicContent.value = {}
+    clearRoutePreview()
+    return
   }
-  updateRoutePreview()
+  updateRoutePreview(true)
 }
 
 // dynamicContent에서 금액 값 추출
-const currentAmount = computed<number | null>(() => {
-  const c = dynamicContent.value
-  if (!c) return null
-  if (c.amount !== undefined && c.amount !== null && c.amount !== '') return Number(c.amount)
-  if (c.contract_amount !== undefined && c.contract_amount !== '') return Number(c.contract_amount)
-  if (c.advance_amount !== undefined && c.advance_amount !== '') return Number(c.advance_amount)
-  if (c.total_cost !== undefined && c.total_cost !== '') return Number(c.total_cost)
-  if (c.total_budget !== undefined && c.total_budget !== '') return Number(c.total_budget)
-  if (c.settlement_amount !== undefined && c.settlement_amount !== '')
-    return Number(c.settlement_amount)
-  return null
-})
+const currentAmount = computed<number | null>(() => extractApprovalAmount(dynamicContent.value))
 
-// 금액 또는 양식 데이터 변경 시 실시간 결재선 미리보기 갱신 (디바운스)
-watch(
-  () => currentAmount.value,
-  () => {
-    updateRoutePreview()
-  },
-)
-
-watch(
-  () => form.value.doc_type,
-  newVal => {
-    if (newVal) {
-      const dt = forDraftDocTypeList.value.find(d => d.id === Number(newVal))
-      if (dt?.default_security_level && !isEdit.value) {
-        form.value.security_level = dt.default_security_level
-      }
-      updateRoutePreview(true)
-    }
-  },
-)
+const currentSealId = computed<number | null>(() => asOptNum(dynamicContent.value?.seal_id))
 
 let previewTimer: ReturnType<typeof setTimeout> | null = null
+const isInitializing = ref(true)
+
 const updateRoutePreview = (immediate = false) => {
-  if (!form.value.doc_type) return
-  if (previewTimer) clearTimeout(previewTimer)
+  if (previewTimer) {
+    clearTimeout(previewTimer)
+    previewTimer = null
+  }
+  if (!form.value.doc_type) {
+    clearRoutePreview()
+    return
+  }
 
   const execute = () => {
+    previewTimer = null
+    if (!form.value.doc_type) return
     fetchRoutePreview(
       Number(form.value.doc_type),
       form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
       currentAmount.value,
+      currentSealId.value,
     )
   }
 
@@ -230,6 +250,30 @@ const updateRoutePreview = (immediate = false) => {
     previewTimer = setTimeout(execute, 200)
   }
 }
+
+watch(
+  () => [currentAmount.value, currentSealId.value] as const,
+  () => {
+    if (isInitializing.value) return
+    updateRoutePreview()
+  },
+)
+
+watch(
+  () => form.value.doc_type,
+  newVal => {
+    if (isInitializing.value) return
+    if (newVal) {
+      const dt = forDraftDocTypeList.value.find(d => d.id === Number(newVal))
+      if (dt?.default_security_level && !isEdit.value) {
+        form.value.security_level = dt.default_security_level
+      }
+      updateRoutePreview(true)
+    } else {
+      clearRoutePreview()
+    }
+  },
+)
 
 const buildFormData = () => {
   const fd = new FormData()
@@ -241,17 +285,13 @@ const buildFormData = () => {
   fd.append('security_level', form.value.security_level)
   fd.append('content', JSON.stringify(dynamicContent.value))
 
-  // 참조자 추가
-  for (const obsId of selectedObservers.value) {
-    fd.append('observer_ids', String(obsId))
-  }
+  // 빈 배열([]) 포함 항상 명시 전송해 수정 시 참조자 전원 해제 반영
+  fd.append('observer_ids', JSON.stringify(selectedObservers.value))
 
-  // 첨부파일 추가
   for (const file of selectedFiles.value) {
     fd.append('files', file)
   }
 
-  // 연동 수신공문 ID 추가
   if (relatedInboundLetterId.value) {
     fd.append('related_inbound_letter', String(relatedInboundLetterId.value))
   }
@@ -259,19 +299,71 @@ const buildFormData = () => {
   return fd
 }
 
+const DATE_RANGE_RULES: ReadonlyArray<{
+  startKey: string
+  endKey: string
+  title: string
+  detail: string
+}> = [
+  {
+    startKey: 'start_date',
+    endKey: 'end_date',
+    title: '기간 확인',
+    detail: '종료일은 시작일과 같거나 이후여야 합니다.',
+  },
+  {
+    startKey: 'start_date',
+    endKey: 'completion_date',
+    title: '사업 일정 확인',
+    detail: '준공(완료)일은 착공일과 같거나 이후여야 합니다.',
+  },
+  {
+    startKey: 'contract_start_date',
+    endKey: 'contract_end_date',
+    title: '계약 기간 확인',
+    detail: '계약 종료일은 계약 시작일과 같거나 이후여야 합니다.',
+  },
+  {
+    startKey: 'leave_start_date',
+    endKey: 'leave_end_date',
+    title: '휴직 기간 확인',
+    detail: '휴직 종료일은 휴직 시작일과 같거나 이후여야 합니다.',
+  },
+  {
+    startKey: 'payment_due_date',
+    endKey: 'settlement_due_date',
+    title: '정산 일정 확인',
+    detail: '정산 예정일은 지급 요청일과 같거나 이후여야 합니다.',
+  },
+]
+
+const validateBusinessRules = (): boolean => {
+  const c = dynamicContent.value
+  for (const rule of DATE_RANGE_RULES) {
+    const startVal = asStr(c[rule.startKey])
+    const endVal = asStr(c[rule.endKey])
+    if (startVal && endVal && startVal > endVal) {
+      message('warning', rule.title, rule.detail)
+      return false
+    }
+  }
+  return true
+}
+
 const onSubmit = async () => {
   saving.value = 'draft'
   try {
     const formData = buildFormData()
     if (isEdit.value) {
-      await updateDocument(Number(route.params.docId), formData)
-      selectedFiles.value = []
+      const updated = await updateDocument(Number(route.params.docId), formData)
+      if (updated) selectedFiles.value = []
     } else {
       const created = await createDocument(formData)
-      if (created) await router.push({ name: '기안 문서함 - 수정', params: { docId: created.id } })
+      if (created) {
+        selectedFiles.value = []
+        await router.push({ name: '기안 문서함 - 수정', params: { docId: created.id } })
+      }
     }
-  } catch (err) {
-    console.error('Failed to save draft document:', err)
   } finally {
     saving.value = ''
   }
@@ -281,20 +373,17 @@ const onSubmitAndSend = async () => {
   saving.value = 'submit'
   try {
     const formData = buildFormData()
-    let docId: number | undefined
-    if (isEdit.value) {
-      await updateDocument(Number(route.params.docId), formData)
-      docId = Number(route.params.docId)
-    } else {
-      const created = await createDocument(formData)
-      docId = created?.id
-    }
-    if (docId) {
-      await submitDocument(docId)
+    const saved = isEdit.value
+      ? await updateDocument(Number(route.params.docId), formData)
+      : await createDocument(formData)
+
+    if (!saved) return
+    selectedFiles.value = []
+
+    const submitted = await submitDocument(saved.id)
+    if (submitted) {
       await router.push({ name: '기안 문서함' })
     }
-  } catch (err) {
-    console.error('Failed to submit document:', err)
   } finally {
     saving.value = ''
   }
@@ -303,7 +392,9 @@ const onSubmitAndSend = async () => {
 const getFormElement = (e?: Event): HTMLFormElement | null => {
   if (formRef.value) {
     if (formRef.value instanceof HTMLFormElement) return formRef.value
-    if ((formRef.value as any).$el instanceof HTMLFormElement) return (formRef.value as any).$el
+    if ('$el' in formRef.value && formRef.value.$el instanceof HTMLFormElement) {
+      return formRef.value.$el
+    }
   }
   if (e?.target && (e.target as HTMLElement).closest) {
     return (e.target as HTMLElement).closest('form')
@@ -313,108 +404,217 @@ const getFormElement = (e?: Event): HTMLFormElement | null => {
 
 const handleSubmit = async (e: Event, type: 'draft' | 'submit') => {
   const formEl = getFormElement(e)
+
+  if (type === 'draft') {
+    if (!form.value.doc_type || !form.value.title.trim()) {
+      validated.value = true
+      const targetSelector = !form.value.doc_type ? 'select[required]' : 'input[required]'
+      const focusTarget = formEl?.querySelector<HTMLElement>(targetSelector)
+      focusTarget?.focus?.()
+      focusTarget?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+      message(
+        'warning',
+        '필수 입력 확인',
+        !form.value.doc_type ? '문서 유형을 선택해 주세요.' : '문서 제목을 입력해 주세요.',
+      )
+      return
+    }
+    if (!validateBusinessRules()) return
+    await onSubmit()
+    return
+  }
+
   if (formEl && typeof formEl.checkValidity === 'function' && !formEl.checkValidity()) {
     e.preventDefault()
     e.stopPropagation()
     validated.value = true
+    const firstInvalid = formEl.querySelector<HTMLElement>(':invalid')
+    firstInvalid?.focus?.()
+    firstInvalid?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    message('warning', '입력 확인', '필수 항목 또는 입력 형식(기간/금액)을 확인해 주세요.')
+    return
+  }
+
+  if (!form.value.title.trim()) {
+    validated.value = true
+    const titleInput = formEl?.querySelector<HTMLElement>('input[required]')
+    titleInput?.focus?.()
+    titleInput?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    message('warning', '필수 입력 확인', '문서 제목을 입력해 주세요.')
     return
   }
 
   validated.value = true
+  if (!validateBusinessRules()) return
 
-  if (type === 'draft') {
-    await onSubmit()
-  } else if (type === 'submit') {
-    await onSubmitAndSend()
+  await onSubmitAndSend()
+}
+
+const onCancel = () => {
+  if (isEdit.value && route.params.docId) {
+    router.push({ name: '기안 문서함 - 보기', params: { docId: route.params.docId } })
+  } else {
+    router.push({ name: '기안 문서함' })
   }
 }
 
 onMounted(async () => {
-  await Promise.all([fetchDocCategoryList(), fetchMyAssignments(), fetchUsersList()])
+  clearDocument()
+  clearRoutePreview()
 
-  // 기본 주보직 선택
-  const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
-  if (primary) {
-    form.value.drafter_assignment = primary.pk
-  }
+  try {
+    await Promise.all([fetchDocCategoryList(), fetchMyAssignments(), fetchUsersList()])
 
-  // 보직에 따른 기안 가능 문서 유형 조회
-  await fetchForDraftDocTypeList(
-    form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
-  )
+    const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
 
-  if (isEdit.value) {
-    await fetchDocument(Number(route.params.docId))
-    if (document.value) {
-      form.value.doc_type = document.value.doc_type
-      form.value.drafter_assignment = document.value.drafter_assignment ?? ''
-      form.value.title = document.value.title
-      form.value.security_level = (document.value.security_level as '1' | '2' | '3') || '2'
-      dynamicContent.value = { ...(document.value.content as Record<string, string>) }
-      selectedObservers.value = (document.value.observers || []).map(o => o.id)
-      if (document.value.related_inbound_letter) {
-        relatedInboundLetterId.value = document.value.related_inbound_letter
+    if (isEdit.value) {
+      const doc = await fetchDocument(Number(route.params.docId))
+      if (doc && !userInfo.value?.is_superuser) {
+        const isEditableStatus = !doc.status || doc.status === 'draft' || doc.status === 'rejected'
+        const isOwner =
+          !doc.drafter?.id || !userInfo.value?.pk || doc.drafter.id === userInfo.value.pk
+        if (!isEditableStatus || !isOwner) {
+          message(
+            'warning',
+            '수정 불가',
+            !isEditableStatus
+              ? '임시저장 또는 반려 상태의 문서만 수정할 수 있습니다.'
+              : '기안자 본인만 문서를 수정할 수 있습니다.',
+          )
+          await router.replace({ name: '기안 문서함 - 보기', params: { docId: doc.id } })
+          return
+        }
       }
-      updateRoutePreview()
-    }
-  } else if (route.query) {
-    if (route.query.title) {
-      form.value.title = String(route.query.title)
-    }
-    if (route.query.inbound_letter) {
-      const inboundId = Number(route.query.inbound_letter)
-      relatedInboundLetterId.value = inboundId
-      const inboundDocType = forDraftDocTypeList.value.find(
-        d =>
-          d.form_template_key === 'INBOUND_REPORT' ||
-          d.code === 'INBOUND_REPORT' ||
-          d.code === 'IR',
-      )
-      if (inboundDocType) {
-        form.value.doc_type = inboundDocType.id
-        onDocTypeChange()
-      }
+      const assignmentId = doc?.drafter_assignment ?? primary?.pk ?? null
+      form.value.drafter_assignment = assignmentId ? String(assignmentId) : ''
+      await fetchForDraftDocTypeList(assignmentId ? Number(assignmentId) : undefined)
 
-      // 수신 공문 정보 사전 로드 및 폼 필드 자동 채움
-      try {
-        const { data: letter } = await api.get(`/inbound-letter/${inboundId}/`)
-        if (letter) {
-          dynamicContent.value = {
-            inbound_letter_id: letter.pk,
-            sender_name: letter.sender_name || '',
-            document_number: letter.document_number || '',
-            receipt_number: letter.receipt_number || '',
-            received_date: letter.received_date || '',
-            reply_due_date: letter.reply_due_date || '',
-            action_type: 'REPLY_LETTER',
-            letter_subject: letter.title || '',
-            letter_summary: letter.content || '',
-            review_opinion: '',
+      if (doc) {
+        form.value.doc_type = doc.doc_type ? String(doc.doc_type) : ''
+        form.value.title = doc.title
+        form.value.security_level = (doc.security_level as SecurityLevel) || '2'
+        dynamicContent.value = { ...(doc.content as ApprovalContent) }
+        selectedObservers.value = (doc.observers || []).map(o => o.id)
+        if (doc.related_inbound_letter) {
+          relatedInboundLetterId.value = doc.related_inbound_letter
+        }
+      }
+      isInitializing.value = false
+      updateRoutePreview(true)
+      return
+    }
+
+    if (primary) {
+      form.value.drafter_assignment = String(primary.pk)
+    }
+    await fetchForDraftDocTypeList(
+      form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+    )
+
+    if (route.query) {
+      if (route.query.title) {
+        form.value.title = String(route.query.title)
+      }
+      if (route.query.inbound_letter) {
+        const inboundId = Number(route.query.inbound_letter)
+        relatedInboundLetterId.value = inboundId
+
+        // 수신 공문 정보 선조회 후 doc_type 설정 (자식 폼 마운트 시 덮어쓰기 방지)
+        try {
+          const { data: letter } = await api.get(`/inbound-letter/${inboundId}/`)
+          if (letter) {
+            dynamicContent.value = {
+              inbound_letter_id: letter.pk,
+              sender_name: letter.sender_name || '',
+              document_number: letter.document_number || '',
+              receipt_number: letter.receipt_number || '',
+              received_date: letter.received_date || '',
+              reply_due_date: letter.reply_due_date || '',
+              action_type: 'REPLY_LETTER',
+              urgency: 'NORMAL',
+              letter_subject: letter.title || '',
+              letter_summary: letter.content || '',
+              review_opinion: '',
+            }
+          }
+        } catch (err) {
+          console.error('Failed to prefetch inbound letter:', err)
+        }
+
+        const inboundDocType = forDraftDocTypeList.value.find(d => {
+          const templateKey = (d.form_template_key || '').trim().toUpperCase()
+          const codeKey = (d.code || '').trim().toUpperCase()
+          return (
+            templateKey === 'INBOUND_REPORT' ||
+            codeKey === 'INBOUND_REPORT' ||
+            codeKey === 'IR'
+          )
+        })
+        if (inboundDocType) {
+          form.value.doc_type = String(inboundDocType.id)
+          if (inboundDocType.default_security_level) {
+            form.value.security_level = inboundDocType.default_security_level
           }
         }
-      } catch (err) {
-        console.error('Failed to prefetch inbound letter:', err)
       }
     }
+  } finally {
+    isInitializing.value = false
+  }
+
+  if (form.value.doc_type) {
+    updateRoutePreview(true)
   }
 })
 
+onBeforeUnmount(() => {
+  if (previewTimer) clearTimeout(previewTimer)
+  clearRoutePreview()
+  clearDocument()
+})
+
 const applyExampleTitle = (title: string) => {
-  if (!form.value.title || confirm('입력된 제목을 추천 예시 제목으로 변경하시겠습니까?')) {
+  if (!form.value.title) {
     form.value.title = title
+    return
+  }
+  pendingConfirmType.value = 'apply-example'
+  pendingExampleTitle.value = title
+  refConfirmModal.value?.callModal(
+    '예시 제목 적용',
+    '입력된 제목을 추천 예시 제목으로 변경하시겠습니까?',
+    'mdi-lightbulb-on-outline',
+    'primary',
+    '적용',
+    'primary',
+  )
+}
+
+const handleModalConfirm = async () => {
+  const confirmType = pendingConfirmType.value
+  refConfirmModal.value?.close()
+  pendingConfirmType.value = null
+
+  if (confirmType === 'delete-attachment' && pendingAttachmentId.value) {
+    const attId = pendingAttachmentId.value
+    pendingAttachmentId.value = null
+    await deleteAttachment(attId, Number(route.params.docId))
+  } else if (confirmType === 'apply-example' && pendingExampleTitle.value) {
+    form.value.title = pendingExampleTitle.value
+    pendingExampleTitle.value = ''
   }
 }
 </script>
 
 <template>
-  <CRow class="">
+  <CRow>
     <CCol lg="8" xl="7">
       <CCardHeader class="d-flex align-items-center justify-content-between border-top">
         <span class="fw-semibold">
           <CIcon name="cilPencil" class="me-2" />
           {{ isEdit ? '결재문서 수정' : '새 기안 작성' }}
         </span>
-        <CButton color="secondary" variant="ghost" size="sm" @click="router.back()"> 취소 </CButton>
+        <CButton color="secondary" variant="ghost" size="sm" @click="onCancel"> 취소 </CButton>
       </CCardHeader>
 
       <CCardBody>
@@ -439,8 +639,8 @@ const applyExampleTitle = (title: string) => {
             </div>
           </CAlert>
 
-          <!-- 기안 부서 / 보직 선택 (보직이 있는 경우) -->
-          <CRow v-if="myAssignments.length > 0" class="mb-3">
+          <!-- 기안 부서 / 보직 선택 (보직이 있거나 수정 모드 기존 보직이 있는 경우) -->
+          <CRow v-if="myAssignments.length > 0 || hasFallbackAssignment" class="mb-3">
             <CFormLabel class="col-sm-3 col-form-label"> 기안 부서/직책 </CFormLabel>
             <CCol sm="9">
               <CFormSelect
@@ -448,7 +648,14 @@ const applyExampleTitle = (title: string) => {
                 :disabled="isEdit"
                 @change="onAssignmentChange"
               >
-                <option v-for="asgn in myAssignments" :key="asgn.pk" :value="asgn.pk">
+                <option v-if="hasFallbackAssignment" :value="form.drafter_assignment">
+                  {{
+                    document?.drafter_assignment_desc ||
+                    document?.department_name ||
+                    '기존 기안 보직'
+                  }}
+                </option>
+                <option v-for="asgn in myAssignments" :key="asgn.pk" :value="String(asgn.pk)">
                   [{{ asgn.is_primary ? '주보직' : '겸직' }}] {{ asgn.department_name }}
                   <template v-if="asgn.duty_name">({{ asgn.duty_name }})</template>
                   <template v-else-if="asgn.position_name">({{ asgn.position_name }})</template>
@@ -477,11 +684,13 @@ const applyExampleTitle = (title: string) => {
                   v-for="q in quickDocTypes"
                   :key="q.docType.id"
                   size="sm"
-                  :color="form.doc_type === q.docType.id ? 'primary' : 'secondary'"
-                  :variant="form.doc_type === q.docType.id ? undefined : 'ghost'"
+                  :color="Number(form.doc_type) === q.docType.id ? 'primary' : 'secondary'"
+                  :variant="Number(form.doc_type) === q.docType.id ? undefined : 'ghost'"
                   :class="[
                     'border py-0 px-2 rounded-pill small',
-                    form.doc_type === q.docType.id ? 'text-white' : 'text-body bg-more-light',
+                    Number(form.doc_type) === q.docType.id
+                      ? 'text-white'
+                      : 'text-body bg-more-light',
                   ]"
                   style="font-size: 0.78rem"
                   @click="selectQuickDocType(q.docType)"
@@ -502,7 +711,7 @@ const applyExampleTitle = (title: string) => {
                   :key="catName"
                   :label="catName"
                 >
-                  <option v-for="dt in types" :key="dt.id" :value="dt.id">
+                  <option v-for="dt in types" :key="dt.id" :value="String(dt.id)">
                     {{ dt.name }}
                     <template v-if="dt.policy_rules?.length"> [금액별 전결]</template>
                     <template v-else-if="dt.final_approval_duty_name">
@@ -516,7 +725,7 @@ const applyExampleTitle = (title: string) => {
               </div>
 
               <!-- 모바일/태블릿 전용 접이식 작성 가이드 (d-lg-none) -->
-              <div v-if="selectedDocType" class="d-lg-none mt-2 p-2 border rounded bg-light">
+              <div v-if="selectedDocType" class="d-lg-none mt-2 p-2 border rounded bg-more-light">
                 <div class="d-flex align-items-center justify-content-between mb-1">
                   <span class="fw-semibold text-primary small d-flex align-items-center">
                     <v-icon
@@ -532,7 +741,7 @@ const applyExampleTitle = (title: string) => {
                 </div>
                 <div class="small text-muted mb-2">{{ currentGuide.summary }}</div>
                 <div class="small mb-1">
-                  <span class="fw-bold text-dark">• 필수 첨부:</span>
+                  <span class="fw-bold text-body">• 필수 첨부:</span>
                   <span class="text-secondary ms-1">{{
                     currentGuide.requiredAttachments.join(', ')
                   }}</span>
@@ -638,16 +847,17 @@ const applyExampleTitle = (title: string) => {
           <!-- 양식 필드 (전용 폼 컴포넌트) -->
           <template v-if="selectedDocType">
             <component
-              :is="
-                STATIC_FORM_REGISTRY[
-                  selectedDocType.form_template_key || selectedDocType.code || ''
-                ]
-              "
-              v-if="
-                (selectedDocType.form_template_key || selectedDocType.code) &&
-                STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code]
-              "
+              :is="activeFormComponent"
+              v-if="activeFormComponent"
+              :key="selectedDocType.id"
               v-model="dynamicContent"
+            />
+
+            <DynamicSchemaForm
+              v-else-if="selectedDocType.form_schema?.length"
+              :key="selectedDocType.id"
+              v-model="dynamicContent"
+              :schema="selectedDocType.form_schema"
             />
 
             <div v-else class="text-center text-muted py-3 border rounded bg-more-light mb-3">
@@ -699,13 +909,16 @@ const applyExampleTitle = (title: string) => {
                   <div class="d-flex align-items-center">
                     <CIcon name="cilFile" class="me-2 text-primary" />
                     <a
-                      :href="att.file_url"
+                      v-if="getSafeExternalUrl(att.file_url)"
+                      :href="getSafeExternalUrl(att.file_url)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="text-decoration-none text-body fw-medium me-2"
                     >
                       {{ att.file_name }}
                     </a>
-                    <span class="badge bg-light text-muted border">
+                    <span v-else class="text-body fw-medium me-2">{{ att.file_name }}</span>
+                    <span class="badge bg-more-light text-muted border">
                       {{ formatFileSize(att.file_size) }}
                     </span>
                   </div>
@@ -728,12 +941,12 @@ const applyExampleTitle = (title: string) => {
                 <li
                   v-for="(file, idx) in selectedFiles"
                   :key="idx"
-                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-light"
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-more-light"
                 >
                   <div class="d-flex align-items-center">
                     <CIcon name="cilCloudUpload" class="me-2 text-success" />
                     <span class="fw-medium me-2">{{ file.name }}</span>
-                    <span class="badge bg-white text-muted border">
+                    <span class="badge bg-more-white text-muted border">
                       {{ formatFileSize(file.size) }}
                     </span>
                   </div>
@@ -798,7 +1011,7 @@ const applyExampleTitle = (title: string) => {
                   </div>
                   <div class="fw-semibold small mb-1">{{ step.role_label }}</div>
                   <div class="text-muted mb-1" style="font-size: 0.72rem">
-                    {{ step.approvers.map(a => a.full_name).join(', ') }}
+                    {{ step.approvers.map(a => getUserDisplayName(a)).join(', ') }}
                   </div>
                   <v-chip
                     :color="step.condition === 'AND' ? 'primary' : 'info'"
@@ -820,8 +1033,8 @@ const applyExampleTitle = (title: string) => {
               type="button"
               color="blue-grey-lighten-2"
               :disabled="!!saving"
-              @click="handleSubmit($event, 'draft')"
               flat
+              @click="handleSubmit($event, 'draft')"
             >
               <CSpinner v-if="saving === 'draft'" size="sm" class="me-1" />
               임시저장
@@ -835,7 +1048,7 @@ const applyExampleTitle = (title: string) => {
               <CSpinner v-if="saving === 'submit'" size="sm" class="me-1" />
               저장 후 상신
             </v-btn>
-            <v-btn color="light" @click="router.push({ name: '기안 문서함' })" flat>
+            <v-btn color="light" flat @click="router.push({ name: '기안 문서함' })">
               목록으로
             </v-btn>
           </div>
@@ -847,7 +1060,7 @@ const applyExampleTitle = (title: string) => {
     <CCol lg="4" xl="5" class="d-none d-lg-block">
       <div class="sticky-top" style="top: 80px; z-index: 10">
         <CCard class="shadow-sm border-light">
-          <CCardHeader class="bg-light d-flex align-items-center justify-content-between py-2">
+          <CCardHeader class="bg-more-light d-flex align-items-center justify-content-between py-2">
             <div class="fw-semibold text-primary d-flex align-items-center">
               <v-icon icon="mdi-lightbulb-on-outline" size="small" class="me-1 text-warning" />
               {{ currentGuide.title }} 작성 가이드
@@ -882,7 +1095,7 @@ const applyExampleTitle = (title: string) => {
                 <v-icon icon="mdi-paperclip" size="x-small" class="me-1 text-info" />
                 필수 첨부 서류 (Checklist)
               </div>
-              <div class="bg-light p-2 rounded small border">
+              <div class="bg-more-light p-2 rounded small border">
                 <div
                   v-for="(att, idx) in currentGuide.requiredAttachments"
                   :key="idx"
@@ -907,7 +1120,7 @@ const applyExampleTitle = (title: string) => {
                   <v-icon
                     icon="mdi-text-box-search-outline"
                     size="x-small"
-                    class="me-1 text-dark"
+                    class="me-1 text-secondary"
                   />
                   모범 작성 예시
                 </div>
@@ -939,6 +1152,8 @@ const applyExampleTitle = (title: string) => {
       </div>
     </CCol>
   </CRow>
+
+  <ConfirmModal ref="refConfirmModal" @confirm-func="handleModalConfirm" />
 </template>
 
 <style scoped>

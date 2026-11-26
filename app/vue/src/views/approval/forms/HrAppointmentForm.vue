@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import type { ApprovalContent } from '@/store/types/approval'
+import {
+  APPOINTMENT_TYPE_OPTIONS,
+  asBool,
+  asList,
+  asStr,
+  getLocalToday,
+} from '../utils/approvalMeta'
 
 interface AppointmentTarget {
   name: string
@@ -13,35 +21,23 @@ interface AppointmentTarget {
 }
 
 const props = defineProps<{
-  modelValue: Record<string, any>
+  modelValue: ApprovalContent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: Record<string, any>): void
+  (e: 'update:modelValue', val: ApprovalContent): void
 }>()
 
-const targetsList = computed<AppointmentTarget[]>(() => {
-  return Array.isArray(props.modelValue.targets) ? props.modelValue.targets : []
-})
+const targetsList = computed<AppointmentTarget[]>(() =>
+  asList<AppointmentTarget>(props.modelValue.targets),
+)
 
 const effectiveDate = computed({
-  get: () => props.modelValue.effective_date ?? '',
+  get: () => asStr(props.modelValue.effective_date),
   set: (val: string) => updateField('effective_date', val),
 })
 
-const appointmentTypes = [
-  { value: 'PROMOTION', label: '승진 / 승격' },
-  { value: 'TRANSFER', label: '부서이동 / 전보' },
-  { value: 'APPOINT', label: '보직 임명 / 해임' },
-  { value: 'HIRE', label: '신규 채용 / 입사' },
-  { value: 'LEAVE_RETURN', label: '휴직 / 복직' },
-  { value: 'RETIRE', label: '퇴직 / 면직' },
-  { value: 'DISPATCH', label: '현장 파견 / 복귀' },
-  { value: 'ORGANIZATION', label: '조직 개편 발령' },
-  { value: 'OTHER', label: '기타 발령' },
-]
-
-const updateField = (key: string, val: any) => {
+const updateField = (key: string, val: unknown) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: val,
@@ -49,7 +45,7 @@ const updateField = (key: string, val: any) => {
 }
 
 const addTarget = () => {
-  const targets: AppointmentTarget[] = [...(props.modelValue.targets || [])]
+  const targets: AppointmentTarget[] = [...targetsList.value]
   targets.push({
     name: '',
     current_dept: '',
@@ -64,14 +60,14 @@ const addTarget = () => {
 
 const removeTarget = (index: number | string) => {
   const i = typeof index === 'string' ? parseInt(index, 10) : index
-  const targets: AppointmentTarget[] = [...(props.modelValue.targets || [])]
+  const targets: AppointmentTarget[] = [...targetsList.value]
   targets.splice(i, 1)
   updateField('targets', targets)
 }
 
 const updateTarget = (index: number | string, field: keyof AppointmentTarget, val: string) => {
   const i = typeof index === 'string' ? parseInt(index, 10) : index
-  const targets: AppointmentTarget[] = [...(props.modelValue.targets || [])]
+  const targets: AppointmentTarget[] = [...targetsList.value]
   if (targets[i]) {
     targets[i] = {
       ...targets[i],
@@ -82,18 +78,18 @@ const updateTarget = (index: number | string, field: keyof AppointmentTarget, va
 }
 
 onMounted(() => {
-  const initial = { ...props.modelValue }
+  const initial: ApprovalContent = { ...props.modelValue }
   let changed = false
 
-  if (!initial.appointment_type) {
+  if (!asStr(initial.appointment_type)) {
     initial.appointment_type = 'PROMOTION'
     changed = true
   }
-  if (!initial.effective_date) {
-    initial.effective_date = new Date().toISOString().substring(0, 10)
+  if (!asStr(initial.effective_date)) {
+    initial.effective_date = getLocalToday()
     changed = true
   }
-  if (!initial.targets || !initial.targets.length) {
+  if (!Array.isArray(initial.targets) || initial.targets.length === 0) {
     initial.targets = [
       {
         name: '',
@@ -130,11 +126,11 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">발령 구분</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.appointment_type ?? 'PROMOTION'"
+          :value="asStr(modelValue.appointment_type, 'PROMOTION')"
           required
           @change="updateField('appointment_type', ($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="t in appointmentTypes" :key="t.value" :value="t.value">
+          <option v-for="t in APPOINTMENT_TYPE_OPTIONS" :key="t.value" :value="t.value">
             {{ t.label }}
           </option>
         </CFormSelect>
@@ -150,7 +146,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">발령 사유 / 배경</CFormLabel>
       <CCol sm="10">
         <CFormTextarea
-          :value="modelValue.reason ?? ''"
+          :value="asStr(modelValue.reason)"
           rows="3"
           placeholder="인사발령을 시행하는 사유 및 기대 효과를 기술해 주세요. (예: 2026년 하반기 조직개편에 따른 신규 부서 편제 및 적재적소 인재 배치)"
           required
@@ -172,16 +168,16 @@ onMounted(() => {
       </div>
       <div class="card-body p-2">
         <div class="table-responsive">
-          <table class="table table-bordered table-sm mb-0 align-middle">
-            <thead class="table-light text-center small">
+          <table class="table table-bordered table-sm mb-0 align-middle bg-more-white">
+            <thead class="bg-more-light text-center small">
               <tr>
                 <th style="width: 40px">#</th>
-                <th style="width: 100px">성명</th>
+                <th style="width: 100px">성명 <span class="text-danger">*</span></th>
                 <th style="width: 150px">현 소속(부서)</th>
                 <th style="width: 120px">현 직급/직책</th>
                 <th style="width: 150px" class="text-primary">발령 소속(부서)</th>
                 <th style="width: 120px" class="text-primary">발령 직급/직책</th>
-                <th style="width: 110px">발령 구분</th>
+                <th style="width: 110px">발령 구분 <span class="text-danger">*</span></th>
                 <th>비고</th>
                 <th style="width: 40px">삭제</th>
               </tr>
@@ -194,6 +190,7 @@ onMounted(() => {
                     size="sm"
                     :value="item.name"
                     placeholder="성명"
+                    required
                     @input="updateTarget(idx, 'name', ($event.target as HTMLInputElement).value)"
                   />
                 </td>
@@ -248,6 +245,7 @@ onMounted(() => {
                     size="sm"
                     :value="item.type_desc"
                     placeholder="예: 승진/전보"
+                    required
                     @input="
                       updateTarget(idx, 'type_desc', ($event.target as HTMLInputElement).value)
                     "
@@ -256,7 +254,7 @@ onMounted(() => {
                 <td>
                   <CFormInput
                     size="sm"
-                    :value="item.note"
+                    :value="item.note ?? ''"
                     placeholder="비고"
                     @input="updateTarget(idx, 'note', ($event.target as HTMLInputElement).value)"
                   />
@@ -287,14 +285,14 @@ onMounted(() => {
         <CFormCheck
           id="publicNoticeCheck"
           label="결재 완료 시 전사 임직원 공지사항 게시"
-          :checked="modelValue.is_public_notice ?? true"
+          :checked="asBool(modelValue.is_public_notice, true)"
           @change="updateField('is_public_notice', ($event.target as HTMLInputElement).checked)"
         />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">특이사항 / 비고</CFormLabel>
       <CCol sm="4">
         <CFormInput
-          :value="modelValue.note ?? ''"
+          :value="asStr(modelValue.note)"
           placeholder="인사위원회 심의 결과 또는 추가 참고사항"
           @input="updateField('note', ($event.target as HTMLInputElement).value)"
         />

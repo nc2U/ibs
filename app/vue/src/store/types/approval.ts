@@ -80,6 +80,7 @@ export interface DocumentType {
   allowed_positions?: number[]
   is_active: boolean
   route_templates: RouteTemplate[]
+  form_schema?: FormField[]
 }
 
 export interface FormField {
@@ -143,6 +144,8 @@ export interface ApprovalStep {
   actions: ApprovalActionRecord[]
 }
 
+export type ApprovalContent = Record<string, unknown>
+
 export interface ApprovalDocument {
   id: number
   doc_number: string
@@ -152,7 +155,8 @@ export interface ApprovalDocument {
   doc_type_name?: string
   drafter_assignment?: number | null
   drafter_assignment_desc?: string
-  content: Record<string, unknown>
+  department_name?: string | null
+  content: ApprovalContent
   attachment?: string | null
   attachments?: ApprovalAttachment[]
   attachment_count?: number
@@ -173,6 +177,7 @@ export interface ApprovalDocument {
   security_level?: SecurityLevel
   security_level_desc?: string
   status: DocumentStatus
+  status_desc?: string
   current_step: number
   content_hash: string
   pdf_url: string | null
@@ -186,7 +191,7 @@ export interface PatchApprovalDocument {
   title?: string
   doc_type?: number
   drafter_assignment?: number | null
-  content?: Record<string, unknown>
+  content?: ApprovalContent
   workspace?: number | null
   related_inbound_letter?: number | null
   security_level?: SecurityLevel
@@ -216,6 +221,7 @@ export interface ApprovalDocumentListItem {
   title: string
   doc_type: number
   doc_type_name?: string
+  doc_type_detail?: DocumentType
   category_name?: string | null
   drafter: SimpleUser
   drafter_name?: string
@@ -229,6 +235,8 @@ export interface ApprovalDocumentListItem {
   status: DocumentStatus
   status_desc?: string
   current_step: number
+  related_inbound_letter?: number | null
+  pdf_url?: string | null
   created_at: string
   submitted_at: string | null
   completed_at: string | null

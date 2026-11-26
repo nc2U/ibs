@@ -5,9 +5,17 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useCompany } from '@/store/pinia/company'
 import { TableSecondary } from '@/utils/cssMixins'
+import { message } from '@/utils/helper'
 import type { DocumentStatus, SecurityLevel } from '@/store/types/approval'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Pagination from '@/components/Pagination'
+import {
+  DOC_STATUS_CHIP_COLOR,
+  DOC_STATUS_LABEL,
+  SECURITY_LEVEL_META,
+  fmtDate,
+  getUserDisplayName,
+} from '../utils/approvalMeta'
 
 const ITEMS_PER_PAGE = 10
 
@@ -21,6 +29,8 @@ const { allDepartList, company } = storeToRefs(companyStore)
 
 // 로딩 상태
 const loading = ref(false)
+const isResetting = ref(false)
+const loadedDeptComId = ref<number | null>(null)
 
 // 필터 상태
 const filterCategory = ref<string>('')
@@ -45,28 +55,11 @@ const onCategoryChange = () => {
   onSearch()
 }
 
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: '임시저장',
-  pending: '결재중',
-  approved: '승인완료',
-  rejected: '반려',
-  cancelled: '취소',
-}
-
-const STATUS_COLOR: Record<DocumentStatus, string> = {
-  draft: 'secondary',
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'danger',
-  cancelled: 'dark',
-}
-
-const fmtDate = (d: string | null) => {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('ko-KR')
-}
-
 const fetchList = async (page = 1) => {
+  if (filterStartDate.value && filterEndDate.value && filterStartDate.value > filterEndDate.value) {
+    message('warning', '기간 확인', '조회 종료일은 시작일과 같거나 이후여야 합니다.')
+    return
+  }
   loading.value = true
   currentPage.value = page
   try {
@@ -90,24 +83,28 @@ const onSearch = () => {
   fetchList(1)
 }
 
-// 기간 선택 변경 감지
+// 기간 선택 변경 감지 (초기화 중에는 중복 호출 방지)
 watch([filterStartDate, filterEndDate], () => {
+  if (isResetting.value) return
   onSearch()
 })
 
-// 회사 변경 시 부서 목록 갱신 및 재조회
+// 회사 변경 시 부서 목록만 동기화하고, 사용자가 회사를 전환한 경우에만 부서 필터 초기화 및 재조회
 watch(
   () => company.value?.pk,
-  async newComId => {
-    if (newComId) {
+  async (newComId, oldComId) => {
+    if (!newComId || newComId === loadedDeptComId.value) return
+    loadedDeptComId.value = newComId
+    await companyStore.fetchAllDepartList(newComId)
+    if (oldComId) {
       filterDepartment.value = ''
-      await companyStore.fetchAllDepartList(newComId)
       await fetchList(1)
     }
   },
 )
 
-const resetFilter = () => {
+const resetFilter = async () => {
+  isResetting.value = true
   filterCategory.value = ''
   filterDocType.value = ''
   filterStatus.value = ''
@@ -116,7 +113,9 @@ const resetFilter = () => {
   filterStartDate.value = ''
   filterEndDate.value = ''
   searchText.value = ''
-  fetchList(1)
+  await Promise.resolve()
+  isResetting.value = false
+  await fetchList(1)
 }
 
 const goDetail = (id: number) => {
@@ -127,19 +126,20 @@ const totalPages = computed(() => approvalStore.allDocumentPages(ITEMS_PER_PAGE)
 
 onMounted(async () => {
   const comId = company.value?.pk || companyStore.initComId || 1
+  loadedDeptComId.value = comId
   await Promise.all([
     approvalStore.fetchDocCategoryList(),
     approvalStore.fetchDocTypeList(),
     companyStore.fetchAllDepartList(comId),
+    fetchList(1),
   ])
-  await fetchList(1)
 })
 </script>
 
 <template>
   <div class="all-documents-container">
     <!-- 검색 및 필터 패널 -->
-    <CCallout class="mb-4 border-0 shadow-sm bg-light">
+    <CCallout class="mb-4 border-0 shadow-sm bg-more-light">
       <CRow>
         <CCol xl="7">
           <CRow class="g-2 align-items-center">
@@ -238,7 +238,7 @@ onMounted(async () => {
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <h6 class="mb-0 fw-bold">전사 결재 문서 목록</h6>
-        <v-chip color="info" shape="rounded-pill" variant="elevated" size="x-small">
+        <v-chip color="info" variant="elevated" size="x-small">
           총 {{ allDocumentsCount }}건
         </v-chip>
       </div>
@@ -307,24 +307,14 @@ onMounted(async () => {
           <!-- 공개등급 -->
           <CTableDataCell class="text-center">
             <v-chip
-              :color="
-                doc.security_level === '1'
-                  ? 'error'
-                  : doc.security_level === '2'
-                    ? 'primary'
-                    : 'success'
-              "
+              v-if="doc.security_level"
+              :color="SECURITY_LEVEL_META[doc.security_level].color"
               variant="tonal"
               size="x-small"
             >
-              {{
-                doc.security_level === '1'
-                  ? '🔒 1등급'
-                  : doc.security_level === '2'
-                    ? '👥 2등급'
-                    : '🌐 3등급'
-              }}
+              {{ SECURITY_LEVEL_META[doc.security_level].shortLabel }}
             </v-chip>
+            <span v-else class="text-muted small">-</span>
           </CTableDataCell>
 
           <!-- 카테고리 / 문서유형 -->
@@ -340,7 +330,7 @@ onMounted(async () => {
 
           <!-- 기안자 -->
           <CTableDataCell class="text-center">
-            {{ doc.drafter_name || doc.drafter?.full_name || doc.drafter?.username || '-' }}
+            {{ doc.drafter_name || getUserDisplayName(doc.drafter) }}
           </CTableDataCell>
 
           <!-- 제목 -->
@@ -357,10 +347,10 @@ onMounted(async () => {
               />
               <v-chip
                 v-if="doc.observer_count && doc.observer_count > 0"
-                color="light"
-                variant="flat"
+                color="secondary"
+                variant="tonal"
                 size="x-small"
-                class="border small py-0 px-1 flex-shrink-0 text-body"
+                class="flex-shrink-0"
               >
                 참조 {{ doc.observer_count }}
               </v-chip>
@@ -369,8 +359,8 @@ onMounted(async () => {
 
           <!-- 상태 -->
           <CTableDataCell class="text-center">
-            <v-chip :color="STATUS_COLOR[doc.status]" variant="flat" size="x-small">
-              {{ doc.status_desc || STATUS_LABEL[doc.status] }}
+            <v-chip :color="DOC_STATUS_CHIP_COLOR[doc.status]" variant="flat" size="x-small">
+              {{ doc.status_desc || DOC_STATUS_LABEL[doc.status] }}
             </v-chip>
           </CTableDataCell>
 

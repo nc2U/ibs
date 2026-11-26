@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useApproval } from '@/store/pinia/approval.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import WidgetWrapper from '../WidgetWrapper.vue'
-import type { ApprovalDocument } from '@/store/types/approval.ts'
+import type { ApprovalDocumentListItem } from '@/store/types/approval.ts'
 
 defineProps<{
   widgetId: string
@@ -22,7 +22,7 @@ const pendingList = computed(() => approvalStore.pendingList || [])
 const draftedList = computed(() => approvalStore.draftedList || [])
 const approvedList = computed(() => approvalStore.approvedList || [])
 
-const currentList = computed<ApprovalDocument[]>(() => {
+const currentList = computed<ApprovalDocumentListItem[]>(() => {
   if (activeTab.value === 'pending') return pendingList.value.slice(0, 5)
   if (activeTab.value === 'drafted') return draftedList.value.slice(0, 5)
   return approvedList.value.slice(0, 5)
@@ -62,7 +62,7 @@ const getStatusBadge = (status: string) => {
   }
 }
 
-const handleRowClick = (item: ApprovalDocument) => {
+const handleRowClick = (item: ApprovalDocumentListItem) => {
   if (!item?.id) return
   if (activeTab.value === 'pending') {
     router.push({ name: '결재 대기함 - 보기', params: { docId: item.id } })

@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
+from apiV1.pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions
 from apiV1.serializers.approval import (
     DocCategorySerializer, DocumentTypeSerializer, ApprovalDocumentSerializer,
@@ -56,6 +57,7 @@ class ApprovalDelegationViewSet(viewsets.ModelViewSet):
     """결재 권한 위임 (부재 및 대결 설정) ViewSet"""
     serializer_class = ApprovalDelegationSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationOneThousand
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -96,6 +98,7 @@ class DocCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DocCategory.objects.filter(is_active=True).order_by('order', 'id')
     serializer_class = DocCategorySerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationOneThousand
 
 
 class DocumentTypeFilter(FilterSet):
@@ -118,6 +121,7 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
     )
     serializer_class = DocumentTypeSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationOneThousand
     filterset_class = DocumentTypeFilter
 
     @action(detail=False, methods=['get'])
@@ -128,9 +132,10 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
         assignment = None
         if assignment_id:
-            assignment = StaffAssignment.objects.filter(
-                pk=assignment_id, staff__user=user
-            ).select_related('staff__position', 'department', 'duty').first()
+            qs_assign = StaffAssignment.objects.filter(pk=assignment_id)
+            if not user.is_superuser:
+                qs_assign = qs_assign.filter(staff__user=user)
+            assignment = qs_assign.select_related('staff__position', 'department', 'duty').first()
         if not assignment:
             assignment = StaffAssignment.objects.filter(
                 staff__user=user, is_primary=True
@@ -450,6 +455,17 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 seal = official_letter.seal
                 if official_letter.is_solo_approval:
                     is_letter_solo = True
+        else:
+            seal_id = _safe_int_pk((document.content or {}).get('seal_id'))
+            if seal_id:
+                from company.models import CompanySeal
+                seal_qs = CompanySeal.objects.select_related(
+                    'final_approval_duty', 'route_template__doc_type'
+                ).filter(pk=seal_id, is_active=True)
+                doc_company = document.company
+                if doc_company:
+                    seal_qs = seal_qs.filter(company=doc_company)
+                seal = seal_qs.first()
 
         # 동적 결재선 단계 목록 산출 (금액/내용 및 공문 인장 기준 포함)
         route_steps = build_dynamic_approval_route(
