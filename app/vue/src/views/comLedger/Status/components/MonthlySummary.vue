@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger'
 import { TableSecondary, TableInfo } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
@@ -35,6 +35,13 @@ const yearMonthLabel = computed(() => {
   if (!/^\d{4}-\d{2}/.test(base)) return ''
   const [y, m] = base.split('-')
   return `${y}년 ${Number(m)}월`
+})
+
+const isCurrentOrFutureMonth = computed(() => {
+  const base = props.date || summary.value?.to_date || ''
+  if (!/^\d{4}-\d{2}/.test(base)) return false
+  const todayMonth = new Date(Date.now() + 32400000).toISOString().slice(0, 7)
+  return base.slice(0, 7) >= todayMonth
 })
 
 const moveMonth = (delta: number) => {
@@ -122,6 +129,20 @@ const openAccountDrilldown = async (row: MonthlySummaryRow, sort: 1 | 2) => {
 
 const loadMoreDrill = () => fetchDrillPage(drillPage.value + 1)
 
+watch(
+  () => props.company,
+  () => {
+    drillSeq++
+    drillModalVisible.value = false
+    drillAccount.value = null
+    drillTransactions.value = []
+    drillCount.value = 0
+    drillPage.value = 1
+    drillLoading.value = false
+    drillMoreLoading.value = false
+  },
+)
+
 const getMatchedEntryAmount = (tx: BankTransaction, accountId?: number) => {
   if (!accountId || !tx.accounting_entries?.length) return tx.amount
   return tx.accounting_entries
@@ -148,7 +169,13 @@ const getMatchedEntryTrader = (tx: BankTransaction, accountId?: number) => {
         <v-icon icon="mdi-chevron-left" size="small" /> 전월
       </v-btn>
       <span class="fw-bold fs-6 px-2">{{ yearMonthLabel }}</span>
-      <v-btn size="small" variant="outlined" color="secondary" @click="moveMonth(1)">
+      <v-btn
+        size="small"
+        variant="outlined"
+        color="secondary"
+        :disabled="isCurrentOrFutureMonth"
+        @click="moveMonth(1)"
+      >
         익월 <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>
       <span v-if="summary" class="text-medium-emphasis small ms-2">

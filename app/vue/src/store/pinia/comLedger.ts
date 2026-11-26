@@ -10,7 +10,8 @@ import {
   type BankTransaction,
   type ComCalculated,
   type CompanyBank,
-  type AccountingEntry,
+  type CompositeTransactionPayload,
+  type CompositeTransactionPatchPayload,
   type LedgerTransactionForDisplay,
   type ComMonthlySummary,
 } from '@/store/types/comLedger'
@@ -72,8 +73,12 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const updateComBankAcc = async (payload: CompanyBank) =>
     await api
@@ -81,8 +86,12 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(async res => {
         await fetchAllComBankAccList(res.data.company)
         await fetchComBankAccList(res.data.company).then(() => message())
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const patchComBankAcc = async (payload: CompanyBank) =>
     await api
@@ -201,18 +210,22 @@ export const useComLedger = defineStore('comLedger', () => {
   }
 
   const findBankTransactionPage = async (highlightId: number, filters: DataFilter) => {
-    const { company } = filters
-    let url = `/ledger/company-transaction/find_page/?highlight_id=${highlightId}&company=${company}`
-    if (filters.from_date) url += `&from_deal_date=${filters.from_date}`
-    if (filters.to_date) url += `&to_deal_date=${filters.to_date}`
-    if (filters.sort) url += `&sort=${filters.sort}`
-    if (filters.account) url += `&account=${filters.account}`
-    if (filters.affiliate) url += `&affiliate=${filters.affiliate}`
-    if (filters.bank_account) url += `&bank_account=${filters.bank_account}`
-    if (filters.search) url += `&search=${filters.search}`
+    const params = cleanupParams({
+      highlight_id: highlightId,
+      company: filters.company,
+      from_deal_date: filters.from_date,
+      to_deal_date: filters.to_date,
+      sort: filters.sort,
+      account_category: filters.account_category,
+      account: filters.account,
+      affiliate: filters.affiliate,
+      bank_account: filters.bank_account,
+      search: filters.search,
+      limit: filters.limit,
+    })
 
     try {
-      const response = await api.get(url)
+      const response = await api.get('/ledger/company-transaction/find_page/', { params })
       return response.data.page
     } catch (err: unknown) {
       errorHandle(err)
@@ -221,48 +234,63 @@ export const useComLedger = defineStore('comLedger', () => {
   }
 
   const createBankTransaction = async (
-    payload: BankTransaction & { accData: AccountingEntry | null },
+    payload: CompositeTransactionPayload,
+    options?: { skipRefresh?: boolean; silent?: boolean },
   ) =>
     await api
       .post(`/ledger/company-composite-transaction/`, payload)
-      .then(async () => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
+      .then(async res => {
+        if (!options?.skipRefresh) {
+          await fetchBankTransactionList(bankTransactionFilter.value)
+        }
+        if (!options?.silent) message()
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
-  const updateBankTransaction = async (
-    payload: BankTransaction & { accData: AccountingEntry | null },
-  ) => {
+  const updateBankTransaction = async (payload: CompositeTransactionPatchPayload) => {
     const { pk, ...formData } = payload
     return await api
       .put(`/ledger/company-composite-transaction/${pk}/`, formData)
-      .then(async () => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() => message())
+      .then(async res => {
+        await fetchBankTransactionList(bankTransactionFilter.value)
+        message()
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
-  const patchBankTransaction = async (
-    payload: Partial<BankTransaction & { accData: AccountingEntry | null }>,
-  ) => {
+  const patchBankTransaction = async (payload: CompositeTransactionPatchPayload) => {
     const { pk, ...formData } = payload
     return await api
       .patch(`/ledger/company-composite-transaction/${pk}/`, formData)
-      .then(async () => {
-        return await fetchBankTransactionList(bankTransactionFilter.value)
+      .then(async res => {
+        await fetchBankTransactionList(bankTransactionFilter.value)
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
   const deleteBankTransaction = async (pk: number) => {
     return await api
       .delete(`/ledger/company-composite-transaction/${pk}/`)
       .then(async () => {
-        return await fetchBankTransactionList(bankTransactionFilter.value).then(() =>
-          message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
-        )
+        await fetchBankTransactionList(bankTransactionFilter.value)
+        message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
   // ============================================

@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
+import { useRoute } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { useComLedger } from '@/store/pinia/comLedger'
 import { getToday } from '@/utils/baseMixins'
+import { message } from '@/utils/helper'
 import type { Company } from '@/store/types/settings.ts'
 import type { ComCalculated } from '@/store/types/comLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -17,6 +19,12 @@ import StatusByAccount from './components/StatusByAccount.vue'
 import CashListByDate from './components/CashListByDate.vue'
 import MonthlySummary from './components/MonthlySummary.vue'
 import Calculated from './components/Calculated.vue'
+
+const route = useRoute()
+const urlCompanyId = computed(() => {
+  const id = route.query.company
+  return id ? parseInt(id as string, 10) : null
+})
 
 const date = ref(getToday())
 const periodMode = ref<'mtd' | 'full'>('mtd')
@@ -73,20 +81,30 @@ const isCalculated = computed(
 
 const checkBalance = async () => {
   if (!company.value) return
-  const payload = {
-    company: company.value as number,
-    calculated: comLedgerLastDealDate.value?.deal_date as string,
+  const lastDealDate = comLedgerLastDealDate.value?.deal_date
+  if (!lastDealDate) {
+    message('warning', '알림!', '정산할 거래 내역이 없습니다.')
+    return
   }
-  if (!!comLedgerCalculated.value)
-    await patchComLedgerCalc({ ...{ pk: comLedgerCalculated.value.pk }, ...payload })
-  else await createComLedgerCalc(payload)
-  await fetchComLedgerCalc(company.value as number)
+  const payload: ComCalculated = {
+    company: company.value as number,
+    calculated: lastDealDate,
+  }
+  if (comLedgerCalculated.value?.pk) {
+    await patchComLedgerCalc({ pk: comLedgerCalculated.value.pk, ...payload })
+  } else {
+    await createComLedgerCalc(payload)
+  }
 }
 
 const excelUrl = computed(() => {
   const comp = compName.value
-  if (comp === 'StatusByAccount') return `/excel/com-balance/?company=${company.value}&date=${date.value}`
-  if (comp === 'CashListByDate') return `/excel/com-daily-cash/?company=${company.value}&date=${date.value}`
+  if (comp === 'StatusByAccount') {
+    return `/excel/com-balance/?company=${company.value}&date=${date.value}&is_balance=${isBalance.value}`
+  }
+  if (comp === 'CashListByDate') {
+    return `/excel/com-daily-cash/?company=${company.value}&date=${date.value}`
+  }
   if (comp === 'MonthlySummary') {
     const { from_date, to_date } = monthlyPeriodRange.value
     return `/excel/com-monthly-summary/?company=${company.value}&from_date=${from_date}&to_date=${to_date}`
@@ -120,9 +138,9 @@ const showTab = (num: number) => {
 
 const loadMonthlySummary = (comId?: number | null) => {
   const targetCom = comId ?? company.value
-  if (!targetCom) return
+  if (!targetCom) return Promise.resolve(null)
   const { from_date, to_date } = monthlyPeriodRange.value
-  fetchComMonthlySummary({ company: targetCom, from_date, to_date })
+  return fetchComMonthlySummary({ company: targetCom, from_date, to_date })
 }
 
 const setDate = (dt: string) => {
@@ -150,13 +168,15 @@ const isExistBalance = (val: boolean | 'true' | '') => {
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchComBankAccList(pk)
-  fetchComLedgerBalanceByAccList({ company: pk, date: date.value, is_balance: 'true' })
-  fetchDateLedgerTransactionList({ company: pk, date: date.value })
-  loadMonthlySummary(pk)
-  fetchComLedgerCalc(pk)
-  fetchComLedgerLastDeal(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    fetchComBankAccList(pk),
+    fetchComLedgerBalanceByAccList({ company: pk, date: date.value, is_balance: isBalance.value }),
+    fetchDateLedgerTransactionList({ company: pk, date: date.value }),
+    loadMonthlySummary(pk),
+    fetchComLedgerCalc(pk),
+    fetchComLedgerLastDeal(pk),
+  ])
 }
 
 const dataReset = () => {
@@ -168,19 +188,26 @@ const dataReset = () => {
   ledgerStore.comLedgerLastDealList = []
 }
 
-const comSelect = (target: number | null) => {
+const comSelect = async (target: number | null) => {
   dataReset()
-  if (!!target) dataSetup(target)
+  if (target) await dataSetup(target)
 }
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  compName.value = comp[Number(localStorage.getItem('comLedgerStatus')) || 1] || 'StatusByAccount'
-  const comId = company.value || comStore.initComId
-  if (comId) {
-    dataSetup(comId)
+  try {
+    const savedTab = Number(localStorage.getItem('comLedgerStatus'))
+    compName.value = [1, 2, 3].includes(savedTab) ? comp[savedTab] : 'StatusByAccount'
+    const comId = urlCompanyId.value || company.value || comStore.initComId
+    if (urlCompanyId.value && urlCompanyId.value !== company.value) {
+      await comStore.fetchCompany(urlCompanyId.value)
+    }
+    if (comId) {
+      await dataSetup(comId)
+    }
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>
 
@@ -228,6 +255,7 @@ onBeforeMount(async () => {
         <Calculated
           :calc-date="comLedgerCalculated?.calculated"
           :is-calculated="isCalculated"
+          :has-transactions="!!comLedgerLastDealDate?.deal_date"
           @to-calculate="checkBalance"
         />
       </CCardBody>

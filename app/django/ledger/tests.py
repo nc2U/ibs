@@ -1990,6 +1990,102 @@ class AdminHtmlRenderingTests(LedgerTestBase):
         self.assertIsNone(row_proj['id'])
         self.assertTrue(bool(row_proj['transaction_id']))
 
+    def test_company_transaction_find_page_and_rls(self):
+        """본사 은행 거래 find_page 액션의 페이지 계산, 필터 조합, RLS 차단, 예외 처리 검증"""
+        other_company = Company.objects.create(name='(주)타사찾기')
+        com_bank_a = CompanyBankAccount.objects.create(
+            company=self.company, bankcode=self.bank_code, alias_name='본사계좌A', number='100-200-300'
+        )
+        com_bank_other = CompanyBankAccount.objects.create(
+            company=other_company, bankcode=self.bank_code, alias_name='타사계좌', number='999-888-777'
+        )
+        acc_rev = CompanyAccount.objects.create(
+            code='4105', name='기타수수료수익', category='revenue', direction='deposit',
+            is_active=True, is_category_only=False
+        )
+        acc_exp = CompanyAccount.objects.create(
+            code='5105', name='기타지급비용', category='expense', direction='withdraw',
+            is_active=True, is_category_only=False
+        )
+
+        # 20건 생성 (최신순 -deal_date, -created_at -> day 20이 1페이지 첫 번째, day 03이 2페이지)
+        txs = []
+        for idx in range(1, 21):
+            tx = CompanyBankTransaction.objects.create(
+                company=self.company,
+                bank_account=com_bank_a,
+                deal_date=date(2026, 8, idx),
+                amount=100000 * idx,
+                sort=self.sort_deposit if idx % 2 == 0 else self.sort_withdraw,
+                content=f'거래 {idx:02d}',
+                creator=self.admin_user,
+            )
+            CompanyAccountingEntry.objects.create(
+                transaction_id=tx.transaction_id,
+                company=self.company,
+                account=acc_rev if idx % 2 == 0 else acc_exp,
+                amount=100000 * idx,
+                trader=f'거래처{idx}',
+            )
+            txs.append(tx)
+
+        other_tx = CompanyBankTransaction.objects.create(
+            company=other_company,
+            bank_account=com_bank_other,
+            deal_date=date(2026, 8, 25),
+            amount=500000,
+            sort=self.sort_deposit,
+            content='타사 거래',
+            creator=self.admin_user,
+        )
+
+        # hq.ledger.read 권한 사용자 구성
+        hq_reader = User.objects.create_user(
+            username='hq_find_page_reader', email='hqfp@test.com', password='password123'
+        )
+        role_hq_read = Role.objects.create(
+            name='본사 원장 열람자(FP)', creator=self.admin_user, category='ibs_hq_manage'
+        )
+        role_hq_read.permissions.add(self.perm_hq_read)
+        member_hq = Member.objects.create(project=self.hq_issue_project, user=hq_reader)
+        member_hq.roles.add(role_hq_read)
+
+        self.client.force_authenticate(user=hq_reader)
+
+        # 1. 최신 거래(day 20, index 19) -> 1페이지
+        res_p1 = self.client.get(
+            f'/api/v1/ledger/company-transaction/find_page/?company={self.company.pk}&highlight_id={txs[19].pk}'
+        )
+        self.assertEqual(res_p1.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_p1.data['page'], 1)
+
+        # 2. 18번째(day 03, index 2) -> 앞에 17개(day 20..04) -> 2페이지
+        res_p2 = self.client.get(
+            f'/api/v1/ledger/company-transaction/find_page/?company={self.company.pk}&highlight_id={txs[2].pk}'
+        )
+        self.assertEqual(res_p2.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_p2.data['page'], 2)
+
+        # 3. 필터 적용 (account_category=revenue 는 10건만 남음 -> day 04(index 3)는 revenue 중 9번째 -> 1페이지)
+        res_filtered = self.client.get(
+            f'/api/v1/ledger/company-transaction/find_page/?company={self.company.pk}&account_category=revenue&highlight_id={txs[3].pk}'
+        )
+        self.assertEqual(res_filtered.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_filtered.data['page'], 1)
+
+        # 4. 타사 거래 조회 시 RLS 필터링으로 404 반환
+        res_rls = self.client.get(
+            f'/api/v1/ledger/company-transaction/find_page/?highlight_id={other_tx.pk}'
+        )
+        self.assertEqual(res_rls.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 5. 잘못된/누락된 파라미터 -> 400 반환
+        res_missing = self.client.get('/api/v1/ledger/company-transaction/find_page/')
+        self.assertEqual(res_missing.status_code, http_status.HTTP_400_BAD_REQUEST)
+        res_invalid = self.client.get('/api/v1/ledger/company-transaction/find_page/?highlight_id=abc')
+        self.assertEqual(res_invalid.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+
 
 
 

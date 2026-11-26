@@ -1,17 +1,50 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  inject,
+  nextTick,
+  onUnmounted,
+  type PropType,
+  ref,
+  watch,
+} from 'vue'
 import { useRouter } from 'vue-router'
-import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
+import { cutString, numFormat } from '@/utils/baseMixins'
+import { message } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { AccountingEntry, AccountPicker, BankTransaction } from '@/store/types/comLedger'
+import type {
+  AccountingEntry,
+  AccountPicker,
+  BankTransaction,
+  CompositeTransactionPatchPayload,
+} from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 import AffiliateSelectModal from './AffiliateSelectModal.vue'
 
+interface SortAmountValue {
+  sort: 1 | 2
+  amount: number
+}
+
+interface AccountAffiliateValue {
+  account: number
+  affiliate: number | null
+}
+
+type InlineEditValue = string | SortAmountValue | AccountAffiliateValue | null
+
+interface FocusableInputRef {
+  focus?: () => void
+  select?: () => void
+  $el?: HTMLElement | null
+}
+
 const props = defineProps({
   transaction: { type: Object as PropType<BankTransaction>, required: true },
-  calculated: { type: String, default: '2000-01-01' },
+  calculated: { type: String, default: '' },
   isHighlighted: { type: Boolean, default: false },
 })
 
@@ -36,7 +69,7 @@ const allowedPeriod = computed(
     superAuth.value ||
     canComLedgerManage.value ||
     (canComLedgerUpdate.value &&
-      diffDate(props.transaction?.deal_date as string, props.calculated) <= 10),
+      (!props.calculated || (props.transaction?.deal_date ?? '') > props.calculated)),
 )
 
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
@@ -53,26 +86,53 @@ const sortType = computed(() => {
   return null // 전체
 })
 
+// --- 스크롤 제어 헬퍼 ---
+const lockBodyScroll = () => {
+  const scrollY = window.scrollY
+  document.documentElement.style.overflow = 'hidden'
+  document.body.style.overflow = 'hidden'
+  document.body.style.position = 'fixed'
+  document.body.style.top = `-${scrollY}px`
+  document.body.style.width = '100%'
+}
+
+const unlockBodyScroll = () => {
+  const scrollY = document.body.style.top
+  const scrollValue = scrollY ? parseInt(scrollY, 10) * -1 : 0
+  document.body.style.position = ''
+  document.body.style.top = ''
+  window.scrollTo(0, scrollValue)
+  document.documentElement.style.overflow = ''
+  document.body.style.overflow = ''
+  document.body.style.width = ''
+}
+
 // --- 관계회사 선택 모달 ---
 const affiliateModalVisible = ref(false)
 const selectedEntryForAffiliate = ref<AccountingEntry | null>(null)
+const pendingAccountForAffiliate = ref<number | null>(null)
+
+const isAffiliateModalRequired = computed(() => {
+  const accountId =
+    pendingAccountForAffiliate.value ?? selectedEntryForAffiliate.value?.account ?? null
+  return Boolean(getAccountById(accountId)?.req_affiliate)
+})
 
 const openAffiliateModal = (entry: AccountingEntry) => {
   if (!allowedPeriod.value) return
+  pendingAccountForAffiliate.value = entry.account
   selectedEntryForAffiliate.value = entry
   affiliateModalVisible.value = true
 }
 
 const handleAffiliateSelect = async (affiliateId: number | null) => {
-  if (!selectedEntryForAffiliate.value) return
+  if (!selectedEntryForAffiliate.value || !props.transaction?.pk) return
 
-  const entry = selectedEntryForAffiliate.value as AccountingEntry
+  const entry = selectedEntryForAffiliate.value
+  const accountToSave = pendingAccountForAffiliate.value || entry.account
 
-  // 계정 피커에서 관계회사 모달로 넘어온 경우, 계정도 함께 저장
-  const accountToSave = editValue.value?.account || entry.account
-
-  const payload: any = {
-    pk: props.transaction?.pk!,
+  const payload: CompositeTransactionPatchPayload = {
+    pk: props.transaction.pk,
     accounting_entries: [
       {
         pk: entry.pk,
@@ -84,50 +144,102 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
 
   try {
     await ledgerStore.patchBankTransaction(payload)
+  } catch {
+    // errorHandle in store already displays toast
   } finally {
-    // 편집 상태 초기화 (Picker는 이미 닫혔으므로 editValue만 초기화)
     editValue.value = null
     selectedEntryForAffiliate.value = null
+    pendingAccountForAffiliate.value = null
   }
 }
+
+watch(affiliateModalVisible, visible => {
+  if (!visible) {
+    pendingAccountForAffiliate.value = null
+    selectedEntryForAffiliate.value = null
+  }
+})
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = computed<{
   type: 'tran' | 'entry'
   pk: number
   field: string
-} | null>(() => ledgerStore.sharedEditingState) // Use computed for reactivity
-const editValue = ref<any>(null)
+} | null>(() => ledgerStore.sharedEditingState)
+const editValue = ref<InlineEditValue>(null)
+const inputRef = ref<FocusableInputRef | FocusableInputRef[] | null>(null)
+const pickerPosition = computed(() => ledgerStore.sharedPickerPosition)
+let isUpdating = false
+
+const accountAffiliateModel = computed<number | null>({
+  get: () => {
+    const val = editValue.value
+    return val && typeof val === 'object' && 'account' in val ? val.account : null
+  },
+  set: newAccount => {
+    const val = editValue.value
+    if (val && typeof val === 'object' && 'account' in val && newAccount !== null) {
+      val.account = newAccount
+    }
+  },
+})
+
+const sortAmountModel = computed<number | null>({
+  get: () => {
+    const val = editValue.value
+    return val && typeof val === 'object' && 'amount' in val ? val.amount : 0
+  },
+  set: newAmount => {
+    const val = editValue.value
+    if (val && typeof val === 'object' && 'amount' in val) {
+      val.amount = Number(newAmount) || 0
+    }
+  },
+})
 
 watch(
   editingState,
-  newVal => {
+  async newVal => {
     if (newVal) {
       const { type, pk, field } = newVal
-      if (type === 'tran' && pk === props.transaction?.pk) {
+      const isOwnedTran = type === 'tran' && pk === props.transaction?.pk
+      const matchedEntry =
+        type === 'entry'
+          ? props.transaction?.accounting_entries?.find(e => e.pk === pk)
+          : undefined
+
+      if (isOwnedTran) {
         if (field === 'note') {
-          editValue.value = props.transaction?.note
+          editValue.value = props.transaction?.note ?? ''
         } else if (field === 'content') {
-          editValue.value = props.transaction?.content
+          editValue.value = props.transaction?.content ?? ''
         } else if (field === 'sort_amount') {
           editValue.value = {
             sort: props.transaction?.sort,
             amount: props.transaction?.amount || 0,
           }
         }
-      } else if (type === 'entry') {
-        const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
-          e => e.pk === pk,
-        )
-        if (entry) {
-          if (field === 'account_affiliate') {
-            editValue.value = {
-              account: entry.account,
-              affiliate: entry.affiliate,
-            }
-          } else if (field === 'trader') {
-            editValue.value = entry.trader
+      } else if (matchedEntry) {
+        if (field === 'account_affiliate') {
+          editValue.value = {
+            account: matchedEntry.account,
+            affiliate: matchedEntry.affiliate,
           }
+        } else if (field === 'trader') {
+          editValue.value = matchedEntry.trader ?? ''
+        }
+      }
+
+      if ((isOwnedTran || matchedEntry) && field !== 'account_affiliate') {
+        await nextTick()
+        const rawRef = Array.isArray(inputRef.value) ? inputRef.value[0] : inputRef.value
+        const domInput =
+          rawRef?.$el?.querySelector<HTMLInputElement>('input') ??
+          (rawRef?.$el instanceof HTMLInputElement ? rawRef.$el : null) ??
+          (rawRef && typeof rawRef.focus === 'function' ? rawRef : null)
+        domInput?.focus?.()
+        if (domInput && 'select' in domInput && typeof domInput.select === 'function') {
+          domInput.select()
         }
       }
     } else {
@@ -137,13 +249,15 @@ watch(
   { immediate: true },
 )
 
-const inputRef = ref<any>(null)
-const pickerPosition = computed(() => ledgerStore.sharedPickerPosition) // Use computed for reactivity
-
-const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: any) => {
-  if (!allowedPeriod.value) return
-  ledgerStore.sharedEditingState = { type, pk, field } // Update shared state
+const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: InlineEditValue) => {
+  if (!canComLedgerEdit.value || !allowedPeriod.value) return
+  ledgerStore.sharedEditingState = { type, pk, field }
   editValue.value = value
+}
+
+const cancelEditing = () => {
+  ledgerStore.clearSharedPickerState()
+  editValue.value = null
 }
 
 const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
@@ -157,100 +271,83 @@ const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
 const handleAccountClick = (entry: AccountingEntry, event: MouseEvent) => {
   event.stopPropagation()
 
+  if (!canComLedgerEdit.value) return
+
   // 현재 항목이 이미 편집 중이라면 → 닫기 (토글)
-  // 이 경우 handlePickerClose()는 상태 초기화와 동시에 handleUpdate()를 호출하여 저장 시도
-  if (isEditing('entry', entry.pk!, 'account_affiliate')) {
+  if (isEditing('entry', entry.pk, 'account_affiliate')) {
     handlePickerClose()
     return
   }
 
   // 다른 Picker가 열려있는 상태라면 → 다른 Picker 닫기 (저장 없이)
   if (ledgerStore.sharedEditingState) {
-    // sharedEditingState를 통해 다른 Picker가 열려있는지 확인
-    // 다른 Picker의 스크롤 제어 해제 및 상태 초기화
-    // (handlePickerClose()를 호출하면 이전 Picker의 내용이 저장될 수 있으므로,
-    // 여기서는 저장 없이 상태만 정리해야 함)
-    const scrollY = document.body.style.top
-    const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
-
-    document.body.style.position = ''
-    document.body.style.top = ''
-    window.scrollTo(0, scrollValue)
-    document.documentElement.style.overflow = ''
-    document.body.style.overflow = ''
-    document.body.style.width = ''
-
-    ledgerStore.clearSharedPickerState() // 공유 상태를 즉시 클리어
-
-    // 다른 Picker를 닫고 함수를 종료. 새 Picker는 다음 클릭에 열림.
+    unlockBodyScroll()
+    ledgerStore.clearSharedPickerState()
     return
   }
 
   // 열려있는 Picker가 없으면 → 새 Picker 열기
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
+  const pickerHeight = 340
+  const spaceBelow = window.innerHeight - rect.bottom
+  const top =
+    spaceBelow < pickerHeight && rect.top > spaceBelow
+      ? Math.max(8, rect.top - Math.min(pickerHeight, rect.top - 8))
+      : rect.bottom
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 280) - 8))
 
   // 공유 pickerPosition 업데이트
   ledgerStore.sharedPickerPosition = {
-    top: rect.bottom,
-    left: rect.left,
+    top,
+    left,
     width: rect.width,
   }
 
-  // setEditing 함수를 통해 공유 editingState 업데이트
-  setEditing('entry', entry.pk!, 'account_affiliate', {
+  // 정산 마감일 이후에도 계정만 단독 수정할 수 있도록 sharedEditingState 직접 설정
+  ledgerStore.sharedEditingState = {
+    type: 'entry',
+    pk: entry.pk,
+    field: 'account_affiliate',
+  }
+  editValue.value = {
     account: entry.account,
     affiliate: entry.affiliate,
-  })
+  }
 
-  // 스크롤 제한 - body와 html 모두 제어
-  const scrollY = window.scrollY
-  document.documentElement.style.overflow = 'hidden'
-  document.body.style.overflow = 'hidden'
-  document.body.style.position = 'fixed'
-  document.body.style.top = `-${scrollY}px`
-  document.body.style.width = '100%'
+  lockBodyScroll()
 }
 
 const handlePickerClose = async () => {
-  // v-model 업데이트 완료를 보장하기 위해 nextTick 사용
   await nextTick()
 
-  // 1. 관계회사가 필요한 계정인지 확인
-  if (editingState.value?.field === 'account_affiliate' && editValue.value) {
-    const selectedAccount = getAccountById(editValue.value.account)
+  const val = editValue.value
+  if (editingState.value?.field === 'account_affiliate' && val && typeof val === 'object' && 'account' in val) {
+    const selectedAccount = getAccountById(val.account)
 
-    // 관계회사가 필요 없는 계정으로 변경한 경우 → affiliate를 null로 초기화
-    if (!selectedAccount?.req_affiliate && editValue.value.affiliate) {
-      editValue.value.affiliate = null
+    if (!selectedAccount?.req_affiliate && val.affiliate && allowedPeriod.value) {
+      val.affiliate = null
     }
 
-    // 관계회사가 필요한데 설정되지 않은 경우
-    if (selectedAccount?.req_affiliate && !editValue.value.affiliate) {
-      // 스크롤 복원
-      const scrollY = document.body.style.top
-      const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
-      document.body.style.position = ''
-      document.body.style.top = ''
-      window.scrollTo(0, scrollValue)
-      document.documentElement.style.overflow = ''
-      document.body.style.overflow = ''
-      document.body.style.width = ''
-
-      // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
+    if (selectedAccount?.req_affiliate && !val.affiliate) {
+      unlockBodyScroll()
       const entryPk = editingState.value?.pk
-      const selectedAccountId = editValue.value.account
-      const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
-        e => e.pk === entryPk,
-      )
-
-      // Picker 상태 정리 (Picker를 닫음)
+      const selectedAccountId = val.account
+      const entry = props.transaction?.accounting_entries?.find(e => e.pk === entryPk)
       ledgerStore.clearSharedPickerState()
 
-      // Picker가 완전히 닫힌 후 모달 열기
+      if (!allowedPeriod.value) {
+        message(
+          'warning',
+          '알림!',
+          '정산 마감일 이전 거래는 관계회사가 필수인 계정으로 변경 시 관계회사 정보를 함께 등록할 수 없습니다.',
+        )
+        return
+      }
+
       if (entry) {
         nextTick(() => {
-          // 새로 선택한 account를 entry에 반영
+          pendingAccountForAffiliate.value = selectedAccountId
           selectedEntryForAffiliate.value = { ...entry, account: selectedAccountId }
           affiliateModalVisible.value = true
         })
@@ -260,124 +357,122 @@ const handlePickerClose = async () => {
   }
 
   try {
-    // 2. 변경 사항 저장 (상태가 초기화되기 전에)
     await handleUpdate()
   } finally {
-    // 3. 스크롤 복원 - 순서 중요!
-    const scrollY = document.body.style.top
-    const scrollValue = scrollY ? parseInt(scrollY || '0') * -1 : 0
-
-    // position을 해제하기 전에 스크롤 위치를 먼저 저장
-    document.body.style.position = ''
-    document.body.style.top = ''
-
-    // 스크롤 복원
-    window.scrollTo(0, scrollValue)
-
-    // 나머지 스타일 복원
-    document.documentElement.style.overflow = ''
-    document.body.style.overflow = ''
-    document.body.style.width = ''
-
-    // 4. 마지막으로 공유 상태 초기화
+    unlockBodyScroll()
     ledgerStore.clearSharedPickerState()
   }
 }
 
 const handleUpdate = async () => {
-  if (!editingState.value) return
+  const state = editingState.value
+  if (!state || isUpdating || !props.transaction?.pk) return
 
-  const { type, pk, field } = editingState.value
+  const { type, pk, field } = state
+  const currentValue = editValue.value
 
   if (type === 'tran') {
+    if (pk !== props.transaction.pk) return
     if (field === 'sort_amount') {
-      const originalSort = props.transaction?.sort
-      const originalAmount = props.transaction?.amount || 0
-      const newSort = editValue.value.sort
-      const newAmount = Number(editValue.value.amount) || 0
+      if (!currentValue || typeof currentValue !== 'object' || !('amount' in currentValue)) {
+        ledgerStore.sharedEditingState = null
+        return
+      }
+      const originalSort = props.transaction.sort
+      const originalAmount = props.transaction.amount || 0
+      const newSort = currentValue.sort
+      const newAmount = Number(currentValue.amount) || 0
 
       if (newSort === originalSort && newAmount === originalAmount) {
         ledgerStore.sharedEditingState = null
         return
       }
     } else {
-      const originalValue = (props.transaction as BankTransaction)[field as keyof BankTransaction]
-      if (editValue.value === originalValue) {
+      const originalValue = (props.transaction[field as keyof BankTransaction] as string) ?? ''
+      if (currentValue === originalValue) {
         ledgerStore.sharedEditingState = null
         return
       }
     }
   } else {
-    const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
-      e => e.pk === pk,
-    )
+    const entry = props.transaction?.accounting_entries?.find(e => e.pk === pk)
     if (!entry) {
-      ledgerStore.sharedEditingState = null // No entry found, cancel editing
+      ledgerStore.sharedEditingState = null
       return
     }
 
-    if (field === 'sort_amount') {
-      const originalSort = props.transaction?.sort
-      const originalAmount = props.transaction?.amount || 0
-      const newSort = editValue.value.sort
-      const newAmount = Number(editValue.value.amount) || 0
-
-      if (newSort === originalSort && newAmount === originalAmount) {
+    if (field === 'account_affiliate') {
+      if (!currentValue || typeof currentValue !== 'object' || !('account' in currentValue)) {
         ledgerStore.sharedEditingState = null
         return
       }
-    } else if (field === 'account_affiliate') {
-      const originalAccount = entry.account
-      const originalAffiliate = entry.affiliate
-      const newAccount = editValue.value.account
-      const newAffiliate = editValue.value.affiliate
-
-      if (newAccount === originalAccount && newAffiliate === originalAffiliate) {
+      if (currentValue.account === entry.account && currentValue.affiliate === entry.affiliate) {
         ledgerStore.sharedEditingState = null
         return
       }
     } else {
-      // For other single entry fields
-      const originalValue = entry[field as keyof AccountingEntry]
-      if (editValue.value === originalValue) {
+      const originalValue = (entry[field as keyof AccountingEntry] as string | null) ?? ''
+      if (currentValue === originalValue) {
         ledgerStore.sharedEditingState = null
         return
       }
     }
   }
 
-  const payload: { pk: number; [key: string]: any } = { pk: props.transaction?.pk! }
+  const payload: CompositeTransactionPatchPayload = { pk: props.transaction.pk }
 
   if (type === 'tran') {
-    if (field === 'sort_amount') {
-      payload.sort = editValue.value.sort
-      payload.amount = Number(editValue.value.amount) || 0
-    } else {
-      payload[field] = editValue.value
+    if (field === 'sort_amount' && currentValue && typeof currentValue === 'object' && 'amount' in currentValue) {
+      payload.sort = currentValue.sort
+      payload.amount = Number(currentValue.amount) || 0
+    } else if (field === 'note' || field === 'content') {
+      payload[field] = String(currentValue ?? '')
     }
   } else {
-    // type === 'entry'
-    if (field === 'account_affiliate') {
+    if (
+      field === 'account_affiliate' &&
+      currentValue &&
+      typeof currentValue === 'object' &&
+      'account' in currentValue
+    ) {
       payload.accounting_entries = [
-        { pk: pk, account: editValue.value.account, affiliate: editValue.value.affiliate },
+        { pk, account: currentValue.account, affiliate: currentValue.affiliate },
       ]
-    } else {
-      payload.accounting_entries = [{ pk: pk, [field]: editValue.value }]
+    } else if (field === 'trader') {
+      payload.accounting_entries = [{ pk, trader: String(currentValue ?? '') }]
     }
   }
 
+  isUpdating = true
   try {
     await ledgerStore.patchBankTransaction(payload)
+  } catch {
+    // errorHandle in store already displays toast
   } finally {
+    isUpdating = false
     ledgerStore.sharedEditingState = null
   }
 }
+
+onUnmounted(() => {
+  const current = ledgerStore.sharedEditingState
+  if (!current) return
+  const ownsState =
+    (current.type === 'tran' && current.pk === props.transaction?.pk) ||
+    (current.type === 'entry' &&
+      Boolean(props.transaction?.accounting_entries?.some(e => e.pk === current.pk)))
+  if (ownsState) {
+    unlockBodyScroll()
+    ledgerStore.clearSharedPickerState()
+  }
+})
 
 // --- Collapse/Expand State for Accounting Entries ---
 const DEFAULT_VISIBLE_COUNT = 3
 const visibleEntryCount = ref<number>(DEFAULT_VISIBLE_COUNT)
 
 const totalEntryCount = computed(() => props.transaction?.accounting_entries?.length || 0)
+const canInlineEditAmount = computed(() => allowedPeriod.value && totalEntryCount.value === 0)
 const shouldShowExpand = computed(() => totalEntryCount.value > DEFAULT_VISIBLE_COUNT)
 
 const visibleEntries = computed(() => {
@@ -420,8 +515,8 @@ const collapseAll = () => {
       <!-- 비고 인라인 편집 -->
       <CTableDataCell
         :class="{
-          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'note'),
-          pointer: !isEditing('tran', transaction.pk!, 'note'),
+          'editable-cell-hint': allowedPeriod && !isEditing('tran', transaction.pk!, 'note'),
+          pointer: allowedPeriod && !isEditing('tran', transaction.pk!, 'note'),
           'p-0': isEditing('tran', transaction.pk!, 'note'),
         }"
         @dblclick="setEditing('tran', transaction.pk!, 'note', transaction.note)"
@@ -429,18 +524,26 @@ const collapseAll = () => {
         <CFormInput
           v-if="isEditing('tran', transaction.pk!, 'note')"
           ref="inputRef"
-          v-model="editValue"
+          :model-value="typeof editValue === 'string' ? editValue : ''"
+          @update:model-value="val => (editValue = val)"
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
+          @keydown.esc="cancelEditing"
         />
-        <span v-else>
+        <span v-else :title="transaction.note || undefined">
           {{ cutString(transaction.note, 20) }}
-          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
+          <v-icon
+            v-if="allowedPeriod"
+            icon="mdi-pencil-outline"
+            size="14"
+            color="success"
+            class="inline-edit-icon"
+          />
         </span>
       </CTableDataCell>
 
       <CTableDataCell>
-        <span v-if="transaction.bank_account_name">
+        <span v-if="transaction.bank_account_name" :title="transaction.bank_account_name">
           {{ cutString(transaction.bank_account_name, 10) }}
         </span>
       </CTableDataCell>
@@ -449,8 +552,8 @@ const collapseAll = () => {
       <CTableDataCell
         :class="{
           truncate: true,
-          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'content'),
-          pointer: !isEditing('tran', transaction.pk!, 'content'),
+          'editable-cell-hint': allowedPeriod && !isEditing('tran', transaction.pk!, 'content'),
+          pointer: allowedPeriod && !isEditing('tran', transaction.pk!, 'content'),
           'p-0': isEditing('tran', transaction.pk!, 'content'),
         }"
         @dblclick="setEditing('tran', transaction.pk!, 'content', transaction.content)"
@@ -458,24 +561,34 @@ const collapseAll = () => {
         <CFormInput
           v-if="isEditing('tran', transaction.pk!, 'content')"
           ref="inputRef"
-          v-model="editValue"
+          :model-value="typeof editValue === 'string' ? editValue : ''"
+          @update:model-value="val => (editValue = val)"
           @blur="handleUpdate"
           @keydown.enter="handleUpdate"
+          @keydown.esc="cancelEditing"
         />
-        <span v-else>
+        <span v-else :title="transaction.content || undefined">
           {{ cutString(transaction.content, 15) }}
-          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
+          <v-icon
+            v-if="allowedPeriod"
+            icon="mdi-pencil-outline"
+            size="14"
+            color="success"
+            class="inline-edit-icon"
+          />
         </span>
       </CTableDataCell>
 
       <CTableDataCell
-        class="text-right"
+        class="text-end"
         :class="{
-          'editable-cell-hint': !isEditing('tran', transaction.pk!, 'sort_amount'),
-          pointer: !isEditing('tran', transaction.pk!, 'sort_amount'),
+          'editable-cell-hint':
+            canInlineEditAmount && !isEditing('tran', transaction.pk!, 'sort_amount'),
+          pointer: canInlineEditAmount && !isEditing('tran', transaction.pk!, 'sort_amount'),
           'p-0': isEditing('tran', transaction.pk!, 'sort_amount'),
         }"
         @dblclick="
+          canInlineEditAmount &&
           setEditing('tran', transaction.pk!, 'sort_amount', {
             sort: transaction.sort,
             amount: transaction.amount || 0,
@@ -496,24 +609,37 @@ const collapseAll = () => {
 
           <CFormInput
             ref="inputRef"
-            v-model.number="editValue.amount"
+            v-model.number="sortAmountModel"
             type="number"
+            min="0"
             style="width: 120px"
             @blur="handleUpdate"
             @keydown.enter="handleUpdate"
+            @keydown.esc="cancelEditing"
           />
         </div>
         <div v-else>
           <span :class="transaction.sort === 1 ? 'text-success strong' : ''">
             {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(transaction.amount || 0) }}
           </span>
-          <v-icon icon="mdi-pencil-outline" size="14" color="success" class="inline-edit-icon" />
+          <v-icon
+            v-if="canInlineEditAmount"
+            icon="mdi-pencil-outline"
+            size="14"
+            color="success"
+            class="inline-edit-icon"
+          />
         </div>
       </CTableDataCell>
 
       <CTableDataCell class="text-center">
-        <v-icon v-if="transaction.is_balanced" icon="mdi-check-circle" color="success" size="sm" />
-        <v-icon v-else icon="mdi-minus-circle" color="danger" size="sm" />
+        <v-icon
+          v-if="transaction.is_balanced"
+          icon="mdi-check-circle"
+          color="success"
+          size="small"
+        />
+        <v-icon v-else icon="mdi-minus-circle" color="danger" size="small" />
       </CTableDataCell>
 
       <CTableDataCell :colspan="canComLedgerEdit ? 5 : 4" class="p-0">
@@ -529,19 +655,22 @@ const collapseAll = () => {
             <CTableDataCell
               :class="{
                 'account-cell': true,
-                'editable-cell-hint': !isEditing('entry', entry.pk!, 'account_affiliate'),
-                pointer: !isEditing('entry', entry.pk!, 'account_affiliate'),
+                'editable-cell-hint':
+                  canComLedgerEdit && !isEditing('entry', entry.pk, 'account_affiliate'),
+                pointer: canComLedgerEdit && !isEditing('entry', entry.pk, 'account_affiliate'),
               }"
               class="bg-yellow-lighten-4"
               style="position: relative"
             >
               <div
                 class="d-flex align-items-center justify-content-between bg-transparent"
-                :class="{ pointer: !isEditing('entry', entry.pk!, 'account_affiliate') }"
+                :class="{
+                  pointer: canComLedgerEdit && !isEditing('entry', entry.pk, 'account_affiliate'),
+                }"
                 @click="handleAccountClick(entry, $event)"
               >
                 <div class="d-flex align-items-center">
-                  <span>{{ cutString(entry.account_name, 12) }}</span>
+                  <span :title="entry.account_name">{{ cutString(entry.account_name, 12) }}</span>
                   <!-- 관계회사 정보 표시 (이미 설정된 경우) - 클릭 가능 -->
                   <v-tooltip v-if="entry.affiliate && allowedPeriod" location="top">
                     <template v-slot:activator="{ props: tooltipProps }">
@@ -550,15 +679,15 @@ const collapseAll = () => {
                         icon="mdi-link-variant"
                         color="primary"
                         size="16"
-                        class="ml-1 pointer"
+                        class="ms-1 pointer"
                         @click.stop="openAffiliateModal(entry)"
                       />
                     </template>
                     <div class="pa-2">
-                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
+                      <div class="fw-bold mb-1">관계회사/프로젝트</div>
                       <div class="mb-2">{{ entry.affiliate_display }}</div>
-                      <div class="d-flex align-items-center text-amber font-weight-medium">
-                        <v-icon icon="mdi-pencil" size="14" class="mr-1" />
+                      <div class="d-flex align-items-center text-amber fw-medium">
+                        <v-icon icon="mdi-pencil" size="14" class="me-1" />
                         클릭하여 변경
                       </div>
                     </div>
@@ -571,11 +700,11 @@ const collapseAll = () => {
                         icon="mdi-link-variant"
                         color="primary"
                         size="16"
-                        class="ml-1"
+                        class="ms-1"
                       />
                     </template>
                     <div class="pa-2">
-                      <div class="font-weight-bold mb-1">관계회사/프로젝트</div>
+                      <div class="fw-bold mb-1">관계회사/프로젝트</div>
                       <div>{{ entry.affiliate_display }}</div>
                     </div>
                   </v-tooltip>
@@ -590,7 +719,7 @@ const collapseAll = () => {
                         icon="mdi-link-variant-plus"
                         color="warning"
                         size="16"
-                        class="ml-1 pointer"
+                        class="ms-1 pointer"
                         @click.stop="openAffiliateModal(entry)"
                       />
                     </template>
@@ -598,7 +727,7 @@ const collapseAll = () => {
                   </v-tooltip>
                 </div>
                 <v-icon
-                  v-if="!isEditing('entry', entry.pk!, 'account_affiliate')"
+                  v-if="canComLedgerEdit && !isEditing('entry', entry.pk, 'account_affiliate')"
                   icon="mdi-chevron-down"
                   size="16"
                   color="grey"
@@ -609,11 +738,9 @@ const collapseAll = () => {
               <Teleport to="body">
                 <LedgerAccountPicker
                   v-if="
-                    isEditing('entry', entry.pk!, 'account_affiliate') &&
-                    editValue &&
-                    pickerPosition
+                    isEditing('entry', entry.pk, 'account_affiliate') && editValue && pickerPosition
                   "
-                  v-model="editValue.account"
+                  v-model="accountAffiliateModel"
                   :options="comAccounts ?? []"
                   :sort-type="sortType"
                   :visible="true"
@@ -625,23 +752,26 @@ const collapseAll = () => {
             <!-- Trader 인라인 편집 -->
             <CTableDataCell
               :class="[
-                'editable-cell-hint',
-                isEditing('entry', entry.pk!, 'trader') ? '' : 'pointer',
+                allowedPeriod ? 'editable-cell-hint' : '',
+                allowedPeriod && !isEditing('entry', entry.pk, 'trader') ? 'pointer' : '',
               ]"
               class="text-truncate"
-              @dblclick="setEditing('entry', entry.pk!, 'trader', entry.trader)"
+              @dblclick="setEditing('entry', entry.pk, 'trader', entry.trader ?? '')"
             >
               <CFormInput
-                v-if="isEditing('entry', entry.pk!, 'trader')"
+                v-if="isEditing('entry', entry.pk, 'trader')"
                 ref="inputRef"
-                v-model="editValue"
+                :model-value="typeof editValue === 'string' ? editValue : ''"
                 class="bg-transparent"
+                @update:model-value="val => (editValue = val)"
                 @blur="handleUpdate"
                 @keydown.enter="handleUpdate"
+                @keydown.esc="cancelEditing"
               />
-              <span v-else class="bg-transparent">
-                {{ cutString(entry.trader, 12) }}
+              <span v-else class="bg-transparent" :title="entry.trader || undefined">
+                {{ cutString(entry.trader ?? '', 12) }}
                 <v-icon
+                  v-if="allowedPeriod"
                   icon="mdi-pencil-outline"
                   size="14"
                   color="success"
@@ -650,26 +780,28 @@ const collapseAll = () => {
               </span>
             </CTableDataCell>
             <CTableDataCell
-              class="text-right"
+              class="text-end"
               :class="transaction.sort === 1 ? 'text-success strong' : ''"
             >
               {{ transaction.sort === 1 ? '+' : '-' }}{{ numFormat(entry.amount) }}
             </CTableDataCell>
-            <CTableDataCell class="pl-3">
-              {{ cutString(entry.evidence_type_display, 10) }}
+            <CTableDataCell class="ps-3">
+              <span :title="entry.evidence_type_display || undefined">
+                {{ cutString(entry.evidence_type_display ?? '', 10) }}
+              </span>
             </CTableDataCell>
-            <CTableDataCell v-if="canComLedgerEdit" class="text-right pr-2">
+            <CTableDataCell v-if="canComLedgerEdit" class="text-end pe-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"
                 size="18"
+                class="pointer edit-icon-hover"
                 @click="
                   router.push({
                     name: '본사 거래 내역 - 수정',
                     params: { transId: transaction.pk },
                   })
                 "
-                class="pointer edit-icon-hover"
               />
             </CTableDataCell>
           </CTableRow>
@@ -685,18 +817,18 @@ const collapseAll = () => {
                 color="primary"
                 @click="expandMore"
               >
-                <v-icon icon="mdi-chevron-down" size="18" class="mr-1" />
+                <v-icon icon="mdi-chevron-down" size="18" class="me-1" />
                 더보기 ({{ remainingCount }}개 항목)
               </v-btn>
 
               <!-- Collapse Button -->
               <v-btn v-else variant="text" size="small" color="grey" @click="collapseAll">
-                <v-icon icon="mdi-chevron-up" size="18" class="mr-1" />
+                <v-icon icon="mdi-chevron-up" size="18" class="me-1" />
                 접기
               </v-btn>
 
               <!-- Entry Count Indicator -->
-              <span class="text-caption text-grey ml-3">
+              <span class="text-caption text-grey ms-3">
                 {{ visibleEntryCount }} / {{ totalEntryCount }} 표시 중
               </span>
             </CTableDataCell>
@@ -710,6 +842,7 @@ const collapseAll = () => {
       v-model="affiliateModalVisible"
       :affiliate="(selectedEntryForAffiliate as AccountingEntry)?.affiliate"
       :account-name="(selectedEntryForAffiliate as AccountingEntry)?.account_name"
+      :required="isAffiliateModalRequired"
       @select="handleAffiliateSelect"
     />
   </template>

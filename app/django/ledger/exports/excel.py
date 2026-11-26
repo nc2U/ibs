@@ -79,6 +79,7 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
         company = _get_authorized_company(request)
         com_name = company.name.replace('주식회사 ', '(주)')
         date = request.GET.get('date') or _get_today_str()
+        is_balance = request.GET.get('is_balance', '')
 
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('본사_계좌별_자금현황')
@@ -143,7 +144,12 @@ class ExportLedgerBalanceByAcc(ExcelExportMixin):
                 When(sort_id=2, deal_date=date, then=F('amount')),
                 default=0
             ))
+        ).annotate(
+            balance=F('inc_sum') - F('out_sum')
         )
+
+        if is_balance == 'true':
+            balance_set = balance_set.exclude(balance=0)
 
         total_inc = 0
         total_out = 0
@@ -210,6 +216,7 @@ class ExportLedgerDateCashbook(ExcelExportMixin):
         company = _get_authorized_company(request)
         com_name = company.name.replace('주식회사 ', '(주)')
         date = request.GET.get('date') or _get_today_str()
+        is_balance = request.GET.get('is_balance', '')
 
         # 워크북 생성
         output, workbook, worksheet = self.create_workbook('당일_입출금내역')

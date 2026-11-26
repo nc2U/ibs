@@ -417,3 +417,67 @@ class LedgerTransactionExportTests(TestCase):
         from urllib.parse import quote
         self.assertIn(quote("프로젝트출납내역.xls"), disposition)
 
+    def test_company_balance_export_is_balance_filtering(self):
+        """본사 계좌별 잔고 엑셀 내보내기 시 is_balance=true 파라미터로 잔고 0 계좌가 제외되는지 검증"""
+        from io import BytesIO
+        import openpyxl
+        from rest_framework_simplejwt.tokens import AccessToken
+        from ibs.models import AccountSort
+        from ledger.models import BankCode, CompanyBankAccount, CompanyBankTransaction
+        from ledger.exports import ExportLedgerBalanceByAcc
+
+        bank_code, _ = BankCode.objects.get_or_create(code='004', defaults={'name': '국민은행'})
+        sort_inc, _ = AccountSort.objects.get_or_create(pk=1, defaults={'name': '입금'})
+        sort_out, _ = AccountSort.objects.get_or_create(pk=2, defaults={'name': '출금'})
+
+        acc_nonzero = CompanyBankAccount.objects.create(
+            company=self.company, bankcode=bank_code, alias_name='유잔고계좌', number='111-111'
+        )
+        acc_zero = CompanyBankAccount.objects.create(
+            company=self.company, bankcode=bank_code, alias_name='영잔고계좌', number='222-222'
+        )
+
+        CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=acc_nonzero, deal_date=datetime.date(2026, 8, 10),
+            amount=1000000, sort=sort_inc, content='입금', creator=self.user
+        )
+        CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=acc_zero, deal_date=datetime.date(2026, 8, 10),
+            amount=500000, sort=sort_inc, content='입금', creator=self.user
+        )
+        CompanyBankTransaction.objects.create(
+            company=self.company, bank_account=acc_zero, deal_date=datetime.date(2026, 8, 10),
+            amount=500000, sort=sort_out, content='전액출금', creator=self.user
+        )
+
+        token = str(AccessToken.for_user(self.user))
+        view = ExportLedgerBalanceByAcc.as_view()
+
+        # 1. is_balance=true -> 영잔고계좌 제외
+        req_filtered = self.factory.get(
+            f'/excel/com-balance/?company={self.company.pk}&date=2026-08-10&is_balance=true'
+        )
+        req_filtered.user = AnonymousUser()
+        req_filtered.COOKIES['accessToken'] = token
+        res_filtered = view(req_filtered)
+        self.assertEqual(res_filtered.status_code, 200)
+        wb_filtered = openpyxl.load_workbook(BytesIO(res_filtered.content))
+        ws_filtered = wb_filtered.active
+        values_filtered = [cell.value for row in ws_filtered.iter_rows() for cell in row if cell.value is not None]
+        self.assertIn('유잔고계좌', values_filtered)
+        self.assertNotIn('영잔고계좌', values_filtered)
+
+        # 2. is_balance 미지정 -> 영잔고계좌 포함
+        req_all = self.factory.get(
+            f'/excel/com-balance/?company={self.company.pk}&date=2026-08-10'
+        )
+        req_all.user = AnonymousUser()
+        req_all.COOKIES['accessToken'] = token
+        res_all = view(req_all)
+        self.assertEqual(res_all.status_code, 200)
+        wb_all = openpyxl.load_workbook(BytesIO(res_all.content))
+        ws_all = wb_all.active
+        values_all = [cell.value for row in ws_all.iter_rows() for cell in row if cell.value is not None]
+        self.assertIn('유잔고계좌', values_all)
+        self.assertIn('영잔고계좌', values_all)
+

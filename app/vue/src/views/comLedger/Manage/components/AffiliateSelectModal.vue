@@ -5,11 +5,13 @@ interface Props {
   modelValue: boolean
   affiliate?: number | null
   accountName?: string
+  required?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   affiliate: null,
   accountName: '',
+  required: false,
 })
 
 interface Emits {
@@ -34,6 +36,7 @@ const closeModal = () => {
 }
 
 const handleSelect = () => {
+  if (props.required && !selectedAffiliate.value) return
   emit('select', selectedAffiliate.value)
   closeModal()
 }
@@ -61,29 +64,43 @@ const handleCancel = () => {
       <v-card-text class="pt-4">
         <div v-if="accountName" class="mb-3">
           <div class="text-caption text-grey">계정</div>
-          <div class="text-body-1 font-weight-medium">{{ accountName }}</div>
+          <div class="text-body-1 fw-medium">{{ accountName }}</div>
         </div>
 
         <div>
           <div class="text-caption text-grey mb-2">관계회사/프로젝트</div>
           <CFormSelect
-            v-model.number="selectedAffiliate"
+            :model-value="selectedAffiliate ? String(selectedAffiliate) : ''"
             placeholder="관계회사를 선택하세요"
             class="mb-2"
+            @update:model-value="val => (selectedAffiliate = val ? Number(val) : null)"
           >
-            <option :value="null">선택 안 함</option>
+            <option value="">선택 안 함</option>
             <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
               {{ aff.label }}
             </option>
           </CFormSelect>
-          <div class="text-caption text-grey-darken-1">이 계정은 관계회사 정보가 필요합니다.</div>
+          <div class="text-caption text-grey-darken-1">
+            {{
+              required
+                ? '이 계정은 관계회사 선택이 필수입니다.'
+                : '관계회사 정보를 선택하거나 변경할 수 있습니다.'
+            }}
+          </div>
         </div>
       </v-card-text>
 
       <v-card-actions class="px-4 pb-4">
         <v-spacer />
         <v-btn color="grey" variant="text" @click="handleCancel">취소</v-btn>
-        <v-btn color="primary" variant="elevated" @click="handleSelect">확인</v-btn>
+        <v-btn
+          color="primary"
+          variant="elevated"
+          :disabled="required && !selectedAffiliate"
+          @click="handleSelect"
+        >
+          확인
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

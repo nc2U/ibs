@@ -6,40 +6,51 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 interface Props {
   calcDate?: string | null
   isCalculated?: boolean
+  hasTransactions?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  calcDate: null,
+  isCalculated: false,
+  hasTransactions: false,
+})
 const emit = defineEmits<{
   (e: 'to-calculate'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
-const canComLedgerUpdate = computed(
-  () => canGlobal(PERM.HQ_LEDGER_UPDATE) || canGlobal(PERM.HQ_LEDGER_MANAGE),
-)
+const canComLedgerManage = computed(() => canGlobal(PERM.HQ_LEDGER_MANAGE))
 
 const refConfirmModal = ref()
 
-const toCalculated = () => refConfirmModal.value.callModal()
+const toCalculated = () => refConfirmModal.value?.callModal()
 
 const modalAction = () => {
   emit('to-calculate')
-  refConfirmModal.value.close()
+  refConfirmModal.value?.close()
 }
 </script>
 
 <template>
-  <CAlert v-if="canComLedgerUpdate" :color="isCalculated ? 'success' : 'warning'" class="text-end">
+  <CAlert v-if="canComLedgerManage" :color="isCalculated ? 'success' : 'warning'" class="text-end">
     <span v-if="calcDate" class="me-3">[정산일 : {{ calcDate }}]</span>
     <v-btn v-if="isCalculated" color="success" size="x-large" disabled> 잔고정산 확인완료</v-btn>
-    <v-btn v-else color="warning" size="x-large" @click="toCalculated"> 당일잔고 정산확인</v-btn>
+    <v-btn
+      v-else
+      color="warning"
+      size="x-large"
+      :disabled="!hasTransactions"
+      @click="toCalculated"
+    >
+      당일잔고 정산확인
+    </v-btn>
   </CAlert>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> 알림</template>
     <template #default>
-      계좌별 잔고 데이터가 실제 계좌 잔고와 일치 하는지 체크 후 확인을 클릭 하십시요. 확인 후 현재
-      등록된 최종 거래 일자로부터 10일이 경과한 거래 건은 수정 및 삭제할 수 없습니다.
+      계좌별 잔고 데이터가 실제 계좌 잔고와 일치하는지 확인 후 진행해 주세요. 정산 확인 후
+      등록된 최종 거래 일자 이전 거래 건은 관리자 외 수정 및 삭제할 수 없습니다.
     </template>
     <template #footer>
       <v-btn color="warning" size="small" @click="modalAction">확인</v-btn>

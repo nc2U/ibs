@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, reactive, ref, watch } from 'vue'
-import { isValidate } from '@/utils/helper.ts'
+import { isValidate, message } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
@@ -8,8 +8,13 @@ import { usePerms } from '@/composables/usePerms'
 import type { ParseResult } from '@/composables/useExcelUpload'
 import { useExcelUpload } from '@/composables/useExcelUpload'
 import { type BulkParseResult, useBulkTransExcel } from '@/composables/useBulkTransExcel'
-import { TableSecondary } from '@/utils/cssMixins.ts'
-import type { BankTransaction } from '@/store/types/comLedger'
+import { bgLight, TableSecondary } from '@/utils/cssMixins.ts'
+import type {
+  BankTransaction,
+  CompositeAccountingEntryPayload,
+  CompositeTransactionPayload,
+  CompositeTransactionPatchPayload,
+} from '@/store/types/comLedger'
 import BankTransactionRow, { type BankTransactionData } from './BankTransactionRow.vue'
 import BulkTransUploadDialog from '@/views/proLedger/Manage/components/BulkTransUploadDialog.vue'
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
@@ -17,30 +22,29 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import AccountManage from './AccountManage.vue'
-import JournalRow from './JournalRow.vue'
+import JournalRow, { type NewEntryForm } from './JournalRow.vue'
 import BankAcc from './BankAcc.vue'
+
+class ClientValidationError extends Error {}
 
 const props = defineProps({
   company: { type: Number, default: null },
 })
 
-watch(
-  () => props.company,
-  async () => {
-    if (isCreateMode.value) initializeCreateForm()
-    else await router.push({ name: '본사 거래 내역' })
-  },
-)
-
 const { canGlobal, PERM } = usePerms()
 const canComLedgerCreate = computed(() => canGlobal(PERM.HQ_LEDGER_CREATE))
 const canComLedgerUpdate = computed(() => canGlobal(PERM.HQ_LEDGER_UPDATE))
 const canComLedgerDelete = computed(() => canGlobal(PERM.HQ_LEDGER_DELETE))
+const canComLedgerManage = computed(() => canGlobal(PERM.HQ_LEDGER_MANAGE))
 const canComLedgerEdit = computed(() =>
-  isCreateMode.value ? canComLedgerCreate.value : canComLedgerUpdate.value,
+  isCreateMode.value
+    ? canComLedgerCreate.value || canComLedgerManage.value
+    : canComLedgerUpdate.value || canComLedgerManage.value,
 )
+const canComLedgerRemove = computed(() => canComLedgerDelete.value || canComLedgerManage.value)
 
 const confirmModal = ref()
+const leaveConfirmModal = ref()
 const alertModal = ref()
 const refAccountManage = ref()
 const refBankAcc = ref()
@@ -50,22 +54,40 @@ const [route, router] = [useRoute(), useRouter()]
 const transId = computed(() => Number(route.params.transId) || null)
 const isCreateMode = computed(() => !transId.value)
 const isSaving = ref(false)
+const skipLeaveGuard = ref(false)
+let pendingLeaveResolve: ((allowed: boolean) => void) | null = null
 
 const ledgerStore = useComLedger()
 const transferFeePk = computed(() => ledgerStore.transferFeePk)
 const transaction = computed(() => ledgerStore.bankTransaction as BankTransaction | null)
+provide('transferFeePk', transferFeePk)
+provide(
+  'affiliates',
+  computed(() => ledgerStore.affiliates),
+)
+provide(
+  'comAccounts',
+  computed(() => ledgerStore.comAccounts),
+)
 
-// Watch transaction data to reinitialize form when loaded
+const accountMap = computed(() => {
+  const map = new Map<number, (typeof ledgerStore.comAccounts)[number]>()
+  for (const acc of ledgerStore.comAccounts) {
+    map.set(acc.value, acc)
+  }
+  return map
+})
+
 watch(
-  () => transaction.value,
-  val => {
-    if (val && !isCreateMode.value) {
-      initializeEditForm()
-    }
+  () => props.company,
+  async (newVal, oldVal) => {
+    if (!oldVal || newVal === oldVal) return
+    if (isCreateMode.value) initializeCreateForm()
+    else await router.push({ name: '본사 거래 내역' })
   },
 )
 
-// 은행 거래 폼 데이터 (생성 모드용)
+// 은행 거래 폼 데이터 (수정 모드 및 단일 생성 폴백용)
 interface BankTransactionForm {
   deal_date: string
   note: string
@@ -86,18 +108,9 @@ const bankForm = reactive<BankTransactionForm>({
   bank_account: '',
 })
 
-// 입력 폼 데이터
-interface NewEntryForm {
-  pk?: number
-  account?: number | null
-  trader?: string
-  amount?: number
-  affiliate?: number | null
-  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
-}
-
 // 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터)
 const editableEntries = ref<NewEntryForm[]>([])
+const initialEditSnapshot = ref<string>('')
 
 // 다중 은행 거래 데이터 (신규 모드용)
 const bankTransactions = ref<BankTransactionData[]>([])
@@ -115,9 +128,21 @@ const createNewTransaction = (data?: Partial<BankTransactionData>): BankTransact
   entries: data?.entries || [{}],
 })
 
+const serializeEditState = () =>
+  JSON.stringify({
+    bankForm: { ...bankForm },
+    entries: editableEntries.value.map(e => ({
+      pk: e.pk ?? null,
+      account: e.account ?? null,
+      trader: e.trader ?? '',
+      amount: e.amount ?? null,
+      affiliate: e.affiliate ?? null,
+      evidence_type: e.evidence_type ?? '',
+    })),
+  })
+
 // 폼 초기화 함수들
 const initializeCreateForm = () => {
-  // 신규 모드: 기본값으로 초기화
   Object.assign(bankForm, {
     deal_date: getToday(),
     bank_account: '',
@@ -127,71 +152,81 @@ const initializeCreateForm = () => {
     note: '',
   })
   editableEntries.value = [{}]
-
-  // 다중 거래건 초기화
+  initialEditSnapshot.value = ''
   bankTransactions.value = [createNewTransaction()]
 }
 
 const initializeEditForm = () => {
   if (!transaction.value) return
 
-  // 수정 모드: 기존 데이터로 초기화
   Object.assign(bankForm, {
     deal_date: transaction.value.deal_date,
-    note: transaction.value.note,
+    note: transaction.value.note ?? '',
     bank_account: transaction.value.bank_account,
-    content: transaction.value.content,
+    content: transaction.value.content ?? '',
     sort: transaction.value.sort,
     amount: transaction.value.amount,
   })
 
-  // 기존 회계 항목들로 초기화
-  if (transaction.value.accounting_entries) {
+  if (transaction.value.accounting_entries?.length) {
     editableEntries.value = transaction.value.accounting_entries.map(entry => ({
       pk: entry.pk,
       account: entry.account,
-      trader: entry.trader,
+      trader: entry.trader ?? '',
       amount: entry.amount,
-      affiliate: entry.affiliate,
-      evidence_type: entry.evidence_type,
+      affiliate: entry.affiliate ?? null,
+      evidence_type: entry.evidence_type ?? '',
     }))
   } else {
     editableEntries.value = [{}]
   }
+
+  initialEditSnapshot.value = serializeEditState()
 }
+
+// Watch transaction data to reinitialize form when loaded
+watch(
+  () => transaction.value,
+  val => {
+    if (val && !isCreateMode.value) {
+      initializeEditForm()
+    }
+  },
+)
 
 // 표시할 행 목록
 const displayRows = computed(() => editableEntries.value)
 
-// 은행 거래 금액
-const bankAmount = computed(() => bankForm.amount || 0)
+// 은행 거래 금액 (신규 모드: 전체 거래건 합계, 수정 모드: 단일 거래 금액)
+const bankAmount = computed(() => {
+  if (isCreateMode.value) {
+    return bankTransactions.value.reduce((sum, t) => sum + (Number(t.bankForm.amount) || 0), 0)
+  }
+  return bankForm.amount || 0
+})
 
 // 거래 구분 이름
 const sortName = computed(() => {
-  return isCreateMode.value
-    ? bankForm.sort === 1
-      ? '입금'
-      : '출금'
-    : transaction.value?.sort_name || ''
+  if (isCreateMode.value) return ''
+  return transaction.value?.sort_name || ''
 })
 
 // 분류 금액 합계 계산
 const totalEntryAmount = computed(() => {
-  return editableEntries.value.reduce((sum, row) => {
-    const amount = Number(row.amount) || 0
-    return sum + amount
-  }, 0)
+  if (isCreateMode.value) {
+    return bankTransactions.value.reduce(
+      (sum, t) => sum + t.entries.reduce((s, row) => s + (Number(row.amount) || 0), 0),
+      0,
+    )
+  }
+  return editableEntries.value.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
 })
 
 // 차액 계산 - bankAmount 사용
-const difference = computed(() => {
-  return bankAmount.value - totalEntryAmount.value
-})
+const difference = computed(() => bankAmount.value - totalEntryAmount.value)
 
 // 금액 일치 여부
-const isBalanced = computed(() => {
-  return difference.value === 0
-})
+const isBalanced = computed(() => difference.value === 0)
 
 // 은행 계좌 목록
 const formBankAccounts = computed(() => {
@@ -274,12 +309,27 @@ const handleUploadClick = (index = 0) => {
   fileInputRef.value?.click()
 }
 
+const showAlertModal = (title: string, body: string, color = 'warning') => {
+  alertModal.value?.callModal(title, body, 'mdi-alert-circle', color)
+}
+
+const isLegacyXlsFile = (file: File) => file.name.toLowerCase().endsWith('.xls')
+
 // File change handler
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
   if (!file) return
+
+  if (isLegacyXlsFile(file)) {
+    showAlertModal(
+      '파일 형식 안내',
+      '.xls(구형 엑셀) 파일은 지원되지 않습니다.\nExcel에서 .xlsx 형식으로 다시 저장한 후 업로드해 주세요.',
+    )
+    target.value = ''
+    return
+  }
 
   try {
     // Prepare existing entries for matching - resolve IDs to names
@@ -308,7 +358,7 @@ const handleFileChange = async (event: Event) => {
     })
   } catch (error) {
     console.error('Excel parsing error:', error)
-    alertModal.value?.callModal('엑셀 파싱 오류', '엑셀 파일 파싱 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
+    showAlertModal('엑셀 파싱 오류', '엑셀 파일 파싱 중 오류가 발생했습니다.', 'danger')
   } finally {
     // Reset file input
     target.value = ''
@@ -410,6 +460,15 @@ const handleBulkFileChange = async (event: Event) => {
   const file = target.files?.[0]
   if (!file) return
 
+  if (isLegacyXlsFile(file)) {
+    showAlertModal(
+      '파일 형식 안내',
+      '.xls(구형 엑셀) 파일은 지원되지 않습니다.\nExcel에서 .xlsx 또는 .csv 형식으로 저장한 후 업로드해 주세요.',
+    )
+    target.value = ''
+    return
+  }
+
   try {
     bulkResult.value = await parseBulkFile(file, {
       bankAccounts: formBankAccounts.value,
@@ -421,10 +480,9 @@ const handleBulkFileChange = async (event: Event) => {
     bulkDialogVisible.value = true
   } catch (error) {
     console.error('Bulk excel parsing error:', error)
-    alertModal.value?.callModal(
+    showAlertModal(
       '엑셀 파싱 오류',
       error instanceof Error ? error.message : '엑셀 파일 파싱 중 오류가 발생했습니다.',
-      'mdi-alert-circle',
       'danger',
     )
   } finally {
@@ -500,8 +558,10 @@ const handleBulkConfirm = ({ replace }: { replace: boolean }) => {
       }),
     )
 
-  if (!imported.length) return
-  bankTransactions.value = replace ? imported : [...bankTransactions.value, ...imported]
+  if (imported.length) {
+    bankTransactions.value = replace ? imported : [...bankTransactions.value, ...imported]
+  }
+  bulkDialogVisible.value = false
   bulkResult.value = null
 }
 
@@ -511,33 +571,28 @@ const addRow = () => {
 
 const removeEntry = (index: number) => {
   if (editableEntries.value.length === 1) {
-    // entry 개수가 1개일 때는 amount를 0으로 설정 (삭제 처리)
     editableEntries.value[index].amount = 0
   } else {
-    // entry 행수가 2개 이상일 배열에서 제거
     editableEntries.value.splice(index, 1)
   }
 }
 
 const insertTransferFeeEntry = (index: number) => {
   if (transferFeePk.value === undefined) {
-    alertModal.value?.callModal('계정 안내', '이체수수료 계정이 설정되지 않았습니다.', 'mdi-alert-circle', 'warning')
+    showAlertModal('계정 안내', '이체수수료 계정이 설정되지 않았습니다.')
     return
   }
 
   const currentRow = editableEntries.value[index]
-  const bankTransactionAmount = Number(bankForm.amount) || 0
+  const baseAmount =
+    currentRow.amount !== undefined && currentRow.amount !== null && currentRow.amount > 0
+      ? Number(currentRow.amount)
+      : Number(bankForm.amount) || 0
 
-  // Calculate a new amount based on bank transaction amount (minimum 0)
-  const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
+  currentRow.amount = Math.max(0, baseAmount - 500)
 
-  // Modify the current row amount
-  currentRow.amount = newCurrentAmount
+  const currentTrader = currentRow.trader?.trim() || ''
 
-  // Create a trader name (default to [] if empty)
-  const currentTrader = currentRow.trader?.trim() || '[]'
-
-  // Create a new transfer fee entry
   const newEntry: NewEntryForm = {
     pk: undefined,
     account: transferFeePk.value,
@@ -547,24 +602,20 @@ const insertTransferFeeEntry = (index: number) => {
     evidence_type: '0',
   }
 
-  // Insert immediately after the current row
   editableEntries.value.splice(index + 1, 0, newEntry)
 }
 
 // ========== 다중 거래건 관련 메서드 ==========
-// 거래건 추가
 const addBankTransaction = () => {
   bankTransactions.value.push(createNewTransaction())
 }
 
-// 거래건 삭제
 const removeBankTransaction = (index: number) => {
   if (bankTransactions.value.length > 1) {
     bankTransactions.value.splice(index, 1)
   }
 }
 
-// 거래건 업데이트
 const updateBankTransaction = (index: number, newData: BankTransactionData) => {
   bankTransactions.value[index] = newData
 }
@@ -577,156 +628,197 @@ const handleTransferWithdraw = (sourceData: BankTransactionData) => {
 
   if (!sourceAccount || sourceAccount.category !== 'transfer') return
 
-  // 대체(입금) 계정 찾기 (category='transfer' && direction='입금')
   const depositTransferAccount = ledgerStore.comAccounts.find(
     acc => acc.is_cate_only === false && acc.category === 'transfer' && acc.direction === '입금',
   )
 
   if (!depositTransferAccount) {
-    alertModal.value?.callModal('계정 안내', '대체(입금) 계정을 찾을 수 없습니다.', 'mdi-alert-circle', 'warning')
+    showAlertModal('계정 안내', '대체(입금) 계정을 찾을 수 없습니다.')
     return
   }
 
-  // 입금 거래건 자동 추가
-  bankTransactions.value.push({
-    bankForm: {
-      deal_date: sourceData.bankForm.deal_date,
-      note: sourceData.bankForm.note,
-      bank_account: null, // 사용자가 선택해야 함
-      content: sourceData.bankForm.content,
-      sort: 1, // 입금
-      amount: sourceData.bankForm.amount,
-    },
-    entries: [
-      {
-        account: depositTransferAccount.value,
-        trader: sourceData.entries[0].trader || '',
-        amount: sourceData.bankForm.amount || undefined,
-        evidence_type: '',
+  bankTransactions.value.push(
+    createNewTransaction({
+      bankForm: {
+        deal_date: sourceData.bankForm.deal_date,
+        note: sourceData.bankForm.note,
+        bank_account: null,
+        content: sourceData.bankForm.content,
+        sort: 1,
+        amount: sourceData.bankForm.amount,
       },
-    ],
+      entries: [
+        {
+          account: depositTransferAccount.value,
+          trader: sourceData.entries[0].trader || '',
+          amount: sourceData.bankForm.amount || undefined,
+          affiliate: null,
+          evidence_type: '',
+        },
+      ],
+    }),
+  )
+}
+
+const isEntryRowValid = (entries: NewEntryForm[]): boolean => {
+  if (!entries.length) return false
+  const hasPositiveEntry = entries.some(e => (e.amount || 0) > 0)
+  if (!hasPositiveEntry) return false
+  return entries.every(e => {
+    const amount = e.amount ?? 0
+    if (amount < 0) return false
+    if (amount > 0) {
+      if (!e.account) return false
+      const acc = accountMap.value.get(e.account)
+      if (acc?.req_affiliate && !e.affiliate) return false
+      return true
+    }
+    return !e.account
   })
 }
 
-// 유효성 검사
+const mapEntriesToPayload = (entries: NewEntryForm[]): CompositeAccountingEntryPayload[] =>
+  entries
+    .filter(e => (e.amount || 0) > 0 && !!e.account)
+    .map(entry => ({
+      ...(entry.pk ? { pk: entry.pk } : {}),
+      account: entry.account as number,
+      affiliate: entry.affiliate ?? null,
+      amount: Number(entry.amount) || 0,
+      trader: entry.trader ?? '',
+      evidence_type: entry.evidence_type === '' || !entry.evidence_type ? null : entry.evidence_type,
+    }))
+
+const validateTransactionSet = (
+  txForm: BankTransactionForm,
+  entries: NewEntryForm[],
+  labelPrefix = '',
+) => {
+  if (!props.company) {
+    throw new ClientValidationError('회사 정보가 선택되지 않았습니다.')
+  }
+
+  if (
+    !txForm.deal_date ||
+    !txForm.bank_account ||
+    !txForm.amount ||
+    txForm.amount <= 0 ||
+    !txForm.content?.trim()
+  ) {
+    throw new ClientValidationError(
+      `${labelPrefix}거래일자, 거래계좌, 금액(0 초과), 적요는 필수 입력 항목입니다.`,
+    )
+  }
+
+  if (entries.some(e => (e.amount ?? 0) < 0)) {
+    throw new ClientValidationError(`${labelPrefix}분류 금액은 0 이상이어야 합니다.`)
+  }
+
+  const positiveEntries = entries.filter(e => (e.amount || 0) > 0)
+  if (positiveEntries.length === 0) {
+    throw new ClientValidationError(`${labelPrefix}최소 하나 이상의 분류 항목이 필요합니다.`)
+  }
+
+  if (positiveEntries.some(e => !e.account)) {
+    throw new ClientValidationError(
+      `${labelPrefix}분류 금액이 입력된 모든 항목에 회계 계정을 선택해야 합니다.`,
+    )
+  }
+
+  if (
+    positiveEntries.some(e => {
+      const acc = e.account ? accountMap.value.get(e.account) : undefined
+      return Boolean(acc?.req_affiliate && !e.affiliate)
+    })
+  ) {
+    throw new ClientValidationError(
+      `${labelPrefix}관계회사/프로젝트가 필수인 계정에 관계회사를 선택해 주세요.`,
+    )
+  }
+
+  const entryTotal = entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+  if (Number(txForm.amount) !== entryTotal) {
+    throw new ClientValidationError(`${labelPrefix}거래 금액과 분류 금액이 일치하지 않습니다.`)
+  }
+}
+
+// 유효성 검사 (단일/수정 모드)
 const validateForm = () => {
-  if (!isBalanced.value) {
-    throw new Error('거래 금액과 분류 금액이 일치하지 않습니다.')
-  }
-
-  if (!bankForm.deal_date || !bankForm.bank_account || !bankForm.amount || !bankForm.content) {
-    throw new Error('거래일자, 거래계좌, 금액, 적요는 필수 입력 항목입니다.')
-  }
-
-  const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
-  if (validEntries.length === 0) {
-    throw new Error('최소 하나 이상의 분류 항목이 필요합니다.')
-  }
-
-  const anyMissingAccount = editableEntries.value.some(e => (e.amount || 0) > 0 && !e.account)
-  if (anyMissingAccount) {
-    throw new Error('분류 금액이 입력된 모든 항목에 회계 계정을 선택해야 합니다.')
-  }
+  validateTransactionSet(bankForm, editableEntries.value)
 }
 
 // 신규 거래 데이터 생성
-const buildCreatePayload = () => {
+const buildCreatePayload = (): CompositeTransactionPayload => {
   validateForm()
 
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(entry => ({
-      ...entry,
-      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-    }))
-
   return {
-    company: props.company!,
+    company: props.company,
     deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account!,
-    amount: bankForm.amount!,
+    bank_account: Number(bankForm.bank_account),
+    amount: Number(bankForm.amount),
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
-    accounting_entries: validEntries,
-  } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
+    accounting_entries: mapEntriesToPayload(editableEntries.value),
+  }
 }
 
 // 수정 거래 데이터 생성
-const buildUpdatePayload = () => {
-  if (!transaction.value) {
-    throw new Error('수정할 거래 데이터가 없습니다.')
+const buildUpdatePayload = (): CompositeTransactionPatchPayload => {
+  if (!transaction.value?.pk) {
+    throw new ClientValidationError('수정할 거래 데이터가 없습니다.')
   }
 
   validateForm()
 
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(entry => ({
-      ...entry,
-      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-    }))
-
   return {
     pk: transaction.value.pk,
-    company: props.company!,
+    company: props.company,
     deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account!,
-    amount: bankForm.amount!,
+    bank_account: Number(bankForm.bank_account),
+    amount: Number(bankForm.amount),
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
-    accounting_entries: validEntries,
-    filters: {},
-  } as any // API 요청 타입과 BankTransaction 타입이 다르므로 any 처리
+    accounting_entries: mapEntriesToPayload(editableEntries.value),
+  }
 }
 
 // 다중 거래건 저장 처리
 const saveMultipleTransactions = async () => {
-  // 모든 거래건 검증
-  for (let i = 0; i < bankTransactions.value.length; i++) {
-    const trans = bankTransactions.value[i]
-
-    if (!trans.bankForm.deal_date || !trans.bankForm.bank_account || !trans.bankForm.amount) {
-      throw new Error(`${i + 1}번째 거래: 거래일자, 거래계좌, 금액은 필수 입력 항목입니다.`)
-    }
-
-    if (!trans.bankForm.content) {
-      throw new Error(`${i + 1}번째 거래: 적요는 필수 입력 항목입니다.`)
-    }
-
-    const validEntries = trans.entries.filter(e => (e.amount || 0) > 0)
-    if (validEntries.length === 0) {
-      throw new Error(`${i + 1}번째 거래: 최소 하나 이상의 분류 항목이 필요합니다.`)
-    }
-
-    const totalEntryAmount = validEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
-    if (trans.bankForm.amount !== totalEntryAmount) {
-      throw new Error(`${i + 1}번째 거래: 거래 금액과 분류 금액이 일치하지 않습니다.`)
-    }
+  if (!props.company) {
+    throw new ClientValidationError('회사 정보가 선택되지 않았습니다.')
   }
 
-  // 각 거래건을 순차적으로 저장
-  for (const trans of bankTransactions.value) {
-    const validEntries = trans.entries
-      .filter(e => (e.amount || 0) > 0)
-      .map(entry => ({
-        ...entry,
-        evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-      }))
+  for (let i = 0; i < bankTransactions.value.length; i++) {
+    const trans = bankTransactions.value[i]
+    validateTransactionSet(trans.bankForm, trans.entries, `${i + 1}번째 거래: `)
+  }
 
-    const payload = {
-      company: props.company!,
-      deal_date: trans.bankForm.deal_date,
-      bank_account: trans.bankForm.bank_account!,
-      amount: trans.bankForm.amount!,
-      sort: trans.bankForm.sort,
-      content: trans.bankForm.content,
-      note: trans.bankForm.note,
-      accounting_entries: validEntries,
-    } as any
-
-    await ledgerStore.createBankTransaction(payload)
+  let savedCount = 0
+  try {
+    for (const trans of bankTransactions.value) {
+      const payload: CompositeTransactionPayload = {
+        company: props.company,
+        deal_date: trans.bankForm.deal_date,
+        bank_account: Number(trans.bankForm.bank_account),
+        amount: Number(trans.bankForm.amount),
+        sort: trans.bankForm.sort,
+        content: trans.bankForm.content,
+        note: trans.bankForm.note,
+        accounting_entries: mapEntriesToPayload(trans.entries),
+      }
+      await ledgerStore.createBankTransaction(payload, { skipRefresh: true, silent: true })
+      savedCount++
+    }
+    await ledgerStore.fetchBankTransactionList(ledgerStore.bankTransactionFilter)
+    message()
+  } catch (err) {
+    if (savedCount > 0) {
+      bankTransactions.value.splice(0, savedCount)
+      await ledgerStore.fetchBankTransactionList(ledgerStore.bankTransactionFilter)
+    }
+    throw err
   }
 }
 
@@ -744,7 +836,6 @@ const saveTransaction = async (event: Event) => {
       isSaving.value = true
 
       if (isCreateMode.value) {
-        // 다중 거래건이 있으면 다중 저장, 없으면 단일 저장
         if (bankTransactions.value.length > 0) {
           await saveMultipleTransactions()
         } else {
@@ -756,11 +847,14 @@ const saveTransaction = async (event: Event) => {
         await ledgerStore.updateBankTransaction(payload)
       }
 
-      // 성공 시 거래 목록 페이지로 이동
+      skipLeaveGuard.value = true
       await router.push({ name: '본사 거래 내역' })
-    } catch (error: any) {
+    } catch (error: unknown) {
+      skipLeaveGuard.value = false
       console.error('저장 실패:', error)
-      alertModal.value?.callModal('저장 오류', error.message || '저장 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
+      if (error instanceof ClientValidationError) {
+        showAlertModal('저장 오류', error.message, 'danger')
+      }
     } finally {
       isSaving.value = false
     }
@@ -768,99 +862,124 @@ const saveTransaction = async (event: Event) => {
 }
 
 const delTransaction = async () => {
-  confirmModal.value.close()
-  await ledgerStore.deleteBankTransaction(transaction.value?.pk!)
-  await router.replace({ name: '본사 거래 내역' })
+  const pk = transaction.value?.pk
+  confirmModal.value?.close()
+  if (!pk) return
+
+  try {
+    await ledgerStore.deleteBankTransaction(pk)
+    skipLeaveGuard.value = true
+    await router.replace({ name: '본사 거래 내역' })
+  } catch {
+    skipLeaveGuard.value = false
+  }
 }
 
 const accCallModal = () => {
-  if (props.company) refBankAcc.value.callModal()
+  if (props.company) refBankAcc.value?.callModal()
+}
+
+const loadEditTransaction = async (id: number) => {
+  await ledgerStore.fetchBankTransaction(id)
+  initializeEditForm()
 }
 
 onBeforeMount(async () => {
   if (isCreateMode.value) {
-    // 신규 모드: 기본 폼으로 초기화
     initializeCreateForm()
   } else if (transId.value) {
-    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
-    await ledgerStore.fetchBankTransaction(transId.value)
-    initializeEditForm()
+    await loadEditTransaction(transId.value)
+  }
+})
+
+watch(transId, async (newId, oldId) => {
+  if (newId === oldId) return
+  if (!newId) {
+    initializeCreateForm()
+  } else {
+    await loadEditTransaction(newId)
   }
 })
 
 // 거래건별 금액 일치 확인 헬퍼 함수
 const isTransactionBalanced = (
-  bankAmount: number | null,
+  bankAmountVal: number | null,
   entries: { amount?: number | null }[],
 ): boolean => {
-  if (!bankAmount) return false
+  if (!bankAmountVal || bankAmountVal <= 0) return false
   const totalEntries = entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
-  return bankAmount === totalEntries
+  return bankAmountVal === totalEntries
 }
 
 // 폼 유효성 검사 상태
 const isFormValid = computed(() => {
+  if (!props.company) return false
+
   if (isCreateMode.value) {
-    // 신규 모드: 모든 거래건 검증
     if (bankTransactions.value.length === 0) return false
 
     return bankTransactions.value.every(trans => {
-      const hasRequiredFields = !!(
+      const hasRequiredFields = Boolean(
         trans.bankForm.deal_date &&
-        trans.bankForm.bank_account &&
-        trans.bankForm.amount
+          trans.bankForm.bank_account &&
+          trans.bankForm.amount &&
+          trans.bankForm.amount > 0 &&
+          trans.bankForm.content?.trim(),
       )
-      const hasValidEntries =
-        trans.entries.length > 0 &&
-        trans.entries.every(e => {
-          const hasAmount = (e.amount || 0) > 0
-          const hasAccount = !!e.account
-          return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
-        }) &&
-        trans.entries.some(e => (e.amount || 0) > 0)
-      const isBalanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
-
-      return hasRequiredFields && hasValidEntries && isBalanced
+      return (
+        hasRequiredFields &&
+        isEntryRowValid(trans.entries) &&
+        isTransactionBalanced(trans.bankForm.amount, trans.entries)
+      )
     })
   } else {
-    // 수정 모드: 기존 단일 거래건 검증
-    const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
-    const hasValidEntries =
-      editableEntries.value.length > 0 &&
-      editableEntries.value.every(e => {
-        const hasAmount = (e.amount || 0) > 0
-        const hasAccount = !!e.account
-        return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
-      }) &&
-      editableEntries.value.some(e => (e.amount || 0) > 0)
-    return hasRequiredFields && hasValidEntries && isBalanced.value
+    const hasRequiredFields = Boolean(
+      bankForm.deal_date &&
+        bankForm.bank_account &&
+        bankForm.amount &&
+        bankForm.amount > 0 &&
+        bankForm.content?.trim(),
+    )
+    return hasRequiredFields && isEntryRowValid(editableEntries.value) && isBalanced.value
   }
 })
 
 // 저장 버튼 비활성화 상태
-const isSaveDisabled = computed(() => {
-  return isSaving.value
-})
+const isSaveDisabled = computed(() => isSaving.value)
 
 // 네비게이션 가드
 const hasUnsavedChanges = computed(() => {
-  if (!isCreateMode.value) return false
-
-  return (
-    hasEnteredTransactions.value ||
-    bankForm.amount !== null ||
-    bankForm.content !== '' ||
-    editableEntries.value.some(e => e.amount)
-  )
+  if (isCreateMode.value) {
+    return (
+      hasEnteredTransactions.value ||
+      bankForm.amount !== null ||
+      bankForm.content !== '' ||
+      editableEntries.value.some(e => e.amount)
+    )
+  }
+  return Boolean(initialEditSnapshot.value && serializeEditState() !== initialEditSnapshot.value)
 })
 
-onBeforeRouteLeave((to, from, next) => {
-  if (hasUnsavedChanges.value) {
-    const answer = window.confirm('저장하지 않은 변경사항이 있습니다. 페이지를 떠나시겠습니까?')
-    next(answer)
-  } else {
-    next()
+const resolveLeaveConfirm = (allowed: boolean) => {
+  if (!pendingLeaveResolve) return
+  const resolve = pendingLeaveResolve
+  pendingLeaveResolve = null
+  resolve(allowed)
+}
+
+const confirmLeaveAction = () => {
+  resolveLeaveConfirm(true)
+  leaveConfirmModal.value?.close()
+}
+
+onBeforeRouteLeave(async () => {
+  if (skipLeaveGuard.value || !hasUnsavedChanges.value) {
+    return true
   }
+  return await new Promise<boolean>(resolve => {
+    pendingLeaveResolve = resolve
+    leaveConfirmModal.value?.callModal()
+  })
 })
 </script>
 
@@ -882,14 +1001,14 @@ onBeforeRouteLeave((to, from, next) => {
         <template v-else>
           {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
           {{ transaction?.content }}
-          <span class="ml-2 text-success strong">분할 중...</span>
+          <span class="ms-2 text-success strong">분할 중...</span>
         </template>
       </CCol>
-      <CCol col="2">
+      <CCol lg="auto">
         <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount, 0, '0') }} </span>
         ∙
         <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount, 0, '0') }}</span> ∙
-        <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
+        <span class="strong me-3" :class="{ 'text-danger': !isBalanced }">
           차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
         </span>
 
@@ -933,17 +1052,17 @@ onBeforeRouteLeave((to, from, next) => {
 
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
-          <CTableHeaderCell class="pl-3" colspan="5">
+          <CTableHeaderCell class="ps-3" colspan="5">
             은행거래내역
             <!-- 신규 모드: 다수 은행거래 + 회계 계정 엑셀 대량 입력 -->
             <template v-if="isCreateMode">
               <span class="text-grey mx-2">|</span>
-              <span class="text-caption mr-1">대량 입력</span>
+              <span class="text-caption me-1">대량 입력</span>
               <v-icon
                 icon="mdi-download"
                 size="16"
                 color="info"
-                class="mr-2 pointer"
+                class="me-2 pointer"
                 @click="handleBulkDownload"
                 v-tooltip="'IBS 표준 대량 입력 템플릿 다운로드'"
               />
@@ -974,15 +1093,15 @@ onBeforeRouteLeave((to, from, next) => {
               <input
                 ref="bulkFileInputRef"
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".xlsx,.csv"
                 style="display: none"
                 @change="handleBulkFileChange"
               />
             </template>
           </CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="canComLedgerEdit ? 4 : 3">
-            <span class="text-grey mr-2">|</span> 분류 내역
-            <span v-if="isCreateMode" class="text-caption text-grey ml-1">
+          <CTableHeaderCell class="ps-0" :colspan="canComLedgerEdit ? 4 : 3">
+            <span class="text-grey me-2">|</span> 분류 내역
+            <span v-if="isCreateMode" class="text-caption text-grey ms-1">
               (거래건별 엑셀 입력은 각 행의 아이콘 사용)
             </span>
           </CTableHeaderCell>
@@ -994,7 +1113,7 @@ onBeforeRouteLeave((to, from, next) => {
                 icon="mdi-download"
                 size="16"
                 color="info"
-                class="mr-2 pointer"
+                class="me-2 pointer"
                 @click="handleDownloadTemplate()"
                 v-tooltip="'회계 계정 정보 템플릿 다운로드'"
               />
@@ -1014,7 +1133,7 @@ onBeforeRouteLeave((to, from, next) => {
             <input
               ref="fileInputRef"
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               style="display: none"
               @change="handleFileChange"
             />
@@ -1034,7 +1153,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">
             계정
-            <a href="#" @click.prevent="refAccountManage.callModal()">
+            <a href="#" @click.prevent="refAccountManage?.callModal()">
               <CIcon name="cilCog" />
             </a>
           </CTableHeaderCell>
@@ -1061,16 +1180,17 @@ onBeforeRouteLeave((to, from, next) => {
             @detect-transfer-withdraw="handleTransferWithdraw"
             @download-template="handleDownloadTemplate(idx)"
             @upload-entries="handleUploadClick(idx)"
+            @alert="(title, msg) => showAlertModal(title, msg)"
           />
 
           <!-- 거래건 추가 버튼 행 -->
-          <CTableRow class="bg-light">
+          <CTableRow :class="bgLight">
             <CTableDataCell colspan="10" class="text-center py-2">
               <v-btn size="small" color="primary" variant="outlined" @click="addBankTransaction">
-                <v-icon icon="mdi-plus" class="mr-1" />
+                <v-icon icon="mdi-plus" class="me-1" />
                 은행거래건 추가
               </v-btn>
-              <small class="text-muted ml-3">
+              <small class="text-muted ms-3">
                 (현재 {{ bankTransactions.length }}건의 거래를 입력 중입니다)
               </small>
             </CTableDataCell>
@@ -1092,7 +1212,11 @@ onBeforeRouteLeave((to, from, next) => {
 
             <!-- 거래계좌 -->
             <CTableDataCell>
-              <CFormSelect v-model="bankForm.bank_account" required>
+              <CFormSelect
+                :model-value="bankForm.bank_account ? String(bankForm.bank_account) : ''"
+                required
+                @update:model-value="val => (bankForm.bank_account = val ? Number(val) : '')"
+              >
                 <option value="">---------</option>
                 <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
                   {{ ba.label }}
@@ -1106,13 +1230,14 @@ onBeforeRouteLeave((to, from, next) => {
             </CTableDataCell>
 
             <!-- 입출금액 -->
-            <CTableDataCell class="text-right">
+            <CTableDataCell class="text-end">
               <div class="d-flex align-items-center justify-content-end">
                 <CFormSelect
-                  v-model.number="bankForm.sort"
+                  :model-value="String(bankForm.sort)"
                   style="width: 70px"
                   required
-                  class="mr-2"
+                  class="me-2"
+                  @update:model-value="val => (bankForm.sort = Number(val) as 1 | 2)"
                 >
                   <option :value="1">입금</option>
                   <option :value="2">출금</option>
@@ -1124,9 +1249,9 @@ onBeforeRouteLeave((to, from, next) => {
                   placeholder="금액"
                   required
                   style="width: 120px"
-                  class="text-right"
+                  class="text-end"
                 />
-                <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
+                <v-btn density="compact" rounded="1" size="22" class="ms-2 pointer" @click="addRow">
                   <v-icon icon="mdi-plus" color="success" />
                 </v-btn>
               </div>
@@ -1137,8 +1262,10 @@ onBeforeRouteLeave((to, from, next) => {
                 :sort="bankForm.sort"
                 :display-rows="displayRows"
                 :trans-amount="bankForm.amount"
+                @update:entries="val => (editableEntries = val)"
                 @remove-entry="removeEntry"
                 @insert-transfer-fee="insertTransferFeeEntry"
+                @alert="(title, msg) => showAlertModal(title, msg)"
               />
             </CTableDataCell>
           </CTableRow>
@@ -1151,8 +1278,8 @@ onBeforeRouteLeave((to, from, next) => {
         <v-btn
           color="warning"
           size="small"
-          @click="confirmModal.callModal()"
-          :disabled="!canComLedgerDelete"
+          :disabled="!canComLedgerRemove"
+          @click="confirmModal?.callModal()"
         >
           삭제
         </v-btn>
@@ -1167,6 +1294,16 @@ onBeforeRouteLeave((to, from, next) => {
     </template>
     <template #footer>
       <v-btn size="small" color="warning" @click="delTransaction">삭제</v-btn>
+    </template>
+  </ConfirmModal>
+
+  <ConfirmModal ref="leaveConfirmModal" @close="resolveLeaveConfirm(false)">
+    <template #header>페이지 이동 확인</template>
+    <template #default>
+      저장하지 않은 변경사항이 있습니다. 페이지를 떠나시겠습니까?
+    </template>
+    <template #footer>
+      <v-btn size="small" color="warning" @click="confirmLeaveAction">나가기</v-btn>
     </template>
   </ConfirmModal>
 

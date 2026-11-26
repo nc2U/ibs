@@ -23,7 +23,10 @@ watch(
 )
 
 watch(date, val => {
-  if (!val) date.value = getToday()
+  if (!val) {
+    date.value = getToday()
+    return
+  }
   setDate()
 })
 const setDate = () => emit('set-date', date.value)

@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms'
-import type { AccountPicker } from '@/store/types/comLedger.ts'
+import type { AccountPicker, EvidenceTypeCode } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
-interface NewEntryForm {
+export interface NewEntryForm {
   pk?: number
   account?: number | null
   trader?: string
   amount?: number
-  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+  evidence_type?: EvidenceTypeCode | ''
   affiliate?: number | null
 }
 
@@ -19,50 +19,71 @@ interface Props {
   transAmount: number | null
 }
 
-const props = defineProps<Props>() // Assign defineProps to a variable
-
-watch(
-  () => props.transAmount,
-  newValue => {
-    if (props.displayRows.length === 1) {
-      props.displayRows[0].amount = newValue || undefined
-    }
-  },
-)
-
-// props.sort 변경을 감지하여 account와 evidence_type을 초기화하는 watch 추가
-watch(
-  () => props.sort,
-  (newValue, oldValue) => {
-    // 실제로 값이 변경되었을 때만 초기화 (초기 로드 시 oldValue는 undefined)
-    if (oldValue !== undefined && newValue !== oldValue) {
-      props.displayRows.forEach(row => {
-        row.account = null // account 초기화
-        row.evidence_type = '' // evidence_type 초기화
-      })
-    }
-  },
-)
+const props = defineProps<Props>()
 
 interface Emits {
   (e: 'removeEntry', index: number): void
-
   (e: 'insertTransferFee', index: number): void
+  (e: 'update:entries', value: NewEntryForm[]): void
+  (e: 'alert', title: string, message: string): void
 }
 
 const emit = defineEmits<Emits>()
 
+const cloneRows = (rows: NewEntryForm[] = props.displayRows) => rows.map(row => ({ ...row }))
+
+const updateRowField = (index: number, patch: Partial<NewEntryForm>) => {
+  const next = cloneRows()
+  next[index] = { ...next[index], ...patch }
+  emit('update:entries', next)
+}
+
+watch(
+  () => props.transAmount,
+  (newValue, oldValue) => {
+    if (
+      oldValue !== undefined &&
+      newValue !== oldValue &&
+      props.displayRows.length === 1
+    ) {
+      const normalized = newValue || undefined
+      if (props.displayRows[0].amount !== normalized) {
+        updateRowField(0, { amount: normalized })
+      }
+    }
+  },
+)
+
+// props.sort 변경을 감지하여 account와 evidence_type을 초기화
+watch(
+  () => props.sort,
+  (newValue, oldValue) => {
+    if (oldValue !== undefined && newValue !== oldValue) {
+      const next = props.displayRows.map(row => ({
+        ...row,
+        account: null,
+        affiliate: null,
+        evidence_type: '' as const,
+      }))
+      emit('update:entries', next)
+    }
+  },
+)
+
 const { canGlobal, PERM } = usePerms()
 const canComLedgerUpdate = computed(
-  () => canGlobal(PERM.HQ_LEDGER_UPDATE) || canGlobal(PERM.HQ_LEDGER_CREATE),
+  () =>
+    canGlobal(PERM.HQ_LEDGER_UPDATE) ||
+    canGlobal(PERM.HQ_LEDGER_CREATE) ||
+    canGlobal(PERM.HQ_LEDGER_MANAGE),
 )
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
-const transferFeePk = inject('transferFeePk')
-
-// Track which row indexes have already inserted transfer fees
-const insertedTransferFees = ref<Set<number>>(new Set())
+const transferFeePk = inject<ComputedRef<number | undefined>>(
+  'transferFeePk',
+  computed(() => undefined),
+)
 
 const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
@@ -80,16 +101,20 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
 watch(
   () => props.displayRows.map(row => row.account),
   (newAccounts, oldAccounts) => {
-    props.displayRows.forEach((row, index) => {
-      // account가 변경된 경우에만 처리
+    let changed = false
+    const next = cloneRows()
+    next.forEach((row, index) => {
       if (newAccounts[index] !== oldAccounts?.[index]) {
         const account = getAccountById(row.account)
-        // account가 없거나 req_affiliate가 false인 경우 affiliate를 null로 초기화
-        if (!account || !account.req_affiliate) {
+        if ((!account || !account.req_affiliate) && row.affiliate !== null) {
           row.affiliate = null
+          changed = true
         }
       }
     })
+    if (changed) {
+      emit('update:entries', next)
+    }
   },
   { deep: true },
 )
@@ -98,27 +123,26 @@ const removeEntry = (index: number) => {
   emit('removeEntry', index)
 }
 
-// Check if transfer fee already inserted for this row
+const isTransferFeeRow = (row: NewEntryForm | undefined): boolean => {
+  if (!row) return false
+  return Boolean(
+    (transferFeePk?.value !== undefined && row.account === transferFeePk.value) ||
+      row.trader?.includes('이체수수료'),
+  )
+}
+
+// Check if transfer fee already exists immediately after this row
 const hasInsertedFee = (index: number): boolean => {
-  return insertedTransferFees.value.has(index)
+  return isTransferFeeRow(props.displayRows[index]) || isTransferFeeRow(props.displayRows[index + 1])
 }
 
 const insertTransferFee = (index: number) => {
-  // Check if already inserted for this row
-  if (hasInsertedFee(index)) {
-    return // Silently ignore (icon should be disabled)
-  }
+  if (hasInsertedFee(index)) return
 
-  const currentRow = props.displayRows[index]
-
-  // Validate transferFeePk exists
-  if (transferFeePk === undefined) {
-    alert('이체수수료 계정이 설정되지 않았습니다. 관리자에게 문의하세요.')
+  if (!transferFeePk || transferFeePk.value === undefined) {
+    emit('alert', '계정 안내', '이체수수료 계정이 설정되지 않았습니다. 관리자에게 문의하세요.')
     return
   }
-
-  // Mark as inserted
-  insertedTransferFees.value.add(index)
 
   emit('insertTransferFee', index)
 }
@@ -126,18 +150,16 @@ const insertTransferFee = (index: number) => {
 // 지출증빙이 필수인지 확인하는 헬퍼 함수
 // 출금(sort===2)이지만 대체(출금) 계정일 경우 지출증빙이 필요하지 않음
 const isEvidenceRequired = (row: NewEntryForm): boolean => {
-  if (props.sort === 1) return false // 입금은 지출증빙 불필요
+  if (props.sort === 1) return false
 
-  // 출금(sort===2)인 경우
   const account = getAccountById(row.account)
-  if (!account) return true // 계정이 선택되지 않았으면 일단 required
+  if (!account) return true
 
-  // 대체(출금) 계정인 경우 지출증빙 불필요
   if (account.category === 'transfer' && account.direction === '출금') {
     return false
   }
 
-  return true // 일반 출금 계정은 지출증빙 필수
+  return true
 }
 </script>
 
@@ -155,15 +177,21 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
         <LedgerAccount
-          v-model="row.account"
+          :model-value="row.account"
           :options="comAccounts ?? []"
           :sort-type="sortType"
           required
+          @update:model-value="val => updateRowField(idx, { account: val })"
         />
         <!-- affiliate 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.req_affiliate" class="pt-0 px-2">
-          <CFormSelect v-model.number="row.affiliate" class="" placeholder="관계회사 선택">
-            <option :value="null">관계회사를 선택하세요</option>
+          <CFormSelect
+            :model-value="row.affiliate ? String(row.affiliate) : ''"
+            required
+            placeholder="관계회사 선택"
+            @update:model-value="val => updateRowField(idx, { affiliate: val ? Number(val) : null })"
+          >
+            <option value="">관계회사를 선택하세요</option>
             <option v-for="aff in affiliates" :value="aff.value" :key="aff.value">
               {{ aff.label }}
             </option>
@@ -171,24 +199,38 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
         </div>
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
+        <CFormInput
+          :model-value="row.trader ?? ''"
+          size="sm"
+          placeholder="거래처"
+          @update:model-value="val => updateRowField(idx, { trader: String(val ?? '') })"
+        />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput
-          v-model.number="row.amount"
+          :model-value="row.amount"
           size="sm"
           type="number"
           min="0"
           placeholder="분류 금액"
+          @update:model-value="
+            val =>
+              updateRowField(idx, {
+                amount: val === '' || val === null ? undefined : Number(val),
+              })
+          "
         />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormSelect
-          v-model="row.evidence_type"
+          :model-value="row.evidence_type ?? ''"
           :disabled="sort === 1"
           :required="isEvidenceRequired(row)"
           size="sm"
           placeholder="지출 증빙"
+          @update:model-value="
+            val => updateRowField(idx, { evidence_type: (val ?? '') as NewEntryForm['evidence_type'] })
+          "
         >
           <option value="">---------</option>
           <option value="0">증빙없음</option>
@@ -200,9 +242,9 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
-      <CTableDataCell v-if="canComLedgerUpdate" class="text-right pr-2">
+      <CTableDataCell v-if="canComLedgerUpdate" class="text-end pe-2">
         <v-icon
-          v-if="sort === 2 && !row.trader?.includes('이체수수료')"
+          v-if="sort === 2 && !isTransferFeeRow(row)"
           icon="mdi-playlist-plus"
           size="small"
           :color="hasInsertedFee(idx) ? 'grey' : 'indigo-lighten-1'"
@@ -214,7 +256,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
         <v-icon
           icon="mdi-close"
           size="small"
-          class="ml-2 pointer"
+          class="ms-2 pointer"
           v-tooltip="'닫기'"
           @click="removeEntry(idx)"
         />

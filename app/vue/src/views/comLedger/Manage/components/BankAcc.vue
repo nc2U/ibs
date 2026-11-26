@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
+import { bgLight } from '@/utils/cssMixins'
 import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -10,7 +11,7 @@ const bankAccAdd = ref(false)
 const ledgerStore = useComLedger()
 const allComBankList = computed(() => ledgerStore.allComBankList)
 
-const callModal = () => comBankAcc.value.callModal()
+const callModal = () => comBankAcc.value?.callModal()
 
 defineExpose({ callModal })
 </script>
@@ -24,7 +25,7 @@ defineExpose({ callModal })
           <CAccordionHeader>
             {{ `${bank.alias_name}  :: ${bank.number}` }}
           </CAccordionHeader>
-          <CAccordionBody class="pl-3">
+          <CAccordionBody class="ps-3">
             <BankAccForm :bank-acc="bank" />
           </CAccordionBody>
         </CAccordionItem>
@@ -32,11 +33,11 @@ defineExpose({ callModal })
 
       <CRow v-show="bankAccAdd">
         <CCol>
-          <h5 class="p-3 bg-light">
-            <v-icon icon="mdi-plus-circle" color="primary" class="mr-1" />
+          <h5 class="p-3" :class="bgLight">
+            <v-icon icon="mdi-plus-circle" color="primary" class="me-1" />
             계좌 추가
           </h5>
-          <BankAccForm />
+          <BankAccForm @created="bankAccAdd = false" />
         </CCol>
       </CRow>
 

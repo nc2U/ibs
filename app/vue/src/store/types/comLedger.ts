@@ -38,6 +38,7 @@ export interface BalanceByAccount {
   date_out: number
   inc_sum: number | null
   out_sum: number | null
+  balance?: number
 }
 
 // 기존 comLedger 타입 (Manage 페이지에서 사용)
@@ -45,7 +46,10 @@ export interface CompanyBank {
   pk?: number
   company?: number
   depart: number | null
+  depart_name?: string
   bankcode: number | null
+  bankcode_name?: string
+  order?: number | null
   alias_name: string
   number: string
   holder: string
@@ -62,6 +66,7 @@ export interface CompanyAccount {
   name: string
   description: string
   parent: number | null
+  parent_name?: string | null
   depth: number
   category: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel'
   category_display: '자산' | '부채' | '자본' | '수익' | '비용' | '대체' | '취소'
@@ -98,6 +103,8 @@ export interface BankTransaction {
   accounting_entries: AccountingEntry[]
 }
 
+export type EvidenceTypeCode = '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+
 export interface AccountingEntry {
   pk: number
   transaction_id: string
@@ -111,8 +118,8 @@ export interface AccountingEntry {
   affiliate: number | null
   affiliate_display: string | null
   amount: number
-  trader: string
-  evidence_type: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
+  trader: string | null
+  evidence_type: EvidenceTypeCode | null
   evidence_type_display:
     | ''
     | '증빙없음'
@@ -122,8 +129,40 @@ export interface AccountingEntry {
     | '현금영수증'
     | '원천징수영수증/지급명세서'
     | '지로용지 및 청구서'
+    | null
   created_at: string
   updated_at: string
+}
+
+export interface CompositeAccountingEntryPayload {
+  pk?: number
+  account: number
+  affiliate?: number | null
+  amount: number
+  trader?: string | null
+  evidence_type?: EvidenceTypeCode | null
+}
+
+export type CompositeAccountingEntryPatchPayload = Partial<CompositeAccountingEntryPayload> & {
+  pk: number
+}
+
+export interface CompositeTransactionPayload {
+  company: number
+  bank_account: number
+  deal_date: string
+  amount: number
+  sort: 1 | 2
+  content: string
+  note?: string
+  accounting_entries?: CompositeAccountingEntryPayload[]
+}
+
+export type CompositeTransactionPatchPayload = Partial<
+  Omit<CompositeTransactionPayload, 'accounting_entries'>
+> & {
+  pk: number
+  accounting_entries?: (CompositeAccountingEntryPatchPayload | CompositeAccountingEntryPayload)[]
 }
 
 // UI 표시용 어댑터 타입 (CashBook 구조 모방)
@@ -146,7 +185,10 @@ export interface ComCalculated {
   pk?: number
   company: number
   calculated: string
-  creator?: { pk: number; username: string }
+  creator?: number | null
+  creator_name?: string
+  created_at?: string
+  updated_at?: string
 }
 
 // 월별 자금 집계

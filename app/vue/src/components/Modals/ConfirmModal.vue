@@ -7,7 +7,7 @@ const props = defineProps({
   checked: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['confirm-func'])
+const emit = defineEmits(['confirm-func', 'close'])
 
 const visible = ref(false)
 const headerMessage = ref('')
@@ -33,7 +33,10 @@ const callModal = (
   submitBtnColor.value = btnColor || 'red-lighten-2'
   visible.value = true
 }
-const close = () => (visible.value = false)
+const close = () => {
+  visible.value = false
+  emit('close')
+}
 defineExpose({ callModal, close })
 </script>
 
@@ -42,8 +45,8 @@ defineExpose({ callModal, close })
     alignment="center"
     :size="size || undefined"
     :visible="visible"
-    @close="() => (visible = false)"
-    @keydown.esc="() => (visible = false)"
+    @close="close"
+    @keydown.esc="close"
   >
     <CModalHeader class="text-body">
       <CModalTitle>
@@ -64,7 +67,7 @@ defineExpose({ callModal, close })
           {{ submitBtnText }}
         </v-btn>
       </slot>
-      <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
+      <v-btn color="light" size="small" @click="close" flat> 닫기</v-btn>
     </CModalFooter>
   </CModal>
 </template>

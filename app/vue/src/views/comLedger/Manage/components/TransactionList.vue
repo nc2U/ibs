@@ -32,7 +32,7 @@ const comCalculated = computed(() => ledgerStore.comLedgerCalculated) // 최종 
 const pageSelect = (page: number) => emit('page-select', page)
 
 const accCallModal = () => {
-  if (props.company) refBankAcc.value.callModal()
+  if (props.company) refBankAcc.value?.callModal()
 }
 </script>
 
@@ -56,9 +56,9 @@ const accCallModal = () => {
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
-        <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="canComLedgerEdit ? 5 : 4">
-          <span class="text-grey mr-2">|</span> 분류 내역
+        <CTableHeaderCell class="ps-3" colspan="6">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="ps-0" :colspan="canComLedgerEdit ? 5 : 4">
+          <span class="text-grey me-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
 
@@ -76,7 +76,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">확인</CTableHeaderCell>
         <CTableHeaderCell class="ps-0" scope="col">
           <span class="text-grey me-2">|</span> 계정
-          <a href="#" class="ms-1" @click.prevent="refAccountManage.callModal()">
+          <a href="#" class="ms-1" @click.prevent="refAccountManage?.callModal()">
             <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
@@ -95,6 +95,11 @@ const accCallModal = () => {
         :calculated="comCalculated?.calculated"
         :is-highlighted="props.highlightId === transaction.pk"
       />
+      <CTableRow v-if="!bankTransactionList.length">
+        <CTableDataCell :colspan="canComLedgerEdit ? 11 : 10" class="text-center text-muted py-5">
+          등록된 거래 내역이 없습니다.
+        </CTableDataCell>
+      </CTableRow>
     </CTableBody>
   </CTable>
 

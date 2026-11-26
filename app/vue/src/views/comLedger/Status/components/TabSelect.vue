@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 
-const tabPanePillsActiveKey = ref(Number(localStorage.getItem('comLedgerStatus')) || 1)
+const storedTab = Number(localStorage.getItem('comLedgerStatus'))
+const tabPanePillsActiveKey = ref([1, 2, 3].includes(storedTab) ? storedTab : 1)
 
 watch(tabPanePillsActiveKey, nVal => localStorage.setItem('comLedgerStatus', String(nVal)))
 

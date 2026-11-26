@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, provide, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, provide, ref, watch } from 'vue'
 import {
   onBeforeRouteLeave,
   type RouteLocationNormalizedLoaded as Loaded,
@@ -48,6 +48,7 @@ const excelUrl = computed(() => {
     from_deal_date: f.from_date || '',
     to_deal_date: f.to_date || '',
     sort: String(f.sort || ''),
+    account_category: f.account_category || '',
     account: String(f.account || ''),
     affiliate: String(f.affiliate || ''),
     bank_account: String(f.bank_account || ''),
@@ -89,14 +90,20 @@ const fetchComLedgerCalc = (com: number) => ledgerStore.fetchComLedgerCalculatio
 
 const pageSelect = (page: number) => listControl.value?.listFiltering(page)
 
-const listFiltering = (payload: Filter) => {
+const listLoadedForCompany = ref<number | null>(null)
+const isListRoute = () => route.name === '본사 거래 내역'
+
+const listFiltering = async (payload: Filter) => {
   // 필터링 시 query string 정리
   clearQueryString()
-  if (company.value) payload.company = company.value
-  if (company.value) fetchBankTransactionList(payload)
+  if (company.value) {
+    payload.company = company.value
+    await fetchBankTransactionList(payload)
+    listLoadedForCompany.value = company.value
+  }
 }
 
-const dataSetup = async (pk: number) => {
+const dataSetup = async (pk: number, withTransactions = isListRoute()) => {
   // 거래 목록 조회 전에 필터의 company 설정
   ledgerStore.bankTransactionFilter.company = pk
   // 서로 독립적인 호출은 병렬로 실행
@@ -106,16 +113,12 @@ const dataSetup = async (pk: number) => {
     fetchComBankAccList(pk),
     fetchAllComBankAccList(pk),
   ])
-  await Promise.all([fetchBankTransactionList({ company: pk }), fetchComLedgerCalc(pk)])
-}
-
-// 다이얼로그 완료 후 목록과 잔액만 재조회
-const refreshList = async () => {
-  if (!company.value) return
-  await Promise.all([
-    fetchBankTransactionList({ ...dataFilter.value, company: company.value }),
-    fetchComLedgerCalc(company.value),
-  ])
+  if (withTransactions) {
+    await Promise.all([fetchBankTransactionList({ company: pk }), fetchComLedgerCalc(pk)])
+    listLoadedForCompany.value = pk
+  } else {
+    await fetchComLedgerCalc(pk)
+  }
 }
 
 const dataReset = () => {
@@ -126,6 +129,7 @@ const dataReset = () => {
   ledgerStore.bankTransactionList = []
   ledgerStore.bankTransactionCount = 0
   ledgerStore.bankTransactionFilter.company = null
+  listLoadedForCompany.value = null
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
@@ -134,7 +138,7 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
     clearQueryString()
   }
   dataReset()
-  if (!!target) {
+  if (target) {
     await dataSetup(target)
   }
 }
@@ -143,7 +147,8 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
 const clearQueryString = () => {
   if (route.query.highlight_id) {
     // highlight_id만 제거하고 나머지 query(company 등)는 보존
-    const { highlight_id: _omit, ...rest } = route.query
+    const rest = { ...route.query }
+    delete rest.highlight_id
     router
       .replace({
         name: route.name,
@@ -182,6 +187,7 @@ const loadHighlightPage = async () => {
         ...dataFilter.value,
         company: company.value,
       })
+      listLoadedForCompany.value = company.value
     } catch (error) {
       console.error('Error finding highlight page:', error)
     }
@@ -191,26 +197,23 @@ const loadHighlightPage = async () => {
 const loading = ref(true)
 onBeforeMount(async () => {
   try {
-    // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
-    let companyId = company.value || comStore.initComId
-    if (urlCompanyId.value && urlCompanyId.value !== companyId) {
-      // 회사 전환 (query string 정리 건너뛰기)
-      await comSelect(urlCompanyId.value, true)
-      companyId = urlCompanyId.value
+    const targetCompanyId = urlCompanyId.value || company.value || comStore.initComId
+    if (urlCompanyId.value && urlCompanyId.value !== company.value) {
+      dataReset()
     }
 
     await Promise.all([fetchBankCodeList(), fetchAffiliateList(), fetchCompanyAccounts()])
 
-    if (companyId) {
-      // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-      if (highlightId.value) {
-        // company가 아직 로드되지 않았다면 먼저 기본 데이터 로딩
-        if (!company.value) await dataSetup(companyId)
+    if (targetCompanyId) {
+      if (highlightId.value && isListRoute()) {
+        await dataSetup(targetCompanyId, false)
         await loadHighlightPage()
       } else {
-        await dataSetup(companyId)
+        await dataSetup(targetCompanyId)
       }
-      await scrollToHighlight()
+      if (isListRoute()) {
+        await scrollToHighlight()
+      }
     }
   } catch (err) {
     console.error('Error loading page:', err)
@@ -219,6 +222,21 @@ onBeforeMount(async () => {
     loading.value = false
   }
 })
+
+watch(
+  () => route.name,
+  async (newName, oldName) => {
+    if (newName === '본사 거래 내역' && oldName && oldName !== '본사 거래 내역' && company.value) {
+      if (highlightId.value) {
+        await loadHighlightPage()
+        await scrollToHighlight()
+      } else if (listLoadedForCompany.value !== company.value) {
+        await fetchBankTransactionList({ ...dataFilter.value, company: company.value })
+        listLoadedForCompany.value = company.value
+      }
+    }
+  },
+)
 
 // 다른 라우트로 이동 시 query string 정리
 onBeforeRouteLeave(() => {

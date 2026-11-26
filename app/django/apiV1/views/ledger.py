@@ -540,6 +540,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         return {
             'list': 'hq.ledger.read',
             'retrieve': 'hq.ledger.read',
+            'find_page': 'hq.ledger.read',
             'create': 'hq.ledger.create',
             'update': 'hq.ledger.update',
             'partial_update': 'hq.ledger.update',
@@ -557,7 +558,7 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         if not user.is_superuser:
             qs = qs.filter(company_id__in=get_accessible_company_ids(user))
 
-        if self.action == 'list':
+        if self.action in ('list', 'find_page'):
             return get_company_transactions(self.request.query_params, base_qs=qs)
         return qs
 
@@ -607,6 +608,44 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 거래 ID(highlight_id)가 현재 필터 조건에서 몇 번째 페이지에 있는지 계산"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response(
+                {'error': 'highlight_id parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response(
+                {'error': 'highlight_id must be integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        page_size = request.query_params.get('limit', '15')
+        try:
+            page_size = int(page_size) if page_size else 15
+            if page_size <= 0:
+                page_size = 15
+        except ValueError:
+            page_size = 15
+
+        queryset = self.filter_queryset(self.get_queryset())
+        target = queryset.filter(pk=highlight_id).values('pk', 'deal_date', 'created_at').first()
+        if not target:
+            return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        items_before = queryset.filter(
+            Q(deal_date__gt=target['deal_date']) |
+            Q(deal_date=target['deal_date'], created_at__gt=target['created_at'])
+        ).count()
+
+        return Response({'page': (items_before // page_size) + 1})
 
     @action(detail=True, methods=['get'])
     def validate_balance(self, request, pk=None):
@@ -821,6 +860,44 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def find_page(self, request):
+        """특정 거래 ID(highlight_id)가 현재 필터 조건에서 몇 번째 페이지에 있는지 계산"""
+        highlight_id = request.query_params.get('highlight_id')
+        if not highlight_id:
+            return Response(
+                {'error': 'highlight_id parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            return Response(
+                {'error': 'highlight_id must be integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        page_size = request.query_params.get('limit', '15')
+        try:
+            page_size = int(page_size) if page_size else 15
+            if page_size <= 0:
+                page_size = 15
+        except ValueError:
+            page_size = 15
+
+        queryset = self.filter_queryset(self.get_queryset())
+        target = queryset.filter(pk=highlight_id).values('pk', 'deal_date', 'created_at').first()
+        if not target:
+            return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        items_before = queryset.filter(
+            Q(deal_date__gt=target['deal_date']) |
+            Q(deal_date=target['deal_date'], created_at__gt=target['created_at'])
+        ).count()
+
+        return Response({'page': (items_before // page_size) + 1})
 
     @action(detail=True, methods=['get'])
     def validate_balance(self, request, pk=None):

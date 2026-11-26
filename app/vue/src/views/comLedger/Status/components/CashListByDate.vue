@@ -75,9 +75,14 @@ const getEntryCountSuffix = (tx: BankTransaction) =>
             {{ numFormat(inc.amount) }}
           </CTableDataCell>
           <CTableDataCell class="text-start">
-            {{ getFirstEntry(inc)?.account_name ?? '' }}{{ getEntryCountSuffix(inc) }}
+            <template v-if="getFirstEntry(inc)">
+              {{ getFirstEntry(inc)?.account_name ?? '' }}{{ getEntryCountSuffix(inc) }}
+            </template>
+            <span v-else class="text-muted">(미분류)</span>
           </CTableDataCell>
-          <CTableDataCell class="text-start">{{ getFirstEntry(inc)?.trader ?? '' }}</CTableDataCell>
+          <CTableDataCell class="text-start">
+            {{ getFirstEntry(inc)?.trader ?? '' }}{{ getEntryCountSuffix(inc) }}
+          </CTableDataCell>
         </CTableRow>
       </template>
       <CTableRow v-else>
@@ -133,9 +138,14 @@ const getEntryCountSuffix = (tx: BankTransaction) =>
             {{ numFormat(out.amount) }}
           </CTableDataCell>
           <CTableDataCell class="text-start">
-            {{ getFirstEntry(out)?.account_name ?? '' }}{{ getEntryCountSuffix(out) }}
+            <template v-if="getFirstEntry(out)">
+              {{ getFirstEntry(out)?.account_name ?? '' }}{{ getEntryCountSuffix(out) }}
+            </template>
+            <span v-else class="text-muted">(미분류)</span>
           </CTableDataCell>
-          <CTableDataCell class="text-start">{{ getFirstEntry(out)?.trader ?? '' }}</CTableDataCell>
+          <CTableDataCell class="text-start">
+            {{ getFirstEntry(out)?.trader ?? '' }}{{ getEntryCountSuffix(out) }}
+          </CTableDataCell>
         </CTableRow>
       </template>
       <CTableRow v-else>

@@ -247,7 +247,7 @@ const delta = (a: PeriodAmounts) => a.cur - a.prev
                   class="share-fill"
                   :class="isIncome ? 'bg-primary' : 'bg-danger'"
                   :style="{
-                    width: `${Math.min(100, (item.row.cur / grandTotal.cur) * 100)}%`,
+                    width: `${Math.max(0, Math.min(100, (item.row.cur / grandTotal.cur) * 100))}%`,
                   }"
                 />
               </div>
@@ -294,7 +294,9 @@ const delta = (a: PeriodAmounts) => a.cur - a.prev
           formatSigned(delta(grandTotal))
         }}</CTableHeaderCell>
         <CTableHeaderCell class="tabular-nums">{{ numFormat(grandTotal.ytd) }}</CTableHeaderCell>
-        <CTableHeaderCell class="text-center tabular-nums">100%</CTableHeaderCell>
+        <CTableHeaderCell class="text-center tabular-nums">
+          {{ grandTotal.cur ? '100%' : '-' }}
+        </CTableHeaderCell>
       </CTableRow>
     </CTableBody>
   </CTable>
