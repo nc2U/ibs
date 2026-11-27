@@ -1443,22 +1443,162 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
     @property
     def required_permission(self):
         return {
-            'create': 'ledger.create',
-            'update': 'ledger.update',
-            'partial_update': 'ledger.update',
-            'destroy': 'ledger.delete',
-        }.get(self.action, 'ledger.read')
+            'create': ('ledger.create', 'payment.create'),
+            'update': ('ledger.update', 'payment.update'),
+            'partial_update': ('ledger.update', 'payment.update'),
+            'destroy': ('ledger.delete', 'payment.delete'),
+        }.get(self.action, ('ledger.read', 'payment.read'))
+
+    @staticmethod
+    def _has_project_perm(request, project_id, perm_code: str) -> bool:
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+        issue_project = IbsModulePermission._resolve_project_issue_project(project_id, request)
+        if not issue_project:
+            return False
+        return perm_code in set(issue_project.get_user_permissions(user))
+
+    @staticmethod
+    def _to_int(val):
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return None
+
+    def _check_payment_scoped_write(self, request, action_name, project_id, data=None, bank_transaction=None, partial=False):
+        """
+        ledger.<action> 권한 없이 payment.<action> 권한만으로 복합거래 API를 호출하는 경우,
+        입금(sort=1) 및 수납계정(is_payment=True) 분개 범위로 엄격히 제한합니다.
+        """
+        if self._has_project_perm(request, project_id, f'ledger.{action_name}'):
+            return None
+
+        if not self._has_project_perm(request, project_id, f'payment.{action_name}'):
+            return Response({'detail': '이 작업을 수행할 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if action_name == 'create':
+            data = data or {}
+            if 'sort' in data and self._to_int(data.get('sort')) != 1:
+                return Response(
+                    {'detail': '일반 입출금 거래 등록은 원장 등록 권한(ledger.create)이 필요합니다.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            entries_data = data.get('accounting_entries')
+            if isinstance(entries_data, list):
+                if len(entries_data) == 0:
+                    return Response(
+                        {'detail': '수납 분개 항목이 없는 은행 거래 등록은 원장 등록 권한(ledger.create)이 필요합니다.'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                acc_ids = [self._to_int(e.get('account')) for e in entries_data if isinstance(e, dict) and e.get('account') is not None]
+                non_payment_exists = ProjectAccount.objects.filter(pk__in=[a for a in acc_ids if a is not None], is_payment=False).exists()
+                if non_payment_exists:
+                    return Response(
+                        {'detail': '비수납 계정 분개 등록은 원장 등록 권한(ledger.create)이 필요합니다.'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            return None
+
+        if action_name == 'update':
+            data = data or {}
+            if bank_transaction.sort_id != 1 or ('sort' in data and self._to_int(data.get('sort')) != 1):
+                return Response(
+                    {'detail': '수납(입금) 이외의 거래 수정은 원장 수정 권한(ledger.update)이 필요합니다.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            existing_entries = {
+                e.pk: e for e in ProjectAccountingEntry.objects.filter(
+                    transaction_id=bank_transaction.transaction_id
+                ).select_related('account')
+            }
+            non_payment_entries = {
+                pk: e for pk, e in existing_entries.items()
+                if not (e.account and e.account.is_payment)
+            }
+
+            entries_data = data.get('accounting_entries')
+            if isinstance(entries_data, list):
+                if not partial and non_payment_entries:
+                    incoming_pks = {
+                        self._to_int(e.get('pk')) for e in entries_data
+                        if isinstance(e, dict) and e.get('pk') is not None
+                    }
+                    if not set(non_payment_entries.keys()).issubset(incoming_pks):
+                        return Response(
+                            {'detail': '비수납 분개 삭제는 원장 수정 권한(ledger.update)이 필요합니다.'},
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
+
+                incoming_acc_ids = set()
+                for entry_data in entries_data:
+                    if not isinstance(entry_data, dict):
+                        continue
+                    entry_pk = self._to_int(entry_data.get('pk')) if entry_data.get('pk') is not None else None
+                    if entry_pk and entry_pk in non_payment_entries:
+                        existing = non_payment_entries[entry_pk]
+                        if (
+                            ('account' in entry_data and self._to_int(entry_data.get('account')) != existing.account_id)
+                            or ('amount' in entry_data and self._to_int(entry_data.get('amount')) != existing.amount)
+                            or ('trader' in entry_data and (entry_data.get('trader') or '') != (existing.trader or ''))
+                            or ('evidence_type' in entry_data and entry_data.get('evidence_type') != existing.evidence_type)
+                            or ('contract' in entry_data and entry_data.get('contract') != existing.contract_id)
+                            or ('contractor' in entry_data and entry_data.get('contractor') != existing.contractor_id)
+                        ):
+                            return Response(
+                                {'detail': '비수납 분개 변경은 원장 수정 권한(ledger.update)이 필요합니다.'},
+                                status=status.HTTP_403_FORBIDDEN,
+                            )
+                    elif 'account' in entry_data:
+                        if entry_data.get('account') is None:
+                            return Response(
+                                {'detail': '비수납 분개 변경은 원장 수정 권한(ledger.update)이 필요합니다.'},
+                                status=status.HTTP_403_FORBIDDEN,
+                            )
+                        acc_id = self._to_int(entry_data.get('account'))
+                        if acc_id is not None:
+                            incoming_acc_ids.add(acc_id)
+
+                if incoming_acc_ids and ProjectAccount.objects.filter(pk__in=incoming_acc_ids, is_payment=False).exists():
+                    return Response(
+                        {'detail': '비수납 계정 분개 수정은 원장 수정 권한(ledger.update)이 필요합니다.'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            return None
+
+        if action_name == 'delete':
+            has_non_payment = ProjectAccountingEntry.objects.filter(
+                transaction_id=bank_transaction.transaction_id
+            ).exclude(account__is_payment=True).exists()
+            if bank_transaction.sort_id != 1 or has_non_payment:
+                return Response(
+                    {'detail': '일반 회계 분개가 포함된 거래 삭제는 원장 삭제 권한(ledger.delete)이 필요합니다.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            return None
+
+        return None
 
     def create(self, request):
         """프로젝트 거래 생성 (은행거래 + 회계분개 + 계약결제)"""
         project_id = request.data.get('project')
-        if project_id and not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+        if project_id:
             try:
                 p_id = int(project_id)
-                if p_id not in get_accessible_project_ids(request.user):
-                    return Response({'detail': '해당 프로젝트에 대한 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
             except (ValueError, TypeError):
                 return Response({'detail': '유효하지 않은 프로젝트 식별자입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+                allowed_ids = set(get_accessible_project_ids(request.user, 'ledger.create')) | set(
+                    get_accessible_project_ids(request.user, 'payment.create')
+                )
+                if p_id not in allowed_ids:
+                    return Response({'detail': '해당 프로젝트에 대한 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+            perm_error = self._check_payment_scoped_write(request, 'create', p_id, data=request.data)
+            if perm_error:
+                return perm_error
 
         serializer = ProjectCompositeTransactionSerializer(
             data=request.data,
@@ -1485,13 +1625,21 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
         """프로젝트 거래 수정 (은행거래 + 회계분개 + 계약결제)"""
         qs = ProjectBankTransaction.objects.all()
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
+            allowed_ids = set(get_accessible_project_ids(request.user, 'ledger.update')) | set(
+                get_accessible_project_ids(request.user, 'payment.update')
+            )
+            qs = qs.filter(project_id__in=allowed_ids)
         try:
             bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
+        perm_error = self._check_payment_scoped_write(
+            request, 'update', bank_transaction.project_id, data=request.data, bank_transaction=bank_transaction, partial=False
+        )
+        if perm_error:
+            return perm_error
 
         serializer = ProjectCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -1519,13 +1667,21 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
         """프로젝트 거래 부분 수정 (은행거래 + 회계분개 + 계약결제)"""
         qs = ProjectBankTransaction.objects.all()
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
+            allowed_ids = set(get_accessible_project_ids(request.user, 'ledger.update')) | set(
+                get_accessible_project_ids(request.user, 'payment.update')
+            )
+            qs = qs.filter(project_id__in=allowed_ids)
         try:
             bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
+        perm_error = self._check_payment_scoped_write(
+            request, 'update', bank_transaction.project_id, data=request.data, bank_transaction=bank_transaction, partial=True
+        )
+        if perm_error:
+            return perm_error
 
         serializer = ProjectCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -1554,13 +1710,21 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
         """프로젝트 거래 삭제 (은행거래 + 회계분개 + 계약결제 일괄 삭제)"""
         qs = ProjectBankTransaction.objects.all()
         if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
+            allowed_ids = set(get_accessible_project_ids(request.user, 'ledger.delete')) | set(
+                get_accessible_project_ids(request.user, 'payment.delete')
+            )
+            qs = qs.filter(project_id__in=allowed_ids)
         try:
             bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         self.check_object_permissions(request, bank_transaction)
+        perm_error = self._check_payment_scoped_write(
+            request, 'delete', bank_transaction.project_id, bank_transaction=bank_transaction
+        )
+        if perm_error:
+            return perm_error
 
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id

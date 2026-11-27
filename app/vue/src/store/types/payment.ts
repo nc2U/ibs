@@ -178,24 +178,40 @@ export interface ContractInPayment {
 interface BasePayment {
   pk: number
   deal_date: string
-  contract: ContractInPayment
+  contract: ContractInPayment | null
   installment_order: {
     pk: number
     pay_sort: string
     pay_name: string
     pay_time: number
     str_display: string
-  }
+  } | null
   bank_account: {
     pk: number
     alias_name: string
-  }
+  } | null
   trader: string
-  note: string
+  note: string | null
 }
 
 export interface AllPayment extends BasePayment {
   income: number
+}
+
+export interface SiblingEntry {
+  pk: number // AccountingEntry PK
+  amount: number
+  trader: string | null
+  contract: number | null
+  account: {
+    pk: number | null
+    name: string | null
+    is_payment: boolean
+  }
+  is_contract_payment: boolean
+  contract_payment_pk: number | null
+  installment_order: number | null
+  installment_order_display: string | null
 }
 
 export interface OriginPayment extends BasePayment {
@@ -213,24 +229,15 @@ export interface OriginPayment extends BasePayment {
       amount: number
       content: string
       note: string
-    }
+    } | null
   }
   is_payment_mismatch: boolean
   created_at: string
   updated_at: string
-  creator: number
+  creator: number | null
   // 폼 수정용 추가 필드
-  bank_transaction_amount?: number // 실제 은행 거래 금액 (분할 납부 시 총액)
-  sibling_entries?: Array<{
-    // 같은 은행 거래에 속한 형제 분개들
-    pk: number // AccountingEntry PK
-    contract_payment_pk: number
-    amount: number
-    trader: string
-    contract: number | null
-    installment_order: number | null
-    installment_order_display: string | null
-  }>
+  bank_transaction_amount?: number | null // 실제 은행 거래 금액 (분할 납부 시 총액)
+  sibling_entries?: SiblingEntry[] // 같은 은행 거래에 속한 형제 분개들
 }
 
 export interface PaymentList {
@@ -368,6 +375,12 @@ export interface ContractPaymentPayload {
 
   // Accounting Entries (배열)
   accounting_entries: PaymentAccEntryInput[]
+}
+
+export interface ContractPaymentPatchPayload extends Partial<
+  Omit<ContractPaymentPayload, 'accounting_entries'>
+> {
+  accounting_entries?: Array<Partial<PaymentAccEntryInput> & { pk?: number | null }>
 }
 
 /**

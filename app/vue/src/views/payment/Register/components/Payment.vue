@@ -5,7 +5,7 @@ import { numFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import type { Contract } from '@/store/types/contract.ts'
-import type { OriginPayment } from '@/store/types/payment.ts'
+import type { ContractPaymentPayload, OriginPayment } from '@/store/types/payment.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import PaymentForm from './PaymentForm.vue'
 
@@ -22,8 +22,13 @@ const props = withDefaults(
   },
 )
 const emit = defineEmits<{
-  (e: 'on-update', bankTransactionId: number, payload: any): void
-  (e: 'on-delete', bankTransactionId: number): void
+  (
+    e: 'on-update',
+    bankTransactionId: number,
+    payload: ContractPaymentPayload,
+    done?: (ok: boolean) => void,
+  ): void
+  (e: 'on-delete', bankTransactionId: number, done?: (ok: boolean) => void): void
 }>()
 
 const { can, PERM } = usePerms()
@@ -32,7 +37,7 @@ const canPaymentUpdate = computed(() => can(PERM.PAYMENT_UPDATE))
 const updateFormModal = ref()
 
 onMounted(() => {
-  if (props.paymentId === props.payment?.pk.toString()) {
+  if (props.paymentId && props.paymentId === props.payment?.pk.toString()) {
     showDetail()
   }
 })
@@ -46,13 +51,22 @@ const showDetail = () => {
   updateFormModal.value.callModal()
 }
 
-const updateObject = (bankTransactionId: number, payload: any) => {
-  emit('on-update', bankTransactionId, payload)
-  updateFormModal.value.close()
+const updateObject = (
+  bankTransactionId: number,
+  payload: ContractPaymentPayload,
+  done?: (ok: boolean) => void,
+) => {
+  emit('on-update', bankTransactionId, payload, (ok: boolean) => {
+    done?.(ok)
+    if (ok) updateFormModal.value?.close()
+  })
 }
 
-const deleteObject = (bankTransactionId: number) => {
-  emit('on-delete', bankTransactionId)
+const deleteObject = (bankTransactionId: number, done?: (ok: boolean) => void) => {
+  emit('on-delete', bankTransactionId, (ok: boolean) => {
+    done?.(ok)
+    if (ok) updateFormModal.value?.close()
+  })
 }
 </script>
 
@@ -60,26 +74,21 @@ const deleteObject = (bankTransactionId: number) => {
   <CTableRow
     v-if="payment"
     class="text-center"
-    :color="payment.pk.toString() === paymentId ? TableSecondary : ''"
+    :color="payment.pk.toString() === paymentId ? TableSecondary : undefined"
   >
     <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
     <CTableDataCell>
       {{ payment.installment_order ? payment.installment_order.str_display : '-' }}
     </CTableDataCell>
     <CTableDataCell class="text-end">
-      <a
-        v-if="canPaymentUpdate"
-        href="#"
-        class="text-decoration-none"
-        @click.prevent="showDetail"
-      >
+      <a v-if="canPaymentUpdate" href="#" class="text-decoration-none" @click.prevent="showDetail">
         {{ numFormat(payment.amount || 0) }}
       </a>
       <span v-else>
         {{ numFormat(payment.amount || 0) }}
       </span>
     </CTableDataCell>
-    <CTableDataCell>{{ payment.bank_account.alias_name }}</CTableDataCell>
+    <CTableDataCell>{{ payment.bank_account?.alias_name ?? '-' }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
     <CTableDataCell v-if="canPaymentUpdate">
       <v-btn type="button" color="info" variant="flat" size="x-small" @click="showDetail">

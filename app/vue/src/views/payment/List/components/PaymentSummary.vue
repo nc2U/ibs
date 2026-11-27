@@ -36,13 +36,13 @@ const getTotalPaid = computed(() =>
     </CTableHead>
 
     <CTableBody v-if="project">
-      <CTableRow v-for="item in paymentSummaryList" :key="item.unit_type_id" class="text-right">
-        <CTableHeaderCell class="text-left pl-5">
+      <CTableRow v-for="item in paymentSummaryList" :key="item.unit_type_id" class="text-end">
+        <CTableHeaderCell class="text-start ps-5">
           <CIcon
             name="cib-node-js"
             :style="{ color: item.unit_type_color }"
             size="sm"
-            class="mr-1"
+            class="me-1"
           />
           {{ item.unit_type_name }}
         </CTableHeaderCell>
@@ -63,7 +63,7 @@ const getTotalPaid = computed(() =>
         </CTableDataCell>
       </CTableRow>
 
-      <CTableRow class="text-right" color="light">
+      <CTableRow class="text-end" color="light">
         <CTableHeaderCell class="text-center">합 계</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(getTotalBudget) }}</CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(getTotalCont) }}</CTableHeaderCell>

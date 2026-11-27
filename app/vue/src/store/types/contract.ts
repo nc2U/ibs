@@ -36,6 +36,7 @@ export interface OrderGroup {
 
 export interface UnitType {
   pk: number
+  sort?: '1' | '2' | '3' | '4' | '5' | '6'
   name: string
   color: string
   average_price: number

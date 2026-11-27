@@ -1058,4 +1058,180 @@ class PaymentAuditFixRegressionTests(PaymentTestCaseBase):
         remain_order = next(o for o in res_overall.data['pay_orders'] if o['pk'] == self.pay_order_remain.pk)
         self.assertEqual(remain_order['contract_amount'], 2970000000)
 
+    def test_payment_only_user_composite_transaction_permissions(self):
+        """ledger.* 권한 없이 payment.* 권한만 가진 사용자는 입금/수납분개 범위에서만 복합거래 CRUD 가능"""
+        sort_deposit, _ = AccountSort.objects.get_or_create(pk=1, defaults={'name': '입금'})
+        non_payment_account = ProjectAccount.objects.create(
+            name='일반기타수입',
+            code='4900',
+            category='revenue',
+            is_payment=False,
+        )
+        self.client.force_authenticate(user=self.user_a)
+        base_url = '/api/v1/ledger/project-composite-transaction/'
+
+        # 1. 수납(is_payment=True, sort=1) 복합거래 생성 허용
+        create_res = self.client.post(
+            base_url,
+            {
+                'project': self.project.pk,
+                'bank_account': self.project_bank_account.pk,
+                'deal_date': '2026-02-01',
+                'amount': 10000000,
+                'sort': sort_deposit.pk,
+                'content': '홍길동[CONT-2026-0001] 대금납부',
+                'accounting_entries': [
+                    {
+                        'account': self.project_account_payment.pk,
+                        'amount': 10000000,
+                        'trader': '홍길동',
+                        'contract': self.contract.pk,
+                        'installment_order': self.pay_order_down.pk,
+                    }
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED, create_res.data)
+        tx_pk = create_res.data['bank_transaction']['pk']
+        entry_pk = create_res.data['accounting_entries'][0]['pk']
+
+        # 2. 수납 분개 PATCH / PUT 허용
+        patch_res = self.client.patch(
+            f'{base_url}{tx_pk}/',
+            {
+                'accounting_entries': [
+                    {'pk': entry_pk, 'installment_order': self.pay_order_remain.pk}
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+
+        # 3. 일반 비수납 계정 거래 생성 시도 -> 403 차단
+        non_pay_res = self.client.post(
+            base_url,
+            {
+                'project': self.project.pk,
+                'bank_account': self.project_bank_account.pk,
+                'deal_date': '2026-02-01',
+                'amount': 500000,
+                'sort': sort_deposit.pk,
+                'content': '비수납 입금',
+                'accounting_entries': [
+                    {'account': non_payment_account.pk, 'amount': 500000, 'trader': '기타'}
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(non_pay_res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 4. 수납 전용 거래 삭제 허용
+        del_res = self.client.delete(f'{base_url}{tx_pk}/')
+        self.assertEqual(del_res.status_code, status.HTTP_204_NO_CONTENT)
+
+        # 5. 비수납 형제 분개가 섞인 거래는 readonly 유지 PUT만 허용하고 비수납 삭제/거래 삭제는 403 차단
+        mixed_tx = ProjectBankTransaction.objects.create(
+            project=self.project,
+            bank_account=self.project_bank_account,
+            deal_date=date(2026, 2, 5),
+            sort=sort_deposit,
+            amount=15000000,
+            content='복합 입금',
+            creator=self.user,
+        )
+        pay_entry = ProjectAccountingEntry.objects.create(
+            project=self.project,
+            transaction_id=mixed_tx.transaction_id,
+            account=self.project_account_payment,
+            contract=self.contract,
+            amount=10000000,
+            trader='홍길동',
+        )
+        non_pay_entry = ProjectAccountingEntry.objects.create(
+            project=self.project,
+            transaction_id=mixed_tx.transaction_id,
+            account=non_payment_account,
+            amount=5000000,
+            trader='기타',
+        )
+
+        # readonlyEntries 유지 PUT -> 200 OK
+        mixed_put_ok = self.client.put(
+            f'{base_url}{mixed_tx.pk}/',
+            {
+                'project': self.project.pk,
+                'bank_account': self.project_bank_account.pk,
+                'deal_date': '2026-02-05',
+                'amount': 15000000,
+                'sort': 1,
+                'content': '복합 입금',
+                'accounting_entries': [
+                    {
+                        'pk': pay_entry.pk,
+                        'account': self.project_account_payment.pk,
+                        'amount': 10000000,
+                        'trader': '홍길동',
+                        'contract': self.contract.pk,
+                        'installment_order': self.pay_order_down.pk,
+                    },
+                    {
+                        'pk': non_pay_entry.pk,
+                        'account': non_payment_account.pk,
+                        'amount': 5000000,
+                        'trader': '기타',
+                    },
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(mixed_put_ok.status_code, status.HTTP_200_OK)
+
+        # 비수납 형제 분개 변조 PUT -> 403 차단
+        mixed_put_forbidden = self.client.put(
+            f'{base_url}{mixed_tx.pk}/',
+            {
+                'project': self.project.pk,
+                'bank_account': self.project_bank_account.pk,
+                'deal_date': '2026-02-05',
+                'amount': 15000000,
+                'sort': 1,
+                'content': '복합 입금',
+                'accounting_entries': [
+                    {
+                        'pk': pay_entry.pk,
+                        'account': self.project_account_payment.pk,
+                        'amount': 10000000,
+                        'trader': '홍길동',
+                        'contract': self.contract.pk,
+                        'installment_order': self.pay_order_down.pk,
+                    },
+                    {
+                        'pk': non_pay_entry.pk,
+                        'account': non_payment_account.pk,
+                        'amount': 5000000,
+                        'trader': '변조시도',
+                    },
+                ],
+            },
+            format='json',
+        )
+        self.assertEqual(mixed_put_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 비수납 형제 분개 포함 거래 삭제 시도 -> 403 차단
+        mixed_del = self.client.delete(f'{base_url}{mixed_tx.pk}/')
+        self.assertEqual(mixed_del.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_excel_paid_by_cont_accepts_date_and_to_date(self):
+        """ExportLedgerPaymentsByCont가 to_date/date 및 빈 문자열 파라미터를 정상 처리"""
+        self.client.force_login(self.user)
+        url_by_cont = reverse('excel:ledger-paid-by-cont')
+        for params in (
+            {'project': self.project.pk, 'to_date': '2026-01-31'},
+            {'project': self.project.pk, 'date': '2026-01-31'},
+            {'project': self.project.pk, 'date': ''},
+        ):
+            res = self.client.get(url_by_cont, params)
+            self.assertEqual(res.status_code, 200)
+
 

@@ -18,11 +18,20 @@ const payStore = usePayment()
 const payOrderList = computed<QSPO[]>(() => payStore.ledgerOverallSummary?.pay_orders || [])
 const contAggregate = computed(() => payStore.ledgerOverallSummary?.aggregate)
 
-const total_cont_amount = computed(() =>
-  payOrderList.value.reduce((acc, order) => acc + order.contract_amount, 0),
-)
+// 동일 pay_time 중복 합산 방지 (백엔드 ContractPaymentOverallSummaryViewSet 기준과 동일)
+const sumUniqueByPayTime = (selector: (order: QSPO) => number) => {
+  const seenPayTimes = new Set<number | string>()
+  return payOrderList.value.reduce((acc, order) => {
+    const key = order.pay_time ?? `pk-${order.pk ?? ''}`
+    if (seenPayTimes.has(key)) return acc
+    seenPayTimes.add(key)
+    return acc + selector(order)
+  }, 0)
+}
+
+const total_cont_amount = computed(() => sumUniqueByPayTime(order => order.contract_amount ?? 0))
 const total_non_cont_amount = computed(() =>
-  payOrderList.value.reduce((acc, order) => acc + order.non_contract_amount, 0),
+  sumUniqueByPayTime(order => order.non_contract_amount ?? 0),
 )
 const total_collected_amount = computed(() =>
   payOrderList.value.reduce((acc, order) => acc + order.collection.collected_amount, 0),

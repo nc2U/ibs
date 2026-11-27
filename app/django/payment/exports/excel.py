@@ -37,8 +37,8 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             if project.pk not in accessible_projects:
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
-        sd = request.GET.get('sd', '1900-01-01')
-        ed = request.GET.get('ed', get_today_str())
+        sd = request.GET.get('sd') or '1900-01-01'
+        ed = request.GET.get('ed') or get_today_str()
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('수납건별_납부내역')
@@ -237,7 +237,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             if project.pk not in accessible_projects:
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
-        date = request.GET.get('to_date', get_today_str())
+        date = request.GET.get('to_date') or request.GET.get('date') or get_today_str()
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('계약자별_납부내역', in_memory=False)
@@ -604,7 +604,7 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
             if project.pk not in accessible_projects:
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
-        date = request.GET.get('date', get_today_str())
+        date = request.GET.get('date') or get_today_str()
 
         # Create a workbook with performance optimization
         output, workbook, worksheet = self.create_workbook('차수_타입별_수납집계', in_memory=False)
@@ -891,7 +891,7 @@ class ExportLedgerOverallSummary(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             if project.pk not in accessible_projects:
                 return HttpResponse('해당 프로젝트에 대한 열람 권한이 없습니다.', status=403, content_type='text/plain; charset=utf-8')
 
-        date = request.GET.get('date', get_today_str())
+        date = request.GET.get('date') or get_today_str()
 
         # ----------------- get_data_using_api start ----------------- #
         # ContractPaymentOverallSummaryViewSet 사용 (Ledger 기반)

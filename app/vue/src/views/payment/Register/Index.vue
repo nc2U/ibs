@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin.ts'
 import { downloadFile } from '@/utils/helper.ts'
 import { useProject } from '@/store/pinia/project.ts'
@@ -10,10 +10,14 @@ import { useContract } from '@/store/pinia/contract.ts'
 import { dateFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import type { Project } from '@/store/types/project.ts'
-import type { ContFilter, Contract } from '@/store/types/contract.ts'
+import type { Contract } from '@/store/types/contract.ts'
 import type { ProAccountFilter } from '@/store/types/proLedger.ts'
-import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment.ts'
+import type {
+  ContractPaymentPayload,
+  ContPayFilter,
+  DownPayFilter,
+  PriceFilter,
+} from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -26,33 +30,15 @@ import OrdersBoard from './components/OrdersBoard.vue'
 import CreateButton from './components/CreateButton.vue'
 
 const { can, PERM } = usePerms()
+const canPaymentRead = computed(() => can(PERM.PAYMENT_READ))
 const canPaymentCreate = computed(() => can(PERM.PAYMENT_CREATE))
+const canPaymentUpdate = computed(() => can(PERM.PAYMENT_UPDATE))
+const canPaymentDelete = computed(() => can(PERM.PAYMENT_DELETE))
 
-const paymentId = ref<string>('')
 const date = ref(dateFormat(new Date()))
 
 const isCalc = ref(localStorage.getItem('isCalc') ?? '1')
 watch(isCalc, newVal => localStorage.setItem('isCalc', newVal))
-
-const paymentUrl = computed(() => {
-  const url = '/pdf/ledger/payment/'
-  const proj = project.value ?? ''
-  const cont = contract.value?.pk ?? ''
-  return `${url}?project=${proj}&contract=${cont}&is_calc=${isCalc.value}&pub_date=${date.value ?? ''}`
-})
-
-const calcUrl = computed(() => {
-  const url = '/pdf/ledger/calculation/'
-  const proj = project.value ?? ''
-  const cont = contract.value?.pk ?? ''
-  return `${url}?project=${proj}&contract=${cont}&pub_date=${date.value ?? ''}`
-})
-
-const lateFeeUrl = computed(() => {
-  const url = '/pdf/ledger/daily-late-fee/'
-  const cont = contract.value?.pk ?? ''
-  return `${url}?contract=${cont}&pub_date=${date.value ?? ''}`
-})
 
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
@@ -76,41 +62,62 @@ const fetchProjectAccounts = (payload: ProAccountFilter) =>
 
 const contractStore = useContract()
 const contract = computed(() => contractStore.contract)
-
-const fetchContractList = (payload: ContFilter) => contractStore.fetchContractList(payload)
 const fetchContract = (pk: number) => contractStore.fetchContract(pk)
 
 const [route, router] = [useRoute(), useRouter()]
+const paymentId = computed(() => (route.query.payment ? String(route.query.payment) : ''))
 
-// contract와 project 모두 watch
+const paymentUrl = computed(() => {
+  const url = '/pdf/ledger/payment/'
+  const proj = project.value ?? ''
+  const cont = contract.value?.pk ?? ''
+  return `${url}?project=${proj}&contract=${cont}&is_calc=${isCalc.value}&pub_date=${date.value ?? ''}`
+})
+
+const calcUrl = computed(() => {
+  const url = '/pdf/ledger/calculation/'
+  const proj = project.value ?? ''
+  const cont = contract.value?.pk ?? ''
+  return `${url}?project=${proj}&contract=${cont}&pub_date=${date.value ?? ''}`
+})
+
+const lateFeeUrl = computed(() => {
+  const url = '/pdf/ledger/daily-late-fee/'
+  const cont = contract.value?.pk ?? ''
+  return `${url}?contract=${cont}&pub_date=${date.value ?? ''}`
+})
+
+const isLoadingContract = ref(false)
+const isLoadingPaymentList = ref(false)
+
+// contract와 project 모두 watch — 단일 진입점으로 중복 요청 및 race condition 방지
 watch(
-  [contract, project],
-  ([newContract, newProject], [oldContract, oldProject]) => {
-    // 같은 contract와 project면 스킵 (중복 로드 방지)
+  [contract, project, canPaymentRead],
+  async ([newContract, newProject, hasRead], [oldContract, oldProject]) => {
+    if (!hasRead) return
     if (oldContract && newContract?.pk === oldContract?.pk && oldProject === newProject) {
       return
     }
 
-    // 이미 로딩 중이면 스킵 (race condition 방지)
-    if (isLoadingPaymentList.value) {
-      return
-    }
-
     if (newContract && newProject) {
+      if (isLoadingPaymentList.value) return
       isLoadingPaymentList.value = true
       const order_group = newContract.order_group
       const unit_type = newContract.unit_type ?? undefined
-      fetchPriceList({ project: newProject, order_group, unit_type })
-      fetchDownPayList({ project: newProject, order_group, unit_type })
-      fetchLedgerAllPaymentList({
-        project: newProject,
-        contract: newContract.pk,
-        ordering: 'deal_date',
-      }).finally(() => {
+      try {
+        await Promise.all([
+          fetchPriceList({ project: newProject, order_group, unit_type }),
+          fetchDownPayList({ project: newProject, order_group, unit_type }),
+          fetchLedgerAllPaymentList({
+            project: newProject,
+            contract: newContract.pk,
+            ordering: 'deal_date',
+          }),
+        ])
+      } finally {
         isLoadingPaymentList.value = false
-      })
+      }
     } else if (!newContract) {
-      // contract가 null일 때만 clear (project가 없는 경우는 clear 하지 않음)
       paymentStore.priceList = []
       paymentStore.downPayList = []
       paymentStore.ledgerAllPaymentList = []
@@ -119,11 +126,6 @@ watch(
   { immediate: false, deep: false },
 )
 
-const listFiltering = (payload: ContFilter) => {
-  payload.project = project.value
-  if (payload.project) fetchContractList({ ...payload })
-}
-
 const getContract = (cont: number) => {
   router.push({
     name: '건별 납부 관리 - 상세',
@@ -131,34 +133,68 @@ const getContract = (cont: number) => {
   })
 }
 
-// Ledger-based payment store methods (Phase 7)
-const createContractPayment = (payload: any) => paymentStore.createContractPayment(payload)
-const updateContractPayment = (bankTransactionId: number, payload: any) =>
+const createContractPayment = (payload: ContractPaymentPayload) =>
+  paymentStore.createContractPayment(payload)
+const updateContractPayment = (bankTransactionId: number, payload: ContractPaymentPayload) =>
   paymentStore.updateContractPayment(bankTransactionId, payload)
 const deleteContractPayment = (bankTransactionId: number) =>
   paymentStore.deleteContractPayment(bankTransactionId)
 
-// Phase 7: Updated handlers for ledger-based payment system
-const onCreate = (payload: any) => {
-  // Set the project from the current context
-  if (project.value) payload.project = project.value
-  createContractPayment(payload)
+const onCreate = async (payload: ContractPaymentPayload, done?: (ok: boolean) => void) => {
+  if (!canPaymentCreate.value) {
+    done?.(false)
+    return
+  }
+  try {
+    if (project.value) payload.project = project.value
+    await createContractPayment(payload)
+    if (contract.value?.pk) await fetchContract(contract.value.pk)
+    done?.(true)
+  } catch {
+    done?.(false)
+  }
 }
 
-const onUpdate = (bankTransactionId: number, payload: any) => {
-  // Set the project from the current context
-  if (project.value) payload.project = project.value
-  updateContractPayment(bankTransactionId, payload)
+const onUpdate = async (
+  bankTransactionId: number,
+  payload: ContractPaymentPayload,
+  done?: (ok: boolean) => void,
+) => {
+  if (!canPaymentUpdate.value) {
+    done?.(false)
+    return
+  }
+  try {
+    if (project.value) payload.project = project.value
+    await updateContractPayment(bankTransactionId, payload)
+    if (contract.value?.pk) await fetchContract(contract.value.pk)
+    done?.(true)
+  } catch {
+    done?.(false)
+  }
 }
 
-const onDelete = (bankTransactionId: number) => {
-  deleteContractPayment(bankTransactionId)
+const onDelete = async (bankTransactionId: number, done?: (ok: boolean) => void) => {
+  if (!canPaymentDelete.value) {
+    done?.(false)
+    return
+  }
+  try {
+    await deleteContractPayment(bankTransactionId)
+    if (contract.value?.pk) await fetchContract(contract.value.pk)
+    done?.(true)
+  } catch {
+    done?.(false)
+  }
 }
 
-const dataSetup = (pk: number) => {
-  fetchTypeList(pk)
-  fetchPayOrderList(pk)
-  fetchAllProBankAccList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    fetchTypeList(pk),
+    fetchPayOrderList(pk),
+    fetchAllProBankAccList(pk),
+    fetchProjectAccounts({ is_payment: true, is_active: true }),
+  ])
 }
 
 const dataReset = () => {
@@ -166,56 +202,50 @@ const dataReset = () => {
   contractStore.contractList = []
   projectDataStore.unitTypeList = []
   proLedgerStore.allProBankList = []
+  paymentStore.priceList = []
+  paymentStore.downPayList = []
   paymentStore.ledgerAllPaymentList = []
   paymentStore.payOrderList = []
 }
 
-const projSelect = (target: number | null) => {
-  router.replace({ name: '건별 납부 관리' })
-  dataReset()
-  if (target) dataSetup(target)
-}
-
-const loading = ref(true)
-const isLoadingContract = ref(false)
-const isLoadingPaymentList = ref(false)
-
-onBeforeMount(async () => {
-  await fetchProjectAccounts({ is_payment: true })
-  const projId = project.value || projStore.currentProject
-  if (projId) dataSetup(projId)
-  loading.value = false
-})
-
 const loadContractData = async (contractId: number) => {
-  if (isLoadingContract.value) return
+  if (isLoadingContract.value || !canPaymentRead.value) return
   isLoadingContract.value = true
   try {
     await fetchContract(contractId)
   } finally {
     isLoadingContract.value = false
   }
-
-  if (contract.value && project.value && !isLoadingPaymentList.value) {
-    try {
-      isLoadingPaymentList.value = true
-      const order_group = contract.value.order_group
-      const unit_type = contract.value.unit_type ?? undefined
-      await fetchPriceList({ project: project.value, order_group, unit_type })
-      await fetchDownPayList({ project: project.value, order_group, unit_type })
-      await fetchLedgerAllPaymentList({
-        project: project.value,
-        contract: contract.value.pk,
-      })
-    } finally {
-      isLoadingPaymentList.value = false
-    }
-  }
 }
+
+const loading = ref(false)
+watch(
+  [project, canPaymentRead],
+  async ([newProj, hasRead], [oldProj, oldRead]) => {
+    if (newProj !== oldProj || hasRead !== oldRead) {
+      if (oldProj !== undefined && newProj !== oldProj && route.params.contractId) {
+        router.replace({ name: '건별 납부 관리' })
+      }
+      dataReset()
+      if (newProj && hasRead) {
+        loading.value = true
+        try {
+          await dataSetup(newProj)
+          const contId = route.params.contractId ? Number(route.params.contractId) : null
+          if (contId) await loadContractData(contId)
+        } finally {
+          loading.value = false
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.params.contractId,
   async newId => {
+    if (!canPaymentRead.value) return
     if (newId) {
       const contId = Number(newId)
       if (!contract.value || contract.value.pk !== contId) {
@@ -227,21 +257,6 @@ watch(
     }
   },
 )
-
-onMounted(async () => {
-  if (route.params.contractId) {
-    const cont = Number(route.params.contractId)
-    // 새로고침 시 데이터가 남아있을 수 있으므로 초기화 후 로드
-    contractStore.contract = null
-    paymentStore.ledgerAllPaymentList = []
-    await loadContractData(cont)
-  } else {
-    contractStore.contract = null
-    paymentStore.ledgerAllPaymentList = []
-  }
-
-  if (route.query.payment) paymentId.value = route.query.payment as string
-})
 
 onBeforeRouteLeave(() => {
   contractStore.contract = null
@@ -256,18 +271,15 @@ onBeforeRouteLeave(() => {
       :page-title="pageTitle"
       :nav-menu="navMenu"
       selector="ProjectSelect"
-      :selectable="false"
-      @proj-select="projSelect"
+      :selectable="!contract"
     />
 
     <ContentBody>
       <CCardBody class="pb-5">
         <ContChoicer
-          ref="listControl"
           :project="project || undefined"
           :contract="contract as Contract"
           :payment-url="paymentUrl"
-          @list-filtering="listFiltering"
           @get-contract="getContract"
         />
         <TableTitleRow
@@ -286,7 +298,7 @@ onBeforeRouteLeave(() => {
             class="d-flex flex-row-reverse"
             :disabled="!project || !contract"
           >
-            <span v-show="project && contract" class="mr-3">
+            <span v-show="project && contract" class="me-3">
               <DatePicker v-model="date" placeholder="발행일자" />
               <v-tooltip activator="parent" location="top">발행일자</v-tooltip>
             </span>
@@ -296,18 +308,18 @@ onBeforeRouteLeave(() => {
               :disabled="!project || !contract"
               variant="tonal"
               size="small"
-              class="mt-1 mr-2"
+              class="mt-1 me-2"
               @click="downloadFile(calcUrl, '할인_가산금_내역.pdf')"
               style="text-decoration: none"
             >
-              공급계약 미체결 연체료(동춘조합 한정)
+              선납할인 · 연체가산 내역서
             </v-btn>
 
             <v-btn
               :disabled="!project || !contract"
               variant="tonal"
               size="small"
-              class="mt-1 mr-2"
+              class="mt-1 me-2"
               @click="downloadFile(lateFeeUrl, '일자별_연체료_내역.pdf')"
               style="text-decoration: none"
             >

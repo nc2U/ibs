@@ -2,13 +2,12 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { cleanupParams, errorHandle, message } from '@/utils/helper'
-import { type CashBookFilter } from '@/store/types/payment'
+import { type ContPayFilter } from '@/store/types/payment'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger'
 import type {
-  AllPayment,
+  ContractPaymentPatchPayload,
   ContractPaymentPayload,
   ContractPaymentResponse,
-  ContPayFilter,
   DownPay,
   DownPayFilter,
   OriginPayment,
@@ -74,7 +73,7 @@ export const usePayment = defineStore('payment', () => {
 
   const fetchPayOrderList = (project: number, pay_sort__in?: string) =>
     api
-      .get(`/pay-order/?project=${project}&pay_sort__in=${pay_sort__in ?? ''}`)
+      .get(`/pay-order/?project=${project}&pay_sort__in=${pay_sort__in ?? ''}&limit=100`)
       .then(res => (payOrderList.value = res.data.results))
       .catch(err => errorHandle(err))
 
@@ -220,134 +219,30 @@ export const usePayment = defineStore('payment', () => {
       )
       .catch(err => errorHandle(err))
 
-  /////////////////////////////// old payment ///////////////////////////////
-  // state & getters
-  const paymentList = ref<AllPayment[]>([])
-  const AllPaymentList = ref<AllPayment[]>([])
-  const getPayments = computed(() =>
-    paymentList.value
-      ? paymentList.value.map((p: AllPayment) => ({
-          pk: p.pk,
-          deal_date: p.deal_date,
-          contract: p.contract,
-          order_group: p.contract ? p.contract.order_group.name : '-',
-          type_color: p.contract ? p.contract.unit_type.color : '-',
-          type_name: p.contract ? p.contract.unit_type.name : '-',
-          serial_number: p.contract ? p.contract.serial_number : '-',
-          contractor: p.contract ? p.contract.contractor : '-',
-          income: p.income,
-          installment_order: p.installment_order ? p.installment_order.str_display : '-',
-          bank_account: p.bank_account.alias_name,
-          trader: p.trader,
-          note: p.note,
-        }))
-      : [],
-  )
-  const paymentsCount = ref<number>(0)
-
-  // actions
-  const fetchPaymentList = async (payload: CashBookFilter) => {
-    const { project } = payload
-    let url = `/payment/?project=${project}`
-    if (payload.from_date) url += `&from_deal_date=${payload.from_date}`
-    if (payload.to_date) url += `&to_deal_date=${payload.to_date}`
-    if (payload.order_group) url += `&contract__order_group=${payload.order_group}`
-    if (payload.unit_type) url += `&contract__unit_type=${payload.unit_type}`
-    if (payload.pay_order) url += `&installment_order=${payload.pay_order}`
-    if (payload.pay_account) url += `&bank_account=${payload.pay_account}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.no_contract) url += `&no_contract=true`
-    if (payload.no_install) url += `&no_install=true&no_contract=false`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
-    const page = payload.page ? payload.page : 1
-    if (payload.page) url += `&page=${page}`
-    return await api
-      .get(url)
-      .then(res => {
-        paymentList.value = res.data.results
-        paymentsCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err))
-  }
-
-  const fetchAllPaymentList = async (payload: CashBookFilter) => {
-    const { project } = payload
-    let url = `/all-payment/?project=${project}`
-    if (payload.contract) url += `&contract=${payload.contract}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    return await api
-      .get(url)
-      .then(res => (AllPaymentList.value = res.data.results))
-      .catch(err => errorHandle(err))
-  }
-
-  const paymentPages = (itemsPerPage: number) => Math.ceil(paymentsCount.value / itemsPerPage)
-
-  // state & getters - PaymentSummary Component
-  const paymentSummaryList = ref<PaymentSummaryComponent[]>([])
-
-  // actions
-  const fetchPaymentSummaryList = async (project: number, date = '') => {
-    let url = `/payment-summary/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (paymentSummaryList.value = res.data))
-      .catch(err => errorHandle(err))
-  }
-
-  // state & getters
-  const overallSummary = ref<OverallSummary | null>(null)
-
-  // actions
-  const fetchOverallSummary = async (project: number, date?: string) => {
-    let url = `/overall-summary/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (overallSummary.value = res.data))
-      .catch(err => errorHandle(err))
-  }
-
-  // state & getters
-  const paymentStatusByUnitType = ref<PaymentStatusByUnitType[]>([])
-
-  // actions
-  const fetchPaymentStatusByUnitType = async (project: number, date?: string) => {
-    let url = `/payment-status-by-unit-type/?project=${project}`
-    if (date) url += `&date=${date}`
-    return await api
-      .get(url)
-      .then(res => (paymentStatusByUnitType.value = res.data))
-      .catch(err => errorHandle(err))
-  }
-
-  /////////////////////////////// old payment ///////////////////////////////
-
-  /////////////////////////////// new payment ///////////////////////////////
+  /////////////////////////////// payment (ledger 기반) ///////////////////////////////
   // state & getters
   const ledgerPaymentFilter = ref<ContPayFilter>({})
+  const ledgerAllPaymentFilter = ref<ContPayFilter>({})
   const ledgerPaymentList = ref<OriginPayment[]>([])
   const ledgerAllPaymentList = ref<OriginPayment[]>([])
-  const legerGetPayments = computed(() =>
+  const ledgerGetPayments = computed(() =>
     ledgerPaymentList.value
       ? ledgerPaymentList.value.map((p: OriginPayment) => ({
           pk: p.pk,
           trans_id: p.bank_transaction_id,
-          entry_id: p.accounting_entry.pk,
+          entry_id: p.accounting_entry?.pk,
           deal_date: p.deal_date,
           contract: p.contract,
-          order_group: p.contract ? p.contract.order_group.name : '-',
-          type_color: p.contract ? p.contract.unit_type.color : '-',
-          type_name: p.contract ? p.contract.unit_type.name : '-',
-          serial_number: p.contract ? p.contract.serial_number : '-',
-          contractor: p.contract ? p.contract.contractor : '-',
+          order_group: p.contract?.order_group?.name ?? '-',
+          type_color: p.contract?.unit_type?.color ?? '-',
+          type_name: p.contract?.unit_type?.name ?? '-',
+          serial_number: p.contract?.serial_number ?? '-',
+          contractor: p.contract?.contractor ?? '-',
           amount: p.amount,
-          installment_order: p.installment_order ? p.installment_order.str_display : '-',
-          bank_account: p.bank_account.alias_name,
+          installment_order: p.installment_order?.str_display ?? '-',
+          bank_account: p.bank_account?.alias_name ?? '-',
           trader: p.trader,
-          note: p.note,
+          note: p.note ?? '',
         }))
       : [],
   )
@@ -396,14 +291,20 @@ export const usePayment = defineStore('payment', () => {
   }
 
   const fetchLedgerAllPaymentList = async (payload: ContPayFilter) => {
-    const { project, contract } = payload
-    let url = `/ledger/all-payment/?is_payment_mismatch=false`
-    if (project) url += `&project=${project}`
-    if (contract) url += `&contract=${contract}`
+    const params = cleanupParams({
+      is_payment_mismatch: false,
+      project: payload.project,
+      contract: payload.contract,
+      ordering: payload.ordering,
+    })
+    const queryString = new URLSearchParams(
+      Object.entries(params).map(([k, v]) => [k, String(v)]),
+    ).toString()
+
     return await api
-      .get(url)
+      .get(`/ledger/all-payment/?${queryString}`)
       .then(res => {
-        ledgerPaymentFilter.value = payload
+        ledgerAllPaymentFilter.value = payload
         ledgerAllPaymentList.value = res.data.results
       })
       .catch(err => errorHandle(err))
@@ -513,7 +414,9 @@ export const usePayment = defineStore('payment', () => {
     try {
       const response = await api.post('/ledger/project-composite-transaction/', payload)
       // 계약 납부 목록 리프레시
-      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
+      if (ledgerAllPaymentFilter.value.project || ledgerAllPaymentFilter.value.contract) {
+        await fetchLedgerAllPaymentList(ledgerAllPaymentFilter.value)
+      }
       message('success', '', '계약 납부가 등록되었습니다.')
       return response.data
     } catch (err: unknown) {
@@ -564,7 +467,9 @@ export const usePayment = defineStore('payment', () => {
         payload,
       )
       // 계약 납부 목록 리프레시
-      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
+      if (ledgerAllPaymentFilter.value.project || ledgerAllPaymentFilter.value.contract) {
+        await fetchLedgerAllPaymentList(ledgerAllPaymentFilter.value)
+      }
       message('success', '', '계약 납부가 수정되었습니다.')
       return response.data
     } catch (err: unknown) {
@@ -614,7 +519,7 @@ export const usePayment = defineStore('payment', () => {
    */
   const patchContractPayment = async (
     bankTransactionId: number,
-    payload: Partial<ContractPaymentPayload>,
+    payload: ContractPaymentPatchPayload,
   ): Promise<ContractPaymentResponse> => {
     try {
       const response = await api.patch(
@@ -654,7 +559,9 @@ export const usePayment = defineStore('payment', () => {
     try {
       await api.delete(`/ledger/project-composite-transaction/${bankTransactionId}/`)
       // 계약 납부 목록 리프레시
-      await fetchLedgerAllPaymentList(ledgerPaymentFilter.value)
+      if (ledgerAllPaymentFilter.value.project || ledgerAllPaymentFilter.value.contract) {
+        await fetchLedgerAllPaymentList(ledgerAllPaymentFilter.value)
+      }
       message('warning', '', '계약 납부가 삭제되었습니다.')
     } catch (err: unknown) {
       errorHandle(err)
@@ -744,29 +651,12 @@ export const usePayment = defineStore('payment', () => {
     updateDownPay,
     deleteDownPay,
 
-    // old property
-    paymentList,
-    AllPaymentList,
-    getPayments,
-    paymentsCount,
-    fetchPaymentList,
-    fetchAllPaymentList,
-    paymentPages,
-
-    paymentSummaryList,
-    fetchPaymentSummaryList,
-
-    overallSummary,
-    fetchOverallSummary,
-
-    paymentStatusByUnitType,
-    fetchPaymentStatusByUnitType,
-
-    // new property
+    // ledger payment property
     ledgerPaymentFilter,
+    ledgerAllPaymentFilter,
     ledgerPaymentList,
     ledgerAllPaymentList,
-    legerGetPayments,
+    ledgerGetPayments,
     ledgerPaymentsCount,
     ledgerPaymentPages,
     fetchLedgerPaymentList,

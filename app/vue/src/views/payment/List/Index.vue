@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin.ts'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { useProjectData } from '@/store/pinia/project_data.ts'
 import { usePayment } from '@/store/pinia/payment.ts'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { onBeforeRouteLeave } from 'vue-router'
-import type { Project } from '@/store/types/project.ts'
-import type { ContractPaymentPayload, ContPayFilter } from '@/store/types/payment.ts'
+import type { ContractPaymentPatchPayload, ContPayFilter } from '@/store/types/payment.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -18,8 +18,14 @@ import PaymentSummary from './components/PaymentSummary.vue'
 import ListController from './components/ListController.vue'
 import PaymentList from './components/PaymentList.vue'
 
-const listControl = ref()
-const filterItems = ref<ContPayFilter>({
+type PayMatchPayload = ContractPaymentPatchPayload & { trans_id: number | null }
+
+const { can, PERM } = usePerms()
+const canPaymentRead = computed(() => can(PERM.PAYMENT_READ))
+const canPaymentMatch = computed(() => can(PERM.PAYMENT_CREATE) || can(PERM.PAYMENT_UPDATE))
+
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+const createDefaultFilters = (): ContPayFilter => ({
   page: 1,
   from_date: '',
   to_date: '',
@@ -31,6 +37,7 @@ const filterItems = ref<ContPayFilter>({
   no_install: false,
   search: '',
 })
+const filterItems = ref<ContPayFilter>(createDefaultFilters())
 
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
@@ -49,7 +56,7 @@ const fetchPaymentSummaryList = (projId: number) =>
   paymentStore.fetchLedgerPaymentSummaryList(projId)
 const fetchPayOrderList = (projId: number) => paymentStore.fetchPayOrderList(projId)
 const fetchPaymentList = (payload: ContPayFilter) => paymentStore.fetchLedgerPaymentList(payload)
-const patchContractPayment = (transPk: number, payload: Partial<ContractPaymentPayload>) =>
+const patchContractPayment = (transPk: number, payload: ContractPaymentPatchPayload) =>
   paymentStore.patchContractPayment(transPk, payload)
 
 const proLedgerStore = useProLedger()
@@ -57,41 +64,46 @@ const fetchAllProBankAccList = (projId: number) => proLedgerStore.fetchAllProBan
 
 const listFiltering = (payload: ContPayFilter) => {
   filterItems.value = payload
-  if (project.value) {
+  if (project.value && canPaymentRead.value) {
     payload.project = project.value
     fetchPaymentList(payload)
   }
 }
 
-const payMatch = (payload: any) => {
+const payMatch = async (payload: PayMatchPayload) => {
+  if (!canPaymentMatch.value) return
   const { trans_id, ...patchData } = payload
-  patchContractPayment(trans_id, patchData)
+  if (!trans_id) return
+  await patchContractPayment(trans_id, patchData)
+  if (project.value) await fetchPaymentSummaryList(project.value)
 }
 
 const pageSelect = (page: number) => {
   filterItems.value.page = page
-  listControl.value.listFiltering(page)
+  listControl.value?.listFiltering(page)
 }
 
 const byPayment = computed(() => {
-  let pUrl = project.value ? `/excel/ledger/payment/?project=${project.value}` : ''
-  if (filterItems.value.from_date) pUrl += `&sd=${filterItems.value.from_date}`
-  if (filterItems.value.to_date) pUrl += `&ed=${filterItems.value.to_date}`
-  if (filterItems.value.order_group) pUrl += `&og=${filterItems.value.order_group}`
-  if (filterItems.value.unit_type) pUrl += `&ut=${filterItems.value.unit_type}`
-  if (filterItems.value.pay_order) pUrl += `&ipo=${filterItems.value.pay_order}`
-  if (filterItems.value.pay_account) pUrl += `&ba=${filterItems.value.pay_account}`
-  if (filterItems.value.no_contract) pUrl += `&nc=true`
-  if (filterItems.value.no_install) pUrl += `&ni=true`
-  if (filterItems.value.search) pUrl += `&q=${filterItems.value.search}`
-  return pUrl
+  if (!project.value) return ''
+  const params = new URLSearchParams({ project: String(project.value) })
+  if (filterItems.value.from_date) params.set('sd', filterItems.value.from_date)
+  if (filterItems.value.to_date) params.set('ed', filterItems.value.to_date)
+  if (filterItems.value.order_group) params.set('og', filterItems.value.order_group)
+  if (filterItems.value.unit_type) params.set('ut', filterItems.value.unit_type)
+  if (filterItems.value.pay_order) params.set('ipo', filterItems.value.pay_order)
+  if (filterItems.value.pay_account) params.set('ba', String(filterItems.value.pay_account))
+  if (filterItems.value.no_contract) params.set('nc', 'true')
+  if (filterItems.value.no_install) params.set('ni', 'true')
+  if (filterItems.value.search) params.set('q', filterItems.value.search)
+  return `/excel/ledger/payment/?${params.toString()}`
 })
 
-const byContract = computed(() =>
-  project.value
-    ? `/excel/ledger/paid-by-cont/?project=${project.value}&date=${filterItems.value.to_date}`
-    : '',
-)
+const byContract = computed(() => {
+  if (!project.value) return ''
+  const params = new URLSearchParams({ project: String(project.value) })
+  if (filterItems.value.to_date) params.set('to_date', filterItems.value.to_date)
+  return `/excel/ledger/paid-by-cont/?${params.toString()}`
+})
 
 const paymentBy = ref(localStorage.getItem('paymentBy') ?? '1') // 다운로드할 파일 선택
 
@@ -103,14 +115,16 @@ const filename = computed(() =>
 )
 
 const dataSetup = async (pk: number) => {
-  await fetchOrderGroupList(pk)
-  await fetchTypeList(pk)
-  await fetchIncBudgetList(pk)
-  await fetchContSummaryList(pk)
-  await fetchPaymentSummaryList(pk)
-  await fetchPaymentList({ project: pk })
-  await fetchPayOrderList(pk)
-  await fetchAllProBankAccList(pk)
+  await Promise.all([
+    fetchOrderGroupList(pk),
+    fetchTypeList(pk),
+    fetchIncBudgetList(pk),
+    fetchContSummaryList(pk),
+    fetchPaymentSummaryList(pk),
+    fetchPaymentList({ project: pk }),
+    fetchPayOrderList(pk),
+    fetchAllProBankAccList(pk),
+  ])
 }
 
 const dataReset = () => {
@@ -123,19 +137,28 @@ const dataReset = () => {
   paymentStore.ledgerPaymentList = []
   paymentStore.payOrderList = []
   paymentStore.ledgerPaymentsCount = 0
+  filterItems.value = createDefaultFilters()
+  listControl.value?.resetFilters()
 }
 
-const projSelect = (target: number | null) => {
-  dataReset()
-  if (target) dataSetup(target)
-}
-
-const loading = ref(true)
-onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) await dataSetup(projId)
-  loading.value = false
-})
+const loading = ref(false)
+watch(
+  [project, canPaymentRead],
+  async ([newProj, hasRead], [oldProj, oldRead]) => {
+    if (newProj !== oldProj || hasRead !== oldRead) {
+      dataReset()
+      if (newProj && hasRead) {
+        loading.value = true
+        try {
+          await dataSetup(newProj)
+        } finally {
+          loading.value = false
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
 
 onBeforeRouteLeave(async () => {
   paymentStore.ledgerPaymentList = []
@@ -146,12 +169,7 @@ onBeforeRouteLeave(async () => {
 <template>
   <PaymentAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    >
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect">
       <PaymentSummary :project="project" />
     </ContentHeader>
 
@@ -179,7 +197,7 @@ onBeforeRouteLeave(async () => {
             style="font-size: 0.8em"
             :disabled="!project"
           >
-            <v-radio label="수납건별" value="1" class="pt-1 pr-3" />
+            <v-radio label="수납건별" value="1" class="pt-1 pe-3" />
             <v-radio label="계약자별" value="2" class="pt-1" />
           </v-radio-group>
         </TableTitleRow>

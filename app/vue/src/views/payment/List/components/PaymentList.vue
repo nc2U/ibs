@@ -2,9 +2,11 @@
 import { computed } from 'vue'
 import { usePayment } from '@/store/pinia/payment.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import type { PaymentList } from '@/store/types/payment.ts'
+import type { ContractPaymentPatchPayload } from '@/store/types/payment.ts'
 import Pagination from '@/components/Pagination'
 import Payment from './Payment.vue'
+
+type PayMatchPayload = ContractPaymentPatchPayload & { trans_id: number | null }
 
 defineProps<{
   page: number
@@ -13,14 +15,14 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'pay-match', payload: any): void
+  (e: 'pay-match', payload: PayMatchPayload): void
 }>()
 
 const paymentStore = usePayment()
-const getPayments = computed(() => paymentStore.legerGetPayments)
+const getPayments = computed(() => paymentStore.ledgerGetPayments)
 const paymentPages = computed(() => paymentStore.ledgerPaymentPages)
 
-const payMatch = (payload: any) => emit('pay-match', payload)
+const payMatch = (payload: PayMatchPayload) => emit('pay-match', payload)
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
 

@@ -2,9 +2,12 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins.ts'
-import type { PaymentList } from '@/store/types/payment.ts'
+import { usePerms } from '@/composables/usePerms.ts'
+import type { ContractPaymentPatchPayload, PaymentList } from '@/store/types/payment.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ContChoicer from './ContChoicer.vue'
+
+type PayMatchPayload = ContractPaymentPatchPayload & { trans_id: number | null }
 
 const props = defineProps<{
   project: number
@@ -12,10 +15,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'pay-match', payload: any): void
+  (e: 'pay-match', payload: PayMatchPayload): void
 }>()
 
 const router = useRouter()
+const { can, PERM } = usePerms()
+const canPaymentMatch = computed(() => can(PERM.PAYMENT_CREATE) || can(PERM.PAYMENT_UPDATE))
 const contMatchingModal = ref()
 
 const rowClass = computed(() => {
@@ -24,6 +29,8 @@ const rowClass = computed(() => {
   cls = !props.payment?.contract ? 'warning' : cls
   return cls
 })
+
+const canManageRow = computed(() => Boolean(props.payment?.contract) || canPaymentMatch.value)
 
 const toManage = () => (props.payment?.contract ? toRegister() : contMatching())
 
@@ -35,40 +42,41 @@ const toRegister = () => {
   })
 }
 const contMatching = () => {
-  if (!props.payment?.contract) contMatchingModal.value.callModal()
-  return
+  if (!props.payment?.contract && canPaymentMatch.value) contMatchingModal.value.callModal()
 }
 
-const payMatch = (payload: any) => emit('pay-match', payload)
+const payMatch = (payload: PayMatchPayload) => emit('pay-match', payload)
 </script>
 
 <template>
-  <CTableRow v-if="payment" class="text-center" :color="rowClass">
+  <CTableRow v-if="payment" class="text-center" :color="rowClass || undefined">
     <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
     <CTableDataCell>{{ payment.order_group }}</CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       <CIcon
         v-if="payment.contract"
         name="cib-node-js"
         :style="{ color: payment.type_color }"
         size="sm"
-        class="mr-1"
+        class="me-1"
       />
       {{ payment.type_name }}
     </CTableDataCell>
     <CTableDataCell>{{ payment.serial_number }}</CTableDataCell>
     <CTableDataCell>
-      <router-link to="" @click="toManage">
+      <a v-if="canManageRow" href="#" class="text-decoration-none" @click.prevent="toManage">
         {{ payment.contract ? payment.contractor : '계약정보 확인' }}
-      </router-link>
+      </a>
+      <span v-else>{{ payment.contract ? payment.contractor : '계약정보 확인' }}</span>
       <v-tooltip activator="parent" location="top">
         {{ payment.trader }} / {{ payment.note }}
       </v-tooltip>
     </CTableDataCell>
-    <CTableDataCell class="text-right">
-      <router-link to="" @click="toManage">
+    <CTableDataCell class="text-end">
+      <a v-if="canManageRow" href="#" class="text-decoration-none" @click.prevent="toManage">
         {{ numFormat(payment.amount) }}
-      </router-link>
+      </a>
+      <span v-else>{{ numFormat(payment.amount) }}</span>
     </CTableDataCell>
     <CTableDataCell :class="payment.installment_order === '-' ? 'text-danger' : ''">
       {{ payment.installment_order === '-' ? '납입회차 확인' : payment.installment_order }}
@@ -76,7 +84,14 @@ const payMatch = (payload: any) => emit('pay-match', payload)
     <CTableDataCell>{{ payment.bank_account }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
     <CTableDataCell>
-      <v-btn type="button" color="info" variant="flat" size="x-small" @click="toManage">
+      <v-btn
+        type="button"
+        color="info"
+        variant="flat"
+        size="x-small"
+        :disabled="!canManageRow"
+        @click="toManage"
+      >
         확인
       </v-btn>
     </CTableDataCell>

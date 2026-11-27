@@ -43,7 +43,7 @@ const paidByOrder = computed(() => {
   // 당회차 납부 총액
   const paid = props.paymentList
     .filter((p: OriginPayment) => !!p.installment_order)
-    .filter(p => p.installment_order.pk === props.order?.pk)
+    .filter(p => p.installment_order?.pk === props.order?.pk)
     .map(p => p.amount)
 
   return paid.length === 0 ? 0 : paid.reduce((x: number, y: number) => x + y, 0)

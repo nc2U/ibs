@@ -8,7 +8,7 @@ import PaymentForm from './PaymentForm.vue'
 
 const props = withDefaults(defineProps<{ contract?: Contract | null }>(), { contract: null })
 const emit = defineEmits<{
-  (e: 'on-create', payload: ContractPaymentPayload): void
+  (e: 'on-create', payload: ContractPaymentPayload, done?: (ok: boolean) => void): void
 }>()
 
 const createFormModal = ref()
@@ -17,21 +17,17 @@ const btnActive = computed(() => !props.contract)
 
 const showDetail = () => createFormModal.value.callModal()
 
-const createObject = (payload: ContractPaymentPayload) => {
-  emit('on-create', payload)
-  createFormModal.value.close()
+const createObject = (payload: ContractPaymentPayload, done?: (ok: boolean) => void) => {
+  emit('on-create', payload, (ok: boolean) => {
+    done?.(ok)
+    if (ok) createFormModal.value?.close()
+  })
 }
 </script>
 
 <template>
-  <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <v-btn
-      type="button"
-      color="primary"
-      variant="flat"
-      :disabled="btnActive"
-      @click="showDetail"
-    >
+  <CAlert :color="AlertLight" variant="solid" class="text-end">
+    <v-btn type="button" color="primary" variant="flat" :disabled="btnActive" @click="showDetail">
       신규납부 등록
     </v-btn>
   </CAlert>

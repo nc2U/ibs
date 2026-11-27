@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { downloadFile } from '@/utils/helper.ts'
 import { type Contract } from '@/store/types/contract.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { usePayment } from '@/store/pinia/payment.ts'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     project?: number | null
     contract?: Contract | null
@@ -18,10 +20,11 @@ withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'list-filtering', payload: any): void
   (e: 'get-contract', cont: number): void
 }>()
 
+const route = useRoute()
+const router = useRouter()
 const form = reactive({ search: '' })
 const msg = ref('')
 const textClass = ref('')
@@ -36,14 +39,20 @@ const pageInit = () => {
   contractStore.contractList = []
 }
 
-const listFiltering = (page = 1) => {
-  nextTick(() => {
-    form.search = form.search.trim()
-    if (form.search === '') pageInit()
-    else emit('list-filtering', { ...{ page }, ...form })
+const listFiltering = async (page = 1) => {
+  form.search = form.search.trim()
+  if (form.search === '') {
+    pageInit()
+    return
+  }
+  if (!props.project) return
+  await contractStore.fetchContractList({
+    project: props.project,
+    search: form.search,
+    page,
   })
   if (contractList.value.length === 0) {
-    msg.value = `해당 검색어로 등록된 데이터가 없습니다.`
+    msg.value = '해당 검색어로 등록된 데이터가 없습니다.'
     textClass.value = 'text-danger'
   }
 }
@@ -53,11 +62,18 @@ const getContract = (cont: number) => {
   pageInit()
 }
 
+const downloadPaymentStatement = () => {
+  if (props.paymentUrl) downloadFile(props.paymentUrl, '납부_확인서.pdf')
+}
+
 const paymentStore = usePayment()
 const removeContract = () => {
   contractStore.contract = null
   paymentStore.ledgerAllPaymentList = []
   paymentStore.ledgerPaymentsCount = 0
+  if (route.params.contractId) {
+    router.replace({ name: '건별 납부 관리' })
+  }
 }
 
 onMounted(() => pageInit())
@@ -84,7 +100,7 @@ onMounted(() => pageInit())
       </CCol>
     </CRow>
     <CRow>
-      <CCol v-if="contractList.length !== 0" color="warning" class="p-2 pl-3">
+      <CCol v-if="contractList.length !== 0" color="warning" class="p-2 ps-3">
         <v-btn
           v-for="cont in contractList"
           :key="cont.pk"
@@ -129,14 +145,16 @@ onMounted(() => pageInit())
             계약자 : {{ contract.contractor?.name }})
           </router-link>
           (
-          <a :href="paymentUrl"> 납부내역서 출력</a>
+          <a href="#" class="text-decoration-none" @click.prevent="downloadPaymentStatement">
+            납부내역서 출력
+          </a>
           )
         </strong>
       </CCol>
-      <CCol v-if="contract" class="text-right">
-        <router-link to="">
-          <CIcon name="cilX" @click="removeContract" />
-        </router-link>
+      <CCol v-if="contract" class="text-end">
+        <a href="#" class="text-reset" aria-label="계약 선택 해제" @click.prevent="removeContract">
+          <CIcon name="cilX" />
+        </a>
       </CCol>
     </CRow>
   </CAlert>

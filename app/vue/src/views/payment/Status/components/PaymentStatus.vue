@@ -1,12 +1,11 @@
 <script lang="ts" setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import { numFormat } from '@/utils/baseMixins.ts'
 import type { PaymentStatusByUnitType } from '@/store/types/payment.ts'
-import { useProject } from '@/store/pinia/project.ts'
 import { usePayment } from '@/store/pinia/payment.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     date?: string
   }>(),
@@ -15,29 +14,9 @@ const props = withDefaults(
   },
 )
 
-const proStore = useProject()
 const paymentStore = usePayment()
 const paymentStatusData = computed<PaymentStatusByUnitType[]>(
   () => paymentStore.ledgerPaymentStatusByUnitType,
-)
-
-// Fetch payment status data on component mount
-onMounted(async () => {
-  const currentProject = proStore.project?.pk
-  if (currentProject) {
-    await paymentStore.fetchLedgerPaymentStatusByUnitType(currentProject, props.date)
-  }
-})
-
-// Watch date changes and refetch data
-watch(
-  () => props.date,
-  async newDate => {
-    const currentProject = proStore.project?.pk
-    if (currentProject) {
-      await paymentStore.fetchLedgerPaymentStatusByUnitType(currentProject, newDate)
-    }
-  },
 )
 
 // 차수별 첫번째 타입인지 확인
@@ -96,7 +75,7 @@ const totals = computed(() => ({
           </strong>
           <small class="text-medium-emphasis"> ({{ date }}) 현재 </small>
         </CTableDataCell>
-        <CTableDataCell class="text-right">(단위: 원)</CTableDataCell>
+        <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
       </CTableRow>
 
       <CTableRow :color="TableSecondary" class="text-center" align="middle">
@@ -121,7 +100,7 @@ const totals = computed(() => ({
       <CTableRow
         v-for="item in paymentStatusData"
         :key="`${item.order_group_id}-${item.unit_type_id}`"
-        class="text-right"
+        class="text-end"
       >
         <CTableDataCell
           v-if="isFirstTypeInOrderGroup(item)"
@@ -133,7 +112,7 @@ const totals = computed(() => ({
           {{ item.order_group_name }}
         </CTableDataCell>
         <CTableDataCell class="text-start ps-4">
-          <v-icon icon="mdi-square" :color="item.unit_type_color" size="sm" />
+          <v-icon icon="mdi-square" :color="item.unit_type_color" size="small" />
           <!-- 타입명 -->
           {{ item.unit_type_name }}
         </CTableDataCell>
@@ -183,9 +162,9 @@ const totals = computed(() => ({
     </CTableBody>
 
     <CTableHead>
-      <CTableRow class="text-right" :color="TableSecondary">
+      <CTableRow class="text-end" :color="TableSecondary">
         <CTableHeaderCell colspan="2" class="text-center"> 총 계</CTableHeaderCell>
-        <CTableHeaderCell class="text-right">
+        <CTableHeaderCell class="text-end">
           <!-- 전체 매출액 합계 -->
           {{ numFormat(totals.totalSalesAmount) }}
         </CTableHeaderCell>

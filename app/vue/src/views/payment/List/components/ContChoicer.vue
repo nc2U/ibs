@@ -1,12 +1,14 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { Contract, ContFilter } from '@/store/types/contract.ts'
-import type { PaymentList } from '@/store/types/payment.ts'
+import type { ContractPaymentPatchPayload, PaymentList } from '@/store/types/payment.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+
+type PayMatchPayload = ContractPaymentPatchPayload & { trans_id: number | null }
 
 const props = defineProps<{
   project: number
@@ -14,7 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'pay-match', payload: any): void
+  (e: 'pay-match', payload: PayMatchPayload): void
   (e: 'close'): void
 }>()
 
@@ -46,18 +48,19 @@ const pageInit = () => {
   contStore.contractList = []
 }
 
-const searchCont = () => {
-  nextTick(() => {
-    if (form.value.search === '') pageInit()
-    else {
-      fetchContractList({ ...{ project: props.project }, ...form.value })
-    }
-  })
+const searchCont = async () => {
+  form.value.search = form.value.search.trim()
+  if (form.value.search === '') {
+    pageInit()
+    return
+  }
+  await fetchContractList({ project: props.project, search: form.value.search })
   if (contactList.value.length === 0) {
-    msg.value = `해당 검색어로 등록된 데이터가 없습니다.`
+    msg.value = '해당 검색어로 등록된 데이터가 없습니다.'
     textClass.value = 'text-danger'
   }
 }
+
 const contMatching = (contract: Contract) => {
   if (canPaymentCreate.value || canPaymentUpdate.value) {
     cont.value = contract
@@ -66,11 +69,14 @@ const contMatching = (contract: Contract) => {
 }
 
 const modalAction = () => {
-  const trans_id = props.payment?.trans_id
+  const trans_id = props.payment?.trans_id ?? null
   const pk = props.payment?.entry_id
-  const contract = (cont.value as Contract)?.pk
-  const content = `${(cont.value as Contract)?.contractor?.name}[${(cont.value as Contract)?.serial_number}] 대금납부`
-  emit('pay-match', { trans_id, content, accounting_entries: [{ pk, contract }] })
+  const contract = (cont.value as Contract | null)?.pk ?? null
+  if (!trans_id || !pk || !contract) {
+    refAlertModal.value?.callModal(null, '연결할 수납 거래 또는 계약 정보가 없습니다.')
+    return
+  }
+  emit('pay-match', { trans_id, accounting_entries: [{ pk, contract }] })
   pageInit()
   emit('close')
 }
@@ -78,7 +84,7 @@ const modalAction = () => {
 
 <template>
   <CRow>
-    <CCol class="pl-4 pr-4">
+    <CCol class="ps-4 pe-4">
       <CCallout color="warning" class="pb-1 mb-4">
         <CRow>
           <CCol>
@@ -99,7 +105,7 @@ const modalAction = () => {
           </CCol>
         </CRow>
         <CRow>
-          <CCol v-if="contactList.length !== 0" color="warning" class="p-2 pl-3">
+          <CCol v-if="contactList.length !== 0" color="warning" class="p-2 ps-3">
             <v-btn
               v-for="c in contactList"
               :key="c.pk"
@@ -118,7 +124,7 @@ const modalAction = () => {
         </CRow>
       </CCallout>
 
-      <CAlert v-if="contactList.length !== 0" color="default" class="pt-0 pb-0 text-primary">
+      <CAlert v-if="contactList.length !== 0" color="light" class="pt-0 pb-0 text-primary">
         상기 계약 건 중 아래 수납 항목을 매칭 등록할 계약 건을 선택한 후 클릭하여 주십시오.
       </CAlert>
 
@@ -137,7 +143,7 @@ const modalAction = () => {
   <ConfirmModal ref="refConfirmModal">
     <template #header>건별 수납 매칭</template>
     <template #default>
-      해당 수납 항목을 &lt;<span class="text-primary" style="font-weight: bold">
+      해당 수납 항목을 &lt;<span class="text-primary fw-bold">
         {{ `${cont?.contractor?.name} [${cont?.serial_number}]` }} </span
       >&gt; 계약 건의 납부대금으로 등록합니다.
     </template>

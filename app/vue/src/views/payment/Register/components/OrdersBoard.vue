@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { usePayment } from '@/store/pinia/payment.ts'
 import { useContract } from '@/store/pinia/contract.ts'
+import { useProjectData } from '@/store/pinia/project_data.ts'
 import type { Contract, ContractPriceWithPaymentPlan } from '@/store/types/contract.ts'
 import type { OriginPayment, PayOrder, Price } from '@/store/types/payment.ts'
 import { numFormat, getToday } from '@/utils/baseMixins.ts'
@@ -21,15 +22,21 @@ const props = withDefaults(
 
 const paymentStore = usePayment()
 const contractStore = useContract()
+const projectDataStore = useProjectData()
 const payOrderList = computed(() => paymentStore.payOrderList)
 const priceList = computed(() => paymentStore.priceList)
 
-// 계약의 차수(order_group)에 따라 제외된 회차를 필터링한 리스트
+// 계약의 차수(order_group) 및 타입종류(type_sort)에 따라 회차를 필터링한 리스트
 const filteredPayOrderList = computed(() => {
   const orderGroup = props.contract?.order_group
-  if (!orderGroup) return payOrderList.value
+  const matchedUnitType = props.contract?.unit_type
+    ? projectDataStore.unitTypeList.find(ut => ut.pk === props.contract?.unit_type)
+    : undefined
+  const typeSort = props.contract?.unit_type_desc?.sort ?? matchedUnitType?.sort
   return payOrderList.value.filter((po: PayOrder) => {
-    return !po.excluded_order_groups?.includes(orderGroup)
+    if (orderGroup && po.excluded_order_groups?.includes(orderGroup)) return false
+    if (typeSort && po.type_sort && po.type_sort !== typeSort) return false
+    return true
   })
 })
 
@@ -82,46 +89,47 @@ const dueTotal = computed(() => {
   // contractPriceData가 로드되지 않은 경우 0 반환
   if (!contractPriceData.value?.payment_plan?.length) return 0
 
-  const commitment: number[] = []
   const today = getToday()
-
-  const dueOrder = filteredPayOrderList.value
-    .filter((o: PayOrder) => {
-      // 백엔드에서 조정된 날짜를 가져옴
-      const adjustedDate = getDueDateFromAPI(o.pay_time as number)
-      // 조정된 날짜가 있고 오늘 이전(또는 오늘)인 경우만 납부 의무가 발생한 것으로 간주
+  return filteredPayOrderList.value
+    .filter(po => {
+      const adjustedDate = getDueDateFromAPI(po)
       return adjustedDate && adjustedDate <= today
     })
-    .map((o: PayOrder) => o.pay_time)
-
-  dueOrder.forEach((el: number | null | undefined) => {
-    if (el) commitment.push(getCommitsFromAPI(el))
-  })
-  return commitment.length !== 0 ? commitment.reduce((x, y) => x + y) : 0
+    .reduce((sum, po) => sum + getCommitsFromAPI(po), 0)
 })
 
-// Get payment amount from API data (high-performance JSON cache)
-const getCommitsFromAPI = (payTime: number | undefined) => {
-  if (!payTime || !contractPriceData.value) return 0
+const findPlanItem = (order: PayOrder) => {
+  const plan = contractPriceData.value?.payment_plan
+  if (!plan?.length) return undefined
+  if (order.pk) {
+    const byPk = plan.find(item => item.installment_order.pk === order.pk)
+    if (byPk) return byPk
+  }
+  if (order.pay_time) {
+    return plan.find(item => item.installment_order.pay_time === order.pay_time)
+  }
+  return undefined
+}
 
-  // 1. payment_plan에서 해당 회차의 조정된 금액을 먼저 찾음 (제외 차수 반영됨)
-  const planItem = contractPriceData.value.payment_plan.find(
-    item => item.installment_order.pay_time === payTime,
-  )
+// Get payment amount from API data (high-performance JSON cache)
+const getCommitsFromAPI = (order: PayOrder) => {
+  if (!contractPriceData.value) return 0
+
+  // 1. payment_plan에서 해당 회차의 조정된 금액을 먼저 찾음 (pk 우선 매칭으로 동일 pay_time 충돌 방지)
+  const planItem = findPlanItem(order)
   if (planItem) return planItem.amount
 
   // 2. plan에 없으면 payment_amounts 캐시 확인
-  const amount = contractPriceData.value.payment_amounts[payTime.toString()]
-  return amount || 0
+  if (order.pay_time) {
+    return contractPriceData.value.payment_amounts[order.pay_time.toString()] || 0
+  }
+  return 0
 }
 
 // Get adjusted due date from API data
-const getDueDateFromAPI = (payTime: number | undefined) => {
-  if (!payTime || !contractPriceData.value) return null
-  const planItem = contractPriceData.value.payment_plan.find(
-    item => item.installment_order.pay_time === payTime,
-  )
-  return planItem?.due_date || null
+const getDueDateFromAPI = (order: PayOrder) => {
+  if (!contractPriceData.value) return null
+  return findPlanItem(order)?.due_date || null
 }
 </script>
 
@@ -146,20 +154,20 @@ const getDueDateFromAPI = (payTime: number | undefined) => {
     </CTableHead>
 
     <CTableBody v-if="contract">
-      <CTableRow v-for="po in filteredPayOrderList" :key="po.pk" class="text-right">
+      <CTableRow v-for="po in filteredPayOrderList" :key="po.pk" class="text-end">
         <Order
           :contract="contract"
           :price="thisPrice"
           :order="po"
-          :commit="getCommitsFromAPI(po.pay_time as number)"
-          :adjusted-due-date="getDueDateFromAPI(po.pay_time as number)"
+          :commit="getCommitsFromAPI(po)"
+          :adjusted-due-date="getDueDateFromAPI(po)"
           :payment-list="paymentList"
         />
       </CTableRow>
     </CTableBody>
 
     <CTableHead>
-      <CTableRow class="text-right">
+      <CTableRow class="text-end">
         <CTableHeaderCell :color="TableSecondary" class="text-center"> 합계</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>{{ numFormat(thisPrice || 0) }}</CTableHeaderCell>

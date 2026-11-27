@@ -38,7 +38,7 @@ class SimpleUnitTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UnitType
-        fields = ('pk', 'name', 'color', 'average_price')
+        fields = ('pk', 'sort', 'name', 'color', 'average_price')
 
 
 class UnitFloorTypeSerializer(serializers.ModelSerializer):

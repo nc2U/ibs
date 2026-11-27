@@ -95,7 +95,7 @@ class InstallmentOrderViewSet(viewsets.ModelViewSet):
     queryset = InstallmentPaymentOrder.objects.select_related('project').all()
     serializer_class = InstallmentOrderSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
-    pagination_class = PageNumberPaginationTwenty
+    pagination_class = PageNumberPaginationOneHundred
     filterset_class = InstallmentOrderFilterSet
     search_fields = ('pay_name', 'alias_name')
 

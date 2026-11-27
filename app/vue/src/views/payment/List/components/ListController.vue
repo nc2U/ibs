@@ -6,12 +6,13 @@ import { usePayment } from '@/store/pinia/payment.ts'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { useProjectData } from '@/store/pinia/project_data.ts'
+import type { ContPayFilter } from '@/store/types/payment.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Multiselect from '@vueform/multiselect'
 
 const props = withDefaults(defineProps<{ byCont?: boolean }>(), { byCont: false })
 const emit = defineEmits<{
-  (e: 'payment-filtering', payload: any): void
+  (e: 'payment-filtering', payload: ContPayFilter): void
 }>()
 
 const from_date = ref('')
@@ -21,7 +22,7 @@ const form = reactive({
   order_group: '',
   unit_type: '',
   pay_order: '',
-  pay_account: '',
+  pay_account: '' as number | '' | null,
   no_contract: false,
   no_install: false,
   search: '',
@@ -53,28 +54,45 @@ const formsCheck = computed(() => {
   return a && b && c && d && e && f && g && h && i
 })
 
-watch(props, nVal => {
-  if (nVal.byCont) {
-    from_date.value = ''
-    form.order_group = ''
-    form.unit_type = ''
-    form.pay_order = ''
-    form.pay_account = ''
-    form.no_contract = false
-    form.no_install = false
-    form.search = ''
-    listFiltering(1)
-  }
-})
+const isSuppressingWatch = ref(false)
 
-watch(from_date, () => listFiltering(1))
-watch(to_date, () => listFiltering(1))
+const clearFilterValues = (keepToDate = false) => {
+  from_date.value = ''
+  if (!keepToDate) to_date.value = ''
+  form.order_group = ''
+  form.unit_type = ''
+  form.pay_order = ''
+  form.pay_account = ''
+  form.no_contract = false
+  form.no_install = false
+  form.search = ''
+}
+
+watch(
+  () => props.byCont,
+  isByCont => {
+    if (isByCont) {
+      isSuppressingWatch.value = true
+      clearFilterValues(true)
+      nextTick(() => {
+        isSuppressingWatch.value = false
+        listFiltering(1)
+      })
+    }
+  },
+)
+
+watch([from_date, to_date], () => {
+  if (!isSuppressingWatch.value) listFiltering(1)
+})
 
 const listFiltering = (page = 1) => {
   nextTick(() => {
     form.search = form.search.trim()
     emit('payment-filtering', {
-      ...{ page, from_date: from_date.value, to_date: to_date.value },
+      page,
+      from_date: from_date.value,
+      to_date: to_date.value,
       ...form,
     })
   })
@@ -83,30 +101,34 @@ const listFiltering = (page = 1) => {
 const noContractFn = () => {
   nextTick(() => {
     if (form.no_contract) form.no_install = false
+    listFiltering(1)
   })
-  listFiltering(1)
 }
 
 const noInstallFn = () => {
   nextTick(() => {
     if (form.no_install) form.no_contract = false
+    listFiltering(1)
   })
-  listFiltering(1)
+}
+
+const resetFilters = () => {
+  isSuppressingWatch.value = true
+  clearFilterValues(false)
+  nextTick(() => {
+    isSuppressingWatch.value = false
+  })
 }
 
 const resetForm = () => {
-  from_date.value = ''
-  to_date.value = ''
-  form.order_group = ''
-  form.unit_type = ''
-  form.pay_order = ''
-  form.pay_account = ''
-  form.no_contract = false
-  form.no_install = false
-  form.search = ''
-  listFiltering(1)
+  isSuppressingWatch.value = true
+  clearFilterValues(false)
+  nextTick(() => {
+    isSuppressingWatch.value = false
+    listFiltering(1)
+  })
 }
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetFilters })
 </script>
 
 <template>
@@ -172,7 +194,7 @@ defineExpose({ listFiltering })
       </CCol>
       <CCol xl="4">
         <CRow>
-          <CCol md="6" lg="3" class="mb-3 pl-4 pt-2">
+          <CCol md="6" lg="3" class="mb-3 ps-4 pt-2">
             <CFormSwitch
               id="no_contract"
               v-model="form.no_contract"
@@ -182,7 +204,7 @@ defineExpose({ listFiltering })
             />
           </CCol>
 
-          <CCol md="6" lg="3" class="mb-3 pl-4 pt-2">
+          <CCol md="6" lg="3" class="mb-3 ps-4 pt-2">
             <CFormSwitch
               id="no_install"
               v-model="form.no_install"
@@ -209,10 +231,10 @@ defineExpose({ listFiltering })
       </CCol>
     </CRow>
     <CRow>
-      <CCol color="warning" class="p-2 pl-3">
+      <CCol color="warning" class="p-2 ps-3">
         <strong>납부 건수 조회 결과 : {{ numFormat(paymentsCount, 0, 0) }} 건</strong>
       </CCol>
-      <CCol v-if="!formsCheck" class="text-right mb-0">
+      <CCol v-if="!formsCheck" class="text-end mb-0">
         <v-btn color="info" variant="flat" size="small" @click="resetForm"> 검색조건 초기화 </v-btn>
       </CCol>
     </CRow>

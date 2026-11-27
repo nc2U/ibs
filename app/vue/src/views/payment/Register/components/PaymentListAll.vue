@@ -4,7 +4,7 @@ import { TableSecondary } from '@/utils/cssMixins.ts'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Contract } from '@/store/types/contract.ts'
-import type { OriginPayment } from '@/store/types/payment.ts'
+import type { ContractPaymentPayload, OriginPayment } from '@/store/types/payment.ts'
 import Payment from './Payment.vue'
 
 const props = withDefaults(
@@ -21,14 +21,17 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'on-update', bankTransactionId: number, payload: any): void
-  (e: 'on-delete', pk: number): void
+  (
+    e: 'on-update',
+    bankTransactionId: number,
+    payload: ContractPaymentPayload,
+    done?: (ok: boolean) => void,
+  ): void
+  (e: 'on-delete', bankTransactionId: number, done?: (ok: boolean) => void): void
 }>()
 
 const { can, PERM } = usePerms()
-const canPaymentManage = computed(
-  () => can(PERM.PAYMENT_UPDATE) || can(PERM.PAYMENT_DELETE),
-)
+const canPaymentManage = computed(() => can(PERM.PAYMENT_UPDATE) || can(PERM.PAYMENT_DELETE))
 
 const paymentSum = computed(() => {
   return props.paymentList.length !== 0
@@ -38,9 +41,13 @@ const paymentSum = computed(() => {
     : 0
 })
 
-const onUpdate = (bankTransactionId: number, payload: any) =>
-  emit('on-update', bankTransactionId, payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const onUpdate = (
+  bankTransactionId: number,
+  payload: ContractPaymentPayload,
+  done?: (ok: boolean) => void,
+) => emit('on-update', bankTransactionId, payload, done)
+const onDelete = (bankTransactionId: number, done?: (ok: boolean) => void) =>
+  emit('on-delete', bankTransactionId, done)
 </script>
 
 <template>
@@ -78,7 +85,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     </CTableBody>
 
     <CTableHead>
-      <CTableRow class="text-right">
+      <CTableRow class="text-end">
         <CTableHeaderCell :color="TableSecondary" class="text-center"> 합계</CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell>
@@ -86,7 +93,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         </CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
         <CTableHeaderCell></CTableHeaderCell>
-        <CTableHeaderCell></CTableHeaderCell>
+        <CTableHeaderCell v-if="canPaymentManage"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
   </CTable>
