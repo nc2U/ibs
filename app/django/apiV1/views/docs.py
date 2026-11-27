@@ -549,7 +549,12 @@ class OfficialLetterFilterSet(FilterSet):
 
 class OfficialLetterViewSet(viewsets.ModelViewSet):
     queryset = OfficialLetter.objects.select_related(
-        'company', 'seal', 'co_seal', 'creator', 'updator', 'approval_document', 'parent_inbound_letter'
+        'company', 'company__logo',
+        'seal', 'seal__internal_manager__duty', 'seal__internal_manager__position', 'seal__final_approval_duty',
+        'co_seal', 'co_seal__internal_manager__duty', 'co_seal__internal_manager__position', 'co_seal__final_approval_duty',
+        'creator', 'creator__staff', 'updator',
+        'approval_document', 'approval_document__drafter__staff',
+        'parent_inbound_letter'
     ).prefetch_related('attachments')
     serializer_class = OfficialLetterSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
@@ -639,7 +644,11 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         if instance.dispatched_at is not None:
             raise ValidationError('이미 대외 발송이 완료된 공문서는 법적 증빙 문서로 삭제할 수 없습니다.')
 
-        # 2. 결재 승인 완료된 공문은 관리자만 삭제 가능
+        # 2. 전자결재가 진행 중인 공문은 기안 회수 또는 반려 후 삭제 가능
+        if instance.approval_status == 'pending':
+            raise ValidationError('전자결재가 진행 중인 공문서는 삭제할 수 없습니다. 기안을 회수하거나 반려된 후에 삭제해 주세요.')
+
+        # 3. 결재 승인 완료된 공문은 관리자만 삭제 가능
         is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
         if instance.approval_status == 'approved' and not is_manager:
             raise PermissionDenied('최종 결재 승인된 공문서는 관리자만 삭제할 수 있습니다.')
@@ -816,18 +825,38 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             'body': f"[대외 공문 발송 품의]\n\n• 수신처: {letter.recipient_name}\n• 참조: {letter.recipient_reference or '-'}\n• 기안/담당: {letter.drafter_name}{f' ({letter.drafter_position})' if letter.drafter_position else ''}\n• 시행일자: {letter.issue_date}\n\n[공문 본문]\n{letter.content}",
         }
 
-        doc = ApprovalDocument(
-            title=f'[공문 발송 품의] {letter.title}',
-            doc_type=doc_type,
-            drafter=request.user,
-            drafter_assignment=assignment,
-            content=content_payload,
-            status=ApprovalDocument.STATUS_PENDING,
-            current_step=1,
-            submitted_at=timezone.now(),
-        )
-        doc.content_hash = doc.compute_hash()
-        doc.save()
+        # 기존 결재 문서(회수 DRAFT 또는 반려 REJECTED)가 있으면 고아 문서가 생기지 않도록 재사용
+        existing_doc = letter.approval_document
+        if existing_doc and existing_doc.status in (
+            ApprovalDocument.STATUS_DRAFT,
+            ApprovalDocument.STATUS_REJECTED,
+        ):
+            existing_doc.steps.all().delete()
+            existing_doc.title = f'[공문 발송 품의] {letter.title}'
+            existing_doc.doc_type = doc_type
+            existing_doc.drafter = request.user
+            existing_doc.drafter_assignment = assignment
+            existing_doc.content = content_payload
+            existing_doc.status = ApprovalDocument.STATUS_PENDING
+            existing_doc.current_step = 1
+            existing_doc.submitted_at = timezone.now()
+            existing_doc.completed_at = None
+            existing_doc.content_hash = existing_doc.compute_hash()
+            existing_doc.save()
+            doc = existing_doc
+        else:
+            doc = ApprovalDocument(
+                title=f'[공문 발송 품의] {letter.title}',
+                doc_type=doc_type,
+                drafter=request.user,
+                drafter_assignment=assignment,
+                content=content_payload,
+                status=ApprovalDocument.STATUS_PENDING,
+                current_step=1,
+                submitted_at=timezone.now(),
+            )
+            doc.content_hash = doc.compute_hash()
+            doc.save()
 
         # 동적 결재선 빌드 및 저장 (공문 인장에 지정된 전결 기준 자동 연동)
         steps = build_dynamic_approval_route(
@@ -916,6 +945,15 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         })
 
 
+def _ensure_letter_company_perm(user, letter, perm_code, denied_msg):
+    """공문/수신공문 첨부파일 뷰셋의 회사별 본사 권한 검증"""
+    if user.is_superuser or getattr(user, 'work_manager', False):
+        return
+    accessible_companies = get_company_ids_with_permission(user, perm_code)
+    if letter and letter.company_id not in accessible_companies:
+        raise PermissionDenied(denied_msg)
+
+
 class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
     queryset = OfficialLetterAttachment.objects.select_related('letter', 'letter__company')
     serializer_class = OfficialLetterAttachmentSerializer
@@ -946,22 +984,26 @@ class OfficialLetterAttachmentViewSet(viewsets.ModelViewSet):
         letter = serializer.validated_data.get('letter')
         if letter and letter.dispatched_at is not None:
             raise ValidationError('이미 대외 발송이 완료된 공문에는 첨부파일을 추가할 수 없습니다.')
-        user = self.request.user
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
-            if letter and letter.company_id not in accessible_companies:
-                raise PermissionDenied('소속 회사 이외의 공문에 첨부파일을 추가할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, letter, 'docs.create', '소속 회사 이외의 공문에 첨부파일을 추가할 수 없습니다.'
+        )
         serializer.save()
 
     def perform_update(self, serializer):
         instance = self.get_object()
         if instance.letter and instance.letter.dispatched_at is not None:
             raise ValidationError('이미 대외 발송이 완료된 공문의 첨부파일은 수정할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, instance.letter, 'docs.update', '소속 회사 이외의 공문 첨부파일을 수정할 수 없습니다.'
+        )
         serializer.save()
 
     def perform_destroy(self, instance):
         if instance.letter and instance.letter.dispatched_at is not None:
             raise ValidationError('이미 대외 발송이 완료된 공문의 첨부파일은 삭제할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, instance.letter, 'docs.delete', '소속 회사 이외의 공문 첨부파일을 삭제할 수 없습니다.'
+        )
         instance.delete()
 
 
@@ -1035,6 +1077,7 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
         letter = self.get_object()
         validated_data = serializer.validated_data
         is_manager = self.request.user.is_superuser or getattr(self.request.user, 'work_manager', False)
+        clear_scan = self.request.data.get('clear_scan_file') in ('true', '1', True)
 
         # 배부/처리 상태 등 사후 관리 필드 목록 (수신 공문 원본 내용이 아닌 처리 대장 필드)
         management_fields = {
@@ -1042,7 +1085,7 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             'reply_due_date', 'sender_contact',
         }
         requested_fields = set(validated_data.keys())
-        is_management_only = bool(requested_fields) and requested_fields.issubset(management_fields)
+        is_management_only = bool(requested_fields) and requested_fields.issubset(management_fields) and not clear_scan
 
         if letter.status == 'closed' and not is_manager:
             raise ValidationError('이미 종결 처리된 수신 공문은 수정할 수 없습니다.')
@@ -1054,7 +1097,10 @@ class InboundLetterViewSet(viewsets.ModelViewSet):
             if app_status == 'approved' and not is_manager and not is_management_only:
                 raise PermissionDenied('최종 결재 승인된 수신 공문의 본문 내용은 관리자만 수정할 수 있습니다.')
 
-        serializer.save(updator=self.request.user)
+        updated = serializer.save(updator=self.request.user)
+        if clear_scan and 'scan_file' not in validated_data and updated.scan_file:
+            updated.scan_file = None
+            updated.save(update_fields=['scan_file'])
 
     def perform_destroy(self, instance):
         if instance.status == 'closed':
@@ -1321,22 +1367,26 @@ class InboundLetterAttachmentViewSet(viewsets.ModelViewSet):
         letter = serializer.validated_data.get('letter')
         if letter and letter.status == 'closed':
             raise ValidationError('종결 처리된 수신 공문에는 첨부파일을 추가할 수 없습니다.')
-        user = self.request.user
-        if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            accessible_companies = get_company_ids_with_permission(user, 'docs.create')
-            if letter and letter.company_id not in accessible_companies:
-                raise PermissionDenied('소속 회사 이외의 수신 공문에 첨부파일을 추가할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, letter, 'docs.create', '소속 회사 이외의 수신 공문에 첨부파일을 추가할 수 없습니다.'
+        )
         serializer.save()
 
     def perform_update(self, serializer):
         instance = self.get_object()
         if instance.letter and instance.letter.status == 'closed':
             raise ValidationError('종결 처리된 수신 공문의 첨부파일은 수정할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, instance.letter, 'docs.update', '소속 회사 이외의 수신 공문 첨부파일을 수정할 수 없습니다.'
+        )
         serializer.save()
 
     def perform_destroy(self, instance):
         if instance.letter and instance.letter.status == 'closed':
             raise ValidationError('종결 처리된 수신 공문의 첨부파일은 삭제할 수 없습니다.')
+        _ensure_letter_company_perm(
+            self.request.user, instance.letter, 'docs.delete', '소속 회사 이외의 수신 공문 첨부파일을 삭제할 수 없습니다.'
+        )
         instance.delete()
 
 

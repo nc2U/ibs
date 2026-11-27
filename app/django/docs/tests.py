@@ -933,3 +933,82 @@ class DocsAppSecurityTests(TestCase):
                 reply_due_date=date(2026, 5, 1),
             )
             bad_inbound.clean()
+
+    def test_pending_official_letter_delete_blocked_and_resubmit_reuses_doc(self):
+        """결재 진행 중(pending) 발송 공문 삭제 차단 및 회수/반려 후 재상신 시 기존 ApprovalDocument 재사용 검증"""
+        from approval.models import DocCategory, DocumentType, ApprovalDocument
+
+        category = DocCategory.objects.create(name='공문카테고리_재상신', code='OL_REUSE_CAT')
+        DocumentType.objects.create(
+            category=category,
+            name='공문발송품의',
+            code='OL_REUSE_TYPE',
+            form_template_key='OFFICIAL_LETTER',
+            route_type=DocumentType.ROUTE_ORGANIZATION,
+        )
+
+        # 1. pending 상태 삭제 시도 -> 400 차단
+        pending_letter = OfficialLetter.objects.create(
+            company=self.company_a,
+            document_number='2026-PEND-DEL-001',
+            title='결재중 삭제 금지 공문',
+            recipient_name='수신처',
+            drafter_name='담당자',
+            content='내용',
+            issue_date=date(2026, 3, 1),
+            approval_status='pending',
+            creator=self.author_user,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+        res_del = self.client.delete(f'/api/v1/official-letter/{pending_letter.pk}/')
+        self.assertEqual(res_del.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(OfficialLetter.objects.filter(pk=pending_letter.pk).exists())
+
+        # 2. 반려/회수 상태 기존 ApprovalDocument가 있는 공문 재상신 시 기존 문서 재사용
+        old_doc = ApprovalDocument.objects.create(
+            title='이전 결재문서',
+            doc_type=DocumentType.objects.get(code='OL_REUSE_TYPE'),
+            drafter=self.author_user,
+            status=ApprovalDocument.STATUS_REJECTED,
+            content={'official_letter_id': self.letter_a.pk},
+            content_hash='legacy',
+        )
+        self.letter_a.approval_document = old_doc
+        self.letter_a.approval_status = 'rejected'
+        self.letter_a.is_solo_approval = True
+        self.letter_a.save(update_fields=['approval_document', 'approval_status', 'is_solo_approval'])
+
+        self.client.force_authenticate(user=self.author_user)
+        res_resubmit = self.client.post(f'/api/v1/official-letter/{self.letter_a.pk}/submit_approval/')
+        self.assertEqual(res_resubmit.status_code, status.HTTP_200_OK)
+        self.letter_a.refresh_from_db()
+        self.assertEqual(self.letter_a.approval_document_id, old_doc.pk)
+        self.assertEqual(
+            ApprovalDocument.objects.filter(content__official_letter_id=self.letter_a.pk).count(),
+            1,
+        )
+
+    def test_inbound_letter_clear_scan_file_via_update(self):
+        """수신 공문 수정 시 clear_scan_file 플래그로 기존 스캔본 제거 검증"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from docs.models import InboundLetter
+
+        inbound = InboundLetter.objects.create(
+            company=self.company_a,
+            document_number='IN-SCAN-001',
+            sender_name='서울시청',
+            title='스캔 제거 테스트',
+            scan_file=SimpleUploadedFile('origin.pdf', b'%PDF-1.4 test'),
+            creator=self.author_user,
+        )
+        self.assertTrue(bool(inbound.scan_file))
+
+        self.client.force_authenticate(user=self.author_user)
+        res = self.client.patch(
+            f'/api/v1/inbound-letter/{inbound.pk}/',
+            {'clear_scan_file': 'true'},
+            format='multipart',
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        inbound.refresh_from_db()
+        self.assertFalse(bool(inbound.scan_file))

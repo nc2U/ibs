@@ -2,7 +2,6 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/letters/_menu/headermixin.ts'
 import {
-  onBeforeRouteLeave,
   onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as Loaded,
   useRoute,
@@ -10,7 +9,7 @@ import {
 } from 'vue-router'
 import { useCompany } from '@/store/pinia/company'
 import { type InboundLetterFilter, useDocs } from '@/store/pinia/docs'
-import type { InboundLetter } from '@/store/types/docs'
+import type { InboundLetter, InboundLetterStatus, PatchInboundLetter } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -21,8 +20,8 @@ import LetterForm, { type LocalAttachmentItem } from './components/LetterForm.vu
 
 const mainViewName = ref('수신 공문 관리')
 
-const letterFilter = ref<InboundLetterFilter>({
-  company: '',
+const createDefaultFilter = (companyId: number | '' = ''): InboundLetterFilter => ({
+  company: companyId,
   received_date_from: '',
   received_date_to: '',
   reply_due_date_from: '',
@@ -36,6 +35,8 @@ const letterFilter = ref<InboundLetterFilter>({
   limit: 10,
 })
 
+const letterFilter = ref<InboundLetterFilter>(createDefaultFilter())
+
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
 
@@ -44,7 +45,6 @@ const letter = computed<InboundLetter | null>(() => docStore.inboundLetter)
 const letterList = computed(() => docStore.inboundLetterList)
 const letterCount = computed(() => docStore.inboundLetterCount)
 
-// 부서 및 직원 목록 셀렉트 옵션
 const departmentOptions = computed<{ value: number; label: string }[]>(() =>
   (comStore.getPkDeparts || [])
     .filter(d => d.value !== undefined)
@@ -58,34 +58,50 @@ const staffOptions = computed<{ value: number; label: string }[]>(() =>
 
 const fetchLetter = (pk: number) => docStore.fetchInboundLetter(pk)
 const fetchLetterList = (payload: InboundLetterFilter) => docStore.fetchInboundLetterList(payload)
-const createLetter = (payload: FormData) => docStore.createInboundLetter(payload)
-const updateLetter = (pk: number, payload: FormData) => docStore.updateInboundLetter(pk, payload)
+const createLetter = (payload: FormData, filter?: InboundLetterFilter) =>
+  docStore.createInboundLetter(payload, filter)
+const updateLetter = (pk: number, payload: FormData, filter?: InboundLetterFilter) =>
+  docStore.updateInboundLetter(pk, payload, filter)
 const deleteLetter = (pk: number, filter: InboundLetterFilter) =>
   docStore.deleteInboundLetter(pk, filter)
-const patchLetter = (pk: number, payload: any) => docStore.patchInboundLetter(pk, payload)
+const patchLetter = (pk: number, payload: PatchInboundLetter) =>
+  docStore.patchInboundLetter(pk, payload)
 
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
+
+const submitting = ref(false)
+const headerKey = ref(0)
+const isInitializing = ref(true)
+const loadedLetterPk = ref<number | null>(null)
+
+const loadSingleLetter = async (letterId?: string | string[]) => {
+  if (letterId) {
+    const numId = Number(letterId)
+    if (loadedLetterPk.value === numId && letter.value?.pk === numId) return
+    loadedLetterPk.value = numId
+    await fetchLetter(numId)
+  } else {
+    loadedLetterPk.value = null
+    docStore.removeInboundLetter()
+  }
+}
 
 watch(
   () => route.params.letterId,
   async val => {
-    if (val) {
-      await fetchLetter(Number(val))
-    } else {
-      docStore.removeInboundLetter()
-    }
+    if (isInitializing.value) return
+    await loadSingleLetter(val)
   },
 )
-
-const headerKey = ref(0)
-const isInitializing = ref(true)
 
 watch(
   company,
   async (newCompany, oldCompany) => {
     if (isInitializing.value) return
-    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined)
+    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
+      letterFilter.value = createDefaultFilter(newCompany)
       await dataSetup(newCompany, route.params?.letterId)
+    }
   },
   { immediate: false },
 )
@@ -106,21 +122,22 @@ const onSubmit = async (
   attachmentsToUpload?: LocalAttachmentItem[],
   pk?: number,
 ) => {
-  if (company.value) {
+  if (submitting.value || !company.value) return
+  submitting.value = true
+  try {
     let letterPk: number | null = null
 
     if (pk) {
-      const res = await updateLetter(pk, formData)
-      letterPk = res?.pk || pk
+      const updated = await updateLetter(pk, formData, letterFilter.value)
+      if (!updated?.pk) return
+      letterPk = updated.pk
     } else {
-      const result = await createLetter(formData)
-      if (result?.pk) {
-        letterPk = result.pk
-      }
+      const created = await createLetter(formData, letterFilter.value)
+      if (!created?.pk) return
+      letterPk = created.pk
     }
 
-    // 대기 중인 첨부파일 순차 업로드
-    if (letterPk && attachmentsToUpload && attachmentsToUpload.length > 0) {
+    if (attachmentsToUpload && attachmentsToUpload.length > 0) {
       for (const att of attachmentsToUpload) {
         const attFormData = new FormData()
         attFormData.append('letter', String(letterPk))
@@ -131,65 +148,78 @@ const onSubmit = async (
       }
     }
 
-    if (letterPk) {
-      await router.replace({
-        name: `${mainViewName.value} - 보기`,
-        params: { letterId: letterPk },
-      })
-    } else {
-      await router.replace({ name: mainViewName.value })
-    }
+    loadedLetterPk.value = letterPk
+    await router.replace({
+      name: `${mainViewName.value} - 보기`,
+      params: { letterId: letterPk },
+    })
+  } finally {
+    submitting.value = false
   }
 }
 
 const onDelete = async (pk: number) => {
-  await deleteLetter(pk, letterFilter.value)
-  await router.replace({ name: mainViewName.value })
+  const deleted = await deleteLetter(pk, letterFilter.value)
+  if (deleted) {
+    loadedLetterPk.value = null
+    await router.replace({ name: mainViewName.value })
+  }
 }
 
-const onStatusChange = async (pk: number, newStatus: string) => {
-  await patchLetter(pk, { status: newStatus as any })
+const onStatusChange = async (pk: number, newStatus: InboundLetterStatus) => {
+  await patchLetter(pk, { pk, status: newStatus })
 }
 
 const dataSetup = async (pk: number, letterId?: string | string[]) => {
   letterFilter.value.company = pk
+  loadedLetterPk.value = letterId ? Number(letterId) : null
   await Promise.all([
     fetchLetterList(letterFilter.value),
     comStore.fetchAllDepartList(pk),
-    comStore.fetchAllStaffList(pk),
+    comStore.fetchAllStaffList(pk, ''),
+    letterId ? fetchLetter(Number(letterId)) : Promise.resolve(),
   ])
-  if (letterId) await fetchLetter(Number(letterId))
+  if (!letterId) {
+    docStore.removeInboundLetter()
+  }
 }
 
 const dataReset = () => {
+  letterFilter.value = createDefaultFilter()
+  loadedLetterPk.value = null
   docStore.removeInboundLetterList()
   docStore.inboundLetterCount = 0
 }
 
-const clearQueryString = () => {
-  if (Object.keys(route.query).length > 0) {
+const clearCompanyQueryParam = () => {
+  if (route.query.company !== undefined) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.company
     router
       .replace({
         name: route.name,
         params: route.params,
-        query: {},
+        query: nextQuery,
       })
       .catch(() => {})
   }
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
-  if (!skipClearQuery) clearQueryString()
+  if (!skipClearQuery) clearCompanyQueryParam()
 
   if (target) {
     localStorage.setItem('curr-company', `${target}`)
-    await comStore.fetchCompany(target)
+    if (company.value !== target) {
+      await comStore.fetchCompany(target)
+    }
 
-    if (route.name?.includes('보기')) {
+    if (route.name?.includes('보기') || route.name?.includes('수정')) {
       await router.replace({ name: mainViewName.value })
     }
 
     if (isInitializing.value) {
+      letterFilter.value = createDefaultFilter(target)
       await dataSetup(target, route.params?.letterId)
       headerKey.value++
     }
@@ -203,8 +233,8 @@ onBeforeRouteUpdate(async to => {
 
   if (toCompanyId && toCompanyId !== company.value) {
     await comSelect(toCompanyId, true)
-  } else {
-    await dataSetup(company.value ?? comStore.initComId, to.params?.letterId)
+  } else if (to.name === mainViewName.value && company.value) {
+    await fetchLetterList(letterFilter.value)
   }
 })
 
@@ -215,7 +245,7 @@ const urlCompanyId = computed(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  let companyId = company.value ?? comStore.initComId
+  const companyId = company.value ?? comStore.initComId
 
   if (urlCompanyId.value) {
     await comSelect(urlCompanyId.value, true)
@@ -225,10 +255,6 @@ onBeforeMount(async () => {
 
   isInitializing.value = false
   loading.value = false
-})
-
-onBeforeRouteLeave(() => {
-  clearQueryString()
 })
 </script>
 
@@ -274,6 +300,7 @@ onBeforeRouteLeave(() => {
             :view-route="mainViewName"
             :departments="departmentOptions"
             :staffs="staffOptions"
+            :submitting="submitting"
             @on-submit="onSubmit"
           />
         </div>
@@ -285,6 +312,7 @@ onBeforeRouteLeave(() => {
             :view-route="mainViewName"
             :departments="departmentOptions"
             :staffs="staffOptions"
+            :submitting="submitting"
             @on-submit="onSubmit"
           />
         </div>

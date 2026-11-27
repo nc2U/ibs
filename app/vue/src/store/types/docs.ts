@@ -200,6 +200,18 @@ export interface TrashDocs {
 }
 
 // Official Letter (공문) Types
+export interface OfficialLetterSealDetail {
+  pk: number
+  name: string
+  seal_type: string
+  seal_type_desc: string
+  purpose?: string
+  internal_manager_name?: string | null
+  internal_manager_duty?: string | null
+  final_approval_duty_name?: string | null
+  seal_image: string | null
+}
+
 export interface OfficialLetterAttachment {
   pk?: number
   letter?: number
@@ -216,6 +228,7 @@ export interface OfficialLetter {
   pk?: number
   company: number | null
   company_name?: string
+  company_logo?: string | null
   document_number?: string
   title: string
   recipient_name: string
@@ -235,25 +248,18 @@ export interface OfficialLetter {
   issue_date: string
   effective_issue_date?: string
   seal?: number | null
-  seal_detail?: {
-    pk: number
-    name: string
-    seal_type: string
-    seal_type_desc: string
-    seal_image: string | null
-  } | null
+  seal_detail?: OfficialLetterSealDetail | null
   co_seal?: number | null
-  co_seal_detail?: {
-    pk: number
-    name: string
-    seal_type: string
-    seal_type_desc: string
-    seal_image: string | null
-  } | null
+  co_seal_detail?: OfficialLetterSealDetail | null
   sender_display_type?: 'company_only' | 'company_rep' | 'co_rep'
   sender_display_type_desc?: string
   sender_duty_title?: string
   sender_name?: string
+  sender_contact?: {
+    phone: string
+    fax: string
+    email: string
+  } | null
   pdf_file?: string | null
   disclosure_type?: '1' | '2' | '3'
   disclosure_type_desc?: string

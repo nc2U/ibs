@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePerms } from '@/composables/usePerms.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs.ts'
 import Pagination from '@/components/Pagination'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { formatShortDate, useLetterPerms } from '@/views/letters/utils/letterMeta'
 
 const props = defineProps<{
   company: number
@@ -21,15 +20,16 @@ const emit = defineEmits<{
   (e: 'pageSelect', page: number): void
 }>()
 
-const { can, PERM } = usePerms()
-const accStore = useAccount()
-const canDocsCreate = computed(() => accStore.isStaff && can(PERM.DOCS_CREATE))
+const { hasPerm, PERM } = useLetterPerms()
+const canDocsCreate = computed(() => hasPerm(PERM.DOCS_CREATE))
 
 const router = useRouter()
 
 const search = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
+const approvalStatus = ref<LetterFilter['approval_status']>('')
+const dispatchMethod = ref('')
 const ordering = ref('-created')
 
 const limit = computed(() => props.letterFilter.limit || 10)
@@ -41,6 +41,8 @@ watch(
     search.value = filter.search || ''
     dateFrom.value = filter.issue_date_from || ''
     dateTo.value = filter.issue_date_to || ''
+    approvalStatus.value = filter.approval_status || ''
+    dispatchMethod.value = filter.dispatch_method || ''
     ordering.value = filter.ordering || '-created'
   },
   { immediate: true },
@@ -51,6 +53,8 @@ const onFilter = () => {
     search: search.value,
     issue_date_from: dateFrom.value,
     issue_date_to: dateTo.value,
+    approval_status: approvalStatus.value,
+    dispatch_method: dispatchMethod.value,
     ordering: ordering.value,
     page: 1,
   })
@@ -60,11 +64,15 @@ const resetFilter = () => {
   search.value = ''
   dateFrom.value = ''
   dateTo.value = ''
+  approvalStatus.value = ''
+  dispatchMethod.value = ''
   ordering.value = '-created'
   emit('listFilter', {
     search: '',
     issue_date_from: '',
     issue_date_to: '',
+    approval_status: '',
+    dispatch_method: '',
     ordering: '-created',
     page: 1,
   })
@@ -77,26 +85,44 @@ const goToCreate = () => {
 const goToView = (pk: number) => {
   router.push({ name: `${props.viewRoute} - 보기`, params: { letterId: pk } })
 }
-
-const formatDate = (dateStr: string | undefined) => {
-  if (!dateStr) return '-'
-  return dateStr.substring(0, 10)
-}
 </script>
 
 <template>
   <div>
     <!-- Filter Section -->
-    <CRow class="mb-3">
-      <CCol md="3">
+    <CRow class="mb-3 g-2">
+      <CCol md="2">
         <CFormLabel>발신일 (시작)</CFormLabel>
         <DatePicker v-model="dateFrom" placeholder="시작일" @update:model-value="onFilter" />
       </CCol>
-      <CCol md="3">
+      <CCol md="2">
         <CFormLabel>발신일 (종료)</CFormLabel>
         <DatePicker v-model="dateTo" placeholder="종료일" @update:model-value="onFilter" />
       </CCol>
-      <CCol md="3">
+      <CCol md="2">
+        <CFormLabel>결재 / 발송상태</CFormLabel>
+        <CFormSelect v-model="approvalStatus" @change="onFilter">
+          <option value="">전체 상태</option>
+          <option value="none">미상신</option>
+          <option value="pending">진행중</option>
+          <option value="approved">승인완료</option>
+          <option value="rejected">반려</option>
+          <option value="dispatched">발송완료</option>
+        </CFormSelect>
+      </CCol>
+      <CCol md="2">
+        <CFormLabel>발송방법</CFormLabel>
+        <CFormSelect v-model="dispatchMethod" @change="onFilter">
+          <option value="">전체 방법</option>
+          <option value="email">이메일</option>
+          <option value="registered_mail">등기우편</option>
+          <option value="direct">인편/직접교부</option>
+          <option value="courier">퀵/택배</option>
+          <option value="fax">팩스</option>
+          <option value="etc">기타</option>
+        </CFormSelect>
+      </CCol>
+      <CCol md="2">
         <CFormLabel>정렬</CFormLabel>
         <CFormSelect v-model="ordering" @change="onFilter">
           <option value="-created">최신순</option>
@@ -106,7 +132,7 @@ const formatDate = (dateStr: string | undefined) => {
           <option value="document_number">문서번호순</option>
         </CFormSelect>
       </CCol>
-      <CCol md="3">
+      <CCol md="2">
         <CFormLabel>검색</CFormLabel>
         <CInputGroup>
           <CFormInput
@@ -174,7 +200,7 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.recipient_name }}</CTableDataCell>
           <CTableDataCell class="text-center">
-            <v-chip color="dark" variant="flat" size="x-small" class="me-1">
+            <v-chip color="blue-grey-darken-2" variant="flat" size="x-small" class="me-1">
               {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
             </v-chip>
             <small
@@ -186,7 +212,7 @@ const formatDate = (dateStr: string | undefined) => {
             </small>
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
+            {{ formatShortDate(letter.effective_issue_date || letter.issue_date) }}
           </CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.creator?.username || '-' }}</CTableDataCell>
           <CTableDataCell class="text-center">

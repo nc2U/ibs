@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { type ComponentPublicInstance, computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { markdownRender } from '@/utils/helper.ts'
-import { usePerms } from '@/composables/usePerms.ts'
+import { sanitizeExternalUrl } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs.ts'
-import { useAccount } from '@/store/pinia/account.ts'
-import { useCompany } from '@/store/pinia/company.ts'
 import type { OfficialLetter } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import LetterA4Preview from './LetterA4Preview.vue'
+import {
+  composeAddress,
+  getLocalTodayStr,
+  isDelegationDutyTitle,
+  parseRepresentatives,
+  resolveApproverDutyTitle,
+  resolveFinalApproverName,
+  resolveRepresentativeName,
+  resolveSenderContact,
+  splitStoredAddress,
+  stripDrafterTitles,
+  useLetterPerms,
+} from '@/views/letters/utils/letterMeta'
 
-const props = defineProps<{
-  company: number
-  letter?: OfficialLetter
-  viewRoute: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    company: number
+    letter?: OfficialLetter
+    viewRoute: string
+    submitting?: boolean
+  }>(),
+  {
+    letter: undefined,
+    submitting: false,
+  },
+)
 
 export interface LocalAttachmentItem {
   file: File
@@ -34,42 +52,26 @@ const emit = defineEmits<{
   ): void
 }>()
 
-const { can, PERM } = usePerms()
-const accStore = useAccount()
-const comStore = useCompany()
+const { accStore, comStore, hasPerm, PERM } = useLetterPerms()
 const sealList = computed(() => comStore.sealList)
 const currentCompany = computed(() => comStore.company)
 
-// 대표이사 정보 분석 (단독 / 공동대표)
-const representativesList = computed(() => {
-  if (!currentCompany.value?.ceo) return []
-  const parts = currentCompany.value.ceo
-    .replace(/;/g, ',')
-    .split(',')
-    .map((p: string) => p.trim())
-    .filter(Boolean)
-  const isJoint = parts.length > 1 || form.value.sender_display_type === 'co_rep'
-  return parts.map((name: string) => ({
-    title: isJoint ? '공동대표이사' : '대표이사',
-    name,
-  }))
-})
+const approvalMode = ref<'approval' | 'manual'>('approval')
 
-const representativeName = computed(() => {
-  return (
-    representativesList.value[0]?.name ||
-    currentCompany.value?.representative_name ||
-    currentCompany.value?.ceo?.split(',')?.[0]?.trim() ||
-    ''
-  )
-})
+// 대표이사 정보 분석 (단독 / 공동대표)
+const representativesList = computed(() =>
+  parseRepresentatives(currentCompany.value?.ceo, form.value.sender_display_type === 'co_rep'),
+)
+
+const representativeName = computed(() =>
+  resolveRepresentativeName(currentCompany.value, representativesList.value),
+)
 
 // 모드별 선택 가능한 인장 목록 필터링:
-// 전자결재 모드(approval)인 경우 부서/현장 직인(DEPT_SEAL)은 연동 결재선(route_template)이 있거나 책임자/전결직책이 완비된 인장만 허용
+// 전자결재 모드(approval)인 경우 부서/현장 직인(DEPT_SEAL)은 연동 결재선(route_template)이 있거나 전결직책이 완비된 인장만 허용
 const availableSealList = computed(() => {
   return sealList.value.filter(s => {
     if (approvalMode.value === 'approval' && s.seal_type === 'DEPT_SEAL') {
-      // 부서장 직인은 연동 결재선 템플릿이 있거나 전결 직책이 있는 경우에만 전자결재 노출
       return !!s.route_template || !!s.final_approval_duty
     }
     return true
@@ -82,36 +84,15 @@ const selectedSeal = computed(() => {
 })
 const selectedSealImage = computed(() => selectedSeal.value?.seal_image || null)
 
-// 공동대표 보조 인장
 const selectedCoSeal = computed(() => {
   if (!form.value.co_seal) return null
   return sealList.value.find(item => item.pk === form.value.co_seal) || null
 })
 const selectedCoSealImage = computed(() => selectedCoSeal.value?.seal_image || null)
 
-// 최종 승인(전결)권자의 직위/직책 명칭 (예: '대표이사', '현장소장', '본부장' 등)
-const approverDutyTitle = computed(() => {
-  if (form.value.sender_duty_title) return form.value.sender_duty_title
-  if (selectedSeal.value?.internal_manager_duty) return selectedSeal.value.internal_manager_duty
-  return selectedSeal.value?.final_approval_duty_name || '대표이사'
-})
-
-// 최종 승인(전결)권자 성명
-const finalApproverName = computed(() => {
-  if (form.value.sender_name) return form.value.sender_name
-  // 1순위: 선택된 인장의 사내 총괄 관리책임자 성명
-  if (selectedSeal.value?.internal_manager_name) {
-    return selectedSeal.value.internal_manager_name
-  }
-  // 2순위: 전결 직책이 있는 인장인 경우
-  if (['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value)) {
-    return (
-      cleanDrafterName.value || form.value.drafter_name || representativeName.value || '전결권자'
-    )
-  }
-  // 3순위: 기본 대표이사 성명
-  return representativeName.value || cleanDrafterName.value || '대표이사'
-})
+const approverDutyTitle = computed(() =>
+  resolveApproverDutyTitle(form.value.sender_duty_title, selectedSeal.value),
+)
 
 const cleanDrafterName = computed(() => {
   const name =
@@ -121,16 +102,24 @@ const cleanDrafterName = computed(() => {
         accStore.userInfo?.username ||
         ''
       : form.value.drafter_name || ''
-  return name.replace(/대표이사|대표|사장|소장|본부장|팀장/g, '').trim()
+  return stripDrafterTitles(name)
 })
 
-// 승인(전결)권자 직접 기안 단독 결재 여부
+const finalApproverName = computed(() =>
+  resolveFinalApproverName({
+    senderName: form.value.sender_name,
+    seal: selectedSeal.value,
+    dutyTitle: approverDutyTitle.value,
+    cleanDrafter: cleanDrafterName.value || form.value.drafter_name || '',
+    representativeName: representativeName.value,
+  }),
+)
+
 const isSoloApproval = computed(() => {
   if (form.value.is_solo_approval) return true
-  // 수동 발송 모드에서 대표이사 결재 시 기안자명과 대표이사 성명이 일치하면 자동 단독 처리
   if (
     approvalMode.value === 'manual' &&
-    !['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value) &&
+    !isDelegationDutyTitle(approverDutyTitle.value) &&
     cleanDrafterName.value &&
     representativeName.value &&
     cleanDrafterName.value === representativeName.value
@@ -140,26 +129,17 @@ const isSoloApproval = computed(() => {
   return false
 })
 
-// 발신자 연락처: 기안자 직원(Staff) 직통 연락처 우선, 미등록 시 회사 대표 연락처
-const senderContact = computed(() => {
-  const phone =
-    (approvalMode.value === 'approval' ? accStore.userInfo?.staff_phone : '') ||
-    currentCompany.value?.phone ||
-    '-'
-  const fax =
-    (approvalMode.value === 'approval' ? accStore.userInfo?.staff_fax : '') ||
-    currentCompany.value?.fax ||
-    '-'
-  const email =
-    (approvalMode.value === 'approval' ? accStore.userInfo?.email : '') ||
-    currentCompany.value?.email ||
-    ''
-  return { phone, fax, email }
-})
+const senderContact = computed(() =>
+  resolveSenderContact({
+    company: currentCompany.value,
+    letter: props.letter ?? null,
+    userInfo: accStore.userInfo,
+    approvalMode: approvalMode.value,
+  }),
+)
 
 const isEdit = computed(() => !!props.letter?.pk)
 
-// 결재 진행 상태 확인
 const isApprovalPending = computed(() => props.letter?.approval_status === 'pending')
 const isApprovalApproved = computed(() => props.letter?.approval_status === 'approved')
 const isApprovalRejected = computed(() => props.letter?.approval_status === 'rejected')
@@ -167,8 +147,10 @@ const isApprovalRejected = computed(() => props.letter?.approval_status === 'rej
 // 결재가 진행 중이거나 최종 승인된 문서는 위·변조 방지를 위해 수정 전면 비활성화
 const canOLManage = computed(() => {
   if (isApprovalPending.value || isApprovalApproved.value) return false
-  return isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)
+  return isEdit.value ? hasPerm(PERM.DOCS_UPDATE) : hasPerm(PERM.DOCS_CREATE)
 })
+
+const canDeleteAttachment = computed(() => hasPerm(PERM.DOCS_DELETE))
 
 // 수정 모드이면서 전자결재 연동 이력이 있는 경우 발송 모드(전자결재 vs 단독) 변경 토글 잠금
 const isApprovalModeLocked = computed(() => {
@@ -185,14 +167,11 @@ const router = useRouter()
 const docStore = useDocs()
 
 const nextDocNumber = ref('')
-
-// 발송 유형 모드: 'approval' (전자결재 상신) | 'manual' (수동/직접 발송)
-const approvalMode = ref<'approval' | 'manual'>('approval')
-
-// 붙임(첨부) 입력 모드: 'file' (파일 직접 첨부) | 'text' (텍스트 직접 입력)
 const attachmentInputMode = ref<'file' | 'text'>('file')
 const pendingAttachments = ref<LocalAttachmentItem[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const pendingDeleteAttId = ref<number | null>(null)
 
 // Form fields
 const form = ref<OfficialLetter>({
@@ -203,7 +182,7 @@ const form = ref<OfficialLetter>({
   recipient_reference: '',
   content: '',
   attachment_text: '',
-  issue_date: new Date().toISOString().substring(0, 10),
+  issue_date: getLocalTodayStr(),
   disclosure_type: '1',
   seal: null,
   co_seal: null,
@@ -217,7 +196,6 @@ const form = ref<OfficialLetter>({
   sender_address: '',
   approval_mode: 'approval',
   parent_inbound_letter: null,
-  // 발송 관리 메타 정보
   recipient_address: '',
   recipient_contact: '',
   dispatch_method: 'email',
@@ -225,64 +203,68 @@ const form = ref<OfficialLetter>({
   dispatched_at: null,
 })
 
+const getDefaultDrafterName = () =>
+  accStore.userInfo?.staff_name ||
+  accStore.userInfo?.profile?.name ||
+  accStore.userInfo?.username ||
+  ''
+
 onMounted(() => {
-  if (!props.letter?.pk && route.query) {
-    if (route.query.reply_to_inbound) {
-      form.value.parent_inbound_letter = Number(route.query.reply_to_inbound)
+  if (!props.letter?.pk) {
+    if (!form.value.drafter_name) {
+      form.value.drafter_name = getDefaultDrafterName()
     }
-    if (route.query.recipient_name) {
-      form.value.recipient_name = String(route.query.recipient_name)
-    }
-    if (route.query.title) {
-      form.value.title = String(route.query.title)
+    if (route.query) {
+      if (route.query.reply_to_inbound) {
+        form.value.parent_inbound_letter = Number(route.query.reply_to_inbound)
+      }
+      if (route.query.recipient_name) {
+        form.value.recipient_name = String(route.query.recipient_name)
+      }
+      if (route.query.title) {
+        form.value.title = String(route.query.title)
+      }
     }
   }
 })
 
-const validated = ref(false)
-// 경유/참조 필드 펼침 상태 (입력된 값이 있으면 기본 오픈)
-const showViaRef = ref(false)
-// 발신지 주소 직접 입력(현장/지사) 펼침 상태 (입력된 값이 있으면 기본 오픈)
-const showCustomAddress = ref(false)
-// DaumPostcode 컴포넌트 ref
-const refPostCode = ref()
+watch(
+  () => accStore.userInfo,
+  user => {
+    if (!props.letter?.pk && !form.value.drafter_name && user) {
+      form.value.drafter_name = getDefaultDrafterName()
+    }
+  },
+)
 
-// 주소 상세 입력을 위한 분리 상태 및 DOM ref
-// DaumPostcode에서 반환된 기본 도로명/지번 주소(address1)와 참고항목(address3: 법정동, 공동주택명 등)
+const validated = ref(false)
+const showViaRef = ref(false)
+const showCustomAddress = ref(false)
+const refPostCode = ref<{ initiate: (num: number) => void } | null>(null)
+
+type TextInputRef = ComponentPublicInstance | HTMLInputElement | null
+
 const senderAddress1 = ref('')
 const senderAddress3 = ref('')
 const senderAddressDetail = ref('')
-const senderDetailInputRef = ref<any>(null)
+const senderDetailInputRef = ref<TextInputRef>(null)
 
 const recipientAddress1 = ref('')
 const recipientAddress3 = ref('')
 const recipientAddressDetail = ref('')
-const recipientDetailInputRef = ref<any>(null)
+const recipientDetailInputRef = ref<TextInputRef>(null)
 
-// 화면 노출용 기본 주소 표기 (예: 인천 연수구 능허대로 287)
-const senderAddressBase = computed(() => {
-  return senderAddress1.value
-})
-
-const recipientAddressBase = computed(() => {
-  return recipientAddress1.value
-})
-
-// 표준 주소 조합 함수: [기본주소] [상세주소] [(법정동/참고항목)]
-// 예: 인천 연수구 능허대로 287 대성빌딩 4층 (동춘동)
-const composeAddress = (addr1: string, detail: string, addr3: string) => {
-  const parts: string[] = []
-  if (addr1.trim()) parts.push(addr1.trim())
-  if (detail.trim()) parts.push(detail.trim())
-  if (addr3.trim()) {
-    const cleanRef = addr3.trim()
-    const formattedRef = cleanRef.startsWith('(') ? cleanRef : `(${cleanRef})`
-    parts.push(formattedRef)
+const focusInputEl = (targetRef: TextInputRef) => {
+  if (!targetRef) return
+  if ('$el' in targetRef && targetRef.$el instanceof HTMLElement) {
+    targetRef.$el.querySelector('input')?.focus()
+    return
   }
-  return parts.join(' ')
+  if ('focus' in targetRef && typeof targetRef.focus === 'function') {
+    targetRef.focus()
+  }
 }
 
-// 상세주소 입력 시 form 필드와 동기화
 const updateSenderAddress = () => {
   form.value.sender_address = composeAddress(
     senderAddress1.value,
@@ -303,28 +285,18 @@ const addressCallback = (data: AddressData) => {
   const { formNum, zipcode, address1, address3 } = callAddress(data)
 
   if (formNum === 1) {
-    // 1: 발신지(현장/지사) 주소
     form.value.sender_zipcode = zipcode
     senderAddress1.value = address1.trim()
     senderAddress3.value = address3.trim()
     senderAddressDetail.value = ''
     updateSenderAddress()
-    // 상세주소 입력창으로 포커스 이동
-    setTimeout(() => {
-      senderDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
-        senderDetailInputRef.value?.focus?.()
-    }, 100)
+    setTimeout(() => focusInputEl(senderDetailInputRef.value), 100)
   } else if (formNum === 2) {
-    // 2: 수신처(발송지) 주소
     recipientAddress1.value = address1.trim()
     recipientAddress3.value = address3.trim()
     recipientAddressDetail.value = ''
     updateRecipientAddress()
-    // 상세주소 입력창으로 포커스 이동
-    setTimeout(() => {
-      recipientDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
-        recipientDetailInputRef.value?.focus?.()
-    }, 100)
+    setTimeout(() => focusInputEl(recipientDetailInputRef.value), 100)
   }
 }
 
@@ -348,13 +320,16 @@ watch(
         dispatch_method: letter.dispatch_method || 'email',
         tracking_number: letter.tracking_number || '',
       }
-      senderAddress1.value = letter.sender_address || ''
-      senderAddress3.value = ''
-      senderAddressDetail.value = ''
-      recipientAddress1.value = letter.recipient_address || ''
-      recipientAddress3.value = ''
-      recipientAddressDetail.value = ''
-      // 발송 유형 모드 복원: approval_mode가 지정되어 있으면 이를 최우선으로 적용
+      const parsedSender = splitStoredAddress(letter.sender_address)
+      senderAddress1.value = parsedSender.base
+      senderAddressDetail.value = parsedSender.detail
+      senderAddress3.value = parsedSender.ref
+
+      const parsedRecipient = splitStoredAddress(letter.recipient_address)
+      recipientAddress1.value = parsedRecipient.base
+      recipientAddressDetail.value = parsedRecipient.detail
+      recipientAddress3.value = parsedRecipient.ref
+
       if (letter.approval_mode) {
         approvalMode.value = letter.approval_mode
       } else if (
@@ -366,27 +341,16 @@ watch(
         approvalMode.value = 'manual'
       }
 
-      // 붙임 입력 모드 자동 설정: 텍스트가 있고 파일이 없으면 텍스트 모드로
       if (letter.attachment_text && (!letter.attachments || letter.attachments.length === 0)) {
         attachmentInputMode.value = 'text'
       } else {
         attachmentInputMode.value = 'file'
       }
 
-      // 경유나 참조 값이 있으면 펼침 상태로 유지
-      if (letter.via || letter.recipient_reference) {
-        showViaRef.value = true
-      }
-      // 발신지 주소 입력값이 있으면 펼침 상태로 유지
-      if (letter.sender_address || letter.sender_zipcode) {
-        showCustomAddress.value = true
-      }
-      // 신규 작성 시 회사의 공식 장부에 등록된 직원 성명(staff_name)으로 기본 기안자명 준비
-      const currentUserName =
-        accStore.userInfo?.staff_name ||
-        accStore.userInfo?.profile?.name ||
-        accStore.userInfo?.username ||
-        ''
+      showViaRef.value = !!(letter.via || letter.recipient_reference)
+      showCustomAddress.value = !!(letter.sender_address || letter.sender_zipcode)
+
+      const currentUserName = getDefaultDrafterName()
       if (!form.value.drafter_name && currentUserName) {
         form.value.drafter_name = currentUserName
       }
@@ -397,8 +361,13 @@ watch(
 
 watch(
   () => props.company,
-  async newCompany => {
+  async (newCompany, oldCompany) => {
     if (newCompany) {
+      if (oldCompany && newCompany !== oldCompany && !props.letter?.pk) {
+        form.value.seal = null
+        form.value.co_seal = null
+        form.value.parent_inbound_letter = null
+      }
       await comStore.fetchCompanySealList(newCompany)
       if (!props.letter?.pk) {
         nextDocNumber.value = await docStore.getNextDocumentNumber(newCompany)
@@ -426,38 +395,63 @@ const removePendingAttachment = (index: number) => {
   pendingAttachments.value.splice(index, 1)
 }
 
-const deleteExistingAttachment = async (attachmentId: number) => {
-  if (props.letter?.pk && confirm('이 첨부파일을 삭제하시겠습니까?')) {
-    await docStore.deleteLetterAttachment(attachmentId, props.letter.pk)
+const deleteExistingAttachment = (attachmentId: number) => {
+  if (!props.letter?.pk) return
+  pendingDeleteAttId.value = attachmentId
+  refConfirmModal.value?.callModal(
+    '첨부파일 삭제 확인',
+    '이 첨부파일을 삭제하시겠습니까?',
+    'mdi-alert-circle-outline',
+    'red-lighten-3',
+    '삭제',
+    'red-lighten-2',
+  )
+}
+
+const handleConfirmDeleteAttachment = async () => {
+  if (pendingDeleteAttId.value && props.letter?.pk) {
+    await docStore.deleteLetterAttachment(pendingDeleteAttId.value, props.letter.pk)
+    pendingDeleteAttId.value = null
+  }
+  refConfirmModal.value?.close()
+}
+
+const onDispatchedDateUpdate = (dateVal: string) => {
+  if (!dateVal) {
+    form.value.dispatched_at = null
+    return
+  }
+  const origDispatched = props.letter?.dispatched_at
+  if (origDispatched && origDispatched.substring(0, 10) === dateVal) {
+    form.value.dispatched_at = origDispatched
+  } else {
+    form.value.dispatched_at = `${dateVal}T00:00:00`
   }
 }
 
 const onSubmit = (isDirectSubmit = false) => {
+  if (props.submitting) return
   validated.value = true
 
-  // 발송 유형 모드 동기화
   form.value.approval_mode = approvalMode.value
 
-  // 전자결재 모드일 때는 기안자명이 비어있을 경우 직원 성명으로 자동 보정
-  if (approvalMode.value === 'approval' && !form.value.drafter_name) {
-    form.value.drafter_name =
-      accStore.userInfo?.staff_name ||
-      accStore.userInfo?.profile?.name ||
-      accStore.userInfo?.username ||
-      '기안'
+  if (approvalMode.value !== 'manual' || form.value.sender_display_type !== 'company_rep') {
+    form.value.sender_duty_title = ''
+    form.value.sender_name = ''
   }
 
-  // 텍스트 모드가 아닐 때는 attachment_text를 비워 상호 배타적으로 유지
+  if (approvalMode.value === 'approval' && !form.value.drafter_name) {
+    form.value.drafter_name = getDefaultDrafterName() || '기안'
+  }
+
   if (attachmentInputMode.value === 'file') {
     form.value.attachment_text = ''
   }
 
-  // 수동 발송 모드에서 승인(전결)권자 직접 기안 시 기안자명이 비어있으면 최종 승인권자 명의로 자동 설정
   if (approvalMode.value === 'manual' && form.value.is_solo_approval && !form.value.drafter_name) {
     form.value.drafter_name = finalApproverName.value || approverDutyTitle.value
   }
 
-  // Validate required fields
   if (
     !form.value.title ||
     !form.value.recipient_name ||
@@ -468,7 +462,7 @@ const onSubmit = (isDirectSubmit = false) => {
     return
   }
 
-  emit('onSubmit', form.value, pendingAttachments.value, isDirectSubmit)
+  emit('onSubmit', form.value, pendingAttachments.value, isDirectSubmit === true)
 }
 
 const goBack = () => {
@@ -508,11 +502,16 @@ const goBack = () => {
       </div>
     </CAlert>
 
-    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
+    <CForm
+      class="needs-validation"
+      novalidate
+      :validated="validated"
+      @submit.prevent="onSubmit(false)"
+    >
       <CRow>
         <!-- 좌측: 공문서 작성/수정 폼 (lg: 6, xl: 7) -->
         <CCol lg="6" xl="7">
-          <!-- 1. 공문서 서식 영역 (PDF 템플릿과 동일 순서) -->
+          <!-- 1. 공문서 서식 영역 -->
           <CCard class="mb-4 shadow-sm border">
             <CCardHeader
               class="py-3 bg-more-light border-bottom d-flex justify-content-between align-items-center"
@@ -539,8 +538,8 @@ const goBack = () => {
               </v-chip>
             </CCardHeader>
             <CCardBody>
-              <!-- 수신 / (경유) / 참조 / 제목 (정돈된 공문서 서식 레이아웃) -->
-              <div class="letter-meta-box p-3 rounded mb-4 border bg-light">
+              <!-- 수신 / (경유) / 참조 / 제목 -->
+              <div class="letter-meta-box p-3 rounded mb-4 border bg-more-light">
                 <div
                   class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom"
                 >
@@ -555,7 +554,6 @@ const goBack = () => {
                       수신 및 제목 정보
                     </strong>
                   </div>
-                  <!-- 경유/참조 토글 버튼 -->
                   <v-btn
                     variant="text"
                     density="compact"
@@ -614,7 +612,7 @@ const goBack = () => {
                   </CCol>
                 </CRow>
 
-                <!-- 2행: 경유 & 참조 (토글 펼침 또는 값이 있을 때 노출) -->
+                <!-- 2행: 경유 & 참조 -->
                 <CRow
                   v-if="showViaRef"
                   class="mb-3 pt-2 pb-1 border border-light-subtle rounded mx-0"
@@ -643,7 +641,7 @@ const goBack = () => {
                   </CCol>
                 </CRow>
 
-                <!-- 3행: 제목 (시각적 위계 강화 - 굵은 글씨 및 또렷한 서식) -->
+                <!-- 3행: 제목 -->
                 <CRow class="mt-2">
                   <CCol md="12">
                     <CRow>
@@ -691,10 +689,9 @@ const goBack = () => {
               </div>
 
               <!-- 붙임(첨부) 목록 -->
-              <div class="mb-4 p-3 bg-light rounded border">
+              <div class="mb-4 p-3 bg-more-light rounded border">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <CFormLabel class="fw-bold mb-0"> 붙임 (첨부 서류 목록) </CFormLabel>
-                  <!-- 붙임 방식 토글 (Vuetify 세그먼트 컨트롤) -->
                   <v-btn-toggle
                     v-model="attachmentInputMode"
                     mandatory
@@ -757,6 +754,7 @@ const goBack = () => {
                         <small class="text-muted ms-2">[{{ att.file_name }}]</small>
                       </div>
                       <v-btn
+                        v-if="canDeleteAttachment"
                         color="error"
                         variant="text"
                         size="small"
@@ -839,12 +837,12 @@ const goBack = () => {
                       </CRow>
 
                       <!-- 실시간 공문 인쇄 미리보기 -->
-                      <div class="bg-light p-2 rounded border small text-secondary">
-                        <span class="fw-bold text-dark">인쇄 미리보기: </span>
-                        <span
-                          >{{ (form.attachments?.length || 0) + idx + 1 }}.
-                          {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.</span
-                        >
+                      <div class="bg-more-light p-2 rounded border small text-secondary">
+                        <span class="fw-bold text-body">인쇄 미리보기: </span>
+                        <span>
+                          {{ (form.attachments?.length || 0) + idx + 1 }}.
+                          {{ att.name || att.file.name }} {{ att.quantity || '1부' }}.
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -878,8 +876,7 @@ const goBack = () => {
               </div>
 
               <!-- 발신 명의, 날인 및 기안자 정보 -->
-              <div class="p-3 bg-light rounded border">
-                <!-- 1. 발송 유형 및 발신 명의 표기 형태 (상단 핵심 컨트롤) -->
+              <div class="p-3 bg-more-light rounded border">
                 <div
                   class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom"
                 >
@@ -916,7 +913,6 @@ const goBack = () => {
 
                 <!-- 1. 발신 명의 및 날인 직인 일체형 설정 카드 -->
                 <div class="mb-3 p-3 bg-more-white rounded border">
-                  <!-- 발신 명의 표기 형태 선택 (회사명만 / 회사명+직책성명 / 공동대표 병기) -->
                   <div
                     class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"
                   >
@@ -929,7 +925,6 @@ const goBack = () => {
                       mandatory
                       density="compact"
                       color="blue-grey-lighten-1"
-                      @update:model-value="(val: any) => (form.sender_display_type = val)"
                     >
                       <v-btn value="company_only" size="small" class="px-3 text-none">
                         회사명 + 인장 표기
@@ -959,9 +954,8 @@ const goBack = () => {
 
                   <hr class="my-2 border-light" />
 
-                  <!-- 날인 인감 선택 (인장 1 & 공동대표 인장 2) -->
+                  <!-- 날인 인감 선택 -->
                   <CRow class="g-2 align-items-start">
-                    <!-- 제1 날인 인감 -->
                     <CCol md="6">
                       <CFormLabel class="small fw-semibold mb-1">
                         <v-icon icon="mdi-seal" size="small" class="me-1 text-secondary" />
@@ -985,14 +979,13 @@ const goBack = () => {
                         </option>
                       </CFormSelect>
 
-                      <!-- 인장 뱃지 및 메타 정보 -->
                       <div
                         v-if="selectedSeal"
-                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-light rounded border"
+                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-more-light rounded border"
                       >
                         <img
                           v-if="selectedSealImage"
-                          :src="selectedSealImage"
+                          :src="sanitizeExternalUrl(selectedSealImage)"
                           alt="인장1"
                           style="width: 36px; height: 36px; object-fit: contain"
                           class="border rounded p-1 bg-more-white"
@@ -1043,7 +1036,6 @@ const goBack = () => {
                       </div>
                     </CCol>
 
-                    <!-- 제2 날인 인감 (공동대표 병기 모드일 때만 활성화) -->
                     <CCol v-if="form.sender_display_type === 'co_rep'" md="6">
                       <CFormLabel class="small fw-semibold mb-1">
                         <v-icon icon="mdi-seal" size="small" class="me-1 text-secondary" />
@@ -1065,11 +1057,11 @@ const goBack = () => {
 
                       <div
                         v-if="selectedCoSeal"
-                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-light rounded border"
+                        class="d-flex align-items-center gap-2 mt-2 p-2 bg-more-light rounded border"
                       >
                         <img
                           v-if="selectedCoSealImage"
-                          :src="selectedCoSealImage"
+                          :src="sanitizeExternalUrl(selectedCoSealImage)"
                           alt="인장2"
                           style="width: 36px; height: 36px; object-fit: contain"
                           class="border rounded p-1 bg-more-white"
@@ -1103,10 +1095,10 @@ const goBack = () => {
                     </CCol>
                   </CRow>
 
-                  <!-- 단독/직접 발송 시: 발송 승인자 직접 지정 (회사명 + 직책·성명 선택 시) -->
+                  <!-- 단독/직접 발송 시: 발송 승인자 직접 지정 -->
                   <CRow
                     v-if="approvalMode === 'manual' && form.sender_display_type === 'company_rep'"
-                    class="mb-3 p-2 bg-light rounded border align-items-center g-2"
+                    class="mt-2 mb-1 p-2 bg-more-light rounded border align-items-center g-2"
                   >
                     <CCol md="6">
                       <CFormLabel class="small fw-semibold text-primary mb-1">
@@ -1145,7 +1137,6 @@ const goBack = () => {
                 <!-- 4. 수동 발송 모드 시 기안자 및 단독결재 설정 -->
                 <div v-if="approvalMode === 'manual'" class="mb-3 p-2 bg-more-white rounded border">
                   <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <!-- 좌측: 일반적인 기안/담당자 정보 입력 (단독 기안 아닐 때) -->
                     <div
                       v-if="!form.is_solo_approval"
                       class="d-flex flex-wrap align-items-center gap-2 flex-grow-1"
@@ -1171,7 +1162,6 @@ const goBack = () => {
                         />
                       </div>
                     </div>
-                    <!-- 단독 기안일 때 좌측 안내 문구 -->
                     <div v-else class="text-muted small py-2 flex-grow-1">
                       <v-icon
                         icon="mdi-information-outline"
@@ -1181,7 +1171,6 @@ const goBack = () => {
                       승인권자({{ approverDutyTitle }}) 직접 기안으로 하단 담당자란이 생략됩니다.
                     </div>
 
-                    <!-- 우측 끝 항상 고정 정렬: 승인권자 직접 기안(단독결재) 체크박스 -->
                     <div class="text-end ms-auto ps-2 border-start">
                       <CFormCheck
                         id="is_solo_approval_check"
@@ -1198,9 +1187,8 @@ const goBack = () => {
 
                 <hr class="my-2 text-muted" />
 
-                <!-- 5. 하단 부가 설정 (발신지 주소 토글 & 공개 구분) -->
+                <!-- 5. 하단 부가 설정 -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                  <!-- 좌측: 발신지 주소 직접 지정 (현장/지사) 토글 -->
                   <div>
                     <v-btn
                       variant="text"
@@ -1228,7 +1216,6 @@ const goBack = () => {
                     </small>
                   </div>
 
-                  <!-- 우측: 공개 구분 선택 (컴팩트 인라인 배치) -->
                   <div class="d-flex align-items-center gap-2">
                     <span class="small fw-semibold text-secondary text-nowrap">
                       공개 구분 <span class="text-danger">*</span>
@@ -1270,12 +1257,10 @@ const goBack = () => {
                     <CCol :xs="12" :md="4">
                       <CFormLabel class="small mb-1">기본 도로명 주소</CFormLabel>
                       <CFormInput
-                        v-model="senderAddressBase"
+                        v-model="senderAddress1"
                         size="sm"
-                        placeholder="주소 검색 시 자동 입력"
-                        readonly
-                        style="cursor: pointer"
-                        @click="refPostCode?.initiate(1)"
+                        placeholder="주소 검색 또는 직접 입력"
+                        @input="updateSenderAddress"
                       />
                     </CCol>
                     <CCol :xs="12" :md="4">
@@ -1294,7 +1279,7 @@ const goBack = () => {
             </CCardBody>
           </CCard>
 
-          <!-- 2. 발송 및 대장 관리 메타 영역 (공문서에는 인쇄되지 않는 업무 관리 데이터) -->
+          <!-- 2. 발송 및 대장 관리 메타 영역 -->
           <CCard class="mb-4 shadow-sm border">
             <CCardHeader class="py-3 bg-more-light border-bottom d-flex align-items-center">
               <v-icon icon="mdi-folder-open-outline" size="small" color="secondary" class="me-2" />
@@ -1315,11 +1300,9 @@ const goBack = () => {
                   <CFormLabel>수신처 기본 주소</CFormLabel>
                   <CInputGroup>
                     <CFormInput
-                      v-model="recipientAddressBase"
-                      placeholder="주소 검색 시 자동 입력"
-                      readonly
-                      style="cursor: pointer"
-                      @click="refPostCode?.initiate(2)"
+                      v-model="recipientAddress1"
+                      placeholder="주소 검색 또는 직접 입력"
+                      @input="updateRecipientAddress"
                     />
                     <CButton
                       type="button"
@@ -1374,7 +1357,7 @@ const goBack = () => {
                   <DatePicker
                     :model-value="form.dispatched_at ? form.dispatched_at.substring(0, 10) : ''"
                     placeholder="실제 발송 완료일"
-                    @update:model-value="form.dispatched_at = $event ? `${$event}T00:00:00` : null"
+                    @update:model-value="onDispatchedDateUpdate"
                   />
                 </CCol>
               </CRow>
@@ -1384,12 +1367,12 @@ const goBack = () => {
           <!-- Actions -->
           <CRow class="mb-4">
             <CCol class="d-flex justify-content-between">
-              <v-btn color="secondary" variant="outlined" @click="goBack">
+              <v-btn color="secondary" variant="outlined" :disabled="submitting" @click="goBack">
                 <v-icon icon="mdi-arrow-left" class="me-1" />
                 취소
               </v-btn>
 
-              <!-- 전자결재 상신 발송 모드: 임시저장(초안) & 즉시 전자결재 상신 분기 제공 -->
+              <!-- 전자결재 상신 발송 모드 -->
               <div v-if="approvalMode === 'approval'" class="d-flex align-items-center gap-2">
                 <small v-if="!canOLManage" class="text-muted">
                   {{
@@ -1400,24 +1383,11 @@ const goBack = () => {
                         : ''
                   }}
                 </small>
-                <!-- 이미 승인된 문서를 관리자가 수정하는 경우 전자결재 재상신 불필요 (수정 저장만 노출) -->
-                <v-btn
-                  v-if="isApprovalApproved"
-                  color="success"
-                  variant="flat"
-                  :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
-                  @click="onSubmit(false)"
-                >
-                  <v-icon icon="mdi-content-save-outline" class="me-1" />
-                  수정 저장
-                </v-btn>
-
-                <!-- 그 외(미상신/반려)의 경우 임시저장과 전자결재 상신 2개 버튼 제공 -->
                 <template v-else>
                   <v-btn
                     color="light"
                     variant="flat"
-                    :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                    :disabled="submitting || !canOLManage"
                     @click="onSubmit(false)"
                   >
                     <v-icon icon="mdi-content-save-outline" class="me-1" />
@@ -1426,7 +1396,7 @@ const goBack = () => {
                   <v-btn
                     color="primary"
                     variant="flat"
-                    :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                    :disabled="submitting || !canOLManage"
                     @click="onSubmit(true)"
                   >
                     <v-icon icon="mdi-send-check-outline" class="me-1" />
@@ -1435,16 +1405,17 @@ const goBack = () => {
                 </template>
               </div>
 
-              <!-- 단독 / 직접 발송 모드: 단일 공문 저장 버튼 -->
+              <!-- 단독 / 직접 발송 모드: type="button"으로 SubmitEvent 오인 상신 방지 -->
               <div v-else class="d-flex align-items-center gap-2">
                 <small v-if="!canOLManage" class="text-muted">
                   (수정 권한이 없거나 수정할 수 없는 상태입니다)
                 </small>
                 <v-btn
-                  type="submit"
+                  type="button"
                   :color="isEdit ? 'success' : 'primary'"
                   variant="flat"
-                  :disabled="(!accStore.isStaff && !accStore.superAuth) || !canOLManage"
+                  :disabled="submitting || !canOLManage"
+                  @click="onSubmit(false)"
                 >
                   <v-icon icon="mdi-content-save-outline" class="me-1" />
                   {{ isEdit ? '수정 저장' : '공문 저장' }}
@@ -1454,7 +1425,7 @@ const goBack = () => {
           </CRow>
         </CCol>
 
-        <!-- 우측: 실시간 A4 공문서 라이브 프리뷰 (lg: 6, xl: 5 / lg 이상 화면에서 표출) -->
+        <!-- 우측: 실시간 A4 공문서 라이브 프리뷰 -->
         <CCol lg="6" xl="5" class="d-none d-lg-block">
           <LetterA4Preview
             :form="form"
@@ -1479,7 +1450,7 @@ const goBack = () => {
       </CRow>
     </CForm>
 
-    <!-- 우편번호 및 도로명 주소 검색 레이어 모달 -->
+    <ConfirmModal ref="refConfirmModal" @confirm-func="handleConfirmDeleteAttachment" />
     <DaumPostcode ref="refPostCode" @address-callback="addressCallback" />
   </div>
 </template>
@@ -1489,11 +1460,6 @@ const goBack = () => {
   font-size: 1.02rem;
   font-weight: 600;
   letter-spacing: -0.2px;
-}
-
-.letter-meta-box {
-  background-color: #f8fafc;
-  border-color: #e2e8f0 !important;
 }
 
 /* DatePicker 유효성 검사 테두리 스타일 */

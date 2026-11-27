@@ -2,7 +2,6 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/letters/_menu/headermixin.ts'
 import {
-  onBeforeRouteLeave,
   onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as Loaded,
   useRoute,
@@ -21,16 +20,20 @@ import LetterForm, { type LocalAttachmentItem } from './components/LetterForm.vu
 
 const mainViewName = ref('발송 공문 관리')
 
-const letterFilter = ref<LetterFilter>({
-  company: '',
+const createDefaultFilter = (companyId: number | '' = ''): LetterFilter => ({
+  company: companyId,
   issue_date_from: '',
   issue_date_to: '',
+  approval_status: '',
+  dispatch_method: '',
   creator: '',
   ordering: '-created',
   search: '',
   page: 1,
   limit: 10,
 })
+
+const letterFilter = ref<LetterFilter>(createDefaultFilter())
 
 const comStore = useCompany()
 const company = computed(() => comStore.company?.pk)
@@ -42,46 +45,69 @@ const letterCount = computed(() => docStore.letterCount)
 
 const fetchLetter = (pk: number) => docStore.fetchLetter(pk)
 const fetchLetterList = (payload: LetterFilter) => docStore.fetchLetterList(payload)
-const createLetter = (payload: OfficialLetter) => docStore.createLetter(payload)
-const updateLetter = (pk: number, payload: OfficialLetter) => docStore.updateLetter(pk, payload)
+const createLetter = (payload: OfficialLetter, filter?: LetterFilter) =>
+  docStore.createLetter(payload, filter)
+const updateLetter = (pk: number, payload: OfficialLetter, filter?: LetterFilter) =>
+  docStore.updateLetter(pk, payload, filter)
 const deleteLetter = (pk: number, filter: LetterFilter) => docStore.deleteLetter(pk, filter)
 const generatePdf = (pk: number) => docStore.generatePdf(pk)
 
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
+const submitting = ref(false)
+const pdfGenerating = ref(false)
+const headerKey = ref(0)
+const isInitializing = ref(true)
+const loadedLetterPk = ref<number | null>(null)
+
+const redirectIfEditLocked = (letterId?: string | string[]) => {
+  if (!letterId || !route.name?.includes('수정') || !letter.value) return false
+  if (
+    letter.value.approval_status === 'pending' ||
+    letter.value.approval_status === 'approved' ||
+    letter.value.dispatched_at
+  ) {
+    router.replace({
+      name: `${mainViewName.value} - 보기`,
+      params: { letterId },
+    })
+    return true
+  }
+  return false
+}
+
+const loadSingleLetter = async (letterId?: string | string[]) => {
+  if (letterId) {
+    const numId = Number(letterId)
+    if (loadedLetterPk.value === numId && letter.value?.pk === numId) {
+      redirectIfEditLocked(letterId)
+      return
+    }
+    loadedLetterPk.value = numId
+    await fetchLetter(numId)
+    redirectIfEditLocked(letterId)
+  } else {
+    loadedLetterPk.value = null
+    docStore.removeLetter()
+  }
+}
+
 watch(
   () => route.params.letterId,
   async val => {
-    if (val) {
-      await fetchLetter(Number(val))
-      // 결재 진행 중이거나 결재 승인 완료된 문서는 수정 페이지 접근 시 보기 화면으로 자동 리다이렉트
-      if (route.name?.includes('수정') && letter.value) {
-        if (
-          letter.value.approval_status === 'pending' ||
-          letter.value.approval_status === 'approved' ||
-          letter.value.dispatched_at
-        ) {
-          router.replace({
-            name: `${mainViewName.value} - 보기`,
-            params: { letterId: val },
-          })
-        }
-      }
-    } else {
-      docStore.removeLetter()
-    }
+    if (isInitializing.value) return
+    await loadSingleLetter(val)
   },
 )
-
-const headerKey = ref(0)
-const isInitializing = ref(true)
 
 watch(
   company,
   async (newCompany, oldCompany) => {
     if (isInitializing.value) return
-    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined)
+    if (newCompany && newCompany !== oldCompany && oldCompany !== undefined) {
+      letterFilter.value = createDefaultFilter(newCompany)
       await dataSetup(newCompany, route.params?.letterId)
+    }
   },
   { immediate: false },
 )
@@ -100,24 +126,25 @@ const pageSelect = (page: number) => {
 const onSubmit = async (
   payload: OfficialLetter,
   attachmentsToUpload?: LocalAttachmentItem[],
-  isDirectSubmit?: boolean,
+  isDirectSubmit = false,
 ) => {
-  if (company.value) {
+  if (submitting.value || !company.value) return
+  submitting.value = true
+  try {
     const data = { ...payload, company: company.value }
     let letterPk: number | null = null
 
     if (payload.pk) {
-      await updateLetter(payload.pk, data)
-      letterPk = payload.pk
+      const updated = await updateLetter(payload.pk, data, letterFilter.value)
+      if (!updated?.pk) return
+      letterPk = updated.pk
     } else {
-      const result = await createLetter(data)
-      if (result?.pk) {
-        letterPk = result.pk
-      }
+      const created = await createLetter(data, letterFilter.value)
+      if (!created?.pk) return
+      letterPk = created.pk
     }
 
-    // 대기 중인 첨부파일 순차 업로드
-    if (letterPk && attachmentsToUpload && attachmentsToUpload.length > 0) {
+    if (attachmentsToUpload && attachmentsToUpload.length > 0) {
       for (const att of attachmentsToUpload) {
         const formData = new FormData()
         formData.append('letter', String(letterPk))
@@ -128,66 +155,88 @@ const onSubmit = async (
       }
     }
 
-    // 전자결재 상신 버튼으로 저장한 경우 백엔드 전자결재 상신 즉시 연계 실행
-    if (letterPk && isDirectSubmit) {
+    if (isDirectSubmit === true) {
       await docStore.submitApproval(letterPk)
     }
 
-    if (letterPk) {
-      await router.replace({
-        name: `${mainViewName.value} - 보기`,
-        params: { letterId: letterPk },
-      })
-    } else {
-      await router.replace({ name: mainViewName.value })
-    }
+    loadedLetterPk.value = letterPk
+    await router.replace({
+      name: `${mainViewName.value} - 보기`,
+      params: { letterId: letterPk },
+    })
+  } finally {
+    submitting.value = false
   }
 }
 
 const onDelete = async (pk: number) => {
-  await deleteLetter(pk, letterFilter.value)
-  await router.replace({ name: mainViewName.value })
+  const deleted = await deleteLetter(pk, letterFilter.value)
+  if (deleted) {
+    loadedLetterPk.value = null
+    await router.replace({ name: mainViewName.value })
+  }
 }
 
 const onGeneratePdf = async (pk: number) => {
-  await generatePdf(pk)
+  pdfGenerating.value = true
+  try {
+    await generatePdf(pk)
+  } finally {
+    pdfGenerating.value = false
+  }
 }
 
 const dataSetup = async (pk: number, letterId?: string | string[]) => {
   letterFilter.value.company = pk
-  await fetchLetterList(letterFilter.value)
-  if (letterId) await fetchLetter(Number(letterId))
+  loadedLetterPk.value = letterId ? Number(letterId) : null
+  await Promise.all([
+    fetchLetterList(letterFilter.value),
+    comStore.fetchCompanySealList(pk),
+    letterId ? fetchLetter(Number(letterId)) : Promise.resolve(),
+  ])
+  if (!letterId) {
+    docStore.removeLetter()
+  } else {
+    redirectIfEditLocked(letterId)
+  }
 }
 
 const dataReset = () => {
+  letterFilter.value = createDefaultFilter()
+  loadedLetterPk.value = null
   docStore.removeLetterList()
   docStore.letterCount = 0
 }
 
-const clearQueryString = () => {
-  if (Object.keys(route.query).length > 0) {
+const clearCompanyQueryParam = () => {
+  if (route.query.company !== undefined) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.company
     router
       .replace({
         name: route.name,
         params: route.params,
-        query: {},
+        query: nextQuery,
       })
       .catch(() => {})
   }
 }
 
 const comSelect = async (target: number | null, skipClearQuery = false) => {
-  if (!skipClearQuery) clearQueryString()
+  if (!skipClearQuery) clearCompanyQueryParam()
 
   if (target) {
     localStorage.setItem('curr-company', `${target}`)
-    await comStore.fetchCompany(target)
+    if (company.value !== target) {
+      await comStore.fetchCompany(target)
+    }
 
-    if (route.name?.includes('보기')) {
+    if (route.name?.includes('보기') || route.name?.includes('수정')) {
       await router.replace({ name: mainViewName.value })
     }
 
     if (isInitializing.value) {
+      letterFilter.value = createDefaultFilter(target)
       await dataSetup(target, route.params?.letterId)
       headerKey.value++
     }
@@ -201,8 +250,8 @@ onBeforeRouteUpdate(async to => {
 
   if (toCompanyId && toCompanyId !== company.value) {
     await comSelect(toCompanyId, true)
-  } else {
-    await dataSetup(company.value ?? comStore.initComId, to.params?.letterId)
+  } else if (to.name === mainViewName.value && company.value) {
+    await fetchLetterList(letterFilter.value)
   }
 })
 
@@ -213,7 +262,7 @@ const urlCompanyId = computed(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  let companyId = company.value ?? comStore.initComId
+  const companyId = company.value ?? comStore.initComId
 
   if (urlCompanyId.value) {
     await comSelect(urlCompanyId.value, true)
@@ -223,10 +272,6 @@ onBeforeMount(async () => {
 
   isInitializing.value = false
   loading.value = false
-})
-
-onBeforeRouteLeave(() => {
-  clearQueryString()
 })
 </script>
 
@@ -260,6 +305,7 @@ onBeforeRouteLeave(() => {
             :letter="letter as OfficialLetter"
             :view-route="mainViewName"
             :letter-filter="letterFilter"
+            :pdf-loading="pdfGenerating"
             @on-delete="onDelete"
             @generate-pdf="onGeneratePdf"
           />
@@ -269,6 +315,7 @@ onBeforeRouteLeave(() => {
           <LetterForm
             :company="company as number"
             :view-route="mainViewName"
+            :submitting="submitting"
             @on-submit="onSubmit"
           />
         </div>
@@ -278,6 +325,7 @@ onBeforeRouteLeave(() => {
             :company="company as number"
             :letter="letter as OfficialLetter"
             :view-route="mainViewName"
+            :submitting="submitting"
             @on-submit="onSubmit"
           />
         </div>

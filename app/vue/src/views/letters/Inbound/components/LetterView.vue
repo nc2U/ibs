@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePerms } from '@/composables/usePerms.ts'
-import type { InboundLetter } from '@/store/types/docs'
+import { downloadFile, sanitizeExternalUrl } from '@/utils/helper'
+import type { InboundLetter, InboundLetterStatus } from '@/store/types/docs'
 import type { InboundLetterFilter } from '@/store/pinia/docs'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import {
+  formatDateTimeStr,
+  formatShortDate,
+  getDDayBadgeColor,
+  getDDayText,
+  getFileExt,
+  getFileNameFromUrl,
+  getScanFileIcon,
+  useLetterPerms,
+} from '@/views/letters/utils/letterMeta'
 
 const props = defineProps<{
   letter: InboundLetter | null
@@ -14,61 +24,34 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'onDelete', pk: number): void
-  (e: 'onStatusChange', pk: number, status: string): void
+  (e: 'onStatusChange', pk: number, status: InboundLetterStatus): void
 }>()
 
-const { can, PERM } = usePerms()
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+const { accStore, hasPerm, PERM } = useLetterPerms()
+const canDocsCreate = computed(() => hasPerm(PERM.DOCS_CREATE))
+const canDocsUpdate = computed(() => hasPerm(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => hasPerm(PERM.DOCS_DELETE))
+const isManager = computed(
+  () => !!accStore.superAuth || (!!accStore.workManager && canDocsUpdate.value),
+)
+const isClosedLocked = computed(() => props.letter?.status === 'closed' && !isManager.value)
+const canEditInbound = computed(() => canDocsUpdate.value && !isClosedLocked.value)
+const canDeleteInbound = computed(() => canDocsDelete.value && props.letter?.status !== 'closed')
 
 const router = useRouter()
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
-const refConfirmModal = ref()
-
-const formatDate = (dateStr: string | undefined | null) => {
-  if (!dateStr) return '-'
-  return dateStr.substring(0, 10)
-}
-
-const formatDateTime = (dateTimeStr: string | undefined | null) => {
-  if (!dateTimeStr) return '-'
-  return dateTimeStr.substring(0, 16).replace('T', ' ')
-}
-
-const getDDayBadgeColor = (dDay: number | null | undefined) => {
-  if (dDay === null || dDay === undefined) return 'secondary'
-  if (dDay < 0) return 'danger'
-  if (dDay === 0) return 'warning'
-  if (dDay <= 3) return 'danger'
-  if (dDay <= 7) return 'warning'
-  return 'info'
-}
-
-const getDDayText = (dDay: number | null | undefined) => {
-  if (dDay === null || dDay === undefined) return ''
-  if (dDay < 0) return `기한초과 (D+${Math.abs(dDay)})`
-  if (dDay === 0) return '오늘 마감 (D-Day)'
-  return `${dDay}일 남음 (D-${dDay})`
-}
-
-const scanFileExt = computed(() => {
-  if (!props.letter?.scan_file) return ''
-  const cleanUrl = props.letter.scan_file.split('?')[0].split('#')[0]
-  const parts = cleanUrl.split('.')
-  return parts.length > 1 ? parts.pop()!.toLowerCase() : ''
-})
+const scanFileExt = computed(() => getFileExt(props.letter?.scan_file))
+const scanFileName = computed(() => getFileNameFromUrl(props.letter?.scan_file))
+const safeScanUrl = computed(() =>
+  props.letter?.scan_file ? sanitizeExternalUrl(props.letter.scan_file) : '',
+)
 
 const isScanPdf = computed(() => scanFileExt.value === 'pdf')
 const isScanHwp = computed(() => ['hwp', 'hwpx'].includes(scanFileExt.value))
 const isScanImage = computed(() =>
   ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(scanFileExt.value),
 )
-
-const scanFileName = computed(() => {
-  if (!props.letter?.scan_file) return ''
-  const cleanUrl = props.letter.scan_file.split('?')[0].split('#')[0]
-  return decodeURIComponent(cleanUrl.split('/').pop() || '')
-})
 
 const goToList = () => {
   router.push({ name: props.viewRoute })
@@ -149,8 +132,8 @@ const goToOutboundReply = () => {
   })
 }
 
-const updateStatus = (newStatus: string) => {
-  if (props.letter?.pk) {
+const updateStatus = (newStatus: InboundLetterStatus) => {
+  if (props.letter?.pk && canEditInbound.value) {
     emit('onStatusChange', props.letter.pk, newStatus)
   }
 }
@@ -185,11 +168,11 @@ const updateStatus = (newStatus: string) => {
 
       <div class="d-flex align-items-center gap-2">
         <CButton
-          v-if="canDocsUpdate"
+          v-if="letter.approval_document || canDocsUpdate"
           color="success"
           variant="outline"
           size="sm"
-          :disabled="letter.status === 'closed'"
+          :disabled="!letter.approval_document && letter.status === 'closed'"
           @click="goToApprovalDraft"
         >
           <v-icon
@@ -204,7 +187,7 @@ const updateStatus = (newStatus: string) => {
           {{ letter.approval_document ? '연동 품의서 확인' : '처리품의 상신' }}
         </CButton>
         <CButton
-          v-if="canDocsUpdate"
+          v-if="canDocsCreate"
           color="primary"
           variant="outline"
           size="sm"
@@ -213,12 +196,12 @@ const updateStatus = (newStatus: string) => {
           <v-icon icon="mdi-reply" size="small" class="me-1" />
           회신 공문 작성
         </CButton>
-        <CButton v-if="canDocsUpdate" color="primary" size="sm" @click="goToEdit">
+        <CButton v-if="canEditInbound" color="primary" size="sm" @click="goToEdit">
           <v-icon icon="mdi-pencil" size="small" class="me-1" />
           수정
         </CButton>
         <CButton
-          v-if="canDocsDelete"
+          v-if="canDeleteInbound"
           color="danger"
           variant="outline"
           size="sm"
@@ -235,7 +218,7 @@ const updateStatus = (newStatus: string) => {
     </div>
 
     <!-- Header Status Card -->
-    <CCard class="mb-4 shadow-sm border-0 bg-light">
+    <CCard class="mb-4 shadow-sm border-0 bg-more-light">
       <CCardBody class="p-4">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>
@@ -298,7 +281,9 @@ const updateStatus = (newStatus: string) => {
               class="fs-7"
             >
               <v-icon icon="mdi-clock-alert-outline" size="small" class="me-1" />
-              회신기한: {{ formatDate(letter.reply_due_date) }} ({{ getDDayText(letter.d_day) }})
+              회신기한: {{ formatShortDate(letter.reply_due_date) }} ({{
+                getDDayText(letter.d_day, true)
+              }})
             </v-chip>
           </div>
         </div>
@@ -307,10 +292,12 @@ const updateStatus = (newStatus: string) => {
 
         <!-- 메타 정보 행 -->
         <CRow class="small text-muted g-2">
-          <CCol md="3"> <strong>접수일자:</strong> {{ formatDate(letter.received_date) }} </CCol>
+          <CCol md="3">
+            <strong>접수일자:</strong> {{ formatShortDate(letter.received_date) }}
+          </CCol>
           <CCol md="3">
             <strong>배부 부서:</strong>
-            <span class="badge bg-white text-dark border ms-1">
+            <span class="badge bg-more-white text-body border ms-1">
               {{ letter.recipient_dept_name || '미지정' }}
             </span>
           </CCol>
@@ -318,7 +305,7 @@ const updateStatus = (newStatus: string) => {
             <strong>처리 담당자:</strong> {{ letter.recipient_manager_name || '미지정' }}
           </CCol>
           <CCol md="3" class="text-end">
-            <strong>등록일시:</strong> {{ formatDateTime(letter.created) }} ({{
+            <strong>등록일시:</strong> {{ formatDateTimeStr(letter.created) }} ({{
               letter.creator?.username || '-'
             }})
           </CCol>
@@ -328,11 +315,9 @@ const updateStatus = (newStatus: string) => {
 
     <!-- Main Content Layout -->
     <CRow>
-      <!-- Left: 내용 요약 & 스캔 PDF 뷰어 -->
       <CCol lg="8">
-        <!-- 요약 및 내용 -->
         <CCard class="mb-4">
-          <CCardHeader class="bg-light fw-semibold">
+          <CCardHeader class="bg-more-light fw-semibold">
             <CIcon name="cilAlignLeft" class="me-1" />
             공문 주요 내용 및 요약
           </CCardHeader>
@@ -347,22 +332,14 @@ const updateStatus = (newStatus: string) => {
           </CCardBody>
         </CCard>
 
-        <!-- 공문서 원본 스캔본 (PDF Preview) -->
+        <!-- 공문서 원본 스캔본 -->
         <CCard class="mb-4">
           <CCardHeader
-            class="bg-light fw-semibold d-flex justify-content-between align-items-center"
+            class="bg-more-light fw-semibold d-flex justify-content-between align-items-center"
           >
             <div>
               <v-icon
-                :icon="
-                  isScanPdf
-                    ? 'mdi-file-pdf-box'
-                    : isScanHwp
-                      ? 'mdi-file-document-outline'
-                      : isScanImage
-                        ? 'mdi-file-image'
-                        : 'mdi-file-document'
-                "
+                :icon="getScanFileIcon(letter.scan_file)"
                 :class="isScanPdf ? 'text-danger' : isScanHwp ? 'text-primary' : 'text-secondary'"
                 class="me-1"
               />
@@ -377,32 +354,35 @@ const updateStatus = (newStatus: string) => {
                 {{ scanFileExt }}
               </v-chip>
             </div>
-            <a
-              v-if="letter.scan_file"
-              :href="letter.scan_file"
-              target="_blank"
-              download
-              class="btn btn-sm btn-outline-primary"
+            <CButton
+              v-if="safeScanUrl && safeScanUrl !== '#'"
+              color="primary"
+              variant="outline"
+              size="sm"
+              @click="downloadFile(safeScanUrl, scanFileName || 'scan_file')"
             >
               <v-icon icon="mdi-download" size="small" class="me-1" />
               원본 파일 다운로드
-            </a>
+            </CButton>
           </CCardHeader>
           <CCardBody class="p-0">
-            <!-- 1. PDF 파일: 인라인 뷰어 -->
-            <div v-if="letter.scan_file && isScanPdf" style="height: 680px; width: 100%">
+            <!-- 1. PDF 파일 -->
+            <div
+              v-if="safeScanUrl && safeScanUrl !== '#' && isScanPdf"
+              style="height: 680px; width: 100%"
+            >
               <iframe
-                :src="`${letter.scan_file}#toolbar=1&navpanes=0`"
+                :src="`${safeScanUrl}#toolbar=1&navpanes=0`"
                 width="100%"
                 height="100%"
                 style="border: none"
               />
             </div>
 
-            <!-- 2. 한글 파일 (HWP / HWPX): 관공서 공문 배너 및 바로 열기/다운로드 안내 -->
+            <!-- 2. 한글 파일 (HWP / HWPX) -->
             <div
-              v-else-if="letter.scan_file && isScanHwp"
-              class="py-5 px-4 text-center bg-light d-flex flex-column align-items-center justify-content-center"
+              v-else-if="safeScanUrl && safeScanUrl !== '#' && isScanHwp"
+              class="py-5 px-4 text-center bg-more-light d-flex flex-column align-items-center justify-content-center"
               style="min-height: 400px"
             >
               <v-icon icon="mdi-file-document-outline" size="64" class="text-primary mb-3" />
@@ -415,22 +395,24 @@ const updateStatus = (newStatus: string) => {
                 관공서 및 공공기관의 한글(HWP/HWPX) 공문서 원본입니다. 보안 및 수정제한이 걸려 있을
                 수 있으므로 다운로드 후 한컴오피스 또는 공공서식 한글 뷰어로 열람하세요.
               </CAlert>
-              <div class="d-flex gap-2">
-                <a :href="letter.scan_file" target="_blank" download class="btn btn-primary px-4">
-                  <v-icon icon="mdi-download" class="me-1" />
-                  한글 파일 다운로드 / 열기
-                </a>
-              </div>
+              <CButton
+                color="primary"
+                class="px-4"
+                @click="downloadFile(safeScanUrl, scanFileName || 'letter.hwp')"
+              >
+                <v-icon icon="mdi-download" class="me-1" />
+                한글 파일 다운로드 / 열기
+              </CButton>
             </div>
 
-            <!-- 3. 이미지 파일 (JPG/PNG 등): 인라인 이미지 뷰어 -->
+            <!-- 3. 이미지 파일 -->
             <div
-              v-else-if="letter.scan_file && isScanImage"
-              class="p-3 text-center bg-light overflow-auto"
+              v-else-if="safeScanUrl && safeScanUrl !== '#' && isScanImage"
+              class="p-3 text-center bg-more-light overflow-auto"
               style="max-height: 680px"
             >
               <img
-                :src="letter.scan_file"
+                :src="safeScanUrl"
                 alt="공문서 원본 이미지"
                 class="img-fluid border shadow-sm rounded"
                 style="max-width: 100%"
@@ -439,8 +421,8 @@ const updateStatus = (newStatus: string) => {
 
             <!-- 4. 기타 파일 형식 -->
             <div
-              v-else-if="letter.scan_file"
-              class="py-5 px-4 text-center bg-light d-flex flex-column align-items-center justify-content-center"
+              v-else-if="safeScanUrl && safeScanUrl !== '#'"
+              class="py-5 px-4 text-center bg-more-light d-flex flex-column align-items-center justify-content-center"
               style="min-height: 350px"
             >
               <v-icon icon="mdi-file-document" size="64" class="text-secondary mb-3" />
@@ -450,15 +432,15 @@ const updateStatus = (newStatus: string) => {
               <p class="text-muted small mb-3 text-truncate" style="max-width: 480px">
                 {{ scanFileName }}
               </p>
-              <a
-                :href="letter.scan_file"
-                target="_blank"
-                download
-                class="btn btn-outline-primary px-4"
+              <CButton
+                color="primary"
+                variant="outline"
+                class="px-4"
+                @click="downloadFile(safeScanUrl, scanFileName || 'scan_file')"
               >
                 <v-icon icon="mdi-download" class="me-1" />
                 파일 다운로드
-              </a>
+              </CButton>
             </div>
 
             <!-- 5. 파일 미등록 시 -->
@@ -475,11 +457,10 @@ const updateStatus = (newStatus: string) => {
         </CCard>
       </CCol>
 
-      <!-- Right: 첨부파일 & 후속조치 패널 -->
       <CCol lg="4">
         <!-- 붙임 및 동봉 첨부파일 -->
         <CCard class="mb-4">
-          <CCardHeader class="bg-light fw-semibold">
+          <CCardHeader class="bg-more-light fw-semibold">
             <v-icon icon="mdi-paperclip" size="small" class="me-1" />
             동봉 / 붙임 첨부파일 ({{ letter.attachments?.length || 0 }})
           </CCardHeader>
@@ -504,33 +485,43 @@ const updateStatus = (newStatus: string) => {
                     </span>
                   </small>
                 </div>
-                <a
-                  :href="att.file as string"
-                  target="_blank"
-                  download
-                  class="btn btn-sm btn-ghost-primary"
+                <CButton
+                  v-if="typeof att.file === 'string'"
+                  color="primary"
+                  variant="ghost"
+                  size="sm"
+                  @click="
+                    downloadFile(
+                      sanitizeExternalUrl(att.file),
+                      att.file_name || att.name || 'attachment',
+                    )
+                  "
                 >
                   <v-icon icon="mdi-download" size="small" />
-                </a>
+                </CButton>
               </li>
             </ul>
             <div v-else class="text-center text-muted py-4 small">동봉된 첨부파일이 없습니다.</div>
           </CCardBody>
         </CCard>
 
-        <!-- 처리 상태 간편 전환 패널 -->
-        <CCard class="mb-4">
-          <CCardHeader class="bg-light fw-semibold">
+        <!-- 처리 상태 간편 전환 패널 (수정 권한 보유자만 노출) -->
+        <CCard v-if="canDocsUpdate" class="mb-4">
+          <CCardHeader class="bg-more-light fw-semibold">
             <v-icon icon="mdi-progress-check" size="small" class="me-1" />
             상태 간편 변경
           </CCardHeader>
           <CCardBody>
+            <div v-if="isClosedLocked" class="small text-muted mb-2">
+              종결된 공문은 관리자만 상태를 변경할 수 있습니다.
+            </div>
             <div class="d-grid gap-2">
               <CButton
                 color="info"
                 :variant="letter.status === 'received' ? undefined : 'outline'"
                 size="sm"
                 class="text-start"
+                :disabled="!canEditInbound"
                 @click="updateStatus('received')"
               >
                 <v-icon icon="mdi-inbox-arrow-down" size="small" class="me-1" />
@@ -541,6 +532,7 @@ const updateStatus = (newStatus: string) => {
                 :variant="letter.status === 'in_progress' ? undefined : 'outline'"
                 size="sm"
                 class="text-start"
+                :disabled="!canEditInbound"
                 @click="updateStatus('in_progress')"
               >
                 <v-icon icon="mdi-clock-outline" size="small" class="me-1" />
@@ -551,6 +543,7 @@ const updateStatus = (newStatus: string) => {
                 :variant="letter.status === 'replied' ? undefined : 'outline'"
                 size="sm"
                 class="text-start"
+                :disabled="!canEditInbound"
                 @click="updateStatus('replied')"
               >
                 <v-icon icon="mdi-reply" size="small" class="me-1" />
@@ -561,6 +554,7 @@ const updateStatus = (newStatus: string) => {
                 :variant="letter.status === 'closed' ? undefined : 'outline'"
                 size="sm"
                 class="text-start"
+                :disabled="!canEditInbound"
                 @click="updateStatus('closed')"
               >
                 <v-icon icon="mdi-check-circle-outline" size="small" class="me-1" />
@@ -584,7 +578,7 @@ const updateStatus = (newStatus: string) => {
               문서번호: {{ letter.approval_document_detail.doc_number || '-' }}
             </div>
             <div class="d-flex justify-content-between align-items-center">
-              <span class="badge bg-light text-dark border">
+              <span class="badge bg-more-light text-body border">
                 {{ letter.approval_document_detail.status_desc }}
               </span>
               <router-link
@@ -621,7 +615,7 @@ const updateStatus = (newStatus: string) => {
                   <small class="text-muted">
                     {{ reply.document_number || '문서번호 미발번' }}
                     <span v-if="reply.dispatched_at" class="ms-1 text-success">
-                      • 발송완료 ({{ formatDate(reply.dispatched_at) }})
+                      • 발송완료 ({{ formatShortDate(reply.dispatched_at) }})
                     </span>
                     <span v-else class="ms-1 text-secondary">
                       • {{ reply.approval_status_desc || '결재 미완료' }}

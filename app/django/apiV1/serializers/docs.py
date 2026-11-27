@@ -467,11 +467,13 @@ class OfficialLetterAttachmentSerializer(serializers.ModelSerializer):
 
 class OfficialLetterSerializer(serializers.ModelSerializer):
     company_name = serializers.SlugField(source='company', read_only=True)
+    company_logo = serializers.SerializerMethodField(read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
     seal_detail = serializers.SerializerMethodField(read_only=True)
     co_seal_detail = serializers.SerializerMethodField(read_only=True)
     sender_display_type_desc = serializers.CharField(source='get_sender_display_type_display', read_only=True)
+    sender_contact = serializers.SerializerMethodField(read_only=True)
     approval_mode_desc = serializers.CharField(source='get_approval_mode_display', read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
@@ -487,7 +489,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OfficialLetter
-        fields = ('pk', 'company', 'company_name', 'document_number', 'title',
+        fields = ('pk', 'company', 'company_name', 'company_logo', 'document_number', 'title',
                   'recipient_name', 'recipient_address', 'recipient_contact',
                   'via', 'recipient_reference',
                   'drafter_name', 'drafter_position', 'is_solo_approval',
@@ -496,7 +498,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'issue_date', 'effective_issue_date',
                   'seal', 'seal_detail', 'co_seal', 'co_seal_detail',
                   'sender_display_type', 'sender_display_type_desc',
-                  'sender_duty_title', 'sender_name',
+                  'sender_duty_title', 'sender_name', 'sender_contact',
                   'pdf_file',
                   'disclosure_type', 'disclosure_type_desc',
                   'dispatch_method', 'dispatch_method_desc', 'tracking_number', 'dispatched_at',
@@ -517,27 +519,55 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
             }
         return None
 
+    @staticmethod
+    def _serialize_seal_detail(seal):
+        if not seal:
+            return None
+        mgr = getattr(seal, 'internal_manager', None)
+        mgr_duty = ''
+        if mgr:
+            if getattr(mgr, 'duty', None):
+                mgr_duty = mgr.duty.name
+            elif getattr(mgr, 'position', None):
+                mgr_duty = mgr.position.name
+        final_duty = getattr(seal, 'final_approval_duty', None)
+        return {
+            'pk': seal.pk,
+            'name': seal.name,
+            'seal_type': seal.seal_type,
+            'seal_type_desc': seal.get_seal_type_display(),
+            'purpose': getattr(seal, 'purpose', '') or '',
+            'internal_manager_name': mgr.name if mgr else None,
+            'internal_manager_duty': mgr_duty,
+            'final_approval_duty_name': final_duty.name if final_duty else None,
+            'seal_image': seal.seal_image.url if seal.seal_image else None,
+        }
+
     def get_seal_detail(self, obj):
-        if obj.seal:
-            return {
-                'pk': obj.seal.pk,
-                'name': obj.seal.name,
-                'seal_type': obj.seal.seal_type,
-                'seal_type_desc': obj.seal.get_seal_type_display(),
-                'seal_image': obj.seal.seal_image.url if obj.seal.seal_image else None,
-            }
-        return None
+        return self._serialize_seal_detail(obj.seal)
 
     def get_co_seal_detail(self, obj):
-        if obj.co_seal:
-            return {
-                'pk': obj.co_seal.pk,
-                'name': obj.co_seal.name,
-                'seal_type': obj.co_seal.seal_type,
-                'seal_type_desc': obj.co_seal.get_seal_type_display(),
-                'seal_image': obj.co_seal.seal_image.url if obj.co_seal.seal_image else None,
-            }
+        return self._serialize_seal_detail(obj.co_seal)
+
+    def get_company_logo(self, obj):
+        company = getattr(obj, 'company', None)
+        logo = getattr(company, 'logo', None) if company else None
+        if logo and getattr(logo, 'generic_logo', None):
+            try:
+                return logo.generic_logo.url
+            except Exception:
+                return None
         return None
+
+    def get_sender_contact(self, obj):
+        drafter_user = obj.approval_document.drafter if obj.approval_document else obj.creator
+        drafter_staff = getattr(drafter_user, 'staff', None) if drafter_user else None
+        company = getattr(obj, 'company', None)
+        return {
+            'phone': (drafter_staff.direct_phone if drafter_staff and drafter_staff.direct_phone else getattr(company, 'phone', '')) or '',
+            'fax': (drafter_staff.direct_fax if drafter_staff and drafter_staff.direct_fax else getattr(company, 'fax', '')) or '',
+            'email': (drafter_staff.email if drafter_staff and drafter_staff.email else getattr(company, 'email', '')) or '',
+        }
 
     def get_approval_document_detail(self, obj):
         if obj.approval_document:

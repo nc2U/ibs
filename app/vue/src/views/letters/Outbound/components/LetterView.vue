@@ -1,70 +1,74 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { type ComponentPublicInstance, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePerms } from '@/composables/usePerms.ts'
-import { markdownRender } from '@/utils/helper.ts'
+import { downloadFile, markdownRender, sanitizeExternalUrl } from '@/utils/helper.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs.ts'
 import { useDocs } from '@/store/pinia/docs.ts'
-import { useAccount } from '@/store/pinia/account.ts'
-import { useCompany } from '@/store/pinia/company.ts'
+import { useApproval } from '@/store/pinia/approval'
 import LetterA4Preview from './LetterA4Preview.vue'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import {
+  composeAddress,
+  formatDateTimeStr,
+  formatShortDate,
+  getLocalTodayStr,
+  parseRepresentatives,
+  resolveApproverDutyTitle,
+  resolveFinalApproverName,
+  resolveRepresentativeName,
+  resolveSenderContact,
+  splitStoredAddress,
+  stripDrafterTitles,
+  useLetterPerms,
+} from '@/views/letters/utils/letterMeta'
 
-const props = defineProps<{
-  letter: OfficialLetter | null
-  viewRoute: string
-  letterFilter: LetterFilter
-}>()
+const props = withDefaults(
+  defineProps<{
+    letter: OfficialLetter | null
+    viewRoute: string
+    letterFilter: LetterFilter
+    pdfLoading?: boolean
+  }>(),
+  {
+    pdfLoading: false,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'onDelete', pk: number): void
   (e: 'generatePdf', pk: number): void
 }>()
 
-const { can, PERM } = usePerms()
-const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+const { accStore, comStore, hasPerm, PERM } = useLetterPerms()
+const canDocsCreate = computed(() => hasPerm(PERM.DOCS_CREATE))
+const canDocsUpdate = computed(() => hasPerm(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => hasPerm(PERM.DOCS_DELETE))
 
 const router = useRouter()
 const docStore = useDocs()
-const accStore = useAccount()
-const comStore = useCompany()
+const appStore = useApproval()
 
 const currentCompany = computed(() => comStore.company)
 const sealList = computed(() => comStore.sealList)
 
-// 대표이사 정보 분석 (단독 / 공동대표)
-const representativesList = computed(() => {
-  if (!currentCompany.value?.ceo) return []
-  const parts = currentCompany.value.ceo
-    .replace(/;/g, ',')
-    .split(',')
-    .map((p: string) => p.trim())
-    .filter(Boolean)
-  const isJoint = parts.length > 1 || props.letter?.sender_display_type === 'co_rep'
-  return parts.map((name: string) => ({
-    title: isJoint ? '공동대표이사' : '대표이사',
-    name,
-  }))
-})
+const representativesList = computed(() =>
+  parseRepresentatives(currentCompany.value?.ceo, props.letter?.sender_display_type === 'co_rep'),
+)
 
-const representativeName = computed(() => {
-  return (
-    representativesList.value[0]?.name ||
-    currentCompany.value?.representative_name ||
-    currentCompany.value?.ceo?.split(',')?.[0]?.trim() ||
-    ''
-  )
-})
+const representativeName = computed(() =>
+  resolveRepresentativeName(currentCompany.value, representativesList.value),
+)
 
 const selectedSeal = computed(() => {
   if (!props.letter?.seal) return null
-  return sealList.value.find(item => item.pk === props.letter?.seal) || null
+  return (
+    sealList.value.find(item => item.pk === props.letter?.seal) || props.letter?.seal_detail || null
+  )
 })
 const selectedSealImage = computed(() => {
   return props.letter?.seal_detail?.seal_image || selectedSeal.value?.seal_image || null
@@ -72,59 +76,53 @@ const selectedSealImage = computed(() => {
 
 const selectedCoSeal = computed(() => {
   if (!props.letter?.co_seal) return null
-  return sealList.value.find(item => item.pk === props.letter?.co_seal) || null
+  return (
+    sealList.value.find(item => item.pk === props.letter?.co_seal) ||
+    props.letter?.co_seal_detail ||
+    null
+  )
 })
 const selectedCoSealImage = computed(() => {
   return props.letter?.co_seal_detail?.seal_image || selectedCoSeal.value?.seal_image || null
 })
 
-const approverDutyTitle = computed(() => {
-  if (props.letter?.sender_duty_title) return props.letter.sender_duty_title
-  if (selectedSeal.value?.internal_manager_duty) return selectedSeal.value.internal_manager_duty
-  return selectedSeal.value?.final_approval_duty_name || '대표이사'
-})
+const approverDutyTitle = computed(() =>
+  resolveApproverDutyTitle(props.letter?.sender_duty_title, selectedSeal.value),
+)
 
-const cleanDrafterName = computed(() => {
-  const name = props.letter?.drafter_name || ''
-  return name.replace(/대표이사|대표|사장|소장|본부장|팀장/g, '').trim()
-})
+const cleanDrafterName = computed(() => stripDrafterTitles(props.letter?.drafter_name))
 
-const finalApproverName = computed(() => {
-  if (props.letter?.sender_name) return props.letter.sender_name
-  if (selectedSeal.value?.internal_manager_name) {
-    return selectedSeal.value.internal_manager_name
-  }
-  if (['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle.value)) {
-    return cleanDrafterName.value || representativeName.value || '전결권자'
-  }
-  return representativeName.value || cleanDrafterName.value || '대표이사'
-})
+const finalApproverName = computed(() =>
+  resolveFinalApproverName({
+    senderName: props.letter?.sender_name,
+    seal: selectedSeal.value,
+    dutyTitle: approverDutyTitle.value,
+    cleanDrafter: cleanDrafterName.value,
+    representativeName: representativeName.value,
+  }),
+)
 
-const senderContact = computed(() => {
-  const phone = currentCompany.value?.phone || '-'
-  const fax = currentCompany.value?.fax || '-'
-  const email = currentCompany.value?.email || ''
-  return { phone, fax, email }
-})
+const senderContact = computed(() =>
+  resolveSenderContact({
+    company: currentCompany.value,
+    letter: props.letter,
+  }),
+)
 
-const refConfirmModal = ref()
-const pdfLoading = ref(false)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
+const confirmAction = ref<'delete' | 'replaceScan' | 'cancelApproval' | null>(null)
+const pendingScanFile = ref<File | null>(null)
+
 const scanUploadLoading = ref(false)
 const scanFileInputRef = ref<HTMLInputElement | null>(null)
+const approvalLoading = ref(false)
+const cancelLoading = ref(false)
 
-// 발송완료 여부
 const isDispatched = computed(() => !!props.letter?.dispatched_at)
-
-// 결재완료 여부
 const isApproved = computed(() => props.letter?.approval_status === 'approved')
-
-// 결재 진행중 여부
 const isPending = computed(() => props.letter?.approval_status === 'pending')
 
-// 결재 반려 여부
-const isRejected = computed(() => props.letter?.approval_status === 'rejected')
-
-// 결재 문서 존재 여부
 const hasApprovalDoc = computed(() => {
   return (
     props.letter?.approval_mode === 'approval' ||
@@ -132,17 +130,11 @@ const hasApprovalDoc = computed(() => {
     (!!props.letter?.approval_status && props.letter.approval_status !== 'none')
   )
 })
-const isManualMode = computed(() => !hasApprovalDoc.value)
 
-// 관리자 여부 (슈퍼유저 또는 work_manager)
-const isManager = computed(() => {
-  return !!accStore.superAuth || !!accStore.workManager
-})
+const isManager = computed(
+  () => !!accStore.superAuth || (!!accStore.workManager && canDocsUpdate.value),
+)
 
-// 재생성 가능 여부:
-// 1. 발송 완료된 경우: 자료 유실/변조 방지를 위해 슈퍼유저 포함 무조건 전면 금지
-// 2. 결재 승인 완료된 경우: 관리자만 가능
-// 3. 그 외: docs.create 권한자 가능
 const canRegeneratePdf = computed(() => {
   if (isDispatched.value) return false
   if (!canDocsCreate.value) return false
@@ -150,37 +142,32 @@ const canRegeneratePdf = computed(() => {
   return true
 })
 
-// 스캔본 업로드 가능 여부:
-// 발송 완료된 공문은 관리자만 교체/등록 가능, 발송 전은 create 권한자 가능
 const canUploadScan = computed(() => {
   if (!canDocsCreate.value) return false
   if (isDispatched.value) return isManager.value
   return true
 })
 
-// 공문 수정 가능 여부:
-// 1. 발송 완료 시: 전면 금지
-// 2. 결재 진행 중 시: 결재 심의 중이므로 수정 금지 (기안 회수 또는 반려 후 수정 가능)
-// 3. 결재 최종 승인 완료 시: 위·변조 방지 및 결재 효력 보존을 위해 관리자 포함 수정 전면 금지
-// 4. 전자결재 모드인 경우: 미상신('none') 또는 반려('rejected') 상태에서만 일반 수정 가능
-// 5. 단독/직접 발송 모드인 경우: 발송 전까지 수정 가능
 const canEditLetter = computed(() => {
   if (isDispatched.value) return false
   if (isPending.value) return false
   if (isApproved.value) return false
-  if (!canDocsUpdate.value) return false
-  return true
+  return canDocsUpdate.value
 })
 
-// 공문 삭제 가능 여부:
-// 1. 발송 완료 시: 법적 증빙 문서로 관리자 포함 전면 삭제 금지
-// 2. 결재 승인 완료 시: 결재 효력 보존 및 대장 일치를 위해 삭제 금지 (관리자 포함)
-// 3. 그 외 (미상신 또는 반려 상태): docs.delete 권한자 가능
 const canDeleteLetter = computed(() => {
   if (isDispatched.value) return false
+  if (isPending.value) return false
   if (isApproved.value) return false
-  if (!canDocsDelete.value) return false
-  return true
+  return canDocsDelete.value
+})
+
+const canCancelApproval = computed(() => {
+  if (!props.letter?.approval_document || !isPending.value) return false
+  return (
+    !!accStore.superAuth ||
+    (canDocsUpdate.value && accStore.userInfo?.pk === props.letter.creator?.pk)
+  )
 })
 
 const letterNav = computed(() => docStore.getLetterNav)
@@ -218,6 +205,7 @@ const goToNext = () => {
 }
 
 const confirmDelete = () => {
+  confirmAction.value = 'delete'
   refConfirmModal.value?.callModal(
     '공문 삭제 확인',
     `문서번호: ${props.letter?.document_number || ''}\n제목: ${props.letter?.title || ''}\n\n이 공문을 삭제하시겠습니까?`,
@@ -228,100 +216,112 @@ const confirmDelete = () => {
   )
 }
 
-const onDelete = () => {
-  if (props.letter?.pk) {
-    emit('onDelete', props.letter.pk)
+const onGeneratePdf = () => {
+  if (!props.letter?.pk || props.pdfLoading) return
+  if (isDispatched.value) {
+    refAlertModal.value?.callModal(
+      'PDF 재생성 제한',
+      '이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.',
+    )
+    return
   }
-  refConfirmModal.value?.close()
+  if (isApproved.value && !isManager.value) {
+    refAlertModal.value?.callModal(
+      '권한 제한',
+      '최종 결재 승인된 공문서는 관리자만 재생성할 수 있습니다.',
+    )
+    return
+  }
+  emit('generatePdf', props.letter.pk)
 }
 
-const onGeneratePdf = async () => {
-  if (props.letter?.pk) {
-    if (isDispatched.value) {
-      alert(
-        '이미 대외 발송이 완료된 공문서는 자료 유실 및 변조 방지를 위해 PDF 재생성이 금지됩니다.',
-      )
-      return
-    }
-    if (isApproved.value && !isManager.value) {
-      alert('최종 결재 승인된 공문서는 관리자만 재생성할 수 있습니다.')
-      return
-    }
-    pdfLoading.value = true
-    try {
-      emit('generatePdf', props.letter.pk)
-    } finally {
-      pdfLoading.value = false
-    }
+const uploadSelectedScanFile = async (file: File) => {
+  if (!props.letter?.pk) return
+  scanUploadLoading.value = true
+  try {
+    await docStore.uploadLetterPdf(props.letter.pk, file)
+  } finally {
+    scanUploadLoading.value = false
+    pendingScanFile.value = null
   }
 }
 
 const onScanFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (target.files && target.files[0] && props.letter?.pk) {
-    if (isDispatched.value && !isManager.value) {
-      alert('이미 발송 완료된 공문의 스캔 파일 교체는 관리자만 가능합니다.')
-      target.value = ''
-      return
-    }
+  const file = target.files?.[0]
+  target.value = ''
+  if (!file || !props.letter?.pk) return
 
-    if (isDispatched.value) {
-      if (
-        !confirm(
-          '이미 발송 완료된 공문서입니다. 등록 시 기존 최종 발송본 파일이 대체됩니다. 계속하시겠습니까?',
-        )
-      ) {
-        target.value = ''
-        return
-      }
-    }
-
-    const file = target.files[0]
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      alert('PDF 파일(.pdf)만 등록 가능합니다.')
-      target.value = ''
-      return
-    }
-    scanUploadLoading.value = true
-    try {
-      await docStore.uploadLetterPdf(props.letter.pk, file)
-    } finally {
-      scanUploadLoading.value = false
-      target.value = ''
-    }
+  if (isDispatched.value && !isManager.value) {
+    refAlertModal.value?.callModal(
+      '권한 제한',
+      '이미 발송 완료된 공문의 스캔 파일 교체는 관리자만 가능합니다.',
+    )
+    return
   }
+
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    refAlertModal.value?.callModal('파일 형식 오류', 'PDF 파일(.pdf)만 등록 가능합니다.')
+    return
+  }
+
+  if (isDispatched.value) {
+    pendingScanFile.value = file
+    confirmAction.value = 'replaceScan'
+    refConfirmModal.value?.callModal(
+      '스캔본 교체 확인',
+      '이미 발송 완료된 공문서입니다. 등록 시 기존 최종 발송본 파일이 대체됩니다. 계속하시겠습니까?',
+      'mdi-alert-circle-outline',
+      'warning',
+      '교체 등록',
+      'warning',
+    )
+    return
+  }
+
+  await uploadSelectedScanFile(file)
 }
 
-const downloadPdf = () => {
-  if (props.letter?.pdf_file) {
-    window.open(props.letter.pdf_file, '_blank')
-  }
+const downloadPdf = async () => {
+  if (!props.letter?.pk) return
+  const safeTitle = (props.letter.title || '공문').substring(0, 30).replace(/[\\/\s]+/g, '_')
+  const fileName = `${props.letter.document_number || props.letter.pk}_${safeTitle}.pdf`
+  await downloadFile(`/api/v1/official-letter/${props.letter.pk}/download_pdf/`, fileName)
 }
-
-import { useApproval } from '@/store/pinia/approval'
-
-const appStore = useApproval()
-const approvalLoading = ref(false)
-const cancelLoading = ref(false)
 
 const onSubmitApproval = async () => {
-  if (props.letter?.pk) {
-    approvalLoading.value = true
-    try {
-      await docStore.submitApproval(props.letter.pk)
-    } finally {
-      approvalLoading.value = false
-    }
+  if (!props.letter?.pk || !canDocsCreate.value) return
+  approvalLoading.value = true
+  try {
+    await docStore.submitApproval(props.letter.pk)
+  } finally {
+    approvalLoading.value = false
   }
 }
 
-const onCancelApproval = async () => {
-  if (
-    props.letter?.approval_document &&
-    confirm(
-      '전자결재 기안을 회수하시겠습니까?\n회수 시 결재 진행이 취소되고 문서를 수정하여 다시 상신할 수 있습니다.',
-    )
-  ) {
+const onCancelApproval = () => {
+  if (!props.letter?.approval_document || !canCancelApproval.value) return
+  confirmAction.value = 'cancelApproval'
+  refConfirmModal.value?.callModal(
+    '전자결재 기안 회수',
+    '전자결재 기안을 회수하시겠습니까?\n회수 시 결재 진행이 취소되고 문서를 수정하여 다시 상신할 수 있습니다.',
+    'mdi-undo-variant',
+    'warning',
+    '기안 회수',
+    'warning',
+  )
+}
+
+const handleConfirmAction = async () => {
+  const action = confirmAction.value
+  confirmAction.value = null
+  refConfirmModal.value?.close()
+
+  if (action === 'delete' && props.letter?.pk) {
+    emit('onDelete', props.letter.pk)
+  } else if (action === 'replaceScan' && pendingScanFile.value) {
+    await uploadSelectedScanFile(pendingScanFile.value)
+  } else if (action === 'cancelApproval' && props.letter?.approval_document) {
     cancelLoading.value = true
     try {
       await appStore.cancelDocument(props.letter.approval_document)
@@ -334,6 +334,13 @@ const onCancelApproval = async () => {
   }
 }
 
+const handleModalClose = () => {
+  if (confirmAction.value === 'replaceScan') {
+    pendingScanFile.value = null
+  }
+  confirmAction.value = null
+}
+
 const goToApprovalDetail = (docId: number) => {
   router.push({ name: '결재 문서함 - 보기', params: { docId } })
 }
@@ -341,8 +348,8 @@ const goToApprovalDetail = (docId: number) => {
 // ── 발송 및 대장 관리 메타 정보 수정 모달 상태 ────────────────
 const showDispatchModal = ref(false)
 const dispatchSaving = ref(false)
-const refDispatchPostCode = ref()
-const recipientDetailInputRef = ref()
+const refDispatchPostCode = ref<{ initiate: (num: number) => void } | null>(null)
+const recipientDetailInputRef = ref<ComponentPublicInstance | HTMLInputElement | null>(null)
 const recipientAddress1 = ref('')
 const recipientAddress3 = ref('')
 const recipientAddressDetail = ref('')
@@ -355,20 +362,6 @@ const dispatchForm = ref({
   recipient_contact: '',
 })
 
-const recipientAddressBase = computed(() => recipientAddress1.value)
-
-const composeAddress = (addr1: string, detail: string, addr3: string) => {
-  const parts: string[] = []
-  if (addr1.trim()) parts.push(addr1.trim())
-  if (detail.trim()) parts.push(detail.trim())
-  if (addr3.trim()) {
-    const cleanRef = addr3.trim()
-    const formattedRef = cleanRef.startsWith('(') ? cleanRef : `(${cleanRef})`
-    parts.push(formattedRef)
-  }
-  return parts.join(' ')
-}
-
 const updateRecipientAddress = () => {
   dispatchForm.value.recipient_address = composeAddress(
     recipientAddress1.value,
@@ -377,16 +370,25 @@ const updateRecipientAddress = () => {
   )
 }
 
+const focusDetailInput = () => {
+  const el = recipientDetailInputRef.value
+  if (!el) return
+  if ('$el' in el && el.$el instanceof HTMLElement) {
+    el.$el.querySelector('input')?.focus()
+    return
+  }
+  if ('focus' in el && typeof el.focus === 'function') {
+    el.focus()
+  }
+}
+
 const postCodeCallback = (data: AddressData) => {
   const { address1, address3 } = callAddress(data)
   recipientAddress1.value = address1.trim()
   recipientAddress3.value = address3.trim()
   recipientAddressDetail.value = ''
   updateRecipientAddress()
-  setTimeout(() => {
-    recipientDetailInputRef.value?.$el?.querySelector?.('input')?.focus() ||
-      recipientDetailInputRef.value?.focus?.()
-  }, 100)
+  setTimeout(focusDetailInput, 100)
 }
 
 const openDispatchModal = () => {
@@ -398,14 +400,15 @@ const openDispatchModal = () => {
     recipient_address: props.letter.recipient_address || '',
     recipient_contact: props.letter.recipient_contact || '',
   }
-  recipientAddress1.value = props.letter.recipient_address || ''
-  recipientAddress3.value = ''
-  recipientAddressDetail.value = ''
+  const parsed = splitStoredAddress(props.letter.recipient_address)
+  recipientAddress1.value = parsed.base
+  recipientAddressDetail.value = parsed.detail
+  recipientAddress3.value = parsed.ref
   showDispatchModal.value = true
 }
 
 const setTodayDispatched = () => {
-  dispatchForm.value.dispatched_at = new Date().toISOString().substring(0, 10)
+  dispatchForm.value.dispatched_at = getLocalTodayStr()
 }
 
 const clearDispatchedDate = () => {
@@ -416,31 +419,29 @@ const saveDispatchMeta = async () => {
   if (!props.letter?.pk) return
   dispatchSaving.value = true
   try {
+    let dispatchedAtPayload: string | null = null
+    if (dispatchForm.value.dispatched_at) {
+      const orig = props.letter.dispatched_at
+      dispatchedAtPayload =
+        orig && orig.substring(0, 10) === dispatchForm.value.dispatched_at
+          ? orig
+          : `${dispatchForm.value.dispatched_at}T00:00:00`
+    }
     const payload = {
       pk: props.letter.pk,
       dispatch_method: dispatchForm.value.dispatch_method,
       tracking_number: dispatchForm.value.tracking_number,
-      dispatched_at: dispatchForm.value.dispatched_at
-        ? `${dispatchForm.value.dispatched_at}T00:00:00`
-        : null,
+      dispatched_at: dispatchedAtPayload,
       recipient_address: dispatchForm.value.recipient_address,
       recipient_contact: dispatchForm.value.recipient_contact,
     }
-    await docStore.patchLetter(props.letter.pk, payload)
-    showDispatchModal.value = false
+    const updated = await docStore.patchLetter(props.letter.pk, payload)
+    if (updated) {
+      showDispatchModal.value = false
+    }
   } finally {
     dispatchSaving.value = false
   }
-}
-
-const formatDate = (dateStr: string | null | undefined) => {
-  if (!dateStr) return '-'
-  return dateStr.substring(0, 10)
-}
-
-const formatDateTime = (dateStr: string | null | undefined) => {
-  if (!dateStr) return '-'
-  return dateStr.replace('T', ' ').substring(0, 19)
 }
 </script>
 
@@ -476,14 +477,14 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       <CCardBody
         class="d-flex flex-wrap justify-content-between align-items-center py-2 px-3 gap-2"
       >
-        <!-- 1. 이미 대외 발송 완료된 경우 -->
         <template v-if="isDispatched">
           <div class="d-flex align-items-center">
             <v-icon icon="mdi-truck-check" size="large" class="text-success me-2" />
             <div>
               <strong class="text-success">대외 발송 완료 공문: </strong>
               <span class="text-muted ms-1">
-                {{ formatDateTime(letter.dispatched_at) }} 발송 완료 (증빙 보관 및 수정/삭제 불가)
+                {{ formatDateTimeStr(letter.dispatched_at, true) }} 발송 완료 (증빙 보관 및
+                수정/삭제 불가)
               </span>
               <v-chip
                 v-if="letter.approval_document_detail"
@@ -509,7 +510,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </div>
         </template>
 
-        <!-- 2. 전자결재 연동 공문인 경우 (진행중 / 승인 / 반려 / 상신대기) -->
         <template v-else-if="hasApprovalDoc">
           <div class="d-flex align-items-center">
             <v-icon icon="mdi-shield-check" size="large" class="text-primary me-2" />
@@ -560,7 +560,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               결재 문서 보기
             </v-btn>
             <v-btn
-              v-if="letter.approval_status === 'pending'"
+              v-if="canCancelApproval"
               color="warning"
               variant="outlined"
               size="small"
@@ -573,7 +573,10 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               기안 회수
             </v-btn>
             <v-btn
-              v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
+              v-if="
+                canDocsCreate &&
+                (letter.approval_status === 'none' || letter.approval_status === 'rejected')
+              "
               color="primary"
               size="small"
               :disabled="approvalLoading"
@@ -586,19 +589,17 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </div>
         </template>
 
-        <!-- 3. 단독 / 직접 발송 모드로 등록된 공문인 경우 (미발송 상태) -->
         <template v-else>
           <div class="d-flex align-items-center">
             <v-icon icon="mdi-file-sign" size="large" class="text-secondary me-2" />
             <div>
-              <strong class="text-dark">단독 / 직접 발송 공문: </strong>
+              <strong class="text-body">단독 / 직접 발송 공문: </strong>
               <span class="text-muted ms-1" style="font-size: 0.85rem">
                 (사내 전자결재 생략 문서 • 직인 실물/전자날인 후 직접 시행·발송)
               </span>
             </div>
           </div>
-          <div class="d-flex align-items-center">
-            <!-- 혹시 전자결재로 전환하여 상신하고 싶을 때를 위한 옵션 버튼 -->
+          <div v-if="canDocsCreate" class="d-flex align-items-center">
             <v-btn
               color="secondary"
               variant="text"
@@ -617,9 +618,8 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       </CCardBody>
     </CCard>
 
-    <!-- Main Content & A4 Preview (2-Column Responsive Layout) -->
+    <!-- Main Content & A4 Preview -->
     <CRow>
-      <!-- 좌측: 공문 상세 정보 & 관리 카드 영역 (lg: 6, xl: 7) -->
       <CCol lg="6" xl="7">
         <!-- Letter Header -->
         <CCard class="mb-4">
@@ -633,13 +633,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
             <div>
               <small class="text-muted">
                 작성자: {{ letter.creator?.username || '-' }} | 작성일:
-                {{ formatDateTime(letter.created) }}
+                {{ formatDateTimeStr(letter.created, true) }}
               </small>
             </div>
           </CCardHeader>
         </CCard>
 
-        <!-- Letter Info (수신 & 발신/날인) -->
+        <!-- Letter Info -->
         <CRow>
           <CCol md="6">
             <CCard class="mb-4">
@@ -691,7 +691,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                       <th>시행(발신)일</th>
                       <td>
                         <span v-if="letter.dispatched_at" class="fw-bold text-success">
-                          {{ formatDate(letter.effective_issue_date || letter.dispatched_at) }}
+                          {{ formatShortDate(letter.effective_issue_date || letter.dispatched_at) }}
                           <v-chip color="success" variant="flat" size="x-small" class="ms-1">
                             발송완료
                           </v-chip>
@@ -700,13 +700,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                           v-else-if="letter.approval_status === 'approved'"
                           class="fw-bold text-primary"
                         >
-                          {{ formatDate(letter.effective_issue_date || letter.issue_date) }}
+                          {{ formatShortDate(letter.effective_issue_date || letter.issue_date) }}
                           <v-chip color="primary" variant="flat" size="x-small" class="ms-1">
                             승인확정
                           </v-chip>
                         </span>
                         <span v-else class="text-secondary">
-                          {{ formatDate(letter.issue_date) }}
+                          {{ formatShortDate(letter.issue_date) }}
                           <small class="text-muted ms-1">(발신 요청일)</small>
                         </span>
                       </td>
@@ -730,17 +730,15 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                       <th style="width: 100px">날인 인감</th>
                       <td>
                         <div v-if="letter.seal_detail" class="d-flex align-items-center">
-                          <span class="me-2"
-                            >{{ letter.seal_detail.name }} ({{
-                              letter.seal_detail.seal_type_desc
-                            }})</span
-                          >
+                          <span class="me-2">
+                            {{ letter.seal_detail.name }} ({{ letter.seal_detail.seal_type_desc }})
+                          </span>
                           <img
                             v-if="letter.seal_detail.seal_image"
-                            :src="letter.seal_detail.seal_image"
+                            :src="sanitizeExternalUrl(letter.seal_detail.seal_image)"
                             alt="인장"
                             style="width: 28px; height: 28px; object-fit: contain"
-                            class="border rounded p-1 bg-white"
+                            class="border rounded p-1 bg-more-white"
                           />
                         </div>
                         <span v-else class="text-muted">(직인생략 또는 미선택)</span>
@@ -749,10 +747,10 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                     <tr>
                       <th>기안/담당자</th>
                       <td>
-                        <span
-                          >{{ letter.drafter_name }}
-                          {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}</span
-                        >
+                        <span>
+                          {{ letter.drafter_name }}
+                          {{ letter.drafter_position ? `(${letter.drafter_position})` : '' }}
+                        </span>
                         <v-chip
                           v-if="letter.is_solo_approval"
                           color="info"
@@ -786,20 +784,20 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </CCardHeader>
           <CCardBody>
             <div
-              class="letter-content bg-more-white markdown-content text-body"
+              class="letter-content bg-more-light markdown-content text-body"
               v-html="markdownRender(letter.content)"
             />
           </CCardBody>
         </CCard>
 
-        <!-- Attachment Section (붙임 텍스트 및 첨부파일) -->
+        <!-- Attachment Section -->
         <CCard class="mb-4">
           <CCardHeader>
             <v-icon icon="mdi-paperclip" size="small" class="me-1" />
             <strong>붙임 (첨부 서류 및 파일)</strong>
           </CCardHeader>
           <CCardBody>
-            <div v-if="letter.attachment_text" class="mb-3 p-3 bg-light rounded border">
+            <div v-if="letter.attachment_text" class="mb-3 p-3 bg-more-light rounded border">
               <div class="fw-bold mb-1">인쇄용 붙임 목록:</div>
               <div style="white-space: pre-wrap">{{ letter.attachment_text }}</div>
             </div>
@@ -819,11 +817,15 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   </div>
                   <v-btn
                     v-if="typeof att.file === 'string'"
-                    :href="att.file"
-                    target="_blank"
                     color="primary"
                     variant="outlined"
                     size="x-small"
+                    @click="
+                      downloadFile(
+                        sanitizeExternalUrl(att.file),
+                        att.file_name || att.name || 'attachment',
+                      )
+                    "
                   >
                     <v-icon icon="mdi-cloud-download" size="small" class="me-1" /> 다운로드
                   </v-btn>
@@ -836,9 +838,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </CCardBody>
         </CCard>
 
-        <!-- Dispatch Meta Section (발송 대장 관리 정보) -->
+        <!-- Dispatch Meta Section -->
         <CCard class="mb-4 border-secondary">
-          <CCardHeader class="bg-light d-flex justify-content-between align-items-center">
+          <CCardHeader class="bg-more-light d-flex justify-content-between align-items-center">
             <div>
               <v-icon icon="mdi-truck-delivery-outline" size="small" class="me-1 text-secondary" />
               <strong>발송 및 대장 관리 메타 정보</strong>
@@ -864,7 +866,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                     <tr>
                       <th style="width: 120px">발송 방법</th>
                       <td>
-                        <v-chip color="dark" variant="flat" size="x-small">
+                        <v-chip color="blue-grey-darken-2" variant="flat" size="x-small">
                           {{ letter.dispatch_method_desc || letter.dispatch_method || '이메일' }}
                         </v-chip>
                       </td>
@@ -875,7 +877,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                     </tr>
                     <tr>
                       <th>발송 완료일시</th>
-                      <td>{{ formatDateTime(letter.dispatched_at) }}</td>
+                      <td>{{ formatDateTimeStr(letter.dispatched_at, true) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -898,7 +900,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </CCardBody>
         </CCard>
 
-        <!-- PDF Section (최종 발송본 PDF 관리) -->
+        <!-- PDF Section -->
         <CCard class="mb-4">
           <CCardHeader class="d-flex justify-content-between align-items-center">
             <strong>
@@ -906,7 +908,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               공문 PDF 파일 (최종 발송/보관본)
             </strong>
             <div>
-              <v-chip v-if="isDispatched" color="dark" variant="flat" size="x-small">
+              <v-chip v-if="isDispatched" color="blue-grey-darken-3" variant="flat" size="x-small">
                 대외 발송완료 (재생성 금지)
               </v-chip>
               <v-chip v-else-if="isApproved" color="secondary" variant="flat" size="x-small">
@@ -919,14 +921,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               v-if="letter.pdf_file"
               class="d-flex flex-wrap align-items-center justify-content-between gap-3"
             >
-              <!-- 좌측: 상태 뱃지 및 보조 관리 옵션(스캔본 등록/교체, 시스템 재생성) -->
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <v-chip color="success" class="p-2 me-1">
                   <v-icon icon="mdi-check-circle" size="small" class="me-1" />
                   최종 PDF 등록됨
                 </v-chip>
 
-                <!-- 실물 날인 스캔본 직접 업로드 / 교체 (발송 후는 관리자만) -->
                 <template v-if="canUploadScan">
                   <input
                     ref="scanFileInputRef"
@@ -951,7 +951,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   (발송 완료된 공문의 스캔본 교체는 관리자만 가능)
                 </small>
 
-                <!-- 시스템 양식 PDF 재생성 (발송 완료 시 무조건 금지, 결재 승인 시 관리자만) -->
                 <v-btn
                   v-if="canRegeneratePdf"
                   color="warning"
@@ -972,13 +971,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                 </small>
               </div>
 
-              <!-- 우측: 가장 자주 사용되고 중요한 [PDF 다운로드] 버튼 강조 배치 -->
               <div>
                 <v-btn
                   color="light"
                   variant="flat"
                   size="default"
-                  class="font-weight-medium"
+                  class="fw-medium"
                   elevation="1"
                   @click="downloadPdf"
                 >
@@ -988,11 +986,9 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               </div>
             </div>
 
-            <!-- PDF 미생성 상태 -->
             <div v-else class="d-flex flex-wrap align-items-center justify-content-between gap-3">
               <span class="text-muted">PDF 파일이 아직 생성되거나 등록되지 않았습니다.</span>
               <div class="d-flex align-items-center gap-2">
-                <!-- 직접 스캔본 업로드 -->
                 <input
                   ref="scanFileInputRef"
                   type="file"
@@ -1013,7 +1009,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
                   스캔본(PDF) 직접 업로드
                 </v-btn>
 
-                <!-- 시스템 PDF 생성 -->
                 <v-btn
                   v-if="canDocsCreate"
                   color="primary"
@@ -1034,7 +1029,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         <!-- Action Buttons -->
         <CRow class="mb-4">
           <CCol class="d-flex justify-content-between align-items-center">
-            <!-- 좌측: 위험 작업인 삭제 버튼 (미상신 또는 반려 상태에서만 노출) -->
             <div>
               <v-btn
                 v-if="canDeleteLetter"
@@ -1048,13 +1042,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               </v-btn>
             </div>
 
-            <!-- 우측: 상태 안내 및 가장 접근이 쉬운 [수정], [목록으로] 순차 배치 -->
             <div class="d-flex align-items-center gap-2">
               <small v-if="isDispatched" class="text-muted me-2">
                 (대외 발송이 완료되어 수정 및 삭제가 제한된 공문입니다)
               </small>
               <small v-else-if="isPending" class="text-muted me-2">
-                (전자결재가 진행 중인 공문입니다. 기안을 회수하거나 반려된 후에 수정할 수 있습니다)
+                (전자결재가 진행 중인 공문입니다. 기안을 회수하거나 반려된 후에 수정/삭제할 수
+                있습니다)
               </small>
               <small v-else-if="isApproved" class="text-muted me-2">
                 (최종 결재 승인되어 내용 수정이 불가합니다)
@@ -1086,7 +1080,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
         </CRow>
       </CCol>
 
-      <!-- 우측: A4 인쇄 미리보기 컴포넌트 (lg: 6, xl: 5 / lg 이상에서 표출) -->
+      <!-- 우측: A4 인쇄 미리보기 컴포넌트 -->
       <CCol lg="6" xl="5" class="d-none d-lg-block">
         <LetterA4Preview
           :form="letter"
@@ -1099,7 +1093,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           :representative-name="representativeName"
           :approver-duty-title="approverDutyTitle"
           :final-approver-name="finalApproverName"
-          :approval-mode="letter.approval_document ? 'approval' : 'manual'"
+          :approval-mode="hasApprovalDoc ? 'approval' : 'manual'"
           :is-solo-approval="!!letter.is_solo_approval"
           :sender-contact="senderContact"
           :clean-drafter-name="cleanDrafterName"
@@ -1113,8 +1107,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
       </CCol>
     </CRow>
 
-    <!-- Delete Confirm Modal -->
-    <ConfirmModal ref="refConfirmModal" @confirm-func="onDelete" />
+    <!-- Modals -->
+    <ConfirmModal
+      ref="refConfirmModal"
+      @confirm-func="handleConfirmAction"
+      @close="handleModalClose"
+    />
+    <AlertModal ref="refAlertModal" />
 
     <!-- 발송 및 대장 관리 메타 정보 수정 모달 -->
     <CModal
@@ -1139,7 +1138,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </small>
         </CAlert>
 
-        <!-- 1. 발송 방법, 등기번호, 발송 완료일자 -->
         <CRow class="mb-3">
           <CCol :xs="12" :md="4">
             <CFormLabel>발송 방법</CFormLabel>
@@ -1192,17 +1190,14 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </CCol>
         </CRow>
 
-        <!-- 2. 수신처 우편 발송지 및 연락처 -->
         <CRow class="mb-2">
           <CCol :xs="12" :md="5">
             <CFormLabel>수신처 기본 주소</CFormLabel>
             <CInputGroup>
               <CFormInput
-                v-model="recipientAddressBase"
-                placeholder="주소 검색 시 자동 입력"
-                readonly
-                style="cursor: pointer"
-                @click="refDispatchPostCode?.initiate(2)"
+                v-model="recipientAddress1"
+                placeholder="주소 검색 또는 직접 입력"
+                @input="updateRecipientAddress"
               />
               <CButton
                 type="button"
@@ -1233,7 +1228,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
           </CCol>
         </CRow>
 
-        <!-- Daum Postcode Component -->
         <DaumPostcode ref="refDispatchPostCode" @address-callback="postCodeCallback" />
       </CModalBody>
       <CModalFooter>
@@ -1265,14 +1259,12 @@ const formatDateTime = (dateStr: string | null | undefined) => {
 .letter-content {
   min-height: 200px;
   padding: 1.25rem;
-  background-color: #fafafa;
   border-radius: 4px;
   line-height: 1.8;
 }
 
 :deep(.markdown-content) {
   font-size: 0.95rem;
-  color: #2c3e50;
 }
 
 :deep(.markdown-content p) {
@@ -1293,13 +1285,13 @@ const formatDateTime = (dateStr: string | null | undefined) => {
 
 :deep(.markdown-content th),
 :deep(.markdown-content td) {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--cui-border-color, #dee2e6);
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
 
 :deep(.markdown-content th) {
-  background-color: #f8f9fa;
+  background-color: rgba(128, 128, 128, 0.12);
   font-weight: 600;
 }
 
@@ -1313,6 +1305,6 @@ const formatDateTime = (dateStr: string | null | undefined) => {
   border-left: 4px solid #ced4da;
   padding-left: 1rem;
   margin: 0.75rem 0;
-  color: #6c757d;
+  opacity: 0.85;
 }
 </style>

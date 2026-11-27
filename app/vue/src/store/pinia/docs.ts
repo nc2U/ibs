@@ -55,6 +55,8 @@ export type LetterFilter = {
   company?: number | ''
   issue_date_from?: string
   issue_date_to?: string
+  approval_status?: 'none' | 'pending' | 'approved' | 'rejected' | 'dispatched' | ''
+  dispatch_method?: string
   creator?: number | ''
   ordering?: string
   search?: string
@@ -512,73 +514,107 @@ export const useDocs = defineStore('docs', () => {
   const removeLetter = () => (letter.value = null)
 
   const fetchLetterList = async (payload: LetterFilter) => {
-    const limit = payload.limit || 10
-    const page = payload.page || 1
-    let url = `/official-letter/?limit=${limit}&page=${page}`
+    const params = new URLSearchParams()
+    params.append('limit', String(payload.limit || 10))
+    params.append('page', String(payload.page || 1))
 
-    const { company, issue_date_from, issue_date_to, creator } = payload
-    if (company) url += `&company=${company}`
-    if (issue_date_from) url += `&issue_date_from=${issue_date_from}`
-    if (issue_date_to) url += `&issue_date_to=${issue_date_to}`
-    if (creator) url += `&creator=${creator}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
+    if (payload.company) params.append('company', String(payload.company))
+    if (payload.issue_date_from) params.append('issue_date_from', payload.issue_date_from)
+    if (payload.issue_date_to) params.append('issue_date_to', payload.issue_date_to)
+    if (payload.approval_status) params.append('approval_status', payload.approval_status)
+    if (payload.dispatch_method) params.append('dispatch_method', payload.dispatch_method)
+    if (payload.creator) params.append('creator', String(payload.creator))
+    if (payload.ordering) params.append('ordering', payload.ordering)
+    if (payload.search) params.append('search', payload.search)
 
-    return await api
-      .get(url)
+    return api
+      .get(`/official-letter/?${params.toString()}`)
       .then(res => {
         letterList.value = res.data.results
         letterCount.value = res.data.count
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const removeLetterList = () => (letterList.value = [])
 
-  const createLetter = (payload: OfficialLetter) =>
+  const createLetter = (payload: OfficialLetter, filter?: LetterFilter) =>
     api
       .post('/official-letter/', payload)
       .then(async res => {
-        await fetchLetterList({ company: res.data.company, page: 1 })
+        await fetchLetterList(
+          filter
+            ? { ...filter, company: res.data.company, page: 1 }
+            : { company: res.data.company, page: 1 },
+        )
         message()
-        return res.data
+        return res.data as OfficialLetter
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
-  const updateLetter = (pk: number, payload: OfficialLetter) =>
+  const updateLetter = (pk: number, payload: OfficialLetter, filter?: LetterFilter) =>
     api
       .put(`/official-letter/${pk}/`, payload)
       .then(async res => {
-        await fetchLetterList({ company: res.data.company, page: 1 })
+        await fetchLetterList(
+          filter
+            ? { ...filter, company: res.data.company }
+            : { company: res.data.company, page: 1 },
+        )
         await fetchLetter(res.data.pk)
         message()
-        return res.data
+        return res.data as OfficialLetter
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const patchLetter = async (pk: number, payload: PatchLetter) =>
     api
       .patch(`/official-letter/${pk}/`, payload)
-      .then(res => fetchLetter(res.data.pk))
-      .catch(err => errorHandle(err))
+      .then(async res => {
+        await fetchLetter(res.data.pk)
+        message()
+        return res.data as OfficialLetter
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteLetter = (pk: number, filter: LetterFilter) =>
     api
       .delete(`/official-letter/${pk}/`)
-      .then(() =>
-        fetchLetterList(filter).then(() => message('warning', '', '해당 공문이 삭제되었습니다.')),
-      )
-      .catch(err => errorHandle(err))
+      .then(async () => {
+        await fetchLetterList(filter)
+        message('warning', '', '해당 공문이 삭제되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const generatePdf = async (pk: number) =>
     api
       .post(`/official-letter/${pk}/generate_pdf/`)
-      .then(res => {
-        fetchLetter(pk)
+      .then(async res => {
+        await fetchLetter(pk)
         message('success', '', 'PDF가 생성되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const uploadLetterPdf = async (pk: number, file: File) => {
     const formData = new FormData()
@@ -592,24 +628,33 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '공문 PDF(스캔본) 파일이 성공적으로 업로드되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const getNextDocumentNumber = async (company: number) =>
     api
       .get(`/official-letter/next_document_number/?company=${company}`)
       .then(res => res.data.next_document_number)
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return ''
+      })
 
   const submitApproval = async (pk: number) =>
     api
       .post(`/official-letter/${pk}/submit_approval/`)
-      .then(res => {
-        fetchLetter(pk)
+      .then(async res => {
+        await fetchLetter(pk)
         message('success', '', '전자결재가 성공적으로 상신되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const uploadLetterAttachment = async (letterId: number, formData: FormData) =>
     api
@@ -621,7 +666,10 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '첨부파일이 등록되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteLetterAttachment = async (attachmentId: number, letterId: number) =>
     api
@@ -629,8 +677,12 @@ export const useDocs = defineStore('docs', () => {
       .then(async () => {
         await fetchLetter(letterId)
         message('warning', '', '첨부파일이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // Inbound Official Letter (수신 공문)
   const inboundLetter = ref<InboundLetter | null>(null)
@@ -651,94 +703,127 @@ export const useDocs = defineStore('docs', () => {
   const fetchInboundLetter = async (pk: number) =>
     api
       .get(`/inbound-letter/${pk}/`)
-      .then(res => (inboundLetter.value = res.data))
-      .catch(err => errorHandle(err))
+      .then(res => {
+        inboundLetter.value = res.data
+        return res.data as InboundLetter
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const removeInboundLetter = () => (inboundLetter.value = null)
 
   const fetchInboundLetterList = async (payload: InboundLetterFilter) => {
-    const limit = payload.limit || 10
-    const page = payload.page || 1
-    let url = `/inbound-letter/?limit=${limit}&page=${page}`
+    const params = new URLSearchParams()
+    params.append('limit', String(payload.limit || 10))
+    params.append('page', String(payload.page || 1))
 
-    const {
-      company,
-      received_date_from,
-      received_date_to,
-      reply_due_date_from,
-      reply_due_date_to,
-      status,
-      recipient_dept,
-      recipient_manager,
-    } = payload
-    if (company) url += `&company=${company}`
-    if (received_date_from) url += `&received_date_from=${received_date_from}`
-    if (received_date_to) url += `&received_date_to=${received_date_to}`
-    if (reply_due_date_from) url += `&reply_due_date_from=${reply_due_date_from}`
-    if (reply_due_date_to) url += `&reply_due_date_to=${reply_due_date_to}`
-    if (status) url += `&status=${status}`
-    if (recipient_dept) url += `&recipient_dept=${recipient_dept}`
-    if (recipient_manager) url += `&recipient_manager=${recipient_manager}`
-    if (payload.ordering) url += `&ordering=${payload.ordering}`
-    if (payload.search) url += `&search=${payload.search}`
+    if (payload.company) params.append('company', String(payload.company))
+    if (payload.received_date_from) params.append('received_date_from', payload.received_date_from)
+    if (payload.received_date_to) params.append('received_date_to', payload.received_date_to)
+    if (payload.reply_due_date_from)
+      params.append('reply_due_date_from', payload.reply_due_date_from)
+    if (payload.reply_due_date_to) params.append('reply_due_date_to', payload.reply_due_date_to)
+    if (payload.status) params.append('status', payload.status)
+    if (payload.recipient_dept) params.append('recipient_dept', String(payload.recipient_dept))
+    if (payload.recipient_manager)
+      params.append('recipient_manager', String(payload.recipient_manager))
+    if (payload.ordering) params.append('ordering', payload.ordering)
+    if (payload.search) params.append('search', payload.search)
 
-    return await api
-      .get(url)
+    return api
+      .get(`/inbound-letter/?${params.toString()}`)
       .then(res => {
         inboundLetterList.value = res.data.results
         inboundLetterCount.value = res.data.count
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const removeInboundLetterList = () => (inboundLetterList.value = [])
 
-  const createInboundLetter = (payload: FormData | InboundLetter) => {
+  const createInboundLetter = (payload: FormData | InboundLetter, filter?: InboundLetterFilter) => {
     const headers = payload instanceof FormData ? config_headers : undefined
     return api
       .post('/inbound-letter/', payload, headers)
       .then(async res => {
-        await fetchInboundLetterList({ company: res.data.company, page: 1 })
+        await fetchInboundLetterList(
+          filter
+            ? { ...filter, company: res.data.company, page: 1 }
+            : { company: res.data.company, page: 1 },
+        )
         message()
-        return res.data
+        return res.data as InboundLetter
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
-  const updateInboundLetter = (pk: number, payload: FormData | InboundLetter) => {
+  const updateInboundLetter = (
+    pk: number,
+    payload: FormData | InboundLetter,
+    filter?: InboundLetterFilter,
+  ) => {
     const headers = payload instanceof FormData ? config_headers : undefined
     return api
       .put(`/inbound-letter/${pk}/`, payload, headers)
       .then(async res => {
-        await fetchInboundLetterList({ company: res.data.company, page: 1 })
+        await fetchInboundLetterList(
+          filter
+            ? { ...filter, company: res.data.company }
+            : { company: res.data.company, page: 1 },
+        )
         await fetchInboundLetter(res.data.pk)
         message()
-        return res.data
+        return res.data as InboundLetter
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
   const patchInboundLetter = async (pk: number, payload: PatchInboundLetter) =>
     api
       .patch(`/inbound-letter/${pk}/`, payload)
-      .then(res => fetchInboundLetter(res.data.pk))
-      .catch(err => errorHandle(err))
+      .then(async res => {
+        await fetchInboundLetter(res.data.pk)
+        message()
+        return res.data as InboundLetter
+      })
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteInboundLetter = (pk: number, filter: InboundLetterFilter) =>
     api
       .delete(`/inbound-letter/${pk}/`)
-      .then(() =>
-        fetchInboundLetterList(filter).then(() =>
-          message('warning', '', '해당 수신 공문이 삭제되었습니다.'),
-        ),
-      )
-      .catch(err => errorHandle(err))
+      .then(async () => {
+        await fetchInboundLetterList(filter)
+        message('warning', '', '해당 수신 공문이 삭제되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const getNextReceiptNumber = async (company: number) =>
     api
       .get(`/inbound-letter/next_receipt_number/?company=${company}`)
       .then(res => res.data.next_receipt_number)
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return ''
+      })
 
   const uploadInboundAttachment = async (letterId: number, formData: FormData) =>
     api
@@ -750,7 +835,10 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', '첨부파일이 등록되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   const deleteInboundAttachment = async (attachmentId: number, letterId: number) =>
     api
@@ -758,8 +846,12 @@ export const useDocs = defineStore('docs', () => {
       .then(async () => {
         await fetchInboundLetter(letterId)
         message('warning', '', '첨부파일이 삭제되었습니다.')
+        return true
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const submitInboundApproval = async (pk: number) =>
     api
@@ -769,7 +861,10 @@ export const useDocs = defineStore('docs', () => {
         message('success', '', res.data.detail || '전자결재가 상신되었습니다.')
         return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
 
   return {
     docTypes,

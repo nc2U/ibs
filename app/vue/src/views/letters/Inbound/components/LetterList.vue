@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePerms } from '@/composables/usePerms.ts'
-import { useAccount } from '@/store/pinia/account.ts'
-import type { InboundLetter } from '@/store/types/docs'
+import type { InboundLetter, InboundLetterStatus } from '@/store/types/docs'
 import type { InboundLetterFilter } from '@/store/pinia/docs'
 import Pagination from '@/components/Pagination'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import {
+  formatShortDate,
+  getDDayBadgeColor,
+  getDDayText,
+  getScanFileIcon,
+  useLetterPerms,
+} from '@/views/letters/utils/letterMeta'
 
 const props = defineProps<{
   company: number
@@ -22,16 +27,15 @@ const emit = defineEmits<{
   (e: 'pageSelect', page: number): void
 }>()
 
-const { can, PERM } = usePerms()
-const accStore = useAccount()
-const canDocsCreate = computed(() => accStore.isStaff && can(PERM.DOCS_CREATE))
+const { hasPerm, PERM } = useLetterPerms()
+const canDocsCreate = computed(() => hasPerm(PERM.DOCS_CREATE))
 
 const router = useRouter()
 
 const search = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
-const status = ref('')
+const status = ref<InboundLetterStatus | ''>('')
 const dept = ref<number | ''>('')
 const ordering = ref('-received_date')
 
@@ -56,7 +60,7 @@ const onFilter = () => {
     search: search.value,
     received_date_from: dateFrom.value,
     received_date_to: dateTo.value,
-    status: status.value as any,
+    status: status.value,
     recipient_dept: dept.value,
     ordering: ordering.value,
     page: 1,
@@ -88,43 +92,12 @@ const goToCreate = () => {
 const goToView = (pk: number) => {
   router.push({ name: `${props.viewRoute} - 보기`, params: { letterId: pk } })
 }
-
-const formatDate = (dateStr: string | undefined | null) => {
-  if (!dateStr) return '-'
-  return dateStr.substring(0, 10)
-}
-
-const getDDayBadgeColor = (dDay: number | null | undefined) => {
-  if (dDay === null || dDay === undefined) return 'secondary'
-  if (dDay < 0) return 'danger'
-  if (dDay === 0) return 'warning'
-  if (dDay <= 3) return 'danger'
-  if (dDay <= 7) return 'warning'
-  return 'info'
-}
-
-const getDDayText = (dDay: number | null | undefined) => {
-  if (dDay === null || dDay === undefined) return ''
-  if (dDay < 0) return `D+${Math.abs(dDay)}`
-  if (dDay === 0) return 'D-Day'
-  return `D-${dDay}`
-}
-
-const getScanFileIcon = (fileUrl: string | null | undefined) => {
-  if (!fileUrl) return 'mdi-file-document-outline'
-  const ext = fileUrl.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return 'mdi-file-pdf-box'
-  if (ext === 'hwp' || ext === 'hwpx') return 'mdi-file-document-outline'
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif', 'tiff'].includes(ext || ''))
-    return 'mdi-file-image'
-  return 'mdi-file-document'
-}
 </script>
 
 <template>
   <div>
     <!-- Filter Section -->
-    <CRow class="mb-3">
+    <CRow class="mb-3 g-2">
       <CCol md="2">
         <CFormLabel>접수일 (시작)</CFormLabel>
         <DatePicker v-model="dateFrom" placeholder="시작일" @update:model-value="onFilter" />
@@ -198,15 +171,15 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
       <CTableHead color="light">
         <CTableRow>
           <CTableHeaderCell class="text-center" style="width: 130px">접수번호</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 140px"
-            >발신처 문서번호</CTableHeaderCell
-          >
+          <CTableHeaderCell class="text-center" style="width: 140px">
+            발신처 문서번호
+          </CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 140px">발신처</CTableHeaderCell>
           <CTableHeaderCell>제목</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 105px">접수일자</CTableHeaderCell>
-          <CTableHeaderCell class="text-center" style="width: 130px"
-            >회신기한 (D-Day)</CTableHeaderCell
-          >
+          <CTableHeaderCell class="text-center" style="width: 130px">
+            회신기한 (D-Day)
+          </CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 110px">배부 부서</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 90px">담당자</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 85px">상태</CTableHeaderCell>
@@ -240,11 +213,11 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
             />
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            {{ formatDate(item.received_date) }}
+            {{ formatShortDate(item.received_date) }}
           </CTableDataCell>
           <CTableDataCell class="text-center">
             <template v-if="item.reply_due_date">
-              <div>{{ formatDate(item.reply_due_date) }}</div>
+              <div>{{ formatShortDate(item.reply_due_date) }}</div>
               <v-chip
                 v-if="item.status !== 'closed' && item.status !== 'replied'"
                 :color="getDDayBadgeColor(item.d_day)"
@@ -259,7 +232,7 @@ const getScanFileIcon = (fileUrl: string | null | undefined) => {
             <span v-else class="text-muted">-</span>
           </CTableDataCell>
           <CTableDataCell class="text-center">
-            <span v-if="item.recipient_dept_name" class="badge bg-light text-dark border">
+            <span v-if="item.recipient_dept_name" class="badge bg-more-light text-body border">
               {{ item.recipient_dept_name }}
             </span>
             <span v-else class="text-muted">-</span>

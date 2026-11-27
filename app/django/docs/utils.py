@@ -10,6 +10,12 @@ from weasyprint import HTML
 from company.models import Logo
 
 
+def _strip_drafter_titles(name):
+    for token in ('현장소장', '대표이사', '본부장', '대표', '사장', '소장', '팀장'):
+        name = name.replace(token, '')
+    return name.strip()
+
+
 def get_letter_approval_line(letter):
     """
     공문과 연동된 ApprovalDocument 또는 수동 정보로부터 렌더링용 결재선 정보 추출
@@ -28,12 +34,7 @@ def get_letter_approval_line(letter):
     )
     # 대표이사 직함이나 공백 제거 후 순수 성명 비교용
     raw_drafter_name = letter.drafter_name or ''
-    clean_drafter_name = (
-        raw_drafter_name.replace('대표이사', '')
-        .replace('대표', '')
-        .replace('사장', '')
-        .strip()
-    )
+    clean_drafter_name = _strip_drafter_titles(raw_drafter_name)
 
     if not approval_doc:
         # 전자결재 연동이 없는 수동 발송의 경우
@@ -190,12 +191,7 @@ def get_letter_approval_line(letter):
         is_solo = True
     else:
         is_solo = False
-        clean_drafter_name = (
-            drafter_name.replace('대표이사', '')
-            .replace('대표', '')
-            .replace('사장', '')
-            .strip()
-        )
+        clean_drafter_name = _strip_drafter_titles(drafter_name)
         final_name = (final_approver_info.get('name') or '').strip()
         if len(middle_steps) == 0:
             if clean_drafter_name and final_name and clean_drafter_name == final_name:

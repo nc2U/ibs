@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { markdownRender } from '@/utils/helper.ts'
+import { computed } from 'vue'
+import { markdownRender, sanitizeExternalUrl } from '@/utils/helper.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Company, CompanySeal } from '@/store/types/settings.ts'
-import type { OfficialLetter } from '@/store/types/docs'
+import type { OfficialLetter, OfficialLetterSealDetail } from '@/store/types/docs'
 import type { LocalAttachmentItem } from './LetterForm.vue'
+import { formatShortDate, isDelegationDutyTitle } from '@/views/letters/utils/letterMeta'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     form: OfficialLetter
     currentCompany?: Company | null
-    selectedSeal?: CompanySeal | null
+    selectedSeal?: CompanySeal | OfficialLetterSealDetail | null
     selectedSealImage?: string | null
-    selectedCoSeal?: CompanySeal | null
+    selectedCoSeal?: CompanySeal | OfficialLetterSealDetail | null
     selectedCoSealImage?: string | null
     representativesList?: Array<{ title: string; name: string }>
     representativeName?: string
@@ -48,6 +50,19 @@ withDefaults(
 )
 
 const accStore = useAccount()
+
+const useCoRepLayout = computed(
+  () => props.form.sender_display_type === 'co_rep' || !!props.selectedCoSealImage,
+)
+
+const safeLogoUrl = computed(() =>
+  props.form.company_logo ? sanitizeExternalUrl(props.form.company_logo) : '',
+)
+
+const resolvedApprovalDateLabel = computed(() => {
+  if (props.form.dispatched_at) return '시행'
+  return isDelegationDutyTitle(props.approverDutyTitle) ? '전결' : '승인'
+})
 </script>
 
 <template>
@@ -62,26 +77,38 @@ const accStore = useAccount()
       </v-chip>
     </div>
 
-    <!-- A4 종이 프리뷰 컨테이너 (A4 비율 210:297 고정) -->
+    <!-- A4 종이 프리뷰 컨테이너 -->
     <div class="a4-preview-wrapper d-flex justify-content-center">
       <div class="a4-preview-sheet shadow border bg-white p-4">
         <!-- 1. 레터헤드 -->
         <div class="preview-letterhead text-center pb-2 mb-2 border-bottom position-relative">
-          <div class="preview-company-name fw-bold" style="font-size: 1.15rem; letter-spacing: 2px">
-            {{ currentCompany?.name || '회사명' }}
-          </div>
-          <div class="text-muted" style="font-size: 0.72rem; line-height: 1.3">
-            <span v-if="currentCompany?.ceo">대표이사 {{ currentCompany.ceo }} | </span>
-            <span v-if="currentCompany?.tax_number">
-              사업자등록번호 {{ currentCompany.tax_number }}
-            </span>
-            <br />
-            <span>
-              <span v-if="currentCompany?.zipcode">[{{ currentCompany.zipcode }}]</span>
-              {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
-              {{ currentCompany?.address3 || '' }}
-            </span>
-          </div>
+          <template v-if="safeLogoUrl">
+            <img
+              :src="safeLogoUrl"
+              alt="Company Logo"
+              style="max-width: 100%; max-height: 52px; object-fit: contain"
+            />
+          </template>
+          <template v-else>
+            <div
+              class="preview-company-name fw-bold"
+              style="font-size: 1.15rem; letter-spacing: 2px"
+            >
+              {{ currentCompany?.name || '회사명' }}
+            </div>
+            <div style="font-size: 0.72rem; line-height: 1.3; color: #555">
+              <span v-if="currentCompany?.ceo">대표이사 {{ currentCompany.ceo }} | </span>
+              <span v-if="currentCompany?.tax_number">
+                사업자등록번호 {{ currentCompany.tax_number }}
+              </span>
+              <br />
+              <span>
+                <span v-if="currentCompany?.zipcode">[{{ currentCompany.zipcode }}]</span>
+                {{ currentCompany?.address1 }} {{ currentCompany?.address2 || '' }}
+                {{ currentCompany?.address3 || '' }}
+              </span>
+            </div>
+          </template>
           <!-- 영문 그라데이션 띠 -->
           <div
             class="preview-en-bar text-center text-white mt-1"
@@ -120,7 +147,7 @@ const accStore = useAccount()
           </table>
         </div>
 
-        <!-- 3. 본문 영역 (가변 확장 및 내용 스크롤 지원) -->
+        <!-- 3. 본문 영역 -->
         <div
           class="preview-content my-2 p-3"
           style="
@@ -138,7 +165,7 @@ const accStore = useAccount()
             class="preview-markdown-body"
             v-html="markdownRender(form.content)"
           />
-          <div v-else class="text-muted">공문 본문 내용이 여기에 실시간으로 표시됩니다.</div>
+          <div v-else style="color: #6c757d">공문 본문 내용이 여기에 실시간으로 표시됩니다.</div>
 
           <!-- 붙임 목록 -->
           <div v-if="attachmentInputMode === 'file'" class="mt-3 pt-2">
@@ -173,54 +200,65 @@ const accStore = useAccount()
           </div>
         </div>
 
-        <!-- 4 & 5. 바닥 영역 (서명 + 메타정보) -->
+        <!-- 4 & 5. 바닥 영역 -->
         <div class="preview-bottom-wrapper mt-auto">
           <!-- 4. 하단 서명 / 직인 날인 -->
           <div class="preview-signature text-center my-2">
-            <!-- 공동대표 병기 모드 (가로 나란히 나열) -->
-            <template v-if="form.sender_display_type === 'co_rep'">
+            <template v-if="useCoRepLayout">
               <div class="fw-bold mb-1" style="font-size: 1.05rem">
                 {{ currentCompany?.name || '회사명' }}
               </div>
               <div class="d-inline-flex align-items-center justify-content-center gap-4">
-                <!-- 공동대표 1 -->
                 <div class="fw-bold d-inline-flex align-items-center" style="font-size: 0.95rem">
-                  <span
-                    >{{ representativesList[0]?.title || '공동대표이사' }}
-                    {{ representativesList[0]?.name || finalApproverName }}</span
-                  >
+                  <span>
+                    {{ representativesList[0]?.title || '공동대표이사' }}
+                    {{ representativesList[0]?.name || finalApproverName }}
+                  </span>
                   <span v-if="selectedSealImage" class="ms-2">
                     <img
-                      :src="selectedSealImage"
+                      :src="sanitizeExternalUrl(selectedSealImage)"
                       alt="인장1"
                       style="width: 32px; height: 32px; object-fit: contain"
                     />
                   </span>
                   <span
+                    v-else-if="selectedSeal?.seal_type === 'OMIT'"
+                    class="ms-2"
+                    style="font-size: 0.72rem; color: #555"
+                  >
+                    (직인생략)
+                  </span>
+                  <span
                     v-else
-                    class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                    style="width: 26px; height: 26px; font-size: 0.7rem"
+                    class="ms-2 border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style="width: 26px; height: 26px; font-size: 0.7rem; color: #555"
                   >
                     (인)
                   </span>
                 </div>
-                <!-- 공동대표 2 -->
                 <div class="fw-bold d-inline-flex align-items-center" style="font-size: 0.95rem">
-                  <span
-                    >{{ representativesList[1]?.title || '공동대표이사' }}
-                    {{ representativesList[1]?.name || '대표2' }}</span
-                  >
+                  <span>
+                    {{ representativesList[1]?.title || '공동대표이사' }}
+                    {{ representativesList[1]?.name || '대표2' }}
+                  </span>
                   <span v-if="selectedCoSealImage" class="ms-2">
                     <img
-                      :src="selectedCoSealImage"
+                      :src="sanitizeExternalUrl(selectedCoSealImage)"
                       alt="인장2"
                       style="width: 32px; height: 32px; object-fit: contain"
                     />
                   </span>
                   <span
+                    v-else-if="selectedCoSeal?.seal_type === 'OMIT'"
+                    class="ms-2"
+                    style="font-size: 0.72rem; color: #555"
+                  >
+                    (직인생략)
+                  </span>
+                  <span
                     v-else
-                    class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                    style="width: 26px; height: 26px; font-size: 0.7rem"
+                    class="ms-2 border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style="width: 26px; height: 26px; font-size: 0.7rem; color: #555"
                   >
                     (인)
                   </span>
@@ -228,43 +266,55 @@ const accStore = useAccount()
               </div>
             </template>
 
-            <!-- 회사명 + 대표직함·성명 표기 모드 -->
             <template v-else-if="form.sender_display_type === 'company_rep'">
               <div class="fw-bold d-inline-flex align-items-center" style="font-size: 1.05rem">
                 <span>{{ currentCompany?.name || '회사명' }}</span>
                 <span class="ms-3">{{ approverDutyTitle }} {{ finalApproverName }}</span>
                 <span v-if="selectedSealImage" class="ms-2">
                   <img
-                    :src="selectedSealImage"
+                    :src="sanitizeExternalUrl(selectedSealImage)"
                     alt="직인"
                     style="width: 36px; height: 36px; object-fit: contain"
                   />
                 </span>
                 <span
+                  v-else-if="selectedSeal?.seal_type === 'OMIT'"
+                  class="ms-2"
+                  style="font-size: 0.75rem; color: #555"
+                >
+                  (직인생략)
+                </span>
+                <span
                   v-else
-                  class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                  style="width: 30px; height: 30px; font-size: 0.75rem"
+                  class="ms-2 border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                  style="width: 30px; height: 30px; font-size: 0.75rem; color: #555"
                 >
                   (인)
                 </span>
               </div>
             </template>
 
-            <!-- 기본형: 회사명만 표기 모드 -->
             <template v-else>
               <div class="fw-bold d-inline-flex align-items-center" style="font-size: 1.05rem">
                 <span>{{ currentCompany?.name || '회사명' }}</span>
                 <span v-if="selectedSealImage" class="ms-2">
                   <img
-                    :src="selectedSealImage"
+                    :src="sanitizeExternalUrl(selectedSealImage)"
                     alt="직인"
                     style="width: 36px; height: 36px; object-fit: contain"
                   />
                 </span>
                 <span
+                  v-else-if="selectedSeal?.seal_type === 'OMIT'"
+                  class="ms-2"
+                  style="font-size: 0.75rem; color: #555"
+                >
+                  (직인생략)
+                </span>
+                <span
                   v-else
-                  class="ms-2 text-muted border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
-                  style="width: 30px; height: 30px; font-size: 0.75rem"
+                  class="ms-2 border border-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                  style="width: 30px; height: 30px; font-size: 0.75rem; color: #555"
                 >
                   (인)
                 </span>
@@ -279,7 +329,6 @@ const accStore = useAccount()
           >
             <table class="w-100" style="color: #444; border-collapse: collapse; font-size: 0.72rem">
               <tbody>
-                <!-- 1행: 결재선 -->
                 <tr>
                   <td class="pb-1" style="width: 40px; vertical-align: bottom; padding-left: 0">
                     <template v-if="!isSoloApproval">
@@ -288,38 +337,43 @@ const accStore = useAccount()
                   </td>
                   <td colspan="2" class="pb-1" style="vertical-align: bottom">
                     <template v-if="!isSoloApproval">
-                      <span class="fw-bold text-dark">{{
-                        approvalMode === 'approval'
-                          ? accStore.userInfo?.staff_name ||
-                            accStore.userInfo?.profile?.name ||
-                            accStore.userInfo?.username ||
-                            '기안자'
-                          : cleanDrafterName || form.drafter_name || '담당자'
+                      <span class="fw-bold" style="color: #111">{{
+                        isViewMode
+                          ? cleanDrafterName || form.drafter_name || '담당자'
+                          : approvalMode === 'approval'
+                            ? accStore.userInfo?.staff_name ||
+                              accStore.userInfo?.profile?.name ||
+                              accStore.userInfo?.username ||
+                              '기안자'
+                            : cleanDrafterName || form.drafter_name || '담당자'
                       }}</span>
                     </template>
-                    <span v-else class="text-muted fst-italic">
+                    <span v-else class="fst-italic" style="color: #6c757d">
                       ({{ approverDutyTitle }} 직접 기안)
                     </span>
                   </td>
                   <td colspan="2" class="text-end pb-1" style="vertical-align: bottom">
-                    <div class="text-muted" style="font-size: 0.65rem; margin-bottom: 1px">
-                      <span v-if="approvalMode === 'approval'" class="badge bg-secondary">
+                    <div style="font-size: 0.65rem; margin-bottom: 1px; color: #6c757d">
+                      <span
+                        v-if="approvalMode === 'approval' && form.approval_status !== 'approved'"
+                        class="badge bg-secondary"
+                      >
                         결재 승인 시 자동 확정
                       </span>
                       <span v-else>
+                        {{ resolvedApprovalDateLabel }}
                         {{
-                          ['현장소장', '소장', '본부장', '팀장'].includes(approverDutyTitle)
-                            ? '전결'
-                            : '시행'
+                          formatShortDate(
+                            form.dispatched_at || form.effective_issue_date || form.issue_date,
+                          )
                         }}
-                        {{ form.issue_date || '발신일자' }}
                       </span>
                     </div>
                     <div>
                       <span class="me-1">
                         {{ approverDutyTitle }}
                       </span>
-                      <span class="fw-bold text-dark">{{ finalApproverName }}</span>
+                      <span class="fw-bold" style="color: #111">{{ finalApproverName }}</span>
                     </div>
                   </td>
                 </tr>
@@ -362,8 +416,8 @@ const accStore = useAccount()
                   <td>
                     <div class="d-flex justify-content-between align-items-center">
                       <span>{{ senderContact.email }}</span>
-                      <span class="text-end text-dark fw-normal ps-1">
-                        <span class="text-secondary me-1">/</span>
+                      <span class="text-end fw-normal ps-1" style="color: #111">
+                        <span class="me-1" style="color: #6c757d">/</span>
                         <span class="fw-semibold">
                           {{
                             form.disclosure_type === '2'
