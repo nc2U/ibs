@@ -1,20 +1,16 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/proDocs/_menu/headermixin1.ts'
 import { useProject } from '@/store/pinia/project.ts'
-import {
-  onBeforeRouteUpdate,
-  type RouteLocationNormalizedLoaded as LoadedRoute,
-  useRoute,
-  useRouter,
-} from 'vue-router'
+import { type RouteLocationNormalizedLoaded as LoadedRoute, useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { type SuitCaseFilter as cFilter, useDocs } from '@/store/pinia/docs.ts'
-import type { AFile, Link, SuitCase } from '@/store/types/docs.ts'
+import type { SuitCase } from '@/store/types/docs.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
+import NoAuth from '@/views/_Accounts/NoAuth.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ListController from '@/components/LawSuitCase/ListController.vue'
 import CaseDetail from '@/components/LawSuitCase/CaseDetail.vue'
@@ -23,12 +19,17 @@ import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
 const { can, PERM } = usePerms()
 
-const fController = ref()
+const fController = ref<{ resetForm: (isFilter?: boolean) => void } | null>(null)
 const mainViewName = ref('소송 사건 관리')
-const caseFilter = ref<cFilter>({
-  company: '',
-  project: '',
-  is_real_dev: '',
+const loading = ref(true)
+
+const createDefaultCaseFilter = (
+  companyPk: number | '' = '',
+  projectPk: number | '' = '',
+): cFilter => ({
+  company: companyPk,
+  project: projectPk,
+  is_real_dev: 'true',
   court: '',
   related_case: '',
   sort: '',
@@ -39,160 +40,183 @@ const caseFilter = ref<cFilter>({
   limit: '',
 })
 
-const excelFilter = computed(() => {
-  const { is_real_dev, sort, level, court, in_progress, search } = caseFilter.value
-  return `project=${project.value}&is_real_dev=${is_real_dev}&sort=${sort}&level=${level}&court=${court}&in_progress=${in_progress}&search=${search}`
-})
-const excelUrl = computed(() => `/excel/suitcases/?company=${company.value}&${excelFilter.value}`)
-
-const listFiltering = (payload: cFilter) => {
-  payload.limit = payload.limit || 10
-  payload.is_real_dev = 'true'
-  payload.project = project.value ?? ''
-  caseFilter.value = payload
-  if (company.value) fetchSuitCaseList({ ...caseFilter.value })
-}
-
-const pageSelect = (page: number) => {
-  caseFilter.value.page = page
-  fetchSuitCaseList(caseFilter.value)
-}
+const caseFilter = ref<cFilter>(createDefaultCaseFilter())
 
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
 const company = computed(() => projStore.project?.company)
+const canDocsRead = computed(() => can(PERM.DOCS_READ))
 
 const docStore = useDocs()
 const suitcase = computed(() => docStore.suitcase)
 const suitcaseList = computed(() => docStore.suitcaseList)
 const getSuitCase = computed(() => docStore.getSuitCase)
 
-const fetchLink = (pk: number) => docStore.fetchLink(pk)
-const fetchFile = (pk: number) => docStore.fetchFile(pk)
-const fetchSuitCase = (pk: number) => docStore.fetchSuitCase(pk)
-const fetchSuitCaseList = (payload: cFilter) => docStore.fetchSuitCaseList(payload)
-const fetchAllSuitCaseList = (payload: cFilter) => docStore.fetchAllSuitCaseList(payload)
+const excelFilter = computed(() => {
+  const { is_real_dev, sort, level, court, related_case, in_progress, search } = caseFilter.value
+  const params = new URLSearchParams({
+    company: String(company.value ?? ''),
+    project: String(project.value ?? ''),
+    is_real_dev: String(is_real_dev || 'true'),
+    sort: sort ?? '',
+    level: level ?? '',
+    court: court ?? '',
+    related_case: String(related_case ?? ''),
+    in_progress: String(in_progress ?? ''),
+    search: search ?? '',
+  })
+  return params.toString()
+})
+const excelUrl = computed(() => `/excel/suitcases/?${excelFilter.value}`)
 
-const createSuitCase = (payload: SuitCase & { isProject?: boolean }) =>
-  docStore.createSuitCase(payload)
-const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
-const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
-const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
-const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
+const listFiltering = (payload: cFilter) => {
+  caseFilter.value = {
+    ...payload,
+    company: company.value ?? '',
+    project: project.value ?? '',
+    is_real_dev: 'true',
+    limit: payload.limit || 10,
+    page: payload.page || 1,
+  }
+  if (project.value && canDocsRead.value) {
+    docStore.fetchSuitCaseList({ ...caseFilter.value })
+  }
+}
+
+const pageSelect = (page: number) => {
+  caseFilter.value.page = page
+  if (project.value && canDocsRead.value) {
+    docStore.fetchSuitCaseList({ ...caseFilter.value })
+  }
+}
+
+const casesRenewal = (page: number) => pageSelect(page)
+
 const linkHit = async (pk: number) => {
-  const link = (await fetchLink(pk)) as Link
-  link.hit = (link.hit as number) + 1
-  await patchLink(pk, link)
+  await docStore.hitLink(pk)
 }
 const fileHit = async (pk: number) => {
-  const file = (await fetchFile(pk)) as AFile
-  const hit = (file.hit as number) + 1
-  await patchFile(pk, { hit })
+  await docStore.hitFile(pk)
 }
 
 const [route, router] = [useRoute() as LoadedRoute & { name: string }, useRouter()]
 
-watch(route, val => {
-  if (val.params.caseId) fetchSuitCase(Number(val.params.caseId))
-  else docStore.removeSuitcase()
-})
-
-const casesRenewal = (page: number) => {
-  caseFilter.value.page = page
-  fetchSuitCaseList(caseFilter.value)
-}
-
 const onSubmit = async (payload: SuitCase & { is_real_dev?: boolean }) => {
-  if (project.value) {
-    if (payload.pk) {
-      await updateSuitCase(payload)
-      await router.replace({
-        name: `${mainViewName.value} - 보기`,
-        params: { caseId: payload.pk },
-      })
-    } else {
-      payload.issue_project = projStore.project?.issue_project ?? null
-      payload.is_real_dev = true
-      await createSuitCase(payload)
-      await router.replace({ name: `${mainViewName.value}` })
-    }
+  if (!project.value) return
+  if (payload.pk) {
+    const ok = await docStore.updateSuitCase(payload)
+    if (!ok) return
+    await router.replace({
+      name: `${mainViewName.value} - 보기`,
+      params: { caseId: payload.pk },
+    })
+  } else {
+    payload.issue_project = projStore.project?.issue_project ?? null
+    payload.is_real_dev = true
+    const created = await docStore.createSuitCase(payload)
+    if (!created) return
+    caseFilter.value.page = 1
+    await router.replace({ name: `${mainViewName.value}` })
   }
 }
 
 const onDelete = async (pk: number) => {
-  await deleteSuitCase(pk)
+  const ok = await docStore.deleteSuitCase(pk)
+  if (!ok) return
   await router.replace({ name: `${mainViewName.value}` })
-  if (project.value) fetchSuitCaseList(caseFilter.value)
 }
 
 const agencyFilter = (court: string) => {
-  fController.value?.courtChange(court)
   caseFilter.value.page = 1
   caseFilter.value.court = court
-  listFiltering(caseFilter.value)
+  if (project.value && canDocsRead.value) {
+    docStore.fetchSuitCaseList({ ...caseFilter.value })
+  }
 }
+
 const agencySearch = (agent: string) => {
-  fController.value?.searchChange(agent)
   caseFilter.value.page = 1
   caseFilter.value.search = agent
-  listFiltering(caseFilter.value)
+  if (project.value && canDocsRead.value) {
+    docStore.fetchSuitCaseList({ ...caseFilter.value })
+  }
 }
 
 const relatedFilter = (related: number) => {
-  fController.value?.relatedChange(related)
   caseFilter.value.page = 1
   caseFilter.value.related_case = related
-  listFiltering(caseFilter.value)
+  if (project.value && canDocsRead.value) {
+    docStore.fetchSuitCaseList({ ...caseFilter.value })
+  }
 }
 
-const dataSetup = (pk: number, caseId?: string | string[]) => {
+const dataSetup = async (pk: number, caseId?: string | string[]) => {
+  if (!canDocsRead.value) return
   caseFilter.value.company = company.value ?? ''
   caseFilter.value.project = pk
-  fetchAllSuitCaseList({ company: company.value ?? '', is_real_dev: 'true', project: pk })
-  fetchSuitCaseList(caseFilter.value)
-  if (caseId) fetchSuitCase(Number(caseId))
+  const tasks: Promise<unknown>[] = [
+    docStore.fetchAllSuitCaseList({
+      company: company.value ?? '',
+      is_real_dev: 'true',
+      project: pk,
+    }),
+    docStore.fetchSuitCaseList({ ...caseFilter.value }),
+  ]
+  if (caseId) tasks.push(docStore.fetchSuitCase(Number(caseId)))
+  await Promise.all(tasks)
 }
 
-const dataReset = () => {
+const dataReset = async (resetRoute = true) => {
   docStore.removeSuitcase()
   docStore.removeSuitcaseList()
   docStore.suitcaseCount = 0
-  caseFilter.value.project = ''
-  router.replace({ name: `${mainViewName.value}` })
-}
-
-const projSelect = (target: number | null) => {
+  caseFilter.value = createDefaultCaseFilter(company.value ?? '', project.value ?? '')
   fController.value?.resetForm(false)
-  dataReset()
-  if (target) dataSetup(target)
+  if (resetRoute && route.name !== mainViewName.value) {
+    await router.replace({ name: `${mainViewName.value}`, query: route.query })
+  }
 }
 
-const projId = computed(() => project.value || projStore.currentProject)
+watch(
+  project,
+  async (newPk, oldPk) => {
+    const switched = oldPk !== undefined && newPk !== oldPk
+    loading.value = true
+    try {
+      if (switched) await dataReset(true)
+      if (newPk && canDocsRead.value) {
+        await dataSetup(newPk, route.params?.caseId)
+      } else if (!newPk) {
+        await dataReset(false)
+      }
+    } finally {
+      loading.value = false
+    }
+  },
+  { immediate: true },
+)
 
-onBeforeRouteUpdate(to => {
-  if (projId.value) dataSetup(projId.value, to.params?.caseId)
-})
-
-const loading = ref(true)
-onBeforeMount(async () => {
-  if (projId.value) dataSetup(projId.value, route.params?.caseId)
-  loading.value = false
-})
+watch(
+  () => route.params.caseId,
+  async newId => {
+    if (newId && project.value && canDocsRead.value) {
+      await docStore.fetchSuitCase(Number(newId))
+    } else if (!newId) {
+      docStore.removeSuitcase()
+    }
+  },
+)
 </script>
 
 <template>
   <ProDocsAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
-      <CCardBody class="pb-5">
+      <NoAuth v-if="project && !canDocsRead" />
+      <CCardBody v-else class="pb-5">
         <div v-if="route.name === `${mainViewName}`" class="pt-3">
           <ListController
             ref="fController"
@@ -254,7 +278,6 @@ onBeforeMount(async () => {
             :suitcase="suitcase ?? undefined"
             :view-route="mainViewName"
             @on-submit="onSubmit"
-            @on-delete="onDelete"
           />
           <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>

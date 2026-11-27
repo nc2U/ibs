@@ -5,6 +5,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   nowType: { type: [String, Number], default: null },
+  nowProject: { type: Number, default: null },
   isCopy: { type: Boolean, default: false },
 })
 
@@ -30,6 +31,7 @@ const onSubmit = () => {
 
 const callModal = () => {
   doc_type.value = props.nowType ? Number(props.nowType) : null
+  project.value = props.nowProject ?? null
   refListModal.value?.callModal()
 }
 

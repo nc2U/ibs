@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAccount } from '@/store/pinia/account'
+import { useTrashPermissions } from '@/views/proDocs/composables/useTrashPermissions.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import type { TrashDocs } from '@/store/types/docs'
 import DOMPurify from 'dompurify'
@@ -13,16 +13,11 @@ const props = defineProps({
 
 const emit = defineEmits(['restore-docs', 'delete-docs'])
 
+const { canManageTrashDoc } = useTrashPermissions()
 const router = useRouter()
-const accStore = useAccount()
 
-const canManage = computed(
-  () =>
-    !!props.docs &&
-    (!!accStore.superAuth ||
-      !!accStore.workManager ||
-      (!!props.docs.creator && props.docs.creator === accStore.userInfo?.username)),
-)
+const canRestore = computed(() => canManageTrashDoc(props.docs, 'update'))
+const canDelete = computed(() => canManageTrashDoc(props.docs, 'delete'))
 </script>
 
 <template>
@@ -72,10 +67,10 @@ const canManage = computed(
       <CCol class="text-end">
         <v-btn-group density="compact" role="group">
           <v-btn color="light" @click="router.push({ name: viewRoute })">목록으로</v-btn>
-          <v-btn v-if="canManage" color="success" @click="emit('restore-docs', docs.pk)">
+          <v-btn v-if="canRestore" color="success" @click="emit('restore-docs', docs.pk)">
             복원하기
           </v-btn>
-          <v-btn v-if="canManage" color="error" @click="emit('delete-docs', docs.pk)">
+          <v-btn v-if="canDelete" color="error" @click="emit('delete-docs', docs.pk)">
             완전 삭제
           </v-btn>
         </v-btn-group>

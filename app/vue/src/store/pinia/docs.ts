@@ -116,6 +116,8 @@ export const useDocs = defineStore('docs', () => {
   const suitcaseList = ref<SuitCase[]>([])
   const suitcaseCount = ref<number>(0)
   const allSuitCaseList = ref<SimpleSuitCase[]>([])
+  const lastSuitCaseFilter = ref<SuitCaseFilter | null>(null)
+  const lastAllSuitCaseFilter = ref<SuitCaseFilter | null>(null)
 
   const getSuitCase = computed(() =>
     allSuitCaseList.value.map(s => ({
@@ -163,6 +165,7 @@ export const useDocs = defineStore('docs', () => {
   }
 
   const fetchSuitCaseList = async (payload: SuitCaseFilter) => {
+    lastSuitCaseFilter.value = { ...payload }
     const params = buildSuitCaseParams(payload)
     params.append('limit', String(payload.limit || 10))
     params.append('page', String(payload.page || 1))
@@ -176,6 +179,7 @@ export const useDocs = defineStore('docs', () => {
   }
 
   const fetchAllSuitCaseList = async (payload: SuitCaseFilter) => {
+    lastAllSuitCaseFilter.value = { ...payload }
     const params = buildSuitCaseParams(payload)
     const qs = params.toString()
     return await api
@@ -189,17 +193,35 @@ export const useDocs = defineStore('docs', () => {
       is_real_dev?: boolean
     },
   ) => {
-    const is_real_dev = payload.is_real_dev ? 'true' : 'false'
-    const retData: SuitCaseFilter = {
+    const is_real_dev =
+      payload.is_real_dev !== undefined
+        ? payload.is_real_dev
+          ? 'true'
+          : 'false'
+        : (lastAllSuitCaseFilter.value?.is_real_dev ?? lastSuitCaseFilter.value?.is_real_dev ?? '')
+    const fallbackFilter: SuitCaseFilter = {
       is_real_dev,
       issue_project: payload.issue_project ?? '',
       page: 1,
     }
+    const allFilter: SuitCaseFilter = lastAllSuitCaseFilter.value
+      ? {
+          ...lastAllSuitCaseFilter.value,
+          ...(is_real_dev ? { is_real_dev } : {}),
+        }
+      : fallbackFilter
+    const listFilter: SuitCaseFilter = lastSuitCaseFilter.value
+      ? {
+          ...lastSuitCaseFilter.value,
+          ...(is_real_dev ? { is_real_dev } : {}),
+          page: 1,
+        }
+      : fallbackFilter
     return await api
       .post(`/suitcase/`, payload)
       .then(async res => {
-        await fetchAllSuitCaseList(retData)
-        await fetchSuitCaseList(retData)
+        await fetchAllSuitCaseList(allFilter)
+        await fetchSuitCaseList(listFilter)
         message()
         return res.data
       })
@@ -221,12 +243,12 @@ export const useDocs = defineStore('docs', () => {
         return false
       })
 
-  const deleteSuitCase = (pk: number) =>
+  const deleteSuitCase = (pk: number, listFilter?: SuitCaseFilter, allFilter?: SuitCaseFilter) =>
     api
       .delete(`/suitcase/${pk}/`)
       .then(async () => {
-        await fetchAllSuitCaseList({})
-        await fetchSuitCaseList({})
+        await fetchAllSuitCaseList(allFilter ?? lastAllSuitCaseFilter.value ?? {})
+        await fetchSuitCaseList(listFilter ?? lastSuitCaseFilter.value ?? {})
         message()
         return true
       })
@@ -238,6 +260,7 @@ export const useDocs = defineStore('docs', () => {
   const docs = ref<Docs | null>(null)
   const docsList = ref<Docs[]>([])
   const docsCount = ref(0)
+  const lastDocsFilter = ref<DocsFilter | null>(null)
   const getDocsNav = computed(() =>
     docsList.value.map(p => ({
       pk: p.pk,
@@ -264,6 +287,7 @@ export const useDocs = defineStore('docs', () => {
   const setDocs = (payload: Docs) => (docs.value = payload)
 
   const fetchDocsList = async (payload: DocsFilter) => {
+    lastDocsFilter.value = { ...payload }
     const params = new URLSearchParams()
     params.append('limit', String(payload.limit || 10))
     params.append('page', String(payload.page || 1))
@@ -291,7 +315,14 @@ export const useDocs = defineStore('docs', () => {
 
   const removeDocsList = () => (docsList.value = [])
 
-  const hitDocs = (pk: number) => api.post(`/docs/${pk}/hit/`).catch(err => errorHandle(err))
+  const hitDocs = (pk: number) =>
+    api
+      .post(`/docs/${pk}/hit/`)
+      .then(res => {
+        if (docs.value?.pk === pk) docs.value.hit = res.data.hit
+        return res.data
+      })
+      .catch(err => errorHandle(err))
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
@@ -305,11 +336,18 @@ export const useDocs = defineStore('docs', () => {
     api
       .post(`/docs/`, payload.form, config_headers)
       .then(async res => {
-        await fetchDocsList({
-          issue_project: res.data.project?.pk ?? res.data.issue_project ?? '',
-          doc_type: res.data.doc_type,
-          page: 1,
-        })
+        const listFilter: DocsFilter = lastDocsFilter.value
+          ? {
+              ...lastDocsFilter.value,
+              doc_type: res.data.doc_type,
+              page: 1,
+            }
+          : {
+              issue_project: res.data.project?.pk ?? res.data.issue_project ?? '',
+              doc_type: res.data.doc_type,
+              page: 1,
+            }
+        await fetchDocsList(listFilter)
         message()
         return res.data
       })
@@ -329,11 +367,17 @@ export const useDocs = defineStore('docs', () => {
     api
       .put(`/docs/${payload.pk}/`, payload.form, config_headers)
       .then(async res => {
-        await fetchDocsList({
-          issue_project: res.data.project?.pk ?? res.data.issue_project ?? '',
-          doc_type: res.data.doc_type,
-          page: 1,
-        })
+        const listFilter: DocsFilter = lastDocsFilter.value
+          ? {
+              ...lastDocsFilter.value,
+              doc_type: res.data.doc_type,
+            }
+          : {
+              issue_project: res.data.project?.pk ?? res.data.issue_project ?? '',
+              doc_type: res.data.doc_type,
+              page: 1,
+            }
+        await fetchDocsList(listFilter)
         await fetchDocs(res.data.pk)
         message()
         return res.data
@@ -353,17 +397,30 @@ export const useDocs = defineStore('docs', () => {
       .patch(`/docs/${data.pk}/`, data)
       .then(res =>
         fetchDocsList({
-          ...filter,
+          ...(filter ?? lastDocsFilter.value ?? {}),
         }).then(() => fetchDocs(res.data.pk)),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return null
+      })
   }
 
-  const copyDocs = (payload: { docs: number; doc_type: number; issue_project: number }) =>
+  const copyDocs = (payload: {
+    docs: number
+    doc_type: number
+    issue_project: number
+  }): Promise<boolean> =>
     api
-      .post(`docs/${payload.docs}/copy/`, payload)
-      .then(() => message('success', '', '게시물 복사가 완료되었습니다.'))
-      .catch(err => errorHandle(err))
+      .post(`/docs/${payload.docs}/copy/`, payload)
+      .then(() => {
+        message('success', '', '게시물 복사가 완료되었습니다.')
+        return true
+      })
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const deleteDocs = (pk: number, filter: DocsFilter): Promise<boolean> =>
     api
@@ -405,25 +462,33 @@ export const useDocs = defineStore('docs', () => {
       })
       .catch(err => errorHandle(err))
 
-  const restoreDocs = (pk: number, page = 1) =>
+  const restoreDocs = (pk: number, page = 1): Promise<boolean> =>
     api
       .patch(`/docs-trash-can/${pk}/`)
       .then(() =>
-        fetchTrashDocsList(page).then(() =>
-          message('success', '', '해당 문서가 휴지통에서 복원되었습니다.'),
-        ),
+        fetchTrashDocsList(page).then(() => {
+          message('success', '', '해당 문서가 휴지통에서 복원되었습니다.')
+          return true
+        }),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
-  const deleteTrashDocs = (pk: number, page = 1) =>
+  const deleteTrashDocs = (pk: number, page = 1): Promise<boolean> =>
     api
       .delete(`/docs-trash-can/${pk}/?hard=1`)
       .then(() =>
-        fetchTrashDocsList(page).then(() =>
-          message('warning', '', '해당 문서가 영구 삭제되었습니다.'),
-        ),
+        fetchTrashDocsList(page).then(() => {
+          message('warning', '', '해당 문서가 영구 삭제되었습니다.')
+          return true
+        }),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   // link
   const link = ref<Link | null>(null)
@@ -434,7 +499,15 @@ export const useDocs = defineStore('docs', () => {
       .then(res => (link.value = res.data))
       .catch(err => errorHandle(err))
 
-  const hitLink = (pk: number) => api.post(`/link/${pk}/hit/`).catch(err => errorHandle(err))
+  const hitLink = (pk: number) =>
+    api
+      .post(`/link/${pk}/hit/`)
+      .then(res => {
+        const target = docs.value?.links?.find(l => l.pk === pk)
+        if (target) target.hit = res.data.hit
+        return res.data
+      })
+      .catch(err => errorHandle(err))
 
   const createLink = (payload: Link) =>
     api
@@ -464,7 +537,15 @@ export const useDocs = defineStore('docs', () => {
       .then(res => (file.value = res.data))
       .catch(err => errorHandle(err))
 
-  const hitFile = (pk: number) => api.post(`/file/${pk}/hit/`).catch(err => errorHandle(err))
+  const hitFile = (pk: number) =>
+    api
+      .post(`/file/${pk}/hit/`)
+      .then(res => {
+        const target = docs.value?.files?.find(f => f.pk === pk)
+        if (target) target.hit = res.data.hit
+        return res.data
+      })
+      .catch(err => errorHandle(err))
 
   const fetchFileList = async (docs: number | '') =>
     api

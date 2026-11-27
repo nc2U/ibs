@@ -42,7 +42,7 @@ const toChangeSecurityLevel = (docs: number, state: boolean, filter: DocsFilter)
     security_level: state ? '3' : '1',
     filter,
   }).then(res => {
-    if (res !== undefined) {
+    if (res) {
       message(
         'info',
         '',
@@ -57,13 +57,14 @@ const toBlind = (docs: number, state: boolean, filter: DocsFilter) =>
     is_blind: !state,
     filter,
   }).then(res => {
-    if (res !== undefined) {
-      message('info', '', `이 게시글을 블라인드${!is_blind.value ? ' 해제' : ' 처리'}하였습니다.`)
+    if (res) {
+      message('info', '', `이 게시글을 블라인드${state ? ' 해제' : ' 처리'}하였습니다.`)
     }
   })
 
-const toTrashCan = async (docs: number, state: boolean, filter: DocsFilter) => {
-  if (!state) await deleteDocs(docs, filter)
+const toTrashCan = async (docs: number, state: boolean, filter: DocsFilter): Promise<boolean> => {
+  if (!state) return await deleteDocs(docs, filter)
+  return false
 }
 
 interface ManagePayload {
@@ -119,15 +120,20 @@ const moveDocs = (
   manager: string,
   filter: DocsFilter,
 ) => {
-  const description = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
+  const note = `<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${type_name} 에서 이동됨]</p>`
-  patchDocs({ pk: docs, doc_type, issue_project, description, filter }).then(res => {
-    if (res !== undefined) message('success', '', '게시물 이동이 완료되었습니다.')
+  const rawContent = org_content ?? ''
+  const combined = `${rawContent}${note}`
+  const description =
+    combined.length <= 255
+      ? combined
+      : `${rawContent.slice(0, Math.max(0, 255 - note.length))}${note}`.slice(0, 255)
+  return patchDocs({ pk: docs, doc_type, issue_project, description, filter }).then(res => {
+    if (res) message('success', '', '게시물 이동이 완료되었습니다.')
   })
 }
-const changeCate = (docs: number, cate: number | undefined, filter: DocsFilter) => {
+const changeCate = (docs: number, cate: number | undefined, filter: DocsFilter) =>
   patchDocs({ pk: docs, category: cate, filter }).then(res => {
-    if (res !== undefined) message('success', '', '카테고리가 변경되었습니다.')
+    if (res) message('success', '', '카테고리가 변경되었습니다.')
   })
-}

@@ -100,7 +100,7 @@ class ExportSuitCases(ExcelExportMixin):
         row_num = 0
         worksheet.set_row(row_num, 50)
         worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1,
-                              str(project if project else company) + ' 소송사건 목록',
+                              f"{project or company or '전체'} 소송사건 목록",
                               title_format)
 
         # 2. Pre Header - Date
@@ -126,13 +126,24 @@ class ExportSuitCases(ExcelExportMixin):
         if is_admin:
             obj_list = base_qs
         else:
-            accessible_projects = IssueProject.objects.filter(members__user=user)
-            obj_list = base_qs.filter(issue_project__in=accessible_projects)
+            accessible_projects = IssueProject.objects.exclude(status='9').filter(members__user=user)
+            readable_ids = [
+                ip.pk for ip in accessible_projects
+                if 'docs.read' in ip.get_user_permissions(user)
+            ]
+            if project and not any(
+                ip.project_id == project.pk and ip.pk in readable_ids
+                for ip in accessible_projects
+            ):
+                return HttpResponse('해당 프로젝트의 소송 사건을 열람할 권한이 없습니다.', status=403)
+            obj_list = base_qs.filter(issue_project_id__in=readable_ids)
 
         if company:
             obj_list = obj_list.filter(issue_project__company=company)
 
         is_real_dev = request.GET.get('is_real_dev')
+        issue_project = request.GET.get('issue_project')
+        related_case = request.GET.get('related_case')
         sort = request.GET.get('sort')
         level = request.GET.get('level')
         court = request.GET.get('court')
@@ -144,6 +155,19 @@ class ExportSuitCases(ExcelExportMixin):
             obj_list = obj_list.filter(issue_project__project=project)
         elif is_real_dev == 'true':
             obj_list = obj_list.filter(issue_project__project__isnull=False)
+
+        if issue_project:
+            try:
+                obj_list = obj_list.filter(issue_project_id=int(issue_project))
+            except (ValueError, TypeError):
+                obj_list = obj_list.none()
+
+        if related_case:
+            try:
+                rc_pk = int(related_case)
+                obj_list = obj_list.filter(Q(pk=rc_pk) | Q(related_case_id=rc_pk))
+            except (ValueError, TypeError):
+                obj_list = obj_list.none()
         obj_list = obj_list.filter(case_end_date__isnull=True) if in_progress == 'true' else obj_list
         obj_list = obj_list.filter(case_end_date__isnull=False) if in_progress == 'false' else obj_list
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
@@ -229,10 +253,13 @@ class ExportSuitCase(ExcelExportMixin):
         if obj.issue_project and obj.issue_project.status == '9':
             return HttpResponse('잠금 보관된 프로젝트의 소송 사건은 열람할 수 없습니다.', status=403)
 
-        # RLS 권한 제어: 관리자가 아닌 경우 해당 사건의 워크스페이스 멤버십 확인
+        # RLS 권한 제어: 관리자가 아닌 경우 해당 사건의 워크스페이스 멤버십 및 docs.read 권한 확인
         if not is_admin:
             from work.models.project import IssueProject
-            if not IssueProject.objects.exclude(status='9').filter(pk=obj.issue_project_id, members__user=user).exists():
+            ip = IssueProject.objects.exclude(status='9').filter(
+                pk=obj.issue_project_id, members__user=user
+            ).first()
+            if not ip or 'docs.read' not in ip.get_user_permissions(user):
                 return HttpResponse('해당 소송 사건을 열람할 권한이 없습니다.', status=403)
 
         # 포맷 생성

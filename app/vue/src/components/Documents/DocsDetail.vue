@@ -25,13 +25,13 @@ const props = defineProps({
   category: { type: Number, default: undefined },
   docs: { type: Object as PropType<Docs | null>, default: null },
   viewRoute: { type: String, required: true },
+  caseViewRoute: { type: String, default: '소송 사건 관리' },
   currPage: { type: Number, required: true },
   docsFilter: { type: Object as PropType<DocsFilter>, default: null },
 })
 
 const emit = defineEmits(['docs-hit', 'link-hit', 'file-hit', 'docs-scrape', 'docs-renewal'])
 
-const refDelModal = ref()
 const refAlertModal = ref()
 const refTypeListModal = ref()
 const isCopy = ref(false)
@@ -42,17 +42,25 @@ const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 
 const { can, PERM } = usePerms()
+const isDocOwner = computed(
+  () => !!props.docs?.creator?.pk && props.docs.creator.pk === userInfo.value?.pk,
+)
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+const canDocsUpdate = computed(
+  () => can(PERM.DOCS_UPDATE) || (can(PERM.DOCS_OWN_UPDATE) && isDocOwner.value),
+)
+const canDocsDelete = computed(
+  () => can(PERM.DOCS_DELETE) || (can(PERM.DOCS_OWN_DELETE) && isDocOwner.value),
+)
 
 const isContentVisible = computed(() => {
   if (props.docs?.is_blind) {
-    return accStore.workManager
+    return !!accStore.superAuth || !!accStore.workManager
   }
   if (props.docs?.security_level === '1') {
     return (
-      accStore.workManager ||
+      !!accStore.superAuth ||
+      !!accStore.workManager ||
       props.docs?.creator?.pk === userInfo?.value?.pk ||
       (props.docs?.allowed_users?.includes(userInfo?.value?.pk ?? 0) ?? false)
     )
@@ -137,7 +145,7 @@ const toScrape = () => {
   else emit('docs-scrape', props.docs?.pk)
 }
 
-const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: number }) => {
+const toManage = async (fn: number, el?: { nType?: number; nProj?: number; nCate?: number }) => {
   const docs = props.docs?.pk
   let state: boolean = false
   if (fn < 4) {
@@ -156,13 +164,12 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
       state = props.docs?.security_level === '1' // 1등급(비공개) 여부
     else if (fn === 7)
       state = props.docs?.is_blind ?? false // is_blind
-    else if (fn === 8)
+    else if (fn === 8) {
       refTrashModal.value?.callModal() // deleted confirm
-    else if (fn === 88) {
-      // soft delete
+      return
+    } else if (fn === 88) {
+      if (!canDocsDelete.value) return
       state = !!props.docs?.deleted // is_deleted
-      refTrashModal.value?.close()
-      router.replace({ name: props.viewRoute })
     }
     const payload = {
       doc_type: el?.nType,
@@ -175,7 +182,11 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
       filter: props.docsFilter as DocsFilter,
       manager: userInfo?.value?.username as string,
     }
-    toDocsManage(fn, payload)
+    const result = await toDocsManage(fn, payload)
+    if (fn === 88) {
+      refTrashModal.value?.close()
+      if (result) await router.replace({ name: props.viewRoute })
+    }
   }
 }
 
@@ -191,11 +202,6 @@ const toEdit = () => {
 }
 
 const deleteConfirm = () => refTrashModal.value?.callModal()
-
-const toDelete = () => {
-  if (can(PERM.DOCS_DELETE)) toManage(88)
-  refTrashModal.value?.close()
-}
 
 watch(
   () => getDocsNav.value,
@@ -215,12 +221,12 @@ onBeforeRouteUpdate((to, from) => {
 
     const last = getDocsNav.value.length - 1
     const getLast = getDocsNav.value[last]
-    if (toDocsId && getLast.pk === fromDocsId && getLast.prev_pk === toDocsId)
+    if (toDocsId && getLast?.pk === fromDocsId && getLast?.prev_pk === toDocsId)
       // 다음 페이지 목록으로
       emit('docs-renewal', props.currPage + 1)
 
     const getFirst = getDocsNav.value[0]
-    if (toDocsId && getFirst.pk === fromDocsId && getFirst.next_pk === toDocsId)
+    if (toDocsId && getFirst?.pk === fromDocsId && getFirst?.next_pk === toDocsId)
       // 이전 페이지 목록으로
       emit('docs-renewal', props.currPage - 1)
 
@@ -252,7 +258,7 @@ onMounted(() => {
       <CCol md="8">
         <h5>
           <v-icon
-            v-if="docs.is_notice"
+            v-if="docs.is_pinned"
             icon="mdi-bullhorn"
             size="small"
             color="blue-grey-darken-1"
@@ -295,19 +301,22 @@ onMounted(() => {
     <div v-show="isContentVisible">
       <CRow class="py-2 justify-content-between">
         <CCol md="7" lg="6" xl="5">
-          <table v-if="typeNum !== 1 && docs.execution_date" class="table table-bordered mt-2 mb-3">
+          <table
+            v-if="typeNum !== 1 && (docs.lawsuit || docs.execution_date)"
+            class="table table-bordered mt-2 mb-3"
+          >
             <tbody>
               <tr v-if="docs.lawsuit">
                 <td class="p-2 bg-blue-grey-lighten-4 text-center">관련사건</td>
                 <td class="p-2">
                   <router-link
-                    :to="{ name: '소송 사건 관리 - 보기', params: { caseId: docs.lawsuit } }"
+                    :to="{ name: `${caseViewRoute} - 보기`, params: { caseId: docs.lawsuit } }"
                   >
                     {{ docs.lawsuit_name }}
                   </router-link>
                 </td>
               </tr>
-              <tr>
+              <tr v-if="docs.execution_date">
                 <td class="p-2 bg-blue-grey-lighten-4 text-center">발행일자</td>
                 <td class="p-2">{{ docs.execution_date }}</td>
               </tr>
@@ -373,7 +382,7 @@ onMounted(() => {
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"
             alt="카카오톡 공유 보내기 버튼"
-            width="20px;"
+            width="20"
           />
         </a>
         <v-icon icon="mdi-facebook" class="me-2" @click="shareFacebook" />
@@ -473,6 +482,7 @@ onMounted(() => {
   <TypeListModal
     ref="refTypeListModal"
     :now-type="docs?.doc_type ?? undefined"
+    :now-project="docs?.project?.pk ?? undefined"
     :is-copy="isCopy"
     @copy-docs="copyDocs"
     @move-docs="moveDocs"
@@ -492,14 +502,6 @@ onMounted(() => {
       <v-btn color="warning" size="small" :disabled="!canDocsDelete" @click="toManage(88)">
         삭제
       </v-btn>
-    </template>
-  </ConfirmModal>
-
-  <ConfirmModal ref="refDelModal">
-    <template #header>알림</template>
-    <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
-    <template #footer>
-      <v-btn color="warning" size="small" :disabled="!canDocsDelete" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

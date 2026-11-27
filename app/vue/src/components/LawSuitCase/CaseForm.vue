@@ -11,14 +11,15 @@ import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
-  getSuitCase: { type: Array, required: true },
+  getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, required: true },
   suitcase: { type: Object as PropType<SuitCase | null>, default: null },
   viewRoute: { type: String, required: true },
 })
 const emit = defineEmits(['on-submit', 'close'])
 
 const { can, PERM } = usePerms()
-const canDocsManage = computed(() => can(PERM.DOCS_UPDATE) || can(PERM.DOCS_CREATE))
+const isEdit = computed(() => Boolean(props.suitcase?.pk))
+const canSubmit = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
 
 const refConfirmModal = ref()
 const refAlertModal = ref()
@@ -79,7 +80,7 @@ const [route, router] = [useRoute(), useRouter()]
 const btnClass = computed(() => (route.params.caseId ? 'success' : 'primary'))
 
 const onSubmit = (event: Event) => {
-  if (canDocsManage.value) {
+  if (canSubmit.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()
@@ -117,6 +118,26 @@ const dataSetup = () => {
     form.case_start_date = props.suitcase.case_start_date
     form.case_end_date = props.suitcase.case_end_date
     form.summary = props.suitcase.summary
+  } else {
+    form.pk = null
+    form.issue_project = null
+    form.sort = ''
+    form.level = ''
+    form.related_case = null
+    form.court = ''
+    form.other_agency = ''
+    form.case_number = ''
+    form.case_name = ''
+    form.plaintiff = ''
+    form.plaintiff_attorney = ''
+    form.plaintiff_case_price = null
+    form.defendant = ''
+    form.defendant_attorney = ''
+    form.defendant_case_price = null
+    form.related_debtor = ''
+    form.case_start_date = null
+    form.case_end_date = null
+    form.summary = ''
   }
 }
 
@@ -361,20 +382,14 @@ onMounted(() => dataSetup())
 
     <CRow>
       <CCol class="text-end">
-        <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</v-btn>
+        <v-btn v-if="canSubmit" :color="btnClass" type="submit" :disabled="formsCheck">
+          저장하기
+        </v-btn>
         <v-btn v-if="route.params.caseId" color="light" @click="router.go(-1)" flat> 뒤로</v-btn>
         <v-btn color="light" @click="router.push({ name: `${viewRoute}` })" flat> 목록으로</v-btn>
       </CCol>
     </CRow>
   </CForm>
-
-  <ConfirmModal ref="refDelModal">
-    <template #header> {{ viewRoute }}</template>
-    <template #default>현재 삭제 기능이 구현되지 않았습니다.</template>
-    <template #footer>
-      <v-btn color="warning" size="small" disabled>삭제</v-btn>
-    </template>
-  </ConfirmModal>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> {{ viewRoute }}</template>

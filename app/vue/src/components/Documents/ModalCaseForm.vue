@@ -49,6 +49,27 @@ const onSubmit = (event: Event) => {
 
 const modalAction = () => {
   emit('on-submit', { ...form.value })
+  form.value = {
+    pk: null,
+    issue_project: null,
+    sort: '',
+    level: '',
+    related_case: null,
+    court: '',
+    other_agency: '',
+    case_number: '',
+    case_name: '',
+    plaintiff: '',
+    plaintiff_attorney: '',
+    plaintiff_case_price: null,
+    defendant: '',
+    defendant_attorney: '',
+    defendant_case_price: null,
+    related_debtor: '',
+    case_start_date: null,
+    case_end_date: null,
+    summary: '',
+  }
   validated.value = false
   refConfirmModal.value?.close()
   refCaseForm.value?.close()

@@ -5,12 +5,12 @@ import type { SuitCase } from '@/store/types/docs'
 import type { Company } from '@/store/types/settings'
 import { useDocs } from '@/store/pinia/docs'
 import { useCompany } from '@/store/pinia/company.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
 import { numFormat, timeFormat } from '@/utils/baseMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useWork } from '@/store/pinia/work_project'
 
 const props = defineProps({
   suitcase: { type: Object as PropType<SuitCase>, required: true },
@@ -20,18 +20,25 @@ const props = defineProps({
 
 const emit = defineEmits(['cases-renewal', 'link-hit', 'file-hit', 'post-delete'])
 
+const workStore = useWork()
+const targetIssueProject = computed(() => {
+  const ip = props.suitcase?.issue_project
+  if (!ip) return undefined
+  return (
+    workStore.myProjectsFlat.find(p => p.pk === ip) ||
+    workStore.allReadableProjectsFlat.find(p => p.pk === ip)
+  )
+})
+const permTarget = computed(() =>
+  targetIssueProject.value ? targetIssueProject.value.pk : undefined,
+)
+
 const { can, PERM } = usePerms()
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE, permTarget.value))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE, permTarget.value))
 
 const refDelModal = ref()
-
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
-const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.suitcase?.creator?.pk === userInfo?.value?.pk,
-)
 
 const prev = ref<number | null>()
 const next = ref<number | null>()
@@ -60,6 +67,14 @@ interface KakaoWindow extends Window {
   }
 }
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
 const toPrint = () => {
   // Clone the specific area to be printed
   const printContent = document.getElementById('print-area')?.cloneNode(true) as HTMLElement | null
@@ -70,7 +85,8 @@ const toPrint = () => {
     printWindow.document.open()
 
     // Add the cloned content to the new window
-    printWindow.document.write(`<html><head><title>${props.suitcase?.__str__}</title></head><body>`)
+    const safeTitle = escapeHtml(props.suitcase?.__str__ ?? '')
+    printWindow.document.write(`<html><head><title>${safeTitle}</title></head><body>`)
     printWindow.document.write(printContent?.innerHTML ?? '')
     printWindow.document.write('</body></html>')
 
@@ -168,7 +184,7 @@ onBeforeRouteUpdate((to, from) => {
     emit('cases-renewal', props.currPage + 1)
 
   const getFirst = getCaseNav.value[0]
-  if (toCaseId && getFirst.pk === fromCaseId && getFirst.next_pk === toCaseId)
+  if (toCaseId && getFirst?.pk === fromCaseId && getFirst?.next_pk === toCaseId)
     // 이전 페이지 목록으로
     emit('cases-renewal', props.currPage - 1)
 
@@ -274,6 +290,7 @@ onBeforeMount(() => {
               </CTableHeaderCell>
               <CTableDataCell colspan="3">
                 <router-link
+                  v-if="suitcase.related_case"
                   :to="{
                     name: `${viewRoute} - 보기`,
                     params: { caseId: `${suitcase.related_case}` },
@@ -402,7 +419,7 @@ onBeforeMount(() => {
           <img
             src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png"
             alt="카카오톡 공유 보내기 버튼"
-            width="20px;"
+            width="20"
           />
         </a>
         <v-icon icon="mdi-facebook" class="me-2" @click="shareFacebook" />
@@ -415,22 +432,8 @@ onBeforeMount(() => {
     <CRow class="py-4">
       <CCol>
         <v-btn-group density="compact" role="group">
-          <v-btn
-            v-if="editAuth"
-            color="success"
-            size="small"
-            :disabled="!canDocsUpdate"
-            @click="toEdit"
-          >
-            수정
-          </v-btn>
-          <v-btn
-            v-if="editAuth"
-            color="warning"
-            size="small"
-            :disabled="!canDocsDelete"
-            @click="deleteConfirm"
-          >
+          <v-btn v-if="canDocsUpdate" color="success" size="small" @click="toEdit"> 수정 </v-btn>
+          <v-btn v-if="canDocsDelete" color="warning" size="small" @click="deleteConfirm">
             삭제
           </v-btn>
           <v-btn color="light" size="small" @click="router.push({ name: `${viewRoute}` })" flat>

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
+import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
@@ -9,7 +10,10 @@ const props = defineProps({
   company: { type: Number, default: null },
   project: { type: Number, default: null },
   projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
-  getSuitCase: { type: Object, default: null },
+  getSuitCase: {
+    type: Array as PropType<{ label: string; value: number }[]>,
+    default: () => [],
+  },
   docsFilter: { type: Object as PropType<DocsFilter>, required: true },
 })
 
@@ -39,8 +43,12 @@ const docsCount = computed(() => docsStore.docsCount)
 
 const disabled = computed(() => (props.comFrom ? !props.company : !props.project))
 
+const isSyncing = ref(false)
+
 const listFiltering = (page = 1) => {
+  if (isSyncing.value) return
   nextTick(() => {
+    if (isSyncing.value) return
     form.value.page = page
     emit('list-filter', { ...form.value })
   })
@@ -68,20 +76,33 @@ const resetForm = (is_filter = true) => {
 
 defineExpose({ listFiltering, resetForm })
 
-onBeforeMount(async () => {
+const syncFromProps = () => {
   if (props.docsFilter) {
-    form.value.limit = props.docsFilter.limit
-    form.value.issue_project = props.docsFilter.issue_project
-    form.value.is_real_dev = props.docsFilter.is_real_dev
-    form.value.ordering = props.docsFilter.ordering
-    form.value.search = props.docsFilter.search
-    form.value.page = props.docsFilter.page
+    isSyncing.value = true
+    form.value.limit = props.docsFilter.limit ?? ''
+    form.value.issue_project = props.docsFilter.issue_project ?? ''
+    form.value.is_real_dev = props.docsFilter.is_real_dev ?? ''
+    form.value.ordering = props.docsFilter.ordering ?? '-created'
+    form.value.lawsuit = props.docsFilter.lawsuit ?? ''
+    form.value.search = props.docsFilter.search ?? ''
+    form.value.page = props.docsFilter.page ?? 1
+    nextTick(() => {
+      isSyncing.value = false
+    })
   }
-})
+}
+
+watch(
+  () => props.docsFilter,
+  () => syncFromProps(),
+  { deep: true },
+)
+
+onBeforeMount(() => syncFromProps())
 </script>
 
 <template>
-  <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4 bg-light">
+  <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
     <CRow>
       <CCol lg="6">
         <CRow>
@@ -125,7 +146,7 @@ onBeforeMount(async () => {
 
       <CCol lg="6">
         <CRow class="justify-content-md-end">
-          <CCol v-if="getSuitCase" md="6" lg="5" xl="3" class="mb-3">
+          <CCol v-if="getSuitCase.length" md="6" lg="5" xl="3" class="mb-3">
             <Multiselect
               v-model="form.lawsuit"
               :options="getSuitCase"
@@ -143,7 +164,7 @@ onBeforeMount(async () => {
               <CFormInput
                 v-model="form.search"
                 :placeholder="`제목, 내용, 첨부링크, 첨부파일명, 작성자${
-                  getSuitCase ? ', 사건번호(명)' : ''
+                  getSuitCase.length ? ', 사건번호(명)' : ''
                 }`"
                 @keydown.enter="listFiltering(1)"
                 :disabled="disabled"
@@ -155,11 +176,11 @@ onBeforeMount(async () => {
       </CCol>
     </CRow>
     <CRow>
-      <CCol color="warning" class="p-2 pl-3">
+      <CCol color="warning" class="p-2 ps-3">
         <strong> 문서 건수 조회 결과 : {{ numFormat(docsCount, 0, 0) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-end mb-0">
-        <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
+        <v-btn color="info" size="small" @click="() => resetForm(true)"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>
   </CCallout>

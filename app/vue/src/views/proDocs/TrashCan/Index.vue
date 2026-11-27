@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/proDocs/_menu/headermixin1'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,6 +15,9 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const mainViewName = '문서 휴지통'
 const page = ref<number>(1)
 
+const { canGlobal, PERM } = usePerms()
+const canReadTrash = computed(() => canGlobal(PERM.DOCS_READ))
+
 const docStore = useDocs()
 const trashDocs = computed(() => docStore.trashDocs)
 const trashDocsList = computed(() => docStore.trashDocsList)
@@ -25,11 +29,11 @@ const router = useRouter()
 const docsId = computed(() => (route.params.docsId ? Number(route.params.docsId) : null))
 
 watch(
-  docsId,
-  async id => {
-    if (id && !Number.isNaN(id)) {
+  [docsId, canReadTrash],
+  async ([id, allowed]) => {
+    if (id && !Number.isNaN(id) && allowed) {
       await docStore.fetchTrashDocs(id)
-    } else {
+    } else if (!id) {
       docStore.removeTrashDocs()
     }
   },
@@ -37,6 +41,7 @@ watch(
 )
 
 const pageSelect = async (p: number) => {
+  if (!canReadTrash.value) return
   page.value = p
   await docStore.fetchTrashDocsList(p)
 }
@@ -57,7 +62,10 @@ const callRestoreDocs = (pk: number) => {
 
 const resModalAction = async () => {
   if (!restoreId.value) return
-  await docStore.restoreDocs(restoreId.value, page.value)
+  const nextPage = trashDocsList.value.length <= 1 && page.value > 1 ? page.value - 1 : page.value
+  const ok = await docStore.restoreDocs(restoreId.value, nextPage)
+  if (!ok) return
+  page.value = nextPage
   restoreId.value = null
   refRestoreModal.value?.close()
   if (route.name !== mainViewName) {
@@ -81,7 +89,10 @@ const callDeleteDocs = (pk: number) => {
 
 const delModalAction = async () => {
   if (!deleteId.value) return
-  await docStore.deleteTrashDocs(deleteId.value, page.value)
+  const nextPage = trashDocsList.value.length <= 1 && page.value > 1 ? page.value - 1 : page.value
+  const ok = await docStore.deleteTrashDocs(deleteId.value, nextPage)
+  if (!ok) return
+  page.value = nextPage
   deleteId.value = null
   refDeleteModal.value?.close()
   if (route.name !== mainViewName) {
@@ -92,7 +103,7 @@ const delModalAction = async () => {
 const loading = ref(true)
 onBeforeMount(async () => {
   try {
-    await docStore.fetchTrashDocsList(page.value)
+    if (canReadTrash.value) await docStore.fetchTrashDocsList(page.value)
   } finally {
     loading.value = false
   }
@@ -100,7 +111,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <ProDocsAuthGuard>
+  <ProDocsAuthGuard global>
     <Loading v-model:active="loading" />
     <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" />
 

@@ -1012,3 +1012,74 @@ class DocsAppSecurityTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         inbound.refresh_from_db()
         self.assertFalse(bool(inbound.scan_file))
+
+    def test_excel_export_docs_read_permission_and_related_case_filter(self):
+        """엑셀 내보내기 시 docs.read 권한 검증 및 related_case/미지정 타이틀 처리 검증"""
+        from django.test import RequestFactory
+        from docs.models import LawsuitCase
+        from docs.exports.excel import ExportSuitCases, ExportSuitCase
+
+        role_no_docs = Role.objects.create(name='이슈전용역할', creator=self.admin_user)
+        user_no_docs = User.objects.create_user(
+            username='issue_only_excel', email='nodocs@test.com', password='password123'
+        )
+        m = Member.objects.create(project=self.workspace, user=user_no_docs)
+        m.roles.add(role_no_docs)
+
+        case_parent = LawsuitCase.objects.create(
+            issue_project=self.workspace,
+            sort='1',
+            level='1',
+            case_number='2026가합100',
+            case_name='본안 소송',
+            plaintiff='원고1',
+            defendant='피고1',
+            case_start_date=date(2026, 1, 1),
+            creator=self.author_user,
+        )
+        LawsuitCase.objects.create(
+            issue_project=self.workspace,
+            sort='4',
+            level='5',
+            related_case=case_parent,
+            case_number='2026카합200',
+            case_name='신청 사건',
+            plaintiff='원고1',
+            defendant='피고1',
+            case_start_date=date(2026, 2, 1),
+            creator=self.author_user,
+        )
+
+        factory = RequestFactory()
+        # 1. 멤버지만 docs.read가 없는 사용자는 단건 엑셀 403 차단
+        req_no_perm = factory.get(f'/excel/suitcase/?pk={case_parent.pk}')
+        req_no_perm.user = user_no_docs
+        res_no_perm = ExportSuitCase().get(req_no_perm)
+        self.assertEqual(res_no_perm.status_code, 403)
+
+        # 2. company/project 미지정 + related_case 필터 목록 엑셀 정상 200
+        req_filter = factory.get(f'/excel/suitcases/?related_case={case_parent.pk}')
+        req_filter.user = self.author_user
+        res_filter = ExportSuitCases().get(req_filter)
+        self.assertEqual(res_filter.status_code, 200)
+        self.assertGreater(len(res_filter.content), 1000)
+
+    def test_document_copy_truncates_long_description_to_255(self):
+        """본문이 255자에 가까운 문서를 복사해도 400 max_length 오류 없이 201 반환 검증"""
+        long_doc = Document.objects.create(
+            issue_project=self.workspace,
+            category=self.category,
+            title='긴 본문 복사 테스트',
+            description='가' * 240,
+            security_level=Document.SECURITY_PROJECT,
+            creator=self.author_user,
+        )
+        self.client.force_authenticate(user=self.author_user)
+        res = self.client.post(
+            f'/api/v1/docs/{long_doc.pk}/copy/',
+            {'issue_project': self.workspace.pk, 'doc_type': 1},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertLessEqual(len(res.data['description']), 255)
+        self.assertIn('복사됨', res.data['description'])

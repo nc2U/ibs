@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { useTrashPermissions } from '@/views/proDocs/composables/useTrashPermissions.ts'
 import { useDocs } from '@/store/pinia/docs'
-import { useAccount } from '@/store/pinia/account'
 import { cutString, numFormat, timeFormat } from '@/utils/baseMixins'
 import { TableSecondary } from '@/utils/cssMixins'
 import type { TrashDocs } from '@/store/types/docs'
@@ -17,16 +17,14 @@ defineProps({
 
 const emit = defineEmits(['page-select', 'restore-docs', 'delete-docs'])
 
+const { canManageTrashDoc } = useTrashPermissions()
 const docStore = useDocs()
-const accStore = useAccount()
 
 const trashDocsPages = (perPage: number) => docStore.trashDocsPages(perPage)
 const pageSelect = (p: number) => emit('page-select', p)
 
-const canManageItem = (doc: TrashDocs) =>
-  !!accStore.superAuth ||
-  !!accStore.workManager ||
-  (!!doc.creator && doc.creator === accStore.userInfo?.username)
+const canRestoreItem = (doc: TrashDocs) => canManageTrashDoc(doc, 'update')
+const canDeleteItem = (doc: TrashDocs) => canManageTrashDoc(doc, 'delete')
 </script>
 
 <template>
@@ -75,7 +73,7 @@ const canManageItem = (doc: TrashDocs) =>
         </CTableDataCell>
         <CTableDataCell>
           <v-btn
-            v-if="canManageItem(doc)"
+            v-if="canRestoreItem(doc)"
             density="compact"
             icon="mdi-delete-restore"
             size="small"
@@ -87,7 +85,7 @@ const canManageItem = (doc: TrashDocs) =>
         </CTableDataCell>
         <CTableDataCell>
           <v-btn
-            v-if="canManageItem(doc)"
+            v-if="canDeleteItem(doc)"
             density="compact"
             icon="mdi-delete-forever-outline"
             size="small"

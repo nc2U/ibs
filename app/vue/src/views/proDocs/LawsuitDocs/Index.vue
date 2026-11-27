@@ -1,228 +1,57 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/proDocs/_menu/headermixin1.ts'
-import { useAccount } from '@/store/pinia/account.ts'
-import { useProject } from '@/store/pinia/project.ts'
-import {
-  onBeforeRouteUpdate,
-  type RouteLocationNormalizedLoaded as Loaded,
-  useRoute,
-  useRouter,
-} from 'vue-router'
-import { usePerms } from '@/composables/usePerms.ts'
-import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs.ts'
-import type { AFile, Attatches, Docs, Link, PatchDocs, SuitCase } from '@/store/types/docs.ts'
+import { useProDocsDocument } from '@/views/proDocs/composables/useProDocsDocument.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProDocsAuthGuard from '@/components/AuthGuard/ProDocsAuthGuard.vue'
+import NoAuth from '@/views/_Accounts/NoAuth.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsDetail from '@/components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
-const { can, PERM } = usePerms()
-
-const fController = ref()
-const typeNumber = ref(2)
-const mainViewName = ref('소송 문서 관리')
-const docsFilter = ref<DocsFilter>({
-  project: '',
-  doc_type: typeNumber.value,
-  category: '',
-  lawsuit: '',
-  ordering: '-created',
-  search: '',
-  page: 1,
-  limit: '',
-})
-
-const heatedPage = ref<number[]>([])
-
-const listFiltering = (payload: DocsFilter) => {
-  payload.limit = payload.limit || 10
-  docsFilter.value.project = payload.project
-  docsFilter.value.limit = payload.limit
-  docsFilter.value.ordering = payload.ordering
-  docsFilter.value.lawsuit = payload.lawsuit
-  docsFilter.value.search = payload.search
-  if (project.value) fetchDocsList({ ...docsFilter.value })
-}
-
-const selectCate = (cate: number) => {
-  docsFilter.value.page = 1
-  docsFilter.value.category = cate
-  fetchDocsList(docsFilter.value)
-}
-
-const pageSelect = (page: number) => {
-  docsFilter.value.page = page
-  fetchDocsList(docsFilter.value)
-}
-
-const projStore = useProject()
-const project = computed(() => projStore.project?.pk)
-const projName = computed(() => projStore.project?.name)
-
-const accStore = useAccount()
-const createDocScrape = (payload: { docs: number; user: number }) =>
-  accStore.createDocScrape(payload)
-
-const docStore = useDocs()
-const docs = computed(() => docStore.docs)
-const docsList = computed(() => docStore.docsList)
-const categoryList = computed(() => docStore.categoryList)
-const getSuitCase = computed(() => docStore.getSuitCase)
-
-const fetchLink = (pk: number) => docStore.fetchLink(pk)
-const fetchFile = (pk: number) => docStore.fetchFile(pk)
-const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
-const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
-const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
-const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
-const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
-
-const createDocs = (payload: { form: FormData; isProject: boolean }) => docStore.createDocs(payload)
-const updateDocs = (payload: { pk: number; form: FormData; isProject: boolean }) =>
-  docStore.updateDocs(payload)
-const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
-const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
-const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
-
-const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
-
-watch(route, val => {
-  if (val.params.docsId) fetchDocs(Number(val.params.docsId))
-  else docStore.removeDocs()
-})
-
-const docsRenewal = (page: number) => {
-  docsFilter.value.page = page
-  fetchDocsList(docsFilter.value)
-}
-
-const docsScrape = (docs: number) => {
-  const user = accStore.userInfo?.pk
-  if (user) createDocScrape({ docs, user })
-}
-
-const onSubmit = async (payload: Docs & Attatches) => {
-  if (project.value) {
-    const { pk, ...rest } = payload
-    const getData: Record<string, any> = { ...rest }
-
-    getData.issue_project = projStore.project?.issue_project
-
-    const form = new FormData()
-
-    for (const key in getData) {
-      if (key === 'links' || key === 'files') {
-        ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
-      } else if (key === 'newFiles') {
-        getData[key]?.forEach((val: any) => {
-          form.append('new_files', val.file as Blob)
-          form.append('new_descs', val.description as string)
-        })
-      } else if (key === 'cngFiles') {
-        getData[key]?.forEach((val: any) => {
-          form.append('cngPks', val.pk as any)
-          form.append('cngFiles', val.file as Blob)
-        })
-      } else if (key === 'newLinks')
-        getData[key].forEach((val: any) => form.append(key, val as string))
-      else {
-        // 기타 단일 값 처리
-        const formValue = getData[key] === null ? '' : getData[key]
-        form.append(key, formValue as string)
-      }
-    }
-
-    if (pk) {
-      await updateDocs({ pk, form, isProject: true })
-      await router.replace({ name: `${mainViewName.value} - 보기`, params: { docsId: pk } })
-    } else {
-      await createDocs({ form, isProject: true })
-      await router.replace({ name: `${mainViewName.value}` })
-      fController.value?.resetForm(false)
-    }
-  }
-}
-
-const createLawSuit = (payload: SuitCase) => {
-  if (!payload.issue_project) payload.issue_project = projStore.project?.issue_project ?? null
-  createSuitCase(payload)
-}
-
-const docsHit = async (pk: number) => {
-  if (!heatedPage.value.includes(pk)) {
-    heatedPage.value.push(pk)
-    await fetchDocs(pk)
-    const hit = (docs.value?.hit ?? 0) + 1
-    await patchDocs({ pk, hit, filter: docsFilter.value })
-  }
-}
-const linkHit = async (pk: number) => {
-  const link = (await fetchLink(pk)) as Link
-  link.hit = (link.hit as number) + 1
-  await patchLink(pk, link)
-}
-const fileHit = async (pk: number) => {
-  const file = (await fetchFile(pk)) as AFile
-  const hit = (file.hit as number) + 1
-  await patchFile(pk, { hit })
-}
-
-const dataSetup = (pk: number, docsId?: string | string[]) => {
-  docsFilter.value.project = pk
-  fetchCategoryList(typeNumber.value)
-  fetchDocsList(docsFilter.value)
-  if (docsId) fetchDocs(Number(docsId))
-  fetchAllSuitCaseList({
-    project: pk,
-    is_real_dev: 'true',
-  })
-}
-
-const dataReset = () => {
-  docStore.removeDocs()
-  docStore.removeDocsList()
-  docStore.docsCount = 0
-  router.replace({ name: `${mainViewName.value}` })
-}
-
-const projSelect = (target: number | null) => {
-  fController.value?.resetForm(false)
-  dataReset()
-  if (target) dataSetup(target)
-  else docStore.removeDocsList()
-}
-
-const projId = computed(() => project.value || projStore.currentProject)
-
-onBeforeRouteUpdate(to => {
-  if (projId.value) dataSetup(projId.value, to.params?.docsId)
-})
-
-const loading = ref(true)
-onBeforeMount(async () => {
-  if (projId.value) dataSetup(projId.value, route.params?.docsId)
-  loading.value = false
-})
+const {
+  can,
+  PERM,
+  fController,
+  formRef,
+  typeNumber,
+  mainViewName,
+  docsFilter,
+  heatedPage,
+  loading,
+  project,
+  projName,
+  canDocsRead,
+  canUpdateCurrentDoc,
+  docs,
+  docsList,
+  categoryList,
+  getSuitCase,
+  route,
+  listFiltering,
+  selectCate,
+  pageSelect,
+  docsRenewal,
+  docsScrape,
+  onSubmit,
+  createLawSuit,
+  docsHit,
+  linkHit,
+  fileHit,
+} = useProDocsDocument({ typeNumber: 2, mainViewName: '소송 문서 관리', withLawsuits: true })
 </script>
 
 <template>
   <ProDocsAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
-      <CCardBody class="pb-5">
+      <NoAuth v-if="project && !canDocsRead" />
+      <CCardBody v-else class="pb-5">
         <div v-if="route.name === `${mainViewName}`" class="pt-3">
           <ListController
             ref="fController"
@@ -271,6 +100,7 @@ onBeforeMount(async () => {
         <div v-else-if="route.name.includes('작성')">
           <DocsForm
             v-if="can(PERM.DOCS_CREATE)"
+            ref="formRef"
             :sort-name="projName"
             :type-num="typeNumber"
             :get-suit-case="getSuitCase"
@@ -284,7 +114,8 @@ onBeforeMount(async () => {
 
         <div v-else-if="route.name.includes('수정')">
           <DocsForm
-            v-if="can(PERM.DOCS_UPDATE)"
+            v-if="canUpdateCurrentDoc"
+            ref="formRef"
             :sort-name="projName"
             :type-num="typeNumber"
             :get-suit-case="getSuitCase"

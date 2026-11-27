@@ -19,7 +19,10 @@ const onSubmit = () => {
   refListModal.value?.close()
 }
 
-const callModal = () => refListModal.value?.callModal()
+const callModal = () => {
+  category.value = null
+  refListModal.value?.callModal()
+}
 
 defineExpose({ callModal })
 </script>

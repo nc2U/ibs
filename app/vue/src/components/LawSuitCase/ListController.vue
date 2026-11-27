@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
@@ -11,7 +11,7 @@ const props = defineProps({
   company: { type: Number, default: null },
   project: { type: Number, default: null },
   projects: { type: Array as PropType<{ label: string; value: number }[]>, default: () => [] },
-  caseFilter: { type: Object, required: true },
+  caseFilter: { type: Object as PropType<SuitCaseFilter>, required: true },
 })
 const emit = defineEmits(['list-filter'])
 
@@ -46,8 +46,12 @@ const docStore = useDocs()
 const suitcaseCount = computed(() => docStore.suitcaseCount)
 const getSuitCase = computed(() => docStore.getSuitCase)
 
+const isSyncing = ref(false)
+
 const listFiltering = (page = 1) => {
+  if (isSyncing.value) return
   nextTick(() => {
+    if (isSyncing.value) return
     form.value.page = page
     emit('list-filter', { ...form.value })
   })
@@ -94,20 +98,32 @@ defineExpose({
   resetForm,
 })
 
-onBeforeMount(() => {
+const syncFromProps = () => {
   if (props.caseFilter) {
-    form.value.limit = props.caseFilter.limit
-    form.value.issue_project = props.caseFilter.issue_project
-    form.value.is_real_dev = props.caseFilter.is_real_dev
-    form.value.court = props.caseFilter.court
-    form.value.related_case = props.caseFilter.related_case
-    form.value.sort = props.caseFilter.sort
-    form.value.level = props.caseFilter.level
-    form.value.in_progress = props.caseFilter.in_progress
-    form.value.search = props.caseFilter.search
-    form.value.page = props.caseFilter.page
+    isSyncing.value = true
+    form.value.limit = props.caseFilter.limit ?? ''
+    form.value.issue_project = props.caseFilter.issue_project ?? ''
+    form.value.is_real_dev = props.caseFilter.is_real_dev ?? ''
+    form.value.court = props.caseFilter.court ?? ''
+    form.value.related_case = props.caseFilter.related_case ?? ''
+    form.value.sort = props.caseFilter.sort ?? ''
+    form.value.level = props.caseFilter.level ?? ''
+    form.value.in_progress = props.caseFilter.in_progress ?? ''
+    form.value.search = props.caseFilter.search ?? ''
+    form.value.page = props.caseFilter.page ?? 1
+    nextTick(() => {
+      isSyncing.value = false
+    })
   }
-})
+}
+
+watch(
+  () => props.caseFilter,
+  () => syncFromProps(),
+  { deep: true },
+)
+
+onBeforeMount(() => syncFromProps())
 </script>
 
 <template>
@@ -219,7 +235,7 @@ onBeforeMount(() => {
         <strong> 사건 수 조회 결과 : {{ numFormat(suitcaseCount, 0, 0) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-end mb-0">
-        <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
+        <v-btn color="info" size="small" @click="() => resetForm(true)"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>
   </CCallout>

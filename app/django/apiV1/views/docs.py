@@ -270,6 +270,11 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 f'</p>'
             )
 
+            full_desc = org_instance.description + add_text
+            if len(full_desc) > 255:
+                keep_len = max(0, 255 - len(add_text))
+                full_desc = org_instance.description[:keep_len] + add_text
+
             new_instance_data = {
                 'issue_project': issue_project,
                 'doc_type': doc_type,
@@ -277,7 +282,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'lawsuit': org_instance.lawsuit.pk if org_instance.lawsuit else None,
                 'title': org_instance.title,
                 'execution_date': org_instance.execution_date if org_instance.execution_date else None,
-                'description': org_instance.description + add_text,
+                'description': full_desc,
             }
 
             serializer = DocumentSerializer(data=new_instance_data, context={'request': request, 'view': self})

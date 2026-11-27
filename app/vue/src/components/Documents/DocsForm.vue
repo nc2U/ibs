@@ -10,7 +10,8 @@ import {
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
+import { useAccount } from '@/store/pinia/account'
+import type { AFile, Category, Docs, Link, SuitCase } from '@/store/types/docs'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
@@ -26,7 +27,7 @@ const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
   typeNum: { type: Number, default: 1 },
-  categoryList: { type: Object, required: true },
+  categoryList: { type: Array as PropType<Category[]>, default: () => [] },
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   docs: { type: Object as PropType<Docs>, default: null },
   viewRoute: { type: String, required: true },
@@ -65,12 +66,20 @@ const enableStore = (event: Event) => {
   attach.value = el?.value ? !el.value : false
 }
 
+const accStore = useAccount()
 const { can, PERM } = usePerms()
-const canDocsManage = computed(() => can(PERM.DOCS_UPDATE) || can(PERM.DOCS_CREATE))
+const isEdit = computed(() => Boolean(props.docs?.pk))
+const isDocOwner = computed(
+  () => !!props.docs?.creator?.pk && props.docs.creator.pk === accStore.userInfo?.pk,
+)
+const canDocsUpdate = computed(
+  () => can(PERM.DOCS_UPDATE) || (can(PERM.DOCS_OWN_UPDATE) && isDocOwner.value),
+)
+const canSubmit = computed(() => (isEdit.value ? canDocsUpdate.value : can(PERM.DOCS_CREATE)))
 
 const formsCheck = computed(() => {
   if (props.docs) {
-    if (!can(PERM.DOCS_UPDATE)) return true
+    if (!canDocsUpdate.value) return true
     const a = form.category === props.docs.category
     const b = form.lawsuit === props.docs.lawsuit
     const c = form.title === props.docs.title
@@ -120,7 +129,7 @@ const linkDelete = (payload: { pk: number; del: boolean }): void => {
 }
 
 const onSubmit = (event: Event) => {
-  if (canDocsManage.value) {
+  if (canSubmit.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()
@@ -141,6 +150,12 @@ const modalAction = () => {
 
 const caseCreate = (payload: SuitCase) => emit('create-lawsuit', payload)
 
+const setLawsuit = (pk: number) => {
+  form.lawsuit = pk
+}
+
+defineExpose({ setLawsuit })
+
 const dataSetup = () => {
   if (props.docs) {
     form.pk = props.docs.pk
@@ -155,8 +170,29 @@ const dataSetup = () => {
     form.is_pinned = props.docs.is_pinned
     form.security_level = props.docs.security_level ?? '3'
     form.is_blind = props.docs.is_blind
-    form.files = props.docs.files
-    form.links = props.docs.links
+    form.files = props.docs.files ?? []
+    form.links = props.docs.links ?? []
+    form.newFiles = []
+    form.cngFiles = []
+    form.newLinks = []
+  } else {
+    form.pk = undefined
+    form.issue_project = null
+    form.doc_type = props.typeNum
+    form.category = null
+    form.lawsuit = null
+    form.title = ''
+    form.execution_date = null
+    form.description = ''
+    form.device = ''
+    form.is_pinned = false
+    form.security_level = '3'
+    form.is_blind = false
+    form.files = []
+    form.newFiles = []
+    form.cngFiles = []
+    form.links = []
+    form.newLinks = []
   }
 }
 
@@ -226,7 +262,7 @@ watch(() => props.docs, dataSetup)
           searchable
         />
       </CCol>
-      <CCol v-if="typeNum === 2 && canDocsManage" md="1" style="padding-top: 7px">
+      <CCol v-if="typeNum === 2 && can(PERM.DOCS_CREATE)" md="1" style="padding-top: 7px">
         <div style="width: 20px">
           <v-icon
             icon="mdi-plus-circle"
@@ -248,7 +284,7 @@ watch(() => props.docs, dataSetup)
       <CCol :md="typeNum === 2 ? 2 : 3">
         <CFormSelect id="category" v-model="form.category" required>
           <option value="">카테고리 선택</option>
-          <option v-for="cate in categoryList" :key="cate.pk" :value="cate.pk">
+          <option v-for="cate in categoryList" :key="cate.pk ?? cate.name" :value="cate.pk">
             {{ cate.name }}
           </option>
         </CFormSelect>
@@ -268,7 +304,7 @@ watch(() => props.docs, dataSetup)
 
     <CRow style="margin-bottom: 52px">
       <CFormLabel for="title" class="col-md-2 col-form-label text-end">내용</CFormLabel>
-      <CCol md="10 mb-5">
+      <CCol md="10" class="mb-5">
         <QuillEditor v-model:content="form.description" placeholder="본문 내용" />
       </CCol>
     </CRow>
@@ -304,7 +340,7 @@ watch(() => props.docs, dataSetup)
 
     <CRow>
       <CCol class="text-end">
-        <v-btn v-if="canDocsManage" :color="btnClass" type="submit" :disabled="formsCheck">
+        <v-btn v-if="canSubmit" :color="btnClass" type="submit" :disabled="formsCheck">
           저장하기
         </v-btn>
         <v-btn v-if="route.params.docsId" color="light" @click="router.go(-1)" flat> 뒤로</v-btn>
