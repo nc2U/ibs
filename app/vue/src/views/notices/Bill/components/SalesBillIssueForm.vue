@@ -28,7 +28,9 @@ const emit = defineEmits<{
 }>()
 
 const { can, PERM } = usePerms()
-const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE) || can(PERM.PAYMENT_UPDATE))
+const canNoticeManage = computed(
+  () => can(PERM.NOTICE_CREATE) || can(PERM.NOTICE_UPDATE) || can(PERM.PAYMENT_UPDATE),
+)
 
 const address2 = ref()
 const postCode = ref<InstanceType<typeof DaumPostcode> | null>(null)
@@ -79,7 +81,7 @@ const btnClass = computed(() => (props.billIssue ? 'success' : 'primary'))
 const formsCheck = computed(() => {
   if (props.billIssue) {
     const a = form.now_payment_order === props.billIssue.now_payment_order
-    const b = form.now_due_date === payOrder.value?.pay_due_date
+    const b = (form.now_due_date || null) === (payOrder.value?.pay_due_date || null)
     const c = form.host_name === props.billIssue.host_name
     const d = form.host_tel === props.billIssue.host_tel
     const e = form.agency === props.billIssue.agency
@@ -136,6 +138,7 @@ const formDataReset = () => {
   form.pk = null
   form.project = props.project
   form.now_payment_order = null
+  form.now_due_date = null
   form.host_name = ''
   form.host_tel = ''
   form.agency = ''
@@ -180,6 +183,18 @@ const formDataSetup = () => {
   } else formDataReset()
 }
 
+const selectedPaymentOrder = computed({
+  get: () => (form.now_payment_order ? String(form.now_payment_order) : ''),
+  set: (val: string) => {
+    const nextOrder = val ? Number(val) : null
+    if (nextOrder !== form.now_payment_order) {
+      form.now_payment_order = nextOrder
+      form.now_due_date = null
+      emit('get-now-order', nextOrder)
+    }
+  },
+})
+
 watch(
   () => props.billIssue,
   () => formDataSetup(),
@@ -202,12 +217,7 @@ watch(
         <strong class="title"> 수납 고지서 발행</strong>
       </CCol>
       <CCol>
-        <CFormSwitch
-          id="formSwitch"
-          label="고지서 관련정보 설정"
-          :model-value="visible"
-          @click="visible = !visible"
-        />
+        <CFormSwitch id="formSwitch" v-model="visible" label="고지서 관련정보 설정" />
       </CCol>
     </CRow>
   </CAlert>
@@ -228,9 +238,9 @@ watch(
           <CFormLabel for="" class="col-form-label">발행회차</CFormLabel>
         </CCol>
         <CCol sm="8" md="4" xl="2">
-          <CFormSelect v-model="form.now_payment_order" placeholder="발행회차" required>
+          <CFormSelect v-model="selectedPaymentOrder" placeholder="발행회차" required>
             <option value="">--------</option>
-            <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
+            <option v-for="po in payOrderList" :key="po.pk as number" :value="String(po.pk)">
               {{ po.str_display }}
             </option>
           </CFormSelect>
@@ -362,15 +372,15 @@ watch(
             <CInputGroupText style="cursor: pointer" @click="postCode?.initiate()">
               우편번호
             </CInputGroupText>
-            <CFormInput
+            <input
               v-model="form.zipcode"
               v-maska
               data-maska="#####"
               type="text"
+              class="form-control"
               placeholder="우편번호"
               maxlength="5"
               required
-              @focus="postCode?.initiate()"
             />
             <!--            <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>-->
           </CInputGroup>
@@ -396,14 +406,13 @@ watch(
             v-model="form.address2"
             placeholder="상세 주소"
             maxlength="50"
-            required
           />
         </CCol>
 
         <CCol class="d-none d-sm-block d-md-none" sm="4" />
 
         <CCol sm="8" md="5" xl="3" class="mb-1">
-          <CFormInput v-model="form.address3" placeholder="참고항목" maxlength="30" required />
+          <CFormInput v-model="form.address3" placeholder="참고항목" maxlength="30" />
         </CCol>
       </CRow>
 
@@ -423,7 +432,7 @@ watch(
           <CFormLabel for="" class="col-form-label">고지서 내용</CFormLabel>
         </CCol>
         <CCol sm="8" md="10" lg="12" xl="11">
-          <CFormTextarea v-model="form.content" placeholder="고지서 내용" rows="4" />
+          <CFormTextarea v-model="form.content" placeholder="고지서 내용" rows="4" required />
         </CCol>
         <CCol class="d-none d-md-block d-lg-none" md="6" />
       </CRow>

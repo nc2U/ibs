@@ -3,12 +3,16 @@ import { ref } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import type { MessageTemplate } from '@/store/types/notice.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 // Store
 const notiStore = useNotice()
 
-// Modal ref
+// Modal refs
 const formModal = ref()
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 // Form state
 const form = ref({
@@ -20,7 +24,6 @@ const form = ref({
 
 const submitting = ref(false)
 const editingId = ref<number | null>(null)
-const showDeleteConfirm = ref(false)
 const deletingId = ref<number | null>(null)
 
 const resetForm = () => {
@@ -43,18 +46,21 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  if (!form.value.title) {
-    alert('템플릿 제목을 입력해주세요.')
+  if (!form.value.title.trim()) {
+    refAlertModal.value?.callModal('입력 필요', '템플릿 제목을 입력해주세요.')
     return
   }
 
-  if (form.value.message_type === 'KAKAO' && !form.value.template_code) {
-    alert('카카오 알림톡은 승인된 템플릿 코드가 필수입니다.')
+  if (form.value.message_type === 'KAKAO' && !form.value.template_code.trim()) {
+    refAlertModal.value?.callModal(
+      '템플릿 코드 필요',
+      '카카오 알림톡은 승인된 템플릿 코드가 필수입니다.',
+    )
     return
   }
 
-  if (!form.value.content) {
-    alert('메시지 내용을 입력해주세요.')
+  if (!form.value.content.trim()) {
+    refAlertModal.value?.callModal('입력 필요', '메시지 내용을 입력해주세요.')
     return
   }
 
@@ -100,7 +106,14 @@ const handleCancelEdit = () => {
 // 삭제 확인
 const confirmDelete = (id: number) => {
   deletingId.value = id
-  showDeleteConfirm.value = true
+  refConfirmModal.value?.callModal(
+    '템플릿 삭제',
+    '정말 이 템플릿을 삭제하시겠습니까? 삭제된 템플릿은 복구할 수 없습니다.',
+    'mdi-alert-box',
+    'red-lighten-3',
+    '삭제',
+    'error',
+  )
 }
 
 // 삭제 실행
@@ -109,8 +122,11 @@ const handleDelete = async () => {
 
   try {
     await notiStore.deleteMessageTemplate(deletingId.value)
-    showDeleteConfirm.value = false
+    if (editingId.value === deletingId.value) {
+      resetForm()
+    }
     deletingId.value = null
+    refConfirmModal.value?.close()
   } catch (error) {
     console.error('템플릿 삭제 실패:', error)
   }
@@ -133,7 +149,7 @@ defineExpose({ openModal, closeModal })
 <template>
   <FormModal ref="formModal">
     <template #icon>
-      <v-icon icon="mdi-text-box" size="small" color="primary" class="mr-2" />
+      <v-icon icon="mdi-text-box" size="small" color="primary" class="me-2" />
     </template>
     <template #header>
       {{ editingId ? '메시지 템플릿 수정' : '메시지 템플릿 등록' }}
@@ -210,22 +226,10 @@ defineExpose({ openModal, closeModal })
         {{ editingId ? '수정' : '등록' }}
       </v-btn>
 
-      <v-btn
-        v-if="editingId"
-        size="small"
-        color="primary"
-        variant="flat"
-        @click="handleCancelEdit"
-      >
+      <v-btn v-if="editingId" size="small" color="primary" variant="flat" @click="handleCancelEdit">
         새 템플릿
       </v-btn>
-      <v-btn
-        color="light"
-        size="small"
-        variant="flat"
-        @click="closeModal"
-        :disabled="submitting"
-      >
+      <v-btn color="light" size="small" variant="flat" @click="closeModal" :disabled="submitting">
         취소
       </v-btn>
     </CModalFooter>
@@ -261,16 +265,13 @@ defineExpose({ openModal, closeModal })
               </v-chip>
             </template>
 
-            <v-list-item class="text-truncate">
+            <v-list-item-title class="text-truncate">
               {{ template.title }}
-              <small
-                v-if="template.template_code"
-                class="text-amber-darken-3 font-weight-bold ms-1"
-              >
+              <small v-if="template.template_code" class="text-amber-darken-3 fw-bold ms-1">
                 [{{ template.template_code }}]
               </small>
               - <span class="text-grey">{{ template.content }}</span>
-            </v-list-item>
+            </v-list-item-title>
 
             <template #append>
               <v-btn
@@ -296,18 +297,7 @@ defineExpose({ openModal, closeModal })
     </CModalBody>
   </FormModal>
 
-  <!-- 삭제 확인 다이얼로그 -->
-  <v-dialog v-model="showDeleteConfirm" max-width="400px">
-    <v-card>
-      <v-card-title class="">템플릿 삭제</v-card-title>
-      <v-card-text>
-        정말 이 템플릿을 삭제하시겠습니까? 삭제된 템플릿은 복구할 수 없습니다.
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn size="small" color="error" variant="flat" @click="handleDelete"> 삭제 </v-btn>
-        <v-btn size="small" variant="flat" @click="showDeleteConfirm = false"> 취소 </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <!-- 삭제 확인 및 알림 모달 -->
+  <ConfirmModal ref="refConfirmModal" @confirm-func="handleDelete" />
+  <AlertModal ref="refAlertModal" />
 </template>

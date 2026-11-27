@@ -39,6 +39,28 @@ def get_accessible_project_ids(user, required_perm: str = 'notice.read'):
     return get_project_ids_with_permission(user, required_perm)
 
 
+def _parse_int_param(raw_val):
+    """쿼리/입력 정수 파라미터 안전 파싱 (유효하지 않으면 None 반환)."""
+    try:
+        return int(raw_val)
+    except (ValueError, TypeError):
+        return None
+
+
+def _check_message_project_permission(request, required_perm: str = 'notice.create'):
+    """메시지 발송 엔드포인트의 프로젝트 지정 및 권한을 검증합니다. 통과 시 None 반환."""
+    project_id = request.data.get('project')
+    if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+        return None
+    if not project_id:
+        return Response({'error': '프로젝트를 지정해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    accessible_projects = list(get_accessible_project_ids(request.user, required_perm))
+    p_id_int = _parse_int_param(project_id)
+    if p_id_int not in accessible_projects:
+        return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    return None
+
+
 class BillIssueViewSet(viewsets.ModelViewSet):
     queryset = SalesBillIssue.objects.select_related('project', 'now_payment_order', 'creator').all()
     serializer_class = SalesBillIssueSerializer
@@ -82,13 +104,22 @@ class RegisteredSenderNumberViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def get_queryset(self):
-        """활성화된 발신번호만 조회"""
-        return RegisteredSenderNumber.objects.filter(is_active=True).order_by('-created_at')
+        """활성화된 발신번호 중 고지 읽기 권한 보유 사용자에게만 조회 허용"""
+        user = self.request.user
+        qs = RegisteredSenderNumber.objects.filter(is_active=True).order_by('-created_at')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if not get_accessible_project_ids(user, 'notice.read'):
+                return qs.none()
+        return qs
 
     def check_manage_permission(self):
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if not get_accessible_project_ids(user, 'notice.manage') and not get_accessible_project_ids(user, 'notice.create'):
+            if (
+                not get_accessible_project_ids(user, 'notice.manage')
+                and not get_accessible_project_ids(user, 'notice.create')
+                and not get_accessible_project_ids(user, 'notice.update')
+            ):
                 raise permissions.exceptions.PermissionDenied('발신번호 관리 권한이 없습니다.')
 
     def perform_create(self, serializer):
@@ -115,13 +146,22 @@ class MessageTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
     def get_queryset(self):
-        """활성화된 템플릿만 조회"""
-        return MessageTemplate.objects.filter(is_active=True).select_related('created_by').order_by('-created_at')
+        """활성화된 템플릿 중 고지 읽기 권한 보유 사용자에게만 조회 허용"""
+        user = self.request.user
+        qs = MessageTemplate.objects.filter(is_active=True).select_related('created_by').order_by('-created_at')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if not get_accessible_project_ids(user, 'notice.read'):
+                return qs.none()
+        return qs
 
     def check_manage_permission(self):
         user = self.request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            if not get_accessible_project_ids(user, 'notice.manage') and not get_accessible_project_ids(user, 'notice.create'):
+            if (
+                not get_accessible_project_ids(user, 'notice.manage')
+                and not get_accessible_project_ids(user, 'notice.create')
+                and not get_accessible_project_ids(user, 'notice.update')
+            ):
                 raise permissions.exceptions.PermissionDenied('메시지 템플릿 관리 권한이 없습니다.')
 
     def perform_create(self, serializer):
@@ -150,18 +190,9 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-sms')
     def send_sms(self, request):
         """SMS/LMS 메시지 발송"""
-        # 프로젝트 권한 검증
-        project_id = request.data.get('project')
-        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            if not project_id:
-                return Response({'error': '프로젝트를 지정해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-            accessible_projects = list(get_accessible_project_ids(request.user, 'notice.create'))
-            try:
-                p_id_int = int(project_id)
-            except (ValueError, TypeError):
-                p_id_int = None
-            if p_id_int not in accessible_projects:
-                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        perm_error = _check_message_project_permission(request, 'notice.create')
+        if perm_error:
+            return perm_error
 
         serializer = SMSMessageSerializer(data=request.data)
         if not serializer.is_valid():
@@ -183,10 +214,83 @@ class MessageViewSet(viewsets.ViewSet):
             schedule_time_str = schedule_time.strftime('%H:%M') if schedule_time else None
 
             # 메시지 타입에 따른 발송
-            if message_type == 'SMS':
+            is_personalized = validated_data.get('is_personalized', False)
+            saved_message_content = validated_data.get('message', '')
+            saved_recipients = list(validated_data.get('recipients') or [])
+
+            if is_personalized:
+                from collections import defaultdict
+                personalized_items = validated_data.get('personalized_recipients') or []
+                grouped_messages = defaultdict(list)
+                for item in personalized_items:
+                    msg_text = str(item['message'])
+                    grouped_messages[msg_text].append(str(item['phone']))
+
+                first_success_result = None
+                last_error_result = None
+                success_recipients = []
+
+                for msg_text, group_phones in grouped_messages.items():
+                    msg_bytes = len(msg_text.encode('utf-8'))
+                    effective_type = message_type
+                    if effective_type == 'SMS' and msg_bytes > 90:
+                        effective_type = 'LMS'
+
+                    if effective_type == 'SMS':
+                        batch_res = sms_service.send_sms(
+                            recipients=group_phones,
+                            message=msg_text,
+                            sender_number=validated_data['sender_number'],
+                            schedule_date=schedule_date_str,
+                            schedule_time=schedule_time_str,
+                            use_v2_api=validated_data.get('use_v2_api', True),
+                        )
+                    elif effective_type == 'LMS':
+                        batch_title = validated_data.get('title') or (
+                            msg_text[:20] + '...' if len(msg_text) > 20 else msg_text
+                        )
+                        batch_res = sms_service.send_lms(
+                            recipients=group_phones,
+                            message=msg_text,
+                            title=batch_title,
+                            sender_number=validated_data['sender_number'],
+                            schedule_date=schedule_date_str,
+                            schedule_time=schedule_time_str,
+                            use_v2_api=validated_data.get('use_v2_api', True),
+                        )
+                    else:
+                        batch_res = sms_service.send_auto_message(
+                            recipients=group_phones,
+                            message=msg_text,
+                            sender_number=validated_data['sender_number'],
+                            title=validated_data.get('title'),
+                            schedule_date=schedule_date_str,
+                            schedule_time=schedule_time_str,
+                        )
+
+                    if batch_res.get('resultCode') == 0:
+                        if first_success_result is None:
+                            first_success_result = dict(batch_res)
+                        success_recipients.extend(group_phones)
+                    else:
+                        last_error_result = dict(batch_res)
+
+                if first_success_result is not None:
+                    result = first_success_result
+                    saved_recipients = success_recipients
+                    first_msg = next(iter(grouped_messages.keys()), '')
+                    saved_message_content = f'[개별 치환 {len(success_recipients)}건] {first_msg}'
+                else:
+                    result = last_error_result or {
+                        'resultCode': -1,
+                        'message': '개별 메시지 발송에 실패했습니다.',
+                        'requestNo': None,
+                        'msgType': message_type,
+                    }
+            elif message_type == 'SMS':
                 result = sms_service.send_sms(
-                    recipients=validated_data['recipients'],
-                    message=validated_data['message'],
+                    recipients=saved_recipients,
+                    message=saved_message_content,
                     sender_number=validated_data['sender_number'],
                     schedule_date=schedule_date_str,
                     schedule_time=schedule_time_str,
@@ -194,8 +298,8 @@ class MessageViewSet(viewsets.ViewSet):
                 )
             elif message_type == 'LMS':
                 result = sms_service.send_lms(
-                    recipients=validated_data['recipients'],
-                    message=validated_data['message'],
+                    recipients=saved_recipients,
+                    message=saved_message_content,
                     title=validated_data.get('title', ''),
                     sender_number=validated_data['sender_number'],
                     schedule_date=schedule_date_str,
@@ -204,8 +308,8 @@ class MessageViewSet(viewsets.ViewSet):
                 )
             else:  # AUTO
                 result = sms_service.send_auto_message(
-                    recipients=validated_data['recipients'],
-                    message=validated_data['message'],
+                    recipients=saved_recipients,
+                    message=saved_message_content,
                     sender_number=validated_data['sender_number'],
                     title=validated_data.get('title'),
                     schedule_date=schedule_date_str,
@@ -238,14 +342,14 @@ class MessageViewSet(viewsets.ViewSet):
                         MessageSendHistory.objects.create(
                             message_type=result.get('msgType', message_type),
                             sender_number=validated_data['sender_number'],
-                            message_content=validated_data['message'],
+                            message_content=saved_message_content,
                             title=validated_data.get('title', ''),
-                            recipients=validated_data['recipients'],
-                            recipient_count=len(validated_data['recipients']),
+                            recipients=saved_recipients,
+                            recipient_count=len(saved_recipients),
                             sent_at=actual_sent_at,
                             request_no=request_no,
                             company_id=company_id or '',
-                            project_id=request.data.get('project'),
+                            project_id=validated_data.get('project'),
                             scheduled_send=validated_data.get('scheduled_send', False),
                             schedule_datetime=schedule_datetime,
                             sent_by=request.user
@@ -281,18 +385,9 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-mms')
     def send_mms(self, request):
         """MMS 메시지 발송"""
-        # 프로젝트 권한 검증
-        project_id = request.data.get('project')
-        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            if not project_id:
-                return Response({'error': '프로젝트를 지정해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-            accessible_projects = list(get_accessible_project_ids(request.user, 'notice.create'))
-            try:
-                p_id_int = int(project_id)
-            except (ValueError, TypeError):
-                p_id_int = None
-            if p_id_int not in accessible_projects:
-                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        perm_error = _check_message_project_permission(request, 'notice.create')
+        if perm_error:
+            return perm_error
 
         serializer = MMSMessageSerializer(data=request.data)
         if not serializer.is_valid():
@@ -357,7 +452,7 @@ class MessageViewSet(viewsets.ViewSet):
                             sent_at=actual_sent_at,
                             request_no=request_no,
                             company_id=company_id or '',
-                            project_id=request.data.get('project'),
+                            project_id=validated_data.get('project'),
                             scheduled_send=validated_data.get('scheduled_send', False),
                             schedule_datetime=schedule_datetime,
                             sent_by=request.user
@@ -395,18 +490,9 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-kakao')
     def send_kakao(self, request):
         """카카오 알림톡 발송"""
-        # 프로젝트 권한 검증
-        project_id = request.data.get('project')
-        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
-            if not project_id:
-                return Response({'error': '프로젝트를 지정해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
-            accessible_projects = list(get_accessible_project_ids(request.user, 'notice.create'))
-            try:
-                p_id_int = int(project_id)
-            except (ValueError, TypeError):
-                p_id_int = None
-            if p_id_int not in accessible_projects:
-                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        perm_error = _check_message_project_permission(request, 'notice.create')
+        if perm_error:
+            return perm_error
 
         serializer = KakaoMessageSerializer(data=request.data)
         if not serializer.is_valid():
@@ -784,12 +870,6 @@ class PostLabelViewSet(viewsets.ReadOnlyModelViewSet):
             accessible_projects = get_accessible_project_ids(user)
             queryset = queryset.filter(contractor__contract__project_id__in=accessible_projects)
 
-        def _parse_int_param(raw_val):
-            try:
-                return int(raw_val)
-            except (ValueError, TypeError):
-                return None
-
         # 프로젝트 필터
         project_id = self.request.query_params.get('project')
         if project_id:
@@ -888,15 +968,43 @@ class EmailNoticeViewSet(viewsets.ReadOnlyModelViewSet):
         order_group = request.query_params.get('order_group')
         building = request.query_params.get('building')
 
+        p_int = _parse_int_param(project_id)
+        if p_int is None:
+            return Response({
+                'total_contractors': 0,
+                'registered_count': 0,
+                'unregistered_count': 0,
+                'recipients': [],
+                'unregistered_contractors': [],
+            }, status=status.HTTP_200_OK)
+
         base_filter = Q(
-            contract__project_id=project_id,
+            contract__project_id=p_int,
             contract__is_active=True,
             is_active=True,
         )
         if order_group:
-            base_filter &= Q(contract__order_group_id=order_group)
+            og_int = _parse_int_param(order_group)
+            if og_int is None:
+                return Response({
+                    'total_contractors': 0,
+                    'registered_count': 0,
+                    'unregistered_count': 0,
+                    'recipients': [],
+                    'unregistered_contractors': [],
+                }, status=status.HTTP_200_OK)
+            base_filter &= Q(contract__order_group_id=og_int)
         if building:
-            base_filter &= Q(contract__key_unit__houseunit__building_unit_id=building)
+            b_int = _parse_int_param(building)
+            if b_int is None:
+                return Response({
+                    'total_contractors': 0,
+                    'registered_count': 0,
+                    'unregistered_count': 0,
+                    'recipients': [],
+                    'unregistered_contractors': [],
+                }, status=status.HTTP_200_OK)
+            base_filter &= Q(contract__key_unit__houseunit__building_unit_id=b_int)
 
         contractors = Contractor.objects.filter(base_filter).select_related(
             'contract__key_unit__houseunit__building_unit',

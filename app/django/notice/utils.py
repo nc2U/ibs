@@ -45,7 +45,7 @@ class IwinvSMSService:
         formatted_recipients = []
         for phone in recipients:
             formatted_phone = self._format_phone_number(phone)
-            if len(formatted_phone) < 10 or len(formatted_phone) > 11:
+            if not formatted_phone.isdigit() or len(formatted_phone) < 9 or len(formatted_phone) > 11:
                 raise ValueError(f"잘못된 전화번호 형식: {phone}")
             formatted_recipients.append(formatted_phone)
 
@@ -417,7 +417,7 @@ class IwinvSMSService:
             formatted_recipients = []
             for recipient in recipients:
                 phone = self._format_phone_number(recipient.get('phone', ''))
-                if len(phone) < 10 or len(phone) > 11:
+                if not phone.isdigit() or len(phone) < 9 or len(phone) > 11:
                     raise ValueError(f"잘못된 전화번호 형식: {recipient.get('phone')}")
 
                 formatted_recipient = {

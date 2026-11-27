@@ -26,9 +26,11 @@ const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const checked = ref(false)
 
-const paidCompleted = computed(
-  () => (props.contract?.last_paid_order?.pay_time ?? 0) >= (props.nowOrder ?? 0),
-)
+const paidCompleted = computed(() => {
+  const paidOrder = props.contract?.last_paid_order
+  const currentCode = paidOrder?.pay_code ?? paidOrder?.pay_time ?? 0
+  return currentCode >= (props.nowOrder ?? 0)
+})
 
 watch(
   () => props.allChecked,
@@ -53,7 +55,7 @@ const contChk = (ctorPk: number) => {
 </script>
 
 <template>
-  <CTableRow v-if="contract" class="text-center" :color="checked ? 'secondary' : ''">
+  <CTableRow v-if="contract" class="text-center" :color="checked ? 'secondary' : undefined">
     <CTableDataCell v-if="canNoticeRead" class="ps-3">
       <CFormCheck
         :id="'check_' + contract.pk"
@@ -65,7 +67,7 @@ const contChk = (ctorPk: number) => {
     </CTableDataCell>
 
     <CTableDataCell>
-      {{ contract.order_group_desc.name }}
+      {{ contract.order_group_desc?.name || '-' }}
     </CTableDataCell>
 
     <CTableDataCell class="text-start">

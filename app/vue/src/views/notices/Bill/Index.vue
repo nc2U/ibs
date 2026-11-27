@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin.ts'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useProject } from '@/store/pinia/project.ts'
@@ -24,6 +24,7 @@ const { can, PERM } = usePerms()
 const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const listControl = ref()
+const contractListRef = ref()
 const limit = ref(10)
 
 const cont_ids = ref<number[]>([])
@@ -46,7 +47,7 @@ const patchSalesBillIssue = (payload: SalesBillIssue) => noticeStore.patchSalesB
 const paymentStore = usePayment()
 const payOrder = computed(() => paymentStore.payOrder as PayOrder | null)
 
-const payOrderTime = computed(() => (payOrder.value ? payOrder.value.pay_time : 0))
+const payOrderCode = computed(() => payOrder.value?.pay_code ?? payOrder.value?.pay_time ?? 0)
 const payOrderName = computed(() => (payOrder.value ? payOrder.value.str_display : ''))
 
 const fetchPayOrder = (pk: number) => paymentStore.fetchPayOrder(pk)
@@ -65,21 +66,27 @@ const fetchSalePriceList = (payload: { project: number }) =>
   contractStore.fetchSalePriceList(payload)
 const fetchDownPayList = (payload: { project: number }) => contractStore.fetchDownPayList(payload)
 
-watch(billIssue, (val: any) => {
+watch(billIssue, (val: SalesBillIssue | null) => {
+  printData.is_bill_issue = !!val
   if (val) {
-    printData.is_bill_issue = !!val
     printData.project = val.project
     if (val.now_payment_order) fetchPayOrder(val.now_payment_order)
+    else paymentStore.payOrder = null
+  } else {
+    paymentStore.payOrder = null
   }
 })
 
 const pageSelect = (page: number) => {
   cont_ids.value = []
-  listControl.value.listFiltering(page)
+  listControl.value?.listFiltering(page)
 }
 
 const listFiltering = (payload: ContFilter) => {
   cont_ids.value = []
+  if ((payload.page ?? 1) === 1) {
+    contractListRef.value?.resetSelection(1)
+  }
   payload.project = project.value
   payload.limit = payload.limit || 10
   limit.value = payload.limit
@@ -100,23 +107,24 @@ const allUnChecked = () => (cont_ids.value = [])
 
 const getNowOrder = (orderPk: number | null) => {
   if (orderPk) fetchPayOrder(orderPk)
+  else paymentStore.payOrder = null
 }
 
 const setPubDate = (payload: string) => (printData.pub_date = payload)
 
-const onSubmit = (payload: SalesBillIssue & { now_due_date: string | null }) => {
+const onSubmit = async (payload: SalesBillIssue & { now_due_date: string | null }) => {
   const { pk, now_payment_order } = payload
   const { now_due_date, ...bill_data } = payload
 
-  if (now_payment_order && payOrder.value?.pay_due_date !== now_due_date) {
-    patchPayOrder({
+  if (now_payment_order && (payOrder.value?.pay_due_date || null) !== (now_due_date || null)) {
+    await patchPayOrder({
       pk: now_payment_order,
       pay_due_date: now_due_date || undefined,
     })
   }
 
-  if (pk) patchSalesBillIssue(bill_data)
-  else createSalesBillIssue(bill_data)
+  if (pk) await patchSalesBillIssue(bill_data)
+  else await createSalesBillIssue(bill_data)
 }
 
 const dataSetup = (pk: number) => {
@@ -142,31 +150,33 @@ const dataReset = () => {
   contractStore.downPaymentList = []
   noticeStore.billIssue = null
   paymentStore.payOrderList = []
+  paymentStore.payOrder = null
   projectDataStore.unitTypeList = []
   projectDataStore.buildingList = []
+  cont_ids.value = []
+  limit.value = 10
+  printData.is_bill_issue = false
   printData.project = null
+  listControl.value?.clearFilters()
+  contractListRef.value?.resetSelection(1)
 }
 
-const projSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
-onBeforeMount(() => {
-  const projId = project.value || projStore.currentProject
-  if (projId) dataSetup(projId)
-})
+watch(
+  [project, canNoticeRead],
+  ([newProj, hasRead], [oldProj, oldRead]) => {
+    if (newProj !== oldProj || hasRead !== oldRead) {
+      dataReset()
+      if (newProj && hasRead) dataSetup(newProj)
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <NoticeAuthGuard>
     <Loading v-model:active="isLoading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">
@@ -184,7 +194,8 @@ onBeforeMount(() => {
         />
         <DownloadButton v-if="canNoticeRead" :print-data="printData" :contracts="cont_ids" />
         <ContractList
-          :now-order="payOrderTime || undefined"
+          ref="contractListRef"
+          :now-order="payOrderCode || undefined"
           :limit="limit"
           @on-cont-chk="onContChk"
           @page-select="pageSelect"

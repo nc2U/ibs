@@ -1,6 +1,8 @@
 <script lang="ts" setup>
-import { ref, onBeforeMount } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
+import { usePerms } from '@/composables/usePerms.ts'
+import { addDaysToDate, getToday } from '@/utils/baseMixins.ts'
 import type { MessageSendHistory, HistoryListParams } from '@/store/types/notice.ts'
 import HistoryFilter from './HistoryFilter.vue'
 import HistoryTable from './HistoryTable.vue'
@@ -15,6 +17,8 @@ interface FilterData {
 }
 
 const noticeStore = useNotice()
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 // 상태
 const loading = ref(false)
@@ -99,15 +103,14 @@ const handleDetail = async (id: number) => {
   }
 }
 
-// 초기 데이터 로드 (최근 7일)
+// 초기 데이터 로드 (최근 7일, KST 기준)
 const loadInitialData = () => {
-  const today = new Date()
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 7)
+  const endDate = getToday()
+  const startDate = addDaysToDate(endDate, -7)
 
   currentFilters.value = {
-    startDate: sevenDaysAgo.toISOString().split('T')[0],
-    endDate: today.toISOString().split('T')[0],
+    startDate,
+    endDate,
     messageType: '',
     senderNumber: '',
   }
@@ -115,10 +118,16 @@ const loadInitialData = () => {
   loadHistory()
 }
 
-// 컴포넌트 마운트 시 초기화
-onBeforeMount(() => {
-  loadInitialData()
-})
+// 권한 준비 시 초기 조회
+watch(
+  canNoticeRead,
+  hasRead => {
+    if (hasRead) {
+      loadInitialData()
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -127,7 +136,12 @@ onBeforeMount(() => {
     <HistoryFilter @search="handleSearch" @reset="handleReset" />
 
     <!-- 테이블 영역 -->
-    <HistoryTable :loading="loading" @detail="handleDetail" @page-change="handlePageChange" />
+    <HistoryTable
+      :loading="loading"
+      :current-page="currentPage"
+      @detail="handleDetail"
+      @page-change="handlePageChange"
+    />
 
     <!-- 상세보기 다이얼로그 -->
     <HistoryDetail v-model:visible="detailVisible" :item="selectedItem" />

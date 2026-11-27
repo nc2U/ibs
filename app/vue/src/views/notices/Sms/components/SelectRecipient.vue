@@ -50,6 +50,16 @@ interface RecipientGroup {
 
 const recipientGroups = ref<RecipientGroup[]>([])
 const individualRecipients = ref<string[]>([])
+const recipientVariablesMap = ref<Record<string, Record<string, string>>>({})
+
+const emitSyncedVariables = () => {
+  if (!props.hasTemplateVariables) return
+  const synced = individualRecipients.value.map(phone => ({
+    phone,
+    variables: recipientVariablesMap.value[phone] || {},
+  }))
+  emit('update:recipientsWithVariables', synced)
+}
 
 // recipientsList와 동기화
 watch(
@@ -61,6 +71,23 @@ watch(
   },
   { deep: true },
 )
+
+const extractCellText = (cellVal: ExcelJS.CellValue): string => {
+  if (cellVal === null || cellVal === undefined) return ''
+  if (typeof cellVal === 'object') {
+    if ('text' in cellVal && typeof cellVal.text === 'string') return cellVal.text.trim()
+    if ('result' in cellVal && cellVal.result !== undefined && cellVal.result !== null) {
+      return String(cellVal.result).trim()
+    }
+    if ('richText' in cellVal && Array.isArray(cellVal.richText)) {
+      return cellVal.richText
+        .map(part => part.text || '')
+        .join('')
+        .trim()
+    }
+  }
+  return String(cellVal).trim()
+}
 
 // 그룹명 매핑
 const getGroupName = (groupType: string): string => {
@@ -186,10 +213,10 @@ const parseExcelFile = async (
         }
 
         // 모든 행을 배열로 변환
-        const rows: any[][] = []
-        worksheet.eachRow((row, rowNumber) => {
-          const rowValues: any[] = []
-          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const rows: ExcelJS.CellValue[][] = []
+        worksheet.eachRow(row => {
+          const rowValues: ExcelJS.CellValue[] = []
+          row.eachCell({ includeEmpty: true }, cell => {
             rowValues.push(cell.value)
           })
           rows.push(rowValues)
@@ -216,7 +243,7 @@ const parseExcelFile = async (
           // 헤더에서 변수명 추출 (A열은 전화번호, B열부터 변수)
           const excelVariableNames: string[] = []
           for (let i = 1; i < headerRow.length; i++) {
-            const varName = headerRow[i] ? String(headerRow[i]).trim() : ''
+            const varName = extractCellText(headerRow[i])
             if (varName) {
               excelVariableNames.push(varName)
             }
@@ -238,14 +265,14 @@ const parseExcelFile = async (
             const row = rows[i]
 
             // A열: 전화번호
-            const phone = row[0] ? String(row[0]).trim() : ''
+            const phone = extractCellText(row[0])
             if (!phone) continue
 
             // B열 이후: 변수 값
             const variables: Record<string, string> = {}
             for (let j = 1; j < headerRow.length; j++) {
-              const varName = headerRow[j] ? String(headerRow[j]).trim() : ''
-              const varValue = row[j] ? String(row[j]).trim() : ''
+              const varName = extractCellText(headerRow[j])
+              const varValue = extractCellText(row[j])
               if (varName) {
                 variables[varName] = varValue
               }
@@ -263,9 +290,10 @@ const parseExcelFile = async (
           // 헤더 감지 (첫 번째 행에 문자열이 많으면 헤더로 판단)
           if (rows.length > 0) {
             const firstRow = rows[0]
-            const hasHeader = firstRow.some(
-              cell => typeof cell === 'string' && isNaN(Number(String(cell).replace(/[^\d]/g, ''))),
-            )
+            const hasHeader = firstRow.some(cell => {
+              const cellText = extractCellText(cell)
+              return cellText !== '' && isNaN(Number(cellText.replace(/[^\d]/g, '')))
+            })
             startRow = hasHeader ? 1 : 0
           }
 
@@ -274,21 +302,10 @@ const parseExcelFile = async (
             const row = rows[i]
 
             // A열 우선, B열 대체
-            const cellA = row[0]
-            const cellB = row[1]
+            const cellA = extractCellText(row[0])
+            const cellB = extractCellText(row[1])
 
-            let phone: string | null = null
-
-            // A열 확인
-            if (cellA) {
-              phone = String(cellA).trim()
-            }
-
-            // A열이 비어있으면 B열 확인
-            if (!phone && cellB) {
-              phone = String(cellB).trim()
-            }
-
+            const phone = cellA || cellB || null
             if (phone) {
               phoneNumbers.push(phone)
             }
@@ -399,7 +416,10 @@ const handleExcelFileChange = async (file: File | File[] | null) => {
         return
       }
 
-      // 부모 컴포넌트에 변수 포함 수신자 전달
+      // 부모 컴포넌트에 변수 포함 수신자 전달 및 내부 맵 동기화
+      recipientVariablesMap.value = Object.fromEntries(
+        validRecipientsWithVars.map(item => [item.phone, item.variables]),
+      )
       emit('update:recipientsWithVariables', validRecipientsWithVars)
 
       // recipientsList도 업데이트 (전화번호만)
@@ -493,10 +513,11 @@ const handleExcelFileChange = async (file: File | File[] | null) => {
 
       refAlertModal.value?.callModal('엑셀 업로드 완료', message)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error)
     refAlertModal.value?.callModal(
       '파일 처리 오류',
-      `파일을 처리하는 중 오류가 발생했습니다:\n${error.message}`,
+      `파일을 처리하는 중 오류가 발생했습니다:\n${errMsg}`,
     )
   } finally {
     excelFileInput.value = null
@@ -576,6 +597,8 @@ const handleAddRecipient = () => {
 
 const handleRemoveIndividual = (phoneNumber: string) => {
   individualRecipients.value = individualRecipients.value.filter(item => item !== phoneNumber)
+  delete recipientVariablesMap.value[phoneNumber]
+  emitSyncedVariables()
 }
 
 const handleRemoveGroup = (groupType: string) => {
@@ -585,7 +608,12 @@ const handleRemoveGroup = (groupType: string) => {
 const handleClearAll = () => {
   recipientGroups.value = []
   individualRecipients.value = []
+  recipientVariablesMap.value = {}
+  recipientsList.value = []
+  emit('update:recipientsWithVariables', [])
 }
+
+defineExpose({ handleClearAll })
 
 const handleGroupSelect = async () => {
   await nextTick(async () => {
@@ -642,7 +670,7 @@ const handleGroupSelect = async () => {
         '',
         `${contractorCount}명의 계약자 중 중복 제거 후 ${phones.length}명의 연락처가 추가되었습니다.`,
       )
-    } catch (error) {
+    } catch {
       refAlertModal.value?.callModal('', '그룹 조회 중 오류가 발생했습니다.')
     } finally {
       selectedGroup.value = '' // 선택 초기화
@@ -680,7 +708,7 @@ const handleGroupSelect = async () => {
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-plus" class="me-2" />
               개별 번호 입력
-              <v-chip v-if="hasTemplateVariables" size="small" color="dark" class="ms-2">
+              <v-chip v-if="hasTemplateVariables" size="small" color="secondary" class="ms-2">
                 변수 모드에서 비활성화
               </v-chip>
             </v-expansion-panel-title>
@@ -726,7 +754,7 @@ const handleGroupSelect = async () => {
             <v-expansion-panel-title>
               <v-icon icon="mdi-account-group" class="me-2" />
               그룹 선택
-              <v-chip v-if="hasTemplateVariables" size="small" color="dark" class="ms-2">
+              <v-chip v-if="hasTemplateVariables" size="small" color="secondary" class="ms-2">
                 변수 모드에서 비활성화
               </v-chip>
             </v-expansion-panel-title>

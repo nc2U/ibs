@@ -125,7 +125,7 @@ const getTypeColor = computed(() => {
       <div class="mb-3">
         <strong class="text-medium-emphasis">메시지 내용</strong>
         <CCard class="mt-2">
-          <CCardBody style="white-space: pre-wrap; background-color: #f8f9fa">
+          <CCardBody class="bg-more-light" style="white-space: pre-wrap">
             {{ item.message_content }}
           </CCardBody>
         </CCard>
@@ -134,7 +134,7 @@ const getTypeColor = computed(() => {
       <div class="mb-3">
         <strong class="text-medium-emphasis">수신번호 목록</strong>
         <CCard class="mt-2">
-          <CCardBody style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa">
+          <CCardBody class="bg-more-light" style="max-height: 200px; overflow-y: auto">
             <div v-for="(phone, index) in item.recipients" :key="index" class="mb-1">
               {{ index + 1 }}. {{ phone }}
             </div>

@@ -266,19 +266,7 @@ const getAddress2 = (item: PostLabel) => {
     margin: 0; /* 브라우저 기본 헤더/푸터 및 여백 완전 제거 */
   }
 
-  body * {
-    visibility: hidden;
-  }
-
-  .print-container,
-  .print-container * {
-    visibility: visible;
-  }
-
   .print-container {
-    position: absolute;
-    left: 0;
-    top: 0;
     width: 100%;
     margin: 0;
     padding: 0;

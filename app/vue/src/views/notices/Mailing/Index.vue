@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { formatMailMergePreview } from './preview'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin.ts'
 import { useNotice } from '@/store/pinia/notice.ts'
@@ -13,9 +13,18 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import Loading from '@/components/Loading/Index.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const { can, PERM } = usePerms()
 const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
+const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE))
+
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+let customRecipientSeq = 0
 
 const loading = ref(false)
 const activeTab = ref<'write' | 'history'>('write')
@@ -49,6 +58,7 @@ const showRecipientManageModal = ref(false)
 
 // 수신 대상자 목록 (편집 및 개별 선택 가능 상태)
 export interface EditableRecipient {
+  _uid: string
   contractor_id: number | null
   name: string
   email: string
@@ -65,16 +75,18 @@ const recipientSearch = ref('')
 const manualName = ref('')
 const manualEmail = ref('')
 
-// recipientsData가 로드되면 editableRecipients 초기화
+// recipientsData가 로드되면 editableRecipients 초기화 (직접 추가한 수신자 유지)
 watch(
   () => recipientsData.value,
   data => {
+    const customList = editableRecipients.value.filter(r => r.is_custom)
     if (!data) {
-      editableRecipients.value = []
+      editableRecipients.value = customList
       return
     }
     // 등록자 (선택 상태로 초기화)
     const registered: EditableRecipient[] = (data.recipients || []).map(r => ({
+      _uid: `contractor-${r.contractor_id}`,
       contractor_id: r.contractor_id,
       name: r.name,
       email: r.email,
@@ -85,6 +97,7 @@ watch(
     }))
     // 미등록자 (미선택 상태, 이메일 빈칸으로 초기화)
     const unregistered: EditableRecipient[] = (data.unregistered_contractors || []).map(u => ({
+      _uid: `contractor-${u.contractor_id}`,
       contractor_id: u.contractor_id,
       name: u.name,
       email: '',
@@ -93,7 +106,7 @@ watch(
       selected: false,
       is_custom: false,
     }))
-    editableRecipients.value = [...registered, ...unregistered]
+    editableRecipients.value = [...customList, ...registered, ...unregistered]
   },
   { immediate: true },
 )
@@ -133,14 +146,15 @@ const addManualRecipient = () => {
   const name = manualName.value.trim()
   const email = manualEmail.value.trim()
   if (!name) {
-    alert('수신자 이름을 입력해 주세요.')
+    refAlertModal.value?.callModal('입력 필요', '수신자 이름을 입력해 주세요.')
     return
   }
-  if (!email || !email.includes('@')) {
-    alert('올바른 이메일 주소를 입력해 주세요.')
+  if (!email || !EMAIL_RE.test(email)) {
+    refAlertModal.value?.callModal('이메일 형식 오류', '올바른 이메일 주소를 입력해 주세요.')
     return
   }
   editableRecipients.value.unshift({
+    _uid: `custom-${++customRecipientSeq}`,
     contractor_id: null,
     name,
     email,
@@ -182,29 +196,75 @@ const insertVariable = (variableTag: string) => {
   }
 }
 
+const hasEmailBodyContent = (html: string): boolean => {
+  const text = html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .trim()
+  return text.length > 0 || /<(img|hr|table|iframe)\b/i.test(html)
+}
+
 // 이메일 발송 실행
 const isSending = ref(false)
-const handleSendEmail = async () => {
+const handleSendEmail = () => {
+  if (!canNoticeManage.value) {
+    refAlertModal.value?.callModal()
+    return
+  }
   if (!project.value) {
-    alert('프로젝트를 선택해 주세요.')
+    refAlertModal.value?.callModal('프로젝트 선택', '프로젝트를 선택해 주세요.')
+    return
+  }
+  if (form.value.sender_email.trim() && !EMAIL_RE.test(form.value.sender_email.trim())) {
+    refAlertModal.value?.callModal(
+      '발신 이메일 형식 오류',
+      '발신 이메일 주소 형식이 올바르지 않습니다.',
+    )
     return
   }
   if (!form.value.title.trim()) {
-    alert('이메일 제목을 입력해 주세요.')
+    refAlertModal.value?.callModal('제목 누락', '이메일 제목을 입력해 주세요.')
     return
   }
-  if (!form.value.content.trim()) {
-    alert('이메일 본문을 입력해 주세요.')
+  if (!hasEmailBodyContent(form.value.content)) {
+    refAlertModal.value?.callModal('본문 누락', '이메일 본문을 입력해 주세요.')
     return
   }
   const regCount = finalRecipients.value.length
   if (regCount === 0) {
-    alert('선택된 유효한 수신자가 없습니다. 수신 대상자 목록에서 이메일을 확인해 주세요.')
+    refAlertModal.value?.callModal(
+      '수신자 없음',
+      '선택된 유효한 수신자가 없습니다. 수신 대상자 목록에서 이메일을 확인해 주세요.',
+    )
+    return
+  }
+  const invalidRecipients = finalRecipients.value.filter(r => !EMAIL_RE.test(r.email.trim()))
+  if (invalidRecipients.length > 0) {
+    const preview = invalidRecipients
+      .slice(0, 3)
+      .map(r => `${r.name}(${r.email})`)
+      .join(', ')
+    refAlertModal.value?.callModal(
+      '이메일 형식 오류',
+      `유효하지 않은 수신자 이메일이 포함되어 있습니다.\n${preview}${invalidRecipients.length > 3 ? ' 외' : ''}`,
+    )
     return
   }
 
   const confirmMsg = `총 ${regCount}명의 수신자에게 이메일을 발송하시겠습니까?\n발송 후에는 취소할 수 없습니다.`
-  if (!confirm(confirmMsg)) return
+  refConfirmModal.value?.callModal(
+    '이메일 발송 확인',
+    confirmMsg,
+    'mdi-send',
+    'primary',
+    '발송 실행',
+    'primary',
+  )
+}
+
+const executeSendEmail = async () => {
+  refConfirmModal.value?.close()
+  if (!project.value || isSending.value) return
 
   isSending.value = true
   try {
@@ -271,6 +331,12 @@ const dataReset = () => {
   noticeStore.emailNoticesCount = 0
   contractStore.orderGroupList = []
   pDataStore.buildingList = []
+  filter.value.order_group = ''
+  filter.value.building = ''
+  recipientSearch.value = ''
+  historyStatusFilter.value = ''
+  manualName.value = ''
+  manualEmail.value = ''
   form.value.title = ''
   form.value.content = ''
 }
@@ -292,28 +358,24 @@ const dataSetup = async (projId: number) => {
   }
 }
 
-const projSelect = async (target: number | null) => {
-  dataReset()
-  if (target) {
-    await dataSetup(target)
-  }
-}
-
-// 프로젝트 변경 시 재조회
+// 프로젝트 및 권한 변경 시 단일 경로로 재조회
 watch(
-  () => project.value,
-  async newProj => {
-    if (newProj) {
-      await dataSetup(newProj)
-    } else {
+  [project, canNoticeRead],
+  async ([newProj, hasRead], [oldProj, oldRead]) => {
+    if (newProj !== oldProj || hasRead !== oldRead) {
       dataReset()
+      if (newProj && hasRead) {
+        await dataSetup(newProj)
+      }
     }
   },
+  { immediate: true },
 )
 
 watch(
   () => activeTab.value,
   async newTab => {
+    if (!project.value || !canNoticeRead.value) return
     if (newTab === 'write') {
       await fetchRecipients()
     } else {
@@ -321,13 +383,6 @@ watch(
     }
   },
 )
-
-onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) {
-    await dataSetup(projId)
-  }
-})
 
 // 상태 뱃지 색상
 const getStatusBadgeColor = (status: string) => {
@@ -348,12 +403,7 @@ const getStatusBadgeColor = (status: string) => {
   <NoticeAuthGuard>
     <Loading v-model:active="loading" />
 
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <!-- 메인 탭 (새 이메일 작성 및 발송 / 이메일 발송 이력 대장) -->
@@ -399,7 +449,7 @@ const getStatusBadgeColor = (status: string) => {
               <!-- 좌측: 대상자 타겟팅 및 집계 카드 -->
               <CCol class="col-12 col-lg-4">
                 <CCard class="shadow-sm mb-3">
-                  <CCardHeader class="bg-light fw-bold py-2 d-flex align-items-center">
+                  <CCardHeader class="bg-more-light fw-bold py-2 d-flex align-items-center">
                     <v-icon icon="mdi-target-account" size="small" class="me-1 text-primary" />
                     발송 대상자 타겟팅
                   </CCardHeader>
@@ -429,7 +479,7 @@ const getStatusBadgeColor = (status: string) => {
                     <hr class="my-3 text-muted" />
 
                     <!-- 수신 현황 통계 카드 -->
-                    <div class="p-3 bg-light rounded-3 border">
+                    <div class="p-3 bg-more-light rounded-3 border">
                       <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="fw-bold">수신 대상자 설정</span>
                         <v-btn
@@ -483,7 +533,7 @@ const getStatusBadgeColor = (status: string) => {
 
                 <!-- 변수 치환 도우미 카드 -->
                 <CCard class="shadow-sm">
-                  <CCardHeader class="bg-light fw-bold py-2 d-flex align-items-center">
+                  <CCardHeader class="bg-more-light fw-bold py-2 d-flex align-items-center">
                     <v-icon icon="mdi-code-tags" size="small" class="me-1 text-primary" />
                     자동 치환 머지 태그
                   </CCardHeader>
@@ -529,7 +579,7 @@ const getStatusBadgeColor = (status: string) => {
               <div class="col-12 col-lg-8">
                 <CCard class="shadow-sm">
                   <CCardHeader
-                    class="bg-light fw-bold py-2 d-flex justify-content-between align-items-center"
+                    class="bg-more-light fw-bold py-2 d-flex justify-content-between align-items-center"
                   >
                     <div class="d-flex align-items-center">
                       <v-icon icon="mdi-email-outline" size="small" class="me-1 text-primary" />
@@ -537,9 +587,7 @@ const getStatusBadgeColor = (status: string) => {
                     </div>
                     <div class="small text-muted">
                       예상 수신인:
-                      <strong class="text-primary">
-                        {{ recipientsData?.registered_count || 0 }}명
-                      </strong>
+                      <strong class="text-primary"> {{ finalRecipients.length }}명 </strong>
                     </div>
                   </CCardHeader>
 
@@ -597,7 +645,7 @@ const getStatusBadgeColor = (status: string) => {
                       <v-btn
                         color="primary"
                         variant="flat"
-                        :disabled="isSending || finalRecipients.length === 0"
+                        :disabled="!canNoticeManage || isSending || finalRecipients.length === 0"
                         @click="handleSendEmail"
                       >
                         <v-icon icon="mdi-send" size="small" class="me-1" />
@@ -745,7 +793,7 @@ const getStatusBadgeColor = (status: string) => {
         </CModalHeader>
         <CModalBody class="p-3">
           <!-- 상단 필터 & 직접 추가 영역 -->
-          <div class="p-3 bg-light rounded border mb-3">
+          <div class="p-3 bg-more-light rounded border mb-3">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-5">
                 <CInputGroup size="sm">
@@ -759,7 +807,7 @@ const getStatusBadgeColor = (status: string) => {
                   <CButton
                     v-if="recipientSearch"
                     color="secondary"
-                    variant="ghost"
+                    variant="outline"
                     type="button"
                     @click="recipientSearch = ''"
                   >
@@ -832,7 +880,7 @@ const getStatusBadgeColor = (status: string) => {
                 <template v-if="filteredEditableRecipients.length > 0">
                   <CTableRow
                     v-for="(r, idx) in filteredEditableRecipients"
-                    :key="r.contractor_id ?? `custom-${idx}`"
+                    :key="r._uid"
                     :class="{ 'table-active': !r.selected }"
                   >
                     <CTableDataCell>
@@ -928,7 +976,7 @@ const getStatusBadgeColor = (status: string) => {
           </CModalTitle>
         </CModalHeader>
         <CModalBody class="p-0">
-          <div class="p-3 bg-light border-bottom small text-secondary">
+          <div class="p-3 bg-more-light border-bottom small text-secondary">
             이메일 주소가 등록되지 않아 이번 발송에서 제외되는 계약자입니다. SMS 또는 서면 우편
             발송을 통해 안내해 주세요.
           </div>
@@ -979,7 +1027,7 @@ const getStatusBadgeColor = (status: string) => {
         </CModalHeader>
         <CModalBody v-if="selectedNotice">
           <!-- 메일 기본 정보 요약 -->
-          <div class="row g-2 mb-4 p-3 bg-light rounded border small">
+          <div class="row g-2 mb-4 p-3 bg-more-light rounded border small">
             <div class="col-12 col-md-8"><strong>제목:</strong> {{ selectedNotice.title }}</div>
             <div class="col-12 col-md-4 text-md-end">
               <strong>상태:</strong>
@@ -1048,7 +1096,7 @@ const getStatusBadgeColor = (status: string) => {
                 <!-- HTML 서식 렌더링 뷰 (실제 수신자 메일 화면과 동일한 스타일) -->
                 <div
                   v-if="!showRawHtml"
-                  class="p-4 bg-white border rounded small email-rendered-view"
+                  class="p-4 bg-white text-dark border rounded small email-rendered-view"
                   style="min-height: 120px; line-height: 1.6"
                   v-html="formattedPreviewContent"
                 />
@@ -1056,7 +1104,7 @@ const getStatusBadgeColor = (status: string) => {
                 <!-- 개발/검토용 원문 HTML 코드 뷰 -->
                 <div
                   v-else
-                  class="p-3 bg-light border rounded small font-monospace text-secondary"
+                  class="p-3 bg-more-light border rounded small font-monospace text-secondary"
                   style="white-space: pre-wrap; word-break: break-all"
                 >
                   {{ selectedNotice.content }}
@@ -1118,6 +1166,8 @@ const getStatusBadgeColor = (status: string) => {
           </v-btn>
         </CModalFooter>
       </CModal>
+      <ConfirmModal ref="refConfirmModal" checked @confirm-func="executeSendEmail" />
+      <AlertModal ref="refAlertModal" />
     </ContentBody>
   </NoticeAuthGuard>
 </template>

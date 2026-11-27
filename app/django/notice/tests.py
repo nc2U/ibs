@@ -615,3 +615,157 @@ class NoticeAppSecurityTests(TestCase):
         res_label = self.client.get(f'/api/v1/post-labels/?project={self.project_a.pk}&order_group=invalid')
         self.assertEqual(res_label.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res_label.data.get('results', res_label.data)), 0)
+
+        self.client.force_authenticate(user=self.user_a)
+        res_email_rec = self.client.get(
+            f'/api/v1/email-notices/recipients/?project={self.project_a.pk}&order_group=invalid'
+        )
+        self.assertEqual(res_email_rec.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_email_rec.data['total_contractors'], 0)
+
+    @override_settings(IWINV_API_KEY='test-api-key', IWINV_AUTH_KEY='test-auth-key')
+    @patch('notice.utils.IwinvSMSService.send_lms')
+    @patch('notice.utils.IwinvSMSService.send_sms')
+    def test_personalized_sms_and_nine_digit_landline_support(self, mock_send_sms, mock_send_lms):
+        """변수 템플릿 개별 SMS 발송 및 9자리 서울 국번 허용 검증"""
+        mock_send_sms.return_value = {'resultCode': 0, 'message': 'ok', 'requestNo': 'REQ-S1', 'msgType': 'SMS'}
+        mock_send_lms.return_value = {'resultCode': 0, 'message': 'ok', 'requestNo': 'REQ-L1', 'msgType': 'LMS'}
+
+        self.client.force_authenticate(user=self.user_a)
+        long_msg = '가' * 35  # 105 bytes (>90B) -> 자동 LMS 전환 검증
+        payload = {
+            'project': self.project_a.pk,
+            'message_type': 'SMS',
+            'sender_number': '02-111-2222',
+            'is_personalized': True,
+            'personalized_recipients': [
+                {'phone': '02-111-2222', 'message': '짧은 안내'},
+                {'phone': '010-1234-5678', 'message': '짧은 안내'},
+                {'phone': '010-9876-5432', 'message': long_msg},
+            ],
+        }
+        res = self.client.post('/api/v1/messages/send-sms/', payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        mock_send_sms.assert_called_once()
+        mock_send_lms.assert_called_once()
+        self.assertEqual(mock_send_sms.call_args.kwargs['recipients'], ['02-111-2222', '010-1234-5678'])
+
+        history = MessageSendHistory.objects.filter(project=self.project_a, request_no='REQ-S1').first()
+        self.assertIsNotNone(history)
+        self.assertEqual(history.recipient_count, 3)
+
+        # 빈 personalized_recipients 전달 시 400 Bad Request
+        res_empty = self.client.post(
+            '/api/v1/messages/send-sms/',
+            {'project': self.project_a.pk, 'sender_number': '02-1234-5678', 'is_personalized': True, 'personalized_recipients': []},
+            format='json',
+        )
+        self.assertEqual(res_empty.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_sender_and_template_notice_read_isolation(self):
+        """notice.read 권한이 없는 타 모듈 직원은 발신번호 및 템플릿 목록 조회 불가 검증"""
+        RegisteredSenderNumber.objects.create(phone_number='02-5555-6666', label='공용')
+        tmpl = MessageTemplate.objects.create(title='공지', message_type='SMS', content='테스트')
+
+        other_user = User.objects.create_user(
+            username='user_no_notice', email='nonotice@test.com', password='password123'
+        )
+        contract_perm = Permission.objects.create(module='contract', code='contract.read', name='계약 읽기')
+        other_role = Role.objects.create(name='계약전용', creator=self.admin_user)
+        other_role.permissions.add(contract_perm)
+        other_member = Member.objects.create(project=self.issue_proj_a, user=other_user)
+        other_member.roles.add(other_role)
+
+        # 권한 없는 사용자: 빈 결과 / 404
+        self.client.force_authenticate(user=other_user)
+        res_senders = self.client.get('/api/v1/registered-sender-numbers/')
+        self.assertEqual(res_senders.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_senders.data.get('results', res_senders.data)), 0)
+
+        res_tmpls = self.client.get(f'/api/v1/message-templates/{tmpl.pk}/')
+        self.assertEqual(res_tmpls.status_code, status.HTTP_404_NOT_FOUND)
+
+        # notice.read 보유 사용자: 정상 조회
+        self.client.force_authenticate(user=self.user_a)
+        res_ok = self.client.get('/api/v1/message-templates/')
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(res_ok.data.get('results', res_ok.data)), 1)
+
+    def test_simple_installment_order_and_pdf_valid_payments_and_due_dates(self):
+        """SimpleInstallmentOrderSerializer pay_code 포함 및 PdfExportBill 불일치 납부 제외·상대 기한 계산 검증"""
+        from datetime import date
+        from apiV1.serializers.payment import SimpleInstallmentOrderSerializer
+        from ibs.models import AccountSort
+        from ledger.models import BankCode, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry, ProjectAccount
+        from notice.exports.pdf import PdfExportBill
+        from payment.models import ContractPayment
+
+        serialized = SimpleInstallmentOrderSerializer(self.order_1).data
+        self.assertEqual(serialized['pay_code'], self.order_1.pay_code)
+
+        # 계약일 및 상대 경과일수 기반 납부회차 설정
+        self.contractor_a.contract_date = date(2026, 1, 1)
+        self.contractor_a.save(update_fields=['contract_date'])
+
+        order_2 = InstallmentPaymentOrder.objects.create(
+            project=self.project_a,
+            pay_sort='2',
+            pay_code=2,
+            pay_time=2,
+            pay_name='1차 중도금',
+            days_since_prev=30,
+        )
+        order_3 = InstallmentPaymentOrder.objects.create(
+            project=self.project_a,
+            pay_sort='2',
+            pay_code=3,
+            pay_time=3,
+            pay_name='2차 중도금',
+            days_since_prev=30,
+        )
+
+        # 유효 납부 1,000만원 + 불일치(환불/조정) 납부 500만원 생성
+        bank_code = BankCode.objects.create(code='001', name='테스트은행')
+        bank_acc = ProjectBankAccount.objects.create(
+            project=self.project_a, bankcode=bank_code, alias_name='분양계좌', number='111-222-333', holder='시행사A'
+        )
+        sort_dep = AccountSort.objects.create(name='입금')
+        pay_account = ProjectAccount.objects.create(
+            code='4100', name='분양대금', category='revenue', is_payment=True, requires_contract=True
+        )
+        tx1 = ProjectBankTransaction.objects.create(
+            project=self.project_a, bank_account=bank_acc, deal_date=date(2026, 1, 5),
+            sort=sort_dep, amount=10000000, content='정상납부', creator=self.admin_user,
+        )
+        entry1 = ProjectAccountingEntry.objects.create(
+            project=self.project_a, transaction_id=tx1.transaction_id, account=pay_account,
+            amount=10000000, trader='홍길동', contract=self.contract_a,
+        )
+        ContractPayment.objects.update_or_create(
+            accounting_entry=entry1,
+            defaults={'installment_order': self.order_1, 'is_payment_mismatch': False},
+        )
+
+        tx2 = ProjectBankTransaction.objects.create(
+            project=self.project_a, bank_account=bank_acc, deal_date=date(2026, 1, 6),
+            sort=sort_dep, amount=5000000, content='환불조정', creator=self.admin_user,
+        )
+        entry2 = ProjectAccountingEntry.objects.create(
+            project=self.project_a, transaction_id=tx2.transaction_id, account=pay_account,
+            amount=5000000, trader='홍길동', contract=self.contract_a,
+        )
+        ContractPayment.objects.update_or_create(
+            accounting_entry=entry2,
+            defaults={'installment_order': self.order_1, 'is_payment_mismatch': True},
+        )
+
+        payment_by_order, paid_sum_total = PdfExportBill.get_paid(self.contract_a)
+        self.assertEqual(paid_sum_total, 10000000)
+        self.assertEqual(payment_by_order[self.order_1.id]['paid_amt'], 10000000)
+
+        # 전체 payment_orders 기준 remain_orders 의 due_date 는 order_2(30일)+order_3(30일)=60일 반영 (2026-03-02)
+        all_orders = InstallmentPaymentOrder.objects.filter(project=self.project_a).order_by('pay_code', 'pay_time')
+        orders_info = [{'order': o, 'pay_amount': 10000000, 'sum_pay_amount': 10000000 * (idx + 1), 'unpaid_amount': 10000000, 'pm_cost_sum': 0} for idx, o in enumerate(all_orders)]
+        remain = PdfExportBill.get_remain_orders(self.contract_a, orders_info, all_orders, now_due_order=2)
+        self.assertEqual(len(remain), 1)
+        self.assertEqual(remain[0]['due_date'], date(2026, 3, 2))

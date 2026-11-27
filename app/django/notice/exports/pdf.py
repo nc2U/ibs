@@ -230,8 +230,8 @@ class PdfExportBill(PdfExportMixin, View):
         }
         """
 
-        # 회차별 납부 내역 집계 (약정 회차가 지정된 항목들만)
-        payment_summary = contract.payments.filter(installment_order__isnull=False) \
+        # 회차별 납부 내역 집계 (약정 회차가 지정된 유효 납부 항목들만)
+        payment_summary = contract.payments.valid_payments().filter(installment_order__isnull=False) \
             .values('installment_order') \
             .annotate(total_paid=Sum('accounting_entry__amount'),
                       last_payment_date=Max('deal_date'))
@@ -245,8 +245,8 @@ class PdfExportBill(PdfExportMixin, View):
             for p in payment_summary
         }
 
-        # 전체 납부 총액 (약정 회차 미지정 항목 포함 전체 납부액)
-        paid_sum_total = contract.payments.aggregate(
+        # 전체 납부 총액 (약정 회차 미지정 유효 납부 항목 포함 전체 납부액, 환불/조정 등 불일치 항목 제외)
+        paid_sum_total = contract.payments.valid_payments().aggregate(
             total=Sum('accounting_entry__amount'))['total'] or 0
 
         return payment_by_order, paid_sum_total
@@ -405,7 +405,7 @@ class PdfExportBill(PdfExportMixin, View):
 
             payment_dict = {
                 'order': order,
-                'due_date': get_due_date_per_order(contract, order, unpaid_orders),
+                'due_date': get_due_date_per_order(contract, order, payment_orders),
                 'amount': amount,
                 'unpaid': unpaid,
                 'penalty': penalty,
@@ -583,7 +583,7 @@ class PdfExportBill(PdfExportMixin, View):
 
             paid_dict = {
                 'order': order.pay_name,
-                'due_date': get_due_date_per_order(contract, order, remain_orders),
+                'due_date': get_due_date_per_order(contract, order, payment_orders),
                 'amount': amount,
                 'paid_date': '',
                 'paid_amt': 0,

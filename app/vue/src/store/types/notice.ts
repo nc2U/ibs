@@ -26,7 +26,28 @@ export declare interface SalesBillIssue {
 }
 
 // SMS/MMS/카카오톡 메시지 관련 타입
+export declare interface PersonalizedSMSRecipient {
+  phone: string
+  message: string
+}
+
 export declare interface SMSMessage {
+  message_type?: 'SMS' | 'LMS' | 'AUTO'
+  message?: string
+  title?: string
+  sender_number: string
+  recipients?: string[]
+  is_personalized?: boolean
+  personalized_recipients?: PersonalizedSMSRecipient[]
+  scheduled_send?: boolean
+  schedule_date?: string
+  schedule_time?: string
+  use_v2_api?: boolean
+  company_id?: string
+  project?: number
+}
+
+export declare interface MMSMessage {
   message_type?: 'SMS' | 'LMS' | 'AUTO'
   message: string
   title?: string
@@ -37,10 +58,17 @@ export declare interface SMSMessage {
   schedule_time?: string
   use_v2_api?: boolean
   company_id?: string
+  project?: number
+  image: File
 }
 
-export declare interface MMSMessage extends SMSMessage {
-  image: File
+export declare interface SenderNumber {
+  id: number
+  phone_number: string
+  label: string
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export declare interface KakaoRecipient {

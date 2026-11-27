@@ -181,7 +181,7 @@ class SimpleInstallmentOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'pay_sort', 'pay_time', 'pay_name', 'str_display')
+        fields = ('pk', 'pay_sort', 'pay_code', 'pay_time', 'pay_name', 'str_display')
 
     @staticmethod
     def get_str_display(obj):

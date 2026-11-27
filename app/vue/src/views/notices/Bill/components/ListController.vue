@@ -66,17 +66,21 @@ const listFiltering = (page = 1) => {
   })
 }
 
-const resetForm = () => {
+const clearFilters = () => {
   form.limit = ''
   form.order_group = ''
   form.unit_type = ''
   form.building = ''
   form.ordering = 'contractor__name'
   form.search = ''
+}
+
+const resetForm = () => {
+  clearFilters()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, clearFilters })
 </script>
 
 <template>
@@ -138,7 +142,7 @@ defineExpose({ listFiltering })
 
       <CCol lg="5">
         <CRow>
-          <CCol md="6" class="mb-3 text-primary light-yellow">
+          <CCol md="6" class="mb-3 text-primary order-badge bg-warning-subtle rounded">
             <strong>{{ nowOrderName }}</strong>
           </CCol>
           <CCol md="6" class="mb-3">
@@ -148,8 +152,7 @@ defineExpose({ listFiltering })
                 placeholder="계약자, 전화번호, 일련번호, 비고"
                 aria-label="Username"
                 aria-describedby="addon-wrapping"
-                @change="listFiltering(1)"
-                @keyup.enter="listFiltering(1)"
+                @keydown.enter="listFiltering(1)"
               />
               <CInputGroupText style="cursor: pointer" @click="listFiltering(1)">
                 검색
@@ -160,22 +163,19 @@ defineExpose({ listFiltering })
       </CCol>
     </CRow>
     <CRow>
-      <CCol color="warning" class="p-2 ps-3">
+      <CCol class="p-2 ps-3">
         <strong>계약 건수 조회 결과 : {{ numFormat(contractsCount, 0, 0) }} 건</strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-end mb-0">
-        <v-btn color="info" variant="flat" size="small" @click="resetForm">
-          검색조건 초기화
-        </v-btn>
+        <v-btn color="info" variant="flat" size="small" @click="resetForm"> 검색조건 초기화 </v-btn>
       </CCol>
     </CRow>
   </CCallout>
 </template>
 
 <style lang="scss" scoped>
-.light-yellow {
+.order-badge {
   text-align: center;
   line-height: 30px;
-  background: lightyellow !important;
 }
 </style>

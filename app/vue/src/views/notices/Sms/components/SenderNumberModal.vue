@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
+import type { SenderNumber } from '@/store/types/notice.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 // Props
 const props = defineProps<{
@@ -11,8 +14,10 @@ const props = defineProps<{
 // Store
 const notiStore = useNotice()
 
-// Modal ref
+// Modal refs
 const formModal = ref()
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
+const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 // Form state
 const form = ref({
@@ -21,12 +26,15 @@ const form = ref({
 })
 
 const submitting = ref(false)
+const editingId = ref<number | null>(null)
+const deletingId = ref<number | null>(null)
 
 const resetForm = () => {
   form.value = {
     phone_number: '',
     label: '',
   }
+  editingId.value = null
 }
 
 // Watch props to populate form when editing
@@ -34,6 +42,7 @@ watch(
   () => props.editItem,
   newVal => {
     if (newVal) {
+      editingId.value = newVal.id
       form.value = {
         phone_number: newVal.phone_number,
         label: newVal.label,
@@ -45,6 +54,7 @@ watch(
 )
 
 const openModal = () => {
+  if (!props.editItem) resetForm()
   formModal.value?.callModal()
 }
 
@@ -53,20 +63,60 @@ const closeModal = () => {
   formModal.value?.close()
 }
 
+const handleEdit = (item: SenderNumber) => {
+  editingId.value = item.id
+  form.value = {
+    phone_number: item.phone_number,
+    label: item.label || '',
+  }
+}
+
+const confirmDelete = (id: number) => {
+  deletingId.value = id
+  refConfirmModal.value?.callModal(
+    '발신번호 삭제',
+    '정말 이 발신번호를 삭제하시겠습니까?',
+    'mdi-alert-box',
+    'red-lighten-3',
+    '삭제',
+    'error',
+  )
+}
+
+const handleDelete = async () => {
+  if (!deletingId.value) return
+  try {
+    await notiStore.deleteSenderNumber(deletingId.value)
+    if (editingId.value === deletingId.value) {
+      resetForm()
+    }
+    deletingId.value = null
+    refConfirmModal.value?.close()
+  } catch (error) {
+    console.error('발신번호 삭제 실패:', error)
+  }
+}
+
 const handleSubmit = async () => {
-  if (!form.value.phone_number) return
+  const digitsOnly = form.value.phone_number.replace(/[^\d]/g, '')
+  if (!digitsOnly || digitsOnly.length < 9 || digitsOnly.length > 11) {
+    refAlertModal.value?.callModal(
+      '발신번호 확인',
+      '올바른 발신번호(9~11자리 숫자)를 입력해주세요.',
+    )
+    return
+  }
 
   submitting.value = true
 
   try {
-    if (props.editItem) {
-      // 수정 모드
-      await notiStore.updateSenderNumber(props.editItem.id, form.value)
+    if (editingId.value) {
+      await notiStore.updateSenderNumber(editingId.value, form.value)
+      resetForm()
     } else {
-      // 생성 모드
       await notiStore.createSenderNumber(form.value)
+      resetForm()
     }
-    closeModal()
   } catch (error) {
     console.error('발신번호 등록/수정 실패:', error)
   } finally {
@@ -80,10 +130,10 @@ defineExpose({ openModal, closeModal })
 <template>
   <FormModal ref="formModal">
     <template #icon>
-      <v-icon icon="mdi-phone-plus" size="small" color="primary" class="mr-2" />
+      <v-icon icon="mdi-phone-plus" size="small" color="primary" class="me-2" />
     </template>
     <template #header>
-      {{ editItem ? '발신번호 수정' : '발신번호 등록' }}
+      {{ editingId ? '발신번호 수정' : '발신번호 등록' }}
     </template>
 
     <CModalBody>
@@ -121,23 +171,63 @@ defineExpose({ openModal, closeModal })
 
     <CModalFooter>
       <v-btn
-        color="primary"
+        :color="editingId ? 'success' : 'primary'"
         variant="flat"
         size="small"
         @click="handleSubmit"
         :loading="submitting"
       >
-        {{ editItem ? '수정' : '등록' }}
+        {{ editingId ? '수정' : '등록' }}
       </v-btn>
-      <v-btn
-        color="light"
-        variant="flat"
-        size="small"
-        @click="closeModal"
-        :disabled="submitting"
-      >
-        취소
+      <v-btn v-if="editingId" color="primary" variant="flat" size="small" @click="resetForm">
+        신규 입력
+      </v-btn>
+      <v-btn color="light" variant="flat" size="small" @click="closeModal" :disabled="submitting">
+        닫기
       </v-btn>
     </CModalFooter>
+
+    <!-- 등록된 발신번호 목록 -->
+    <CModalBody>
+      <v-divider class="my-3" />
+      <h6 class="mb-2">
+        <v-icon icon="mdi-phone-settings" class="me-2" size="small" />
+        등록된 발신번호 ({{ notiStore.senderNumbers.length }}개)
+      </h6>
+      <div style="max-height: 220px; overflow-y: auto">
+        <v-alert v-if="notiStore.senderNumbers.length === 0" type="info" variant="tonal">
+          등록된 발신번호가 없습니다.
+        </v-alert>
+        <v-list v-else density="compact">
+          <v-list-item v-for="item in notiStore.senderNumbers" :key="item.id" class="py-0">
+            <v-list-item-title>
+              <strong>{{ item.phone_number }}</strong>
+              <span v-if="item.label" class="text-grey ms-2">({{ item.label }})</span>
+            </v-list-item-title>
+            <template #append>
+              <v-btn
+                icon="mdi-pencil"
+                size="20"
+                rounded
+                variant="text"
+                color="success"
+                @click="handleEdit(item)"
+              />
+              <v-btn
+                icon="mdi-delete"
+                size="20"
+                rounded
+                variant="text"
+                color="grey"
+                @click="confirmDelete(item.id)"
+              />
+            </template>
+          </v-list-item>
+        </v-list>
+      </div>
+    </CModalBody>
   </FormModal>
+
+  <ConfirmModal ref="refConfirmModal" @confirm-func="handleDelete" />
+  <AlertModal ref="refAlertModal" />
 </template>

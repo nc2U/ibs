@@ -8,10 +8,12 @@ import Pagination from '@/components/Pagination'
 // Props
 interface Props {
   loading?: boolean
+  currentPage?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
+  currentPage: 1,
 })
 
 // Emits
@@ -27,13 +29,6 @@ const noticeStore = useNotice()
 const historyData = computed<HistoryListResponse | null>(() => noticeStore.messageSendHistory)
 const historyList = computed(() => historyData.value?.results || [])
 const totalCount = computed(() => historyData.value?.count || 0)
-const currentPage = computed(() => {
-  const nextUrl = historyData.value?.next
-  const prevUrl = historyData.value?.previous
-  if (!nextUrl && !prevUrl) return 1
-  // URL에서 page 번호 추출하여 계산
-  return 1 // 기본값
-})
 
 // 페이지네이션
 const pageSize = 15
@@ -158,7 +153,7 @@ const formatDate = (dateStr: string) => {
       <!-- 페이지네이션 -->
       <div v-if="!loading && historyList.length > 0" class="d-flex mt-3">
         <Pagination
-          :active-page="currentPage"
+          :active-page="props.currentPage"
           :limit="8"
           :pages="totalPages"
           class="mt-3"

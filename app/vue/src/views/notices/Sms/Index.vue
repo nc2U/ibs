@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin.ts'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useCompany } from '@/store/pinia/company.ts'
@@ -7,29 +7,34 @@ import { useProject } from '@/store/pinia/project.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import type { Project } from '@/store/types/project.ts'
-import type { KakaoMessage } from '@/store/types/notice.ts'
+import type { KakaoMessage, MMSMessage, SMSMessage } from '@/store/types/notice.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
 import BalanceCard from './components/BalanceCard.vue'
 import SelectRecipient from './components/SelectRecipient.vue'
-import SelectMessage from './components/SelectMessage.vue'
+import SelectMessage, {
+  type KakaoFormState,
+  type SmsFormState,
+} from './components/SelectMessage.vue'
 import SendMessage from './components/SendMessage.vue'
 import HistoryTab from './components/HistoryTab.vue'
 
 const { can, PERM } = usePerms()
 const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
+const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE))
 
-const loading = ref(true)
+const loading = ref(false)
 const mainTab = ref('send') // 'send' or 'history'
 const activeTab = ref('sms')
+
+const selectRecipientRef = ref<InstanceType<typeof SelectRecipient> | null>(null)
 
 // 공통 데이터
 const recipientInput = ref('')
 const recipientsList = ref<string[]>([])
 
-const messageCount = ref(0)
 const sendProgress = ref(0)
 const isSending = ref(false)
 
@@ -46,28 +51,28 @@ const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 const projectStore = useProject()
 const project = computed<Project | null>(() => projectStore.project)
+const companyId = computed(() => (company.value?.pk ? `company${company.value.pk}` : ''))
 
 // 폼 데이터
-const smsForm = ref({
+const smsForm = ref<SmsFormState>({
   messageType: 'SMS',
   message: '',
   senderNumber: '',
-  companyId: company?.value?.pk ? `company${company.value.pk}` : '', // 회사 PK로 자동 생성, 없으면 빈 문자열
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',
 })
 
-const kakaoForm = ref({
+const kakaoForm = ref<KakaoFormState>({
   templateId: '',
   message: '',
   senderNumber: '',
-  parameters: {} as Record<string, string>,
+  parameters: {},
   scheduledSend: false,
   scheduleDate: '',
   scheduleTime: '',
   reSend: true,
-  resendType: 'Y' as 'Y' | 'N',
+  resendType: 'Y',
   resendTitle: '',
   resendContent: '',
 })
@@ -77,7 +82,25 @@ const currentForm = computed(() => {
   return activeTab.value === 'sms' ? smsForm.value : kakaoForm.value
 })
 
+const updateScheduleState = (
+  field: 'scheduledSend' | 'scheduleDate' | 'scheduleTime',
+  value: boolean | string,
+) => {
+  if (activeTab.value === 'sms') {
+    if (field === 'scheduledSend') smsForm.value.scheduledSend = Boolean(value)
+    else if (field === 'scheduleDate') smsForm.value.scheduleDate = String(value)
+    else smsForm.value.scheduleTime = String(value)
+  } else {
+    if (field === 'scheduledSend') kakaoForm.value.scheduledSend = Boolean(value)
+    else if (field === 'scheduleDate') kakaoForm.value.scheduleDate = String(value)
+    else kakaoForm.value.scheduleTime = String(value)
+  }
+}
+
 const isDisabled = computed(() => {
+  if (!canNoticeManage.value || isSending.value) {
+    return true
+  }
   if (activeTab.value === 'sms') {
     const basicValidation =
       recipientsList.value.length === 0 || !smsForm.value.message || !smsForm.value.senderNumber
@@ -114,29 +137,23 @@ const buttonText = computed(() => {
   return currentForm.value.scheduledSend ? '예약 등록' : `${prefix} 전송`
 })
 
-const selectTemplate = () => {
-  // UI만 구현
-}
-
-const previewMessage = () => {
-  // UI만 구현
-}
-
 const notiStore = useNotice()
+
+const escapeRegExp = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 // 변수 치환 함수
 const replaceVariables = (template: string, variables: Record<string, string>): string => {
   let result = template
   for (const [key, value] of Object.entries(variables)) {
-    const regex = new RegExp(`\\{${key}\\}`, 'g')
+    const regex = new RegExp(`\\{${escapeRegExp(key)}\\}`, 'g')
     result = result.replace(regex, value)
   }
   return result
 }
 
 const sendMessage = async () => {
-  // 이미 발송 중이면 중복 실행 방지
-  if (isSending.value) {
+  // 권한 없음 또는 이미 발송 중이면 차단
+  if (!canNoticeManage.value || isSending.value) {
     return
   }
 
@@ -144,39 +161,45 @@ const sendMessage = async () => {
   sendProgress.value = 0
 
   try {
+    const projectPk = project.value?.pk || undefined
+    const activeCompanyId = companyId.value || undefined
+
     if (activeTab.value === 'sms') {
       // MMS 타입이면서 이미지가 첨부된 경우
       if (smsForm.value.messageType === 'MMS' && attachedImages.value.length > 0) {
-        const mmsData = {
+        const mmsData: MMSMessage = {
           message: smsForm.value.message,
           title: '포토 메시지',
           sender_number: smsForm.value.senderNumber,
           recipients: recipientsList.value,
           image: attachedImages.value[0], // 첫 번째 이미지
-          company_id: smsForm.value.companyId || undefined,
+          company_id: activeCompanyId,
+          project: projectPk,
           scheduled_send: smsForm.value.scheduledSend,
           schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
           schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
           use_v2_api: true,
         }
 
-        await notiStore.sendMMS(mmsData as any)
+        await notiStore.sendMMS(mmsData)
       }
       // 변수 모드: 개별 메시지 생성
       else if (templateHasVariables.value && recipientsWithVariables.value.length > 0) {
-        // 각 수신자마다 개별 메시지 생성
-        const personalizedRecipients = recipientsWithVariables.value.map(item => ({
-          phone: item.phone,
-          message: replaceVariables(smsForm.value.message, item.variables),
+        const variableMap = new Map(
+          recipientsWithVariables.value.map(item => [item.phone, item.variables]),
+        )
+        const personalizedRecipients = recipientsList.value.map(phone => ({
+          phone,
+          message: replaceVariables(smsForm.value.message, variableMap.get(phone) || {}),
         }))
 
-        // 개별 메시지 발송 (백엔드에서 지원하는 경우)
-        const smsData = {
+        const smsData: SMSMessage = {
           message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
           title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
           sender_number: smsForm.value.senderNumber,
           personalized_recipients: personalizedRecipients, // 개별 메시지 배열
-          company_id: smsForm.value.companyId || undefined,
+          company_id: activeCompanyId,
+          project: projectPk,
           scheduled_send: smsForm.value.scheduledSend,
           schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
           schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
@@ -184,16 +207,17 @@ const sendMessage = async () => {
           is_personalized: true, // 개별 메시지 플래그
         }
 
-        await notiStore.sendSMS(smsData as any)
+        await notiStore.sendSMS(smsData)
       } else {
         // 일반 모드: 동일 메시지 발송
-        const smsData = {
+        const smsData: SMSMessage = {
           message_type: smsForm.value.messageType as 'SMS' | 'LMS' | 'AUTO',
           message: smsForm.value.message,
           title: smsForm.value.messageType === 'LMS' ? '안내' : undefined,
           sender_number: smsForm.value.senderNumber,
           recipients: recipientsList.value,
-          company_id: smsForm.value.companyId || undefined,
+          company_id: activeCompanyId,
+          project: projectPk,
           scheduled_send: smsForm.value.scheduledSend,
           schedule_date: smsForm.value.scheduledSend ? smsForm.value.scheduleDate : undefined,
           schedule_time: smsForm.value.scheduledSend ? smsForm.value.scheduleTime : undefined,
@@ -241,8 +265,8 @@ const sendMessage = async () => {
           kakaoForm.value.reSend && kakaoForm.value.resendType === 'N'
             ? kakaoForm.value.resendContent
             : undefined,
-        company_id: smsForm.value.companyId || undefined,
-        project: project.value?.pk || undefined,
+        company_id: activeCompanyId,
+        project: projectPk,
       }
 
       await notiStore.sendKakao(kakaoPayload)
@@ -252,6 +276,7 @@ const sendMessage = async () => {
     await notiStore.fetchMessageSendHistory({
       page: 1,
       ordering: '-created',
+      project: projectPk,
     })
 
     mainTab.value = 'history'
@@ -268,39 +293,49 @@ const balance = computed(() => notiStore.balance)
 const balanceLoading = computed(() => notiStore.loading)
 
 const refreshBalance = async () => {
+  if (!canNoticeRead.value) return
   try {
     await notiStore.fetchBalance()
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Store에서 기본 에러 처리는 하지만, 추가 로깅이 필요한 경우
     console.error('잔액 조회 실패:', error)
   }
 }
 
-const projSelect = () => {
-  // 프로젝트 전환 시 기존 수신자 및 폼 관련 상태 초기화
+const resetRecipientSelection = () => {
   recipientInput.value = ''
+  selectRecipientRef.value?.handleClearAll()
   recipientsList.value = []
   recipientsWithVariables.value = []
 }
 
-// 초기화 (잔액 자동 조회)
-onBeforeMount(async () => {
-  loading.value = false
-  // 페이지 로드 시 잔액 자동 조회
-  await refreshBalance()
-})
+watch(
+  () => project.value?.pk,
+  (newPk, oldPk) => {
+    if (oldPk !== undefined && newPk !== oldPk) {
+      resetRecipientSelection()
+    }
+  },
+)
+
+watch(
+  canNoticeRead,
+  async hasRead => {
+    if (!hasRead) return
+    if (!company.value && comStore.initComId) {
+      await comStore.fetchCompany(comStore.initComId)
+    }
+    await refreshBalance()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <NoticeAuthGuard>
     <Loading v-model:active="loading" />
 
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <!-- 메인 탭 (발송 / 히스토리) -->
@@ -334,9 +369,6 @@ onBeforeMount(async () => {
                   v-model:active-tab="activeTab"
                   v-model:sms-form="smsForm"
                   v-model:kakao-form="kakaoForm"
-                  v-model:message-count="messageCount"
-                  @select-template="selectTemplate"
-                  @preview-message="previewMessage"
                   @update:has-variables="templateHasVariables = $event"
                   @update:variable-names="templateVariableNames = $event"
                   @update:attached-images="attachedImages = $event"
@@ -345,9 +377,10 @@ onBeforeMount(async () => {
               <CCol sm="6">
                 <!-- 수신자 관리 섹션 (고정) -->
                 <SelectRecipient
+                  ref="selectRecipientRef"
                   v-model:recipient-input="recipientInput"
                   v-model:recipients-list="recipientsList"
-                  :has-template-variables="templateHasVariables"
+                  :has-template-variables="activeTab === 'sms' && templateHasVariables"
                   :variable-names="templateVariableNames"
                   @update:recipients-with-variables="recipientsWithVariables = $event"
                 />
@@ -364,6 +397,9 @@ onBeforeMount(async () => {
                   :button-text="buttonText"
                   :is-sending="isSending"
                   :send-progress="sendProgress"
+                  @update:scheduled-send="updateScheduleState('scheduledSend', $event)"
+                  @update:schedule-date="updateScheduleState('scheduleDate', $event)"
+                  @update:schedule-time="updateScheduleState('scheduleTime', $event)"
                   @send-message="sendMessage"
                 />
               </CCol>

@@ -1,7 +1,8 @@
 import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { message, errorHandle, getErrorMessage } from '@/utils/helper'
+import { getToday } from '@/utils/baseMixins'
+import { message, errorHandle, getErrorData, getErrorMessage } from '@/utils/helper'
 
 export interface RecipientGroupResponse {
   phone_numbers: string[]
@@ -15,9 +16,23 @@ export interface RecipientGroupResponse {
 }
 
 const handleNoticeError = (err: unknown, fallback: string, failTitle?: string): void => {
-  const errorMsg = getErrorMessage(err, fallback)
-  if (failTitle) message('danger', failTitle, errorMsg)
-  errorHandle(err || { message: errorMsg })
+  const errorData = getErrorData(err) as Record<string, unknown> | null
+  if (
+    errorData &&
+    typeof errorData === 'object' &&
+    (errorData.code === 'token_not_valid' ||
+      errorData.detail === '자격 인증 데이터가 제공되지 않았습니다.')
+  ) {
+    return
+  }
+
+  if (failTitle) {
+    const errorMsg = getErrorMessage(err, fallback)
+    message('danger', failTitle, errorMsg, 10000)
+    return
+  }
+
+  errorHandle(err || { message: fallback })
 }
 import type {
   SalesBillIssue,
@@ -29,6 +44,7 @@ import type {
   BalanceResponse,
   SMSResponse,
   KakaoResponse,
+  SenderNumber,
   MessageTemplate,
   MessageSendHistory,
   HistoryListParams,
@@ -47,46 +63,86 @@ export const useNotice = defineStore('notice', () => {
   const billIssue = ref<SalesBillIssue | null>(null)
   const sendHistory = ref<SendHistoryResponse | null>(null)
   const balance = ref<number>(0)
-  const senderNumbers = ref<Array<{ id: number; phone_number: string; label: string }>>([])
+  const senderNumbers = ref<SenderNumber[]>([])
   const messageTemplates = ref<MessageTemplate[]>([])
   const messageSendHistory = ref<HistoryListResponse | null>(null)
   const currentHistory = ref<MessageSendHistory | null>(null)
 
   // Sales Bill Issue actions
-  const fetchSalesBillIssue = (pk: number) =>
+  const fetchSalesBillIssue = (projectId: number) =>
     api
-      .get(`/sales-bill-issue/${pk}/`)
-      .then(res => (billIssue.value = res.data))
+      .get('/sales-bill-issue/', { params: { project: projectId } })
+      .then(res => {
+        const results = Array.isArray(res.data?.results)
+          ? res.data.results
+          : Array.isArray(res.data)
+            ? res.data
+            : []
+        billIssue.value = results[0] ?? null
+        return billIssue.value
+      })
       .catch(err => {
         billIssue.value = null
-        console.log(err)
+        errorHandle(err)
+        return null
       })
 
   const createSalesBillIssue = (payload: SalesBillIssue) =>
     api
       .post('/sales-bill-issue/', payload)
-      .then(() => message())
-      .catch(err => errorHandle(err))
+      .then(async res => {
+        billIssue.value = res.data
+        if (res.data?.now_payment_order) {
+          await payStore.fetchPayOrder(res.data.now_payment_order)
+        } else {
+          payStore.payOrder = null
+        }
+        message()
+        return res.data as SalesBillIssue
+      })
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const patchSalesBillIssue = (payload: SalesBillIssue) =>
     api
       .patch(`/sales-bill-issue/${payload.pk}/`, payload)
       .then(async res => {
-        await payStore.fetchPayOrder(res.data.now_payment_order || 3)
+        billIssue.value = res.data
+        if (res.data?.now_payment_order) {
+          await payStore.fetchPayOrder(res.data.now_payment_order)
+        } else {
+          payStore.payOrder = null
+        }
         message()
+        return res.data as SalesBillIssue
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const updateSalesBillIssue = (payload: SalesBillIssue) =>
     api
       .put(`/sales-bill-issue/${payload.pk}/`, payload)
-      .then(() => message())
-      .catch(err => errorHandle(err))
+      .then(res => {
+        billIssue.value = res.data
+        message()
+        return res.data as SalesBillIssue
+      })
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const deleteSalesBillIssue = (pk: number) =>
     api
       .delete(`/sales-bill-issue/${pk}/`)
-      .then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.'))
+      .then(() => {
+        billIssue.value = null
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
       .catch(err => errorHandle(err))
 
   // SMS/LMS 발송
@@ -94,6 +150,9 @@ export const useNotice = defineStore('notice', () => {
     loading.value = true
     try {
       const response = await api.post<SMSResponse>('/messages/send-sms/', payload)
+      const recipientCount = payload.is_personalized
+        ? payload.personalized_recipients?.length || 0
+        : payload.recipients?.length || 0
 
       if (response.data.resultCode !== 0) {
         message('danger', '발송 실패', response.data.message || '알 수 없는 오류가 발생했습니다.')
@@ -117,12 +176,12 @@ export const useNotice = defineStore('notice', () => {
       // 2.5초 대기 (iwinv API가 실제 발송 처리할 시간)
       await new Promise(resolve => setTimeout(resolve, 2500))
 
-      // 전송 내역 조회 (오늘 날짜, requestNo로 필터링)
-      const today = new Date()
+      // 전송 내역 조회 (KST 오늘 날짜, requestNo로 필터링)
+      const todayStr = getToday()
       const historyParams = {
         company_id: payload.company_id,
-        start_date: today.toISOString().split('T')[0],
-        end_date: today.toISOString().split('T')[0],
+        start_date: todayStr,
+        end_date: todayStr,
         request_no: response.data.requestNo,
         page_num: 1,
         page_size: 10,
@@ -146,17 +205,17 @@ export const useNotice = defineStore('notice', () => {
         // '0', '06' = 성공
         // 'WAIT' = 대기 중
         // 그 외 = 실패
-        if (sendResult.sendStatusCode === '0' || sendResult.sendStatusCode === '06') {
-          message(
-            'success',
-            '발송 성공',
-            `SMS가 성공적으로 발송되었습니다. (${payload.recipients.length}건)`,
-          )
+        if (
+          !sendResult ||
+          sendResult.sendStatusCode === '0' ||
+          sendResult.sendStatusCode === '06'
+        ) {
+          message('success', '발송 성공', `SMS가 성공적으로 발송되었습니다. (${recipientCount}건)`)
         } else if (sendResult.sendStatusCode === 'WAIT') {
           message(
             'info',
             '발송 대기 중',
-            `SMS 발송이 접수되었습니다. 전송 처리 중입니다. (${payload.recipients.length}건)`,
+            `SMS 발송이 접수되었습니다. 전송 처리 중입니다. (${recipientCount}건)`,
           )
         } else {
           message(
@@ -201,6 +260,7 @@ export const useNotice = defineStore('notice', () => {
       formData.append('image', payload.image)
       formData.append('scheduled_send', String(payload.scheduled_send || false))
 
+      if (payload.project) formData.append('project', String(payload.project))
       if (payload.company_id) formData.append('company_id', payload.company_id)
       if (payload.schedule_date) formData.append('schedule_date', payload.schedule_date)
       if (payload.schedule_time) formData.append('schedule_time', payload.schedule_time)
@@ -448,11 +508,6 @@ export const useNotice = defineStore('notice', () => {
       const response = await api.get('/messages/recipient-groups/', {
         params: { project: projectId, group_type: groupType },
       })
-
-      // 디버그 정보 출력
-      if (response.data.debug) {
-        console.log('🔍 백엔드 디버그 정보:', response.data.debug)
-      }
 
       return response.data
     } catch (err: unknown) {

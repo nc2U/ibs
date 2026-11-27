@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { addDaysToDate, getToday } from '@/utils/baseMixins.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 // Emits
@@ -49,14 +50,11 @@ const handleReset = () => {
   emit('reset')
 }
 
-// 초기 날짜 설정 (최근 7일)
+// 초기 날짜 설정 (최근 7일, KST 기준)
 const initDates = () => {
-  const today = new Date()
-  const weekAgo = new Date(today)
-  weekAgo.setDate(weekAgo.getDate() - 7)
-
-  filterData.value.endDate = today.toISOString().split('T')[0]
-  filterData.value.startDate = weekAgo.toISOString().split('T')[0]
+  const endDate = getToday()
+  filterData.value.endDate = endDate
+  filterData.value.startDate = addDaysToDate(endDate, -7)
 }
 
 // 컴포넌트 마운트 시 초기 날짜 설정

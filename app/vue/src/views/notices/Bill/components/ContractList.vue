@@ -38,11 +38,18 @@ const pageSelect = (p: number) => {
   emit('page-select', p)
 }
 
+const resetSelection = (targetPage = 1) => {
+  page.value = targetPage
+  allChecked.value = false
+}
+
 const onAllCheckChange = () => {
   if (!allChecked.value) emit('all-un-checked')
 }
 
 const onContChk = (payload: { chk: boolean; pk: number }) => emit('on-cont-chk', payload)
+
+defineExpose({ resetSelection })
 </script>
 
 <template>

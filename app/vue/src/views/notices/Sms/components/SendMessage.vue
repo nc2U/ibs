@@ -1,11 +1,18 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import TimePicker from '@/components/DatePicker/TimePicker.vue'
+
+export interface SendFormScheduleState {
+  scheduledSend: boolean
+  scheduleDate: string
+  scheduleTime: string
+}
 
 // Props 정의
 interface Props {
   activeTab: string
-  currentForm: any
+  currentForm: SendFormScheduleState
   isDisabled: boolean
   buttonText: string
   isSending: boolean
@@ -17,7 +24,25 @@ const props = defineProps<Props>()
 // Emits 정의
 const emit = defineEmits<{
   (e: 'sendMessage'): void
+  (e: 'update:scheduledSend', value: boolean): void
+  (e: 'update:scheduleDate', value: string): void
+  (e: 'update:scheduleTime', value: string): void
 }>()
+
+const scheduledSendModel = computed({
+  get: () => props.currentForm.scheduledSend,
+  set: (val: boolean) => emit('update:scheduledSend', val),
+})
+
+const scheduleDateModel = computed({
+  get: () => props.currentForm.scheduleDate,
+  set: (val: string) => emit('update:scheduleDate', val),
+})
+
+const scheduleTimeModel = computed({
+  get: () => props.currentForm.scheduleTime,
+  set: (val: string) => emit('update:scheduleTime', val),
+})
 
 const handleSendMessage = () => emit('sendMessage')
 </script>
@@ -33,7 +58,7 @@ const handleSendMessage = () => emit('sendMessage')
         <!-- 발송 옵션 -->
         <CCol :xl="6" :lg="12">
           <div>
-            <v-radio-group v-model="props.currentForm.scheduledSend" inline>
+            <v-radio-group v-model="scheduledSendModel" inline>
               <template v-slot:label>
                 <div class="strong mb-2">발송 시점</div>
               </template>
@@ -49,15 +74,15 @@ const handleSendMessage = () => emit('sendMessage')
             </v-radio-group>
           </div>
 
-          <div v-if="props.currentForm.scheduledSend" class="mb-3">
+          <div v-if="scheduledSendModel" class="mb-3">
             <CRow>
               <CCol :md="6">
                 <label class="form-label">발송 날짜</label>
-                <DatePicker v-model="props.currentForm.scheduleDate" />
+                <DatePicker v-model="scheduleDateModel" />
               </CCol>
               <CCol :md="6">
                 <label class="form-label">발송 시간</label>
-                <TimePicker v-model="props.currentForm.scheduleTime" />
+                <TimePicker v-model="scheduleTimeModel" />
               </CCol>
             </CRow>
           </div>
@@ -65,7 +90,7 @@ const handleSendMessage = () => emit('sendMessage')
 
         <!-- 발송 실행 -->
         <CCol :md="6" :xs="12">
-          <div class="text-right">
+          <div class="text-end">
             <v-btn
               :color="props.activeTab === 'sms' ? 'primary' : 'success'"
               variant="flat"
@@ -81,7 +106,7 @@ const handleSendMessage = () => emit('sendMessage')
 
             <div v-if="props.isSending" class="mt-3">
               <v-progress-linear
-                v-model="props.sendProgress"
+                :model-value="props.sendProgress"
                 :color="props.activeTab === 'sms' ? 'primary' : 'success'"
                 height="8"
                 rounded

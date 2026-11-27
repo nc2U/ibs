@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, watch, ref, onMounted, nextTick } from 'vue'
+import { computed, watch, ref, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
 import { usePerms } from '@/composables/usePerms.ts'
 import SenderNumberModal from './SenderNumberModal.vue'
@@ -7,26 +7,53 @@ import MessageTemplateModal from './MessageTemplateModal.vue'
 import SpecialCharModal from './SpecialCharModal.vue'
 import KakaoGuideModal from './KakaoGuideModal.vue'
 
+export interface SmsFormState {
+  messageType: 'SMS' | 'LMS' | 'MMS' | 'AUTO'
+  message: string
+  senderNumber: string
+  scheduledSend: boolean
+  scheduleDate: string
+  scheduleTime: string
+}
+
+export interface KakaoFormState {
+  templateId: string
+  message: string
+  senderNumber: string
+  parameters: Record<string, string>
+  scheduledSend: boolean
+  scheduleDate: string
+  scheduleTime: string
+  reSend: boolean
+  resendType: 'Y' | 'N'
+  resendTitle: string
+  resendContent: string
+}
+
 // Props 정의
-const activeTab = defineModel<string>('activeTab')
-const smsForm = defineModel<any>('smsForm') as any
-const kakaoForm = defineModel<any>('kakaoForm') as any
-const messageCount = defineModel<number>('messageCount') as any
+const activeTab = defineModel<string>('activeTab', { required: true })
+const smsForm = defineModel<SmsFormState>('smsForm', { required: true })
+const kakaoForm = defineModel<KakaoFormState>('kakaoForm', { required: true })
 
 // Emits 정의
 const emit = defineEmits<{
-  (e: 'selectTemplate'): void
-  (e: 'update:messageCount', value: number): void
   (e: 'update:hasVariables', value: boolean): void
   (e: 'update:variableNames', value: string[]): void
   (e: 'update:attachedImages', value: File[]): void
 }>()
 
 const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE) || can(PERM.NOTICE_UPDATE))
 
 // Store
 const notiStore = useNotice()
+
+const textEncoder = new TextEncoder()
+const getUtf8ByteLength = (text: string): number => textEncoder.encode(text).length
+const escapeRegExp = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const smsByteLength = computed(() => getUtf8ByteLength(smsForm.value.message || ''))
 
 // Variable extraction function
 const extractVariables = (content: string): string[] => {
@@ -168,23 +195,28 @@ const kakaoPreviewMessage = computed(() => {
 
   for (const [key, value] of Object.entries(params)) {
     const displayVal = (value as string) || `[${key}]`
-    const regexHash = new RegExp(`#{${key}}`, 'g')
-    const regexBrace = new RegExp(`{${key}}`, 'g')
+    const escapedKey = escapeRegExp(key)
+    const regexHash = new RegExp(`#\\{${escapedKey}\\}`, 'g')
+    const regexBrace = new RegExp(`\\{${escapedKey}\\}`, 'g')
     result = result.replace(regexHash, displayVal).replace(regexBrace, displayVal)
   }
 
   return result
 })
 
-// Load sender numbers and templates on mount
-onMounted(async () => {
-  try {
-    await notiStore.fetchSenderNumbers()
-    await notiStore.fetchMessageTemplates()
-  } catch (error) {
-    console.error('데이터 조회 실패:', error)
-  }
-})
+// Load sender numbers and templates when read permission is available
+watch(
+  canNoticeRead,
+  async hasRead => {
+    if (!hasRead) return
+    try {
+      await Promise.all([notiStore.fetchSenderNumbers(), notiStore.fetchMessageTemplates()])
+    } catch (error) {
+      console.error('데이터 조회 실패:', error)
+    }
+  },
+  { immediate: true },
+)
 
 const handleOpenSenderModal = () => {
   editingSenderNumber.value = null
@@ -212,7 +244,7 @@ const handleTemplateSelect = () => {
     )
 
     if (template) {
-      smsForm.value.messageType = template.message_type
+      smsForm.value.messageType = template.message_type === 'KAKAO' ? 'SMS' : template.message_type
       smsForm.value.message = template.content
 
       // 템플릿 내용에서 변수 추출
@@ -289,35 +321,26 @@ const handleFileSelect = (event: Event) => {
 
 const addImages = (files: File[]) => {
   uploadError.value = ''
+  const file = files[0]
+  if (!file) return
 
-  for (const file of files) {
-    const validation = validateImage(file)
-    if (!validation.valid) {
-      uploadError.value = validation.error || '파일 업로드 실패'
-      continue
-    }
-
-    // 이미 추가된 파일인지 체크
-    const isDuplicate = attachedImages.value.some(
-      img => img.name === file.name && img.size === file.size,
-    )
-    if (isDuplicate) {
-      uploadError.value = '이미 추가된 이미지입니다.'
-      continue
-    }
-
-    // 파일 추가
-    attachedImages.value.push(file)
-
-    // 미리보기 URL 생성
-    const reader = new FileReader()
-    reader.onload = e => {
-      if (e.target?.result) {
-        imagePreviewUrls.value.push(e.target.result as string)
-      }
-    }
-    reader.readAsDataURL(file)
+  const validation = validateImage(file)
+  if (!validation.valid) {
+    uploadError.value = validation.error || '파일 업로드 실패'
+    return
   }
+
+  // MMS API는 단일 이미지 전송만 지원하므로 1:1 동기화 유지
+  attachedImages.value = [file]
+  imagePreviewUrls.value = []
+
+  const reader = new FileReader()
+  reader.onload = e => {
+    if (e.target?.result && attachedImages.value[0] === file) {
+      imagePreviewUrls.value = [e.target.result as string]
+    }
+  }
+  reader.readAsDataURL(file)
 }
 
 const removeImage = (index: number) => {
@@ -359,21 +382,21 @@ const formattedTotalSize = computed(() => {
   return `${sizeInKB.toFixed(1)}KB`
 })
 
-// SMS 메시지 변경 감지 및 자동 타입 변경
+// SMS 메시지 변경 감지 및 UTF-8 바이트 기준 자동 타입 변경 (90 bytes 초과 시 LMS 전환)
 watch(
-  () => smsForm.value?.message,
+  () => smsForm.value.message,
   newMessage => {
     if (newMessage === undefined) return
 
-    const messageLength = newMessage.length
+    const byteLength = getUtf8ByteLength(newMessage)
 
-    // 메시지 길이에 따라 자동으로 SMS/LMS 전환
-    if (messageLength > 90 && smsForm.value?.messageType === 'SMS')
-      smsForm.value.messageType = 'LMS'
-    else if (messageLength <= 90 && smsForm.value?.messageType === 'LMS')
-      smsForm.value.messageType = 'SMS'
+    if (byteLength > 90 && smsForm.value.messageType === 'SMS') {
+      smsForm.value = { ...smsForm.value, messageType: 'LMS' }
+    } else if (byteLength <= 90 && smsForm.value.messageType === 'LMS') {
+      smsForm.value = { ...smsForm.value, messageType: 'SMS' }
+    }
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 )
 
 // 메시지 타입 변경 감지 - MMS가 아닐 때 첨부 이미지 초기화
@@ -456,9 +479,9 @@ watch(
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>메시지 내용</CFormLabel>
                 <small class="text-muted">
-                  {{ smsForm?.message?.length || 0 }}/{{
-                    smsForm.messageType === 'SMS' ? '90' : '2000'
-                  }}자
+                  {{ smsByteLength }}/{{ smsForm.messageType === 'SMS' ? '90' : '2000' }} bytes ({{
+                    smsForm?.message?.length || 0
+                  }}자)
                 </small>
               </div>
               <CFormTextarea
@@ -485,7 +508,7 @@ watch(
             <div v-if="smsForm.messageType === 'MMS'" class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>이미지 첨부</CFormLabel>
-                <small class="text-muted">JPG 파일만 가능 (100KB 미만)</small>
+                <small class="text-muted">JPG 파일 1장만 가능 (100KB 미만)</small>
               </div>
 
               <!-- 파일 입력 (숨김) -->
@@ -493,7 +516,6 @@ watch(
                 ref="fileInputRef"
                 type="file"
                 accept="image/jpeg,image/jpg"
-                multiple
                 style="display: none"
                 @change="handleFileSelect"
               />
@@ -596,7 +618,9 @@ watch(
                 </div>
               </div>
               <small class="text-muted d-block mt-2">
-                타입: {{ smsForm.messageType }} | 길이: {{ smsForm.message?.length || 0 }}자
+                타입: {{ smsForm.messageType }} | 용량: {{ smsByteLength }} bytes ({{
+                  smsForm.message?.length || 0
+                }}자)
                 <span v-if="smsForm.messageType === 'MMS' && attachedImages.length > 0">
                   | 이미지: {{ attachedImages.length }}개 ({{ formattedTotalSize }})
                 </span>
@@ -689,7 +713,7 @@ watch(
                 @change="handleKakaoTemplateSelect"
               />
               <div v-if="kakaoForm.templateId" class="mt-1 d-flex justify-content-between">
-                <small class="text-primary font-weight-bold">
+                <small class="text-primary fw-bold">
                   템플릿 코드: {{ kakaoForm.templateId }}
                 </small>
                 <small class="text-medium-emphasis"> 변수 {{ kakaoVariableNames.length }}개 </small>

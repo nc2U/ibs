@@ -235,6 +235,7 @@ export interface Payment {
 interface InstallmentOrder {
   pk: number
   pay_sort: string
+  pay_code?: number
   pay_time: number
   pay_name: string
   str_display: string

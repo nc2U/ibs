@@ -99,6 +99,8 @@ class SMSMessageSerializer(serializers.Serializer):
     )
     message = serializers.CharField(
         max_length=2000,
+        required=False,
+        allow_blank=True,
         help_text="메시지 내용 (SMS: 90byte, LMS: 2000byte)"
     )
     title = serializers.CharField(
@@ -113,9 +115,22 @@ class SMSMessageSerializer(serializers.Serializer):
     )
     recipients = serializers.ListField(
         child=serializers.CharField(max_length=20),
-        min_length=1,
+        required=False,
+        allow_empty=True,
         max_length=1000,
         help_text="수신자 번호 리스트 (최대 1000명)"
+    )
+    is_personalized = serializers.BooleanField(
+        default=False,
+        required=False,
+        help_text="수신자별 개별(변수 치환) 메시지 여부"
+    )
+    personalized_recipients = serializers.ListField(
+        child=serializers.DictField(),
+        required=False,
+        allow_empty=True,
+        max_length=1000,
+        help_text="개별 메시지 수신자 리스트 [{'phone': '01012345678', 'message': '내용'}]"
     )
     scheduled_send = serializers.BooleanField(
         default=False,
@@ -147,8 +162,46 @@ class SMSMessageSerializer(serializers.Serializer):
         help_text="프로젝트 ID (히스토리 저장용)"
     )
 
+    @staticmethod
+    def _validate_phone_value(phone: str) -> None:
+        clean_phone = str(phone).replace('-', '').replace(' ', '')
+        if not clean_phone.isdigit() or len(clean_phone) < 9 or len(clean_phone) > 11:
+            raise serializers.ValidationError(f"잘못된 전화번호 형식: {phone}")
+
     def validate(self, data):
         """전체 유효성 검사"""
+        is_personalized = data.get('is_personalized', False)
+        personalized_recipients = data.get('personalized_recipients') or []
+        recipients = data.get('recipients') or []
+        message = data.get('message') or ''
+
+        if is_personalized:
+            if not personalized_recipients:
+                raise serializers.ValidationError(
+                    {'personalized_recipients': "개별 발송 수신자 목록을 1건 이상 입력해야 합니다."}
+                )
+            for idx, item in enumerate(personalized_recipients):
+                phone = (item.get('phone') or '').strip()
+                item_msg = item.get('message') or ''
+                if not phone:
+                    raise serializers.ValidationError(
+                        {'personalized_recipients': f"수신자 {idx + 1}번째: 전화번호(phone)가 필요합니다."}
+                    )
+                self._validate_phone_value(phone)
+                if not str(item_msg).strip():
+                    raise serializers.ValidationError(
+                        {'personalized_recipients': f"수신자 {idx + 1}번째: 메시지 내용(message)이 필요합니다."}
+                    )
+                if len(str(item_msg).encode('utf-8')) > 2000:
+                    raise serializers.ValidationError(
+                        {'personalized_recipients': f"수신자 {idx + 1}번째: 메시지는 2000 bytes까지만 입력 가능합니다."}
+                    )
+        else:
+            if not str(message).strip():
+                raise serializers.ValidationError({'message': "이 필드는 필수 항목입니다."})
+            if not recipients:
+                raise serializers.ValidationError({'recipients': "이 필드는 필수 항목입니다."})
+
         # 예약 발송 시 날짜/시간 필수 검사
         if data.get('scheduled_send', False):
             if not data.get('schedule_date') or not data.get('schedule_time'):
@@ -167,7 +220,7 @@ class SMSMessageSerializer(serializers.Serializer):
     @staticmethod
     def validate_message(value):
         """메시지 내용 유효성 검사"""
-        if len(value.encode('utf-8')) > 2000:
+        if value and len(value.encode('utf-8')) > 2000:
             raise serializers.ValidationError(
                 "메시지는 2000 bytes까지만 입력 가능합니다."
             )
@@ -182,8 +235,8 @@ class SMSMessageSerializer(serializers.Serializer):
             )
         return value
 
-    @staticmethod
-    def validate_recipients(value):
+    @classmethod
+    def validate_recipients(cls, value):
         """수신자 번호 유효성 검사"""
         if len(value) > 1000:
             raise serializers.ValidationError(
@@ -192,17 +245,23 @@ class SMSMessageSerializer(serializers.Serializer):
 
         # 전화번호 형식 검사
         for phone in value:
-            clean_phone = phone.replace('-', '').replace(' ', '')
-            if not clean_phone.isdigit() or len(clean_phone) < 10 or len(clean_phone) > 11:
-                raise serializers.ValidationError(
-                    f"잘못된 전화번호 형식: {phone}"
-                )
+            cls._validate_phone_value(phone)
 
         return value
 
 
 class MMSMessageSerializer(SMSMessageSerializer):
     """MMS 메시지 발송 시리얼라이저"""
+    message = serializers.CharField(
+        max_length=2000,
+        help_text="메시지 내용 (최대 2000byte)"
+    )
+    recipients = serializers.ListField(
+        child=serializers.CharField(max_length=20),
+        min_length=1,
+        max_length=1000,
+        help_text="수신자 번호 리스트 (최대 1000명)"
+    )
     image = serializers.ImageField(
         help_text="이미지 파일 (100KB 미만 JPG)"
     )
@@ -305,7 +364,7 @@ class KakaoMessageSerializer(serializers.Serializer):
 
             # 전화번호 형식 검사
             phone = str(recipient['phone']).replace('-', '').replace(' ', '')
-            if not phone.isdigit() or len(phone) < 10 or len(phone) > 11:
+            if not phone.isdigit() or len(phone) < 9 or len(phone) > 11:
                 raise serializers.ValidationError(
                     f"수신자 {i + 1}번째: 잘못된 전화번호 형식 - {recipient['phone']}"
                 )
@@ -399,7 +458,7 @@ class SMSHistoryQuerySerializer(serializers.Serializer):
         """전화번호 유효성 검사"""
         if value:
             clean_phone = value.replace('-', '').replace(' ', '')
-            if not clean_phone.isdigit() or len(clean_phone) < 10 or len(clean_phone) > 11:
+            if not clean_phone.isdigit() or len(clean_phone) < 9 or len(clean_phone) > 11:
                 raise serializers.ValidationError(
                     f"잘못된 전화번호 형식: {value}"
                 )

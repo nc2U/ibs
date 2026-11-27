@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin.ts'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useProject } from '@/store/pinia/project.ts'
@@ -12,12 +12,14 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import NoticeAuthGuard from '@/components/AuthGuard/NoticeAuthGuard.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import PrintSheet from './components/PrintSheet.vue'
 import Pagination from '@/components/Pagination'
 
 const { can, PERM } = usePerms()
 const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const loading = ref(false)
 const noticeStore = useNotice()
 const projStore = useProject()
@@ -51,6 +53,17 @@ watch(
   () => filter.value.addressType,
   newVal => {
     printOptions.value.addressType = newVal
+  },
+)
+
+// 라벨 규격 변경 시 startOffset 범위 클램핑
+watch(
+  () => printOptions.value.specCode,
+  newCode => {
+    const maxCells = SPECS[newCode]?.perPage || 16
+    if (printOptions.value.startOffset > maxCells) {
+      printOptions.value.startOffset = 1
+    }
   },
 )
 
@@ -108,43 +121,39 @@ const dataReset = () => {
   noticeStore.postLabelsCount = 0
   contractStore.orderGroupList = []
   pDataStore.buildingList = []
+  filter.value.order_group = ''
+  filter.value.building = ''
+  filter.value.search = ''
   selectedIds.value = []
   curPage.value = 1
 }
 
 const dataSetup = async (projId: number) => {
-  await Promise.all([
-    contractStore.fetchOrderGroupList(projId),
-    pDataStore.fetchBuildingList(projId),
-  ])
-  await fetchLabels()
-}
-
-const projSelect = async (target: number | null) => {
-  dataReset()
-  if (target) {
-    await dataSetup(target)
+  loading.value = true
+  try {
+    await Promise.all([
+      contractStore.fetchOrderGroupList(projId),
+      pDataStore.fetchBuildingList(projId),
+    ])
+    await fetchLabels()
+  } finally {
+    loading.value = false
   }
 }
 
-// 프로젝트 변경 시 재조회
+// 프로젝트 및 권한 변경 시 단일 경로로 재조회
 watch(
-  () => project.value,
-  async newProj => {
-    if (newProj) {
-      await dataSetup(newProj)
-    } else {
+  [project, canNoticeRead],
+  async ([newProj, hasRead], [oldProj, oldRead]) => {
+    if (newProj !== oldProj || hasRead !== oldRead) {
       dataReset()
+      if (newProj && hasRead) {
+        await dataSetup(newProj)
+      }
     }
   },
+  { immediate: true },
 )
-
-onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) {
-    await dataSetup(projId)
-  }
-})
 
 // 현재 페이지 전원 선택 여부 (체크박스 헤더용)
 const isPageAllSelected = computed({
@@ -186,7 +195,7 @@ const selectedItems = computed(() => {
 // 선택 라벨 출력(브라우저 print 트리거)
 const handlePrint = () => {
   if (selectedItems.value.length === 0) {
-    alert('출력할 라벨을 1개 이상 선택해 주세요.')
+    refAlertModal.value?.callModal('선택 필요', '출력할 라벨을 1개 이상 선택해 주세요.')
     return
   }
   window.print()
@@ -210,12 +219,7 @@ const displayAddress = (item: PostLabel) => {
 <template>
   <NoticeAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
     <ContentBody>
       <!-- 1. 상단 컨트롤 패널 (필터 + 라벨 규격 설정) -->
       <CCard class="m-3 shadow-sm">
@@ -371,7 +375,7 @@ const displayAddress = (item: PostLabel) => {
       <!-- 3. 명단 테이블 및 인쇄 액션 바 -->
       <CCard class="mx-3 shadow-sm mb-3">
         <CCardHeader
-          class="bg-light py-2 d-flex flex-wrap justify-content-between align-items-center"
+          class="bg-more-light py-2 d-flex flex-wrap justify-content-between align-items-center"
         >
           <div class="fw-bold d-flex align-items-center">
             <v-icon icon="mdi-account-group" size="small" class="me-1 text-primary" />
@@ -384,6 +388,16 @@ const displayAddress = (item: PostLabel) => {
               variant="outlined"
             >
               {{ selectedIds.length }} / {{ postLabels.length }}
+            </v-chip>
+            <v-chip
+              v-if="postLabelsCount > postLabels.length"
+              color="warning"
+              shape="rounded-pill"
+              class="ms-2"
+              size="x-small"
+              variant="tonal"
+            >
+              전체 {{ postLabelsCount.toLocaleString() }}건 중 최대 3,000건 표시
             </v-chip>
           </div>
 
@@ -543,10 +557,12 @@ const displayAddress = (item: PostLabel) => {
         </CCardFooter>
       </CCard>
 
-      <!-- 4. 인쇄 전용 숨김 시트 (브라우저 print() 호출 시 이 영역만 1:1로 렌더링됨) -->
-      <div class="d-none d-print-block">
-        <PrintSheet :items="selectedItems" :options="printOptions" />
-      </div>
+      <!-- 4. 인쇄 전용 숨김 시트 (Teleport로 body 직속 배치하여 인쇄 시 레이아웃/미리보기 모달 격리) -->
+      <Teleport to="body">
+        <div id="label-print-portal" class="d-none d-print-block">
+          <PrintSheet :items="selectedItems" :options="printOptions" />
+        </div>
+      </Teleport>
 
       <!-- 5. 인쇄 미리보기 모달 다이얼로그 -->
       <CModal size="xl" :visible="showPreviewModal" scrollable @close="showPreviewModal = false">
@@ -556,7 +572,7 @@ const displayAddress = (item: PostLabel) => {
             우편 라벨 인쇄 미리보기 (A4 용지 실측 뷰)
           </CModalTitle>
         </CModalHeader>
-        <CModalBody class="p-0 bg-slate-100" style="max-height: 75vh; overflow-y: auto">
+        <CModalBody class="p-0 bg-more-light" style="max-height: 75vh; overflow-y: auto">
           <PrintSheet :items="selectedItems" :options="printOptions" />
         </CModalBody>
         <CModalFooter>
@@ -573,33 +589,35 @@ const displayAddress = (item: PostLabel) => {
           </v-btn>
         </CModalFooter>
       </CModal>
+
+      <AlertModal ref="refAlertModal" />
     </ContentBody>
   </NoticeAuthGuard>
 </template>
 
-<style scoped>
-/* 화면에서는 인쇄 시트 영역 완전 숨김 */
+<style>
 @media screen {
-  .d-print-block {
+  #label-print-portal {
     display: none !important;
   }
 }
 
-/* 인쇄 모드 시 화면의 모든 UI 숨기고 인쇄 시트만 표출 */
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4 portrait;
+    margin: 0;
   }
-  .d-print-block,
-  .d-print-block * {
-    visibility: visible;
+
+  body > *:not(#label-print-portal) {
+    display: none !important;
   }
-  .d-print-block {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+
+  #label-print-portal {
     display: block !important;
+    position: static !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 </style>
