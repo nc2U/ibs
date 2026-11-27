@@ -493,6 +493,13 @@ class StaffSerializer(serializers.ModelSerializer):
                   'duty_name', 'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
                   'assignments', 'executive')
 
+    @staticmethod
+    def _mask_id_number(id_num):
+        cleaned = str(id_num or '').replace('-', '').strip()
+        if len(cleaned) >= 7:
+            return f"{cleaned[:6]}-{'*' * (len(cleaned) - 6)}"
+        return '*******'
+
     def validate(self, attrs):
         company = attrs.get('company') or getattr(self.instance, 'company', None)
         position = attrs.get('position', getattr(self.instance, 'position', None) if self.instance else None)
@@ -502,6 +509,13 @@ class StaffSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'position': '직위의 소속 회사가 직원의 소속 회사와 일치하지 않습니다.'})
             if grade and grade.company_id != company.pk:
                 raise serializers.ValidationError({'grade': '직급의 소속 회사가 직원의 소속 회사와 일치하지 않습니다.'})
+        if 'id_number' in attrs:
+            raw_id = attrs['id_number']
+            if raw_id and '*' in str(raw_id):
+                if self.instance and raw_id == self._mask_id_number(self.instance.id_number):
+                    attrs.pop('id_number')
+                else:
+                    raise serializers.ValidationError({'id_number': '유효한 주민등록번호를 입력하세요.'})
         return attrs
 
     def to_representation(self, instance):
@@ -516,11 +530,7 @@ class StaffSerializer(serializers.ModelSerializer):
         if not (is_owner or is_admin):
             id_num = data.get('id_number')
             if id_num:
-                cleaned = str(id_num).replace('-', '').strip()
-                if len(cleaned) >= 7:
-                    data['id_number'] = f"{cleaned[:6]}-{'*' * (len(cleaned) - 6)}"
-                else:
-                    data['id_number'] = '*******'
+                data['id_number'] = self._mask_id_number(id_num)
         return data
 
     def create(self, validated_data):

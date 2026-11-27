@@ -28,21 +28,24 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Department): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Department, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
-const canHrWorkManager = computed(() => canHrWorkCreate.value || canHrWorkUpdate.value)
+const canSubmit = computed(() =>
+  props.department ? canHrWorkUpdate.value : canHrWorkCreate.value,
+)
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
 
 const form = ref<Department>({
   pk: undefined,
@@ -56,44 +59,52 @@ const form = ref<Department>({
 
 const formsCheck = computed(() => {
   if (props.department) {
-    const a = form.value.upper_depart === props.department.upper_depart
+    const a = (form.value.upper_depart ?? null) === (props.department.upper_depart ?? null)
     const b = form.value.name === props.department.name
-    const c = form.value.manager === props.department.manager
-    const d = form.value.task === props.department.task
+    const c = (form.value.manager ?? null) === (props.department.manager ?? null)
+    const d = (form.value.task ?? '') === (props.department.task ?? '')
 
     return a && b && c && d
   } else return false
 })
 
 const comStore = useCompany()
-const getPkDeparts = computed(() => comStore.getPkDeparts)
+const getPkDeparts = computed(() =>
+  comStore.getPkDeparts.filter(d => d.value !== props.department?.pk),
+)
 const allStaffs = computed(() => comStore.getAllStaffs)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkManager.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) multiSubmit({ ...form.value })
+    else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Department) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.department?.pk) {
-    emit('on-delete', props.department.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.department.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -121,7 +132,7 @@ onBeforeMount(() => formDataSetup())
               <CFormLabel class="col-sm-2 col-form-label">상위부서</CFormLabel>
               <CCol sm="10">
                 <MultiSelect
-                  v-model.number="form.upper_depart"
+                  v-model="form.upper_depart"
                   mode="single"
                   :options="getPkDeparts"
                   placeholder="상위부서"
@@ -174,12 +185,12 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
-          v-if="canHrWorkManager"
+          v-if="canSubmit"
           type="submit"
           variant="flat"
           :color="department ? 'success' : 'primary'"
           size="small"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
@@ -189,6 +200,7 @@ onBeforeMount(() => formDataSetup())
           variant="flat"
           color="warning"
           size="small"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제

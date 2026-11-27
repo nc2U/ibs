@@ -7,10 +7,17 @@ import { type Department as Depart } from '@/store/types/company.ts'
 import Pagination from '@/components/Pagination'
 import Department from './Department.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: Depart): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Depart, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -25,8 +32,9 @@ const departmentsCount = computed(() => companyStore.departmentsCount)
 
 const departmentPages = (page: number) => companyStore.departmentPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: Depart) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: Depart, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -70,7 +78,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="departmentsCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="departmentPages(10)"
     class="mt-3"

@@ -7,10 +7,17 @@ import { type Grade as GradeType } from '@/store/types/company.ts'
 import Pagination from '@/components/Pagination'
 import Grade from './Grade.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: GradeType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: GradeType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const gradesCount = computed(() => comStore.gradesCount)
 
 const gradePages = (page: number) => comStore.gradePages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: GradeType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: GradeType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -70,7 +78,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="gradesCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="gradePages(10)"
     class="mt-3"

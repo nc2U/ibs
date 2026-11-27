@@ -10,8 +10,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PromotionCandidate): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PromotionCandidate, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -19,11 +19,12 @@ const canHrWorkManage = computed(
   () => canGlobal(PERM.HQ_HR_WORK_CREATE) || canGlobal(PERM.HQ_HR_WORK_UPDATE),
 )
 
-const updateFormModal = ref()
+const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
-const showDetail = () => updateFormModal.value.callModal()
-const multiSubmit = (payload: PromotionCandidate) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const showDetail = () => updateFormModal.value?.callModal()
+const multiSubmit = (payload: PromotionCandidate, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -38,7 +39,7 @@ const getStatusBadge = (status: string) => {
     case 'hold':
       return { color: 'warning', label: '심사 보류' }
     default:
-      return { color: 'light', label: status }
+      return { color: 'secondary', label: status }
   }
 }
 </script>
@@ -50,7 +51,7 @@ const getStatusBadge = (status: string) => {
       <a href="#" @click.prevent="showDetail">{{ candidate.staff_name }}</a>
     </CTableDataCell>
     <CTableDataCell>
-      <v-chip color="light" variant="flat" size="x-small" class="text-body border">
+      <v-chip color="secondary" variant="outlined" size="x-small" class="border">
         {{ candidate.current_grade_code }}
       </v-chip>
       <CIcon icon="cil-arrow-right" class="mx-1 text-muted small" />
@@ -96,7 +97,7 @@ const getStatusBadge = (status: string) => {
         :candidate="candidate"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
-        @close="updateFormModal.close()"
+        @close="updateFormModal?.close()"
       />
     </template>
   </FormModal>

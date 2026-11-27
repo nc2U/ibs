@@ -7,10 +7,17 @@ import { type Position as PositionType } from '@/store/types/company.ts'
 import Pagination from '@/components/Pagination'
 import Position from './Position.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: PositionType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PositionType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const positionsCount = computed(() => companyStore.positionsCount)
 
 const positionPages = (page: number) => companyStore.positionPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: PositionType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: PositionType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -66,7 +74,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="positionsCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="positionPages(10)"
     class="mt-3"

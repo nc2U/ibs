@@ -44,12 +44,12 @@ const form = reactive({
 
 const formsCheck = computed(
   () =>
-    form.staff === '' &&
-    form.leave_type === '' &&
-    form.start_date === '' &&
-    form.end_date === '' &&
-    form.is_cancelled === '' &&
-    form.q === '',
+    !form.staff &&
+    !form.leave_type &&
+    !form.start_date &&
+    !form.end_date &&
+    (form.is_cancelled === '' || form.is_cancelled === null) &&
+    form.q.trim() === '',
 )
 
 const comStore = useCompany()
@@ -64,23 +64,27 @@ const listFiltering = (page = 1) => {
       leave_type: form.leave_type || '',
       start_date: form.start_date || '',
       end_date: form.end_date || '',
-      is_cancelled: form.is_cancelled,
-      q: form.q,
+      is_cancelled: form.is_cancelled ?? '',
+      q: form.q.trim(),
     })
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.staff = ''
   form.leave_type = ''
   form.start_date = ''
   form.end_date = ''
   form.is_cancelled = ''
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

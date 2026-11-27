@@ -28,20 +28,25 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Grade): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Grade, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.grade ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
+
+const normalizeNum = (v: number | string | null | undefined) =>
+  v === '' || v === null || v === undefined ? null : Number(v)
 
 const form = ref<Grade>({
   pk: undefined,
@@ -56,10 +61,14 @@ const form = ref<Grade>({
 const formsCheck = computed(() => {
   if (props.grade) {
     const a = form.value.code === props.grade.code
-    const b = form.value.role === props.grade.role
-    const c = form.value.min_promotion_years === props.grade.min_promotion_years
-    const d = JSON.stringify(form.value.positions) === JSON.stringify(props.grade.positions)
-    const e = form.value.promotion_criteria === props.grade.promotion_criteria
+    const b = (form.value.role ?? '') === (props.grade.role ?? '')
+    const c =
+      normalizeNum(form.value.min_promotion_years) ===
+      normalizeNum(props.grade.min_promotion_years)
+    const d =
+      JSON.stringify([...(form.value.positions || [])]) ===
+      JSON.stringify([...(props.grade.positions || [])])
+    const e = (form.value.promotion_criteria ?? '') === (props.grade.promotion_criteria ?? '')
 
     return a && b && c && d && e
   } else return false
@@ -72,27 +81,38 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({
+        ...form.value,
+        min_promotion_years: normalizeNum(form.value.min_promotion_years),
+        positions: [...(form.value.positions || [])],
+      })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Grade) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.grade?.pk) {
-    emit('on-delete', props.grade.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.grade.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -102,7 +122,7 @@ const formDataSetup = () => {
     form.value.code = props.grade.code
     form.value.role = props.grade.role
     form.value.min_promotion_years = props.grade.min_promotion_years
-    form.value.positions = props.grade.positions
+    form.value.positions = [...(props.grade.positions || [])]
     form.value.promotion_criteria = props.grade.promotion_criteria
   } else form.value.company = props.company || undefined
 }
@@ -193,20 +213,22 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="grade ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="grade"
+          v-if="grade && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제

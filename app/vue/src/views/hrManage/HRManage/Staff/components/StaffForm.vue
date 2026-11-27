@@ -17,20 +17,24 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Staff): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Staff, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.staff ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
+
+const isMaskedIdNumber = computed(() => Boolean(props.staff?.id_number?.includes('*')))
 
 const form = ref<Staff>({
   pk: undefined,
@@ -59,17 +63,19 @@ const formsCheck = computed(() => {
     const c = form.value.name === props.staff.name
     const d = form.value.id_number === props.staff.id_number
     const e = form.value.personal_phone === props.staff.personal_phone
-    const f = form.value.email === props.staff.email
-    const g = form.value.department === props.staff.department
-    const h = form.value.grade === props.staff.grade
-    const i = form.value.position === props.staff.position
-    const j = form.value.duty === props.staff.duty
+    const e2 = (form.value.direct_phone ?? '') === (props.staff.direct_phone ?? '')
+    const e3 = (form.value.direct_fax ?? '') === (props.staff.direct_fax ?? '')
+    const f = (form.value.email ?? '') === (props.staff.email ?? '')
+    const g = (form.value.department ?? '') === (props.staff.department ?? '')
+    const h = (form.value.grade ?? '') === (props.staff.grade ?? '')
+    const i = (form.value.position ?? '') === (props.staff.position ?? '')
+    const j = (form.value.duty ?? '') === (props.staff.duty ?? '')
     const k = form.value.date_join === props.staff.date_join
     const l = form.value.date_leave === props.staff.date_leave
     const m = form.value.status === props.staff.status
-    const n = form.value.user === props.staff.user
+    const n = (form.value.user ?? null) === (props.staff.user ?? null)
 
-    return a && b && c && d && e && f && g && h && i && j && k && l && m && n
+    return a && b && c && d && e && e2 && e3 && f && g && h && i && j && k && l && m && n
   } else return false
 })
 
@@ -101,21 +107,33 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value?.callModal()
+    if (canSubmit.value) {
+      const payload: Staff = {
+        ...form.value,
+        direct_phone: props.staff?.direct_phone ?? form.value.direct_phone ?? '',
+        direct_fax: props.staff?.direct_fax ?? form.value.direct_fax ?? '',
+      }
+      multiSubmit(payload)
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Staff) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.staff?.pk) {
-    emit('on-delete', props.staff.pk)
-    refDelModal.value?.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.staff.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
@@ -132,6 +150,8 @@ const formDataSetup = () => {
     form.value.name = props.staff.name
     form.value.id_number = props.staff.id_number
     form.value.personal_phone = props.staff.personal_phone
+    form.value.direct_phone = props.staff.direct_phone ?? ''
+    form.value.direct_fax = props.staff.direct_fax ?? ''
     form.value.email = props.staff.email
     form.value.department = props.staff.department
     form.value.grade = props.staff.grade
@@ -206,7 +226,15 @@ watch(
                 주민등록번호
               </CFormLabel>
               <CCol sm="8">
+                <CFormInput
+                  v-if="isMaskedIdNumber"
+                  :model-value="form.id_number"
+                  disabled
+                  readonly
+                  title="전체 주민등록번호 열람 권한이 없어 마스킹되어 있습니다."
+                />
                 <input
+                  v-else
                   v-model="form.id_number"
                   v-maska
                   data-maska="######-#######"
@@ -380,14 +408,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           :color="staff ? 'success' : 'primary'"
           size="small"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
-        <v-btn v-if="staff" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="staff && canHrWorkDelete"
+          type="button"
+          size="small"
+          color="warning"
+          :disabled="submitting"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn

@@ -7,10 +7,17 @@ import { type Staff as StaffType } from '@/store/types/company.ts'
 import Pagination from '@/components/Pagination'
 import Staff from './Staff.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: StaffType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const staffsCount = computed(() => companyStore.staffsCount)
 
 const staffPages = (page: number) => companyStore.staffPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: StaffType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: StaffType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -74,7 +82,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="staffsCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="staffPages(10)"
     class="mt-3"

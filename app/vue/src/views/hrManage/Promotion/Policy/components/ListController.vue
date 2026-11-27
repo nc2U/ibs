@@ -27,7 +27,10 @@ const form = reactive({
 
 const formsCheck = computed(
   () =>
-    form.current_grade === '' && form.target_grade === '' && form.is_active === '' && form.q === '',
+    !form.current_grade &&
+    !form.target_grade &&
+    (form.is_active === '' || form.is_active === null) &&
+    form.q.trim() === '',
 )
 
 const comStore = useCompany()
@@ -40,21 +43,25 @@ const listFiltering = (page = 1) => {
       page,
       current_grade: form.current_grade || '',
       target_grade: form.target_grade || '',
-      is_active: form.is_active,
-      q: form.q,
+      is_active: form.is_active ?? '',
+      q: form.q.trim(),
     })
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.current_grade = ''
   form.target_grade = ''
   form.is_active = ''
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

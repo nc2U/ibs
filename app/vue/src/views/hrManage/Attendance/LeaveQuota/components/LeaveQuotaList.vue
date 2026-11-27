@@ -7,10 +7,17 @@ import { type StaffLeaveQuota as StaffLeaveQuotaType } from '@/store/types/compa
 import Pagination from '@/components/Pagination'
 import LeaveQuota from './LeaveQuota.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: StaffLeaveQuotaType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffLeaveQuotaType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const staffLeaveQuotasCount = computed(() => companyStore.staffLeaveQuotasCount)
 
 const staffLeaveQuotaPages = (page: number) => companyStore.staffLeaveQuotaPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: StaffLeaveQuotaType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: StaffLeaveQuotaType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -78,7 +86,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="staffLeaveQuotasCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="staffLeaveQuotaPages(10)"
     class="mt-3"

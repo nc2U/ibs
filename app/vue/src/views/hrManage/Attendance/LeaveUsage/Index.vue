@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
-import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin3'
+import { computed, ref, watch } from 'vue'
+import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin3'
 import { useCompany } from '@/store/pinia/company.ts'
-import type { Company } from '@/store/types/settings.ts'
 import type { StaffLeaveUsage, StaffLeaveUsageFilter } from '@/store/types/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -16,17 +15,12 @@ import LeaveUsageList from './components/LeaveUsageList.vue'
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
-const isHrManager = computed(
-  () =>
-    canGlobal(PERM.HQ_HR_WORK_READ) ||
-    canGlobal(PERM.HQ_HR_WORK_CREATE) ||
-    canGlobal(PERM.HQ_HR_WORK_UPDATE),
-)
-const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
+
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
 
 const dataFilter = ref<StaffLeaveUsageFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   staff: '',
   leave_type: '',
   start_date: '',
@@ -36,99 +30,98 @@ const dataFilter = ref<StaffLeaveUsageFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const url = `/excel/staff-leave-usages/?company=${company.value}`
-  const filter = dataFilter.value
-  let query = ''
-  if (filter.staff) query += `&staff=${filter.staff}`
-  if (filter.leave_type) query += `&leave_type=${filter.leave_type}`
-  if (filter.start_date) query += `&start_date=${filter.start_date}`
-  if (filter.end_date) query += `&end_date=${filter.end_date}`
-  if (filter.is_cancelled !== '') query += `&is_cancelled=${filter.is_cancelled}`
-  if (filter.q) query += `&search=${filter.q}`
-  return `${url}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.staff) sp.set('staff', String(f.staff))
+  if (f.leave_type) sp.set('leave_type', String(f.leave_type))
+  if (f.start_date) sp.set('start_date', f.start_date)
+  if (f.end_date) sp.set('end_date', f.end_date)
+  if (f.is_cancelled !== '' && f.is_cancelled !== undefined)
+    sp.set('is_cancelled', String(f.is_cancelled))
+  if (f.q) sp.set('search', f.q)
+  return `/excel/staff-leave-usages/?${sp.toString()}`
 })
 
 const listFiltering = (payload: StaffLeaveUsageFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchStaffLeaveUsageList({
-      page: payload.page,
-      com: payload.com,
-      staff: payload.staff,
-      leave_type: payload.leave_type,
-      start_date: payload.start_date,
-      end_date: payload.end_date,
-      is_cancelled: payload.is_cancelled,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchStaffLeaveUsageList(dataFilter.value)
 }
 
-const fetchStaffLeaveUsageList = (payload: StaffLeaveUsageFilter) =>
-  comStore.fetchStaffLeaveUsageList(payload)
-const fetchAllStaffList = (com?: number) => comStore.fetchAllStaffList(com)
-
-const createStaffLeaveUsage = (payload: StaffLeaveUsage, p?: number, c?: number) =>
-  comStore.createStaffLeaveUsage(payload, p, c)
-const updateStaffLeaveUsage = (payload: StaffLeaveUsage, p?: number, c?: number) =>
-  comStore.updateStaffLeaveUsage(payload, p, c)
-const deleteStaffLeaveUsage = (pk: number, com: number) => comStore.deleteStaffLeaveUsage(pk, com)
-
-const multiSubmit = (payload: StaffLeaveUsage) => {
+const multiSubmit = async (payload: StaffLeaveUsage, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) updateStaffLeaveUsage(payload, page, company.value)
-    else createStaffLeaveUsage(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaffLeaveUsage(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaffLeaveUsage(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteStaffLeaveUsage(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaffLeaveUsage(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   if (company.value) {
     dataFilter.value.page = num
     dataFilter.value.com = company.value
-    fetchStaffLeaveUsageList(dataFilter.value)
+    comStore.fetchStaffLeaveUsageList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchStaffLeaveUsageList({ com: pk })
-  fetchAllStaffList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([comStore.fetchStaffLeaveUsageList({ com: pk }), comStore.fetchAllStaffList(pk)])
 }
+
 const dataReset = () => {
   comStore.staffLeaveUsageList = []
+  comStore.staffLeaveUsagesCount = 0
+  comStore.allStaffLeaveUsageList = []
+  comStore.staffLeaveUsage = null
   comStore.allStaffList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = {
+      page: 1,
+      com: newVal,
+      staff: '',
+      leave_type: '',
+      start_date: '',
+      end_date: '',
+      is_cancelled: '',
+      q: '',
+    }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <ComHrAuthGuard>
+  <ComHrAuthGuard require-hr-read>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
-        <ListController @list-filtering="listFiltering" />
+        <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddLeaveUsage v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="휴가 사용 내역"
@@ -138,6 +131,7 @@ onMounted(async () => {
           :disabled="!company"
         />
         <LeaveUsageList
+          :active-page="dataFilter.page || 1"
           @page-select="pageSelect"
           @multi-submit="multiSubmit"
           @on-delete="onDelete"

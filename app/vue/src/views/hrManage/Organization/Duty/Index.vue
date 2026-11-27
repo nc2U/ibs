@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -16,75 +16,83 @@ import DutyList from './components/DutyList.vue'
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<ComFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => comStore.company?.pk ?? undefined)
 const comName = computed(() => comStore.company?.name || undefined)
 
-const excelUrl = computed(
-  () => `/excel/duties/?company=${company.value}&search=${dataFilter.value.q}`,
-)
+const excelUrl = computed(() => {
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  if (dataFilter.value.q) sp.set('search', dataFilter.value.q)
+  return `/excel/duties/?${sp.toString()}`
+})
 
 const listFiltering = (payload: ComFilter) => {
-  dataFilter.value = payload
-  fetchDutyList({
-    page: payload.page,
-    com: payload.com,
-    q: payload.q,
-  })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchDutyList(dataFilter.value)
 }
 
-const fetchDutyList = (payload: ComFilter) => comStore.fetchDutyList(payload)
-
-const createDuty = (payload: Duty, p?: number, c?: number) => comStore.createDuty(payload, p, c)
-const updateDuty = (payload: Duty, p?: number, c?: number) => comStore.updateDuty(payload, p, c)
-const deleteDuty = (pk: number, com: number) => comStore.deleteDuty(pk, com)
-
-const multiSubmit = (payload: Duty) => {
+const multiSubmit = async (payload: Duty, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (!!payload.pk) updateDuty(payload, page, company.value)
-    else createDuty(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateDuty(payload, page, company.value, dataFilter.value)
+      : await comStore.createDuty(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteDuty(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteDuty(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   dataFilter.value.page = num
   if (company.value) {
     dataFilter.value.com = company.value
-    fetchDutyList(dataFilter.value)
+    comStore.fetchDutyList(dataFilter.value)
   }
 }
 
-const comSelect = (target: number | null) => {
+const dataReset = () => {
   comStore.dutyList = []
-  if (!!target) fetchDutyList({ com: target })
+  comStore.dutysCount = 0
+  comStore.allDutyList = []
+  comStore.duty = null
 }
 
 const loading = ref(true)
-onMounted(async () => {
-  await fetchDutyList({ com: company.value || comStore.initComId })
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = { page: 1, com: newVal, q: '' }
+    if (newVal) {
+      loading.value = true
+      await comStore.fetchDutyList({ com: newVal })
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
@@ -96,7 +104,12 @@ onMounted(async () => {
           filename="직책_목록.xlsx"
           :disabled="!company"
         />
-        <DutyList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
+        <DutyList
+          :active-page="dataFilter.page || 1"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @page-select="pageSelect"
+        />
       </CCardBody>
     </ContentBody>
   </ComHrAuthGuard>

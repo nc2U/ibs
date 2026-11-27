@@ -20,8 +20,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Department): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Department, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -29,11 +29,12 @@ const canHrWorkManager = computed(
   () => canGlobal(PERM.HQ_HR_WORK_CREATE) || canGlobal(PERM.HQ_HR_WORK_UPDATE),
 )
 
-const updateFormModal = ref()
+const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
-const showDetail = () => updateFormModal.value.callModal()
-const multiSubmit = (payload: Department) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const showDetail = () => updateFormModal.value?.callModal()
+const multiSubmit = (payload: Department, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 const getUpperName = (up: number | null) => {
   const deps = up ? props.getDeparts : []
   return up && !!deps.length ? deps.filter(d => d.value === up).map(d => d.label)[0] : ''
@@ -61,7 +62,7 @@ const getUpperName = (up: number | null) => {
         :department="department"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
-        @close="updateFormModal.close()"
+        @close="updateFormModal?.close()"
       />
     </template>
   </FormModal>

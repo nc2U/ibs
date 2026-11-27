@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/hrManage/_menu/headermixin4.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -16,9 +16,11 @@ import PolicyList from './components/PolicyList.vue'
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<PromotionPolicyFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   current_grade: '',
   target_grade: '',
   is_active: '',
@@ -26,96 +28,94 @@ const dataFilter = ref<PromotionPolicyFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => comStore.company?.pk ?? undefined)
 const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const url = `/excel/staff-promotion-policies/?company=${company.value}`
-  const filter = dataFilter.value
-  let query = ''
-  if (filter.current_grade) query += `&current_grade=${filter.current_grade}`
-  if (filter.target_grade) query += `&target_grade=${filter.target_grade}`
-  if (filter.is_active !== '' && filter.is_active !== undefined)
-    query += `&is_active=${filter.is_active}`
-  if (filter.q) query += `&search=${filter.q}`
-  return `${url}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.current_grade) sp.set('current_grade', String(f.current_grade))
+  if (f.target_grade) sp.set('target_grade', String(f.target_grade))
+  if (f.is_active !== '' && f.is_active !== undefined)
+    sp.set('is_active', String(f.is_active))
+  if (f.q) sp.set('search', f.q)
+  return `/excel/staff-promotion-policies/?${sp.toString()}`
 })
 
 const listFiltering = (payload: PromotionPolicyFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchPromotionPolicyList({
-      page: payload.page,
-      com: payload.com,
-      current_grade: payload.current_grade,
-      target_grade: payload.target_grade,
-      is_active: payload.is_active,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchPromotionPolicyList(dataFilter.value)
 }
 
-const fetchPromotionPolicyList = (payload: PromotionPolicyFilter) =>
-  comStore.fetchPromotionPolicyList(payload)
-const fetchAllGradeList = (com?: number) => comStore.fetchAllGradeList(com)
-
-const createPromotionPolicy = (payload: PromotionPolicy, p?: number, c?: number) =>
-  comStore.createPromotionPolicy(payload, p, c)
-const updatePromotionPolicy = (payload: PromotionPolicy, p?: number, c?: number) =>
-  comStore.updatePromotionPolicy(payload, p, c)
-const deletePromotionPolicy = (pk: number, com: number) => comStore.deletePromotionPolicy(pk, com)
-
-const multiSubmit = (payload: PromotionPolicy) => {
+const multiSubmit = async (payload: PromotionPolicy, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) updatePromotionPolicy(payload, page, company.value)
-    else createPromotionPolicy(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updatePromotionPolicy(payload, page, company.value, dataFilter.value)
+      : await comStore.createPromotionPolicy(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deletePromotionPolicy(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deletePromotionPolicy(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   if (company.value) {
     dataFilter.value.page = num
     dataFilter.value.com = company.value
-    fetchPromotionPolicyList(dataFilter.value)
+    comStore.fetchPromotionPolicyList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchPromotionPolicyList({ com: pk })
-  fetchAllGradeList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([comStore.fetchPromotionPolicyList({ com: pk }), comStore.fetchAllGradeList(pk)])
 }
+
 const dataReset = () => {
   comStore.promotionPolicyList = []
+  comStore.promotionPoliciesCount = 0
+  comStore.allPromotionPolicyList = []
+  comStore.promotionPolicy = null
   comStore.allGradeList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = {
+      page: 1,
+      com: newVal,
+      current_grade: '',
+      target_grade: '',
+      is_active: '',
+      q: '',
+    }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <ComHrAuthGuard>
+  <ComHrAuthGuard require-hr-read>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
-        <ListController @list-filtering="listFiltering" />
+        <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddPolicy v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="직급별 승급 기준 및 정책 목록"
@@ -124,7 +124,12 @@ onMounted(async () => {
           filename="직급별_승급_정책_목록.xlsx"
           :disabled="!company"
         />
-        <PolicyList @page-select="pageSelect" @multi-submit="multiSubmit" @on-delete="onDelete" />
+        <PolicyList
+          :active-page="dataFilter.page || 1"
+          @page-select="pageSelect"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+        />
       </CCardBody>
     </ContentBody>
   </ComHrAuthGuard>

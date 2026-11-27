@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin3'
+import { ref, computed, watch } from 'vue'
+import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin3'
 import { useCompany } from '@/store/pinia/company.ts'
-import type { Company } from '@/store/types/settings.ts'
 import { type StaffLeaveQuota, type StaffLeaveQuotaFilter } from '@/store/types/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -18,110 +17,106 @@ const currentYear = new Date().getFullYear()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
-const isHrManager = computed(
-  () =>
-    canGlobal(PERM.HQ_HR_WORK_READ) ||
-    canGlobal(PERM.HQ_HR_WORK_CREATE) ||
-    canGlobal(PERM.HQ_HR_WORK_UPDATE),
-)
-const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
+
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
 
 const dataFilter = ref<StaffLeaveQuotaFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   staff: '',
   year: currentYear,
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const url = `/excel/staff-leave-quotas/?company=${company.value}`
-  const filter = dataFilter.value
-  let query = ''
-  if (filter.year) query += `&year=${filter.year}`
-  if (filter.staff) query += `&staff=${filter.staff}`
-  if (filter.q) query += `&search=${filter.q}`
-  return `${url}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.year) sp.set('year', String(f.year))
+  if (f.staff) sp.set('staff', String(f.staff))
+  if (f.q) sp.set('search', f.q)
+  return `/excel/staff-leave-quotas/?${sp.toString()}`
 })
 
 const listFiltering = (payload: StaffLeaveQuotaFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchStaffLeaveQuotaList({
-      page: payload.page,
-      com: payload.com,
-      staff: payload.staff,
-      year: payload.year,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchStaffLeaveQuotaList(dataFilter.value)
 }
 
-const fetchStaffLeaveQuotaList = (payload: StaffLeaveQuotaFilter) =>
-  comStore.fetchStaffLeaveQuotaList(payload)
-const fetchAllStaffList = (com?: number) => comStore.fetchAllStaffList(com)
-
-const createStaffLeaveQuota = (payload: StaffLeaveQuota, p?: number, c?: number) =>
-  comStore.createStaffLeaveQuota(payload, p, c)
-const updateStaffLeaveQuota = (payload: StaffLeaveQuota, p?: number, c?: number) =>
-  comStore.updateStaffLeaveQuota(payload, p, c)
-const deleteStaffLeaveQuota = (pk: number, com: number) => comStore.deleteStaffLeaveQuota(pk, com)
-
-const multiSubmit = (payload: StaffLeaveQuota) => {
+const multiSubmit = async (payload: StaffLeaveQuota, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) updateStaffLeaveQuota(payload, page, company.value)
-    else createStaffLeaveQuota(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaffLeaveQuota(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaffLeaveQuota(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteStaffLeaveQuota(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaffLeaveQuota(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   if (company.value) {
     dataFilter.value.page = num
     dataFilter.value.com = company.value
-    fetchStaffLeaveQuotaList(dataFilter.value)
+    comStore.fetchStaffLeaveQuotaList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchStaffLeaveQuotaList({ com: pk, year: dataFilter.value.year })
-  fetchAllStaffList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    comStore.fetchStaffLeaveQuotaList({ com: pk, year: dataFilter.value.year }),
+    comStore.fetchAllStaffList(pk),
+  ])
 }
+
 const dataReset = () => {
   comStore.staffLeaveQuotaList = []
+  comStore.staffLeaveQuotasCount = 0
+  comStore.allStaffLeaveQuotaList = []
+  comStore.staffLeaveQuota = null
   comStore.allStaffList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = {
+      page: 1,
+      com: newVal,
+      staff: '',
+      year: currentYear,
+      q: '',
+    }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <ComHrAuthGuard>
+  <ComHrAuthGuard require-hr-read>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
-        <ListController @list-filtering="listFiltering" />
+        <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddLeaveQuota v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="연차 부여 및 잔여 현황"
@@ -131,6 +126,7 @@ onMounted(async () => {
           :disabled="!company"
         />
         <LeaveQuotaList
+          :active-page="dataFilter.page || 1"
           @page-select="pageSelect"
           @multi-submit="multiSubmit"
           @on-delete="onDelete"

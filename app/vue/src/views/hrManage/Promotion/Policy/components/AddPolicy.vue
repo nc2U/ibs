@@ -9,20 +9,21 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps<{ company?: string | null }>()
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PromotionPolicy): void
+  (e: 'multi-submit', payload: PromotionPolicy, done?: (ok: boolean) => void): void
 }>()
 
-const refFormModal = ref()
-const refAlertModal = ref()
+const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
 const createConfirm = () => {
-  if (canHrWorkCreate.value) refFormModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkCreate.value) refFormModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
-const multiSubmit = (payload: PromotionPolicy) => emit('multi-submit', payload)
+const multiSubmit = (payload: PromotionPolicy, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
 </script>
 
 <template>
@@ -35,7 +36,7 @@ const multiSubmit = (payload: PromotionPolicy) => emit('multi-submit', payload)
   <FormModal ref="refFormModal" size="lg">
     <template #header>승급 정책 신규 등록</template>
     <template #default>
-      <PolicyForm :company="company" @multi-submit="multiSubmit" @close="refFormModal.close()" />
+      <PolicyForm :company="company" @multi-submit="multiSubmit" @close="refFormModal?.close()" />
     </template>
   </FormModal>
 

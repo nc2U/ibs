@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { Company } from '@/store/types/settings.ts'
 import { type Position, type ComFilter } from '@/store/types/company.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -17,89 +16,88 @@ import PositionList from './components/PositionList.vue'
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const refListControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<ComFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
-const excelUrl = computed(
-  () => `/excel/positions/?company=${company.value}&search=${dataFilter.value.q}`,
-)
+const excelUrl = computed(() => {
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  if (dataFilter.value.q) sp.set('search', dataFilter.value.q)
+  return `/excel/positions/?${sp.toString()}`
+})
 
 const listFiltering = (payload: ComFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchPositionList({
-      page: payload.page,
-      com: payload.com,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchPositionList(dataFilter.value)
 }
 
-const fetchAllGradeList = (com?: number) => comStore.fetchAllGradeList(com)
-const fetchPositionList = (payload: ComFilter) => comStore.fetchPositionList(payload)
-
-const createPosition = (payload: Position, p?: number, c?: number) =>
-  comStore.createPosition(payload, p, c)
-const updatePosition = (payload: Position, p?: number, c?: number) =>
-  comStore.updatePosition(payload, p, c)
-const deletePosition = (pk: number, com: number) => comStore.deletePosition(pk, com)
-
-const multiSubmit = (payload: Position) => {
+const multiSubmit = async (payload: Position, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (!!payload.pk) updatePosition(payload, page, company.value)
-    else createPosition(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updatePosition(payload, page, company.value, dataFilter.value)
+      : await comStore.createPosition(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deletePosition(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deletePosition(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   dataFilter.value.page = num
   if (company.value) {
     dataFilter.value.com = company.value
-    fetchPositionList(dataFilter.value)
+    comStore.fetchPositionList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchAllGradeList(pk)
-  fetchPositionList({ com: pk })
+const dataSetup = async (pk: number) => {
+  await Promise.all([comStore.fetchAllGradeList(pk), comStore.fetchPositionList({ com: pk })])
 }
 
 const dataReset = () => {
   comStore.allGradeList = []
   comStore.positionList = []
-}
-
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
+  comStore.positionsCount = 0
+  comStore.allPositionList = []
+  comStore.position = null
 }
 
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    refListControl.value?.clearFilter()
+    dataFilter.value = { page: 1, com: newVal, q: '' }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
         <ListController ref="refListControl" @list-filtering="listFiltering" />
@@ -111,7 +109,12 @@ onMounted(async () => {
           filename="직위_목록.xlsx"
           :disabled="!company"
         />
-        <PositionList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
+        <PositionList
+          :active-page="dataFilter.page || 1"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @page-select="pageSelect"
+        />
       </CCardBody>
     </ContentBody>
   </ComHrAuthGuard>

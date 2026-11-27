@@ -7,8 +7,8 @@ import LeaveQuotaForm from './LeaveQuotaForm.vue'
 
 defineProps<{ quota: StaffLeaveQuota }>()
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffLeaveQuota): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffLeaveQuota, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -19,8 +19,9 @@ const canHrWorkManage = computed(
 const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
 const showDetail = () => updateFormModal.value?.callModal()
-const multiSubmit = (payload: StaffLeaveQuota) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: StaffLeaveQuota, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>

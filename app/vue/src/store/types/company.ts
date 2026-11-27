@@ -37,11 +37,11 @@ export type StaffFilter = {
   page?: number
   com?: number
   sort?: '' | '1' | '2'
-  dep?: string
-  gra?: string
-  pos?: string
-  dut?: string
-  sts?: '1' | '2' | '3' | '4'
+  dep?: string | number
+  gra?: string | number
+  pos?: string | number
+  dut?: string | number
+  sts?: '' | '1' | '2' | '3' | '4'
   q?: string
 }
 
@@ -106,7 +106,7 @@ export type RepresentType = 'none' | 'sole' | 'joint' | 'each'
 export interface Executive {
   pk?: number
   company?: string
-  staff: number
+  staff: number | null
   staff_name?: string
   full_name?: string
   name: string

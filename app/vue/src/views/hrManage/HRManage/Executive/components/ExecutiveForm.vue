@@ -15,14 +15,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Executive): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Executive, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.executive ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -37,9 +38,9 @@ const getPkStaffs = computed(() =>
 const executiveTypes = [
   { value: 'inside', label: '사내이사' },
   { value: 'outside', label: '사외이사' },
-  { value: 'non_standing_director', label: '기타비상무이사' },
+  { value: 'non_standing', label: '기타비상무이사' },
   { value: 'auditor', label: '감사' },
-  { value: 'advisor', label: '고문/자문' },
+  { value: 'advisor', label: '고문' },
 ]
 
 const representTypes = [
@@ -52,11 +53,12 @@ const representTypes = [
 const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
 const form = ref<Executive>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   name: '',
   contact: '',
   rank: null,
@@ -73,18 +75,18 @@ const form = ref<Executive>({
 const formsCheck = computed(() => {
   if (props.executive) {
     const a = form.value.pk === props.executive.pk
-    const b = form.value.staff === props.executive.staff
-    const c = form.value.name === props.executive.name
-    const d = form.value.contact === props.executive.contact
-    const e = form.value.rank === props.executive.rank
+    const b = (form.value.staff ?? null) === (props.executive.staff ?? null)
+    const c = (form.value.name ?? '') === (props.executive.name ?? '')
+    const d = (form.value.contact ?? '') === (props.executive.contact ?? '')
+    const e = (form.value.rank ?? null) === (props.executive.rank ?? null)
     const f = form.value.executive_type === props.executive.executive_type
     const g = form.value.is_registered === props.executive.is_registered
     const h = form.value.is_standing === props.executive.is_standing
     const i = form.value.represent_type === props.executive.represent_type
-    const j = form.value.term_start === props.executive.term_start
-    const k = form.value.term_end === props.executive.term_end
-    const l = form.value.appointed_date === props.executive.appointed_date
-    const m = form.value.note === props.executive.note
+    const j = (form.value.term_start ?? null) === (props.executive.term_start ?? null)
+    const k = (form.value.term_end ?? null) === (props.executive.term_end ?? null)
+    const l = (form.value.appointed_date ?? null) === (props.executive.appointed_date ?? null)
+    const m = (form.value.note ?? '') === (props.executive.note ?? '')
 
     return a && b && c && d && e && f && g && h && i && j && k && l && m
   } else return false
@@ -94,23 +96,33 @@ const isStaffRequired = computed(() => !form.value.name)
 const isNameRequired = computed(() => !form.value.staff)
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    !form.value.rank ||
+    (!form.value.staff && !form.value.name?.trim())
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
+    if (canSubmit.value) multiSubmit({ ...form.value })
     else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Executive) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value?.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
@@ -171,11 +183,12 @@ watch(
           </CCol>
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">임원 직위</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">임원 직위</CFormLabel>
               <CCol sm="8">
                 <Multiselect
                   v-model="form.rank"
                   :options="getPkExecutiveRanks"
+                  required
                   placeholder="직위 선택"
                 />
               </CCol>
@@ -251,12 +264,17 @@ watch(
               <CFormLabel class="col-sm-4 col-form-label">등기 / 상근 여부</CFormLabel>
               <CCol sm="8" class="d-flex align-items-center gap-4 pt-1">
                 <CFormCheck
-                  id="is_registered"
+                  :id="`is_registered_${executive?.pk ?? 'new'}`"
                   v-model="form.is_registered"
                   label="등기 임원"
                   inline
                 />
-                <CFormCheck id="is_standing" v-model="form.is_standing" label="상근" inline />
+                <CFormCheck
+                  :id="`is_standing_${executive?.pk ?? 'new'}`"
+                  v-model="form.is_standing"
+                  label="상근"
+                  inline
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -305,14 +323,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           :color="executive ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
-        <v-btn v-if="executive" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="executive && canHrWorkDelete"
+          type="button"
+          size="small"
+          color="warning"
+          :disabled="submitting"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn
@@ -337,7 +363,8 @@ watch(
       <v-btn
         color="warning"
         size="small"
-        @click="deleteObject(executive?.pk as number)"
+        :disabled="submitting"
+        @click="executive?.pk && deleteObject(executive.pk)"
       >
         삭제
       </v-btn>

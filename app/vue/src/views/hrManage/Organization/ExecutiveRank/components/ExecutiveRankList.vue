@@ -7,10 +7,17 @@ import { type ExecutiveRank as ExecutiveRankType } from '@/store/types/company.t
 import Pagination from '@/components/Pagination'
 import ExecutiveRank from './ExecutiveRank.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: ExecutiveRankType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: ExecutiveRankType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const executiveRanksCount = computed(() => companyStore.executiveRanksCount)
 
 const executiveRankPages = (page: number) => companyStore.executiveRankPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: ExecutiveRankType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: ExecutiveRankType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -66,7 +74,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="executiveRanksCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="executiveRankPages(10)"
     class="mt-3"

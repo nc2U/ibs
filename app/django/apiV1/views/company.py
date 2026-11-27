@@ -1,4 +1,4 @@
-from django_filters.rest_framework import FilterSet, CharFilter
+from django_filters.rest_framework import FilterSet, CharFilter, DateFilter
 from rest_framework import viewsets
 
 from company.models import (
@@ -221,13 +221,13 @@ class ExecutiveViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
 
 
 class StaffFilter(FilterSet):
-    department = CharFilter(field_name='assignments__department', lookup_expr='exact')
+    department = CharFilter(field_name='assignments__department', lookup_expr='exact', distinct=True)
     position = CharFilter(field_name='position', lookup_expr='exact')
-    duty = CharFilter(field_name='assignments__duty', lookup_expr='exact')
+    duty = CharFilter(field_name='assignments__duty', lookup_expr='exact', distinct=True)
 
     class Meta:
         model = Staff
-        fields = ('company', 'sort', 'employment_type', 'department', 'position', 'duty', 'user', 'status')
+        fields = ('company', 'sort', 'employment_type', 'department', 'grade', 'position', 'duty', 'user', 'status')
 
 
 class StaffViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
@@ -357,12 +357,21 @@ class StaffLeaveQuotaViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
             'update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
+class StaffLeaveUsageFilter(FilterSet):
+    start_date = DateFilter(field_name='start_date', lookup_expr='gte')
+    end_date = DateFilter(field_name='end_date', lookup_expr='lte')
+
+    class Meta:
+        model = StaffLeaveUsage
+        fields = ('company', 'staff', 'leave_type', 'is_cancelled', 'start_date', 'end_date')
+
+
 class StaffLeaveUsageViewSet(CompanyDataFilterMixin, viewsets.ModelViewSet):
     queryset = StaffLeaveUsage.objects.all().select_related('company', 'staff', 'approval_doc')
     serializer_class = StaffLeaveUsageSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneThousand
-    filterset_fields = ('company', 'staff', 'leave_type', 'is_cancelled')
+    filterset_class = StaffLeaveUsageFilter
     search_fields = ('staff__name', 'reason')
 
     @property

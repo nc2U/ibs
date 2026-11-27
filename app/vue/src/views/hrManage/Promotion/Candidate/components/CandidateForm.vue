@@ -15,14 +15,17 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PromotionCandidate): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PromotionCandidate, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() =>
+  props.candidate ? canHrWorkUpdate.value : canHrWorkCreate.value,
+)
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -57,15 +60,32 @@ const statusOptions = [
   { value: 'hold', label: '심사 보류' },
 ]
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<PromotionCandidate>({
+const normalizeNum = (v: number | string | null | undefined) =>
+  v === '' || v === null || v === undefined ? null : Number(v)
+
+const getLocalToday = () => {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+type CandidateFormState = Omit<PromotionCandidate, 'staff' | 'policy'> & {
+  staff: number | null
+  policy: number | null
+}
+
+const form = ref<CandidateFormState>({
   pk: undefined,
   company: undefined,
-  policy: null as any,
-  staff: null as any,
+  policy: null,
+  staff: null,
   eval_year: currentYear,
   tenure_years: 0,
   avg_eval_score: null,
@@ -76,8 +96,7 @@ const form = ref<PromotionCandidate>({
 
 const onStatusChange = (newStatus: PromotionStatus) => {
   if (newStatus === 'approved' && !form.value.promoted_date) {
-    const todayStr = new Date().toISOString().substring(0, 10)
-    form.value.promoted_date = todayStr
+    form.value.promoted_date = getLocalToday()
   } else if (newStatus !== 'approved') {
     form.value.promoted_date = null
   }
@@ -86,42 +105,61 @@ const onStatusChange = (newStatus: PromotionStatus) => {
 const formsCheck = computed(() => {
   if (props.candidate) {
     const a = form.value.pk === props.candidate.pk
-    const b = form.value.policy === props.candidate.policy
-    const c = form.value.staff === props.candidate.staff
+    const b = (form.value.policy ?? null) === (props.candidate.policy ?? null)
+    const c = (form.value.staff ?? null) === (props.candidate.staff ?? null)
     const d = form.value.eval_year === props.candidate.eval_year
     const e = Number(form.value.tenure_years) === Number(props.candidate.tenure_years)
-    const f = Number(form.value.avg_eval_score) === Number(props.candidate.avg_eval_score)
+    const f =
+      normalizeNum(form.value.avg_eval_score) === normalizeNum(props.candidate.avg_eval_score)
     const g = form.value.status === props.candidate.status
-    const h = form.value.committee_review === props.candidate.committee_review
-    const i = form.value.promoted_date === props.candidate.promoted_date
+    const h = (form.value.committee_review ?? '') === (props.candidate.committee_review ?? '')
+    const i = (form.value.promoted_date ?? null) === (props.candidate.promoted_date ?? null)
 
     return a && b && c && d && e && f && g && h && i
   } else return false
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    !form.value.eval_year ||
+    form.value.staff === null ||
+    form.value.policy === null ||
+    !form.value.status
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({
+        ...form.value,
+        staff: form.value.staff,
+        policy: form.value.policy,
+        avg_eval_score: normalizeNum(form.value.avg_eval_score),
+      })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: PromotionCandidate) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -287,20 +325,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="candidate ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="candidate"
+          v-if="candidate && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제
@@ -328,8 +368,8 @@ watch(
         color="warning"
         size="small"
         variant="flat"
-        :disabled="!candidate?.pk"
-        @click="deleteObject(candidate?.pk as number)"
+        :disabled="!candidate?.pk || submitting"
+        @click="candidate?.pk && deleteObject(candidate.pk)"
       >
         삭제
       </v-btn>

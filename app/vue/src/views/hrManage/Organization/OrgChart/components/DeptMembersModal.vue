@@ -22,7 +22,7 @@ const emit = defineEmits<{
     </CModalHeader>
     <CModalBody v-if="node">
       <!-- 부서 기본 정보 -->
-      <div v-if="node.task" class="alert alert-light border mb-3 bg-more-light">
+      <div v-if="node.task" class="p-3 border rounded mb-3 bg-more-light">
         <strong class="d-block mb-1 text-secondary">
           <CIcon name="cilTask" class="me-1" /> 주요 담당 업무
         </strong>
@@ -40,7 +40,10 @@ const emit = defineEmits<{
         >
       </div>
 
-      <div v-if="!node.members.length" class="text-center text-muted py-4 border rounded bg-light">
+      <div
+        v-if="!node.members.length"
+        class="text-center text-muted py-4 border rounded bg-more-light"
+      >
         등록된 소속 직원이 없습니다.
       </div>
 

@@ -140,10 +140,10 @@ class ExportStaffs(CompanyExportMixin):
         is_admin = user and (user.is_superuser or getattr(user, 'work_manager', False))
 
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
-        obj_list = obj_list.filter(assignments__department_id=department) if department else obj_list
+        obj_list = obj_list.filter(assignments__department_id=department).distinct() if department else obj_list
         obj_list = obj_list.filter(grade_id=grade) if grade else obj_list
         obj_list = obj_list.filter(position_id=position) if position else obj_list
-        obj_list = obj_list.filter(assignments__duty_id=duty) if duty else obj_list
+        obj_list = obj_list.filter(assignments__duty_id=duty).distinct() if duty else obj_list
         obj_list = obj_list.filter(status=status) if status else obj_list
         if search:
             search_q = (
@@ -1426,6 +1426,7 @@ class ExportStaffLeaveUsages(CompanyExportMixin):
         leave_type = request.GET.get('leave_type')
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
+        is_cancelled = request.GET.get('is_cancelled')
         search = request.GET.get('search')
 
         if staff:
@@ -1436,6 +1437,10 @@ class ExportStaffLeaveUsages(CompanyExportMixin):
             obj_list = obj_list.filter(start_date__gte=start_date)
         if end_date:
             obj_list = obj_list.filter(end_date__lte=end_date)
+        if is_cancelled in ('true', 'True', '1'):
+            obj_list = obj_list.filter(is_cancelled=True)
+        elif is_cancelled in ('false', 'False', '0'):
+            obj_list = obj_list.filter(is_cancelled=False)
         if search:
             obj_list = obj_list.filter(
                 Q(staff__name__icontains=search) |
@@ -1537,7 +1542,7 @@ class ExportStaffAttendanceStatus(CompanyExportMixin):
         search = request.GET.get('search')
 
         if department:
-            staff_list = staff_list.filter(assignments__department_id=department)
+            staff_list = staff_list.filter(assignments__department_id=department).distinct()
         if status:
             staff_list = staff_list.filter(status=status)
         if search:
@@ -1755,6 +1760,7 @@ class ExportPromotionCandidates(CompanyExportMixin):
         ).prefetch_related('staff__assignments__department')
         eval_year = request.GET.get('eval_year')
         status = request.GET.get('status')
+        policy = request.GET.get('policy')
         staff = request.GET.get('staff')
         search = request.GET.get('search')
 
@@ -1762,6 +1768,8 @@ class ExportPromotionCandidates(CompanyExportMixin):
             obj_list = obj_list.filter(eval_year=eval_year)
         if status:
             obj_list = obj_list.filter(status=status)
+        if policy:
+            obj_list = obj_list.filter(policy_id=policy)
         if staff:
             obj_list = obj_list.filter(staff_id=staff)
         if search:

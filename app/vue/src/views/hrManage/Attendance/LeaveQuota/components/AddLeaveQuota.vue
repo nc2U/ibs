@@ -8,7 +8,9 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps<{ company?: string }>()
-const emit = defineEmits<{ (e: 'multi-submit', payload: StaffLeaveQuota): void }>()
+const emit = defineEmits<{
+  (e: 'multi-submit', payload: StaffLeaveQuota, done?: (ok: boolean) => void): void
+}>()
 
 const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
@@ -20,7 +22,8 @@ const createConfirm = () => {
   if (canHrWorkCreate.value) refFormModal.value?.callModal()
   else refAlertModal.value?.callModal()
 }
-const multiSubmit = (payload: StaffLeaveQuota) => emit('multi-submit', payload)
+const multiSubmit = (payload: StaffLeaveQuota, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
 </script>
 
 <template>

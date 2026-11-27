@@ -7,8 +7,8 @@ import FormModal from '@/components/Modals/FormModal.vue'
 
 defineProps<{ staff: Staff }>()
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Staff): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Staff, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -21,8 +21,9 @@ const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 const badgeColor = ['', 'success', 'teal-darken-2', 'warning', 'error']
 
 const showDetail = () => updateFormModal.value?.callModal()
-const multiSubmit = (payload: Staff) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: Staff, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>

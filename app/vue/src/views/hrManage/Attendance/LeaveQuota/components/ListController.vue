@@ -24,7 +24,9 @@ const form = reactive({
   q: '',
 })
 
-const formsCheck = computed(() => form.staff === '' && form.year === currentYear && form.q === '')
+const formsCheck = computed(
+  () => !form.staff && form.year === currentYear && form.q.trim() === '',
+)
 
 const comStore = useCompany()
 const staffLeaveQuotasCount = computed(() => comStore.staffLeaveQuotasCount)
@@ -36,19 +38,23 @@ const listFiltering = (page = 1) => {
       page,
       staff: form.staff || '',
       year: form.year || '',
-      q: form.q,
+      q: form.q.trim(),
     })
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.staff = ''
   form.year = currentYear
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

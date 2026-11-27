@@ -15,14 +15,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffLeaveQuota): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffLeaveQuota, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.quota ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -44,11 +45,14 @@ const years = Array.from({ length: 6 }, (_, i) => ({
 const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<StaffLeaveQuota>({
+type LeaveQuotaFormState = Omit<StaffLeaveQuota, 'staff'> & { staff: number | null }
+
+const form = ref<LeaveQuotaFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   year: currentYear,
   granted_days: 15.0,
   carry_over_days: 0.0,
@@ -75,37 +79,49 @@ const totalGranted = computed(
 const formsCheck = computed(() => {
   if (props.quota) {
     const a = form.value.pk === props.quota.pk
-    const b = form.value.staff === props.quota.staff
+    const b = (form.value.staff ?? null) === (props.quota.staff ?? null)
     const c = form.value.year === props.quota.year
     const d = Number(form.value.granted_days) === Number(props.quota.granted_days)
     const e = Number(form.value.carry_over_days) === Number(props.quota.carry_over_days)
     const f = Number(form.value.reward_days) === Number(props.quota.reward_days)
-    const g = form.value.valid_start === props.quota.valid_start
-    const h = form.value.valid_end === props.quota.valid_end
-    const i = form.value.note === props.quota.note
+    const g = (form.value.valid_start ?? '') === (props.quota.valid_start ?? '')
+    const h = (form.value.valid_end ?? '') === (props.quota.valid_end ?? '')
+    const i = (form.value.note ?? '') === (props.quota.note ?? '')
 
     return a && b && c && d && e && f && g && h && i
   } else return false
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    !form.value.year ||
+    form.value.staff === null ||
+    !form.value.valid_start ||
+    !form.value.valid_end
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
+    if (canSubmit.value) multiSubmit({ ...form.value, staff: form.value.staff })
     else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: StaffLeaveQuota) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value?.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
@@ -264,14 +280,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           :color="quota ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
-        <v-btn v-if="quota" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="quota && canHrWorkDelete"
+          type="button"
+          size="small"
+          color="warning"
+          :disabled="submitting"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn
@@ -296,7 +320,8 @@ watch(
       <v-btn
         color="warning"
         size="small"
-        @click="deleteObject(quota?.pk as number)"
+        :disabled="submitting"
+        @click="quota?.pk && deleteObject(quota.pk)"
       >
         삭제
       </v-btn>

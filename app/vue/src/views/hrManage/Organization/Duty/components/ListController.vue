@@ -27,12 +27,16 @@ const listFiltering = (page = 1) => {
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

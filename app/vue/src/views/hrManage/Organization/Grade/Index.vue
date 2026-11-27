@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { Company } from '@/store/types/settings.ts'
 import type { Grade, ComFilter } from '@/store/types/company.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -17,87 +16,88 @@ import GradeList from './components/GradeList.vue'
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<ComFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
-const excelUrl = computed(
-  () => `/excel/grades/?company=${company.value}&search=${dataFilter.value.q}`,
-)
+const excelUrl = computed(() => {
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  if (dataFilter.value.q) sp.set('search', dataFilter.value.q)
+  return `/excel/grades/?${sp.toString()}`
+})
 
 const listFiltering = (payload: ComFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchGradeList({
-      page: payload.page,
-      com: payload.com,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchGradeList(dataFilter.value)
 }
 
-const fetchGradeList = (payload: ComFilter) => comStore.fetchGradeList(payload)
-const fetchAllPositionList = (com?: number) => comStore.fetchAllPositionList(com)
-
-const createGrade = (payload: Grade, p?: number, c?: number) => comStore.createGrade(payload, p, c)
-const updateGrade = (payload: Grade, p?: number, c?: number) => comStore.updateGrade(payload, p, c)
-const deleteGrade = (pk: number, com: number) => comStore.deleteGrade(pk, com)
-
-const multiSubmit = (payload: Grade) => {
+const multiSubmit = async (payload: Grade, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (!!payload.pk) updateGrade(payload, page, company.value)
-    else createGrade(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateGrade(payload, page, company.value, dataFilter.value)
+      : await comStore.createGrade(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteGrade(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteGrade(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   dataFilter.value.page = num
   if (company.value) {
     dataFilter.value.com = company.value
-    fetchGradeList(dataFilter.value)
+    comStore.fetchGradeList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchGradeList({ com: pk })
-  fetchAllPositionList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([comStore.fetchGradeList({ com: pk }), comStore.fetchAllPositionList(pk)])
 }
 
 const dataReset = () => {
   comStore.gradeList = []
+  comStore.gradesCount = 0
+  comStore.allGradeList = []
+  comStore.grade = null
   comStore.allPositionList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = { page: 1, com: newVal, q: '' }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
@@ -109,7 +109,12 @@ onMounted(async () => {
           filename="직급_목록.xlsx"
           :disabled="!company"
         />
-        <GradeList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
+        <GradeList
+          :active-page="dataFilter.page || 1"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @page-select="pageSelect"
+        />
       </CCardBody>
     </ContentBody>
   </ComHrAuthGuard>

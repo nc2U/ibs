@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu1, navMenu2, pageTitle } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { Company } from '@/store/types/settings.ts'
 import {
   type StaffCareer,
   type StaffCertificate,
@@ -29,31 +28,31 @@ const isHrManager = computed(
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 
 const currentTab = ref<'career' | 'certificate' | 'reward'>('career')
+const refListControl = ref<InstanceType<typeof ListController> | null>(null)
 
 const dataFilter = ref<StaffRecordFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   staff: '',
   sort: '',
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const filter = dataFilter.value
-  let base = ''
+  let base = '/excel/staff-rewards/'
   if (currentTab.value === 'career') base = '/excel/staff-careers/'
   else if (currentTab.value === 'certificate') base = '/excel/staff-certificates/'
-  else base = '/excel/staff-rewards/'
 
-  let query = `?company=${company.value}`
-  if (filter.staff) query += `&staff=${filter.staff}`
-  if (filter.sort && currentTab.value === 'reward') query += `&sort=${filter.sort}`
-  if (filter.q) query += `&search=${filter.q}`
-  return `${base}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.staff) sp.set('staff', String(f.staff))
+  if (f.sort && currentTab.value === 'reward') sp.set('sort', String(f.sort))
+  if (f.q) sp.set('search', f.q)
+  return `${base}?${sp.toString()}`
 })
 
 const excelFilename = computed(() => {
@@ -63,55 +62,66 @@ const excelFilename = computed(() => {
 })
 
 const listFiltering = (payload: StaffRecordFilter) => {
-  dataFilter.value = payload
+  dataFilter.value = { ...payload, com: company.value }
   if (company.value) {
-    if (currentTab.value === 'career') fetchStaffCareerList(payload)
-    else if (currentTab.value === 'certificate') fetchStaffCertificateList(payload)
-    else fetchStaffRewardPunishmentList(payload)
+    if (currentTab.value === 'career') comStore.fetchStaffCareerList(dataFilter.value)
+    else if (currentTab.value === 'certificate') comStore.fetchStaffCertificateList(dataFilter.value)
+    else comStore.fetchStaffRewardPunishmentList(dataFilter.value)
   }
 }
-
-const fetchStaffCareerList = (payload: StaffRecordFilter) => comStore.fetchStaffCareerList(payload)
-const fetchStaffCertificateList = (payload: StaffRecordFilter) =>
-  comStore.fetchStaffCertificateList(payload)
-const fetchStaffRewardPunishmentList = (payload: StaffRecordFilter) =>
-  comStore.fetchStaffRewardPunishmentList(payload)
-const fetchAllStaffList = (com?: number) => comStore.fetchAllStaffList(com)
 
 // Career CRUD
-const onCareerSubmit = (payload: StaffCareer) => {
+const onCareerSubmit = async (payload: StaffCareer, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) comStore.updateStaffCareer(payload, page, company.value)
-    else comStore.createStaffCareer(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaffCareer(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaffCareer(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onCareerDelete = (pk: number) => {
-  if (company.value) comStore.deleteStaffCareer(pk, company.value)
+const onCareerDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaffCareer(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 // Certificate CRUD
-const onCertificateSubmit = (payload: StaffCertificate) => {
+const onCertificateSubmit = async (payload: StaffCertificate, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) comStore.updateStaffCertificate(payload, page, company.value)
-    else comStore.createStaffCertificate(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaffCertificate(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaffCertificate(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onCertificateDelete = (pk: number) => {
-  if (company.value) comStore.deleteStaffCertificate(pk, company.value)
+const onCertificateDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaffCertificate(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 // Reward CRUD
-const onRewardSubmit = (payload: StaffRewardPunishment) => {
+const onRewardSubmit = async (payload: StaffRewardPunishment, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) comStore.updateStaffRewardPunishment(payload, page, company.value)
-    else comStore.createStaffRewardPunishment(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaffRewardPunishment(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaffRewardPunishment(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onRewardDelete = (pk: number) => {
-  if (company.value) comStore.deleteStaffRewardPunishment(pk, company.value)
+const onRewardDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaffRewardPunishment(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const onPageSelect = (page: number) => {
@@ -121,52 +131,63 @@ const onPageSelect = (page: number) => {
 
 const onTabChange = (tab: 'career' | 'certificate' | 'reward') => {
   currentTab.value = tab
-  dataFilter.value.page = 1
+  dataFilter.value = { ...dataFilter.value, page: 1, com: company.value }
   if (company.value) {
-    if (tab === 'career') fetchStaffCareerList(dataFilter.value)
-    else if (tab === 'certificate') fetchStaffCertificateList(dataFilter.value)
-    else fetchStaffRewardPunishmentList(dataFilter.value)
+    if (tab === 'career') comStore.fetchStaffCareerList(dataFilter.value)
+    else if (tab === 'certificate') comStore.fetchStaffCertificateList(dataFilter.value)
+    else comStore.fetchStaffRewardPunishmentList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchStaffCareerList({ com: pk })
-  fetchStaffCertificateList({ com: pk })
-  fetchStaffRewardPunishmentList({ com: pk })
-  fetchAllStaffList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    comStore.fetchStaffCareerList({ com: pk }),
+    comStore.fetchStaffCertificateList({ com: pk }),
+    comStore.fetchStaffRewardPunishmentList({ com: pk }),
+    comStore.fetchAllStaffList(pk, ''),
+  ])
 }
 
 const dataReset = () => {
   comStore.staffCareerList = []
+  comStore.staffCareersCount = 0
+  comStore.allStaffCareerList = []
+  comStore.staffCareer = null
   comStore.staffCertificateList = []
+  comStore.staffCertificatesCount = 0
+  comStore.allStaffCertificateList = []
+  comStore.staffCertificate = null
   comStore.staffRewardPunishmentList = []
+  comStore.staffRewardPunishmentsCount = 0
+  comStore.allStaffRewardPunishmentList = []
+  comStore.staffRewardPunishment = null
   comStore.allStaffList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    refListControl.value?.clearFilter()
+    dataFilter.value = { page: 1, com: newVal, staff: '', sort: '', q: '' }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <ComHrAuthGuard>
+  <ComHrAuthGuard require-hr-read>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
-        <ListController @list-filtering="listFiltering" />
+        <ListController ref="refListControl" @list-filtering="listFiltering" />
 
         <!-- 탭 전환 네비게이션 -->
         <CNav variant="tabs" class="mb-3">
@@ -212,6 +233,7 @@ onMounted(async () => {
           :excel-url="excelUrl"
           :excel-filename="excelFilename"
           :selected-staff="Number(dataFilter.staff) || undefined"
+          :active-page="dataFilter.page || 1"
           @multi-submit="onCareerSubmit"
           @on-delete="onCareerDelete"
           @page-select="onPageSelect"
@@ -224,6 +246,7 @@ onMounted(async () => {
           :excel-url="excelUrl"
           :excel-filename="excelFilename"
           :selected-staff="Number(dataFilter.staff) || undefined"
+          :active-page="dataFilter.page || 1"
           @multi-submit="onCertificateSubmit"
           @on-delete="onCertificateDelete"
           @page-select="onPageSelect"
@@ -236,6 +259,7 @@ onMounted(async () => {
           :excel-url="excelUrl"
           :excel-filename="excelFilename"
           :selected-staff="Number(dataFilter.staff) || undefined"
+          :active-page="dataFilter.page || 1"
           @multi-submit="onRewardSubmit"
           @on-delete="onRewardDelete"
           @page-select="onPageSelect"

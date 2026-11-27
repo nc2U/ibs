@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -16,77 +16,83 @@ import ExecutiveRankList from './components/ExecutiveRankList.vue'
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<ComFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   q: '',
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => comStore.company?.pk ?? undefined)
 const comName = computed(() => comStore.company?.name || undefined)
 
-const excelUrl = computed(
-  () => `/excel/executive-ranks/?company=${company.value}&search=${dataFilter.value.q}`,
-)
+const excelUrl = computed(() => {
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  if (dataFilter.value.q) sp.set('search', dataFilter.value.q)
+  return `/excel/executive-ranks/?${sp.toString()}`
+})
 
 const listFiltering = (payload: ComFilter) => {
-  dataFilter.value = payload
-  fetchExecutiveRankList({
-    page: payload.page,
-    com: payload.com,
-    q: payload.q,
-  })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchExecutiveRankList(dataFilter.value)
 }
 
-const fetchExecutiveRankList = (payload: ComFilter) => comStore.fetchExecutiveRankList(payload)
-
-const createExecutiveRank = (payload: ExecutiveRank, p?: number, c?: number) =>
-  comStore.createExecutiveRank(payload, p, c)
-const updateExecutiveRank = (payload: ExecutiveRank, p?: number, c?: number) =>
-  comStore.updateExecutiveRank(payload, p, c)
-const deleteExecutiveRank = (pk: number, com: number) => comStore.deleteExecutiveRank(pk, com)
-
-const multiSubmit = (payload: ExecutiveRank) => {
+const multiSubmit = async (payload: ExecutiveRank, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (!!payload.pk) updateExecutiveRank(payload, page, company.value)
-    else createExecutiveRank(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateExecutiveRank(payload, page, company.value, dataFilter.value)
+      : await comStore.createExecutiveRank(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteExecutiveRank(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteExecutiveRank(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   dataFilter.value.page = num
   if (company.value) {
     dataFilter.value.com = company.value
-    fetchExecutiveRankList(dataFilter.value)
+    comStore.fetchExecutiveRankList(dataFilter.value)
   }
 }
 
-const comSelect = (target: number | null) => {
+const dataReset = () => {
   comStore.executiveRankList = []
-  if (!!target) fetchExecutiveRankList({ com: target })
+  comStore.executiveRanksCount = 0
+  comStore.allExecutiveRankList = []
+  comStore.executiveRank = null
 }
 
 const loading = ref(true)
-onMounted(async () => {
-  await fetchExecutiveRankList({ com: company.value || comStore.initComId })
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = { page: 1, com: newVal, q: '' }
+    if (newVal) {
+      loading.value = true
+      await comStore.fetchExecutiveRankList({ com: newVal })
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
@@ -99,6 +105,7 @@ onMounted(async () => {
           :disabled="!company"
         />
         <ExecutiveRankList
+          :active-page="dataFilter.page || 1"
           @page-select="pageSelect"
           @multi-submit="multiSubmit"
           @on-delete="onDelete"

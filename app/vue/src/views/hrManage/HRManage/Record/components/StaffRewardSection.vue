@@ -2,8 +2,10 @@
 import { computed, ref } from 'vue'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
+import { isValidate } from '@/utils/helper.ts'
 import { type StaffRewardPunishment } from '@/store/types/company.ts'
 import { TableSecondary, AlertSecondary } from '@/utils/cssMixins.ts'
+import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -17,18 +19,20 @@ const props = withDefaults(
     excelUrl?: string
     excelFilename?: string
     selectedStaff?: number | null
+    activePage?: number
   }>(),
   {
     company: null,
     excelUrl: '',
     excelFilename: '',
     selectedStaff: null,
+    activePage: 1,
   },
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffRewardPunishment): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffRewardPunishment, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'page-select', page: number): void
 }>()
 
@@ -57,14 +61,16 @@ const sorts = [
   { value: 'punish', label: '징계/문책' },
 ]
 
-const refFormModal = ref()
-const refDelModal = ref()
-const refAlertModal = ref()
+const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
-const form = ref<StaffRewardPunishment>({
+type StaffRewardFormState = Omit<StaffRewardPunishment, 'staff'> & { staff: number | null }
+
+const form = ref<StaffRewardFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   sort: 'reward',
   type_name: '',
   action_date: '',
@@ -74,15 +80,37 @@ const form = ref<StaffRewardPunishment>({
   note: '',
 })
 
+const origForm = ref<StaffRewardPunishment | null>(null)
 const isEdit = ref(false)
+const validated = ref(false)
+const submitting = ref(false)
+
+const canSubmit = computed(() => (isEdit.value ? canHrWorkUpdate.value : canHrWorkCreate.value))
+
+const formsCheck = computed(() => {
+  if (!isEdit.value || !origForm.value) return false
+  const o = origForm.value
+  return (
+    (form.value.staff ?? null) === (o.staff ?? null) &&
+    form.value.sort === o.sort &&
+    form.value.type_name === o.type_name &&
+    form.value.action_date === o.action_date &&
+    (form.value.expire_date ?? null) === (o.expire_date ?? null) &&
+    form.value.reason === o.reason &&
+    (form.value.organization ?? '') === (o.organization ?? '') &&
+    (form.value.note ?? '') === (o.note ?? '')
+  )
+})
 
 const openCreateModal = () => {
-  if (!canHrWorkCreate.value) return refAlertModal.value.callModal()
+  if (!canHrWorkCreate.value) return refAlertModal.value?.callModal()
   isEdit.value = false
+  origForm.value = null
+  validated.value = false
   form.value = {
     pk: undefined,
     company: props.company || undefined,
-    staff: props.selectedStaff || (allStaffList.value[0]?.pk as number) || (null as any),
+    staff: props.selectedStaff || allStaffList.value[0]?.pk || null,
     sort: 'reward',
     type_name: '',
     action_date: '',
@@ -91,33 +119,50 @@ const openCreateModal = () => {
     organization: '',
     note: '',
   }
-  refFormModal.value.callModal()
+  refFormModal.value?.callModal()
 }
 
 const openEditModal = (item: StaffRewardPunishment) => {
   isEdit.value = true
+  validated.value = false
+  origForm.value = { ...item }
   form.value = { ...item }
-  refFormModal.value.callModal()
+  refFormModal.value?.callModal()
 }
 
-const onSubmit = () => {
-  if (!form.value.staff || !form.value.type_name || !form.value.action_date || !form.value.reason)
+const onSubmit = (event: Event) => {
+  if (
+    isValidate(event) ||
+    form.value.staff === null ||
+    !form.value.type_name ||
+    !form.value.action_date ||
+    !form.value.reason
+  ) {
+    validated.value = true
     return
-  emit('multi-submit', { ...form.value })
-  refFormModal.value.close()
+  }
+  if (!canSubmit.value) return refAlertModal.value?.callModal()
+  submitting.value = true
+  emit('multi-submit', { ...form.value, staff: form.value.staff }, ok => {
+    submitting.value = false
+    if (ok) refFormModal.value?.close()
+  })
 }
 
 const deleteObject = () => {
   if (form.value.pk) {
-    emit('on-delete', form.value.pk)
-    refDelModal.value.close()
-    refFormModal.value.close()
+    submitting.value = true
+    emit('on-delete', form.value.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) refFormModal.value?.close()
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 defineExpose({ openCreateModal })
@@ -196,7 +241,7 @@ defineExpose({ openCreateModal })
 
   <Pagination
     v-if="staffRewardPunishmentsCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="comStore.staffRewardPunishmentPages(10)"
     class="mt-3"
@@ -208,7 +253,12 @@ defineExpose({ openCreateModal })
       {{ isEdit ? '직원 상벌 이력 수정' : '직원 상벌 이력 등록' }}
     </template>
     <template #default>
-      <CForm class="p-3" @submit.prevent="onSubmit">
+      <CForm
+        class="needs-validation p-3"
+        novalidate
+        :validated="validated"
+        @submit.prevent="onSubmit"
+      >
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
@@ -310,19 +360,22 @@ defineExpose({ openCreateModal })
 
         <div class="d-flex justify-content-end gap-2 mt-4">
           <v-btn
+            v-if="canSubmit"
             type="submit"
             size="small"
             variant="flat"
             :color="isEdit ? 'success' : 'primary'"
+            :disabled="formsCheck || submitting"
           >
             저장
           </v-btn>
           <v-btn
-            v-if="isEdit"
+            v-if="isEdit && canHrWorkDelete"
             type="button"
             size="small"
             variant="flat"
             color="warning"
+            :disabled="submitting"
             @click="deleteConfirm"
           >
             삭제
@@ -332,7 +385,7 @@ defineExpose({ openCreateModal })
             size="small"
             variant="flat"
             color="light"
-            @click="refFormModal.close()"
+            @click="refFormModal?.close()"
           >
             닫기
           </v-btn>
@@ -347,7 +400,15 @@ defineExpose({ openCreateModal })
       삭제한 데이터는 복구할 수 없습니다. 해당 상벌 이력을 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" variant="flat" @click="deleteObject">삭제</v-btn>
+      <v-btn
+        color="warning"
+        size="small"
+        variant="flat"
+        :disabled="submitting"
+        @click="deleteObject"
+      >
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 

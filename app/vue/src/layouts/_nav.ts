@@ -119,7 +119,7 @@ const humanResource = {
       component: 'CNavGroup',
       name: '근태 휴가 관리',
       icon: 'cilLifeRing',
-      auth: 'isStaff',
+      auth: 'isHrManager',
       items: [
         {
           component: 'CNavItem',
@@ -135,7 +135,6 @@ const humanResource = {
           component: 'CNavItem',
           name: '근태 현황 관리',
           to: '/hr-manage/attendance',
-          auth: 'isHrManager',
         },
       ],
     },

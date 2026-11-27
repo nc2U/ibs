@@ -14,28 +14,38 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PromotionPolicy): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PromotionPolicy, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.policy ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
 const getPkGrades = computed(() => comStore.getPkGrades)
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<PromotionPolicy>({
+const normalizeNum = (v: number | string | null | undefined) =>
+  v === '' || v === null || v === undefined ? null : Number(v)
+
+type PolicyFormState = Omit<PromotionPolicy, 'current_grade' | 'target_grade'> & {
+  current_grade: number | null
+  target_grade: number | null
+}
+
+const form = ref<PolicyFormState>({
   pk: undefined,
   company: undefined,
-  current_grade: null as any,
-  target_grade: null as any,
+  current_grade: null,
+  target_grade: null,
   min_years: 3,
   min_avg_grade_point: null,
   required_eval_grade: '',
@@ -48,14 +58,18 @@ const form = ref<PromotionPolicy>({
 const formsCheck = computed(() => {
   if (props.policy) {
     const a = form.value.pk === props.policy.pk
-    const b = form.value.current_grade === props.policy.current_grade
-    const c = form.value.target_grade === props.policy.target_grade
+    const b = (form.value.current_grade ?? null) === (props.policy.current_grade ?? null)
+    const c = (form.value.target_grade ?? null) === (props.policy.target_grade ?? null)
     const d = Number(form.value.min_years) === Number(props.policy.min_years)
-    const e = Number(form.value.min_avg_grade_point) === Number(props.policy.min_avg_grade_point)
-    const f = form.value.required_eval_grade === props.policy.required_eval_grade
-    const g = form.value.required_credentials === props.policy.required_credentials
-    const h = form.value.disqualification_conditions === props.policy.disqualification_conditions
-    const i = form.value.description === props.policy.description
+    const e =
+      normalizeNum(form.value.min_avg_grade_point) ===
+      normalizeNum(props.policy.min_avg_grade_point)
+    const f = (form.value.required_eval_grade ?? '') === (props.policy.required_eval_grade ?? '')
+    const g = (form.value.required_credentials ?? '') === (props.policy.required_credentials ?? '')
+    const h =
+      (form.value.disqualification_conditions ?? '') ===
+      (props.policy.disqualification_conditions ?? '')
+    const i = (form.value.description ?? '') === (props.policy.description ?? '')
     const j = form.value.is_active === props.policy.is_active
 
     return a && b && c && d && e && f && g && h && i && j
@@ -63,28 +77,45 @@ const formsCheck = computed(() => {
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    form.value.current_grade === null ||
+    form.value.target_grade === null ||
+    !form.value.min_years
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({
+        ...form.value,
+        current_grade: form.value.current_grade,
+        target_grade: form.value.target_grade,
+        min_avg_grade_point: normalizeNum(form.value.min_avg_grade_point),
+      })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: PromotionPolicy) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -204,7 +235,7 @@ watch(
               <CFormLabel class="col-sm-4 col-form-label">사용 여부</CFormLabel>
               <CCol sm="8" class="pt-2">
                 <CFormCheck
-                  id="policy_is_active"
+                  :id="`policy_is_active_${policy?.pk ?? 'new'}`"
                   v-model="form.is_active"
                   label="현재 승급 정책 활성화(사용)"
                 />
@@ -261,20 +292,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="policy ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="policy"
+          v-if="policy && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제
@@ -302,8 +335,8 @@ watch(
         color="warning"
         size="small"
         variant="flat"
-        :disabled="!policy?.pk"
-        @click="deleteObject(policy?.pk as number)"
+        :disabled="!policy?.pk || submitting"
+        @click="policy?.pk && deleteObject(policy.pk)"
       >
         삭제
       </v-btn>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Department, Staff } from '@/store/types/company.ts'
@@ -21,7 +21,7 @@ const selectedDeptNode = ref<OrgNode | null>(null)
 const isModalVisible = ref(false)
 
 // 선택된 회사 ID
-const currentCompanyId = computed(() => (comStore.company as any)?.pk || comStore.initComId || 1)
+const company = computed(() => comStore.company?.pk)
 
 // 데이터 로드
 const loadOrgData = async (comId: number) => {
@@ -30,12 +30,6 @@ const loadOrgData = async (comId: number) => {
     await Promise.all([comStore.fetchAllDepartList(comId), comStore.fetchAllStaffList(comId)])
   } finally {
     loading.value = false
-  }
-}
-
-const comSelect = async (target: number | null) => {
-  if (target) {
-    await loadOrgData(target)
   }
 }
 
@@ -165,6 +159,20 @@ const onSelectDept = (node: OrgNode) => {
   isModalVisible.value = true
 }
 
+// 그리드 뷰 검색 필터
+const filteredDeparts = computed(() => {
+  const q = searchTerm.value.trim().toLowerCase()
+  const list = comStore.allDepartList || []
+  if (!q) return list
+  return list.filter(
+    dept =>
+      dept.name?.toLowerCase().includes(q) ||
+      dept.task?.toLowerCase().includes(q) ||
+      dept.manager_name?.toLowerCase().includes(q) ||
+      getDeptMembers(dept).some(m => m.name?.toLowerCase().includes(q)),
+  )
+})
+
 // 검색어 입력 시 자동 펼치기
 watch(
   () => searchTerm.value,
@@ -175,20 +183,22 @@ watch(
   },
 )
 
-onMounted(async () => {
-  await loadOrgData(currentCompanyId.value)
-})
+watch(
+  company,
+  async newVal => {
+    comStore.allDepartList = []
+    comStore.allStaffList = []
+    if (newVal) await loadOrgData(newVal)
+    else loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
 
     <ContentBody>
       <CCardBody class="p-4">
@@ -223,7 +233,12 @@ onMounted(async () => {
             <div style="width: 220px">
               <CInputGroup size="sm">
                 <CFormInput v-model="searchTerm" placeholder="부서명/직원명 검색..." />
-                <CButton v-if="searchTerm" color="light" variant="outline" @click="searchTerm = ''">
+                <CButton
+                  v-if="searchTerm"
+                  color="secondary"
+                  variant="outline"
+                  @click="searchTerm = ''"
+                >
                   <v-icon icon="mdi-close" size="x-small" />
                 </CButton>
               </CInputGroup>
@@ -311,10 +326,14 @@ onMounted(async () => {
 
         <!-- 2. 부서별 카드 그리드 뷰 -->
         <div v-else class="row g-3 pb-5">
-          <div v-if="!comStore.allDepartList.length" class="col-12 text-center text-muted py-5">
-            등록된 부서가 없습니다.
+          <div v-if="!filteredDeparts.length" class="col-12 text-center text-muted py-5">
+            {{
+              searchTerm.trim()
+                ? '검색 조건에 일치하는 부서가 없습니다.'
+                : '등록된 부서가 없습니다.'
+            }}
           </div>
-          <div v-for="dept in comStore.allDepartList" :key="dept.pk" class="col-md-6 col-lg-4">
+          <div v-for="dept in filteredDeparts" :key="dept.pk" class="col-md-6 col-lg-4">
             <div
               class="card h-100 shadow-sm border cursor-pointer hover-card"
               @click="
@@ -341,7 +360,7 @@ onMounted(async () => {
                     <v-icon icon="mdi-account-tie" size="x-small" class="me-1 text-primary" />
                     책임자: <strong>{{ dept.manager_name || '미지정' }}</strong>
                   </span>
-                  <span class="badge bg-light text-dark border text-body">
+                  <span class="badge bg-secondary-subtle text-body border">
                     {{ getDeptMembers(dept).length }}명
                   </span>
                 </div>

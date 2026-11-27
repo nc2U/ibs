@@ -7,10 +7,17 @@ import { type PersonnelOrder as PersonnelOrderType } from '@/store/types/company
 import Pagination from '@/components/Pagination'
 import Appointment from './Appointment.vue'
 
+withDefaults(
+  defineProps<{
+    activePage?: number
+  }>(),
+  { activePage: 1 },
+)
+
 const emit = defineEmits<{
   (e: 'page-select', page: number): void
-  (e: 'multi-submit', payload: PersonnelOrderType): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PersonnelOrderType, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -24,8 +31,9 @@ const personnelOrdersCount = computed(() => companyStore.personnelOrdersCount)
 
 const personnelOrderPages = (page: number) => companyStore.personnelOrderPages(page)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: PersonnelOrderType) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: PersonnelOrderType, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
@@ -72,7 +80,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
   <Pagination
     v-if="personnelOrdersCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="personnelOrderPages(10)"
     class="mt-3"

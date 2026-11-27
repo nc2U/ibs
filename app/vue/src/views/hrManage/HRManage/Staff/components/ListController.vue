@@ -34,13 +34,13 @@ const form = reactive<{
 
 const formsCheck = computed(
   () =>
-    form.sort === '' &&
-    form.dep === '' &&
-    form.gra === '' &&
-    form.pos === '' &&
-    form.dut === '' &&
+    !form.sort &&
+    !form.dep &&
+    !form.gra &&
+    !form.pos &&
+    !form.dut &&
     form.sts === '1' &&
-    form.q === '',
+    form.q.trim() === '',
 )
 
 const comStore = useCompany()
@@ -66,18 +66,18 @@ const listFiltering = (page = 1) => {
   nextTick(() => {
     emit('list-filtering', {
       page,
-      sort: form.sort,
+      sort: form.sort || '',
       dep: form.dep || '',
       gra: form.gra || '',
       pos: form.pos || '',
       dut: form.dut || '',
-      sts: (form.sts || undefined) as '1' | '2' | '3' | '4' | undefined,
-      q: form.q,
+      sts: form.sts || '',
+      q: form.q.trim(),
     })
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.sort = ''
   form.dep = ''
   form.gra = ''
@@ -85,10 +85,14 @@ const resetForm = () => {
   form.dut = ''
   form.sts = '1'
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>
@@ -98,7 +102,7 @@ defineExpose({ listFiltering })
         <CRow>
           <CCol lg="4" xl="2" class="mb-3">
             <Multiselect
-              v-model.number="form.sort"
+              v-model="form.sort"
               :options="getSorts"
               autocomplete="label"
               :classes="{ search: 'form-control multiselect-search' }"
@@ -158,7 +162,7 @@ defineExpose({ listFiltering })
           </CCol>
           <CCol lg="4" xl="2" class="pb-0 mb-3">
             <Multiselect
-              v-model.number="form.sts"
+              v-model="form.sts"
               :options="getStatus"
               autocomplete="label"
               :classes="{ search: 'form-control multiselect-search' }"

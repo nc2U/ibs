@@ -14,14 +14,17 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffEvaluation): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffEvaluation, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() =>
+  props.evaluation ? canHrWorkUpdate.value : canHrWorkCreate.value,
+)
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -54,14 +57,20 @@ const gradeOptions = [
   { value: 'D', label: 'D (불량, 64점 이하)' },
 ]
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<StaffEvaluation>({
+const normalizeNum = (v: number | string | null | undefined) =>
+  v === '' || v === null || v === undefined ? null : Number(v)
+
+type StaffEvaluationFormState = Omit<StaffEvaluation, 'staff'> & { staff: number | null }
+
+const form = ref<StaffEvaluationFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   eval_year: currentYear,
   eval_period: 'yearly',
   grade: 'B',
@@ -75,43 +84,60 @@ const form = ref<StaffEvaluation>({
 const formsCheck = computed(() => {
   if (props.evaluation) {
     const a = form.value.pk === props.evaluation.pk
-    const b = form.value.staff === props.evaluation.staff
+    const b = (form.value.staff ?? null) === (props.evaluation.staff ?? null)
     const c = form.value.eval_year === props.evaluation.eval_year
     const d = form.value.eval_period === props.evaluation.eval_period
     const e = form.value.grade === props.evaluation.grade
-    const f = Number(form.value.score) === Number(props.evaluation.score)
-    const g = form.value.achievement_summary === props.evaluation.achievement_summary
-    const h = form.value.evaluator === props.evaluation.evaluator
-    const i = form.value.reviewer === props.evaluation.reviewer
-    const j = form.value.notes === props.evaluation.notes
+    const f = normalizeNum(form.value.score) === normalizeNum(props.evaluation.score)
+    const g = (form.value.achievement_summary ?? '') === (props.evaluation.achievement_summary ?? '')
+    const h = (form.value.evaluator ?? null) === (props.evaluation.evaluator ?? null)
+    const i = (form.value.reviewer ?? null) === (props.evaluation.reviewer ?? null)
+    const j = (form.value.notes ?? '') === (props.evaluation.notes ?? '')
 
     return a && b && c && d && e && f && g && h && i && j
   } else return false
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    form.value.staff === null ||
+    !form.value.eval_year ||
+    !form.value.eval_period ||
+    !form.value.grade
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({
+        ...form.value,
+        staff: form.value.staff,
+        score: normalizeNum(form.value.score),
+      })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: StaffEvaluation) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -288,20 +314,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="evaluation ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="evaluation"
+          v-if="evaluation && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제
@@ -329,8 +357,8 @@ watch(
         color="warning"
         size="small"
         variant="flat"
-        :disabled="!evaluation?.pk"
-        @click="deleteObject(evaluation?.pk as number)"
+        :disabled="!evaluation?.pk || submitting"
+        @click="evaluation?.pk && deleteObject(evaluation.pk)"
       >
         삭제
       </v-btn>

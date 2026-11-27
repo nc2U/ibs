@@ -612,4 +612,94 @@ class CompanySecurityAndOptimizationTests(APITestCase):
         res = ExportStaffs().get(req)
         self.assertEqual(res.status_code, 401)
 
+    def test_staff_masked_id_number_preserved_on_update_and_rejected_on_invalid(self):
+        """[hrManage 수정] 마스킹된 주민번호로 PATCH/PUT 시 원본이 보존되고, 위조/생성 시 * 포함 값은 400 거부"""
+        from work.models.project import IssueProject, Member, Role, Permission
+        hq_ip = IssueProject.objects.create(
+            company=self.company_1, name='본사', slug='hq-mask-test', type='1', creator=self.admin
+        )
+        perm_upd, _ = Permission.objects.get_or_create(
+            code='hq.hr_work.update',
+            defaults={'name': '인사 수정', 'module': 'hr_work', 'is_for_hq': True}
+        )
+        role_upd = Role.objects.create(name='인사수정자', category='ibs_hq_manage', creator=self.admin)
+        role_upd.permissions.add(perm_upd)
+        # user_2는 타사지만 company_1 직원을 생성해 테스트
+        updater_user = User.objects.create_user(username='updater_u1', email='upd@test.com', password='password123')
+        Staff.objects.create(
+            company=self.company_1, user=updater_user, name='인사담당', sort='2',
+            id_number='910101-1111111', personal_phone='010-2222-3333', date_join='2022-01-01'
+        )
+        mem = Member.objects.create(user=updater_user, project=hq_ip)
+        mem.roles.add(role_upd)
+
+        self.client.force_authenticate(user=updater_user)
+        # 1) 조회 시 마스킹 문자열 수신 확인
+        get_res = self.client.get(f'/api/v1/staff/{self.staff_1.pk}/')
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data['id_number'], '950505-*******')
+
+        # 2) 마스킹된 id_number 그대로 포함해 다른 필드(email) 수정 시 원본 주민번호 보존
+        put_res = self.client.patch(f'/api/v1/staff/{self.staff_1.pk}/', {
+            'id_number': get_res.data['id_number'],
+            'email': 'updated@test.com',
+        })
+        self.assertEqual(put_res.status_code, status.HTTP_200_OK)
+        self.staff_1.refresh_from_db()
+        self.assertEqual(self.staff_1.id_number, '950505-1234567')
+        self.assertEqual(self.staff_1.email, 'updated@test.com')
+
+        # 3) 일치하지 않는 임의 * 문자열은 400 거부
+        bad_res = self.client.patch(f'/api/v1/staff/{self.staff_1.pk}/', {
+            'id_number': '999999-*******',
+        })
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_staff_grade_filter_and_leave_usage_date_filter_and_excel_filters(self):
+        """[hrManage 수정] StaffFilter grade 필터, StaffLeaveUsageFilter 날짜 필터, Excel 추가 필터 검증"""
+        from decimal import Decimal
+        from django.test import RequestFactory
+        from company.models import JobGrade, PromotionPolicy, PromotionCandidate, StaffLeaveUsage
+        from company.exports.excel import ExportStaffLeaveUsages, ExportPromotionCandidates
+
+        g1 = JobGrade.objects.create(company=self.company_1, code='G1')
+        g2 = JobGrade.objects.create(company=self.company_1, code='G2')
+        self.staff_1.grade = g1
+        self.staff_1.save()
+
+        self.client.force_authenticate(user=self.admin)
+        res_g1 = self.client.get(f'/api/v1/staff/?company={self.company_1.pk}&grade={g1.pk}')
+        res_g2 = self.client.get(f'/api/v1/staff/?company={self.company_1.pk}&grade={g2.pk}')
+        self.assertEqual(res_g1.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_g1.data['results']), 1)
+        self.assertEqual(len(res_g2.data['results']), 0)
+
+        u1 = StaffLeaveUsage.objects.create(
+            company=self.company_1, staff=self.staff_1, start_date='2026-03-01', end_date='2026-03-01',
+            deduction_days=Decimal('1.00'), is_cancelled=False, reason='정상휴가'
+        )
+        u2 = StaffLeaveUsage.objects.create(
+            company=self.company_1, staff=self.staff_1, start_date='2026-05-10', end_date='2026-05-10',
+            deduction_days=Decimal('1.00'), is_cancelled=True, reason='취소휴가'
+        )
+        res_date = self.client.get(
+            f'/api/v1/staff-leave-usage/?company={self.company_1.pk}&start_date=2026-04-01&end_date=2026-05-31'
+        )
+        self.assertEqual(res_date.status_code, status.HTTP_200_OK)
+        self.assertEqual([x['pk'] for x in res_date.data['results']], [u2.pk])
+
+        factory = RequestFactory()
+        req_lu = factory.get(f'/excel/staff-leave-usages/?company={self.company_1.pk}&is_cancelled=false')
+        req_lu.user = self.admin
+        res_lu_excel = ExportStaffLeaveUsages().get(req_lu)
+        self.assertEqual(res_lu_excel.status_code, 200)
+
+        pol = PromotionPolicy.objects.create(company=self.company_1, current_grade=g1, target_grade=g2, min_years=3)
+        PromotionCandidate.objects.create(company=self.company_1, policy=pol, staff=self.staff_1, eval_year=2026)
+        req_pc = factory.get(f'/excel/staff-promotion-candidates/?company={self.company_1.pk}&policy={pol.pk}')
+        req_pc.user = self.admin
+        res_pc_excel = ExportPromotionCandidates().get(req_pc)
+        self.assertEqual(res_pc_excel.status_code, 200)
+
+
 

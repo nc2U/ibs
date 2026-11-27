@@ -7,8 +7,8 @@ import LeaveUsageForm from './LeaveUsageForm.vue'
 
 defineProps<{ usage: StaffLeaveUsage }>()
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffLeaveUsage): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffLeaveUsage, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -19,8 +19,9 @@ const canHrWorkManage = computed(
 const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
 const showDetail = () => updateFormModal.value?.callModal()
-const multiSubmit = (payload: StaffLeaveUsage) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const multiSubmit = (payload: StaffLeaveUsage, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>

@@ -15,14 +15,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffLeaveUsage): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffLeaveUsage, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.usage ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -51,11 +52,14 @@ const leaveTypeOptions = [
 const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<StaffLeaveUsage>({
+type LeaveUsageFormState = Omit<StaffLeaveUsage, 'staff'> & { staff: number | null }
+
+const form = ref<LeaveUsageFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   leave_type: 'annual',
   start_date: '',
   end_date: '',
@@ -80,36 +84,48 @@ const onStartDateChange = (val: string) => {
 const formsCheck = computed(() => {
   if (props.usage) {
     const a = form.value.pk === props.usage.pk
-    const b = form.value.staff === props.usage.staff
+    const b = (form.value.staff ?? null) === (props.usage.staff ?? null)
     const c = form.value.leave_type === props.usage.leave_type
     const d = form.value.start_date === props.usage.start_date
     const e = form.value.end_date === props.usage.end_date
     const f = Number(form.value.deduction_days) === Number(props.usage.deduction_days)
-    const g = form.value.reason === props.usage.reason
-    const h = form.value.is_cancelled === props.usage.is_cancelled
+    const g = (form.value.reason ?? '') === (props.usage.reason ?? '')
+    const h = Boolean(form.value.is_cancelled) === Boolean(props.usage.is_cancelled)
 
     return a && b && c && d && e && f && g && h
   } else return false
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    form.value.staff === null ||
+    !form.value.leave_type ||
+    !form.value.start_date ||
+    !form.value.end_date
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
+    if (canSubmit.value) multiSubmit({ ...form.value, staff: form.value.staff })
     else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: StaffLeaveUsage) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = (pk: number) => {
-  emit('on-delete', pk)
-  refDelModal.value?.close()
-  emit('close')
+  submitting.value = true
+  emit('on-delete', pk, ok => {
+    submitting.value = false
+    refDelModal.value?.close()
+    if (ok) emit('close')
+  })
 }
 
 const deleteConfirm = () => {
@@ -236,7 +252,7 @@ watch(
               <CFormLabel class="col-sm-2 col-form-label">취소 상태</CFormLabel>
               <CCol sm="10" class="pt-2">
                 <CFormCheck
-                  id="isCancelledCheck"
+                  :id="`isCancelledCheck_${usage?.pk ?? 'new'}`"
                   v-model="form.is_cancelled"
                   label="휴가 취소 처리 (체크 시 사용 일수가 차감에서 복구됩니다)"
                 />
@@ -250,14 +266,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           :color="usage ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
-        <v-btn v-if="usage" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="usage && canHrWorkDelete"
+          type="button"
+          size="small"
+          color="warning"
+          :disabled="submitting"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn
@@ -282,7 +306,8 @@ watch(
       <v-btn
         color="warning"
         size="small"
-        @click="deleteObject(usage?.pk as number)"
+        :disabled="submitting"
+        @click="usage?.pk && deleteObject(usage.pk)"
       >
         삭제
       </v-btn>

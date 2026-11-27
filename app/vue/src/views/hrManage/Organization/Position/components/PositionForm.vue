@@ -28,20 +28,22 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Position): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Position, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.position ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
 
 const form = ref<Position>({
   pk: undefined,
@@ -54,8 +56,10 @@ const form = ref<Position>({
 const formsCheck = computed(() => {
   if (props.position) {
     const a = form.value.name === props.position.name
-    const b = JSON.stringify(form.value.grades) === JSON.stringify(props.position.grades)
-    const c = form.value.desc === props.position.desc
+    const b =
+      JSON.stringify([...(form.value.grades || [])]) ===
+      JSON.stringify([...(props.position.grades || [])])
+    const c = (form.value.desc ?? '') === (props.position.desc ?? '')
 
     return a && b && c
   } else return false
@@ -68,27 +72,37 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({
+        ...form.value,
+        grades: [...(form.value.grades || [])],
+      })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Position) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.position?.pk) {
-    emit('on-delete', props.position.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.position.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -96,7 +110,7 @@ const formDataSetup = () => {
     form.value.pk = props.position.pk
     form.value.company = props.position.company
     form.value.name = props.position.name
-    form.value.grades = props.position.grades
+    form.value.grades = [...(props.position.grades || [])]
     form.value.desc = props.position.desc
   } else form.value.company = props.company || undefined
 }
@@ -155,20 +169,22 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="position ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="position"
+          v-if="position && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제

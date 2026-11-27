@@ -3,11 +3,7 @@ import { reactive, computed, nextTick } from 'vue'
 import { numFormat } from '@/utils/baseMixins.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { bgLight } from '@/utils/cssMixins.ts'
-
-type ComFilter = {
-  page?: number
-  q?: string
-}
+import { type ComFilter } from '@/store/types/company.ts'
 
 const emit = defineEmits<{
   (e: 'list-filtering', filter: ComFilter): void
@@ -29,12 +25,16 @@ const listFiltering = (page = 1) => {
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

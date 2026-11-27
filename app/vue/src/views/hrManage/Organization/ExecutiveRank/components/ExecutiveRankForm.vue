@@ -26,20 +26,24 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: ExecutiveRank): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: ExecutiveRank, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() =>
+  props.executiveRank ? canHrWorkUpdate.value : canHrWorkCreate.value,
+)
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
 
 const form = ref<ExecutiveRank>({
   pk: undefined,
@@ -52,10 +56,10 @@ const form = ref<ExecutiveRank>({
 
 const formsCheck = computed(() => {
   if (props.executiveRank) {
-    const a = form.value.code === props.executiveRank.code
+    const a = (form.value.code ?? '') === (props.executiveRank.code ?? '')
     const b = form.value.name === props.executiveRank.name
-    const c = form.value.sort_order === props.executiveRank.sort_order
-    const d = form.value.role_desc === props.executiveRank.role_desc
+    const c = (form.value.sort_order ?? 1) === (props.executiveRank.sort_order ?? 1)
+    const d = (form.value.role_desc ?? '') === (props.executiveRank.role_desc ?? '')
 
     return a && b && c && d
   } else return false
@@ -65,27 +69,33 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) multiSubmit({ ...form.value })
+    else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: ExecutiveRank) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.executiveRank?.pk) {
-    emit('on-delete', props.executiveRank.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.executiveRank.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -127,7 +137,11 @@ onBeforeMount(() => formDataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label required">직위 코드</CFormLabel>
               <CCol sm="10">
-                <CFormInput v-model="form.code" placeholder="예: E1, E2, E3, CEO 등" />
+                <CFormInput
+                  v-model="form.code"
+                  required
+                  placeholder="예: E1, E2, E3, CEO 등"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -164,20 +178,22 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="executiveRank ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="executiveRank"
+          v-if="executiveRank && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제

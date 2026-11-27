@@ -26,20 +26,22 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Duty): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: Duty, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.duty ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const validated = ref(false)
+const submitting = ref(false)
 
 const form = ref<Duty>({
   pk: undefined,
@@ -51,9 +53,9 @@ const form = ref<Duty>({
 
 const formsCheck = computed(() => {
   if (props.duty) {
-    const a = form.value.code === props.duty.code
+    const a = (form.value.code ?? '') === (props.duty.code ?? '')
     const b = form.value.name === props.duty.name
-    const c = form.value.desc === props.duty.desc
+    const c = (form.value.desc ?? '') === (props.duty.desc ?? '')
 
     return a && b && c
   } else return false
@@ -63,27 +65,33 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) multiSubmit({ ...form.value })
+    else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: Duty) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.duty?.pk) {
-    emit('on-delete', props.duty.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.duty.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -145,20 +153,22 @@ onBeforeMount(() => formDataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="duty ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="duty"
+          v-if="duty && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제

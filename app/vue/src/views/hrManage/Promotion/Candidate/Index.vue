@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/hrManage/_menu/headermixin4.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -18,9 +18,11 @@ const currentYear = new Date().getFullYear()
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const listControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<PromotionCandidateFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   eval_year: currentYear,
   status: '',
   policy: '',
@@ -29,101 +31,100 @@ const dataFilter = ref<PromotionCandidateFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => comStore.company?.pk)
+const company = computed(() => comStore.company?.pk ?? undefined)
 const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const url = `/excel/staff-promotion-candidates/?company=${company.value}`
-  const filter = dataFilter.value
-  let query = ''
-  if (filter.eval_year) query += `&eval_year=${filter.eval_year}`
-  if (filter.status) query += `&status=${filter.status}`
-  if (filter.policy) query += `&policy=${filter.policy}`
-  if (filter.staff) query += `&staff=${filter.staff}`
-  if (filter.q) query += `&search=${filter.q}`
-  return `${url}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.eval_year) sp.set('eval_year', String(f.eval_year))
+  if (f.status) sp.set('status', f.status)
+  if (f.policy) sp.set('policy', String(f.policy))
+  if (f.staff) sp.set('staff', String(f.staff))
+  if (f.q) sp.set('search', f.q)
+  return `/excel/staff-promotion-candidates/?${sp.toString()}`
 })
 
 const listFiltering = (payload: PromotionCandidateFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchPromotionCandidateList({
-      page: payload.page,
-      com: payload.com,
-      eval_year: payload.eval_year,
-      status: payload.status,
-      policy: payload.policy,
-      staff: payload.staff,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchPromotionCandidateList(dataFilter.value)
 }
 
-const fetchPromotionCandidateList = (payload: PromotionCandidateFilter) =>
-  comStore.fetchPromotionCandidateList(payload)
-const fetchAllStaffList = (com?: number) => comStore.fetchAllStaffList(com)
-const fetchAllPromotionPolicyList = (com?: number) => comStore.fetchAllPromotionPolicyList(com)
-
-const createPromotionCandidate = (payload: PromotionCandidate, p?: number, c?: number) =>
-  comStore.createPromotionCandidate(payload, p, c)
-const updatePromotionCandidate = (payload: PromotionCandidate, p?: number, c?: number) =>
-  comStore.updatePromotionCandidate(payload, p, c)
-const deletePromotionCandidate = (pk: number, com: number) =>
-  comStore.deletePromotionCandidate(pk, com)
-
-const multiSubmit = (payload: PromotionCandidate) => {
+const multiSubmit = async (payload: PromotionCandidate, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) updatePromotionCandidate(payload, page, company.value)
-    else createPromotionCandidate(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updatePromotionCandidate(payload, page, company.value, dataFilter.value)
+      : await comStore.createPromotionCandidate(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deletePromotionCandidate(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deletePromotionCandidate(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   if (company.value) {
     dataFilter.value.page = num
     dataFilter.value.com = company.value
-    fetchPromotionCandidateList(dataFilter.value)
+    comStore.fetchPromotionCandidateList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchPromotionCandidateList({ com: pk, eval_year: dataFilter.value.eval_year })
-  fetchAllStaffList(pk)
-  fetchAllPromotionPolicyList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    comStore.fetchPromotionCandidateList({ com: pk, eval_year: dataFilter.value.eval_year }),
+    comStore.fetchAllStaffList(pk),
+    comStore.fetchAllPromotionPolicyList(pk),
+  ])
 }
+
 const dataReset = () => {
   comStore.promotionCandidateList = []
+  comStore.promotionCandidatesCount = 0
+  comStore.allPromotionCandidateList = []
+  comStore.promotionCandidate = null
   comStore.allStaffList = []
   comStore.allPromotionPolicyList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    listControl.value?.clearFilter()
+    dataFilter.value = {
+      page: 1,
+      com: newVal,
+      eval_year: currentYear,
+      status: '',
+      policy: '',
+      staff: '',
+      q: '',
+    }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <ComHrAuthGuard>
+  <ComHrAuthGuard require-hr-read>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
-        <ListController @list-filtering="listFiltering" />
+        <ListController ref="listControl" @list-filtering="listFiltering" />
         <AddCandidate v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="승급 심사 대상 및 발령 목록"
@@ -133,6 +134,7 @@ onMounted(async () => {
           :disabled="!company"
         />
         <CandidateList
+          :active-page="dataFilter.page || 1"
           @page-select="pageSelect"
           @multi-submit="multiSubmit"
           @on-delete="onDelete"

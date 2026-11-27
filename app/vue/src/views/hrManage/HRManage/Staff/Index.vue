@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import type { Company } from '@/store/types/settings.ts'
 import { type Staff, type StaffFilter } from '@/store/types/company.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -26,9 +25,11 @@ const isHrManager = computed(
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
+const refListControl = ref<InstanceType<typeof ListController> | null>(null)
+
 const dataFilter = ref<StaffFilter>({
   page: 1,
-  com: 1,
+  com: undefined,
   sort: '',
   dep: '',
   gra: '',
@@ -39,107 +40,106 @@ const dataFilter = ref<StaffFilter>({
 })
 
 const comStore = useCompany()
-const company = computed(() => (comStore.company as Company)?.pk)
-const comName = computed(() => (comStore.company as Company)?.name || undefined)
+const company = computed(() => comStore.company?.pk ?? undefined)
+const comName = computed(() => comStore.company?.name || undefined)
 
 const excelUrl = computed(() => {
-  const url = `/excel/staffs/?company=${company.value}`
-  const filter = dataFilter.value
-  let query = ''
-  query = filter.sort ? `${query}&sort=${filter.sort}` : query
-  query = filter.dep ? `${query}&department=${filter.dep}` : query
-  query = filter.gra ? `${query}&grade=${filter.gra}` : query
-  query = filter.pos ? `${query}&position=${filter.pos}` : query
-  query = filter.dut ? `${query}&duty=${filter.dut}` : query
-  query = filter.sts ? `${query}&status=${filter.sts}` : query
-  query = filter.q ? `${query}&search=${filter.q}` : query
-  return `${url}${query}`
+  const sp = new URLSearchParams({ company: String(company.value ?? '') })
+  const f = dataFilter.value
+  if (f.sort) sp.set('sort', String(f.sort))
+  if (f.dep) sp.set('department', String(f.dep))
+  if (f.gra) sp.set('grade', String(f.gra))
+  if (f.pos) sp.set('position', String(f.pos))
+  if (f.dut) sp.set('duty', String(f.dut))
+  if (f.sts) sp.set('status', String(f.sts))
+  if (f.q) sp.set('search', f.q)
+  return `/excel/staffs/?${sp.toString()}`
 })
 
-const fetchUsersList = () => accStore.fetchUsersList()
-
 const listFiltering = (payload: StaffFilter) => {
-  dataFilter.value = payload
-  if (company.value)
-    fetchStaffList({
-      page: payload.page,
-      com: payload.com,
-      sort: payload.sort,
-      dep: payload.dep,
-      gra: payload.gra,
-      pos: payload.pos,
-      dut: payload.dut,
-      sts: payload.sts,
-      q: payload.q,
-    })
+  dataFilter.value = { ...payload, com: company.value }
+  if (company.value) comStore.fetchStaffList(dataFilter.value)
 }
 
-const fetchStaffList = (payload: StaffFilter) => comStore.fetchStaffList(payload)
-const fetchAllGradeList = (com?: number) => comStore.fetchAllGradeList(com)
-const fetchAllDepartList = (com?: number) => comStore.fetchAllDepartList(com)
-const fetchAllPositionList = (com?: number) => comStore.fetchAllPositionList(com)
-const fetchAllDutyList = (com?: number) => comStore.fetchAllDutyList(com)
-
-const createStaff = (payload: Staff, p?: number, c?: number) => comStore.createStaff(payload, p, c)
-const updateStaff = (payload: Staff, p?: number, c?: number) => comStore.updateStaff(payload, p, c)
-const deleteStaff = (pk: number, com: number) => comStore.deleteStaff(pk, com)
-
-const multiSubmit = (payload: Staff) => {
+const multiSubmit = async (payload: Staff, done?: (ok: boolean) => void) => {
   const { page } = dataFilter.value
-  if (company.value) {
-    if (payload.pk) updateStaff(payload, page, company.value)
-    else createStaff(payload, page, company.value)
-  }
+  const ok = company.value
+    ? payload.pk
+      ? await comStore.updateStaff(payload, page, company.value, dataFilter.value)
+      : await comStore.createStaff(payload, page, company.value, dataFilter.value)
+    : false
+  done?.(ok)
 }
-const onDelete = (pk: number) => {
-  if (company.value) deleteStaff(pk, company.value)
+
+const onDelete = async (pk: number, done?: (ok: boolean) => void) => {
+  const ok = company.value
+    ? await comStore.deleteStaff(pk, company.value, dataFilter.value)
+    : false
+  if (ok) dataFilter.value.page = 1
+  done?.(ok)
 }
 
 const pageSelect = (num: number) => {
   if (company.value) {
     dataFilter.value.page = num
     dataFilter.value.com = company.value
-    fetchStaffList(dataFilter.value)
+    comStore.fetchStaffList(dataFilter.value)
   }
 }
 
-const dataSetup = (pk: number) => {
-  fetchStaffList({ com: pk, sts: '1' })
-  fetchAllGradeList(pk)
-  fetchAllDepartList(pk)
-  fetchAllPositionList(pk)
-  fetchAllDutyList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    accStore.usersList.length ? Promise.resolve() : accStore.fetchUsersList(),
+    comStore.fetchStaffList({ com: pk, sts: '1' }),
+    comStore.fetchAllGradeList(pk),
+    comStore.fetchAllDepartList(pk),
+    comStore.fetchAllPositionList(pk),
+    comStore.fetchAllDutyList(pk),
+  ])
 }
+
 const dataReset = () => {
   comStore.staffList = []
+  comStore.staffsCount = 0
+  comStore.allStaffList = []
+  comStore.staff = null
   comStore.allGradeList = []
   comStore.allDepartList = []
   comStore.allPositionList = []
   comStore.allDutyList = []
 }
 
-const comSelect = (target: number | null) => {
-  dataReset()
-  if (!!target) dataSetup(target)
-}
-
 const loading = ref(true)
-onMounted(async () => {
-  await fetchUsersList()
-  dataSetup(company.value || comStore.initComId)
-  loading.value = false
-})
+watch(
+  company,
+  async newVal => {
+    dataReset()
+    refListControl.value?.clearFilter()
+    dataFilter.value = {
+      page: 1,
+      com: newVal,
+      sort: '',
+      dep: '',
+      gra: '',
+      pos: '',
+      dut: '',
+      sts: '1',
+      q: '',
+    }
+    if (newVal) {
+      loading.value = true
+      await dataSetup(newVal)
+    }
+    loading.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <ComHrAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="CompanySelect"
-      @com-select="comSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
       <CCardBody>
         <ListController ref="refListControl" @list-filtering="listFiltering" />
@@ -151,7 +151,12 @@ onMounted(async () => {
           filename="직원_목록.xlsx"
           :disabled="!company"
         />
-        <StaffList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
+        <StaffList
+          :active-page="dataFilter.page || 1"
+          @multi-submit="multiSubmit"
+          @on-delete="onDelete"
+          @page-select="pageSelect"
+        />
       </CCardBody>
     </ContentBody>
   </ComHrAuthGuard>

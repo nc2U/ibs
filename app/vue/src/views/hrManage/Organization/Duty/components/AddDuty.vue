@@ -12,20 +12,21 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: Duty): void
+  (e: 'multi-submit', payload: Duty, done?: (ok: boolean) => void): void
 }>()
 
-const refFormModal = ref()
-const refAlertModal = ref()
+const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
 const createConfirm = () => {
-  if (canHrWorkCreate.value) refFormModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkCreate.value) refFormModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
-const multiSubmit = (payload: Duty) => emit('multi-submit', payload)
+const multiSubmit = (payload: Duty, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
 </script>
 
 <template>
@@ -38,7 +39,7 @@ const multiSubmit = (payload: Duty) => emit('multi-submit', payload)
   <FormModal ref="refFormModal" size="lg">
     <template #header>직책 정보 등록</template>
     <template #default>
-      <DutyForm :company="company" @multi-submit="multiSubmit" @close="refFormModal.close()" />
+      <DutyForm :company="company" @multi-submit="multiSubmit" @close="refFormModal?.close()" />
     </template>
   </FormModal>
 

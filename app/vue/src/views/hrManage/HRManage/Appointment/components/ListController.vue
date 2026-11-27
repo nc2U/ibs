@@ -20,7 +20,7 @@ const form = reactive({
 })
 
 const formsCheck = computed(
-  () => form.staff === '' && form.order_type === '' && form.department === '' && form.q === '',
+  () => !form.staff && !form.order_type && !form.department && form.q.trim() === '',
 )
 
 const comStore = useCompany()
@@ -48,20 +48,24 @@ const listFiltering = (page = 1) => {
       staff: form.staff || '',
       order_type: form.order_type || '',
       department: form.department || '',
-      q: form.q,
+      q: form.q.trim(),
     })
   })
 }
 
-const resetForm = () => {
+const clearFilter = () => {
   form.staff = ''
   form.order_type = ''
   form.department = ''
   form.q = ''
+}
+
+const resetForm = () => {
+  clearFilter()
   listFiltering(1)
 }
 
-defineExpose({ listFiltering })
+defineExpose({ listFiltering, resetForm, clearFilter })
 </script>
 
 <template>

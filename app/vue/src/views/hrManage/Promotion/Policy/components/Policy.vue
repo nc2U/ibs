@@ -10,8 +10,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PromotionPolicy): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PromotionPolicy, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
@@ -19,17 +19,18 @@ const canHrWorkManage = computed(
   () => canGlobal(PERM.HQ_HR_WORK_CREATE) || canGlobal(PERM.HQ_HR_WORK_UPDATE),
 )
 
-const updateFormModal = ref()
+const updateFormModal = ref<InstanceType<typeof FormModal> | null>(null)
 
-const showDetail = () => updateFormModal.value.callModal()
-const multiSubmit = (payload: PromotionPolicy) => emit('multi-submit', payload)
-const onDelete = (pk: number) => emit('on-delete', pk)
+const showDetail = () => updateFormModal.value?.callModal()
+const multiSubmit = (payload: PromotionPolicy, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (pk: number, done?: (ok: boolean) => void) => emit('on-delete', pk, done)
 </script>
 
 <template>
   <CTableRow v-if="policy" class="text-center">
     <CTableDataCell class="fw-bold">
-      <v-chip color="light" variant="flat" size="x-small" class="text-body border">
+      <v-chip color="secondary" variant="outlined" size="x-small" class="border">
         {{ policy.current_grade_code }}
       </v-chip>
       <CIcon icon="cil-arrow-right" class="mx-1 text-muted small" />
@@ -72,7 +73,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         :policy="policy"
         @multi-submit="multiSubmit"
         @on-delete="onDelete"
-        @close="updateFormModal.close()"
+        @close="updateFormModal?.close()"
       />
     </template>
   </FormModal>

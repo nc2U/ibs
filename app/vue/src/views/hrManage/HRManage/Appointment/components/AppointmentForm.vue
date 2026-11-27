@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
+import { bgLight } from '@/utils/cssMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { type PersonnelOrder } from '@/store/types/company.ts'
@@ -21,14 +22,15 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: PersonnelOrder): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: PersonnelOrder, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'close'): void
 }>()
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 const canHrWorkUpdate = computed(() => canGlobal(PERM.HQ_HR_WORK_UPDATE))
+const canSubmit = computed(() => (props.order ? canHrWorkUpdate.value : canHrWorkCreate.value))
 const canHrWorkDelete = computed(() => canGlobal(PERM.HQ_HR_WORK_DELETE))
 
 const comStore = useCompany()
@@ -58,14 +60,17 @@ const orderTypes = [
   { value: '90', label: '퇴사/면직' },
 ]
 
-const refDelModal = ref()
-const refAlertModal = ref()
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const validated = ref(false)
+const submitting = ref(false)
 
-const form = ref<PersonnelOrder>({
+type PersonnelOrderFormState = Omit<PersonnelOrder, 'staff'> & { staff: number | null }
+
+const form = ref<PersonnelOrderFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   order_type: '20',
   order_date: '',
   effective_end_date: null,
@@ -82,7 +87,7 @@ const form = ref<PersonnelOrder>({
   is_processed: true,
 })
 
-const onStaffSelected = (staffPk: number) => {
+const onStaffSelected = (staffPk: number | null) => {
   if (!staffPk) return
   const targetStaff = allStaffList.value.find(s => s.pk === staffPk)
   if (targetStaff) {
@@ -110,47 +115,64 @@ const onStaffSelected = (staffPk: number) => {
 const formsCheck = computed(() => {
   if (props.order) {
     const a = form.value.pk === props.order.pk
-    const b = form.value.staff === props.order.staff
+    const b = (form.value.staff ?? null) === (props.order.staff ?? null)
     const c = form.value.order_type === props.order.order_type
     const d = form.value.order_date === props.order.order_date
-    const e = form.value.effective_end_date === props.order.effective_end_date
-    const f = form.value.order_no === props.order.order_no
-    const g = form.value.new_department === props.order.new_department
-    const h = form.value.new_grade === props.order.new_grade
-    const i = form.value.new_position === props.order.new_position
-    const j = form.value.new_duty === props.order.new_duty
-    const k = form.value.description === props.order.description
+    const e =
+      (form.value.effective_end_date ?? null) === (props.order.effective_end_date ?? null)
+    const f = (form.value.order_no ?? '') === (props.order.order_no ?? '')
+    const p1 = (form.value.prev_department ?? null) === (props.order.prev_department ?? null)
+    const p2 = (form.value.prev_grade ?? null) === (props.order.prev_grade ?? null)
+    const p3 = (form.value.prev_position ?? null) === (props.order.prev_position ?? null)
+    const p4 = (form.value.prev_duty ?? null) === (props.order.prev_duty ?? null)
+    const g = (form.value.new_department ?? null) === (props.order.new_department ?? null)
+    const h = (form.value.new_grade ?? null) === (props.order.new_grade ?? null)
+    const i = (form.value.new_position ?? null) === (props.order.new_position ?? null)
+    const j = (form.value.new_duty ?? null) === (props.order.new_duty ?? null)
+    const k = (form.value.description ?? '') === (props.order.description ?? '')
     const l = form.value.is_processed === props.order.is_processed
 
-    return a && b && c && d && e && f && g && h && i && j && k && l
+    return a && b && c && d && e && f && p1 && p2 && p3 && p4 && g && h && i && j && k && l
   } else return false
 })
 
 const onSubmit = (event: Event) => {
-  if (isValidate(event)) {
+  if (
+    isValidate(event) ||
+    form.value.staff === null ||
+    !form.value.order_type ||
+    !form.value.order_date
+  ) {
     validated.value = true
   } else {
-    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
-    else refAlertModal.value.callModal()
+    if (canSubmit.value) {
+      multiSubmit({ ...form.value, staff: form.value.staff })
+    } else refAlertModal.value?.callModal()
   }
 }
 
 const multiSubmit = (payload: PersonnelOrder) => {
-  emit('multi-submit', payload)
-  emit('close')
+  submitting.value = true
+  emit('multi-submit', payload, ok => {
+    submitting.value = false
+    if (ok) emit('close')
+  })
 }
 
 const deleteObject = () => {
   if (props.order?.pk) {
-    emit('on-delete', props.order.pk)
-    refDelModal.value.close()
-    emit('close')
+    submitting.value = true
+    emit('on-delete', props.order.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) emit('close')
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 const formDataSetup = () => {
@@ -254,7 +276,7 @@ watch(
               <CFormLabel class="col-sm-4 col-form-label">자동 반영</CFormLabel>
               <CCol sm="8" class="pt-1">
                 <CFormCheck
-                  id="is_processed"
+                  :id="`is_processed_${order?.pk ?? 'new'}`"
                   v-model="form.is_processed"
                   label="직원 현재 상태에 즉시 자동 반영"
                 />
@@ -264,7 +286,7 @@ watch(
         </CRow>
 
         <!-- 발령 전 상태 스냅샷 -->
-        <CCallout color="secondary" class="p-3 my-3 bg-light">
+        <CCallout color="secondary" class="p-3 my-3" :class="bgLight">
           <h6 class="fw-bold mb-2">발령 전 상태 (스냅샷)</h6>
           <CRow>
             <CCol sm="3">
@@ -299,7 +321,7 @@ watch(
         </CCallout>
 
         <!-- 발령 후 상태 -->
-        <CCallout color="primary" class="p-3 my-3 bg-light">
+        <CCallout color="primary" class="p-3 my-3" :class="bgLight">
           <h6 class="fw-bold mb-2 text-primary">발령 후 상태 (새 보직/직급/직위)</h6>
           <CRow>
             <CCol sm="3">
@@ -352,20 +374,22 @@ watch(
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSubmit"
           type="submit"
           size="small"
           variant="flat"
           :color="order ? 'success' : 'primary'"
-          :disabled="formsCheck"
+          :disabled="formsCheck || submitting"
         >
           저장
         </v-btn>
         <v-btn
-          v-if="order"
+          v-if="order && canHrWorkDelete"
           type="button"
           size="small"
           variant="flat"
           color="warning"
+          :disabled="submitting"
           @click="deleteConfirm"
         >
           삭제
@@ -389,7 +413,9 @@ watch(
       삭제한 데이터는 복구할 수 없습니다. 해당 발령 이력을 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" variant="flat" @click="deleteObject"> 삭제 </v-btn>
+      <v-btn color="warning" size="small" variant="flat" :disabled="submitting" @click="deleteObject">
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 

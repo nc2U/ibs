@@ -38,7 +38,7 @@ const getStatusBadge = (status: string) => {
     case '4':
       return { color: 'secondary', label: '퇴사' }
     default:
-      return { color: 'light', label: '-' }
+      return { color: 'secondary', label: '-' }
   }
 }
 </script>

@@ -2,8 +2,10 @@
 import { computed, ref } from 'vue'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
+import { isValidate } from '@/utils/helper.ts'
 import { type StaffCertificate } from '@/store/types/company.ts'
 import { TableSecondary, AlertSecondary } from '@/utils/cssMixins.ts'
+import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -17,18 +19,20 @@ const props = withDefaults(
     excelUrl?: string
     excelFilename?: string
     selectedStaff?: number | null
+    activePage?: number
   }>(),
   {
     company: null,
     excelUrl: '',
     excelFilename: '',
     selectedStaff: null,
+    activePage: 1,
   },
 )
 
 const emit = defineEmits<{
-  (e: 'multi-submit', payload: StaffCertificate): void
-  (e: 'on-delete', pk: number): void
+  (e: 'multi-submit', payload: StaffCertificate, done?: (ok: boolean) => void): void
+  (e: 'on-delete', pk: number, done?: (ok: boolean) => void): void
   (e: 'page-select', page: number): void
 }>()
 
@@ -52,14 +56,16 @@ const getPkStaffs = computed(() =>
   })),
 )
 
-const refFormModal = ref()
-const refDelModal = ref()
-const refAlertModal = ref()
+const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refDelModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
-const form = ref<StaffCertificate>({
+type StaffCertificateFormState = Omit<StaffCertificate, 'staff'> & { staff: number | null }
+
+const form = ref<StaffCertificateFormState>({
   pk: undefined,
   company: undefined,
-  staff: null as any,
+  staff: null,
   name: '',
   grade: '',
   cert_number: '',
@@ -70,15 +76,38 @@ const form = ref<StaffCertificate>({
   note: '',
 })
 
+const origForm = ref<StaffCertificate | null>(null)
 const isEdit = ref(false)
+const validated = ref(false)
+const submitting = ref(false)
+
+const canSubmit = computed(() => (isEdit.value ? canHrWorkUpdate.value : canHrWorkCreate.value))
+
+const formsCheck = computed(() => {
+  if (!isEdit.value || !origForm.value) return false
+  const o = origForm.value
+  return (
+    (form.value.staff ?? null) === (o.staff ?? null) &&
+    form.value.name === o.name &&
+    (form.value.grade ?? '') === (o.grade ?? '') &&
+    (form.value.cert_number ?? '') === (o.cert_number ?? '') &&
+    (form.value.issuer ?? '') === (o.issuer ?? '') &&
+    form.value.acquired_date === o.acquired_date &&
+    (form.value.expire_date ?? null) === (o.expire_date ?? null) &&
+    form.value.has_allowance === o.has_allowance &&
+    (form.value.note ?? '') === (o.note ?? '')
+  )
+})
 
 const openCreateModal = () => {
-  if (!canHrWorkCreate.value) return refAlertModal.value.callModal()
+  if (!canHrWorkCreate.value) return refAlertModal.value?.callModal()
   isEdit.value = false
+  origForm.value = null
+  validated.value = false
   form.value = {
     pk: undefined,
     company: props.company || undefined,
-    staff: props.selectedStaff || (allStaffList.value[0]?.pk as number) || (null as any),
+    staff: props.selectedStaff || allStaffList.value[0]?.pk || null,
     name: '',
     grade: '',
     cert_number: '',
@@ -88,32 +117,49 @@ const openCreateModal = () => {
     has_allowance: false,
     note: '',
   }
-  refFormModal.value.callModal()
+  refFormModal.value?.callModal()
 }
 
 const openEditModal = (item: StaffCertificate) => {
   isEdit.value = true
+  validated.value = false
+  origForm.value = { ...item }
   form.value = { ...item }
-  refFormModal.value.callModal()
+  refFormModal.value?.callModal()
 }
 
-const onSubmit = () => {
-  if (!form.value.staff || !form.value.name || !form.value.acquired_date) return
-  emit('multi-submit', { ...form.value })
-  refFormModal.value.close()
+const onSubmit = (event: Event) => {
+  if (
+    isValidate(event) ||
+    form.value.staff === null ||
+    !form.value.name ||
+    !form.value.acquired_date
+  ) {
+    validated.value = true
+    return
+  }
+  if (!canSubmit.value) return refAlertModal.value?.callModal()
+  submitting.value = true
+  emit('multi-submit', { ...form.value, staff: form.value.staff }, ok => {
+    submitting.value = false
+    if (ok) refFormModal.value?.close()
+  })
 }
 
 const deleteObject = () => {
   if (form.value.pk) {
-    emit('on-delete', form.value.pk)
-    refDelModal.value.close()
-    refFormModal.value.close()
+    submitting.value = true
+    emit('on-delete', form.value.pk, ok => {
+      submitting.value = false
+      refDelModal.value?.close()
+      if (ok) refFormModal.value?.close()
+    })
   }
 }
 
 const deleteConfirm = () => {
-  if (canHrWorkDelete.value) refDelModal.value.callModal()
-  else refAlertModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value?.callModal()
+  else refAlertModal.value?.callModal()
 }
 
 defineExpose({ openCreateModal })
@@ -192,7 +238,7 @@ defineExpose({ openCreateModal })
 
   <Pagination
     v-if="staffCertificatesCount > 10"
-    :active-page="1"
+    :active-page="activePage"
     :limit="8"
     :pages="comStore.staffCertificatePages(10)"
     class="mt-3"
@@ -204,7 +250,12 @@ defineExpose({ openCreateModal })
       {{ isEdit ? '직원 자격/면허 수정' : '직원 자격/면허 등록' }}
     </template>
     <template #default>
-      <CForm class="p-3" @submit.prevent="onSubmit">
+      <CForm
+        class="needs-validation p-3"
+        novalidate
+        :validated="validated"
+        @submit.prevent="onSubmit"
+      >
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
@@ -282,7 +333,7 @@ defineExpose({ openCreateModal })
               <CFormLabel class="col-sm-4 col-form-label">수당 지급</CFormLabel>
               <CCol sm="8" class="pt-1">
                 <CFormCheck
-                  id="has_allowance"
+                  :id="`has_allowance_${form.pk ?? 'new'}`"
                   v-model="form.has_allowance"
                   label="자격 수당 지급 대상"
                 />
@@ -304,19 +355,22 @@ defineExpose({ openCreateModal })
 
         <div class="d-flex justify-content-end gap-2 mt-4">
           <v-btn
+            v-if="canSubmit"
             type="submit"
             size="small"
             variant="flat"
             :color="isEdit ? 'success' : 'primary'"
+            :disabled="formsCheck || submitting"
           >
             저장
           </v-btn>
           <v-btn
-            v-if="isEdit"
+            v-if="isEdit && canHrWorkDelete"
             type="button"
             size="small"
             variant="flat"
             color="warning"
+            :disabled="submitting"
             @click="deleteConfirm"
           >
             삭제
@@ -326,7 +380,7 @@ defineExpose({ openCreateModal })
             size="small"
             variant="flat"
             color="light"
-            @click="refFormModal.close()"
+            @click="refFormModal?.close()"
           >
             닫기
           </v-btn>
@@ -341,7 +395,15 @@ defineExpose({ openCreateModal })
       삭제한 데이터는 복구할 수 없습니다. 해당 자격/면허 정보를 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" variant="flat" @click="deleteObject">삭제</v-btn>
+      <v-btn
+        color="warning"
+        size="small"
+        variant="flat"
+        :disabled="submitting"
+        @click="deleteObject"
+      >
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 
