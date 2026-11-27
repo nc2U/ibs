@@ -171,7 +171,9 @@ class ExportContracts(ContractExportMixin):
         dong = request.GET.get('dong')
         is_null = request.GET.get('is_null')
         quali = request.GET.get('quali')
+        change_type = request.GET.get('change_type')
         sup = request.GET.get('sup')
+        completed = request.GET.get('completed')
         sdate = request.GET.get('sdate')
         edate = request.GET.get('edate')
         q = request.GET.get('q')
@@ -203,8 +205,11 @@ class ExportContracts(ContractExportMixin):
         null_qry = True if is_null == '1' else False
         queryset = queryset.filter(key_unit__houseunit__isnull=null_qry) if is_null else queryset
         queryset = queryset.filter(contractor__qualification=quali) if quali else queryset
+        queryset = queryset.filter(contractor__change_type=change_type) if change_type else queryset
         sup_qry = True if sup == 'true' else False
         queryset = queryset.filter(is_sup_cont=sup_qry) if sup else queryset
+        if completed is not None and completed != '':
+            queryset = queryset.filter(is_completed=(completed.lower() in ('true', '1')))
         queryset = queryset.filter(contractor__contract_date__gte=sdate) if sdate else queryset
         queryset = queryset.filter(contractor__contract_date__lte=edate) if edate else queryset
         queryset = queryset.filter(

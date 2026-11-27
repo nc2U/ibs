@@ -39,7 +39,7 @@ const unitMap = computed(() => {
 const getUnit = (line: number, floor: number) => unitMap.value.get(`${line}-${floor}`)
 
 const getFirst = (floor: number) => {
-  if (floor > maxPiloti.value) {
+  if (floor >= maxPiloti.value) {
     const lines = props.units
       .filter(u => u.floor === floor)
       .map(u => u.line)

@@ -247,18 +247,17 @@ const deleteFile = async () => {
   try {
     await contStore.removeContractFile(fileToDelete.value, props.contract?.pk as number)
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
+    fileToDelete.value = null
     confirmModal.value?.close()
   } catch (error) {
     console.error('파일 삭제 실패:', error)
-  } finally {
-    fileToDelete.value = null
   }
 }
 
 // 자격구분 색상
-const getQualificationColor = (q: '1' | '2' | '3' | '') => {
+const getQualificationColor = (q: '1' | '2' | '3' | '4' | '') => {
   if (!q) return 'secondary'
-  return { '1': 'info', '2': 'warning', '3': 'success' }[q]
+  return { '1': 'info', '2': 'warning', '3': 'success', '4': 'danger' }[q] || 'secondary'
 }
 </script>
 
@@ -272,11 +271,11 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
       <CRow class="mb-2">
         <CCol :sm="6">
           <strong>계약번호 :</strong>
-          <span class="ml-2">{{ contract.serial_number }}</span>
+          <span class="ms-2">{{ contract.serial_number }}</span>
         </CCol>
         <CCol :sm="6">
           <strong>분양차수 :</strong>
-          <span class="ml-2">{{ contract.order_group_desc.name }}</span>
+          <span class="ms-2">{{ contract.order_group_desc?.name }}</span>
         </CCol>
       </CRow>
       <CRow class="mb-2">
@@ -287,15 +286,15 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               name="cibDiscover"
               :style="'color:' + contract.unit_type_desc.color"
               size="sm"
-              class="ml-2 mr-1"
+              class="ms-2 me-1"
             />
             <span>{{ contract.unit_type_desc.name }}</span>
           </template>
-          <span v-else class="ml-2 text-medium-emphasis">미정</span>
+          <span v-else class="ms-2 text-medium-emphasis">미정</span>
         </CCol>
         <CCol :sm="6">
           <strong>호수 :</strong>
-          <span class="ml-2" :class="contract.key_unit?.houseunit ? 'text-success' : 'text-danger'">
+          <span class="ms-2" :class="contract.key_unit?.houseunit ? 'text-success' : 'text-danger'">
             {{ contract.key_unit?.houseunit?.__str__ || '미정' }}
           </span>
         </CCol>
@@ -303,11 +302,11 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
       <CRow class="mb-2">
         <CCol :sm="6">
           <strong>계약일 :</strong>
-          <span class="ml-2">{{ contractor.contract_date || '-' }}</span>
+          <span class="ms-2">{{ contractor.contract_date || '-' }}</span>
         </CCol>
         <CCol :sm="6">
           <strong>공급계약일 :</strong>
-          <span class="ml-2">{{ contract.sup_cont_date || '-' }}</span>
+          <span class="ms-2">{{ contract.sup_cont_date || '-' }}</span>
         </CCol>
       </CRow>
       <CRow>
@@ -317,7 +316,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             :color="contract.is_active ? 'success' : 'secondary'"
             variant="flat"
             size="x-small"
-            class="ml-2"
+            class="ms-2"
           >
             {{ contract.is_active ? '활성' : '비활성' }}
           </v-chip>
@@ -328,7 +327,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             :color="contract.is_sup_cont ? 'success' : 'secondary'"
             variant="flat"
             size="x-small"
-            class="ml-2"
+            class="ms-2"
           >
             {{ contract.is_sup_cont ? '완료' : '미완료' }}
           </v-chip>
@@ -339,7 +338,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             :color="contract.is_completed ? 'success' : 'info'"
             variant="flat"
             size="x-small"
-            class="ml-2"
+            class="ms-2"
           >
             {{ contract.is_completed ? '종결' : '진행중' }}
           </v-chip>
@@ -360,17 +359,19 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
         <CRow class="mb-2">
           <CCol :sm="6">
             <strong>이름 :</strong>
-            <span class="ml-2 text-info strong">{{ contractor.name }}</span>
+            <span class="ms-2 text-info strong">{{ contractor.name }}</span>
           </CCol>
           <CCol :sm="6">
             <strong>생년월일 :</strong>
-            <span class="ml-2">{{ contractor.birth_date }}</span>
+            <span class="ms-2">{{ contractor.birth_date || '-' }}</span>
           </CCol>
         </CRow>
         <CRow class="mb-2">
           <CCol :sm="6">
             <strong>성별 :</strong>
-            <span class="ml-2">{{ contractor.gender === 'M' ? '남성' : '여성' }}</span>
+            <span class="ms-2">{{
+              contractor.gender === 'M' ? '남성' : contractor.gender === 'F' ? '여성' : '-'
+            }}</span>
           </CCol>
           <CCol :sm="6">
             <strong>자격구분 :</strong>
@@ -378,7 +379,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               :color="getQualificationColor(contractor.qualification)"
               variant="flat"
               size="x-small"
-              class="ml-2"
+              class="ms-2"
             >
               {{ contractor.qualifi_display }}
             </v-chip>
@@ -453,13 +454,13 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
         <CRow class="mb-2">
           <CCol :sm="6">
             <strong>휴대폰 :</strong>
-            <span class="ml-2">
+            <span class="ms-2">
               {{ contract.contractor?.contractorcontact.cell_phone || '-' }}
             </span>
           </CCol>
           <CCol :sm="6">
             <strong>집전화 :</strong>
-            <span class="ml-2">
+            <span class="ms-2">
               {{ contract.contractor?.contractorcontact.home_phone || '-' }}
             </span>
           </CCol>
@@ -467,13 +468,13 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
         <CRow class="mb-2">
           <CCol :sm="6">
             <strong>기타전화 :</strong>
-            <span class="ml-2">
+            <span class="ms-2">
               {{ contract.contractor?.contractorcontact.other_phone || '-' }}
             </span>
           </CCol>
           <CCol :sm="6">
             <strong>이메일 :</strong>
-            <span class="ml-2">
+            <span class="ms-2">
               {{ contract.contractor?.contractorcontact.email || '-' }}
             </span>
           </CCol>
@@ -485,11 +486,11 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
         <div class="d-flex justify-content-between align-items-center">
           <v-btn-toggle v-model="selectedAddressTab" mandatory density="compact" rounded="0">
             <v-btn value="id" size="small">
-              <v-icon icon="mdi-home" size="small" class="mr-1" />
+              <v-icon icon="mdi-home" size="small" class="me-1" />
               주민등록 주소
             </v-btn>
             <v-btn value="dm" size="small">
-              <v-icon icon="mdi-email" size="small" class="mr-1" />
+              <v-icon icon="mdi-email" size="small" class="me-1" />
               우편물 수령 주소
             </v-btn>
           </v-btn-toggle>
@@ -498,7 +499,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             color="primary"
             variant="outlined"
             size="small"
-            @click="refChangeAddr.callModal()"
+            @click="refChangeAddr?.callModal()"
           >
             주소변경 등록
           </v-btn>
@@ -538,7 +539,8 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
           <div
             v-else-if="selectedAddressTab === 'dm'"
             key="dm-address"
-            class="p-3 border mt-0 bg-yellow-lighten-5"
+            class="p-3 border mt-0"
+            :class="isDark ? 'bg-dark' : 'bg-yellow-lighten-5'"
           >
             <div
               v-if="
@@ -615,7 +617,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
       <div>
         <h6 class="mb-2">
           메모
-          <span v-if="canContractUpdate" class="text-caption text-grey ml-1">
+          <span v-if="canContractUpdate" class="text-caption text-grey ms-1">
             (더블클릭하여 수정)
           </span>
         </h6>
@@ -640,7 +642,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             :disabled="isSavingNote"
             class="mb-2 bg-transparent"
           />
-          <div class="text-right">
+          <div class="text-end">
             <v-btn
               color="success"
               size="small"
@@ -670,9 +672,14 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
           <div class="d-flex justify-content-between align-items-center p-2 border rounded">
             <div class="flex-grow-1">
               <div>
-                <v-icon icon="mdi-file-document" size="small" class="mr-1" />
-                <strong class="mr-2">{{ file.file_name }}</strong>
-                <a :href="file.file" target="_blank" class="text-decoration-none">
+                <v-icon icon="mdi-file-document" size="small" class="me-1" />
+                <strong class="me-2">{{ file.file_name }}</strong>
+                <a
+                  :href="file.file"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-decoration-none"
+                >
                   <v-icon icon="mdi-download" color="primary" />
                 </a>
               </div>
@@ -690,7 +697,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
                 icon="mdi-pencil"
                 :color="editingFileId === file.pk ? 'warning' : 'success'"
                 size="x-small"
-                class="ml-3 pointer"
+                class="ms-3 pointer"
                 @click="toggleEditMode(file.pk)"
               />
               <v-icon
@@ -698,7 +705,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
                 icon="mdi-delete"
                 color="grey"
                 size="x-small"
-                class="ml-1 pointer"
+                class="ms-1 pointer"
                 @click="confirmDeleteFile(file.pk, file.file_name)"
               />
             </div>
@@ -708,7 +715,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
           <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-more-light">
             <div class="mb-2">
               <strong class="text-primary">파일 변경</strong>
-              <small class="text-grey ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
+              <small class="text-grey ms-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
             </div>
             <v-file-input
               v-model="editFile"
@@ -718,7 +725,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               :disabled="isUpdating"
               class="mb-2"
             />
-            <div class="text-right">
+            <div class="text-end">
               <v-btn
                 color="success"
                 size="small"
@@ -746,7 +753,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
           <CCol class="p-3 text-center text-grey" :class="bgLight"> 등록된 파일이 없습니다. </CCol>
         </CRow>
 
-        <CRow class="text-right mt-3">
+        <CRow class="text-end mt-3">
           <CCol v-if="canContractUpdate" :sm="12">
             <v-file-input
               v-model="selectedFile"
@@ -774,14 +781,15 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
     <template #header>주소변경 등록</template>
     <template #default>
       <AddressForm
-        :contractor="contractor?.pk as number"
+        v-if="contractor?.pk"
+        :contractor="contractor.pk"
         :address="address"
-        @close="refChangeAddr.close()"
+        @close="refChangeAddr?.close()"
       />
     </template>
   </FormModal>
 
-  <ConfirmModal ref="confirmModal">
+  <ConfirmModal ref="confirmModal" @close="fileToDelete = null">
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteFile">
         <v-icon icon="mdi-delete" size="small" class="me-1" />

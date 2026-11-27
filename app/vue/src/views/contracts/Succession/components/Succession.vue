@@ -1,10 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Succession } from '@/store/types/contract'
-
-const router = useRouter()
 
 const props = defineProps<{
   succession: Succession
@@ -32,12 +29,6 @@ const statusLabel = computed(() => statusMap[props.succession?.status] || '')
 
 const callFormModal = () => {
   if (!done.value) {
-    if (props.succession?.buyer?.pk) {
-      router.replace({
-        name: '권리 의무 승계',
-        query: { contractor: props.succession.buyer.pk },
-      })
-    }
     emit('call-form', props.succession)
   } else {
     emit('done-alert')

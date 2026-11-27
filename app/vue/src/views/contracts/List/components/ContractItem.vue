@@ -56,6 +56,7 @@ const changeTypeColor = computed(() => {
   >
     <CTableDataCell>
       <router-link
+        v-if="contractorPk"
         :to="{
           name: '계약 상세 보기',
           params: { contractorId: contractorPk },
@@ -64,8 +65,9 @@ const changeTypeColor = computed(() => {
       >
         {{ contract.serial_number }}
       </router-link>
+      <span v-else>{{ contract.serial_number }}</span>
     </CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       <v-chip :color="getColor(contract.contractor?.qualification)" variant="flat" size="x-small">
         {{ contract.contractor?.qualifi_display }}
       </v-chip>
@@ -74,21 +76,21 @@ const changeTypeColor = computed(() => {
         :color="changeTypeColor"
         variant="flat"
         size="x-small"
-        class="ml-1"
+        class="ms-1"
       >
         {{ changeTypeLabel }}
       </v-chip>
     </CTableDataCell>
     <CTableDataCell>
-      {{ contract.order_group_desc.name }}
+      {{ contract.order_group_desc?.name }}
     </CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       <template v-if="contract.unit_type_desc">
         <CIcon
           name="cibDiscover"
           :style="'color:' + contract.unit_type_desc.color"
           size="sm"
-          class="mr-1"
+          class="me-1"
         />
         {{ contract.unit_type_desc.name }}
       </template>
@@ -96,6 +98,7 @@ const changeTypeColor = computed(() => {
     </CTableDataCell>
     <CTableDataCell>
       <router-link
+        v-if="contractorPk"
         :to="{
           name: '계약 상세 보기',
           params: { contractorId: contractorPk },
@@ -104,12 +107,14 @@ const changeTypeColor = computed(() => {
       >
         {{ contract.contractor?.name }}
       </router-link>
+      <span v-else>{{ contract.contractor?.name }}</span>
     </CTableDataCell>
     <CTableDataCell
-      class="text-left"
+      class="text-start"
       :class="contract.key_unit?.houseunit !== null ? '' : 'text-danger'"
     >
       <router-link
+        v-if="contractorPk"
         :to="{
           name: '계약 상세 보기',
           params: { contractorId: contractorPk },
@@ -118,13 +123,16 @@ const changeTypeColor = computed(() => {
       >
         {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
       </router-link>
+      <span v-else>
+        {{ contract.key_unit?.houseunit ? contract.key_unit?.houseunit.__str__ : '미정' }}
+      </span>
     </CTableDataCell>
     <CTableDataCell>{{ contract.contractor?.contract_date }}</CTableDataCell>
     <CTableDataCell>{{ contract.sup_cont_date }}</CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.contractprice?.price || 0) }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.total_paid) }}
     </CTableDataCell>
     <CTableDataCell>
@@ -132,7 +140,7 @@ const changeTypeColor = computed(() => {
     </CTableDataCell>
     <CTableDataCell>
       <span v-if="!!contract.contract_files.length" class="pointer">
-        <a :href="contract.contract_files[0].file" target="_blank">
+        <a :href="contract.contract_files[0].file" target="_blank" rel="noopener noreferrer">
           <v-icon icon="mdi-download-box" color="primary" />
         </a>
         <v-tooltip activator="parent" location="top">
@@ -150,13 +158,15 @@ const changeTypeColor = computed(() => {
         type="button"
         color="info"
         size="x-small"
-        class="mr-1"
+        class="me-1"
+        :disabled="!contractorPk"
         @click="
-          router.push({
-            name: '계약 상세 보기',
-            params: { contractorId: contractorPk },
-            query: { from_page: props.currentPage },
-          })
+          contractorPk &&
+            router.push({
+              name: '계약 상세 보기',
+              params: { contractorId: contractorPk },
+              query: { from_page: props.currentPage },
+            })
         "
       >
         보기

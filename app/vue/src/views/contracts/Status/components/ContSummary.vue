@@ -8,6 +8,7 @@ import { TableSecondary, TableSuccess, TablePrimary } from '@/utils/cssMixins'
 const pDataStore = useProjectData()
 const simpleTypes = computed(() => pDataStore.simpleTypes)
 const unitSum = computed(() => pDataStore.unitSummary)
+const allUnitSum = computed(() => pDataStore.allUnitSummary)
 
 const contStore = useContract()
 const contSum = computed(() => contStore.contSum || 0)
@@ -17,7 +18,7 @@ const totalUnits = computed(() => unitSum.value?.totalNum || 0)
 const totalHolding = computed(() => unitSum.value?.holdNum || 0)
 const sumTotal = computed(() => subsSum.value + contSum.value)
 const assignedNum = computed(
-  () => (unitSum.value?.contNum || 0) + (unitSum.value?.appNum || 0),
+  () => (allUnitSum.value?.contNum || 0) + (allUnitSum.value?.appNum || 0),
 )
 const unassignedNum = computed(() => sumTotal.value - assignedNum.value)
 const remainingNum = computed(() => totalUnits.value - totalHolding.value - sumTotal.value)

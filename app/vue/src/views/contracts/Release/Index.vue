@@ -33,6 +33,7 @@ const page = ref(1)
 const loading = ref(true)
 
 const releaseFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const releaseFormRef = ref<InstanceType<typeof ReleaseForm> | null>(null)
 const releaseAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 // 쿼리/파라미터 안전 파싱 (NaN 방어)
@@ -55,10 +56,13 @@ const contractor = computed<Contractor | null>(() => contStore.contractor)
 const contRelease = computed(() => contStore.contRelease)
 const contOn = computed(() => !!contractor.value && contractor.value.status < '3')
 
-// 라우트 contractorId 감시 (중복 watch 제거)
+const isNavigatingForm = ref(false)
+
+// 라우트 contractorId 감시 (중복 fetch 방지)
 watch(
   contractorId,
   async newId => {
+    if (isNavigatingForm.value) return
     if (newId) {
       await contStore.fetchContractor(newId)
     } else {
@@ -76,14 +80,6 @@ watch(contractor, async val => {
     contStore.contRelease = null
   }
 })
-
-const searchContractor = async (search: string) => {
-  if (search.trim() !== '' && project.value) {
-    await contStore.fetchContractorList(project.value, search.trim())
-  } else {
-    contStore.contractorList = []
-  }
-}
 
 // 임시 쿼리만 선택적으로 정리 (project 등 영구 파라미터 보존)
 const clearTransientQueries = () => {
@@ -129,8 +125,9 @@ const loadHighlightPage = async (highlightIdVal: number, targetProjectId: number
   }
 }
 
-// setTimeout(500) 제거 및 데이터 로드 완료 후 모달 즉시 호출
+// 중복 조회 방지 및 데이터 로드 완료 후 모달 즉시 호출
 const callForm = async (targetContractorId: number) => {
+  isNavigatingForm.value = true
   try {
     await router.replace({
       name: '계약 해지 보기',
@@ -140,9 +137,7 @@ const callForm = async (targetContractorId: number) => {
 
     if (contStore.contractor?.pk !== targetContractorId) {
       await contStore.fetchContractor(targetContractorId)
-    }
-
-    if (contStore.contractor?.contractorrelease) {
+    } else if (contStore.contractor?.contractorrelease) {
       await contStore.fetchContRelease(contStore.contractor.contractorrelease)
     } else {
       contStore.contRelease = null
@@ -155,6 +150,9 @@ const callForm = async (targetContractorId: number) => {
     }
   } catch (error) {
     console.error('해지 폼 호출 오류:', error)
+  } finally {
+    await nextTick()
+    isNavigatingForm.value = false
   }
 }
 
@@ -203,19 +201,26 @@ const onSubmit = async (payload: ReleaseFormData) => {
     note: payload.note,
   }
 
-  if (!payload.pk) {
-    await contStore.createRelease(releaseData)
-  } else {
-    await contStore.updateRelease({ page: page.value, ...releaseData })
+  try {
+    if (!payload.pk) {
+      await contStore.createRelease(releaseData)
+    } else {
+      await contStore.updateRelease({ page: page.value, ...releaseData })
+    }
+    releaseFormModal.value?.close()
+  } catch {
+    // 에러 안내는 store의 errorHandle에서 처리하며 모달은 유지
   }
-  releaseFormModal.value?.close()
 }
 
 const onDelete = async (pk: number) => {
-  if (project.value) {
+  if (!project.value) return
+  try {
     await contStore.deleteRelease(pk, project.value, page.value)
+    releaseFormModal.value?.close()
+  } catch {
+    // 에러 안내는 store의 errorHandle에서 처리
   }
-  releaseFormModal.value?.close()
 }
 
 // 라우트 갱신 감지 (watch(route) 대체)
@@ -236,16 +241,17 @@ onBeforeMount(async () => {
   const targetProjectId = urlProjectId.value || project.value || projStore.currentProject
 
   if (targetProjectId) {
-    if (urlProjectId.value && urlProjectId.value !== project.value) {
-      await projSelect(urlProjectId.value, true)
+    if (project.value !== targetProjectId) {
+      await projSelect(targetProjectId, true)
     } else {
-      if (contractorId.value) {
-        await contStore.fetchContractor(contractorId.value)
-      } else {
-        contStore.contractor = null
-        contStore.contract = null
-      }
       await dataSetup(targetProjectId)
+    }
+
+    if (contractorId.value) {
+      await contStore.fetchContractor(contractorId.value)
+    } else {
+      contStore.contractor = null
+      contStore.contract = null
     }
   }
 
@@ -266,10 +272,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
-        <ContController
-          :project="project ?? undefined"
-          @search-contractor="searchContractor"
-        />
+        <ContController :project="project ?? undefined" />
         <ContractorAlert v-if="contractor" :contractor="contractor" clear-route="계약 해지 관리" />
 
         <ReleaseButton
@@ -295,10 +298,11 @@ onBeforeMount(async () => {
       </CCardBody>
     </ContentBody>
 
-    <FormModal ref="releaseFormModal" size="lg">
+    <FormModal ref="releaseFormModal" size="lg" @close="releaseFormRef?.resetForm()">
       <template #header>{{ contRelease ? '계약 해지 수정' : '계약 해지 등록' }}</template>
       <template #default>
         <ReleaseForm
+          ref="releaseFormRef"
           :release="contRelease ?? undefined"
           :contractor="contractor"
           @on-submit="onSubmit"

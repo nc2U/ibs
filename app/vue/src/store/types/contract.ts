@@ -115,8 +115,8 @@ export interface Contract {
   project: number
   order_group_sort: '1' | '2' // '조합모집' | '일반분양'
   order_group: number
-  unit_type: number
-  unit_type_desc: UnitType
+  unit_type: number | null
+  unit_type_desc: UnitType | null
   serial_number: string
   is_active: boolean
   is_completed: boolean
@@ -161,10 +161,10 @@ export interface Contractor {
   contract: number
   name: string
   __str__: string
-  birth_date: string
+  birth_date: string | null
   gender: 'M' | 'F' | ''
-  qualification: '1' | '2' | '3' | ''
-  qualifi_display: '일반분양' | '미인가조합원' | '인가조합원'
+  qualification: '1' | '2' | '3' | '4' | ''
+  qualifi_display: '일반분양' | '미인가조합원' | '인가조합원' | '부적격'
   status: '1' | '2' | '3' | '4' | ''
   status_display: '청약' | '계약' | '변경처리중' | '계약종결'
   change_type: '1' | '2' | '3' | null
@@ -333,7 +333,7 @@ export interface Succession {
 export interface Buyer {
   pk?: number
   name: string
-  birth_date: string
+  birth_date: string | null
   gender: 'M' | 'F'
   has_rrn?: boolean
   rrn_masked?: string
@@ -387,9 +387,9 @@ export interface ContractRelease {
   release_type: '1' | '2' | '3'
   status: '1' | '2' | '3' | '4' | '9'
   refund_amount: number | null
-  refund_account_bank: string
-  refund_account_number: string
-  refund_account_depositor: string
+  refund_account_bank: string | null
+  refund_account_number: string | null
+  refund_account_depositor: string | null
   refund_completion_date: string | null // 환불 완료일
   completion_date: string | null // 해지 확정일
   note: string

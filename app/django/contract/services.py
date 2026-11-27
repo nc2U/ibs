@@ -1241,6 +1241,12 @@ class ContractCreationService:
         if isinstance(is_sup_cont_value, str):
             is_sup_cont_value = is_sup_cont_value.lower() == 'true'
 
+        is_completed_value = data.get('is_completed', False)
+        if isinstance(is_completed_value, str):
+            is_completed_value = is_completed_value.lower() == 'true'
+        else:
+            is_completed_value = bool(is_completed_value)
+
         # Convert string to date for sup_cont_date
         sup_cont_date_value = clean_date_value(data.get('sup_cont_date'))
         if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
@@ -1275,7 +1281,8 @@ class ContractCreationService:
                 unit_type_id=unit_type_id,
                 is_active=is_active_value,
                 is_sup_cont=is_sup_cont_value,
-                sup_cont_date=sup_cont_date_value
+                sup_cont_date=sup_cont_date_value,
+                is_completed=is_completed_value
             )
         except IntegrityError as e:
             if 'serial_number' in str(e):
@@ -1339,6 +1346,12 @@ class ContractUpdateService:
             if isinstance(is_sup_cont_value, str):
                 is_sup_cont_value = is_sup_cont_value.lower() == 'true'
             instance.is_sup_cont = is_sup_cont_value
+
+        if 'is_completed' in data:
+            is_completed_value = data.get('is_completed')
+            if isinstance(is_completed_value, str):
+                is_completed_value = is_completed_value.lower() == 'true'
+            instance.is_completed = bool(is_completed_value)
 
         if 'sup_cont_date' in data:
             sup_cont_date_value = clean_date_value(data.get('sup_cont_date'))

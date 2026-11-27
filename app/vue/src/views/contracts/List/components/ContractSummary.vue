@@ -69,7 +69,7 @@ const contNum = (order: number | null, type?: number): number => {
     </CTableHead>
 
     <CTableBody v-if="props.project">
-      <CTableRow v-for="(type, i) in unitTypeList" :key="i" class="text-right" align="middle">
+      <CTableRow v-for="(type, i) in unitTypeList" :key="type.pk ?? i" class="text-end" align="middle">
         <!-- 프로젝트명 -->
         <CTableHeaderCell
           v-if="props.project && i === 0"
@@ -79,7 +79,7 @@ const contNum = (order: number | null, type?: number): number => {
           {{ props.project.name }}
         </CTableHeaderCell>
         <!--  타입 -->
-        <CTableDataCell class="text-left pl-2">
+        <CTableDataCell class="text-start ps-2">
           <CIcon name="cibDiscover" :style="'color:' + type.color" size="sm" />
           {{ type.name }}
         </CTableDataCell>
@@ -90,7 +90,8 @@ const contNum = (order: number | null, type?: number): number => {
         <!-- 타입별 청약건수-->
         <CTableDataCell>{{ numFormat(subsNum(type.pk)) }}</CTableDataCell>
         <!-- 차수별 타입별 계약건수-->
-        <CTableDataCell v-for="order in orderGroupList" :key="order.pk">
+        <CTableDataCell v-if="orderGroupList.length === 0">-</CTableDataCell>
+        <CTableDataCell v-for="order in orderGroupList" v-else :key="order.pk">
           {{ numFormat(contNum(order.pk, type.pk)) }}
         </CTableDataCell>
 
@@ -112,21 +113,22 @@ const contNum = (order: number | null, type?: number): number => {
         </CTableDataCell>
       </CTableRow>
 
-      <CTableRow v-if="untypedSubsNum > 0" class="text-right" align="middle">
+      <CTableRow v-if="untypedSubsNum > 0" class="text-end" align="middle">
         <CTableHeaderCell v-if="unitTypeList.length === 0" class="text-center">
           {{ props.project.name }}
         </CTableHeaderCell>
-        <CTableDataCell class="text-left pl-2 text-medium-emphasis"> 미지정 </CTableDataCell>
+        <CTableDataCell class="text-start ps-2 text-medium-emphasis"> 미지정 </CTableDataCell>
         <CTableDataCell>-</CTableDataCell>
         <CTableDataCell>{{ numFormat(untypedSubsNum) }}</CTableDataCell>
-        <CTableDataCell v-for="order in orderGroupList" :key="order.pk">-</CTableDataCell>
+        <CTableDataCell v-if="orderGroupList.length === 0">-</CTableDataCell>
+        <CTableDataCell v-for="order in orderGroupList" v-else :key="order.pk">-</CTableDataCell>
         <CTableDataCell v-if="orderGroupList.length > 1">-</CTableDataCell>
         <CTableDataCell>-</CTableDataCell>
         <CTableDataCell>-</CTableDataCell>
         <CTableDataCell>-</CTableDataCell>
       </CTableRow>
 
-      <CTableRow class="text-right" :color="TableSecondary">
+      <CTableRow class="text-end" :color="TableSecondary">
         <CTableDataCell class="text-center"> 합계</CTableDataCell>
         <CTableDataCell></CTableDataCell>
         <!-- 타입별 세대수 합계-->

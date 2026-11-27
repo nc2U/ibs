@@ -25,11 +25,11 @@ const onClose = () => {
 </script>
 
 <template>
-  <CAlert variant="solid" class="text-right bg-more-light">
+  <CAlert variant="solid" class="text-end bg-more-light">
     <v-btn color="primary" :disabled="!project" @click="createConfirm"> 신규등록</v-btn>
   </CAlert>
 
-  <FormModal ref="createFormModal" size="xl">
+  <FormModal ref="createFormModal" size="xl" @close="onClose">
     <template #header>청약 / 계약 등록 수정</template>
     <template #default>
       <ContractForm

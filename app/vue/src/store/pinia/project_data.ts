@@ -171,20 +171,16 @@ export const useProjectData = defineStore('projectData', () => {
   const mallExcludedUnits = computed(() =>
     houseUnitList.value.filter(u => u.unit_type?.sort && u.unit_type.sort < '5'),
   )
-  const unitSummary = computed(() =>
-    mallExcludedUnits.value
-      ? {
-          totalNum: mallExcludedUnits.value.length,
-          holdNum: mallExcludedUnits.value.filter(u => u.is_hold).length,
-          appNum: mallExcludedUnits.value.filter(
-            u => u.key_unit && u.key_unit.contract && u.key_unit.contract.contractor.status === '1',
-          ).length,
-          contNum: mallExcludedUnits.value.filter(
-            u => u.key_unit && u.key_unit.contract && u.key_unit.contract.contractor.status === '2',
-          ).length,
-        }
-      : { totalNum: 0, holdNum: 0, appNum: 0, contNum: 0 },
-  )
+  const summarizeUnits = (units: typeof houseUnitList.value) => ({
+    totalNum: units.length,
+    holdNum: units.filter(u => u.is_hold).length,
+    appNum: units.filter(u => u.key_unit?.contract?.contractor?.status === '1').length,
+    contNum: units.filter(u =>
+      ['2', '3'].includes(u.key_unit?.contract?.contractor?.status ?? ''),
+    ).length,
+  })
+  const unitSummary = computed(() => summarizeUnits(mallExcludedUnits.value))
+  const allUnitSummary = computed(() => summarizeUnits(houseUnitList.value))
   const numUnitByType = ref(0)
 
   // actions
@@ -300,6 +296,7 @@ export const useProjectData = defineStore('projectData', () => {
     isLoading,
     simpleUnits,
     unitSummary,
+    allUnitSummary,
     numUnitByType,
     fetchHouseUnitList,
     fetchNumUnitByType,

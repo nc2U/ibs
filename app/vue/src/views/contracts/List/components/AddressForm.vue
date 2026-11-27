@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUnmount, type PropType, ref } from 'vue'
+import { computed, onBeforeUnmount, type PropType, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useContract } from '@/store/pinia/contract.ts'
 import { isValidate } from '@/utils/helper.ts'
@@ -33,7 +33,7 @@ const form = ref({
 })
 
 const resetForm = () => {
-  form.value.contractor = null
+  form.value.contractor = props.contractor ?? null
   form.value.id_zipcode = ''
   form.value.id_address1 = ''
   form.value.id_address2 = ''
@@ -42,6 +42,8 @@ const resetForm = () => {
   form.value.dm_address1 = ''
   form.value.dm_address2 = ''
   form.value.dm_address3 = ''
+  sameAddr.value = false
+  validated.value = false
 }
 
 const refAddress1 = ref()
@@ -53,7 +55,7 @@ const sameAddr = ref(false)
 
 // 테이블 색상 상태 관리
 const currentTableColor = ref<'info' | 'warning'>('info')
-const colorTimeout = ref<any | null>(null)
+const colorTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const contStore = useContract()
 const contAddressList = computed<ContractorAddress[]>(() => contStore.contAddressList)
@@ -123,7 +125,7 @@ const selectedPk = ref<number | null>(null)
 const changeToCurrentAddress = async (addressPk: number) => {
   mode.value = 'update'
   selectedPk.value = addressPk
-  refConfirmChk.value.callModal(
+  refConfirmChk.value?.callModal(
     '주소변경 등록',
     '이 종전 주소를 현재 주소로 다시 변경하시겠습니까?',
     'mdi-office-building-marker',
@@ -136,7 +138,7 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     mode.value = 'create'
-    refConfirmChk.value.callModal(
+    refConfirmChk.value?.callModal(
       '주소변경 등록',
       '입력하신 주소를 새로운 현재 주소로 등록하시겠습니까?',
       'mdi-office-building-marker',
@@ -151,12 +153,17 @@ const modalAction = async () => {
     resetForm()
   } else if (mode.value === 'update' && selectedPk.value !== null)
     await patchContAddress(selectedPk.value, { is_current: true } as Partial<AddressInContractor>)
-  refConfirmChk.value.close()
+  refConfirmChk.value?.close()
 }
 
-onBeforeMount(() => {
-  props.contractor && (form.value.contractor = props.contractor)
-})
+watch(
+  () => props.contractor,
+  pk => {
+    form.value.contractor = pk ?? null
+    if (pk) contStore.fetchContAddressList(pk)
+  },
+  { immediate: true },
+)
 
 onBeforeUnmount(() => {
   // 컴포넌트 언마운트 시 타이머 정리
@@ -170,7 +177,7 @@ onBeforeUnmount(() => {
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
     <CModalBody class="text-body">
       <h6 class="mb-2">
-        <v-icon icon="mdi-office-building-marker" size="small" color="primary" class="mr-1" />
+        <v-icon icon="mdi-office-building-marker" size="small" color="primary" class="me-1" />
         변경할 주소
       </h6>
       <CRow>
@@ -178,7 +185,7 @@ onBeforeUnmount(() => {
 
         <CCol sm="12" lg="4" xl="2" class="mb-lg-0 mb-3">
           <CInputGroup>
-            <CInputGroupText @click="refModalPost.initiate(1)"> 우편번호</CInputGroupText>
+            <CInputGroupText @click="refModalPost?.initiate(1)"> 우편번호</CInputGroupText>
             <CFormInput
               v-model="form.id_zipcode"
               v-maska
@@ -186,7 +193,7 @@ onBeforeUnmount(() => {
               maxlength="5"
               placeholder="우편번호"
               required
-              @focus="refModalPost.initiate(1)"
+              @focus="refModalPost?.initiate(1)"
             />
           </CInputGroup>
         </CCol>
@@ -196,7 +203,7 @@ onBeforeUnmount(() => {
             maxlength="35"
             placeholder="주민등록 주소를 입력하세요"
             required
-            @focus="refModalPost.initiate(1)"
+            @focus="refModalPost?.initiate(1)"
           />
         </CCol>
 
@@ -221,7 +228,7 @@ onBeforeUnmount(() => {
         <CFormLabel sm="2" class="col-lg-2 col-xl-1 col-form-label required"> 우편수령</CFormLabel>
         <CCol sm="12" lg="4" xl="2" class="mb-lg-0 mb-3">
           <CInputGroup>
-            <CInputGroupText @click="refModalPost.initiate(2)"> 우편번호</CInputGroupText>
+            <CInputGroupText @click="refModalPost?.initiate(2)"> 우편번호</CInputGroupText>
             <CFormInput
               v-model="form.dm_zipcode"
               v-maska
@@ -229,7 +236,7 @@ onBeforeUnmount(() => {
               maxlength="5"
               placeholder="우편번호"
               required
-              @focus="refModalPost.initiate(2)"
+              @focus="refModalPost?.initiate(2)"
             />
           </CInputGroup>
         </CCol>
@@ -239,7 +246,7 @@ onBeforeUnmount(() => {
             maxlength="50"
             placeholder="우편물 수령 주소를 입력하세요"
             required
-            @focus="refModalPost.initiate(2)"
+            @focus="refModalPost?.initiate(2)"
           />
         </CCol>
         <CCol sm="12" lg="6" xl="2" class="mb-lg-0 mb-3">
@@ -271,7 +278,7 @@ onBeforeUnmount(() => {
       </CRow>
       <v-divider />
       <h6 class="mb-2">
-        <v-icon icon="mdi-office-building-marker" size="small" color="info" class="mr-1" />
+        <v-icon icon="mdi-office-building-marker" size="small" color="info" class="me-1" />
         변경전 (현재) 주소
       </h6>
       <CTable
@@ -284,14 +291,14 @@ onBeforeUnmount(() => {
         <CTableBody class="text-center">
           <CTableRow>
             <CTableHeaderCell class="pt-3">주민등록 주소</CTableHeaderCell>
-            <CTableDataCell class="pt-3 pl-2 text-left">
+            <CTableDataCell class="pt-3 ps-2 text-start">
               ({{ address.id_zipcode }}) {{ address.id_address1 }} {{ address.id_address2 }}
               {{ address.id_address3 }}
             </CTableDataCell>
           </CTableRow>
           <CTableRow>
             <CTableHeaderCell class="pb-3">우편수령 주소</CTableHeaderCell>
-            <CTableDataCell class="pb-3 pl-2 text-left">
+            <CTableDataCell class="pb-3 ps-2 text-start">
               ({{ address.dm_zipcode }}) {{ address.dm_address1 }} {{ address.dm_address2 }}
               {{ address.dm_address3 }}
             </CTableDataCell>
@@ -300,7 +307,7 @@ onBeforeUnmount(() => {
       </CTable>
       <v-divider />
       <h6 class="mb-2">
-        <v-icon icon="mdi-office-building-marker" size="small" color="warning" class="mr-1" />
+        <v-icon icon="mdi-office-building-marker" size="small" color="warning" class="me-1" />
         과거 주소 이력
       </h6>
       <CTable v-if="contAddressList.length" bordered responsive align="middle" class="mb-0">
@@ -308,7 +315,7 @@ onBeforeUnmount(() => {
           <CTableRow>
             <CTableDataCell rowspan="2">{{ contAddressList.length - index }}</CTableDataCell>
             <CTableHeaderCell>주민등록 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
+            <CTableDataCell class="ps-2 text-start">
               ({{ addr.id_zipcode }}) {{ addr.id_address1 }} {{ addr.id_address2 }}
               {{ addr.id_address3 }}
             </CTableDataCell>
@@ -326,7 +333,7 @@ onBeforeUnmount(() => {
           </CTableRow>
           <CTableRow>
             <CTableHeaderCell>우편수령 주소</CTableHeaderCell>
-            <CTableDataCell class="pl-2 text-left">
+            <CTableDataCell class="ps-2 text-start">
               ({{ addr.dm_zipcode }}) {{ addr.dm_address1 }} {{ addr.dm_address2 }}
               {{ addr.dm_address3 }}
             </CTableDataCell>

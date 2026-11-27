@@ -298,6 +298,12 @@ const handleStatusChange = async (targetStatus: '1' | '2') => {
   }
 }
 
+const onContractUpdated = async () => {
+  if (project.value?.pk) {
+    await loadSummaryData(project.value.pk)
+  }
+}
+
 const projSelect = async (target: number | null, isAuto = false) => {
   if (!isAuto) clearTransientQueries()
   dataReset()
@@ -338,8 +344,8 @@ onBeforeMount(async () => {
   const targetProjectId = urlProjectId.value || project.value?.pk || projStore.currentProject
 
   if (targetProjectId) {
-    if (urlProjectId.value && urlProjectId.value !== project.value?.pk) {
-      await projSelect(urlProjectId.value, true)
+    if (project.value?.pk !== targetProjectId) {
+      await projSelect(targetProjectId, true)
     } else {
       await dataSetup(targetProjectId, urlPage.value ?? undefined)
     }
@@ -410,6 +416,7 @@ onBeforeMount(async () => {
           :border-top="!visible"
           @page-select="pageSelect"
           @contract-converted="handleStatusChange('2')"
+          @contract-updated="onContractUpdated"
         />
       </CCardBody>
     </ContentBody>

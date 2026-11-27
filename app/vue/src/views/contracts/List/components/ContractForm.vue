@@ -36,18 +36,22 @@ const props = defineProps({
   project: { type: Number, default: null },
   contract: { type: Object as PropType<Contract>, default: null },
   unitSet: { type: Boolean, default: false },
-  isUnion: { type: Boolean, default: false },
   fromPage: { type: [Number, null] as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['on-submit', 'close', 'subscription-created', 'contract-converted'])
+const emit = defineEmits([
+  'on-submit',
+  'close',
+  'subscription-created',
+  'contract-converted',
+  'contract-updated',
+])
 
 const { can, PERM } = usePerms()
 const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 const canContractManage = computed(() =>
   !props.contract ? can(PERM.CONTRACT_CREATE) : can(PERM.CONTRACT_UPDATE),
 )
-const canContractDelete = computed(() => can(PERM.CONTRACT_DELETE))
 
 const refPostCode = ref()
 const refBankAcc = ref()
@@ -143,15 +147,32 @@ const getTypes = computed(() => projectDataStore.getTypes)
 const proLedgerStore = useProLedger()
 const allProBankList = computed(() => proLedgerStore.allProBankList)
 
-const onBankCreate = (payload: any) =>
-  proLedgerStore.createProBankAcc({ ...payload, project: props.project })
-const onBankUpdate = (payload: any) => proLedgerStore.updateProBankAcc(payload)
+const onBankCreate = (payload: Parameters<typeof proLedgerStore.createProBankAcc>[0]) =>
+  proLedgerStore.createProBankAcc({
+    ...payload,
+    project: (props.project ?? payload.project) as number,
+  })
+const onBankUpdate = (payload: Parameters<typeof proLedgerStore.updateProBankAcc>[0]) =>
+  proLedgerStore.updateProBankAcc(payload)
 
 const paymentStore = usePayment()
 const payOrderList = computed(() => paymentStore.payOrderList)
 
+const statusOptions = computed(() => {
+  const base = [
+    { value: '1', label: '청약' },
+    { value: '2', label: '계약' },
+  ]
+  if (props.contract?.contractor?.status === '3') {
+    base.push({ value: '3', label: '변경처리중' })
+  } else if (props.contract?.contractor?.status === '4') {
+    base.push({ value: '4', label: '계약종결' })
+  }
+  return base
+})
+
 const contLabel = computed(() => (form.status !== '1' ? '계약' : '청약'))
-const isContract = computed(() => form.status === '2')
+const isContract = computed(() => ['2', '3'].includes(form.status))
 const noStatus = computed(() => (form.status === null || form.status === '') && !props.contract)
 const downPayOrder = computed(() =>
   payOrderList.value.filter((po: PayOrder) => po.pay_time && po.pay_time <= 1),
@@ -171,35 +192,35 @@ const formsCheck = computed(() => {
   if (props.contract && contractor.value) {
     const a = form.order_group === props.contract.order_group
     const b = form.unit_type === props.contract.unit_type
-    const c = form.key_unit === props.contract.key_unit?.pk
-    const d = form.houseunit === props.contract.key_unit?.houseunit?.pk
+    const c = form.key_unit === (props.contract.key_unit?.pk ?? null)
+    const d = form.houseunit === (props.contract.key_unit?.houseunit?.pk ?? null)
     const e = form.is_sup_cont === props.contract.is_sup_cont
     const e_comp = form.is_completed === props.contract.is_completed
-    const f = form.sup_cont_date === props.contract.sup_cont_date
-    const g = form.reservation_date === contractor.value.reservation_date
-    const h = form.contract_date === contractor.value?.contract_date
+    const f = (form.sup_cont_date || '') === (props.contract.sup_cont_date || '')
+    const g = (form.reservation_date || null) === (contractor.value.reservation_date || null)
+    const h = (form.contract_date || null) === (contractor.value?.contract_date || null)
     const i = form.name === contractor.value.name
-    const j = form.birth_date === contractor.value.birth_date
+    const j = (form.birth_date || null) === (contractor.value.birth_date || null)
     const k = form.gender === contractor.value?.gender
     const l = form.qualification === contractor.value?.qualification
-    const m = form.cell_phone === contact.value?.cell_phone
-    const n = form.home_phone === contact.value?.home_phone
-    const o = form.other_phone === contact.value?.other_phone
-    const p = form.email === contact.value?.email
+    const m = form.cell_phone === (contact.value?.cell_phone ?? '')
+    const n = form.home_phone === (contact.value?.home_phone ?? '')
+    const o = form.other_phone === (contact.value?.other_phone ?? '')
+    const p = form.email === (contact.value?.email ?? '')
     const q = !form.deal_date
     const r = !form.amount
     const s = !form.bank_account
     const t = !form.trader
     const u = !form.installment_order
-    const v = form.id_zipcode === address.value?.id_zipcode
-    const w = form.id_address1 === address.value?.id_address1
-    const x = form.id_address2 === address.value?.id_address2
-    const y = form.id_address3 === address.value?.id_address3
-    const z = form.dm_zipcode === address.value?.dm_zipcode
-    const a1 = form.dm_address1 === address.value?.dm_address1
-    const b1 = form.dm_address2 === address.value?.dm_address2
-    const c1 = form.dm_address3 === address.value?.dm_address3
-    const d1 = form.note === contractor.value?.note
+    const v = form.id_zipcode === (address.value?.id_zipcode ?? '')
+    const w = form.id_address1 === (address.value?.id_address1 ?? '')
+    const x = form.id_address2 === (address.value?.id_address2 ?? '')
+    const y = form.id_address3 === (address.value?.id_address3 ?? '')
+    const z = form.dm_zipcode === (address.value?.dm_zipcode ?? '')
+    const a1 = form.dm_address1 === (address.value?.dm_address1 ?? '')
+    const b1 = form.dm_address2 === (address.value?.dm_address2 ?? '')
+    const c1 = form.dm_address3 === (address.value?.dm_address3 ?? '')
+    const d1 = form.note === (contractor.value?.note ?? '')
 
     const e1 = !newFile.value
     const f1 = !editFile.value
@@ -225,7 +246,7 @@ const payUpdate = (payment: Payment) => {
     form.trader = payment.trader
     form.installment_order = payment.installment_order.pk
   } else {
-    refAlertModal.value.callModal(
+    refAlertModal.value?.callModal(
       null,
       '거래일로부터 90일이 경과한 입력 데이터는 수정할 수 없습니다. 관리자에게 문의바랍니다.',
     )
@@ -242,7 +263,7 @@ const payReset = () => {
 }
 
 const getOGSort = (pk: number): string =>
-  pk ? getOrderGroups.value.filter(o => o.value == pk)[0].sort : ''
+  pk ? (getOrderGroups.value.find(o => o.value == pk)?.sort ?? '') : ''
 
 const getKUCode = (pk: number) => getKeyUnits.value.filter(k => k.value === pk).map(k => k.label)[0]
 
@@ -251,6 +272,11 @@ const setOGSort = () =>
     form.order_group_sort = getOGSort(Number(form.order_group as number))
     if (!props.contract) {
       form.qualification = form.order_group_sort === '2' ? '1' : '2'
+    }
+    if (form.key_unit && form.key_unit_code) {
+      form.serial_number = `${form.key_unit_code}-${form.order_group}`
+    } else if (!props.unitSet && form.order_group) {
+      form.serial_number = `TEMP-${form.order_group}-${Date.now()}`
     }
   })
 
@@ -266,8 +292,8 @@ const setKeyCode = () => {
 
 const unitReset = () => {
   nextTick(() => {
-    if (!form.status) formDataReset()
-    else if (form.status !== '2') form.rrn = ''
+    if (!form.status && !props.contract) formDataReset()
+    else if (!isContract.value) form.rrn = ''
   })
 }
 
@@ -391,12 +417,12 @@ const formDataSetup = () => {
     // contract
     form.pk = props.contract.pk
     form.order_group = props.contract.order_group
-    form.order_group_sort = props.contract.order_group_desc.sort
+    form.order_group_sort = props.contract.order_group_desc?.sort ?? ''
     form.unit_type = props.contract.unit_type
     form.serial_number = props.contract.serial_number
-    form.is_sup_cont = form.is_sup_cont || props.contract.is_sup_cont
+    form.is_sup_cont = props.contract.is_sup_cont
     form.is_completed = props.contract.is_completed
-    form.sup_cont_date = form.sup_cont_date ?? props.contract.sup_cont_date ?? ''
+    form.sup_cont_date = props.contract.sup_cont_date ?? ''
     form.key_unit = props.contract.key_unit?.pk ?? null
     form.key_unit_code = props.contract.key_unit?.unit_code ?? ''
     form.houseunit = props.contract.key_unit?.houseunit?.pk ?? null
@@ -415,7 +441,7 @@ const formDataSetup = () => {
     form.rrn_legal_basis = contractor.value?.rrn_legal_basis || '1'
 
     // address
-    if (contractor.value?.status === '2') {
+    if (['2', '3'].includes(contractor.value?.status ?? '')) {
       form.id_zipcode = address.value?.id_zipcode ?? '' // 20
       form.id_address1 = address.value?.id_address1 ?? '' // 21
       form.id_address2 = address.value?.id_address2 ?? '' // 22
@@ -474,8 +500,8 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canContractManage.value) refConfirmModal.value.callModal()
-    else refAlertModal.value.callModal()
+    if (canContractManage.value) refConfirmModal.value?.callModal()
+    else refAlertModal.value?.callModal()
   }
 }
 
@@ -485,8 +511,8 @@ const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
 const delFile = ref<number | undefined>(undefined)
 
-const saveContract = (payload: any) => {
-  const { pk, ...getData } = payload as { [key: string]: any }
+const saveContract = (payload: Record<string, unknown>) => {
+  const { pk, ...getData } = payload
 
   const formData = new FormData()
 
@@ -504,16 +530,18 @@ const saveContract = (payload: any) => {
   }
 
   if (!pk) return contStore.createContractSet(formData)
-  else return contStore.updateContractSet(pk, formData)
+  else return contStore.updateContractSet(Number(pk), formData)
 }
 
 const modalAction = async () => {
   // 신규 청약 생성 여부 확인
   const isNewSubscription = !form.pk && form.status === '1'
+  const isNewContract = !form.pk && isContract.value
 
-  // 청약을 계약으로 전환 여부 확인 (기존 계약이 있고, 기존 상태가 '1'(청약)이었는데 현재 form 상태가 '2'(계약)인 경우)
+  // 청약을 계약으로 전환 여부 확인 (기존 계약이 있고, 기존 상태가 '1'(청약)이었는데 현재 form 상태가 계약인 경우)
   const isContractConversion =
-    props.contract && contractor.value?.status === '1' && form.status === '2'
+    !!props.contract && contractor.value?.status === '1' && isContract.value
+  const isExistingUpdate = !!props.contract && !isContractConversion
 
   await saveContract({
     ...form,
@@ -523,27 +551,34 @@ const modalAction = async () => {
     delFile: delFile.value,
   })
   validated.value = false
-  refConfirmModal.value.close()
+  refConfirmModal.value?.close()
   newFile.value = ''
   editFile.value = ''
   cngFile.value = ''
   delFile.value = undefined
-  RefContFile.value.doneEdit()
+  RefContFile.value?.doneEdit()
 
   emit('close')
   // 신규 청약이면 subscription-created 이벤트 (status UI 동기화용)
   if (isNewSubscription) emit('subscription-created')
-  // 청약을 계약으로 전환하면 contract-converted 이벤트 (status UI 동기화용)
-  if (isContractConversion) emit('contract-converted')
+  // 신규 계약 생성 또는 청약을 계약으로 전환하면 contract-converted 이벤트 (status UI 동기화용)
+  if (isNewContract || isContractConversion) emit('contract-converted')
+  // 기존 계약/청약 수정 시 요약 통계 동기화
+  if (isExistingUpdate) emit('contract-updated')
 }
 
-const fileControl = (payload: any) => {
+const fileControl = (payload: {
+  newFile?: File | ''
+  editFile?: number | ''
+  cngFile?: File | ''
+  delFile?: number
+}) => {
   if (payload.newFile) newFile.value = payload.newFile
   else newFile.value = ''
 
   if (payload.editFile) {
     editFile.value = payload.editFile
-    cngFile.value = payload.cngFile
+    cngFile.value = payload.cngFile ?? ''
   } else {
     editFile.value = ''
     cngFile.value = ''
@@ -553,9 +588,25 @@ const fileControl = (payload: any) => {
   else delFile.value = undefined
 }
 
+const closeAddrModal = () => {
+  refChangeAddr.value?.close()
+  if (address.value) {
+    form.id_zipcode = address.value.id_zipcode ?? ''
+    form.id_address1 = address.value.id_address1 ?? ''
+    form.id_address2 = address.value.id_address2 ?? ''
+    form.id_address3 = address.value.id_address3 ?? ''
+    form.dm_zipcode = address.value.dm_zipcode ?? ''
+    form.dm_address1 = address.value.dm_address1 ?? ''
+    form.dm_address2 = address.value.dm_address2 ?? ''
+    form.dm_address3 = address.value.dm_address3 ?? ''
+  }
+}
+
 defineExpose({ formDataReset })
 
-onBeforeMount(() => paymentStore.fetchPayOrderList(props.project, '1'))
+onBeforeMount(() => {
+  if (props.project) paymentStore.fetchPayOrderList(props.project, '1')
+})
 onMounted(() => {
   formDataSetup()
 })
@@ -592,18 +643,16 @@ onBeforeRouteLeave(() => formDataReset())
           <Multiselect
             v-model="form.status"
             placeholder="---------"
-            :options="[
-              { value: '1', label: '청약' },
-              { value: '2', label: '계약' },
-            ]"
+            :options="statusOptions"
             required
             autocomplete="label"
             :classes="{
               search: 'form-control multiselect-search',
             }"
             :add-option-on="['enter', 'tab']"
+            :can-clear="!contract"
             searchable
-            :disabled="!project"
+            :disabled="!project || ['3', '4'].includes(contract?.contractor?.status ?? '')"
             @change="unitReset"
           />
         </CCol>
@@ -819,7 +868,7 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>성별을 선택하세요.</CFormFeedback>
         </CCol>
 
-        <CCol v-if="contract && isUnion && form.order_group_sort === '1'" xs="6" lg="2">
+        <CCol v-if="contract && form.order_group_sort === '1'" xs="6" lg="2">
           <CFormSelect v-model="form.qualification" required :disabled="!isContract">
             <option value="">---------</option>
             <option value="2">미인가</option>
@@ -849,7 +898,7 @@ onBeforeRouteLeave(() => formDataReset())
             @blur="applyRrnMeta"
           />
           <div class="form-text text-muted">
-            암호화 보관 · 저장 후에는 마스킹(`******`) 처리됩니다.
+            암호화 보관 · 저장 후에는 마스킹(******) 처리됩니다.
           </div>
         </CCol>
 
@@ -997,7 +1046,7 @@ onBeforeRouteLeave(() => formDataReset())
                 type="number"
                 min="0"
                 placeholder="입금액"
-                :required="form.deal_date"
+                :required="!!form.deal_date"
                 :disabled="noStatus"
               />
               <CFormFeedback invalid>입금액을 입력하세요.</CFormFeedback>
@@ -1006,7 +1055,7 @@ onBeforeRouteLeave(() => formDataReset())
               <div class="d-flex align-items-center">
                 <CFormSelect
                   v-model="form.bank_account"
-                  :required="form.deal_date"
+                  :required="!!form.deal_date"
                   :disabled="noStatus"
                 >
                   <option value="">납부계좌 선택</option>
@@ -1014,7 +1063,12 @@ onBeforeRouteLeave(() => formDataReset())
                     {{ pb.alias_name }}
                   </option>
                 </CFormSelect>
-                <CIcon name="cilCog" class="ms-1" role="button" @click="refBankAcc.callModal()" />
+                <CIcon
+                  name="cilCog"
+                  class="ms-1"
+                  role="button"
+                  @click="refBankAcc?.callModal()"
+                />
               </div>
               <CFormFeedback invalid>납부계좌를 선택하세요.</CFormFeedback>
             </CCol>
@@ -1023,7 +1077,7 @@ onBeforeRouteLeave(() => formDataReset())
                 v-model="form.trader"
                 maxlength="20"
                 placeholder="입금자명을 입력하세요"
-                :required="form.deal_date"
+                :required="!!form.deal_date"
                 :disabled="noStatus"
               />
               <CFormFeedback invalid>입금자명을 입력하세요.</CFormFeedback>
@@ -1031,7 +1085,7 @@ onBeforeRouteLeave(() => formDataReset())
             <CCol sm="12" md="6" lg="2" class="mb-3">
               <CFormSelect
                 v-model="form.installment_order"
-                :required="form.deal_date"
+                :required="!!form.deal_date"
                 :disabled="noStatus"
               >
                 <option value="">납부회차 선택</option>
@@ -1209,9 +1263,10 @@ onBeforeRouteLeave(() => formDataReset())
     <template #header>주소변경 등록</template>
     <template #default>
       <AddressForm
-        :contractor="contractor?.pk as number"
+        v-if="contractor?.pk"
+        :contractor="contractor.pk"
         :address="address"
-        @close="refChangeAddr.close()"
+        @close="closeAddrModal"
       />
     </template>
   </FormModal>

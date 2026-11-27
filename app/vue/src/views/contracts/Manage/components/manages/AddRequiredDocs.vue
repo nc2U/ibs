@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { downloadFile } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract.ts'
-import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
+import type { ContractDocument, RequiredDocs } from '@/store/types/contract'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 // Props
 const props = defineProps<{
@@ -27,12 +28,15 @@ const contractorId = computed(() =>
 const requiredDocsList = computed(() => {
   const list = contStore.requiredDocsList
   // sortFilter가 있으면 필터링
-  if (props.sortFilter && list) return list.filter(doc => (doc as any).sort === props.sortFilter)
+  if (props.sortFilter && list) {
+    return list.filter(
+      doc => (doc as RequiredDocs & { sort?: string }).sort === props.sortFilter,
+    )
+  }
 
   return list
 })
 const contractDocumentList = computed(() => contStore.contractDocumentList)
-const contractor = computed(() => contStore.contractor as Contractor | null)
 
 // 편집 중인 문서 ID 추적
 const editingDocId = ref<number | null>(null)
@@ -42,6 +46,10 @@ const fileUploadDialog = ref(false)
 const uploadingDoc = ref<MergedDocument | null>(null)
 const selectedFile = ref<File | null>(null)
 
+// 파일 삭제 모달
+const refDeleteFileModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const pendingDeleteFile = ref<{ fileId: number; contractDocId: number } | null>(null)
+
 // 로딩 상태
 const isLoading = ref(false)
 
@@ -50,7 +58,7 @@ interface MergedDocument extends RequiredDocs {
   contract_doc_pk?: number
   submitted_quantity: number
   is_complete: boolean
-  files: any[]
+  files: NonNullable<ContractDocument['files']>
 }
 
 const mergedDocuments = computed<MergedDocument[]>(() => {
@@ -92,20 +100,6 @@ const missingRequiredDocs = computed(() => {
     .length
 })
 
-// 데이터 로드
-const loadData = async () => {
-  if (!contractorId.value) return
-
-  try {
-    isLoading.value = true
-    await contStore.fetchContractDocuments(contractorId.value)
-  } catch (error) {
-    console.error('데이터 로드 실패:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
 // 자동 저장 함수 - 반환값으로 생성되거나 확인된 pk를 보장함
 const saveDocument = async (doc: MergedDocument): Promise<number | undefined> => {
   if (!contractorId.value) return undefined
@@ -139,8 +133,10 @@ const saveDocument = async (doc: MergedDocument): Promise<number | undefined> =>
   }
 }
 
-// 수량 변경 핸들러 (debounce 적용)
-const onQuantityChange = (doc: MergedDocument, value: number) => (doc.submitted_quantity = value)
+// 수량 변경 핸들러
+const onQuantityChange = (doc: MergedDocument, value: number) => {
+  doc.submitted_quantity = Number.isNaN(value) ? 0 : Math.max(0, value)
+}
 
 // 편집 모드 토글
 const startEdit = (docId: number) => {
@@ -149,8 +145,9 @@ const startEdit = (docId: number) => {
 }
 
 const endEdit = async (doc: MergedDocument) => {
-  await saveDocument(doc)
+  if (editingDocId.value !== doc.pk) return
   editingDocId.value = null
+  await saveDocument(doc)
 }
 
 // 파일 업로드 다이얼로그 열기 (단순 UI 토글)
@@ -197,16 +194,27 @@ const closeFileUpload = () => {
   selectedFile.value = null
 }
 
-// 파일 삭제
-const deleteFile = async (fileId: number, contractDocId: number) => {
+// 파일 삭제 확인 모달 열기
+const deleteFile = (fileId: number, contractDocId: number) => {
   if (!contractorId.value) return
+  pendingDeleteFile.value = { fileId, contractDocId }
+  refDeleteFileModal.value?.callModal(
+    '첨부 파일 삭제',
+    '선택한 파일을 삭제하시겠습니까?',
+    'mdi-delete-alert',
+    'danger',
+  )
+}
 
-  if (confirm('파일을 삭제하시겠습니까?')) {
-    try {
-      await contStore.deleteDocumentFile(fileId, contractDocId, contractorId.value)
-    } catch (error) {
-      console.error('파일 삭제 실패:', error)
-    }
+const confirmDeleteFile = async () => {
+  if (!contractorId.value || !pendingDeleteFile.value) return
+  const { fileId, contractDocId } = pendingDeleteFile.value
+  try {
+    await contStore.deleteDocumentFile(fileId, contractDocId, contractorId.value)
+    pendingDeleteFile.value = null
+    refDeleteFileModal.value?.close()
+  } catch (error) {
+    console.error('파일 삭제 실패:', error)
   }
 }
 
@@ -221,27 +229,12 @@ const getRowClass = (doc: MergedDocument) => {
   }
   return ''
 }
-
-// Watch: contractorId 변경 시 데이터 로드
-watch(
-  contractorId,
-  newId => {
-    if (newId) {
-      loadData()
-    } else {
-      // contractorId가 없으면 데이터 초기화
-      contStore.contractDocumentList = []
-    }
-  },
-  { immediate: true },
-)
-
 </script>
 
 <template>
   <CCardBody class="pt-0">
     <div class="text-end mb-2">
-      <span v-if="missingRequiredDocs > 0" class="text-danger mt-1 mr-2" style="font-size: 0.8rem">
+      <span v-if="missingRequiredDocs > 0" class="text-danger mt-1 me-2" style="font-size: 0.8rem">
         필수 서류 미제출: {{ missingRequiredDocs }}건
       </span>
       <v-progress-circular
@@ -344,7 +337,7 @@ watch(
               style="width: 70px; margin: 0 auto"
               @input="onQuantityChange(doc, parseInt(($event.target as HTMLInputElement).value))"
               @blur="endEdit(doc)"
-              @keydown.enter="endEdit"
+              @keydown.enter="endEdit(doc)"
             />
           </CTableDataCell>
 
@@ -358,9 +351,9 @@ watch(
                 v-for="file in doc.files"
                 :key="file.pk"
                 size="small"
-                closable
+                :closable="canContractUpdate"
                 @click="downloadFile(file.file, file.file_name)"
-                @click:close="deleteFile(file.pk, doc.contract_doc_pk!)"
+                @click:close="file.pk && deleteFile(file.pk, doc.contract_doc_pk!)"
                 style="flex-shrink: 0"
               >
                 <v-icon icon="mdi-file" size="14" class="me-1" />
@@ -392,9 +385,9 @@ watch(
 
   <!-- 파일 업로드 다이얼로그 -->
   <v-dialog v-model="fileUploadDialog" max-width="500">
-    <v-card class="bg-more-light">
+    <v-card v-if="fileUploadDialog" class="bg-more-light">
       <v-card-title class="text-muted">
-        <v-icon icon="mdi-paperclip" size="sm" class="me-1" />
+        <v-icon icon="mdi-paperclip" size="small" class="me-1" />
         파일 업로드
       </v-card-title>
       <v-card-text>
@@ -410,4 +403,13 @@ watch(
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <ConfirmModal ref="refDeleteFileModal" @close="pendingDeleteFile = null">
+    <template #footer>
+      <v-btn color="warning" size="small" @click="confirmDeleteFile">
+        <v-icon icon="mdi-delete" size="small" class="me-1" />
+        삭제
+      </v-btn>
+    </template>
+  </ConfirmModal>
 </template>

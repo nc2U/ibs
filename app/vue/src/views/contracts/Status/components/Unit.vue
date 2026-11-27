@@ -24,13 +24,13 @@ const isContor = inject<Ref<boolean>>('isContor', ref(true))
 const isPiloti = computed(() => !props.unit && props.floor < props.maxPiloti)
 const isContract = computed(() => !!props.unit?.key_unit?.contract)
 const contorName = computed(() =>
-  isContract.value ? props.unit?.key_unit.contract?.contractor.name : '',
+  isContract.value ? (props.unit?.key_unit.contract?.contractor?.name ?? '') : '',
 )
 const contorPk = computed<number | null>(() =>
-  isContract.value ? (props.unit?.key_unit.contract?.contractor.pk ?? null) : null,
+  isContract.value ? (props.unit?.key_unit.contract?.contractor?.pk ?? null) : null,
 )
 const status = computed(() =>
-  isContract.value ? props.unit?.key_unit.contract?.contractor.status : '',
+  isContract.value ? (props.unit?.key_unit.contract?.contractor?.status ?? '') : '',
 )
 const isHold = computed(() => !!props.unit?.is_hold)
 </script>
@@ -60,6 +60,7 @@ const isHold = computed(() => !!props.unit?.is_hold)
         back: unit && !status,
         app: status === '1',
         cont: status === '2',
+        changing: status === '3',
         hold: isHold,
       }"
     >
@@ -140,6 +141,7 @@ const isHold = computed(() => !!props.unit?.is_hold)
 $back: white;
 $app: #ffff99;
 $cont: #ddd;
+$changing: #fce8b2;
 $hold: #999;
 
 .back {
@@ -154,6 +156,10 @@ $hold: #999;
   background: $cont;
 }
 
+.changing {
+  background: $changing;
+}
+
 .hold {
   background: $hold;
 }
@@ -165,6 +171,10 @@ $hold: #999;
 
   .cont {
     background: darken($cont, 40%);
+  }
+
+  .changing {
+    background: #735c1f;
   }
 
   .hold {

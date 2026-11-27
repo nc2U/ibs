@@ -99,7 +99,7 @@ watch(
     if (newContract && newProject) {
       isLoadingPaymentList.value = true
       const order_group = newContract.order_group
-      const unit_type = newContract.unit_type
+      const unit_type = newContract.unit_type ?? undefined
       fetchPriceList({ project: newProject, order_group, unit_type })
       fetchDownPayList({ project: newProject, order_group, unit_type })
       fetchLedgerAllPaymentList({
@@ -200,7 +200,7 @@ const loadContractData = async (contractId: number) => {
     try {
       isLoadingPaymentList.value = true
       const order_group = contract.value.order_group
-      const unit_type = contract.value.unit_type
+      const unit_type = contract.value.unit_type ?? undefined
       await fetchPriceList({ project: project.value, order_group, unit_type })
       await fetchDownPayList({ project: project.value, order_group, unit_type })
       await fetchLedgerAllPaymentList({

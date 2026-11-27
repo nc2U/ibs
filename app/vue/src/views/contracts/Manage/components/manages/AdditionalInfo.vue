@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useContract } from '@/store/pinia/contract'
 import type { Contract } from '@/store/types/contract'
 import AddRequiredDocs from './AddRequiredDocs.vue'
 import AddConsultation from './AddConsultation.vue'
@@ -7,6 +9,21 @@ import AddConsultation from './AddConsultation.vue'
 defineProps<{
   contract?: Contract | null
 }>()
+
+const route = useRoute()
+const contStore = useContract()
+const contractorId = computed(() =>
+  route.params.contractorId ? parseInt(route.params.contractorId as string, 10) : null,
+)
+
+watch(
+  contractorId,
+  newId => {
+    if (newId) contStore.fetchContractDocuments(newId)
+    else contStore.contractDocumentList = []
+  },
+  { immediate: true },
+)
 
 // 로컬 스토리지 키
 const PROOF_DOCS_EXPANDED_KEY = 'contract_proof_docs_expanded'

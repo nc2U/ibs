@@ -35,8 +35,8 @@ const visibleTabs = ref({
 const selectedTabs = computed({
   get: () => {
     return Object.entries(visibleTabs.value)
-      .filter(([_, visible]) => visible)
-      .map(([key, _]) => key)
+      .filter(([, visible]) => visible)
+      .map(([key]) => key)
   },
   set: newValue => {
     // 각 탭의 표시 상태를 업데이트 (객체 전체를 교체하여 반응성 보장)
@@ -84,15 +84,15 @@ const goToList = () => {
       <CCol>
         <v-btn-toggle v-model="selectedTabs" multiple density="compact" rounded="0" mandatory>
           <v-btn value="contract">
-            <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+            <v-icon icon="mdi-file-document-outline" size="small" class="me-1" />
             계약관련 내역
           </v-btn>
           <v-btn value="payment">
-            <v-icon icon="mdi-cash-multiple" size="small" class="mr-1" />
+            <v-icon icon="mdi-cash-multiple" size="small" class="me-1" />
             납부관련 내역
           </v-btn>
           <v-btn value="extra">
-            <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+            <v-icon icon="mdi-information-outline" size="small" class="me-1" />
             기타추가 정보
           </v-btn>
         </v-btn-toggle>
@@ -127,7 +127,7 @@ const goToList = () => {
       <CCol>
         <div class="d-flex justify-content-between align-items-center">
           <v-btn color="light" size="small" @click="goToList">
-            <v-icon icon="mdi-arrow-left" class="mr-1" />
+            <v-icon icon="mdi-arrow-left" class="me-1" />
             목록으로
           </v-btn>
         </div>

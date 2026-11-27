@@ -464,7 +464,7 @@ class ContractorSerializer(ContractorSensitiveReadMixin, serializers.ModelSerial
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     change_type_display = serializers.CharField(source='get_change_type_display', read_only=True)
-    succession = SuccessionInContractorSerializer(source='curr_contractor', read_only=True)
+    succession = serializers.SerializerMethodField()
     contractorrelease = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -473,6 +473,19 @@ class ContractorSerializer(ContractorSensitiveReadMixin, serializers.ModelSerial
                   'qualifi_display', 'status', 'status_display', 'change_type', 'change_type_display',
                   'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease',
                   'has_rrn', 'rrn_masked', 'rrn_legal_basis')
+
+    @staticmethod
+    def get_succession(obj):
+        # 진행 중인 양도(prev_contractor) > 진행 중인 양수(curr_contractor) > 기존 승계 이력 순으로 반환
+        prev_suc = getattr(obj, 'prev_contractor', None)
+        curr_suc = getattr(obj, 'curr_contractor', None)
+        if prev_suc and prev_suc.status in ('1', '2'):
+            suc = prev_suc
+        elif curr_suc and curr_suc.status in ('1', '2'):
+            suc = curr_suc
+        else:
+            suc = curr_suc or prev_suc
+        return SuccessionInContractorSerializer(suc).data if suc else None
 
     def validate(self, attrs):
         instance = self.instance

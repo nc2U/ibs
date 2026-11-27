@@ -1,9 +1,16 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useStore } from '@/store'
+import { usePerms } from '@/composables/usePerms.ts'
 import { cutString } from '@/utils/baseMixins.ts'
 import type { ConsultationLog } from '@/store/types/contract'
 import ConsultationDetail from './ConsultationDetail.vue'
 import ConsultationEditForm from './ConsultationEditForm.vue'
+
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 // Props
 const props = defineProps<{
@@ -105,6 +112,7 @@ const getStatusColor = (status: string) => statusColorMap[status] || 'default'
     </CTableDataCell>
     <CTableDataCell class="text-end py-0">
       <v-btn
+        v-if="canContractUpdate"
         size="x-small"
         icon="mdi-pencil"
         variant="text"
@@ -112,6 +120,7 @@ const getStatusColor = (status: string) => statusColorMap[status] || 'default'
         @click.stop="toggleEdit"
       />
       <v-btn
+        v-if="canContractUpdate"
         size="x-small"
         icon="mdi-trash-can-outline"
         variant="text"
@@ -123,7 +132,7 @@ const getStatusColor = (status: string) => statusColorMap[status] || 'default'
 
   <!-- 확장 행 -->
   <CTableRow v-if="isExpanded">
-    <CTableDataCell colspan="6" class="bg-yellow-lighten-5">
+    <CTableDataCell colspan="6" :class="isDark ? 'bg-dark' : 'bg-yellow-lighten-5'">
       <!-- 수정 모드 -->
       <ConsultationEditForm
         v-if="editingLog"

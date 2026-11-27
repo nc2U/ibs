@@ -484,6 +484,109 @@ class SuccessionAndReleaseAPITests(APITestCase):
         self.assertEqual(response.data['detail'], '계약 정보는 직접 삭제할 수 없습니다. 계약 해지 절차(ContractorRelease)를 이용하십시오.')
         self.assertTrue(Contract.objects.filter(pk=self.contract.pk).exists())
 
+    def test_contractor_serializer_exposes_ongoing_seller_succession(self):
+        """이전 양수 완료 이력이 있는 계약자가 새로운 승계 양도인일 때 진행 중인 양도 승계를 우선 반환하는지 검증"""
+        self.seller.contract = None
+        self.seller.prev_contract = self.contract
+        self.seller.status = '5'
+        self.seller.is_active = False
+        self.seller.save()
+
+        buyer1 = Contractor.objects.create(
+            contract=self.contract,
+            name='1차양수인',
+            status='2',
+            contract_date='2026-01-20',
+            is_active=True
+        )
+
+        # 기존 완료 승계 (self.seller -> buyer1)
+        suc_done = Succession.objects.create(
+            contract=self.contract,
+            seller=self.seller,
+            buyer=buyer1,
+            apply_date='2026-01-18',
+            trading_date='2026-01-18',
+            status='3'
+        )
+        # 진행 중 신규 승계 (buyer1 -> buyer2)
+        buyer2 = Contractor.objects.create(
+            contract=None,
+            name='2차양수인',
+            status='3',
+            is_active=False
+        )
+        buyer1.status = '3'
+        buyer1.change_type = '1'
+        buyer1.save()
+        suc_ongoing = Succession.objects.create(
+            contract=self.contract,
+            seller=buyer1,
+            buyer=buyer2,
+            apply_date='2026-02-01',
+            trading_date='2026-02-01',
+            status='1'
+        )
+
+        res_seller = self.client.get(f'/api/v1/contractor/{buyer1.pk}/')
+        self.assertEqual(res_seller.status_code, http_status.HTTP_200_OK)
+        self.assertIsNotNone(res_seller.data['succession'])
+        self.assertEqual(res_seller.data['succession']['pk'], suc_ongoing.pk)
+        self.assertNotEqual(res_seller.data['succession']['pk'], suc_done.pk)
+
+        res_buyer = self.client.get(f'/api/v1/contractor/{buyer2.pk}/')
+        self.assertEqual(res_buyer.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_buyer.data['succession']['pk'], suc_ongoing.pk)
+
+    def test_contract_service_is_completed_and_excel_filters(self):
+        """계약 서비스 is_completed 저장 및 엑셀 다운로드 change_type/completed 필터 검증"""
+        from io import BytesIO
+        import openpyxl
+        from contract.services import ContractCreationService, ContractUpdateService
+
+        cont_comp = ContractCreationService._create_base_contract({
+            'project': self.project.pk,
+            'serial_number': 'CONT-COMP-1',
+            'order_group': self.order_group.pk,
+            'unit_type': self.unit_type.pk,
+            'is_completed': 'true',
+        })
+        self.assertTrue(cont_comp.is_completed)
+
+        Contractor.objects.create(
+            contract=cont_comp,
+            name='완납변경계약자',
+            status='3',
+            change_type='2',
+            contract_date='2026-02-05',
+            is_active=True,
+        )
+        self.seller.change_type = '1'
+        self.seller.save()
+
+        self.client.force_login(user=self.user)
+        res = self.client.get(
+            f'/excel/contracts/?project={self.project.pk}&change_type=2&completed=true'
+        )
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        wb = openpyxl.load_workbook(BytesIO(res.content))
+        ws = wb.active
+        cell_texts = [str(v) for row in ws.iter_rows(values_only=True) for v in row if v is not None]
+        self.assertIn('완납변경계약자', cell_texts)
+        self.assertNotIn(self.seller.name, cell_texts)
+
+        ContractUpdateService().update_contract(
+            cont_comp,
+            {
+                'order_group': self.order_group.pk,
+                'unit_type': self.unit_type.pk,
+                'is_completed': 'false',
+            },
+            self.user,
+        )
+        cont_comp.refresh_from_db()
+        self.assertFalse(cont_comp.is_completed)
+
 
 class ContractAndPaymentSecurityTests(APITestCase):
     """

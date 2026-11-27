@@ -29,17 +29,11 @@ const consultationLogList = computed(() => contStore.consultationLogList)
 // 로딩 상태
 const isLoading = ref(false)
 
-// 현재 페이지 상태
-const currentPage = ref(1)
+// 현재 페이지 상태 (스토어 페이지네이션과 동기화)
+const currentPage = computed(() => contStore.consultationLogPagination.page)
 
 // 필터 상태
 const statusFilter = ref<string>('')
-
-// 필터링된 리스트
-const filteredList = computed(() => {
-  if (!statusFilter.value) return consultationLogList.value
-  return consultationLogList.value.filter(log => log.status === statusFilter.value)
-})
 
 // 폼 제출
 const handleSubmit = async (data: Partial<ConsultationLog>) => {
@@ -71,7 +65,7 @@ const delPk = ref<number | null>(null)
 const handleDelete = async (pk: number) => {
   delPk.value = pk
   if (!contractorId.value) return
-  refDeleteConfirm.value.callModal()
+  refDeleteConfirm.value?.callModal()
 }
 
 const deleteLog = async () => {
@@ -82,7 +76,7 @@ const deleteLog = async () => {
       console.error('삭제 실패:', error)
     }
     delPk.value = null
-    refDeleteConfirm.value.close()
+    refDeleteConfirm.value?.close()
   }
 }
 
@@ -92,7 +86,6 @@ const consultationLogPages = (pageNum: number) => contStore.consultationLogPages
 // 페이지 변경
 const onPageChange = (page: number) => {
   if (!contractorId.value) return
-  currentPage.value = page
   loadData(page)
 }
 
@@ -116,7 +109,6 @@ const loadData = async (page = 1) => {
 // 상태 필터 변경 시 데이터 새로고침
 watch(statusFilter, () => {
   if (contractorId.value) {
-    currentPage.value = 1
     loadData(1)
   }
 })
@@ -126,7 +118,6 @@ watch(
   contractorId,
   newId => {
     if (newId) {
-      currentPage.value = 1
       loadData(1)
     } else contStore.consultationLogList = []
   },
@@ -154,7 +145,7 @@ watch(
     <div v-else-if="!contractorId" class="text-center py-5 text-grey">계약자를 선택해주세요.</div>
 
     <!-- 상담 내역이 없음 -->
-    <div v-else-if="filteredList.length === 0" class="text-center py-5 text-grey">
+    <div v-else-if="consultationLogList.length === 0" class="text-center py-5 text-grey">
       <v-icon icon="mdi-message-text-outline" size="large" class="mb-2" />
       <div>상담 내역이 없습니다.</div>
     </div>
@@ -181,7 +172,7 @@ watch(
       </CTableHead>
       <CTableBody>
         <ConsultationListItem
-          v-for="log in filteredList"
+          v-for="log in consultationLogList"
           :key="log.pk"
           :log="log"
           @edit="handleEdit"
@@ -193,7 +184,7 @@ watch(
     <!-- 페이지네이션 -->
     <CCol class="d-flex justify-content-center mt-0">
       <Pagination
-        v-show="filteredList.length"
+        v-show="consultationLogList.length"
         :active-page="currentPage"
         :limit="8"
         :pages="consultationLogPages(10)"
@@ -205,7 +196,7 @@ watch(
 
   <ConfirmModal ref="refDeleteConfirm">
     <template #icon>
-      <v-icon icon="mdi-trash-can-outline" size="small" color="danger" class="mr-2" />
+      <v-icon icon="mdi-trash-can-outline" size="small" color="danger" class="me-2" />
     </template>
     <template #default>상담 내역을 삭제하시겠습니까?</template>
     <template #footer>

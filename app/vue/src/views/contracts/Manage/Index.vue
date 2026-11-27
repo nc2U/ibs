@@ -65,15 +65,6 @@ const loadContractData = async (contorId: number) => {
   }
 }
 
-// 계약자 검색
-const searchContractor = async (search: string) => {
-  if (search.trim() !== '' && project.value) {
-    await contStore.fetchContractorList(project.value, search.trim())
-  } else {
-    contStore.contractorList = []
-  }
-}
-
 // 기초 메타 데이터 세팅 (Promise 대기 보장)
 const dataSetup = async (projId: number) => {
   await contStore.fetchRequiredDocsList(projId)
@@ -130,7 +121,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ContNavigation :cont-on="!!contract" :contractor="contractor?.pk" />
-        <ContController :project="project ?? undefined" @search-contractor="searchContractor" />
+        <ContController :project="project ?? undefined" />
         <ContractorAlert
           v-if="contractor"
           :is-blank="!contract"

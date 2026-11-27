@@ -120,10 +120,18 @@ class UnitFloorTypeViewSet(viewsets.ModelViewSet):
 
 class KeyUnitListFilterSet(FilterSet):
     available = BooleanFilter(field_name='contract', lookup_expr='isnull', label='계약가능유닛')
+    available_for_contract = NumberFilter(
+        method='filter_available_for_contract',
+        label='계약가능 및 특정계약 유닛',
+    )
 
     class Meta:
         model = KeyUnit
-        fields = ('project', 'unit_type', 'contract', 'available')
+        fields = ('project', 'unit_type', 'contract', 'available', 'available_for_contract')
+
+    @staticmethod
+    def filter_available_for_contract(queryset, name, value):
+        return queryset.filter(Q(contract__isnull=True) | Q(contract__pk=value))
 
 
 class KeyUnitViewSet(viewsets.ModelViewSet):

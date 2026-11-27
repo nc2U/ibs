@@ -91,7 +91,7 @@ const handleFileDownload = (url: string, fileName: string) => {
             </CTableRow>
           </CTableBody>
         </CTable>
-        <div class="text-right">
+        <div class="text-end">
           <router-link
             :to="{
               name: '건별 납부 관리 - 상세',
@@ -116,18 +116,15 @@ const handleFileDownload = (url: string, fileName: string) => {
         <CTable small striped hover>
           <CTableHead>
             <CTableRow class="text-center">
-              <CTableHeaderCell>구분</CTableHeaderCell>
               <CTableHeaderCell>발급 문서</CTableHeaderCell>
               <CTableHeaderCell>비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
             <CTableRow>
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/bill/?project=${contract.project}&seq=${contract.pk}`,
@@ -143,11 +140,9 @@ const handleFileDownload = (url: string, fileName: string) => {
               <CTableDataCell></CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/ledger/payment/?project=${contract.project}&contract=${contract.pk}&is_calc=1`,
@@ -163,11 +158,9 @@ const handleFileDownload = (url: string, fileName: string) => {
               <CTableDataCell>할인/가산 내역 포함</CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/ledger/payment/?project=${contract.project}&contract=${contract.pk}`,
@@ -183,11 +176,9 @@ const handleFileDownload = (url: string, fileName: string) => {
               <CTableDataCell>대외 확인용</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="contract.project === 1">
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/ledger/calculation/?project=${contract.project}&contract=${contract.pk}`,
@@ -203,11 +194,9 @@ const handleFileDownload = (url: string, fileName: string) => {
               <CTableDataCell></CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/ledger/daily-late-fee/?contract=${contract.pk}`,
@@ -223,11 +212,9 @@ const handleFileDownload = (url: string, fileName: string) => {
               <CTableDataCell></CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableDataCell class="text-center">
-                <CFormCheck />
-              </CTableDataCell>
               <CTableDataCell>
                 <button
+                  type="button"
                   @click="
                     handleFileDownload(
                       `/pdf/cert-occupancy/?project=${contract.project}&contract=${contract.pk}`,

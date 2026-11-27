@@ -9,7 +9,7 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ContractForm from './ContractForm.vue'
 import ContractItem from './ContractItem.vue'
 
-const emit = defineEmits(['page-select', 'contract-converted'])
+const emit = defineEmits(['page-select', 'contract-converted', 'contract-updated'])
 
 const props = defineProps({
   limit: { type: Number, default: 10 },
@@ -107,7 +107,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     @active-page-change="pageSelect"
   />
 
-  <FormModal ref="updateFormModal" size="xl">
+  <FormModal ref="updateFormModal" size="xl" @close="closeUpdateModal">
     <template #header>청약 / 계약 등록 수정</template>
     <template #default>
       <ContractForm
@@ -117,6 +117,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         :unit-set="unitSet"
         @close="closeUpdateModal"
         @contract-converted="$emit('contract-converted')"
+        @contract-updated="$emit('contract-updated')"
       />
     </template>
   </FormModal>

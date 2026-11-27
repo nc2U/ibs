@@ -142,13 +142,13 @@ export const useContract = defineStore('contract', () => {
   // actions
   const fetchKeyUnitList = async (payload: UnitFilter) => {
     const { project } = payload
-    const unit_type = payload.unit_type || ''
-    const contract = payload.contract || ''
-    const available = payload.available || ''
+    const params: Record<string, unknown> = { project }
+    if (payload.unit_type) params.unit_type = payload.unit_type
+    if (payload.contract) params.available_for_contract = payload.contract
+    else if (payload.available) params.available = payload.available
+
     return await api
-      .get(
-        `/key-unit/?project=${project}&unit_type=${unit_type}&contract=${contract}&available=${available}`,
-      )
+      .get('/key-unit/', { params })
       .then(res => (keyUnitList.value = res.data.results))
       .catch(err => errorHandle(err))
   }
@@ -276,9 +276,11 @@ export const useContract = defineStore('contract', () => {
         contractFilter.value = payload
         contractList.value = res.data.results
         contractsCount.value = res.data.count
-        isLoading.value = false
       })
       .catch(err => errorHandle(err))
+      .finally(() => {
+        isLoading.value = false
+      })
   }
 
   const findContractPage = async (highlightId: number, filters: ContFilter) => {
@@ -338,12 +340,17 @@ export const useContract = defineStore('contract', () => {
 
   const removeContractor = () => (contractor.value = null)
 
-  const fetchContractorList = (project: number, search = '') => {
+  const fetchContractorList = (project: number, search = '') =>
     api
-      .get(`/contractor/?contract__project=${project}&search=${search}&is_active=true`)
+      .get('/contractor/', {
+        params: {
+          contract__project: project,
+          search,
+          is_active: true,
+        },
+      })
       .then(res => (contractorList.value = res.data.results))
       .catch(err => errorHandle(err))
-  }
 
   const patchContractor = (
     pk: number,
@@ -646,6 +653,7 @@ export const useContract = defineStore('contract', () => {
     previous: null as string | null,
     page: 1,
     pageSize: 10,
+    status: '',
   })
   const consultationLogCount = ref<number>(0)
   const consultationLogPages = (itemsPerPage: number) =>
@@ -655,16 +663,26 @@ export const useContract = defineStore('contract', () => {
     contractorId: number,
     params?: { page?: number; status?: string },
   ) => {
+    const page = params?.page || 1
+    const status = params?.status ?? ''
     const queryParams = new URLSearchParams({
       contractor: contractorId.toString(),
-      page: (params?.page || 1).toString(),
-      ...(params?.status && { status: params.status }),
+      page: page.toString(),
+      ...(status && { status }),
     })
 
     try {
       const res = await api.get(`/contractor-consultations/?${queryParams}`)
       consultationLogList.value = res.data.results
       consultationLogCount.value = res.data.count
+      consultationLogPagination.value = {
+        ...consultationLogPagination.value,
+        count: res.data.count,
+        next: res.data.next ?? null,
+        previous: res.data.previous ?? null,
+        page,
+        status,
+      }
       return res.data
     } catch (err: unknown) {
       return errorHandle(err)
@@ -676,7 +694,10 @@ export const useContract = defineStore('contract', () => {
       .post('/contractor-consultations/', payload)
       .then(async res => {
         if (payload.contractor) {
-          await fetchConsultationLogs(payload.contractor)
+          await fetchConsultationLogs(payload.contractor, {
+            page: 1,
+            status: consultationLogPagination.value.status || undefined,
+          })
         }
         message()
         return res.data
@@ -694,6 +715,7 @@ export const useContract = defineStore('contract', () => {
         if (res.data.contractor) {
           await fetchConsultationLogs(res.data.contractor, {
             page: consultationLogPagination.value.page,
+            status: consultationLogPagination.value.status || undefined,
           })
         }
         message()
@@ -706,11 +728,16 @@ export const useContract = defineStore('contract', () => {
   }
 
   const deleteConsultationLog = async (pk: number, contractorId: number) => {
+    const nextPage =
+      consultationLogList.value.length <= 1 && consultationLogPagination.value.page > 1
+        ? consultationLogPagination.value.page - 1
+        : consultationLogPagination.value.page
     return await api
       .delete(`/contractor-consultations/${pk}/`)
       .then(async () => {
         await fetchConsultationLogs(contractorId, {
-          page: consultationLogPagination.value.page,
+          page: nextPage,
+          status: consultationLogPagination.value.status || undefined,
         })
         message('warning', '알림!', '상담 내역이 삭제되었습니다.')
       })
@@ -744,31 +771,55 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err))
 
   const createSuccession = async (
-    payload: Succession & BuyerForm & { project: number; page: number },
+    payload: Omit<Partial<Succession>, 'contract' | 'seller' | 'buyer'> &
+      Partial<BuyerForm> & {
+        contract: number | null
+        seller: number | null
+        buyer: number | null
+        project: number
+        page: number
+      },
   ) => {
     const { project, page, ...dbData } = payload
     return await api
       .post(`/succession/`, dbData)
-      .then(res =>
-        fetchSuccessionList(project, page).then(() =>
-          fetchContractor(res.data.buyer.pk).then(() => message()),
-        ),
-      )
-      .catch(err => errorHandle(err))
+      .then(async res => {
+        await fetchSuccessionList(project, page)
+        const targetPk = res.data.status === '3' ? res.data.buyer?.pk : res.data.seller?.pk
+        if (targetPk) await fetchContractor(targetPk)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
   const patchSuccession = async (
-    payload: Succession & BuyerForm & { project: number; page: number },
+    payload: Omit<Partial<Succession>, 'contract' | 'seller' | 'buyer'> &
+      Partial<BuyerForm> & {
+        contract: number | null
+        seller: number | null
+        buyer: number | null
+        project: number
+        page: number
+      },
   ) => {
     const { pk, project, page, ...dbData } = payload
     return await api
       .put(`/succession/${pk}/`, dbData)
-      .then(res =>
-        fetchSuccessionList(project, page).then(() =>
-          fetchContractor(res.data.buyer.pk).then(() => message()),
-        ),
-      )
-      .catch(err => errorHandle(err))
+      .then(async res => {
+        await fetchSuccessionList(project, page)
+        const targetPk = res.data.status === '3' ? res.data.buyer?.pk : res.data.seller?.pk
+        if (targetPk) await fetchContractor(targetPk)
+        message()
+        return res.data
+      })
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
   const deleteSuccession = async (pk: number, project: number, page = 1) => {
@@ -782,7 +833,10 @@ export const useContract = defineStore('contract', () => {
           message('warning', '', '해당 승계 건이 삭제되었습니다.')
         }),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
   }
 
   const findSuccessionPage = async (highlightId: number, projectId: number) => {
@@ -844,9 +898,14 @@ export const useContract = defineStore('contract', () => {
       .then(async res => {
         contRelease.value = res.data
         await fetchContReleaseList(payload.project)
+        await fetchContractor(payload.contractor)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const updateRelease = (payload: ContractRelease & { page: number }) =>
     api
@@ -854,9 +913,14 @@ export const useContract = defineStore('contract', () => {
       .then(async res => {
         contRelease.value = res.data
         await fetchContReleaseList(payload.project, payload.page)
+        await fetchContractor(payload.contractor)
         message()
+        return res.data
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const deleteRelease = (pk: number, project: number, page = 1) =>
     api
@@ -867,7 +931,10 @@ export const useContract = defineStore('contract', () => {
         await fetchContReleaseList(project, page)
         message('warning', '', '해당 해지 건이 삭제되었습니다.')
       })
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   // 일괄 가격 업데이트 미리보기
   const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {

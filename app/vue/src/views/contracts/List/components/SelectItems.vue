@@ -34,7 +34,7 @@ const selectedItems = computed({
           color="grey"
           readonly
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems2"
@@ -44,7 +44,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems3"
@@ -54,7 +54,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems4"
@@ -64,7 +64,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems5"
@@ -74,7 +74,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           v-if="unitSet"
@@ -85,7 +85,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems8"
@@ -95,7 +95,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems9"
@@ -105,7 +105,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems10"
@@ -115,7 +115,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems11"
@@ -125,7 +125,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems12"
@@ -135,7 +135,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems13"
@@ -145,7 +145,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems14"
@@ -155,7 +155,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems15"
@@ -165,7 +165,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems16"
@@ -175,7 +175,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems17"
@@ -185,7 +185,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems18"
@@ -195,7 +195,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems19"
@@ -205,7 +205,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems20"
@@ -215,7 +215,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems24"
@@ -225,7 +225,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
         <v-checkbox-btn
           id="printItems28"
@@ -235,7 +235,7 @@ const selectedItems = computed({
           inline
           color="indigo"
           hide-details
-          class="mr-2"
+          class="me-2"
         />
       </v-row>
     </v-container>

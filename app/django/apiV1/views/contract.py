@@ -765,6 +765,8 @@ class ContractorViewSet(viewsets.ModelViewSet):
             'contract__order_group',
             'contract__unit_type',
             'prev_contract__project',
+            'curr_contractor',
+            'prev_contractor',
             'contractorcontact',
             'sensitive_info',
         ).prefetch_related(

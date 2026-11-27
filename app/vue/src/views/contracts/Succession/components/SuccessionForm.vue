@@ -47,8 +47,8 @@ const postCode = ref<InstanceType<typeof DaumPostcode> | null>(null)
 const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 const refConfirmModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
-const address21 = ref<any>(null)
-const address22 = ref<any>(null)
+const address21 = ref<{ $el?: { nextElementSibling?: HTMLElement | null } } | null>(null)
+const address22 = ref<{ $el?: { nextElementSibling?: HTMLElement | null } } | null>(null)
 const sameAddr = ref(false)
 const validated = ref(false)
 
@@ -95,7 +95,7 @@ const createInitialFormData = () => ({
   buyer: null as number | null,
   apply_date: getToday(),
   trading_date: getToday(),
-  status: '1',
+  status: '1' as '1' | '2' | '3' | '9',
   approval_date: null as string | null,
   note: '',
 })
@@ -113,7 +113,7 @@ const formsCheck = computed(() => {
     const f = form.approval_date === props.succession.approval_date
     const g = (form.note || '') === (props.succession.note || '')
     const h = buyer_data.name === props.succession.buyer?.name
-    const i = buyer_data.birth_date === props.succession.buyer?.birth_date
+    const i = buyer_data.birth_date === (props.succession.buyer?.birth_date || '')
     const j = buyer_data.gender === props.succession.buyer?.gender
 
     const addr = props.succession.buyer?.contractoraddress
@@ -167,9 +167,9 @@ const onSubmit = (event: Event) => {
     if (isValidate(event)) {
       validated.value = true
     } else {
-      const s_data = { ...form }
+      const s_data: SuccessionFormData = { ...form }
       const b_data = { ...buyer_data }
-      emit('on-submit', { s_data: s_data as any, b_data })
+      emit('on-submit', { s_data, b_data })
     }
   } else refAlertModal.value?.callModal()
 }
@@ -201,8 +201,9 @@ const addressCallback = (data: AddressData) => {
   }
 }
 
-const toSame = () => {
-  if (!sameAddr.value) {
+const onSameAddrChange = (val: boolean | null) => {
+  sameAddr.value = !!val
+  if (sameAddr.value) {
     buyer_data.dm_zipcode = buyer_data.id_zipcode
     buyer_data.dm_address1 = buyer_data.id_address1
     buyer_data.dm_address2 = buyer_data.id_address2
@@ -222,6 +223,8 @@ const chkStatus = () => {
 }
 
 const formDataSet = () => {
+  validated.value = false
+  sameAddr.value = false
   if (props.isSuccession && props.succession) {
     const buyer = props.succession.buyer
     form.pk = props.succession.pk
@@ -235,7 +238,7 @@ const formDataSet = () => {
     form.note = props.succession.note || ''
 
     buyer_data.name = buyer.name
-    buyer_data.birth_date = buyer.birth_date
+    buyer_data.birth_date = buyer.birth_date || ''
     buyer_data.gender = buyer.gender
 
     const addr = buyer.contractoraddress
@@ -259,10 +262,10 @@ const formDataSet = () => {
     // 신규 등록 모드: 깨끗하게 초기화
     Object.assign(form, createInitialFormData())
     Object.assign(buyer_data, createInitialBuyerData())
-    sameAddr.value = false
-    validated.value = false
   }
 }
+
+defineExpose({ resetForm: formDataSet })
 
 onBeforeMount(() => formDataSet())
 
@@ -282,7 +285,7 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label"> 양도계약자</CFormLabel>
             <CCol sm="8">
-              <CFormSelect v-model="form.seller" required readonly>
+              <CFormSelect v-model="form.seller" required disabled>
                 <option :value="seller.pk">
                   {{ seller.name }}
                 </option>
@@ -573,7 +576,12 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
                   placeholder="참고항목(동, 건물)"
                 />
                 <CInputGroupText>
-                  <CFormCheck id="toSame" v-model="sameAddr" label="상동" @click="toSame" />
+                  <CFormCheck
+                    id="toSame"
+                    v-model="sameAddr"
+                    label="상동"
+                    @update:model-value="onSameAddrChange"
+                  />
                 </CInputGroupText>
               </CInputGroup>
             </CCol>

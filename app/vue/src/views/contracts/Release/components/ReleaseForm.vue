@@ -88,10 +88,11 @@ const statusOptions = computed(() => {
     { value: '4', label: '해지확정' },
     { value: '9', label: '신청취소' },
   ]
-  if (form.release_type === '2') {
-    return options.filter(opt => opt.value !== '2')
-  }
-  return options
+  return options.filter(opt => {
+    if (form.release_type === '2' && opt.value === '2') return false
+    if (props.release?.status === '4' && opt.value === '9') return false
+    return true
+  })
 })
 
 const dateOfReceipt = computed(() => (form.release_type === '3' ? '해지통보일' : '해지신청일'))
@@ -115,6 +116,7 @@ const modalAction = () => {
 }
 
 const formDataSet = () => {
+  validated.value = false
   if (props.release) {
     form.pk = props.release.pk
     form.contractor = props.release.contractor
@@ -144,6 +146,8 @@ const formDataSet = () => {
   }
 }
 
+defineExpose({ resetForm: formDataSet })
+
 onBeforeMount(() => formDataSet())
 
 watch([() => props.release, () => props.contractor], () => formDataSet(), { deep: true })
@@ -162,7 +166,7 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label">계약자</CFormLabel>
             <CCol sm="8">
-              <CFormSelect v-model="form.contractor" required readonly>
+              <CFormSelect v-model="form.contractor" required disabled>
                 <option :value="form.contractor">
                   {{ contractor?.name || release?.__str__ || '계약자 정보 없음' }}
                 </option>

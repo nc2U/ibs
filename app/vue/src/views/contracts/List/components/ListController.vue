@@ -54,9 +54,15 @@ const contractsCount = computed(() => contractStore.contractsCount)
 const buildingList = computed(() => projectDataStore.buildingList)
 const simpleTypes = computed(() => projectDataStore.simpleTypes)
 
-watch(from_date, () => listFiltering(1))
+const isResetting = ref(false)
 
-watch(to_date, () => listFiltering(1))
+watch(from_date, () => {
+  if (!isResetting.value) listFiltering(1)
+})
+
+watch(to_date, () => {
+  if (!isResetting.value) listFiltering(1)
+})
 
 watch(combinedStatus, val => {
   if (val.startsWith('q')) {
@@ -69,7 +75,7 @@ watch(combinedStatus, val => {
     form.qualification = ''
     form.change_type = ''
   }
-  listFiltering(1)
+  if (!isResetting.value) listFiltering(1)
 })
 
 const listFiltering = (page = 1) => {
@@ -86,7 +92,8 @@ const listFiltering = (page = 1) => {
 
 defineExpose({ listFiltering })
 
-const resetForm = () => {
+const resetForm = async () => {
+  isResetting.value = true
   form.limit = ''
   form.order_group = ''
   form.unit_type = ''
@@ -101,6 +108,8 @@ const resetForm = () => {
   to_date.value = ''
   form.ordering = '-created'
   form.search = ''
+  await nextTick()
+  isResetting.value = false
   listFiltering(1)
 }
 </script>
@@ -235,13 +244,13 @@ const resetForm = () => {
       </CCol>
     </CRow>
     <CRow>
-      <CCol color="warning" class="p-2 pl-3">
+      <CCol color="warning" class="p-2 ps-3">
         <strong>
           계약 건수 조회 결과 :
           {{ numFormat(contractsCount, 0, 0) }} 건
         </strong>
       </CCol>
-      <CCol v-if="!formsCheck" class="text-right mb-0">
+      <CCol v-if="!formsCheck" class="text-end mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>
       </CCol>
     </CRow>

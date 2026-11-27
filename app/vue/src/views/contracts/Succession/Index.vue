@@ -33,6 +33,7 @@ const page = ref(1)
 const loading = ref(true)
 
 const successionFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const successionFormRef = ref<InstanceType<typeof SuccessionForm> | null>(null)
 const successionAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 // 쿼리/파라미터 안전 파싱 (NaN 방어)
@@ -68,6 +69,8 @@ watch(
   },
 )
 
+const skipNextSuccessionWatch = ref(false)
+
 // 계약자 변경 시 연관 데이터 독립 갱신 (if-else 논리 버그 해결)
 watch(contractor, async val => {
   if (val?.contract) {
@@ -76,20 +79,14 @@ watch(contractor, async val => {
     contStore.contract = null
   }
 
+  if (skipNextSuccessionWatch.value) return
+
   if (val?.succession?.pk) {
     await contStore.fetchSuccession(val.succession.pk)
   } else {
     contStore.succession = null
   }
 })
-
-const searchContractor = async (search: string) => {
-  if (search.trim() !== '' && project.value) {
-    await contStore.fetchContractorList(project.value, search.trim())
-  } else {
-    contStore.contractorList = []
-  }
-}
 
 // 임시 쿼리만 선택적으로 정리 (project 등 영구 파라미터 보존)
 const clearTransientQueries = (preserveHighlight = false) => {
@@ -162,10 +159,16 @@ const projSelect = async (target: number | null, isAuto = false) => {
 
 const callFormModal = async (suc?: Succession) => {
   if (suc) {
-    contStore.succession = suc
     if (suc.seller?.pk && contStore.contractor?.pk !== suc.seller.pk) {
-      await contStore.fetchContractor(suc.seller.pk)
+      skipNextSuccessionWatch.value = true
+      try {
+        await contStore.fetchContractor(suc.seller.pk)
+        await nextTick()
+      } finally {
+        skipNextSuccessionWatch.value = false
+      }
     }
+    contStore.succession = suc
   }
   if (canContractSuccession.value) {
     successionFormModal.value?.callModal()
@@ -187,26 +190,37 @@ const onSubmit = async (payload: { s_data: SuccessionFormData; b_data: BuyerForm
 
   const dbData = { ...s_data, ...b_data }
 
-  if (!isSuccession.value && !s_data.pk) {
-    await contStore.createSuccession({ ...dbData, project: project.value, page: 1 } as any)
-    if (s_data.seller) {
-      router.push({ name: '권리 의무 승계 보기', params: { contractorId: s_data.seller } })
+  try {
+    if (!isSuccession.value && !s_data.pk) {
+      await contStore.createSuccession({ ...dbData, project: project.value, page: 1 })
+      if (s_data.seller) {
+        router.push({
+          name: '권리 의무 승계 보기',
+          params: { contractorId: s_data.seller },
+          query: route.query,
+        })
+      }
+    } else {
+      await contStore.patchSuccession({
+        ...dbData,
+        project: project.value,
+        page: page.value,
+      })
     }
-  } else {
-    await contStore.patchSuccession({
-      ...dbData,
-      project: project.value,
-      page: page.value,
-    } as any)
+    successionFormModal.value?.close()
+  } catch {
+    // 에러 안내는 store의 errorHandle에서 처리하며 모달은 유지
   }
-  successionFormModal.value?.close()
 }
 
 const onDelete = async (pk: number) => {
-  if (project.value) {
+  if (!project.value) return
+  try {
     await contStore.deleteSuccession(pk, project.value, page.value)
+    successionFormModal.value?.close()
+  } catch {
+    // 에러 안내는 store의 errorHandle에서 처리
   }
-  successionFormModal.value?.close()
 }
 
 // 라우트 갱신 감지 (project.value 참조 오류 해결)
@@ -226,15 +240,16 @@ onBeforeMount(async () => {
   const targetId = urlProjectId.value || project.value || projStore.currentProject
 
   if (targetId) {
-    if (urlProjectId.value && urlProjectId.value !== project.value) {
-      await projSelect(urlProjectId.value, true)
+    if (project.value !== targetId) {
+      await projSelect(targetId, true)
     } else {
-      if (contractorId.value) {
-        await contStore.fetchContractor(contractorId.value)
-      } else {
-        contStore.contractor = null
-      }
       await dataSetup(targetId)
+    }
+
+    if (contractorId.value) {
+      await contStore.fetchContractor(contractorId.value)
+    } else {
+      contStore.contractor = null
     }
   }
 
@@ -255,7 +270,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
-        <ContController :project="project ?? undefined" @search-contractor="searchContractor" />
+        <ContController :project="project ?? undefined" />
         <ContractorAlert v-if="contractor" :contractor="contractor" clear-route="권리 의무 승계" />
 
         <SuccessionButton
@@ -280,10 +295,11 @@ onBeforeMount(async () => {
       </CCardBody>
     </ContentBody>
 
-    <FormModal ref="successionFormModal" size="lg">
+    <FormModal ref="successionFormModal" size="lg" @close="successionFormRef?.resetForm()">
       <template #header>{{ isSuccession ? '권리 의무 승계 수정' : '권리 의무 승계 등록' }}</template>
       <template #default>
         <SuccessionForm
+          ref="successionFormRef"
           :succession="succession ?? undefined"
           :is-succession="isSuccession"
           @on-submit="onSubmit"

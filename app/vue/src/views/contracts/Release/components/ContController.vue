@@ -1,16 +1,13 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useContract } from '@/store/pinia/contract'
 
 const props = defineProps<{
   project?: number | null
 }>()
 
-const emit = defineEmits<{
-  'search-contractor': [search: string]
-}>()
-
+const route = useRoute()
 const router = useRouter()
 const contractStore = useContract()
 
@@ -19,10 +16,15 @@ const isSearched = ref(false)
 
 const contractorList = computed(() => contractStore.contractorList)
 
-const searchContractor = () => {
-  if (!search.value.trim()) return
-  isSearched.value = true
-  emit('search-contractor', search.value.trim())
+const searchContractor = async () => {
+  const query = search.value.trim()
+  if (!query || !props.project) return
+  isSearched.value = false
+  try {
+    await contractStore.fetchContractorList(props.project, query)
+  } finally {
+    isSearched.value = true
+  }
 }
 
 watch(
@@ -39,7 +41,7 @@ watch(search, () => {
 })
 
 const setContractor = (pk: number) => {
-  router.push({ name: '계약 해지 보기', params: { contractorId: pk } })
+  router.push({ name: '계약 해지 보기', params: { contractorId: pk }, query: route.query })
   search.value = ''
   isSearched.value = false
   contractStore.contractorList = []
@@ -72,7 +74,7 @@ const setContractor = (pk: number) => {
           <CCol
             v-if="contractorList && contractorList.length > 0"
             color="warning"
-            class="p-1 pl-3 mb-2"
+            class="p-1 ps-3 mb-2"
           >
             <v-btn
               v-for="contractor in contractorList"
@@ -90,7 +92,7 @@ const setContractor = (pk: number) => {
           </CCol>
           <CCol
             v-else-if="isSearched"
-            class="p-1 pl-3 mb-2 d-flex align-items-center text-muted"
+            class="p-1 ps-3 mb-2 d-flex align-items-center text-muted"
           >
             <small>검색 결과가 없습니다.</small>
           </CCol>

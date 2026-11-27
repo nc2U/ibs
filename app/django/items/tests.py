@@ -872,6 +872,38 @@ class ItemsIsolationAndPermissionTests(APITestCase):
         self.assertIn(self.house_a, hu_admin.get_queryset(req))
         self.assertNotIn(self.house_b, hu_admin.get_queryset(req))
 
+    def test_key_unit_available_for_contract_filter(self):
+        """[contracts/List] 계약 수정 시 기존 배정 키유닛과 미배정 키유닛을 함께 조회하는 available_for_contract 검증"""
+        from contract.models import OrderGroup, Contract
+
+        self.client.force_authenticate(user=self.user_a)
+        og_a = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, sort='2', name='1차 일반분양'
+        )
+        ku_free = KeyUnit.objects.create(
+            project=self.project_a, unit_type=self.unit_type_a, unit_code='KU-FREE'
+        )
+        ku_other = KeyUnit.objects.create(
+            project=self.project_a, unit_type=self.unit_type_a, unit_code='KU-OTHER'
+        )
+        cont_a = Contract.objects.create(
+            project=self.project_a, serial_number='S-A', order_group=og_a,
+            unit_type=self.unit_type_a, key_unit=self.key_unit_a
+        )
+        Contract.objects.create(
+            project=self.project_a, serial_number='S-B', order_group=og_a,
+            unit_type=self.unit_type_a, key_unit=ku_other
+        )
+
+        res = self.client.get(
+            f'/api/v1/key-unit/?project={self.project_a.pk}&unit_type={self.unit_type_a.pk}&available_for_contract={cont_a.pk}'
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        pks = [item['pk'] for item in res.data['results']]
+        self.assertIn(self.key_unit_a.pk, pks)
+        self.assertIn(ku_free.pk, pks)
+        self.assertNotIn(ku_other.pk, pks)
+
 
 
 class ItemsAdminQueryOptimizationTest(TestCase):
