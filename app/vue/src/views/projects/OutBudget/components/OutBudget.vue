@@ -26,8 +26,8 @@ const form = reactive<{
   pk: number | null
   account: number | ''
   basis_calc: string
-  budget: number | null
-  revised_budget: number | null
+  budget: number | '' | null
+  revised_budget: number | '' | null
 }>({
   pk: null,
   account: '',
@@ -35,6 +35,9 @@ const form = reactive<{
   budget: null,
   revised_budget: null,
 })
+
+const toNullableNumber = (val: number | '' | null) =>
+  val !== null && val !== '' ? Number(val) : null
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -57,10 +60,8 @@ const isUnchanged = computed(() => {
   return (
     Number(form.account) === props.budget.account &&
     form.basis_calc.trim() === (props.budget.basis_calc || '') &&
-    Number(form.budget) === props.budget.budget &&
-    (form.revised_budget !== null && (form.revised_budget as any) !== ''
-      ? Number(form.revised_budget)
-      : null) === (props.budget.revised_budget || null)
+    toNullableNumber(form.budget) === props.budget.budget &&
+    toNullableNumber(form.revised_budget) === (props.budget.revised_budget || null)
   )
 })
 
@@ -68,7 +69,8 @@ const formsCheck = computed(() => {
   return (
     !form.account ||
     form.budget === null ||
-    form.budget < 0 ||
+    form.budget === '' ||
+    Number(form.budget) < 0 ||
     isUnchanged.value
   )
 })
@@ -83,10 +85,7 @@ const onUpdateBudget = () => {
       account: Number(form.account),
       basis_calc: form.basis_calc.trim(),
       budget: Number(form.budget),
-      revised_budget:
-        form.revised_budget !== null && (form.revised_budget as any) !== ''
-          ? Number(form.revised_budget)
-          : null,
+      revised_budget: toNullableNumber(form.revised_budget),
     })
   } else {
     refAlertModal.value.callModal()
@@ -113,7 +112,7 @@ const modalAction = () => {
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model.number="form.account" required>
+      <CFormSelect v-model.number="form.account" :disabled="!canProjectUpdate" required>
         <option value="">계정과목</option>
         <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
           {{ acc.label }}
@@ -123,7 +122,9 @@ const modalAction = () => {
     <CTableDataCell>
       <CFormInput
         v-model="form.basis_calc"
+        maxlength="255"
         placeholder="산출근거"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateBudget"
       />
     </CTableDataCell>
@@ -134,6 +135,7 @@ const modalAction = () => {
         min="0"
         required
         placeholder="인준 지출 예산"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateBudget"
       />
     </CTableDataCell>
@@ -143,6 +145,7 @@ const modalAction = () => {
         type="number"
         min="0"
         placeholder="현황 지출 예산"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateBudget"
       />
     </CTableDataCell>
@@ -150,7 +153,7 @@ const modalAction = () => {
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateBudget">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" @click="onDeleteBudget">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteBudget">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

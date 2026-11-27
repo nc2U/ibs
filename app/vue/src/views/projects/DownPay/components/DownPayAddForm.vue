@@ -14,7 +14,7 @@ const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 const orders = inject<OrderGroup[]>('orders')
 const types = inject<UnitType[]>('types')
 
-const props = defineProps({ disabled: Boolean })
+defineProps({ disabled: Boolean })
 const emit = defineEmits<{
   (
     e: 'on-submit',
@@ -29,7 +29,7 @@ const refConfirmModal = ref()
 const form = reactive<{
   order_group: number | ''
   unit_type: number | ''
-  payment_amount: number | null
+  payment_amount: number | '' | null
 }>({
   order_group: '',
   unit_type: '',
@@ -51,17 +51,22 @@ const isFormValid = computed(
     Boolean(form.order_group) &&
     Boolean(form.unit_type) &&
     form.payment_amount !== null &&
-    form.payment_amount >= 0 &&
+    form.payment_amount !== '' &&
+    Number(form.payment_amount) >= 0 &&
     !isDuplicate.value,
 )
 
 const onSubmit = (event: Event) => {
   if (canProjectUpdate.value) {
     if (isDuplicate.value) {
-      alert('이미 등록된 차수와 타입의 조합입니다.')
+      refAlertModal.value.callModal('중복 등록 오류', '이미 등록된 차수와 타입의 조합입니다.')
       return
     }
-    isValidate(event) ? (validated.value = true) : refConfirmModal.value.callModal()
+    if (isValidate(event)) {
+      validated.value = true
+    } else {
+      refConfirmModal.value.callModal()
+    }
   } else {
     refAlertModal.value.callModal()
     resetForm()
@@ -70,7 +75,8 @@ const onSubmit = (event: Event) => {
 
 const modalAction = () => {
   if (isDuplicate.value) {
-    alert('이미 등록된 차수와 타입의 조합입니다.')
+    refConfirmModal.value.close()
+    refAlertModal.value.callModal('중복 등록 오류', '이미 등록된 차수와 타입의 조합입니다.')
     return
   }
   emit('on-submit', {
@@ -131,11 +137,7 @@ const resetForm = () => {
       <CCol md="2">
         <CRow>
           <CCol md="12" class="d-grid gap-2 d-lg-block mb-3">
-            <v-btn
-              color="primary"
-              type="submit"
-              :disabled="disabled || !isFormValid"
-            >
+            <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid">
               계약금액 추가
             </v-btn>
           </CCol>

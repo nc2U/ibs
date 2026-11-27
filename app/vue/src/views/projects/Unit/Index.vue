@@ -3,7 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin5'
 import { useProject } from '@/store/pinia/project'
-import type { HouseUnit, Project } from '@/store/types/project'
+import type { BuildingUnit, HouseUnitUpdatePayload, Project } from '@/store/types/project'
 import { type CreateUnit, useProjectData } from '@/store/pinia/project_data'
 import { message } from '@/utils/helper'
 import Loading from '@/components/Loading/Index.vue'
@@ -12,7 +12,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
 import UnitTable from '@/views/projects/Unit/components/UnitTable.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
+const refAlertModal = ref()
 const refUnitController = ref()
 
 const bldgPk = ref<null | number>(null)
@@ -31,11 +33,12 @@ const fetchBuildingList = (projId: number) => pDataStore.fetchBuildingList(projI
 const fetchHouseUnitList = (projId: number, bldg?: number) =>
   pDataStore.fetchHouseUnitList(projId, bldg)
 
-const createBuilding = (payload: any) => pDataStore.createBuilding(payload)
+const createBuilding = (payload: { project: number; name: string }) =>
+  pDataStore.createBuilding(payload as BuildingUnit)
 const createUnit = (payload: CreateUnit) => pDataStore.createUnit(payload)
-const patchUnit = (payload: HouseUnit & { bldg: number }) => pDataStore.patchUnit(payload)
-const deleteUnit = (pk: number, proj: number, type: number) =>
-  pDataStore.deleteUnit(pk, proj, type)
+const patchUnit = (payload: HouseUnitUpdatePayload & { project: number; bldg: number }) =>
+  pDataStore.patchUnit(payload)
+const deleteUnit = (pk: number, proj: number, type: number) => pDataStore.deleteUnit(pk, proj, type)
 
 const bldgSelect = (bldg: { pk: number; name: string }) => {
   bldgPk.value = bldg.pk
@@ -69,7 +72,7 @@ const unitRegister = async (payload: OriginalUnit) => {
   if (!project.value) return
 
   if (payload.maxFloor < payload.minFloor) {
-    alert('종료층은 시작층 이상이어야 합니다.')
+    refAlertModal.value?.callModal('입력 오류', '종료층은 시작층 이상이어야 합니다.')
     return
   }
 
@@ -100,7 +103,10 @@ const unitRegister = async (payload: OriginalUnit) => {
   const isExist = requestedFloors.some(f => existingFloors.includes(f))
 
   if (isExist) {
-    alert('해당 범위의 호수 중 이미 등록되어 있는 유니트가 있습니다.')
+    refAlertModal.value?.callModal(
+      '중복 호수 알림',
+      '해당 범위의 호수 중 이미 등록되어 있는 유니트가 있습니다.',
+    )
     return
   }
 
@@ -117,7 +123,8 @@ const unitRegister = async (payload: OriginalUnit) => {
 
   const unassigned = inputUnits.filter(u => !u.floor_type)
   if (unassigned.length > 0) {
-    alert(
+    refAlertModal.value?.callModal(
+      '층별 조건 미설정',
       '해당 범위 중 층별 조건(Floor Type)이 설정되지 않은 층이 있습니다. 먼저 층별 조건을 등록하세요.',
     )
     return
@@ -142,10 +149,11 @@ const unitRegister = async (payload: OriginalUnit) => {
     message()
   } catch (err) {
     console.error(err)
+    await fetchHouseUnitList(project.value, building_unit)
   }
 }
 
-const onUpdate = (payload: HouseUnit) => {
+const onUpdate = (payload: HouseUnitUpdatePayload) => {
   if (bldgPk.value) {
     const projId = project.value || projStore.currentProject
     if (projId) {
@@ -156,7 +164,7 @@ const onUpdate = (payload: HouseUnit) => {
       })
     }
   } else {
-    alert('동(건물)을 선택하세요!')
+    refAlertModal.value?.callModal('선택 알림', '동(건물)을 선택하세요!')
   }
 }
 
@@ -183,12 +191,6 @@ const dataReset = () => {
   bldgName.value = ''
 }
 
-const projSelect = (target: number | null) => {
-  if (refUnitController.value) refUnitController.value.projReset()
-  dataReset()
-  if (target) dataSetup(target)
-}
-
 watch(
   () => project.value,
   newProjId => {
@@ -200,9 +202,8 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) {
-    await dataSetup(projId)
+  if (project.value) {
+    await dataSetup(project.value)
     pDataStore.houseUnitList = []
   }
   loading.value = false
@@ -216,12 +217,7 @@ onBeforeRouteLeave(() => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">
@@ -235,5 +231,7 @@ onBeforeRouteLeave(() => {
         <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
       </CCardBody>
     </ContentBody>
+
+    <AlertModal ref="refAlertModal" />
   </ProjectAuthGuard>
 </template>

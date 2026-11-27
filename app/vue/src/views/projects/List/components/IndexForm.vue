@@ -145,7 +145,8 @@ const store = useStore()
 const validated = ref(false)
 
 const onSubmit = (event: Event) => {
-  if (canProjectCreate.value || canProjectUpdate.value) {
+  const hasPerm = props.project ? canProjectUpdate.value : canProjectCreate.value
+  if (hasPerm) {
     const formEl = event.currentTarget as HTMLFormElement
     if (!props.project && workspaceMode.value === 'match' && !form.issue_project) {
       event.preventDefault()
@@ -164,14 +165,15 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
-  if (!form.order) form.order = 100
-  const submitData = { ...form }
+  const submitData: Partial<Project> & typeof form = {
+    ...form,
+    order: form.order || 100,
+  }
   if (props.project) {
     delete submitData.sub_name
     delete submitData.slug
     delete submitData.desc
     delete submitData.slack_notifications_enabled
-    delete submitData.company_id
   } else {
     if (workspaceMode.value === 'match') {
       submitData.issue_project = form.issue_project ? Number(form.issue_project) : null
@@ -294,11 +296,7 @@ watch(
             <CCol md="10" lg="2" class="mb-md-3">
               <CFormSelect v-model="form.kind" required>
                 <option value="">프로젝트 종류</option>
-                <option
-                  v-for="sort in sortOptions"
-                  :key="sort.value"
-                  :value="sort.value"
-                >
+                <option v-for="sort in sortOptions" :key="sort.value" :value="sort.value">
                   {{ sort.label }}
                 </option>
               </CFormSelect>
@@ -719,12 +717,19 @@ watch(
       </CRow>
     </CCardBody>
 
-    <CCardFooter class="text-right">
+    <CCardFooter class="text-end">
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />
         저장
       </v-btn>
-      <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
+      <v-btn
+        v-if="project && canProjectDelete"
+        type="button"
+        color="warning"
+        @click="deleteProject"
+      >
+        삭제
+      </v-btn>
       <v-btn type="button" color="light" @click="emit('reset-form')" flat> 취소</v-btn>
     </CCardFooter>
   </CForm>

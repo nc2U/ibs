@@ -87,10 +87,10 @@ defineExpose({ listFiltering })
       </CCol>
     </CRow>
     <CRow>
-      <CCol class="p-2 pl-3">
+      <CCol class="p-2 ps-3">
         <strong> 계약 건 수 조회 결과 : {{ numFormat(siteContCount, 0, 0) }} 건 </strong>
       </CCol>
-      <CCol v-if="!formsCheck" class="text-right mb-0">
+      <CCol v-if="!formsCheck" class="text-end mb-0">
         <v-btn color="info" size="small" @click="resetForm">검색조건 초기화</v-btn>
       </CCol>
     </CRow>

@@ -118,12 +118,13 @@ watch(
         min="1"
         required
         placeholder="등록차수"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOrder"
       />
     </CTableDataCell>
 
     <CTableDataCell>
-      <CFormSelect v-model="form.sort" required>
+      <CFormSelect v-model="form.sort" :disabled="!canProjectUpdate" required>
         <option value="">구분선택</option>
         <option value="1">조합모집</option>
         <option value="2">일반분양</option>
@@ -136,14 +137,15 @@ watch(
         maxlength="20"
         placeholder="차수그룹명"
         required
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOrder"
       />
     </CTableDataCell>
 
-    <CTableDataCell class="pl-lg-5 pt-sm-3 pt-lg-1">
+    <CTableDataCell class="ps-lg-5 pt-sm-3 pt-lg-1">
       <CFormCheck
         v-model="form.is_default_for_uncontracted"
-        :disabled="isCheckboxDisabled"
+        :disabled="!canProjectUpdate || isCheckboxDisabled"
         label="미계약세대 기본설정"
         :id="`uncontracted-base-order-${order.pk}`"
       />
@@ -156,7 +158,7 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateOrder">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteOrder">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteOrder">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

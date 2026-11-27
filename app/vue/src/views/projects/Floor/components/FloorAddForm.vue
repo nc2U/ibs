@@ -52,10 +52,14 @@ const isFormValid = computed(
 const onSubmit = (event: Event) => {
   if (canProjectUpdate.value) {
     if (isRangeInvalid.value) {
-      alert('종료 층은 시작 층보다 크거나 같아야 합니다.')
+      refAlertModal.value.callModal('입력 오류', '종료 층은 시작 층보다 크거나 같아야 합니다.')
       return
     }
-    isValidate(event) ? (validated.value = true) : refConfirmModal.value.callModal()
+    if (isValidate(event)) {
+      validated.value = true
+    } else {
+      refConfirmModal.value.callModal()
+    }
   } else {
     refAlertModal.value.callModal()
     resetForm()
@@ -64,7 +68,7 @@ const onSubmit = (event: Event) => {
 
 const modalAction = () => {
   if (isRangeInvalid.value) {
-    alert('종료 층은 시작 층보다 크거나 같아야 합니다.')
+    refAlertModal.value.callModal('입력 오류', '종료 층은 시작 층보다 크거나 같아야 합니다.')
     return
   }
   emit('on-submit', {
@@ -123,7 +127,9 @@ const resetForm = () => {
           required
           :disabled="disabled"
           :invalid="isRangeInvalid"
-          :feedback-invalid="isRangeInvalid ? '종료 층은 시작 층보다 크거나 같아야 합니다.' : undefined"
+          :feedback-invalid="
+            isRangeInvalid ? '종료 층은 시작 층보다 크거나 같아야 합니다.' : undefined
+          "
         />
         <div v-if="isRangeInvalid" class="text-danger small mt-1">
           ※ 종료 층은 시작 층보다 크거나 같아야 합니다.

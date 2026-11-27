@@ -120,9 +120,7 @@ const resetForm = () => {
       </CCol>
 
       <CCol md="3" class="d-grid gap-2 d-lg-block mb-3">
-        <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid">
-          그룹추가
-        </v-btn>
+        <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid"> 그룹추가 </v-btn>
       </CCol>
     </CRow>
   </CForm>

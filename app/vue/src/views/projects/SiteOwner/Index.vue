@@ -11,12 +11,13 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
+import NoAuth from '@/views/_Accounts/NoAuth.vue'
 import ListController from '@/views/projects/SiteOwner/components/ListController.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import AddSiteOwner from '@/views/projects/SiteOwner/components/AddSiteOwner.vue'
 import SiteOwnerList from '@/views/projects/SiteOwner/components/SiteOwnerList.vue'
 
-const { can, PERM } = usePerms()
+const { can, canGlobal, PERM } = usePerms()
 const canSiteRead = computed(() => can(PERM.SITE_READ))
 const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
 
@@ -48,29 +49,31 @@ const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 const isReturned = computed(() => (projStore.project as Project)?.is_returned_area)
 
+const hasAccess = computed(() => (project.value ? canSiteRead.value : canGlobal(PERM.SITE_READ)))
+
 const siteStore = useSite()
 const getOwnersTotal = computed(() => siteStore.getOwnersTotal?.owned_area)
 
 const excelUrl = computed(() => {
-  const url = `/excel/sites-by-owner/?project=${project.value}`
+  const params = new URLSearchParams({ project: String(project.value ?? '') })
   const filter = dataFilter.value
-  let queryStr = filter.sort ? `&own_sort=${filter.sort}` : ''
-  queryStr = filter.search ? `${queryStr}&search=${filter.search}` : queryStr
-  return `${url}${queryStr}`
+  if (filter.sort) params.append('own_sort', filter.sort)
+  if (filter.search) params.append('search', filter.search)
+  return `/excel/sites-by-owner/?${params.toString()}`
 })
 
 const listFiltering = (payload: OwnerFilter) => {
   clearQueryString()
   payload.project = project.value as number
   dataFilter.value = payload
-  if (project.value) siteStore.fetchSiteOwnerList(payload)
+  if (project.value && canSiteRead.value) siteStore.fetchSiteOwnerList(payload)
 }
 
 const pageSelect = (page: number) => {
   clearQueryString()
   dataFilter.value.project = project.value as number
   dataFilter.value.page = page
-  if (project.value) siteStore.fetchSiteOwnerList(dataFilter.value)
+  if (project.value && canSiteRead.value) siteStore.fetchSiteOwnerList(dataFilter.value)
 }
 
 // 하이라이트 기능
@@ -103,21 +106,18 @@ const loadHighlightPage = async (projectId: number) => {
         is_use_consent: dataFilter.value.is_use_consent || '',
         search: dataFilter.value.search || '',
       }
-      siteStore.fetchSiteOwnerList({ project: projectId, page: targetPage })
+      await Promise.all([
+        siteStore.fetchSiteOwnerList({ project: projectId, page: targetPage }),
+        siteStore.fetchAllSites(projectId),
+      ])
     } catch (error) {
       console.error('Error loading highlight page:', error)
-      dataSetup(projectId)
+      await dataSetup(projectId)
     }
   }
 }
 
-type inputData = SiteOwner & {
-  limit: number
-  page: number
-  sort: string
-  use_consent: '' | '0' | '1'
-  search: string
-}
+type inputData = SiteOwner & OwnerFilter
 
 const onCreate = (payload: inputData) => siteStore.createSiteOwner(payload)
 
@@ -131,21 +131,22 @@ const relationPatch = (payload: Relation) => {
   }
 }
 
-const multiSubmit = (payload: SiteOwner) => {
+const multiSubmit = async (payload: SiteOwner, done?: (ok: boolean) => void) => {
   const { limit, page, sort, is_use_consent, search } = dataFilter.value
   const submitData = { ...payload, limit, page, sort, is_use_consent, search } as inputData
-  if (payload.pk) onUpdate(submitData)
-  else onCreate(submitData)
+  const ok = await (payload.pk ? onUpdate(submitData) : onCreate(submitData))
+  done?.(ok)
 }
 
-const onDelete = (payload: { pk: number; project: number }) => {
+const onDelete = async (payload: { pk: number; project: number }, done?: (ok: boolean) => void) => {
   const { pk, project: projId } = payload
-  siteStore.deleteSiteOwner(pk, projId)
+  const ok = await siteStore.deleteSiteOwner(pk, projId, dataFilter.value)
+  done?.(ok)
 }
 
 const dataSetup = (pk: number) => {
-  siteStore.fetchSiteOwnerList({ project: pk })
-  siteStore.fetchAllSites(pk)
+  dataFilter.value.project = pk
+  return Promise.all([siteStore.fetchSiteOwnerList(dataFilter.value), siteStore.fetchAllSites(pk)])
 }
 
 const dataReset = () => {
@@ -154,20 +155,17 @@ const dataReset = () => {
   siteStore.allSites = []
 }
 
-const projSelect = (target: number | null) => {
-  clearQueryString()
-  dataReset()
-  if (target) dataSetup(target)
-}
-
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.page || route.query.highlight_id) {
+    const restQuery = { ...route.query }
+    delete restQuery.page
+    delete restQuery.highlight_id
     router
       .replace({
         name: route.name,
         params: route.params,
-        query: {},
+        query: restQuery,
       })
       .catch(() => {
         // 동일 경로 이동 NavigationDuplicated 에러 무시
@@ -177,10 +175,17 @@ const clearQueryString = () => {
 
 watch(
   () => project.value,
-  newVal => {
-    clearQueryString()
+  async (newVal, oldVal) => {
+    if (oldVal !== undefined) clearQueryString()
     dataReset()
-    if (newVal) dataSetup(newVal)
+    if (newVal && canSiteRead.value) {
+      if (highlightId.value) {
+        await loadHighlightPage(newVal)
+        await scrollToHighlight()
+      } else {
+        await dataSetup(newVal)
+      }
+    }
   },
 )
 
@@ -190,22 +195,16 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (canSiteRead.value) {
-    let projectId = urlProjectId.value || project.value || projStore.currentProject
-    if (projectId) {
-      if (urlProjectId.value && urlProjectId.value !== project.value) {
-        console.log(`Using project ${urlProjectId.value} from URL parameter`)
-        projectId = urlProjectId.value
-      }
-
-      siteStore.fetchAllSites(projectId)
-
-      if (highlightId.value) {
-        await loadHighlightPage(projectId)
-        await scrollToHighlight()
-      } else {
-        dataSetup(projectId)
-      }
+  if (
+    canSiteRead.value &&
+    project.value &&
+    (!urlProjectId.value || urlProjectId.value === project.value)
+  ) {
+    if (highlightId.value) {
+      await loadHighlightPage(project.value)
+      await scrollToHighlight()
+    } else {
+      await dataSetup(project.value)
     }
   }
   loading.value = false
@@ -215,19 +214,11 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
-      <CCardBody class="pb-5">
-        <ListController
-          :project="project ?? undefined"
-          @list-filtering="listFiltering"
-        />
+      <CCardBody v-if="hasAccess" class="pb-5">
+        <ListController :project="project ?? undefined" @list-filtering="listFiltering" />
         <AddSiteOwner
           v-if="canSiteCreate"
           :project="project ?? undefined"
@@ -258,6 +249,7 @@ onBeforeMount(async () => {
           @on-delete="onDelete"
         />
       </CCardBody>
+      <NoAuth v-else />
     </ContentBody>
   </ProjectAuthGuard>
 </template>

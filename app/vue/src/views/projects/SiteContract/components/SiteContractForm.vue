@@ -6,7 +6,7 @@ import { humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms'
 import { useSite } from '@/store/pinia/project_site'
 import type { SiteContract, SiteOwner } from '@/store/types/project'
-import Multiselect from '@vueform/multiselect'
+import Multiselect from '@/components/MultiSelect/index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -62,26 +62,29 @@ const form = reactive<SiteContract>({
 const siteStore = useSite()
 const getOwners = computed(() => siteStore.getOwners)
 
+const toNumOrNull = (val: number | '' | null | undefined): number | null =>
+  val === null || val === undefined || val === '' ? null : Number(val)
+
 const formsCheck = computed(() => {
   if (props.contract) {
     if (!canSiteUpdate.value) return true
     const a = form.owner === props.contract?.owner
     const b = form.contract_date === props.contract.contract_date
-    const c = form.total_price === props.contract.total_price
-    const d = form.contract_area === props.contract.contract_area
-    const e = form.down_pay1 === props.contract.down_pay1
+    const c = toNumOrNull(form.total_price) === toNumOrNull(props.contract.total_price)
+    const d = toNumOrNull(form.contract_area) === toNumOrNull(props.contract.contract_area)
+    const e = toNumOrNull(form.down_pay1) === toNumOrNull(props.contract.down_pay1)
     const f = form.down_pay1_date === props.contract.down_pay1_date
     const g = form.down_pay1_is_paid === props.contract.down_pay1_is_paid
-    const h = form.down_pay2 === props.contract.down_pay2
+    const h = toNumOrNull(form.down_pay2) === toNumOrNull(props.contract.down_pay2)
     const i = form.down_pay2_date === props.contract.down_pay2_date
     const j = form.down_pay2_is_paid === props.contract.down_pay2_is_paid
-    const k = form.inter_pay1 === props.contract.inter_pay1
+    const k = toNumOrNull(form.inter_pay1) === toNumOrNull(props.contract.inter_pay1)
     const l = form.inter_pay1_date === props.contract.inter_pay1_date
     const m = form.inter_pay1_is_paid === props.contract.inter_pay1_is_paid
-    const n = form.inter_pay2 === props.contract.inter_pay2
+    const n = toNumOrNull(form.inter_pay2) === toNumOrNull(props.contract.inter_pay2)
     const o = form.inter_pay2_date === props.contract.inter_pay2_date
     const p = form.inter_pay2_is_paid === props.contract.inter_pay2_is_paid
-    const q = form.remain_pay === props.contract.remain_pay
+    const q = toNumOrNull(form.remain_pay) === toNumOrNull(props.contract.remain_pay)
     const r = form.remain_pay_date === props.contract.remain_pay_date
     const s = form.remain_pay_is_paid === props.contract.remain_pay_is_paid
     const t = form.ownership_completion === props.contract.ownership_completion
@@ -103,18 +106,18 @@ const formsCheck = computed(() => {
 })
 
 const isFormValid = computed(() => {
+  const totalPrice = toNumOrNull(form.total_price)
+  const downPay1 = toNumOrNull(form.down_pay1)
+  const remainPay = toNumOrNull(form.remain_pay)
   return (
     Boolean(form.owner) &&
     Boolean(form.contract_date) &&
-    form.total_price !== null &&
-    form.total_price !== undefined &&
-    form.total_price >= 0 &&
-    form.down_pay1 !== null &&
-    form.down_pay1 !== undefined &&
-    form.down_pay1 >= 0 &&
-    form.remain_pay !== null &&
-    form.remain_pay !== undefined &&
-    form.remain_pay >= 0 &&
+    totalPrice !== null &&
+    totalPrice >= 0 &&
+    downPay1 !== null &&
+    downPay1 >= 0 &&
+    remainPay !== null &&
+    remainPay >= 0 &&
     Boolean(form.acc_bank?.trim()) &&
     Boolean(form.acc_number?.trim()) &&
     Boolean(form.acc_owner?.trim())
@@ -132,12 +135,15 @@ const getAreaByOwner = computed(() =>
 watch(
   () => form.owner,
   val => {
-    if (!props.contract && val) siteStore.fetchSiteOwner(val)
+    if (!props.contract) {
+      if (val) siteStore.fetchSiteOwner(val)
+      else form.contract_area = null
+    }
   },
 )
 
 watch(getAreaByOwner, val => {
-  if (val) form.contract_area = val
+  if (!props.contract && form.owner && val) form.contract_area = val
 })
 
 const appStore = useStore()
@@ -220,13 +226,12 @@ const multiSubmit = (payload: SiteContract) => {
     new_files: newFiles.value,
     del_files: delFiles.value,
   })
-  emit('close')
 }
 
 const deleteObject = () => {
-  emit('on-delete', { pk: props.contract?.pk, project: props.contract?.project })
+  if (!props.contract?.pk || !props.contract?.project) return
+  emit('on-delete', { pk: props.contract.pk, project: props.contract.project })
   refDelModal.value.close()
-  emit('close')
 }
 
 const deleteConfirm = () => {
@@ -314,14 +319,13 @@ onBeforeMount(() => dataSetup())
               <CFormLabel class="col-sm-4 col-form-label required">소유자</CFormLabel>
               <CCol sm="8">
                 <Multiselect
-                  v-model.number="form.owner"
+                  v-model="form.owner"
+                  mode="single"
                   :options="getOwners"
                   placeholder="소유자"
-                  autocomplete="label"
-                  :attrs="form.owner ? {} : { required: true }"
-                  :classes="{ search: 'form-control multiselect-search' }"
-                  :add-option-on="['enter', 'tab']"
-                  searchable
+                  :disabled="!canSiteManage"
+                  :required="!form.owner"
+                  :invalid="validated && !form.owner"
                 />
               </CCol>
             </CRow>
@@ -337,6 +341,7 @@ onBeforeMount(() => dataSetup())
                   min="0"
                   step="0.0000001"
                   placeholder="총 계약면적(㎡)"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -354,6 +359,7 @@ onBeforeMount(() => dataSetup())
                   type="number"
                   required
                   placeholder="총 매매가격"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -368,6 +374,7 @@ onBeforeMount(() => dataSetup())
                   maxlength="10"
                   placeholder="계약 체결일"
                   required
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -386,6 +393,7 @@ onBeforeMount(() => dataSetup())
                     min="0"
                     required
                     placeholder="계약금 - 1차"
+                    :disabled="!canSiteManage"
                   />
                   <CInputGroupText>
                     <CFormCheck
@@ -393,6 +401,7 @@ onBeforeMount(() => dataSetup())
                       v-model="form.down_pay1_is_paid"
                       type="checkbox"
                       label="지급"
+                      :disabled="!canSiteManage"
                     />
                   </CInputGroupText>
                 </CInputGroup>
@@ -408,6 +417,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.down_pay1_date"
                   maxlength="10"
                   placeholder="계약금 1차 지급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -425,6 +435,7 @@ onBeforeMount(() => dataSetup())
                     type="number"
                     min="0"
                     placeholder="계약금 - 2차"
+                    :disabled="!canSiteManage"
                   />
                   <CInputGroupText>
                     <CFormCheck
@@ -432,6 +443,7 @@ onBeforeMount(() => dataSetup())
                       v-model="form.down_pay2_is_paid"
                       type="checkbox"
                       label="지급"
+                      :disabled="!canSiteManage"
                     />
                   </CInputGroupText>
                 </CInputGroup>
@@ -447,6 +459,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.down_pay2_date"
                   maxlength="10"
                   placeholder="계약금 2차 지급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -464,6 +477,7 @@ onBeforeMount(() => dataSetup())
                     type="number"
                     min="0"
                     placeholder="중도금 - 1차"
+                    :disabled="!canSiteManage"
                   />
                   <CInputGroupText>
                     <CFormCheck
@@ -471,6 +485,7 @@ onBeforeMount(() => dataSetup())
                       v-model="form.inter_pay1_is_paid"
                       type="checkbox"
                       label="지급"
+                      :disabled="!canSiteManage"
                     />
                   </CInputGroupText>
                 </CInputGroup>
@@ -486,6 +501,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.inter_pay1_date"
                   maxlength="10"
                   placeholder="중도금 1차 지급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -503,6 +519,7 @@ onBeforeMount(() => dataSetup())
                     type="number"
                     min="0"
                     placeholder="중도금 - 2차"
+                    :disabled="!canSiteManage"
                   />
                   <CInputGroupText>
                     <CFormCheck
@@ -510,6 +527,7 @@ onBeforeMount(() => dataSetup())
                       v-model="form.inter_pay2_is_paid"
                       type="checkbox"
                       label="지급"
+                      :disabled="!canSiteManage"
                     />
                   </CInputGroupText>
                 </CInputGroup>
@@ -525,6 +543,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.inter_pay2_date"
                   maxlength="10"
                   placeholder="중도금 2차 지급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -543,6 +562,7 @@ onBeforeMount(() => dataSetup())
                     min="0"
                     required
                     placeholder="계약 잔금"
+                    :disabled="!canSiteManage"
                   />
                   <CInputGroupText>
                     <CFormCheck
@@ -550,6 +570,7 @@ onBeforeMount(() => dataSetup())
                       v-model="form.remain_pay_is_paid"
                       type="checkbox"
                       label="지급"
+                      :disabled="!canSiteManage"
                     />
                   </CInputGroupText>
                 </CInputGroup>
@@ -565,6 +586,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.remain_pay_date"
                   maxlength="10"
                   placeholder="잔금 지급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -581,6 +603,7 @@ onBeforeMount(() => dataSetup())
                   maxlength="20"
                   required
                   placeholder="입금 은행"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
               <CCol sm="3">
@@ -589,16 +612,24 @@ onBeforeMount(() => dataSetup())
                   maxlength="25"
                   required
                   placeholder="계좌번호"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
               <CCol sm="2">
-                <CFormInput v-model="form.acc_owner" maxlength="20" required placeholder="예금주" />
+                <CFormInput
+                  v-model="form.acc_owner"
+                  maxlength="20"
+                  required
+                  placeholder="예금주"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
               <CCol sm="2" class="pt-2">
                 <CFormSwitch
                   id="ownership_completion"
                   v-model="form.ownership_completion"
                   label="소유권 확보"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -610,13 +641,18 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">특이사항</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea v-model="form.note" rows="3" placeholder="특이사항" />
+                <CFormTextarea
+                  v-model="form.note"
+                  rows="3"
+                  placeholder="특이사항"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
         </CRow>
 
-        <CRow class="mb-3 py-2 px-1 rounded" :class="{ 'bg-light': !isDark, 'bg-dark': isDark }">
+        <CRow class="mb-3 py-2 px-1 rounded bg-body-tertiary">
           <CFormLabel class="col-sm-2 col-form-label">계약서 및 첨부파일</CFormLabel>
           <CCol sm="10">
             <!-- 파일 선택 영역 -->
@@ -626,6 +662,7 @@ onBeforeMount(() => dataSetup())
                 type="file"
                 multiple
                 class="d-none"
+                :disabled="!canSiteManage"
                 @change="handleFileSelect"
               />
               <v-btn
@@ -633,11 +670,12 @@ onBeforeMount(() => dataSetup())
                 variant="tonal"
                 size="small"
                 prepend-icon="mdi-paperclip"
+                :disabled="!canSiteManage"
                 @click="fileInputRef?.click()"
               >
                 파일 선택 (복수 가능)
               </v-btn>
-              <span class="text-caption text-grey ml-3">
+              <span class="text-caption text-grey ms-3">
                 토지매매계약서, 인감증명서, 위임장, 등기부등본 등 관련 서류를 복수로 등록할 수
                 있습니다.
               </span>
@@ -645,14 +683,14 @@ onBeforeMount(() => dataSetup())
 
             <!-- 파일 에러 메시지 -->
             <div v-if="fileErrorMessage" class="text-danger small mb-2">
-              <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+              <v-icon icon="mdi-alert-circle" size="14" class="me-1" />
               {{ fileErrorMessage }}
             </div>
 
             <!-- 기존 등록된 파일 목록 -->
             <div v-if="form.site_cont_files && form.site_cont_files.length > 0" class="mb-3">
-              <div class="text-caption text-medium-emphasis mb-1 font-weight-bold">
-                <v-icon icon="mdi-folder-outline" size="14" class="mr-1" />
+              <div class="text-caption text-medium-emphasis mb-1 fw-bold">
+                <v-icon icon="mdi-folder-outline" size="14" class="me-1" />
                 등록된 계약서 / 첨부 서류 ({{ form.site_cont_files.length }}개)
               </div>
               <v-list density="compact" class="py-0 border rounded bg-transparent">
@@ -661,9 +699,9 @@ onBeforeMount(() => dataSetup())
                   :key="file.pk"
                   class="px-3 py-1"
                   :class="{
-                    'text-decoration-line-through text-grey bg-grey-lighten-4': isMarkedForDeletion(
-                      file.pk,
-                    ),
+                    'text-decoration-line-through text-grey': isMarkedForDeletion(file.pk),
+                    'bg-grey-lighten-4': isMarkedForDeletion(file.pk) && !isDark,
+                    'bg-grey-darken-3': isMarkedForDeletion(file.pk) && isDark,
                   }"
                 >
                   <template #prepend>
@@ -675,7 +713,7 @@ onBeforeMount(() => dataSetup())
                       "
                       :color="isMarkedForDeletion(file.pk) ? 'grey' : 'primary'"
                       size="18"
-                      class="mr-2"
+                      class="me-2"
                     />
                   </template>
 
@@ -684,25 +722,26 @@ onBeforeMount(() => dataSetup())
                       v-if="!isMarkedForDeletion(file.pk)"
                       :href="file.file"
                       target="_blank"
-                      class="text-decoration-none text-primary font-weight-medium"
+                      rel="noopener noreferrer"
+                      class="text-decoration-none text-primary fw-medium"
                     >
                       {{ file.file_name }}
                     </a>
                     <span v-else>{{ file.file_name }}</span>
-                    <span class="text-caption text-grey ml-2">
+                    <span class="text-caption text-grey ms-2">
                       ({{ humanizeFileSize(file.file_size) }})
                     </span>
-                    <span v-if="file.creator?.username" class="text-caption text-grey ml-2">
+                    <span v-if="file.creator?.username" class="text-caption text-grey ms-2">
                       · {{ file.creator.username }}
                     </span>
-                    <span v-if="file.created" class="text-caption text-grey ml-1">
+                    <span v-if="file.created" class="text-caption text-grey ms-1">
                       · {{ file.created.substring(0, 10) }}
                     </span>
                     <v-chip
                       v-if="isMarkedForDeletion(file.pk)"
                       color="error"
                       size="x-small"
-                      class="ml-2"
+                      class="ms-2"
                       variant="outlined"
                     >
                       삭제 대기
@@ -716,6 +755,7 @@ onBeforeMount(() => dataSetup())
                       :color="isMarkedForDeletion(file.pk) ? 'info' : 'error'"
                       variant="text"
                       size="small"
+                      :disabled="!canSiteManage"
                       @click="toggleDeleteExistingFile(file.pk)"
                     >
                       <v-tooltip activator="parent" location="top">
@@ -730,10 +770,10 @@ onBeforeMount(() => dataSetup())
             <!-- 새로 추가된 파일 목록 -->
             <div v-if="newFiles.length > 0">
               <div
-                class="text-caption text-medium-emphasis mb-1 font-weight-bold d-flex justify-content-between"
+                class="text-caption text-medium-emphasis mb-1 fw-bold d-flex justify-content-between"
               >
                 <span>
-                  <v-icon icon="mdi-cloud-upload-outline" size="14" class="mr-1" />
+                  <v-icon icon="mdi-cloud-upload-outline" size="14" class="me-1" />
                   추가할 파일 ({{ newFiles.length }}개, 총 {{ humanizeFileSize(totalNewFileSize) }})
                 </span>
               </div>
@@ -744,12 +784,12 @@ onBeforeMount(() => dataSetup())
                   class="px-3 py-1"
                 >
                   <template #prepend>
-                    <v-icon icon="mdi-file-plus-outline" color="success" size="18" class="mr-2" />
+                    <v-icon icon="mdi-file-plus-outline" color="success" size="18" class="me-2" />
                   </template>
 
                   <v-list-item-title class="text-body-2">
                     {{ nFile.name }}
-                    <span class="text-caption text-grey ml-2">
+                    <span class="text-caption text-grey ms-2">
                       ({{ humanizeFileSize(nFile.size) }})
                     </span>
                   </v-list-item-title>
@@ -761,6 +801,7 @@ onBeforeMount(() => dataSetup())
                       color="grey"
                       variant="text"
                       size="small"
+                      :disabled="!canSiteManage"
                       @click="removeNewFile(idx)"
                     >
                       <v-tooltip activator="parent" location="top">제거</v-tooltip>
@@ -777,6 +818,7 @@ onBeforeMount(() => dataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSiteManage"
           type="submit"
           size="small"
           :color="contract ? 'success' : 'primary'"
@@ -784,7 +826,13 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn v-if="contract" size="small" type="button" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="contract && canSiteDelete"
+          size="small"
+          type="button"
+          color="warning"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn type="button" size="small" color="light" flat @click="emit('close')">닫기</v-btn>

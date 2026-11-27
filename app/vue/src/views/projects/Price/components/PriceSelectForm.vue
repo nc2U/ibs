@@ -42,7 +42,7 @@ defineExpose({ dataReset })
 const onSortSelect = (e: Event) => {
   form.value.order = null
   form.value.type = null
-  emit('on-sort-select', (e.target as HTMLSelectElement).value as any)
+  emit('on-sort-select', (e.target as HTMLSelectElement).value as '1' | '2' | '3' | '4' | '5' | '6')
 }
 
 const onOrderSelect = (e: Event) => {
@@ -83,7 +83,12 @@ onMounted(() => {
         <CRow>
           <CFormLabel for="sel_sort" class="col-sm-4 col-form-label"> 구분</CFormLabel>
           <CCol sm="8">
-            <CFormSelect id="sel_sort" v-model="form.sort" :disabled="!project" @change="onSortSelect">
+            <CFormSelect
+              id="sel_sort"
+              v-model="form.sort"
+              :disabled="!project"
+              @change="onSortSelect"
+            >
               <option value="">---------</option>
               <option value="1">공동주택</option>
               <option value="2">오피스텔</option>

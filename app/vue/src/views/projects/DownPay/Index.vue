@@ -68,22 +68,13 @@ const onDeleteDownPay = (pk: number) => {
 }
 
 const dataSetup = async (pk: number) => {
-  await Promise.all([
-    fetchOrderGroupList(pk),
-    fetchTypeList(pk),
-    fetchDownPayList({ project: pk }),
-  ])
+  await Promise.all([fetchOrderGroupList(pk), fetchTypeList(pk), fetchDownPayList({ project: pk })])
 }
 
 const dataReset = () => {
   contStore.orderGroupList = []
   pDataStore.unitTypeList = []
   payStore.downPayList = []
-}
-
-const projSelect = (target: number | null) => {
-  dataReset()
-  if (target) dataSetup(target)
 }
 
 watch(
@@ -96,8 +87,7 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) await dataSetup(projId)
+  if (project.value) await dataSetup(project.value)
   loading.value = false
 })
 </script>
@@ -105,12 +95,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">

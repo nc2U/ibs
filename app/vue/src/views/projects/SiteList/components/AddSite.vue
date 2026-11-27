@@ -4,6 +4,7 @@ import { AlertLight } from '@/utils/cssMixins'
 import { usePerms } from '@/composables/usePerms'
 import type { Site } from '@/store/types/project'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import SiteForm from './SiteForm.vue'
 
 defineProps({ project: { type: Number, default: undefined } })
@@ -31,16 +32,15 @@ const handleClose = () => {
 }
 
 const multiSubmit = (payload: Site) => {
-  emit('multi-submit', payload)
-  handleClose()
+  emit('multi-submit', payload, (ok: boolean) => {
+    if (ok) handleClose()
+  })
 }
 </script>
 
 <template>
-  <CAlert :color="AlertLight" variant="solid" class="text-right">
-    <v-btn color="primary" :disabled="!project" @click="createConfirm">
-      사업 부지 신규등록
-    </v-btn>
+  <CAlert :color="AlertLight" variant="solid" class="text-end">
+    <v-btn color="primary" :disabled="!project" @click="createConfirm"> 사업 부지 신규등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">

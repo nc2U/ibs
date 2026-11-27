@@ -33,11 +33,11 @@ const bldgName = ref('')
 const typeName = ref('')
 
 const form = reactive<{
-  building: number | null
-  line: number | null
-  type: number | null
-  minFloor: number | null
-  maxFloor: number | null
+  building: number | '' | null
+  line: number | '' | null
+  type: number | '' | null
+  minFloor: number | '' | null
+  maxFloor: number | '' | null
 }>({
   building: null,
   line: null,
@@ -46,11 +46,14 @@ const form = reactive<{
   maxFloor: null,
 })
 
-const warning = computed(() => !!form.maxFloor)
+const isEmptyNum = (val: number | '' | null | undefined): val is '' | null | undefined =>
+  val === null || val === undefined || val === ''
+
+const warning = computed(() => !isEmptyNum(form.maxFloor))
 
 const isRangeInvalid = computed(() => {
-  if (form.minFloor === null || form.maxFloor === null) return false
-  return form.minFloor > form.maxFloor
+  if (isEmptyNum(form.minFloor) || isEmptyNum(form.maxFloor)) return false
+  return Number(form.minFloor) > Number(form.maxFloor)
 })
 
 const typeNameLength = computed(() => {
@@ -94,7 +97,7 @@ watch(
 watch(
   () => form.minFloor,
   val => {
-    if (val === null) reset(4)
+    if (isEmptyNum(val)) reset(4)
   },
 )
 
@@ -103,7 +106,7 @@ const dong = ref('')
 const onSubmit = (event: Event) => {
   if (canProjectUpdate.value) {
     const e = event.currentTarget as HTMLFormElement
-    if (!e.checkValidity()) {
+    if (!e.checkValidity() || !dong.value.trim()) {
       event.preventDefault()
       event.stopPropagation()
 
@@ -111,19 +114,28 @@ const onSubmit = (event: Event) => {
     } else {
       emit('dong-register', dong.value.trim())
       dong.value = ''
+      validated.value = false
       refBuildForm.value?.close()
     }
   }
+}
+
+const closeBuildForm = () => {
+  dong.value = ''
+  validated.value = false
+  refBuildForm.value?.close()
 }
 
 const reset = (n: number) => {
   if (n === 1) {
     form.line = null
     form.type = null
+    typeName.value = ''
     form.minFloor = null
     form.maxFloor = null
   } else if (n === 2) {
     form.type = null
+    typeName.value = ''
     form.minFloor = null
     form.maxFloor = null
   } else if (n === 3) {
@@ -159,7 +171,7 @@ const typeSelect = (event: Event) => {
 }
 
 const unitRegister = () => {
-  if (isRangeInvalid.value || form.minFloor === null) return
+  if (isRangeInvalid.value || isEmptyNum(form.minFloor)) return
 
   if (canProjectUpdate.value) refConfirmModal.value?.callModal()
   else {
@@ -169,9 +181,10 @@ const unitRegister = () => {
 }
 
 const modalAction = () => {
-  if (!form.maxFloor) form.maxFloor = form.minFloor
+  const maxFloor = isEmptyNum(form.maxFloor) ? form.minFloor : form.maxFloor
   emit('unit-register', {
     ...form,
+    maxFloor,
     typeName: typeName.value,
     maxLength: typeNameLength.value,
     maxUnits: maxUnits.value,
@@ -266,7 +279,7 @@ const modalAction = () => {
               type="number"
               min="-10"
               placeholder="입력 범위 종료층"
-              :disabled="!form.minFloor"
+              :disabled="isEmptyNum(form.minFloor)"
               :invalid="isRangeInvalid"
               @keydown.enter="unitRegister"
             />
@@ -286,10 +299,10 @@ const modalAction = () => {
     등록되지 않도록 신중하게 진행하여 주십시오.
   </CAlert>
 
-  <CAlert v-if="canProjectUpdate" :color="AlertLight" variant="solid" class="text-right">
+  <CAlert v-if="canProjectUpdate" :color="AlertLight" variant="solid" class="text-end">
     <v-btn
       color="primary"
-      :disabled="!project || form.minFloor === null || isRangeInvalid"
+      :disabled="!project || isEmptyNum(form.minFloor) || isRangeInvalid"
       @click="unitRegister"
     >
       호수(유니트) 일괄등록
@@ -310,7 +323,7 @@ const modalAction = () => {
         </CModalBody>
         <CModalFooter>
           <v-btn type="submit" size="small" color="primary">저장</v-btn>
-          <v-btn color="light" size="small" @click="refBuildForm?.close()" flat>닫기</v-btn>
+          <v-btn color="light" size="small" @click="closeBuildForm" flat>닫기</v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -322,12 +335,12 @@ const modalAction = () => {
       <p class="text-primary">
         <strong>
           [{{ bldgName }}동] ({{ typeName || form.type }} 타입) {{ form.line }}호 라인, 층<span
-            v-if="form.maxFloor"
+            v-if="!isEmptyNum(form.maxFloor)"
           >
             범위
           </span>
           : {{ form.minFloor }}층
-          <span v-if="form.maxFloor">- {{ form.maxFloor }}층</span>
+          <span v-if="!isEmptyNum(form.maxFloor)">- {{ form.maxFloor }}층</span>
         </strong>
       </p>
       <p>상기 호수(유니트)정보의 일괄등록을 진행하시겠습니까?</p>

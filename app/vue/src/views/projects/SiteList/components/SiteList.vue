@@ -26,8 +26,10 @@ const siteCount = computed(() => siteStore.siteCount)
 
 const sitePages = (num: number) => Math.ceil(siteCount.value / num)
 const pageSelect = (page: number) => emit('page-select', page)
-const multiSubmit = (payload: S) => emit('multi-submit', payload)
-const onDelete = (payload: { pk: number; project: number }) => emit('on-delete', payload)
+const multiSubmit = (payload: S, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (payload: { pk: number; project: number }, done?: (ok: boolean) => void) =>
+  emit('on-delete', payload, done)
 </script>
 
 <template>

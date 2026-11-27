@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePerms } from '@/composables/usePerms'
-import type { HouseUnit } from '@/store/types/project'
+import type { HouseUnitUpdatePayload } from '@/store/types/project'
 import Unit from '@/views/projects/Unit/components/Unit.vue'
 import UnitForm from './UnitForm.vue'
 
 defineProps({ bldgName: { type: String, default: '' } })
 const emit = defineEmits<{
-  (e: 'on-update', payload: HouseUnit): void
+  (e: 'on-update', payload: HouseUnitUpdatePayload): void
   (e: 'on-delete', payload: { pk: number; type: number }): void
 }>()
 
@@ -17,12 +17,8 @@ const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const proDataStore = useProjectData()
 const units = computed(() => proDataStore.simpleUnits)
-const floorList = computed(() =>
-  [...new Set(units.value.map(u => u.floor))].sort((a, b) => b - a),
-)
-const lineList = computed(() =>
-  [...new Set(units.value.map(u => u.line))].sort((a, b) => a - b),
-)
+const floorList = computed(() => [...new Set(units.value.map(u => u.floor))].sort((a, b) => b - a))
+const lineList = computed(() => [...new Set(units.value.map(u => u.line))].sort((a, b) => a - b))
 const houseUnitList = computed(() => proDataStore.houseUnitList)
 
 const unitCol = computed(() => (lineList.value.length > 8 ? 12 : 5))
@@ -38,7 +34,7 @@ const unitMap = computed(() => {
 
 const getUnit = (line: number, floor: number) => unitMap.value.get(`${line}-${floor}`) ?? null
 
-const onUpdate = (payload: HouseUnit) => emit('on-update', payload)
+const onUpdate = (payload: HouseUnitUpdatePayload) => emit('on-update', payload)
 const onDelete = (payload: { pk: number; type: number }) => emit('on-delete', payload)
 </script>
 

@@ -36,14 +36,14 @@ const form = reactive({
   lot_number: '',
   site_purpose: '',
   official_area: '',
-  returned_area: null as number | null,
+  returned_area: null as number | '' | null,
   incorporated_area: null as number | string | null,
-  notice_price: null as number | null,
+  notice_price: null as number | '' | null,
   rights_a: '',
   rights_b: '',
   dup_issue_date: null as null | string,
   note: '',
-  site_info_files: [] as any[],
+  site_info_files: [] as NonNullable<Site['site_info_files']>,
 })
 
 const projectStore = useProject()
@@ -54,6 +54,9 @@ const project = computed(
 const isReturned = computed(() => (projectStore.project as Project)?.is_returned_area)
 const siteStore = useSite()
 
+const numOrNull = (val: number | string | null | undefined) =>
+  val === '' || val === null || val === undefined ? null : Number(val)
+
 const formsCheck = computed(() => {
   if (props.site) {
     const a = form.project === props.site.project
@@ -61,10 +64,10 @@ const formsCheck = computed(() => {
     const c = form.district === props.site.district
     const d = form.lot_number === props.site.lot_number
     const e = form.site_purpose === props.site.site_purpose
-    const f = form.official_area === props.site.official_area
-    const g = form.returned_area === props.site.returned_area
+    const f = numOrNull(form.official_area) === numOrNull(props.site.official_area)
+    const g = numOrNull(form.returned_area) === numOrNull(props.site.returned_area)
     const g2 = (form.incorporated_area ?? '') === (props.site.incorporated_area ?? '')
-    const h = form.notice_price === props.site.notice_price
+    const h = numOrNull(form.notice_price) === numOrNull(props.site.notice_price)
     const i = form.rights_a === props.site.rights_a
     const j = form.rights_b === props.site.rights_b
     const k = form.dup_issue_date === props.site.dup_issue_date
@@ -107,13 +110,18 @@ const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
 const delFile = ref<number | undefined>(undefined)
 
-const fileControl = (payload: any) => {
+const fileControl = (payload: {
+  newFile?: File | null
+  editFile?: number | null
+  cngFile?: File | null
+  delFile?: number | null
+}) => {
   if (payload.newFile) newFile.value = payload.newFile
   else newFile.value = ''
 
   if (payload.editFile) {
     editFile.value = payload.editFile
-    cngFile.value = payload.cngFile
+    cngFile.value = payload.cngFile ?? ''
   } else {
     editFile.value = ''
     cngFile.value = ''
@@ -127,7 +135,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event) || !isFormValid.value) {
     validated.value = true
   } else {
-    if (canSiteManage.value) multiSubmit({ ...form })
+    if (canSiteManage.value) multiSubmit({ ...form } as unknown as Site)
     else refAlertModal.value.callModal()
     validated.value = false
   }
@@ -141,13 +149,11 @@ const multiSubmit = (payload: Site) => {
     cngFile: cngFile.value,
     delFile: delFile.value,
   })
-  emit('close')
 }
 
 const deleteObject = () => {
   emit('on-delete', { pk: props.site?.pk, project: props.site?.project })
   refDelModal.value.close()
-  emit('close')
 }
 
 const deleteConfirm = () => {
@@ -219,6 +225,7 @@ onBeforeMount(() => dataSetup())
                   min="0"
                   type="number"
                   placeholder="등록 번호"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -228,7 +235,13 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label required">행정 동</CFormLabel>
               <CCol sm="8">
-                <CFormInput v-model="form.district" required maxlength="10" placeholder="행정 동" />
+                <CFormInput
+                  v-model="form.district"
+                  required
+                  maxlength="10"
+                  placeholder="행정 동"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -239,7 +252,13 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label required">지번</CFormLabel>
               <CCol sm="8">
-                <CFormInput v-model="form.lot_number" required maxlength="10" placeholder="지번" />
+                <CFormInput
+                  v-model="form.lot_number"
+                  required
+                  maxlength="10"
+                  placeholder="지번"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -253,6 +272,7 @@ onBeforeMount(() => dataSetup())
                   required
                   maxlength="10"
                   placeholder="지목"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -271,6 +291,7 @@ onBeforeMount(() => dataSetup())
                   min="0"
                   step="0.0000001"
                   placeholder="공부상 면적(㎡)"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -285,6 +306,7 @@ onBeforeMount(() => dataSetup())
                   min="0"
                   step="0.0000001"
                   placeholder="환지 면적(㎡)"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -304,6 +326,7 @@ onBeforeMount(() => dataSetup())
                   step="0.0000001"
                   :invalid="!isIncorporatedValid"
                   placeholder="미입력 시 전체 면적 편입"
+                  :disabled="!canSiteManage"
                 />
                 <CFormFeedback v-if="!isIncorporatedValid" invalid>
                   편입면적은 0 이상, 공부상 면적 이하이어야 합니다.
@@ -330,6 +353,7 @@ onBeforeMount(() => dataSetup())
                   :required="false"
                   maxlength="10"
                   placeholder="등기부 발급일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -344,6 +368,7 @@ onBeforeMount(() => dataSetup())
                   type="number"
                   :required="false"
                   placeholder="공시지가"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -355,7 +380,12 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">갑구 권리 제한 사항</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea v-model="form.rights_a" rows="4" placeholder="갑구 권리 제한 사항" />
+                <CFormTextarea
+                  v-model="form.rights_a"
+                  rows="4"
+                  placeholder="갑구 권리 제한 사항"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -366,7 +396,12 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">을구 권리 제한 사항</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea v-model="form.rights_b" rows="4" placeholder="을구 권리 제한 사항" />
+                <CFormTextarea
+                  v-model="form.rights_b"
+                  rows="4"
+                  placeholder="을구 권리 제한 사항"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -383,6 +418,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.note"
                   rows="4"
                   placeholder="지상 건축물 등 기타 관련 참고 사항"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -390,10 +426,10 @@ onBeforeMount(() => dataSetup())
         </CRow>
 
         <AttatchFile
-          ref="RefSiteInfoFile"
           label-name="등기사항전부증명서"
           :attatch-files="form.site_info_files"
           :deleted="delFile"
+          :disabled="!canSiteManage"
           @file-control="fileControl"
         />
       </div>

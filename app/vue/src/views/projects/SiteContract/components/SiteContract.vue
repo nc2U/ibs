@@ -30,13 +30,15 @@ const closeModal = () => {
 }
 
 const multiSubmit = (payload: SiteContract) => {
-  emit('multi-submit', payload)
-  closeModal()
+  emit('multi-submit', payload, (ok: boolean) => {
+    if (ok) closeModal()
+  })
 }
 
 const onDelete = (payload: { pk: number; project: number }) => {
-  emit('on-delete', payload)
-  closeModal()
+  emit('on-delete', payload, (ok: boolean) => {
+    if (ok) closeModal()
+  })
 }
 </script>
 
@@ -73,7 +75,7 @@ const onDelete = (payload: { pk: number; project: number }) => {
     <CTableDataCell :class="{ 'bg-success': contract.down_pay1_is_paid }">
       {{ contract.down_pay1_is_paid ? '완료' : '' }}
     </CTableDataCell>
-    <CTableDataCell class="text-right">
+    <CTableDataCell class="text-end">
       {{ numFormat(contract.remain_pay || 0) }}
     </CTableDataCell>
     <CTableDataCell :class="{ 'bg-success': contract.remain_pay_is_paid }">
@@ -87,7 +89,7 @@ const onDelete = (payload: { pk: number; project: number }) => {
       </span>
       <!-- 파일이 1개인 경우 -->
       <span v-else-if="contract.site_cont_files.length === 1" class="pointer">
-        <a :href="contract.site_cont_files[0].file" target="_blank">
+        <a :href="contract.site_cont_files[0].file" target="_blank" rel="noopener noreferrer">
           <v-icon icon="mdi-download-box" color="primary" />
         </a>
         <v-tooltip activator="parent" location="top">
@@ -123,10 +125,11 @@ const onDelete = (payload: { pk: number; project: number }) => {
               :key="f.pk"
               :href="f.file"
               target="_blank"
+              rel="noopener noreferrer"
               class="px-3"
             >
               <template #prepend>
-                <v-icon icon="mdi-file-document-outline" size="18" color="primary" class="mr-2" />
+                <v-icon icon="mdi-file-document-outline" size="18" color="primary" class="me-2" />
               </template>
               <v-list-item-title class="text-caption">
                 {{ f.file_name }}

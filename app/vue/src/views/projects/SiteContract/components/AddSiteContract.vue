@@ -4,6 +4,7 @@ import type { SiteContract } from '@/store/types/project'
 import { usePerms } from '@/composables/usePerms'
 import { AlertLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
 
 defineProps({ project: { type: Number, default: undefined } })
@@ -31,13 +32,14 @@ const handleClose = () => {
 }
 
 const multiSubmit = (payload: SiteContract) => {
-  emit('multi-submit', payload)
-  handleClose()
+  emit('multi-submit', payload, (ok: boolean) => {
+    if (ok) handleClose()
+  })
 }
 </script>
 
 <template>
-  <CAlert :color="AlertLight" variant="solid" class="text-right">
+  <CAlert :color="AlertLight" variant="solid" class="text-end">
     <v-btn color="primary" :disabled="!project" @click="createConfirm">
       부지 매입계약 신규등록
     </v-btn>

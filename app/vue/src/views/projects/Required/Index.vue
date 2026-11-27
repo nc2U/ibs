@@ -31,13 +31,10 @@ const dataSetup = async (projId: number) => {
   }
 }
 
-const projSelect = (target: number | null) => {
-  if (target) dataSetup(target)
-}
-
 watch(
   () => project.value,
   newVal => {
+    contStore.requiredDocsList = []
     if (newVal) dataSetup(newVal)
   },
 )
@@ -51,12 +48,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">

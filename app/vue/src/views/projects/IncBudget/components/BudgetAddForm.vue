@@ -29,7 +29,7 @@ const accountList = inject<AccItem[]>('accountList')
 const orderGroups = inject<OGroup[]>('orderGroups')
 const unitTypes = inject<UType[]>('unitTypes')
 
-const props = defineProps({ disabled: Boolean })
+defineProps({ disabled: Boolean })
 const emit = defineEmits<{
   (e: 'on-submit', payload: Omit<ProIncBudget, 'pk' | 'project'>): void
 }>()
@@ -43,10 +43,10 @@ const form = reactive<{
   order_group: number | ''
   unit_type: number | ''
   item_name: string
-  average_price: number | null
-  quantity: number | null
-  budget: number | null
-  revised_budget: number | null
+  average_price: number | '' | null
+  quantity: number | '' | null
+  budget: number | '' | null
+  revised_budget: number | '' | null
 }>({
   account: '',
   order_group: '',
@@ -58,6 +58,9 @@ const form = reactive<{
   revised_budget: null,
 })
 
+const toNullableNumber = (val: number | '' | null) =>
+  val !== null && val !== '' ? Number(val) : null
+
 // 폼 유효성 검사:
 // 1) 계정(account) 필수
 // 2) unit_type 없으면 item_name 필수
@@ -68,9 +71,11 @@ const isFormValid = computed(
     Boolean(form.account) &&
     (Boolean(form.unit_type) || Boolean(form.item_name.trim())) &&
     form.quantity !== null &&
-    form.quantity > 0 &&
+    form.quantity !== '' &&
+    Number(form.quantity) > 0 &&
     form.budget !== null &&
-    form.budget >= 0,
+    form.budget !== '' &&
+    Number(form.budget) >= 0,
 )
 
 const onSubmit = (event: Event) => {
@@ -92,16 +97,10 @@ const modalAction = () => {
     order_group: form.order_group ? Number(form.order_group) : null,
     unit_type: form.unit_type ? Number(form.unit_type) : null,
     item_name: form.item_name.trim(),
-    average_price:
-      form.average_price !== null && (form.average_price as any) !== ''
-        ? Number(form.average_price)
-        : null,
+    average_price: toNullableNumber(form.average_price),
     quantity: Number(form.quantity),
     budget: Number(form.budget),
-    revised_budget:
-      form.revised_budget !== null && (form.revised_budget as any) !== ''
-        ? Number(form.revised_budget)
-        : null,
+    revised_budget: toNullableNumber(form.revised_budget),
   })
   validated.value = false
   refConfirmModal.value.close()
@@ -213,7 +212,7 @@ const resetForm = () => {
 
       <CCol lg="12" xl="2">
         <CRow>
-          <CCol md="12" class="d-grid gap-2 d-md-block text-right mb-3">
+          <CCol md="12" class="d-grid gap-2 d-md-block text-end mb-3">
             <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid">
               수입 예산 추가
             </v-btn>

@@ -24,10 +24,10 @@ const onDeleteBudget = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 20%" />
-      <col style="width: 20%" />
-      <col style="width: 20%" />
-      <col style="width: 20%" />
+      <col :style="{ width: canProjectUpdate ? '20%' : '22%' }" />
+      <col :style="{ width: canProjectUpdate ? '30%' : '34%' }" />
+      <col :style="{ width: canProjectUpdate ? '20%' : '22%' }" />
+      <col :style="{ width: canProjectUpdate ? '20%' : '22%' }" />
       <col v-if="canProjectUpdate" style="width: 10%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">

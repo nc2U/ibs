@@ -51,11 +51,6 @@ const onDeleteType = (pk: number) => {
   if (project.value) deleteType(pk, project.value)
 }
 
-const projSelect = (target: number | null) => {
-  pDataStore.unitTypeList = []
-  if (target) fetchTypeList(target)
-}
-
 watch(
   () => project.value,
   newProjId => {
@@ -66,8 +61,7 @@ watch(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) await fetchTypeList(projId)
+  if (project.value) await fetchTypeList(project.value)
   loading.value = false
 })
 </script>
@@ -75,12 +69,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">

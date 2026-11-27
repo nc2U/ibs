@@ -57,13 +57,15 @@ const closeModal = () => {
 }
 
 const multiSubmit = (payload: Site) => {
-  emit('multi-submit', payload)
-  closeModal()
+  emit('multi-submit', payload, (ok: boolean) => {
+    if (ok) closeModal()
+  })
 }
 
 const onDelete = (payload: { pk: number; project: number }) => {
-  emit('on-delete', payload)
-  closeModal()
+  emit('on-delete', payload, (ok: boolean) => {
+    if (ok) closeModal()
+  })
 }
 </script>
 
@@ -109,7 +111,7 @@ const onDelete = (payload: { pk: number; project: number }) => {
     >
       {{ numFormat((Number(effectiveIncorporatedArea) || 0) * 0.3025, 2) }}
     </CTableDataCell>
-    <CTableDataCell class="text-left">
+    <CTableDataCell class="text-start">
       {{ owners.length ? cutString(owners.join(', '), 48) : '' }}
       <v-tooltip v-if="owners.length" activator="parent" location="top">
         {{ owners.length ? owners.join(', ') : '' }}
@@ -117,7 +119,7 @@ const onDelete = (payload: { pk: number; project: number }) => {
     </CTableDataCell>
     <CTableDataCell>
       <span v-if="site.site_info_files && site.site_info_files.length" class="pointer">
-        <a :href="site.site_info_files[0].file" target="_blank">
+        <a :href="site.site_info_files[0].file" target="_blank" rel="noopener noreferrer">
           <v-icon icon="mdi-download-box" color="primary" />
         </a>
         <v-tooltip activator="parent" location="top">

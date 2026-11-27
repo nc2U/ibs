@@ -42,11 +42,6 @@ const onDeleteBuilding = (pk: number) => {
   }
 }
 
-const projSelect = (target: number | null) => {
-  pDataStore.buildingList = []
-  if (target) fetchBuildingList(target)
-}
-
 watch(
   () => project.value,
   newProjId => {
@@ -57,8 +52,7 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const projId = project.value || projStore.currentProject
-  if (projId) await fetchBuildingList(projId)
+  if (project.value) await fetchBuildingList(project.value)
   loading.value = false
 })
 </script>
@@ -66,12 +60,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">

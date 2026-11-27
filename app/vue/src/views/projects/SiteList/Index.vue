@@ -11,12 +11,13 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
+import NoAuth from '@/views/_Accounts/NoAuth.vue'
 import ListController from './components/ListController.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import AddSite from './components/AddSite.vue'
 import SiteList from './components/SiteList.vue'
 
-const { can, PERM } = usePerms()
+const { can, canGlobal, PERM } = usePerms()
 const canSiteRead = computed(() => can(PERM.SITE_READ))
 const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
 
@@ -46,6 +47,8 @@ const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
 const isReturned = computed(() => (projStore.project as Project)?.is_returned_area)
 
+const hasAccess = computed(() => (project.value ? canSiteRead.value : canGlobal(PERM.SITE_READ)))
+
 const siteStore = useSite()
 const getSitesTotal = computed(() => siteStore.getSitesTotal)
 const totalArea = computed(() =>
@@ -54,22 +57,26 @@ const totalArea = computed(() =>
 const totalIncorporatedArea = computed(() => getSitesTotal.value?.incorporated ?? totalArea.value)
 
 const rights = ref(false)
-const excelUrl = computed(
-  () =>
-    `/excel/sites/?project=${project.value}&search=${dataFilter.value.search}&rights=${rights.value || ''}`,
-)
+const excelUrl = computed(() => {
+  const params = new URLSearchParams({
+    project: String(project.value ?? ''),
+    search: dataFilter.value.search || '',
+    rights: rights.value ? 'true' : '',
+  })
+  return `/excel/sites/?${params.toString()}`
+})
 
 const listFiltering = (payload: SiteFilter) => {
   clearQueryString()
   payload.project = project.value as number
   dataFilter.value = payload
-  if (project.value) siteStore.fetchSiteList(payload)
+  if (project.value && canSiteRead.value) siteStore.fetchSiteList(payload)
 }
 
 const pageSelect = (page: number) => {
   clearQueryString()
   dataFilter.value.page = page
-  if (project.value) {
+  if (project.value && canSiteRead.value) {
     siteStore.fetchSiteList({
       ...dataFilter.value,
       project: project.value,
@@ -78,37 +85,62 @@ const pageSelect = (page: number) => {
   }
 }
 
-const onCreate = (payload: { form: FormData; page?: number; search?: string }) =>
-  siteStore.createSite(payload)
+const onCreate = (payload: {
+  form: FormData
+  limit?: number | ''
+  page?: number
+  search?: string
+}) => siteStore.createSite(payload)
 
-const onUpdate = (pk: number, payload: { form: FormData; page?: number; search?: string }) =>
-  siteStore.updateSite(pk, payload)
+const onUpdate = (
+  pk: number,
+  payload: { form: FormData; limit?: number | ''; page?: number; search?: string },
+) => siteStore.updateSite(pk, payload)
 
-const multiSubmit = (payload: Site) => {
-  const { page, search } = dataFilter.value
-  const { pk, ...data } = payload as { [key: string]: any }
+const multiSubmit = async (payload: Site, done?: (ok: boolean) => void) => {
+  const { limit, page, search } = dataFilter.value
+  const { pk, ...data } = payload as unknown as Record<string, unknown>
+  const readonlyKeys = new Set([
+    'creator',
+    'updator',
+    'created',
+    'updated',
+    'owners',
+    'site_info_files',
+  ])
+  const fileKeys = new Set(['newFile', 'cngFile'])
 
   const form = new FormData()
   for (const key in data) {
+    if (readonlyKeys.has(key)) continue
     const value = data[key]
-    if (value !== null && value !== undefined && value !== '') form.set(key, value)
-    else if (key === 'incorporated_area') form.set(key, '')
+    if (fileKeys.has(key)) {
+      if (value instanceof File) form.set(key, value)
+      continue
+    }
+    if (key === 'editFile' || key === 'delFile') {
+      if (value !== null && value !== undefined && value !== '') form.set(key, String(value))
+      continue
+    }
+    if (value !== null && value !== undefined && value !== '') form.set(key, String(value))
+    else form.set(key, '')
   }
 
-  const submitData = { form, page, search }
+  const submitData = { form, limit, page, search }
 
-  if (pk) onUpdate(pk, submitData)
-  else onCreate(submitData)
+  const ok = pk ? await onUpdate(Number(pk), submitData) : await onCreate(submitData)
+  done?.(ok)
 }
 
-const onDelete = (payload: { pk: number; project: number }) => {
+const onDelete = async (payload: { pk: number; project: number }, done?: (ok: boolean) => void) => {
   const { pk, project: projId } = payload
-  siteStore.deleteSite(pk, projId)
+  const ok = await siteStore.deleteSite(pk, projId, dataFilter.value)
+  done?.(ok)
 }
 
 const dataSetup = (pk: number) => {
   dataFilter.value.project = pk
-  siteStore.fetchSiteList(dataFilter.value)
+  return siteStore.fetchSiteList(dataFilter.value)
 }
 
 const dataReset = () => {
@@ -116,20 +148,17 @@ const dataReset = () => {
   siteStore.siteCount = 0
 }
 
-const projSelect = (target: number | null) => {
-  clearQueryString()
-  dataReset()
-  if (target) dataSetup(target)
-}
-
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.page || route.query.highlight_id) {
+    const restQuery = { ...route.query }
+    delete restQuery.page
+    delete restQuery.highlight_id
     router
       .replace({
         name: route.name,
         params: route.params,
-        query: {},
+        query: restQuery,
       })
       .catch(() => {
         // 동일 경로 이동 NavigationDuplicated 에러 무시
@@ -161,23 +190,30 @@ const loadHighlightPage = async (projectId: number) => {
           page: targetPage,
           search: dataFilter.value.search || '',
         }
-        siteStore.fetchSiteList({ project: projectId, page: targetPage })
+        await siteStore.fetchSiteList({ project: projectId, page: targetPage })
       } else {
-        dataSetup(projectId)
+        await dataSetup(projectId)
       }
     } catch (error) {
       console.error('Error loading highlight page:', error)
-      dataSetup(projectId)
+      await dataSetup(projectId)
     }
   }
 }
 
 watch(
   () => project.value,
-  newVal => {
-    clearQueryString()
+  async (newVal, oldVal) => {
+    if (oldVal !== undefined) clearQueryString()
     dataReset()
-    if (newVal) dataSetup(newVal)
+    if (newVal && canSiteRead.value) {
+      if (highlightId.value) {
+        await loadHighlightPage(newVal)
+        await scrollToHighlight()
+      } else {
+        await dataSetup(newVal)
+      }
+    }
   },
 )
 
@@ -187,17 +223,16 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (canSiteRead.value) {
-    let projectId = urlProjectId.value || project.value || projStore.currentProject
-    if (projectId) {
-      if (urlProjectId.value && urlProjectId.value !== project.value) projectId = urlProjectId.value
-
-      if (highlightId.value) {
-        await loadHighlightPage(projectId)
-        await scrollToHighlight()
-      } else {
-        dataSetup(projectId)
-      }
+  if (
+    canSiteRead.value &&
+    project.value &&
+    (!urlProjectId.value || urlProjectId.value === project.value)
+  ) {
+    if (highlightId.value) {
+      await loadHighlightPage(project.value)
+      await scrollToHighlight()
+    } else {
+      await dataSetup(project.value)
     }
   }
   loading.value = false
@@ -207,15 +242,10 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
-      <CCardBody class="pb-5">
+      <CCardBody v-if="hasAccess" class="pb-5">
         <ListController
           ref="listControl"
           :project="project ?? undefined"
@@ -246,7 +276,7 @@ onBeforeMount(async () => {
               id="include-rights"
               v-model="rights"
               label="권리제한사항 포함"
-              class="ml-3"
+              class="ms-3"
             />
           </span>
         </TableTitleRow>
@@ -260,6 +290,7 @@ onBeforeMount(async () => {
           @on-delete="onDelete"
         />
       </CCardBody>
+      <NoAuth v-else />
     </ContentBody>
   </ProjectAuthGuard>
 </template>

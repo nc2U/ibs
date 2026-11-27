@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms'
 import { usePayment } from '@/store/pinia/payment'
 import type { PaymentPerInstallment, PayOrder } from '@/store/types/payment'
 
@@ -16,6 +17,9 @@ const emit = defineEmits<{
   (e: 'createRequested'): void
   (e: 'usedPayOrdersChanged', usedPayOrderIds: number[]): void
 }>()
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const payStore = usePayment()
 const { getPaymentPerInstallmentData } = payStore
@@ -71,7 +75,6 @@ const loadData = async () => {
   }
 }
 
-const handleCreate = () => emit('createRequested')
 const handleEdit = (item: PaymentPerInstallment) => emit('editRequested', item)
 const handleDelete = (item: PaymentPerInstallment) => emit('deleteRequested', item)
 
@@ -87,7 +90,7 @@ defineExpose({
 </script>
 
 <template>
-  <CRow class="p-3" style="background: lightyellow">
+  <CRow class="p-3 bg-body-tertiary border-top border-bottom">
     <CCol v-if="!availablePayOrders.length" class="text-center py-4 text-grey">
       사용 가능한 납부 회차가 없습니다.
     </CCol>
@@ -98,7 +101,7 @@ defineExpose({
 
     <CCol v-else class="px-5">
       <CRow v-for="item in localPaymentPerInstallmentList" :key="item.pk" class="p-1 text-center">
-        <CCol class="text-right">
+        <CCol class="text-end">
           <span class="strong">납부 회차</span>
           :
           <u>{{ item.pay_order_info?.pay_name || getPayOrderName(item.pay_order as number) }}</u>
@@ -107,8 +110,8 @@ defineExpose({
         <CCol class="text-center">
           <span class="strong">약정금액</span> : <u>{{ numFormat(item.amount as number) }}원</u>
         </CCol>
-        <CCol class="text-left">
-          <v-btn size="x-small" color="success" class="mr-1" @click="handleEdit(item)">
+        <CCol v-if="canProjectUpdate" class="text-start">
+          <v-btn size="x-small" color="success" class="me-1" @click="handleEdit(item)">
             수정
           </v-btn>
           <v-btn size="x-small" color="warning" @click="handleDelete(item)"> 삭제 </v-btn>

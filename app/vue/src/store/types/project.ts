@@ -173,6 +173,18 @@ export interface HouseUnit {
   hold_reason: string
 }
 
+export interface HouseUnitUpdatePayload {
+  pk: number
+  unit_type: number
+  floor_type: number
+  building_unit: number
+  name: string
+  bldg_line: number
+  floor_no: number
+  is_hold: boolean
+  hold_reason: string
+}
+
 export interface AllHouseUnit {
   pk: number
   unit_type: {

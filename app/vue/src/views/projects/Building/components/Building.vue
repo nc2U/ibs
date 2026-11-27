@@ -73,6 +73,7 @@ watch(
         v-model="form.name"
         maxlength="10"
         placeholder="동(건물)"
+        :disabled="!canProjectUpdate"
         @keydown.enter="onUpdateBuilding"
       />
     </CTableDataCell>
@@ -80,17 +81,15 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateBuilding">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteBuilding">
-        삭제
-      </v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteBuilding"> 삭제 </v-btn>
     </CTableDataCell>
   </CTableRow>
 
   <ConfirmModal ref="refConfirmModal">
     <template #header> 동(건물) 삭제</template>
     <template #default>
-      이 동(건물)에 종속된 유니트(호수) 데이터가 있는 경우 해당 데이터를 모두 제거한 후 삭제가능합니다.
-      해당 동(건물)을 삭제하시겠습니까?
+      이 동(건물)에 종속된 유니트(호수) 데이터가 있는 경우 해당 데이터를 모두 제거한 후
+      삭제가능합니다. 해당 동(건물)을 삭제하시겠습니까?
     </template>
     <template #footer>
       <v-btn size="small" color="warning" @click="modalAction">삭제</v-btn>

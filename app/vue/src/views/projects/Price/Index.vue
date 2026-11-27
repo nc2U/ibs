@@ -47,8 +47,7 @@ const unitTypeList = computed(() => pDataStore.unitTypeList)
 const condTexts = computed(() => {
   const orderText =
     orderGroupList.value.find((o: OrderGroup) => o.pk === order_group.value)?.name || ''
-  const typeText =
-    unitTypeList.value.find(t => t.pk === unit_type.value)?.name || ''
+  const typeText = unitTypeList.value.find(t => t.pk === unit_type.value)?.name || ''
   return { orderText, typeText }
 })
 
@@ -166,10 +165,10 @@ const contPriceSet = async () => {
     try {
       loading.value = true
       await bulkUpdateContractPrices(project.value)
-      loading.value = false
     } catch (error) {
-      loading.value = false
       console.error('계약 가격 일괄 업데이트 실패:', error)
+    } finally {
+      loading.value = false
     }
   }
 }
@@ -196,12 +195,6 @@ const dataReset = () => {
   selectForm.value?.dataReset()
 }
 
-const projSelect = (target: number | null) => {
-  payStore.priceList = []
-  dataReset()
-  if (target) dataSetup(target)
-}
-
 watch(
   () => project.value,
   newProjId => {
@@ -221,12 +214,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">

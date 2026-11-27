@@ -28,8 +28,8 @@ const validated = ref(false)
 const form = reactive<{
   account: number | ''
   basis_calc: string
-  budget: number | null
-  revised_budget: number | null
+  budget: number | '' | null
+  revised_budget: number | '' | null
 }>({
   account: '',
   basis_calc: '',
@@ -46,9 +46,7 @@ watch(
 
 const isFormValid = computed(
   () =>
-    Boolean(form.account) &&
-    form.budget !== null &&
-    form.budget >= 0,
+    Boolean(form.account) && form.budget !== null && form.budget !== '' && Number(form.budget) >= 0,
 )
 
 const onSubmit = (event: Event) => {
@@ -70,7 +68,7 @@ const modalAction = () => {
     basis_calc: form.basis_calc.trim(),
     budget: Number(form.budget),
     revised_budget:
-      form.revised_budget !== null && (form.revised_budget as any) !== ''
+      form.revised_budget !== null && form.revised_budget !== ''
         ? Number(form.revised_budget)
         : null,
   })
@@ -104,7 +102,7 @@ const resetForm = () => {
             <CFormInput
               v-model="form.basis_calc"
               placeholder="산출근거"
-              maxlength="18"
+              maxlength="255"
               :disabled="disabled"
             />
           </CCol>
@@ -135,7 +133,7 @@ const resetForm = () => {
       </CCol>
       <CCol md="2" xl="1">
         <CRow>
-          <CCol md="12" class="d-grid gap-2 d-lg-block text-right mb-3">
+          <CCol md="12" class="d-grid gap-2 d-lg-block text-end mb-3">
             <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid">
               지출 예산 추가
             </v-btn>

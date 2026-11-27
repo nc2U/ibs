@@ -33,7 +33,7 @@ const refConfirmModal = ref()
 const form = reactive<{
   order_group: number | ''
   unit_type: number | ''
-  payment_amount: number | null
+  payment_amount: number | '' | null
 }>({
   order_group: '',
   unit_type: '',
@@ -56,7 +56,9 @@ const isUnchanged = computed(
   () =>
     Number(form.order_group) === props.downPay.order_group &&
     Number(form.unit_type) === props.downPay.unit_type &&
-    Number(form.payment_amount) === props.downPay.payment_amount,
+    (form.payment_amount !== null && form.payment_amount !== ''
+      ? Number(form.payment_amount)
+      : null) === props.downPay.payment_amount,
 )
 
 // 수정 버튼 비활성화 여부
@@ -65,7 +67,8 @@ const formsCheck = computed(
     !form.order_group ||
     !form.unit_type ||
     form.payment_amount === null ||
-    form.payment_amount < 0 ||
+    form.payment_amount === '' ||
+    Number(form.payment_amount) < 0 ||
     isDuplicate.value ||
     isUnchanged.value,
 )
@@ -118,7 +121,7 @@ watch(
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.order_group" required>
+      <CFormSelect v-model="form.order_group" :disabled="!canProjectUpdate" required>
         <option value="">차수선택</option>
         <option v-for="order in orders" :key="order.pk as number" :value="order.pk as number">
           {{ order.name }}
@@ -126,7 +129,7 @@ watch(
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.unit_type" required>
+      <CFormSelect v-model="form.unit_type" :disabled="!canProjectUpdate" required>
         <option value="">타입선택</option>
         <option v-for="type in types" :key="type.pk" :value="type.pk">
           {{ type.name }}
@@ -139,6 +142,7 @@ watch(
         placeholder="회차별 납부 계약금액"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateDownPay"
       />
@@ -148,7 +152,7 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateDownPay">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteDownPay">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteDownPay">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

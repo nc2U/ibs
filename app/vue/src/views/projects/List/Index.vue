@@ -20,14 +20,10 @@ const updateForm = () => (compName.value = 'UpdateForm')
 const resetForm = () => (compName.value = 'IndexDetail')
 
 const toSubmit = async (payload: Project) => {
-  if (payload.pk) await projStore.updateProject(payload)
-  else await projStore.createProject(payload)
-  compName.value = 'IndexDetail'
-}
-
-const projSelect = (target: number | null) => {
-  resetForm()
-  if (target) projStore.fetchProject(target)
+  const ok = payload.pk
+    ? await projStore.updateProject(payload)
+    : await projStore.createProject(payload)
+  if (ok) compName.value = 'IndexDetail'
 }
 
 watch(
@@ -49,12 +45,7 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <IndexDetail

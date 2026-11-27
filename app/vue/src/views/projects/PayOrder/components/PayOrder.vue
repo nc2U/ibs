@@ -17,7 +17,26 @@ const { can, PERM } = usePerms()
 const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 const isSuperAuth = computed(() => useAccount().superAuth)
 
-const form = reactive<PayOrder>({
+type PayOrderFormState = Omit<
+  PayOrder,
+  | 'pay_code'
+  | 'pay_time'
+  | 'pay_amt'
+  | 'pay_ratio'
+  | 'days_since_prev'
+  | 'prep_discount_ratio'
+  | 'late_penalty_ratio'
+> & {
+  pay_code: number | '' | null
+  pay_time: number | '' | null
+  pay_amt: number | '' | null
+  pay_ratio: number | '' | null
+  days_since_prev: number | '' | null
+  prep_discount_ratio: number | '' | null
+  late_penalty_ratio: number | '' | null
+}
+
+const form = reactive<PayOrderFormState>({
   type_sort: '1',
   pay_sort: '',
   calculation_method: 'auto',
@@ -42,6 +61,9 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const isExpand = ref(false)
+
+const toNullableNumber = (val: number | '' | null | undefined) =>
+  val !== null && val !== undefined && val !== '' ? Number(val) : null
 
 const dataSetup = () => {
   if (props.payOrder) {
@@ -72,11 +94,8 @@ watch(
   { deep: true, immediate: true },
 )
 
-const areNumbersEqual = (a: number | null | undefined, b: number | null | undefined) => {
-  const numA = a !== null && a !== undefined && (a as any) !== '' ? Number(a) : null
-  const numB = b !== null && b !== undefined && (b as any) !== '' ? Number(b) : null
-  return numA === numB
-}
+const areNumbersEqual = (a: number | '' | null | undefined, b: number | '' | null | undefined) =>
+  toNullableNumber(a) === toNullableNumber(b)
 
 const areStringsEqual = (a: string | null | undefined, b: string | null | undefined) => {
   return (a || '').trim() === (b || '').trim()
@@ -113,11 +132,9 @@ const isFormValid = computed(() => {
   const hasName = Boolean((form.pay_name || '').trim())
 
   const prepValid =
-    !form.is_prep_discount ||
-    (form.prep_discount_ratio !== null && (form.prep_discount_ratio as any) !== '')
+    !form.is_prep_discount || (form.prep_discount_ratio !== null && form.prep_discount_ratio !== '')
   const lateValid =
-    !form.is_late_penalty ||
-    (form.late_penalty_ratio !== null && (form.late_penalty_ratio as any) !== '')
+    !form.is_late_penalty || (form.late_penalty_ratio !== null && form.late_penalty_ratio !== '')
 
   return hasType && hasSort && hasCode && hasTime && hasName && prepValid && lateValid
 })
@@ -151,36 +168,21 @@ const onUpdatePayOrder = () => {
       pay_sort: form.pay_sort,
       calculation_method: form.calculation_method,
       is_except_price: form.is_except_price,
-      pay_code: form.pay_code !== null ? Number(form.pay_code) : null,
-      pay_time: form.pay_time !== null ? Number(form.pay_time) : null,
+      pay_code: toNullableNumber(form.pay_code),
+      pay_time: toNullableNumber(form.pay_time),
       pay_name: (form.pay_name || '').trim(),
       alias_name: (form.alias_name || '').trim(),
-      pay_amt:
-        form.pay_amt !== null && (form.pay_amt as any) !== '' ? Number(form.pay_amt) : null,
-      pay_ratio:
-        form.pay_ratio !== null && (form.pay_ratio as any) !== ''
-          ? Number(form.pay_ratio)
-          : null,
+      pay_amt: toNullableNumber(form.pay_amt),
+      pay_ratio: toNullableNumber(form.pay_ratio),
       pay_due_date: form.pay_due_date || null,
-      days_since_prev:
-        form.days_since_prev !== null && (form.days_since_prev as any) !== ''
-          ? Number(form.days_since_prev)
-          : null,
+      days_since_prev: toNullableNumber(form.days_since_prev),
       is_prep_discount: form.is_prep_discount,
-      prep_discount_ratio:
-        form.is_prep_discount &&
-        form.prep_discount_ratio !== null &&
-        (form.prep_discount_ratio as any) !== ''
-          ? Number(form.prep_discount_ratio)
-          : null,
+      prep_discount_ratio: form.is_prep_discount
+        ? toNullableNumber(form.prep_discount_ratio)
+        : null,
       prep_ref_date: form.is_prep_discount ? form.prep_ref_date || null : null,
       is_late_penalty: form.is_late_penalty,
-      late_penalty_ratio:
-        form.is_late_penalty &&
-        form.late_penalty_ratio !== null &&
-        (form.late_penalty_ratio as any) !== ''
-          ? Number(form.late_penalty_ratio)
-          : null,
+      late_penalty_ratio: form.is_late_penalty ? toNullableNumber(form.late_penalty_ratio) : null,
       extra_due_date: form.is_late_penalty ? form.extra_due_date || null : null,
       excluded_order_groups: props.payOrder.excluded_order_groups,
     })
@@ -209,7 +211,7 @@ const modalAction = () => {
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.type_sort" required>
+      <CFormSelect v-model="form.type_sort" :disabled="!canProjectUpdate" required>
         <option value="">타입 종류</option>
         <option value="1">공동주택</option>
         <option value="2">오피스텔</option>
@@ -220,7 +222,12 @@ const modalAction = () => {
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.pay_sort" required @change="onPaySortChange">
+      <CFormSelect
+        v-model="form.pay_sort"
+        :disabled="!canProjectUpdate"
+        required
+        @change="onPaySortChange"
+      >
         <option value="">종류선택</option>
         <option value="1">계약금</option>
         <option value="2">중도금</option>
@@ -234,15 +241,23 @@ const modalAction = () => {
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.calculation_method" :disabled="form.pay_sort !== '1'">
+      <CFormSelect
+        v-model="form.calculation_method"
+        :disabled="!canProjectUpdate || form.pay_sort !== '1'"
+      >
         <option value="auto">---------</option>
         <option value="downpayment">등록 계약 금액 우선</option>
         <option value="ratio">분양가격 × 납부비율</option>
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_except_price" :id="`iep-${payOrder.pk}`" label="불포함" />
+      <CCol class="pt-2 ps-3">
+        <CFormSwitch
+          v-model="form.is_except_price"
+          :id="`iep-${payOrder.pk}`"
+          label="불포함"
+          :disabled="!canProjectUpdate"
+        />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
@@ -251,6 +266,7 @@ const modalAction = () => {
         placeholder="납입회차 코드"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdatePayOrder"
       />
@@ -261,6 +277,7 @@ const modalAction = () => {
         placeholder="납부순서"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdatePayOrder"
       />
@@ -270,6 +287,7 @@ const modalAction = () => {
         v-model="form.pay_name"
         maxlength="20"
         placeholder="납부회차 명"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdatePayOrder"
       />
@@ -280,6 +298,7 @@ const modalAction = () => {
         v-model="form.alias_name"
         maxlength="20"
         placeholder="회차 별칭"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
@@ -289,7 +308,7 @@ const modalAction = () => {
         placeholder="납부 약정액"
         type="number"
         min="0"
-        :disabled="form.pay_sort === '2' || form.pay_sort === '3'"
+        :disabled="!canProjectUpdate || form.pay_sort === '2' || form.pay_sort === '3'"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
@@ -299,12 +318,12 @@ const modalAction = () => {
         placeholder="납부비율"
         type="number"
         min="0"
-        :disabled="form.pay_sort === '3'"
+        :disabled="!canProjectUpdate || form.pay_sort === '3'"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
 
-    <CTableDataCell class="pl-lg-5 pt-3">
+    <CTableDataCell class="ps-lg-5 pt-3">
       <CFormSwitch v-model="isExpand" :id="`i-expand-${payOrder.pk}`" label="추가설정" />
     </CTableDataCell>
 
@@ -312,7 +331,7 @@ const modalAction = () => {
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdatePayOrder">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" @click="onDeletePayOrder">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeletePayOrder">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 
@@ -324,6 +343,7 @@ const modalAction = () => {
         maxlength="10"
         placeholder="납부약정일"
         :required="false"
+        :disabled="!canProjectUpdate"
       />
     </CTableDataCell>
     <CTableDataCell>
@@ -333,14 +353,20 @@ const modalAction = () => {
         min="0"
         maxlength="20"
         placeholder="전회 기준 경과일수"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
 
     <CTableDataCell> </CTableDataCell>
     <CTableDataCell>
-      <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_prep_discount" :id="`ipd-${payOrder.pk}`" label="선납할인" />
+      <CCol class="pt-2 ps-3">
+        <CFormSwitch
+          v-model="form.is_prep_discount"
+          :id="`ipd-${payOrder.pk}`"
+          label="선납할인"
+          :disabled="!canProjectUpdate"
+        />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
@@ -349,7 +375,7 @@ const modalAction = () => {
         placeholder="선납할인율"
         type="number"
         min="0"
-        :disabled="!form.is_prep_discount"
+        :disabled="!canProjectUpdate || !form.is_prep_discount"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
@@ -359,12 +385,17 @@ const modalAction = () => {
         maxlength="10"
         placeholder="선납기준일"
         :required="false"
-        :disabled="!form.is_prep_discount"
+        :disabled="!canProjectUpdate || !form.is_prep_discount"
       />
     </CTableDataCell>
     <CTableDataCell>
-      <CCol class="pt-2 pl-3">
-        <CFormSwitch v-model="form.is_late_penalty" :id="`ilp-${payOrder.pk}`" label="연체가산" />
+      <CCol class="pt-2 ps-3">
+        <CFormSwitch
+          v-model="form.is_late_penalty"
+          :id="`ilp-${payOrder.pk}`"
+          label="연체가산"
+          :disabled="!canProjectUpdate"
+        />
       </CCol>
     </CTableDataCell>
     <CTableDataCell>
@@ -373,7 +404,7 @@ const modalAction = () => {
         placeholder="연체가산율"
         type="number"
         min="0"
-        :disabled="!form.is_late_penalty"
+        :disabled="!canProjectUpdate || !form.is_late_penalty"
         @keydown.enter.prevent="onUpdatePayOrder"
       />
     </CTableDataCell>
@@ -383,7 +414,7 @@ const modalAction = () => {
         maxlength="10"
         placeholder="연체기준일"
         :required="false"
-        :disabled="!form.is_late_penalty"
+        :disabled="!canProjectUpdate || !form.is_late_penalty"
       />
     </CTableDataCell>
     <CTableDataCell> </CTableDataCell>

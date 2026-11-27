@@ -33,7 +33,7 @@ export const usePayment = defineStore('payment', () => {
     const unit_type = payload.unit_type || ''
 
     return await api
-      .get(`/price/?project=${project}&order_group=${order_group}&unit_type=${unit_type}`)
+      .get(`/price/?project=${project}&order_group=${order_group}&unit_type=${unit_type}&limit=100`)
       .then(res => (priceList.value = res.data.results))
       .catch(err => errorHandle(err))
   }
@@ -136,7 +136,10 @@ export const usePayment = defineStore('payment', () => {
       .then(() =>
         fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const updatePaymentPerInstallment = (payload: PaymentPerInstallmentPayload) =>
     api
@@ -144,7 +147,10 @@ export const usePayment = defineStore('payment', () => {
       .then(() =>
         fetchPaymentPerInstallmentList({ sales_price: payload.sales_price }).then(() => message()),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   const deletePaymentPerInstallment = (pk: number, salesPriceId: number) =>
     api
@@ -154,7 +160,10 @@ export const usePayment = defineStore('payment', () => {
           message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
-      .catch(err => errorHandle(err))
+      .catch(err => {
+        errorHandle(err)
+        throw err
+      })
 
   // 컴포넌트용 PaymentPerInstallment 데이터 조회 (전역 상태 업데이트 없음)
   const getPaymentPerInstallmentData = async (
@@ -188,7 +197,7 @@ export const usePayment = defineStore('payment', () => {
 
   // actions
   const fetchDownPayList = async (payload: DownPayFilter) => {
-    let url = `/down-payment/?project=${payload.project}`
+    let url = `/down-payment/?project=${payload.project}&limit=100`
     if (payload.order_group) url += `&order_group=${payload.order_group}`
     if (payload.unit_type) url += `&unit_type=${payload.unit_type}`
     return await api

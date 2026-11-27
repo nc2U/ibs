@@ -30,10 +30,10 @@ const form = reactive<{
   order_group: number | ''
   unit_type: number | ''
   item_name: string
-  average_price: number | null
-  quantity: number | null
-  budget: number | null
-  revised_budget: number | null
+  average_price: number | '' | null
+  quantity: number | '' | null
+  budget: number | '' | null
+  revised_budget: number | '' | null
 }>({
   pk: null,
   account: '',
@@ -46,6 +46,9 @@ const form = reactive<{
   revised_budget: null,
 })
 
+const toNullableNumber = (val: number | '' | null) =>
+  val !== null && val !== '' ? Number(val) : null
+
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
@@ -55,14 +58,10 @@ const isUnchanged = computed(() => {
     (form.order_group ? Number(form.order_group) : null) === (props.budget.order_group || null) &&
     (form.unit_type ? Number(form.unit_type) : null) === (props.budget.unit_type || null) &&
     form.item_name.trim() === (props.budget.item_name || '') &&
-    (form.average_price !== null && (form.average_price as any) !== ''
-      ? Number(form.average_price)
-      : null) === (props.budget.average_price || null) &&
-    Number(form.quantity) === props.budget.quantity &&
-    Number(form.budget) === props.budget.budget &&
-    (form.revised_budget !== null && (form.revised_budget as any) !== ''
-      ? Number(form.revised_budget)
-      : null) === (props.budget.revised_budget || null)
+    toNullableNumber(form.average_price) === (props.budget.average_price || null) &&
+    toNullableNumber(form.quantity) === props.budget.quantity &&
+    toNullableNumber(form.budget) === props.budget.budget &&
+    toNullableNumber(form.revised_budget) === (props.budget.revised_budget || null)
   )
 })
 
@@ -71,9 +70,11 @@ const formsCheck = computed(() => {
     !form.account ||
     (!form.unit_type && !form.item_name.trim()) ||
     form.quantity === null ||
-    form.quantity <= 0 ||
+    form.quantity === '' ||
+    Number(form.quantity) <= 0 ||
     form.budget === null ||
-    form.budget < 0 ||
+    form.budget === '' ||
+    Number(form.budget) < 0 ||
     isUnchanged.value
   )
 })
@@ -89,16 +90,10 @@ const onUpdateBudget = () => {
       order_group: form.order_group ? Number(form.order_group) : null,
       unit_type: form.unit_type ? Number(form.unit_type) : null,
       item_name: form.item_name.trim(),
-      average_price:
-        form.average_price !== null && (form.average_price as any) !== ''
-          ? Number(form.average_price)
-          : null,
+      average_price: toNullableNumber(form.average_price),
       quantity: Number(form.quantity),
       budget: Number(form.budget),
-      revised_budget:
-        form.revised_budget !== null && (form.revised_budget as any) !== ''
-          ? Number(form.revised_budget)
-          : null,
+      revised_budget: toNullableNumber(form.revised_budget),
     })
   } else {
     refAlertModal.value.callModal()
@@ -143,7 +138,7 @@ watch(
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.account" required>
+      <CFormSelect v-model="form.account" :disabled="!canProjectUpdate" required>
         <option value="">계정</option>
         <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
           {{ acc.label }}
@@ -151,7 +146,7 @@ watch(
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.order_group">
+      <CFormSelect v-model="form.order_group" :disabled="!canProjectUpdate">
         <option value="">차수</option>
         <option v-for="og in orderGroups" :key="og.value" :value="og.value">
           {{ og.label }}
@@ -159,7 +154,7 @@ watch(
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.unit_type">
+      <CFormSelect v-model="form.unit_type" :disabled="!canProjectUpdate">
         <option value="">타입</option>
         <option v-for="ut in unitTypes" :key="ut.value" :value="ut.value">
           {{ ut.label }}
@@ -170,6 +165,7 @@ watch(
       <CFormInput
         v-model="form.item_name"
         placeholder="항목명칭"
+        :disabled="!canProjectUpdate"
         :required="!form.unit_type"
         @keydown.enter.prevent="onUpdateBudget"
       />
@@ -180,6 +176,7 @@ watch(
         type="number"
         min="0"
         placeholder="평균가격"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateBudget"
       />
     </CTableDataCell>
@@ -189,6 +186,7 @@ watch(
         type="number"
         min="0"
         placeholder="수량"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateBudget"
       />
@@ -199,6 +197,7 @@ watch(
         type="number"
         min="0"
         placeholder="인준수입예산"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateBudget"
       />
@@ -209,6 +208,7 @@ watch(
         type="number"
         min="0"
         placeholder="현황수입예산"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateBudget"
       />
     </CTableDataCell>
@@ -216,7 +216,7 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateBudget">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteBudget">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteBudget">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

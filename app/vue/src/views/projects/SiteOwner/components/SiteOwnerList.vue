@@ -25,8 +25,10 @@ const siteOwnerCount = computed(() => siteStore.siteOwnerCount)
 const ownerPages = (num: number) => Math.ceil(siteOwnerCount.value / num)
 const pageSelect = (page: number) => emit('page-select', page)
 const relationPatch = (payload: Relation) => emit('relation-patch', payload)
-const multiSubmit = (payload: Owner) => emit('multi-submit', payload)
-const onDelete = (payload: { pk: number; project: number }) => emit('on-delete', payload)
+const multiSubmit = (payload: Owner, done?: (ok: boolean) => void) =>
+  emit('multi-submit', payload, done)
+const onDelete = (payload: { pk: number; project: number }, done?: (ok: boolean) => void) =>
+  emit('on-delete', payload, done)
 </script>
 
 <template>

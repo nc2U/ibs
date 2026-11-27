@@ -77,17 +77,35 @@ export const useProject = defineStore('project', () => {
     permStore.setProjectRole(null)
   }
 
-  const createProject = (payload: Project) =>
+  const createProject = (payload: Project): Promise<boolean> =>
     api
       .post('/project/', payload)
-      .then(res => fetchProjectList().then(() => fetchProject(res.data.pk).then(() => message())))
-      .catch(err => errorHandle(err))
+      .then(res =>
+        fetchProjectList().then(() =>
+          fetchProject(res.data.pk).then(() => {
+            message()
+            return true
+          }),
+        ),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
-  const updateProject = (payload: Project) =>
+  const updateProject = (payload: Project): Promise<boolean> =>
     api
       .put(`/project/${payload.pk}/`, payload)
-      .then(res => fetchProject(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err))
+      .then(res =>
+        fetchProject(res.data.pk).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
+      })
 
   const deleteProject = (pk: number) =>
     api
@@ -104,7 +122,7 @@ export const useProject = defineStore('project', () => {
   // actions
   const fetchIncBudgetList = (project: number) =>
     api
-      .get(`/inc-budget/?project=${project}`)
+      .get(`/inc-budget/?project=${project}&limit=100`)
       .then(res => (proIncBudgetList.value = res.data.results))
       .catch(err => errorHandle(err))
 
@@ -117,25 +135,28 @@ export const useProject = defineStore('project', () => {
   const createIncBudget = (payload: ProIncBudget) =>
     api
       .post('/inc-budget/', payload)
-      .then(res => {
+      .then(res =>
         fetchIncBudgetList(res.data.project).then(() =>
           fetchIncBudget(res.data.pk).then(() => message()),
-        )
-      })
+        ),
+      )
       .catch(err => errorHandle(err))
 
   const updateIncBudget = (payload: ProIncBudget) =>
     api
       .put(`/inc-budget/${payload.pk}/`, payload)
-      .then(res => {
+      .then(res =>
         fetchIncBudgetList(res.data.project).then(() =>
           fetchIncBudget(res.data.pk).then(() => message()),
-        )
-      })
+        ),
+      )
       .catch(err => errorHandle(err))
 
   const patchIncBudgetList = (project: number, pk: number, budget: number) =>
-    api.patch(`/Inc-budget/${pk}/`, { budget }).then(() => fetchIncBudgetList(project))
+    api
+      .patch(`/inc-budget/${pk}/`, { budget })
+      .then(() => fetchIncBudgetList(project))
+      .catch(err => errorHandle(err))
 
   const deleteIncBudget = (pk: number, project: number) =>
     api
@@ -154,7 +175,7 @@ export const useProject = defineStore('project', () => {
   // actions
   const fetchOutBudgetList = (project: number) =>
     api
-      .get(`/out-budget/?project=${project}`)
+      .get(`/out-budget/?project=${project}&limit=100`)
       .then(res => (proOutBudgetList.value = res.data.results))
       .catch(err => errorHandle(err))
 
@@ -167,23 +188,24 @@ export const useProject = defineStore('project', () => {
   const createOutBudget = (payload: ProOutBudget) =>
     api
       .post('/out-budget/', payload)
-      .then(res => {
+      .then(res =>
         fetchOutBudgetList(res.data.project).then(() =>
           fetchOutBudget(res.data.pk).then(() => message()),
-        )
-      })
+        ),
+      )
       .catch(err => errorHandle(err))
 
   const updateOutBudget = (payload: ProOutBudget) =>
     api
       .put(`/out-budget/${payload.pk}/`, payload)
-      .then(res => {
-        fetchOutBudgetList(res.data.project).then(() => message())
-      })
+      .then(res => fetchOutBudgetList(res.data.project).then(() => message()))
       .catch(err => errorHandle(err))
 
   const patchOutBudget = (project: number, pk: number, budget: number) =>
-    api.patch(`/out-budget/${pk}/`, { budget }).then(() => fetchOutBudgetList(project))
+    api
+      .patch(`/out-budget/${pk}/`, { budget })
+      .then(() => fetchOutBudgetList(project))
+      .catch(err => errorHandle(err))
 
   const deleteOutBudget = (pk: number, project: number) =>
     api
@@ -217,6 +239,7 @@ export const useProject = defineStore('project', () => {
     api
       .patch(`/status-budget/${payload.pk}/`, payload)
       .then(() => fetchStatusOutBudgetList(payload.project, useLedger))
+      .catch(err => errorHandle(err))
 
   // states & getters (ibs 기반)
   const execAmountList = ref<ExecAmountToBudget[]>([])

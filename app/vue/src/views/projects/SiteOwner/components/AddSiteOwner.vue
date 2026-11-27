@@ -4,6 +4,7 @@ import { usePerms } from '@/composables/usePerms'
 import { AlertLight } from '@/utils/cssMixins'
 import type { SiteOwner } from '@/store/types/project'
 import FormModal from '@/components/Modals/FormModal.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 import SiteOwnerForm from '@/views/projects/SiteOwner/components/SiteOwnerForm.vue'
 
 defineProps({ project: { type: Number, default: undefined } })
@@ -31,13 +32,14 @@ const handleClose = () => {
 }
 
 const multiSubmit = (payload: SiteOwner) => {
-  emit('multi-submit', payload)
-  handleClose()
+  emit('multi-submit', payload, (ok: boolean) => {
+    if (ok) handleClose()
+  })
 }
 </script>
 
 <template>
-  <CAlert :color="AlertLight" variant="solid" class="text-right">
+  <CAlert :color="AlertLight" variant="solid" class="text-end">
     <v-btn color="primary" :disabled="!project" @click="createConfirm">
       부지 소유자 신규등록
     </v-btn>

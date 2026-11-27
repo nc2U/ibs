@@ -25,19 +25,19 @@ const form = reactive<{
   pay_sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ''
   calculation_method: 'auto' | 'ratio' | 'downpayment'
   is_except_price: boolean
-  pay_code: number | null
-  pay_time: number | null
+  pay_code: number | '' | null
+  pay_time: number | '' | null
   pay_name: string
   alias_name: string
-  pay_amt: number | null
-  pay_ratio: number | null
+  pay_amt: number | '' | null
+  pay_ratio: number | '' | null
   pay_due_date: string | null
-  days_since_prev: number | null
+  days_since_prev: number | '' | null
   is_prep_discount: boolean
-  prep_discount_ratio: number | null
+  prep_discount_ratio: number | '' | null
   prep_ref_date: string | null
   is_late_penalty: boolean
-  late_penalty_ratio: number | null
+  late_penalty_ratio: number | '' | null
   extra_due_date: string | null
 }>({
   type_sort: '1',
@@ -59,6 +59,9 @@ const form = reactive<{
   late_penalty_ratio: null,
   extra_due_date: null,
 })
+
+const toNullableNumber = (val: number | '' | null) =>
+  val !== null && val !== '' ? Number(val) : null
 
 watch(
   () => props.disabled,
@@ -87,11 +90,9 @@ const isFormValid = computed(() => {
   const hasName = Boolean(form.pay_name.trim())
 
   const prepValid =
-    !form.is_prep_discount ||
-    (form.prep_discount_ratio !== null && (form.prep_discount_ratio as any) !== '')
+    !form.is_prep_discount || (form.prep_discount_ratio !== null && form.prep_discount_ratio !== '')
   const lateValid =
-    !form.is_late_penalty ||
-    (form.late_penalty_ratio !== null && (form.late_penalty_ratio as any) !== '')
+    !form.is_late_penalty || (form.late_penalty_ratio !== null && form.late_penalty_ratio !== '')
 
   return hasType && hasSort && hasCode && hasTime && hasName && prepValid && lateValid
 })
@@ -115,33 +116,19 @@ const modalAction = () => {
     pay_sort: form.pay_sort,
     calculation_method: form.calculation_method,
     is_except_price: form.is_except_price,
-    pay_code: form.pay_code !== null ? Number(form.pay_code) : null,
-    pay_time: form.pay_time !== null ? Number(form.pay_time) : null,
+    pay_code: toNullableNumber(form.pay_code),
+    pay_time: toNullableNumber(form.pay_time),
     pay_name: form.pay_name.trim(),
     alias_name: form.alias_name.trim(),
-    pay_amt: form.pay_amt !== null && (form.pay_amt as any) !== '' ? Number(form.pay_amt) : null,
-    pay_ratio:
-      form.pay_ratio !== null && (form.pay_ratio as any) !== '' ? Number(form.pay_ratio) : null,
+    pay_amt: toNullableNumber(form.pay_amt),
+    pay_ratio: toNullableNumber(form.pay_ratio),
     pay_due_date: form.pay_due_date || null,
-    days_since_prev:
-      form.days_since_prev !== null && (form.days_since_prev as any) !== ''
-        ? Number(form.days_since_prev)
-        : null,
+    days_since_prev: toNullableNumber(form.days_since_prev),
     is_prep_discount: form.is_prep_discount,
-    prep_discount_ratio:
-      form.is_prep_discount &&
-      form.prep_discount_ratio !== null &&
-      (form.prep_discount_ratio as any) !== ''
-        ? Number(form.prep_discount_ratio)
-        : null,
+    prep_discount_ratio: form.is_prep_discount ? toNullableNumber(form.prep_discount_ratio) : null,
     prep_ref_date: form.is_prep_discount ? form.prep_ref_date || null : null,
     is_late_penalty: form.is_late_penalty,
-    late_penalty_ratio:
-      form.is_late_penalty &&
-      form.late_penalty_ratio !== null &&
-      (form.late_penalty_ratio as any) !== ''
-        ? Number(form.late_penalty_ratio)
-        : null,
+    late_penalty_ratio: form.is_late_penalty ? toNullableNumber(form.late_penalty_ratio) : null,
     extra_due_date: form.is_late_penalty ? form.extra_due_date || null : null,
   })
   validated.value = false
@@ -161,7 +148,7 @@ const resetForm = () => {
   form.pay_amt = null
   form.pay_ratio = null
   form.pay_due_date = null
-  days_since_prev: null
+  form.days_since_prev = null
   form.is_prep_discount = false
   form.prep_discount_ratio = null
   form.prep_ref_date = null
@@ -411,7 +398,7 @@ const resetForm = () => {
         </CRow>
       </CCol>
 
-      <CCol xl="1" class="mb-3 text-right">
+      <CCol xl="1" class="mb-3 text-end">
         <v-btn color="primary" type="submit" :disabled="disabled || !isFormValid"> 회차추가</v-btn>
       </CCol>
     </CRow>

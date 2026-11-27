@@ -39,16 +39,14 @@ export const useContract = defineStore('contract', () => {
 
   const fetchOrderGroupList = (project: number, sort = '') =>
     api
-      .get(`/order-group/?project=${project}&&sort=${sort}`)
+      .get(`/order-group/?project=${project}&sort=${sort}&limit=100`)
       .then(res => (orderGroupList.value = res.data.results))
       .catch(err => errorHandle(err))
 
   const createOrderGroup = (payload: OrderGroup) =>
     api
       .post(`/order-group/`, payload)
-      .then(res => {
-        fetchOrderGroupList(res.data.project).then(() => message())
-      })
+      .then(res => fetchOrderGroupList(res.data.project).then(() => message()))
       .catch(err => errorHandle(err))
 
   const updateOrderGroup = (payload: OrderGroup) =>
@@ -79,11 +77,14 @@ export const useContract = defineStore('contract', () => {
   const requiredDocsList = ref<RequiredDocs[]>([])
   const fetchRequiredDocsList = async (project: number) =>
     await api
-      .get(`/required-docs/?project=${project}`)
+      .get(`/required-docs/?project=${project}&limit=100`)
       .then(res => (requiredDocsList.value = res.data.results))
       .catch(err => errorHandle(err))
 
-  const createRequiredDoc = async (payload: RequiredDocs) => {
+  type RequiredDocCreatePayload = Omit<RequiredDocs, 'pk' | 'document_name' | 'required'> &
+    Partial<Pick<RequiredDocs, 'pk' | 'document_name' | 'required'>>
+
+  const createRequiredDoc = async (payload: RequiredDocCreatePayload) => {
     return await api
       .post(`/required-docs/`, payload)
       .then(async res => {

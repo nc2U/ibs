@@ -23,15 +23,18 @@ const isSuperAuth = computed(() => useAccount().superAuth)
 
 const getTypes = inject<TypeOption[]>('getTypes')
 
+const toNullableNumber = (val: number | '' | null | undefined): number | null =>
+  val !== null && val !== undefined && val !== '' ? Number(val) : null
+
 const form = reactive<{
   types: number[]
   opt_code: string
   opt_name: string
   opt_desc: string
   opt_maker: string
-  opt_price: number | null
-  opt_deposit: number | null
-  opt_balance: number | null
+  opt_price: number | '' | null
+  opt_deposit: number | '' | null
+  opt_balance: number | '' | null
 }>({
   types: [],
   opt_code: '',
@@ -71,14 +74,11 @@ const areArraysEqual = (a: number[], b: number[]) => {
 }
 
 const isDepositBalanceValid = computed(() => {
-  if (
-    form.opt_price !== null &&
-    form.opt_deposit !== null &&
-    (form.opt_deposit as any) !== '' &&
-    form.opt_balance !== null &&
-    (form.opt_balance as any) !== ''
-  ) {
-    return Number(form.opt_deposit) + Number(form.opt_balance) === Number(form.opt_price)
+  const price = toNullableNumber(form.opt_price)
+  const deposit = toNullableNumber(form.opt_deposit)
+  const balance = toNullableNumber(form.opt_balance)
+  if (price !== null && deposit !== null && balance !== null) {
+    return deposit + balance === price
   }
   return true
 })
@@ -89,15 +89,9 @@ const isUnchanged = computed(() => {
   const nameSame = form.opt_name.trim() === (props.optionItem.opt_name || '').trim()
   const descSame = (form.opt_desc || '').trim() === (props.optionItem.opt_desc || '').trim()
   const makerSame = (form.opt_maker || '').trim() === (props.optionItem.opt_maker || '').trim()
-  const priceSame = Number(form.opt_price) === props.optionItem.opt_price
-  const depositSame =
-    (form.opt_deposit !== null && (form.opt_deposit as any) !== ''
-      ? Number(form.opt_deposit)
-      : null) === (props.optionItem.opt_deposit || null)
-  const balanceSame =
-    (form.opt_balance !== null && (form.opt_balance as any) !== ''
-      ? Number(form.opt_balance)
-      : null) === (props.optionItem.opt_balance || null)
+  const priceSame = toNullableNumber(form.opt_price) === (props.optionItem.opt_price ?? null)
+  const depositSame = toNullableNumber(form.opt_deposit) === (props.optionItem.opt_deposit ?? null)
+  const balanceSame = toNullableNumber(form.opt_balance) === (props.optionItem.opt_balance ?? null)
 
   return (
     typesSame &&
@@ -114,15 +108,12 @@ const isUnchanged = computed(() => {
 const formsCheck = computed(() => {
   const hasTypes = form.types.length > 0
   const hasName = Boolean(form.opt_name.trim())
-  const hasPrice = form.opt_price !== null && form.opt_price >= 0
-  const depositValid =
-    form.opt_deposit === null ||
-    (form.opt_deposit as any) === '' ||
-    Number(form.opt_deposit) >= 0
-  const balanceValid =
-    form.opt_balance === null ||
-    (form.opt_balance as any) === '' ||
-    Number(form.opt_balance) >= 0
+  const price = toNullableNumber(form.opt_price)
+  const deposit = toNullableNumber(form.opt_deposit)
+  const balance = toNullableNumber(form.opt_balance)
+  const hasPrice = price !== null && price >= 0
+  const depositValid = deposit === null || deposit >= 0
+  const balanceValid = balance === null || balance >= 0
 
   if (
     !hasTypes ||
@@ -139,6 +130,8 @@ const formsCheck = computed(() => {
 
 const onUpdateOption = () => {
   if (formsCheck.value) return
+  const price = toNullableNumber(form.opt_price)
+  if (price === null) return
 
   if (canProjectUpdate.value) {
     emit('on-update', {
@@ -149,15 +142,9 @@ const onUpdateOption = () => {
       opt_name: form.opt_name.trim(),
       opt_desc: form.opt_desc.trim() || null,
       opt_maker: form.opt_maker.trim() || null,
-      opt_price: Number(form.opt_price),
-      opt_deposit:
-        form.opt_deposit !== null && (form.opt_deposit as any) !== ''
-          ? Number(form.opt_deposit)
-          : null,
-      opt_balance:
-        form.opt_balance !== null && (form.opt_balance as any) !== ''
-          ? Number(form.opt_balance)
-          : null,
+      opt_price: price,
+      opt_deposit: toNullableNumber(form.opt_deposit),
+      opt_balance: toNullableNumber(form.opt_balance),
     })
   } else {
     refAlertModal.value.callModal()
@@ -189,6 +176,7 @@ const modalAction = () => {
         :options="getTypes || []"
         placeholder="타입구분"
         required
+        :disabled="!canProjectUpdate"
       />
     </CTableDataCell>
 
@@ -197,6 +185,7 @@ const modalAction = () => {
         v-model="form.opt_code"
         maxlength="20"
         placeholder="품목 코드"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -206,6 +195,7 @@ const modalAction = () => {
         maxlength="100"
         placeholder="품목 이름"
         required
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -214,6 +204,7 @@ const modalAction = () => {
         v-model="form.opt_desc"
         maxlength="200"
         placeholder="세부 옵션"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -222,6 +213,7 @@ const modalAction = () => {
       <CFormInput
         v-model="form.opt_maker"
         placeholder="제조사"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -233,6 +225,7 @@ const modalAction = () => {
         type="number"
         min="0"
         required
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -243,6 +236,7 @@ const modalAction = () => {
         placeholder="계약금"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -253,6 +247,7 @@ const modalAction = () => {
         placeholder="잔금"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateOption"
       />
     </CTableDataCell>
@@ -261,7 +256,7 @@ const modalAction = () => {
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateOption">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" @click="onDeleteOption">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteOption">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

@@ -68,6 +68,8 @@ const project = computed(() => props.project || projectStore.project?.pk || curr
 const siteStore = useSite()
 const getSites = computed(() => siteStore.getSites)
 
+const sortIds = (ids: number[]) => [...ids].sort((x, y) => x - y)
+
 const formsCheck = computed(() => {
   if (props.owner) {
     if (!canSiteUpdate.value) return true
@@ -76,8 +78,8 @@ const formsCheck = computed(() => {
     const c = form.use_consent === props.owner.use_consent
     const d = form.date_of_birth === props.owner.date_of_birth
     const e =
-      JSON.stringify(form.sites) ===
-      JSON.stringify(props.owner.sites.map((s: SimpleSite) => s.site))
+      JSON.stringify(sortIds(form.sites)) ===
+      JSON.stringify(sortIds(props.owner.sites.map((s: SimpleSite) => s.site)))
     const f = form.phone1 === props.owner.phone1
     const g = form.phone2 === props.owner.phone2
     const h = form.zipcode === props.owner.zipcode
@@ -102,7 +104,7 @@ const addressCallback = (data: AddressData) => {
     form.address1 = address1
     form.address2 = ''
     form.address3 = address3
-    address2.value.$el.nextElementSibling.focus()
+    address2.value?.$el?.nextElementSibling?.focus?.()
   }
 }
 
@@ -118,13 +120,12 @@ const onSubmit = (event: Event) => {
 
 const multiSubmit = (multiPayload: SiteOwnerFormData) => {
   emit('multi-submit', multiPayload as unknown as SiteOwner)
-  emit('close')
 }
 
 const deleteObject = () => {
+  if (!props.owner?.pk || !props.owner?.project) return
   emit('on-delete', { pk: props.owner.pk, project: props.owner.project })
   refDelModal.value.close()
-  emit('close')
 }
 
 const deleteConfirm = () => {
@@ -184,7 +185,7 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label">소유구분</CFormLabel>
               <CCol sm="8">
-                <CFormSelect v-model="form.own_sort">
+                <CFormSelect v-model="form.own_sort" :disabled="!canSiteManage">
                   <option v-for="sort in own_sort_select" :key="sort.val" :value="sort.val">
                     {{ sort.text }}
                   </option>
@@ -201,7 +202,7 @@ onBeforeMount(() => dataSetup())
                   id="use-consent"
                   v-model="form.use_consent"
                   label="토지사용 동의(승낙) 여부"
-                  :disabled="!owner"
+                  :disabled="!owner || !canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -213,7 +214,13 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-4 col-form-label required">소유자</CFormLabel>
               <CCol sm="8">
-                <CFormInput v-model="form.owner" maxlength="20" required placeholder="소유자" />
+                <CFormInput
+                  v-model="form.owner"
+                  maxlength="20"
+                  required
+                  placeholder="소유자"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -227,6 +234,7 @@ onBeforeMount(() => dataSetup())
                   maxlength="10"
                   :required="false"
                   placeholder="생년월일"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -242,6 +250,7 @@ onBeforeMount(() => dataSetup())
                   v-model="form.sites"
                   :options="getSites"
                   placeholder="소유부지 :: 필수 입력"
+                  :disabled="!canSiteManage"
                   :attrs="form.sites.length ? {} : { required: true }"
                 />
               </CCol>
@@ -261,6 +270,7 @@ onBeforeMount(() => dataSetup())
                   class="form-control"
                   maxlength="13"
                   placeholder="주 연락처"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -277,6 +287,7 @@ onBeforeMount(() => dataSetup())
                   class="form-control"
                   maxlength="13"
                   placeholder="보조 연락처"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
             </CRow>
@@ -289,7 +300,10 @@ onBeforeMount(() => dataSetup())
               <CFormLabel class="col-sm-2 col-form-label">주소</CFormLabel>
               <CCol sm="3">
                 <CInputGroup>
-                  <CInputGroupText style="cursor: pointer" @click="refPostCode.initiate()">
+                  <CInputGroupText
+                    style="cursor: pointer"
+                    @click="canSiteManage && refPostCode.initiate()"
+                  >
                     우편번호
                   </CInputGroupText>
                   <CFormInput
@@ -298,7 +312,8 @@ onBeforeMount(() => dataSetup())
                     data-maska="#####"
                     placeholder="우편번호"
                     maxlength="5"
-                    @focus="refPostCode.initiate()"
+                    :disabled="!canSiteManage"
+                    @focus="canSiteManage && refPostCode.initiate()"
                   />
                   <CFormFeedback invalid>우편번호를 입력하세요.</CFormFeedback>
                 </CInputGroup>
@@ -308,7 +323,8 @@ onBeforeMount(() => dataSetup())
                   v-model="form.address1"
                   maxlength="35"
                   placeholder="메인 주소"
-                  @click="refPostCode.initiate()"
+                  :disabled="!canSiteManage"
+                  @click="canSiteManage && refPostCode.initiate()"
                 />
               </CCol>
             </CRow>
@@ -323,12 +339,18 @@ onBeforeMount(() => dataSetup())
                 <CFormInput
                   ref="address2"
                   v-model="form.address2"
-                  maxlength="20"
+                  maxlength="50"
                   placeholder="상세 주소"
+                  :disabled="!canSiteManage"
                 />
               </CCol>
               <CCol sm="5">
-                <CFormInput v-model="form.address3" maxlength="20" placeholder="나머지 주소" />
+                <CFormInput
+                  v-model="form.address3"
+                  maxlength="30"
+                  placeholder="나머지 주소"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -339,7 +361,12 @@ onBeforeMount(() => dataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">주요 상담 기록</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea v-model="form.note" rows="4" placeholder="주요 상담 기록" />
+                <CFormTextarea
+                  v-model="form.note"
+                  rows="4"
+                  placeholder="주요 상담 기록"
+                  :disabled="!canSiteManage"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -350,6 +377,7 @@ onBeforeMount(() => dataSetup())
     <CModalFooter>
       <slot name="footer">
         <v-btn
+          v-if="canSiteManage"
           type="submit"
           size="small"
           :color="owner ? 'success' : 'primary'"
@@ -357,7 +385,13 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn v-if="owner" size="small" type="button" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="owner && canSiteDelete"
+          size="small"
+          type="button"
+          color="warning"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn type="button" size="small" color="light" flat @click="$emit('close')">닫기</v-btn>

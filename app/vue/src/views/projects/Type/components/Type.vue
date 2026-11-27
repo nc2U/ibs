@@ -79,7 +79,7 @@ const isInvalid = computed(() => {
     !form.value.color ||
     !form.value.price_setting ||
     form.value.num_unit === null ||
-    form.value.num_unit === ('' as any) ||
+    form.value.num_unit === '' ||
     Number(form.value.num_unit) < 0
   )
 })
@@ -178,14 +178,14 @@ watch(
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.sort" required>
+      <CFormSelect v-model="form.sort" :disabled="!canProjectUpdate" required>
         <option v-for="tp in typeSort" :key="tp.value" :value="tp.value">
           {{ tp.label }}
         </option>
       </CFormSelect>
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.main_or_sub" required>
+      <CFormSelect v-model="form.main_or_sub" :disabled="!canProjectUpdate" required>
         <option value="1">메인유닛</option>
         <option value="2">보조시설</option>
       </CFormSelect>
@@ -195,12 +195,19 @@ watch(
         v-model="form.name"
         maxlength="10"
         placeholder="타입명칭"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateType"
       />
     </CTableDataCell>
     <CTableDataCell>
-      <CFormInput v-model="form.color" title="타입색상" type="color" required />
+      <CFormInput
+        v-model="form.color"
+        title="타입색상"
+        type="color"
+        :disabled="!canProjectUpdate"
+        required
+      />
     </CTableDataCell>
 
     <CTableDataCell>
@@ -210,6 +217,7 @@ watch(
         type="number"
         min="0"
         step="0.0001"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateType"
       />
     </CTableDataCell>
@@ -220,6 +228,7 @@ watch(
         type="number"
         min="0"
         step="0.0001"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateType"
       />
     </CTableDataCell>
@@ -230,6 +239,7 @@ watch(
         type="number"
         min="0"
         step="0.0001"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateType"
       />
     </CTableDataCell>
@@ -240,11 +250,12 @@ watch(
         placeholder="평균가격"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateType"
       />
     </CTableDataCell>
     <CTableDataCell>
-      <CFormSelect v-model="form.price_setting" required>
+      <CFormSelect v-model="form.price_setting" :disabled="!canProjectUpdate" required>
         <option value="1">타입별 설정</option>
         <option value="2">층타입별 설정</option>
         <option value="3">호별 설정</option>
@@ -256,6 +267,7 @@ watch(
         placeholder="세대수"
         type="number"
         min="0"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateType"
       />
@@ -264,7 +276,7 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateType">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteType">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteType">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

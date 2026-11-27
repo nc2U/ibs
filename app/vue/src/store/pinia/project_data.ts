@@ -6,6 +6,7 @@ import {
   type BuildingUnit,
   type AllHouseUnit,
   type HouseUnit,
+  type HouseUnitUpdatePayload,
   type OptionItem,
 } from '@/store/types/project'
 import api from '@/api'
@@ -44,7 +45,7 @@ export const useProjectData = defineStore('projectData', () => {
   // actions
   const fetchTypeList = (projId: number, sort?: '1' | '2' | '3' | '4' | '5' | '6') =>
     api
-      .get(`/type/?project=${projId}&sort=${sort || ''}`)
+      .get(`/type/?project=${projId}&sort=${sort || ''}&limit=100`)
       .then(res => {
         unitTypeList.value = res.data.results
       })
@@ -91,7 +92,7 @@ export const useProjectData = defineStore('projectData', () => {
   // actions
   const fetchFloorTypeList = (projId: number, sort?: '1' | '2' | '3' | '4' | '5' | '6') =>
     api
-      .get(`/floor/?project=${projId}&sort=${sort || ''}`)
+      .get(`/floor/?project=${projId}&sort=${sort || ''}&limit=100`)
       .then(res => (floorTypeList.value = res.data.results))
       .catch(err => errorHandle(err))
 
@@ -123,7 +124,7 @@ export const useProjectData = defineStore('projectData', () => {
   // actions
   const fetchBuildingList = (projId: number) =>
     api
-      .get(`/bldg/?project=${projId}`)
+      .get(`/bldg/?project=${projId}&limit=100`)
       .then(res => (buildingList.value = res.data.results))
       .catch(err => errorHandle(err))
 
@@ -175,9 +176,8 @@ export const useProjectData = defineStore('projectData', () => {
     totalNum: units.length,
     holdNum: units.filter(u => u.is_hold).length,
     appNum: units.filter(u => u.key_unit?.contract?.contractor?.status === '1').length,
-    contNum: units.filter(u =>
-      ['2', '3'].includes(u.key_unit?.contract?.contractor?.status ?? ''),
-    ).length,
+    contNum: units.filter(u => ['2', '3'].includes(u.key_unit?.contract?.contractor?.status ?? ''))
+      .length,
   })
   const unitSummary = computed(() => summarizeUnits(mallExcludedUnits.value))
   const allUnitSummary = computed(() => summarizeUnits(houseUnitList.value))
@@ -188,13 +188,14 @@ export const useProjectData = defineStore('projectData', () => {
     isLoading.value = true
     let apiUri = `/all-house-unit/?building_unit__project=${project}`
     if (bldg) apiUri += `&building_unit=${bldg}`
-    return await api
-      .get(apiUri)
-      .then(res => {
-        houseUnitList.value = res.data.results
-        isLoading.value = false
-      })
-      .catch(err => errorHandle(err))
+    try {
+      const res = await api.get(apiUri)
+      houseUnitList.value = res.data.results
+    } catch (err) {
+      errorHandle(err)
+    } finally {
+      isLoading.value = false
+    }
   }
 
   const fetchNumUnitByType = (project: number, unit_type: number) =>
@@ -204,12 +205,13 @@ export const useProjectData = defineStore('projectData', () => {
       .catch(err => errorHandle(err))
 
   const createUnit = async (payload: CreateUnit) => {
-    const { project, unit_type, ...restPayload } = payload
-    const { unit_code, ...unitPayload } = restPayload
-    const houseUnits = { ...{ project, unit_type }, ...unitPayload, unit_code }
-
-    await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err))
-    await fetchNumUnitByType(project, unit_type)
+    try {
+      await api.post(`/house-unit/`, payload)
+      await fetchNumUnitByType(payload.project, payload.unit_type)
+    } catch (err) {
+      errorHandle(err)
+      throw err
+    }
   }
 
   const updateUnit = async (payload: HouseUnit) => {
@@ -220,7 +222,7 @@ export const useProjectData = defineStore('projectData', () => {
       .catch(err => errorHandle(err))
   }
 
-  const patchUnit = async (payload: HouseUnit & { bldg: number }) => {
+  const patchUnit = async (payload: HouseUnitUpdatePayload & { project: number; bldg: number }) => {
     const { pk, project, bldg, ...unitData } = payload
     return await api
       .put(`/house-unit/${pk}/`, unitData)
@@ -244,7 +246,7 @@ export const useProjectData = defineStore('projectData', () => {
 
   const fetchOptionItemList = (proj: number) =>
     api
-      .get(`/option-item/?project=${proj}`)
+      .get(`/option-item/?project=${proj}&limit=100`)
       .then(res => (optionItemList.value = res.data.results))
       .catch(err => errorHandle(err))
   // const fetchOptionItem = (pk: number) => api.get(`/option-item/${pk}/`)

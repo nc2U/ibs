@@ -42,20 +42,20 @@ const refConfirmModal = ref()
 const refAlertModal = ref()
 
 const form = reactive({
-  price_build: null as number | null,
-  price_land: null as number | null,
-  price_tax: null as number | null,
-  price: null as number | null,
+  price_build: null as number | '' | null,
+  price_land: null as number | '' | null,
+  price_tax: null as number | '' | null,
+  price: null as number | '' | null,
 })
+
+const toNullableNumber = (val: number | '' | null | undefined) =>
+  val !== null && val !== undefined && val !== '' ? Number(val) : null
 
 const confirmModalType = ref<'price' | 'payment'>('price')
 
 const payStore = usePayment()
-const {
-  createPaymentPerInstallment,
-  updatePaymentPerInstallment,
-  deletePaymentPerInstallment,
-} = payStore
+const { createPaymentPerInstallment, updatePaymentPerInstallment, deletePaymentPerInstallment } =
+  payStore
 
 const dataSetup = () => {
   if (props.price) {
@@ -82,23 +82,18 @@ watch(
 )
 
 const onComponentPriceChange = () => {
-  const b = Number(form.price_build) || 0
-  const l = Number(form.price_land) || 0
-  const t = Number(form.price_tax) || 0
-  if (
-    form.price_build !== null ||
-    form.price_land !== null ||
-    form.price_tax !== null
-  ) {
-    form.price = b + l + t
+  const b = toNullableNumber(form.price_build)
+  const l = toNullableNumber(form.price_land)
+  const t = toNullableNumber(form.price_tax)
+  if (b !== null || l !== null || t !== null) {
+    form.price = (b || 0) + (l || 0) + (t || 0)
+  } else {
+    form.price = null
   }
 }
 
-const areNumbersEqual = (a: number | null | undefined, b: number | null | undefined) => {
-  const numA = a !== null && a !== undefined && (a as any) !== '' ? Number(a) : null
-  const numB = b !== null && b !== undefined && (b as any) !== '' ? Number(b) : null
-  return numA === numB
-}
+const areNumbersEqual = (a: number | '' | null | undefined, b: number | '' | null | undefined) =>
+  toNullableNumber(a) === toNullableNumber(b)
 
 const isUnchanged = computed(() => {
   if (!props.price) return false
@@ -111,10 +106,7 @@ const isUnchanged = computed(() => {
 
 const isFormValid = computed(() => {
   return (
-    form.price !== null &&
-    form.price !== undefined &&
-    (form.price as any) !== '' &&
-    Number(form.price) > 0
+    form.price !== null && form.price !== undefined && form.price !== '' && Number(form.price) > 0
   )
 })
 
@@ -143,18 +135,9 @@ const onStorePrice = () => {
       order_group: Number(props.pFilters?.order_group),
       unit_type: Number(props.pFilters?.unit_type),
       unit_floor_type: props.floor.pk,
-      price_build:
-        form.price_build !== null && (form.price_build as any) !== ''
-          ? Number(form.price_build)
-          : null,
-      price_land:
-        form.price_land !== null && (form.price_land as any) !== ''
-          ? Number(form.price_land)
-          : null,
-      price_tax:
-        form.price_tax !== null && (form.price_tax as any) !== ''
-          ? Number(form.price_tax)
-          : null,
+      price_build: toNullableNumber(form.price_build),
+      price_land: toNullableNumber(form.price_land),
+      price_tax: toNullableNumber(form.price_tax),
       price: Number(form.price),
     }
     if (!props.price) emit('on-create', payload)
@@ -167,7 +150,14 @@ const onStorePrice = () => {
 const deletePrice = () => {
   if (isSuperAuth.value) {
     confirmModalType.value = 'price'
-    refConfirmModal.value.callModal()
+    refConfirmModal.value.callModal(
+      '공급가격 삭제',
+      '해당 데이터를 삭제하면 이후 복구할 수 없습니다. 이 공급가격 정보를 삭제 하시겠습니까?',
+      '',
+      'warning',
+      '삭제',
+      'warning',
+    )
   } else {
     refAlertModal.value.callModal()
   }
@@ -178,7 +168,6 @@ const modalAction = async () => {
     if (confirmModalType.value === 'price') {
       if (props.price?.pk) {
         emit('on-delete', props.price.pk)
-        dataReset()
       }
     } else if (confirmModalType.value === 'payment' && paymentEditId.value) {
       await deletePaymentPerInstallment(paymentEditId.value, props.price?.pk as number)
@@ -226,6 +215,10 @@ const handleUsedPayOrdersChanged = (usedIds: number[]) => {
 }
 
 const handlePaymentCreate = () => {
+  if (!canProjectUpdate.value) {
+    refAlertModal.value.callModal()
+    return
+  }
   paymentEditMode.value = false
   paymentEditId.value = null
   resetPaymentForm()
@@ -233,6 +226,10 @@ const handlePaymentCreate = () => {
 }
 
 const handlePaymentEdit = (item: PayInstallType) => {
+  if (!canProjectUpdate.value) {
+    refAlertModal.value.callModal()
+    return
+  }
   paymentEditMode.value = true
   paymentEditId.value = item.pk
   paymentForm.pay_order = item.pay_order
@@ -241,11 +238,18 @@ const handlePaymentEdit = (item: PayInstallType) => {
 }
 
 const handlePaymentDelete = (item: PayInstallType) => {
+  if (!isSuperAuth.value) {
+    refAlertModal.value.callModal()
+    return
+  }
   confirmModalType.value = 'payment'
   paymentEditId.value = item.pk
-  refConfirmModal.value.confirmOpen(
-    '',
+  refConfirmModal.value.callModal(
+    '특별 약정금액 삭제',
     `'${item.pay_order_info?.pay_name}' 특별 약정금액을 삭제하시겠습니까?`,
+    '',
+    'warning',
+    '삭제',
     'warning',
   )
 }
@@ -257,11 +261,18 @@ const resetPaymentForm = () => {
 }
 
 const paymentFormsCheck = computed(() => {
-  return paymentForm.pay_order && paymentForm.amount && paymentForm.amount > 0
+  const amt = paymentForm.amount as number | '' | null | undefined
+  return (
+    Boolean(paymentForm.pay_order) &&
+    amt !== null &&
+    amt !== undefined &&
+    amt !== '' &&
+    Number(amt) > 0
+  )
 })
 
 const handlePaymentModalAction = async () => {
-  if (!paymentFormsCheck.value) return
+  if (!paymentFormsCheck.value || !canProjectUpdate.value) return
 
   try {
     if (paymentEditMode.value && paymentEditId.value) {
@@ -288,17 +299,25 @@ const handlePaymentModalAction = async () => {
 
     refPaymentPerInstallment.value?.loadData()
     emit('payment-changed')
-  } catch (error: any) {
-    if (error?.response?.data?.non_field_errors) {
-      const errorMessage = error.response.data.non_field_errors[0]
+  } catch (error: unknown) {
+    const errData = (error as { response?: { data?: { non_field_errors?: string[] } } })?.response
+      ?.data
+    if (errData?.non_field_errors?.length) {
+      const errorMessage = errData.non_field_errors[0]
       if (errorMessage.includes('고유해야 합니다')) {
-        refAlertModal.value.alertOpen(
-          '',
+        refAlertModal.value.callModal(
+          '중복 등록 오류',
           '해당 납부 회차에 대한 특별 약정금액이 이미 존재합니다.',
-          'warning',
         )
-      } else refAlertModal.value.alertOpen('', errorMessage, 'danger')
-    } else refAlertModal.value.alertOpen('', '특별 약정금액 처리 중 오류가 발생했습니다.', 'danger')
+      } else refAlertModal.value.callModal('오류', errorMessage, '', 'danger')
+    } else {
+      refAlertModal.value.callModal(
+        '오류',
+        '특별 약정금액 처리 중 오류가 발생했습니다.',
+        '',
+        'danger',
+      )
+    }
   }
 }
 </script>
@@ -321,7 +340,8 @@ const handlePaymentModalAction = async () => {
         type="number"
         min="0"
         placeholder="타입별 건물가"
-        @input="onComponentPriceChange"
+        :disabled="!canProjectUpdate"
+        @update:model-value="onComponentPriceChange"
         @keydown.enter.prevent="onStorePrice"
       />
     </CTableDataCell>
@@ -331,7 +351,8 @@ const handlePaymentModalAction = async () => {
         type="number"
         min="0"
         placeholder="타입별 대지가"
-        @input="onComponentPriceChange"
+        :disabled="!canProjectUpdate"
+        @update:model-value="onComponentPriceChange"
         @keydown.enter.prevent="onStorePrice"
       />
     </CTableDataCell>
@@ -341,7 +362,8 @@ const handlePaymentModalAction = async () => {
         type="number"
         min="0"
         placeholder="타입별 부가세"
-        @input="onComponentPriceChange"
+        :disabled="!canProjectUpdate"
+        @update:model-value="onComponentPriceChange"
         @keydown.enter.prevent="onStorePrice"
       />
     </CTableDataCell>
@@ -351,6 +373,7 @@ const handlePaymentModalAction = async () => {
         type="number"
         min="0"
         placeholder="타입별 공급가격"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onStorePrice"
       />
@@ -359,13 +382,15 @@ const handlePaymentModalAction = async () => {
       <v-btn :color="btnColor" size="x-small" :disabled="formsCheck" @click="onStorePrice">
         {{ btnTitle }}
       </v-btn>
-      <v-btn color="warning" size="x-small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" :disabled="!price" @click="deletePrice">
+        삭제
+      </v-btn>
     </CTableDataCell>
     <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn
         :color="showPaymentDetails ? 'secondary' : 'info'"
         size="x-small"
-        class="mr-1"
+        class="me-1"
         :disabled="!price"
         @click="togglePaymentDetails"
       >
@@ -472,11 +497,11 @@ const handlePaymentModalAction = async () => {
 
 <style scoped>
 .payment-detail-row {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg);
 }
 
 .payment-detail-row td {
-  border-top: 1px solid #dee2e6;
-  border-bottom: 1px solid #dee2e6;
+  border-top: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid var(--bs-border-color);
 }
 </style>

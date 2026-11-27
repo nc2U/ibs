@@ -38,16 +38,25 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
 <template>
   <CTable hover responsive>
-    <colgroup>
-      <col style="width: 7%" />
-      <col style="width: 7%" />
-      <col style="width: 7%" />
+    <colgroup v-if="canProjectUpdate">
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 12%" />
+      <col style="width: 13%" />
+      <col style="width: 13%" />
+      <col style="width: 12%" />
+      <col style="width: 14%" />
       <col style="width: 8%" />
-      <col style="width: 7%" />
-      <col style="width: 7%" />
       <col style="width: 8%" />
-      <col v-if="canProjectUpdate" style="width: 7%" />
-      <col v-if="canProjectUpdate" style="width: 5%" />
+    </colgroup>
+    <colgroup v-else>
+      <col style="width: 12%" />
+      <col style="width: 12%" />
+      <col style="width: 16%" />
+      <col style="width: 15%" />
+      <col style="width: 15%" />
+      <col style="width: 14%" />
+      <col style="width: 16%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -62,7 +71,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell v-if="canProjectUpdate">특별약정 추가</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
-    <CTableBody v-if="!msg">
+    <CTableBody v-if="!msg && floorTypeList.length > 0">
       <Price
         v-for="floor in floorTypeList"
         :key="floor.pk"
@@ -76,7 +85,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       />
     </CTableBody>
 
-    <CTableBody v-else>
+    <CTableBody v-else-if="msg">
       <CTableRow>
         <CTableDataCell :colspan="canProjectUpdate ? 9 : 7" class="text-center p-5 text-info">
           {{ msg }}
@@ -84,7 +93,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       </CTableRow>
     </CTableBody>
 
-    <CTableBody v-if="!msg && floorTypeList.length === 0">
+    <CTableBody v-else>
       <CTableRow>
         <CTableDataCell :colspan="canProjectUpdate ? 9 : 7" class="text-center p-5 text-danger">
           <p>

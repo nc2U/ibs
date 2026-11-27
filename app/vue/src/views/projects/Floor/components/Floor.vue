@@ -117,7 +117,7 @@ watch(
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model="form.sort" required>
+      <CFormSelect v-model="form.sort" :disabled="!canProjectUpdate" required>
         <option value="">---------</option>
         <option value="1">공동주택</option>
         <option value="2">오피스텔</option>
@@ -133,6 +133,7 @@ watch(
         placeholder="시작 층"
         type="number"
         min="-10"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateFloor"
       />
@@ -143,6 +144,7 @@ watch(
         placeholder="종료 층"
         type="number"
         min="-10"
+        :disabled="!canProjectUpdate"
         required
         :invalid="isRangeInvalid"
         @keydown.enter.prevent="onUpdateFloor"
@@ -157,6 +159,7 @@ watch(
         v-model="form.extra_cond"
         maxlength="20"
         placeholder="방향/위치"
+        :disabled="!canProjectUpdate"
         @keydown.enter.prevent="onUpdateFloor"
       />
     </CTableDataCell>
@@ -166,6 +169,7 @@ watch(
         v-model="form.alias_name"
         maxlength="20"
         placeholder="층별 범위 명칭"
+        :disabled="!canProjectUpdate"
         required
         @keydown.enter.prevent="onUpdateFloor"
       />
@@ -174,7 +178,7 @@ watch(
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateFloor">
         수정
       </v-btn>
-      <v-btn color="warning" size="x-small" class="ml-1" @click="onDeleteFloor">삭제</v-btn>
+      <v-btn color="warning" size="x-small" class="ms-1" @click="onDeleteFloor">삭제</v-btn>
     </CTableDataCell>
   </CTableRow>
 

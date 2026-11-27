@@ -16,13 +16,16 @@ const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
+const parseNum = (val: number | '' | null | undefined): number | null =>
+  val !== undefined && val !== null && val !== '' ? Number(val) : null
+
 const form = reactive({
   sort: 'proof' as 'proof' | 'pledge',
   document_type: null as null | number,
-  quantity: undefined as undefined | number,
+  quantity: undefined as undefined | number | '',
   require_type: 'required' as 'required' | 'optional' | 'conditional',
   description: '',
-  display_order: undefined as undefined | number,
+  display_order: undefined as undefined | number | '',
 })
 
 const projStore = useProject()
@@ -35,11 +38,9 @@ const existingTypeIds = computed(() => contStore.requiredDocsList.map(doc => doc
 const validated = ref(false)
 
 const isFormValid = computed(() => {
-  return (
-    Boolean(form.document_type) &&
-    (form.quantity === undefined || form.quantity === null || form.quantity >= 0) &&
-    (form.display_order === undefined || form.display_order === null || form.display_order >= 0)
-  )
+  const qty = parseNum(form.quantity)
+  const order = parseNum(form.display_order)
+  return Boolean(form.document_type) && (qty === null || qty >= 0) && (order === null || order >= 0)
 })
 
 const onSubmit = (event: Event) => {
@@ -57,14 +58,19 @@ const onSubmit = (event: Event) => {
 
 const modalAction = async () => {
   if (!project.value || !form.document_type) return
+  const qty = parseNum(form.quantity)
+  const order = parseNum(form.display_order)
 
   try {
     await contStore.createRequiredDoc({
-      ...form,
+      sort: form.sort,
+      document_type: Number(form.document_type),
+      require_type: form.require_type,
+      description: form.description,
       project: project.value,
-      quantity: form.quantity || 1,
-      display_order: form.display_order || 0,
-    } as any)
+      quantity: qty !== null ? qty : 1,
+      display_order: order !== null ? order : 0,
+    })
     validated.value = false
     refConfirmModal.value.close()
     resetForm()

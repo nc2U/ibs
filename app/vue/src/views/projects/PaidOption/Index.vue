@@ -50,11 +50,6 @@ const dataReset = () => {
   pDataStore.optionItemList = []
 }
 
-const projSelect = (target: number | null) => {
-  dataReset()
-  if (target) dataSetup(target)
-}
-
 watch(
   () => project.value,
   newProjId => {
@@ -73,20 +68,11 @@ onBeforeMount(async () => {
 <template>
   <ProjectAuthGuard>
     <Loading v-model:active="loading" />
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <OptionAddForm
-          v-if="canProjectUpdate"
-          :disabled="!project"
-          @on-submit="onSubmit"
-        />
+        <OptionAddForm v-if="canProjectUpdate" :disabled="!project" @on-submit="onSubmit" />
         <OptionFormList @on-update="onUpdateOption" @on-delete="onDeleteOption" />
       </CCardBody>
     </ContentBody>

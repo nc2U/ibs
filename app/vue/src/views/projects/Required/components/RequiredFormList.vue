@@ -43,11 +43,7 @@ const requiredDocsList = computed(() => contStore.requiredDocsList)
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="requiredDocsList.length > 0">
-      <Required
-        v-for="doc in requiredDocsList"
-        :key="doc.pk"
-        :required-doc="doc"
-      />
+      <Required v-for="doc in requiredDocsList" :key="doc.pk" :required-doc="doc" />
     </CTableBody>
 
     <CTableBody v-else>

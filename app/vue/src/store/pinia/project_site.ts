@@ -50,17 +50,21 @@ export const useSite = defineStore('site', () => {
     incorporated: number | null
   }>()
 
-  const fetchAllSites = (project: number) => {
-    api.get(`/all-site/?project=${project}`).then(res => {
-      allSites.value = res.data.results
-    })
-  }
+  const fetchAllSites = (project: number) =>
+    api
+      .get(`/all-site/?project=${project}`)
+      .then(res => {
+        allSites.value = res.data.results
+      })
+      .catch(err => errorHandle(err))
 
-  const fetchSitesTotal = (project: number) => {
-    api.get(`/sites-total/?project=${project}`).then(res => {
-      getSitesTotal.value = res.data.results[0]
-    })
-  }
+  const fetchSitesTotal = (project: number) =>
+    api
+      .get(`/sites-total/?project=${project}`)
+      .then(res => {
+        getSitesTotal.value = res.data.results?.[0]
+      })
+      .catch(err => errorHandle(err))
 
   const siteList = ref<Site[]>([])
   const getSiteList = computed(() =>
@@ -84,49 +88,79 @@ export const useSite = defineStore('site', () => {
 
   const fetchSiteList = (payload: SiteFilter) => {
     const { project, limit, page, search } = payload
-    api
-      .get(
-        `/site/?project=${project}&limit=${limit || 10}&page=${page || 1}&search=${search || ''}`,
-      )
+    const params = new URLSearchParams({
+      project: String(project ?? ''),
+      limit: String(limit || 10),
+      page: String(page || 1),
+      search: search || '',
+    })
+    return api
+      .get(`/site/?${params.toString()}`)
       .then(res => {
         siteList.value = res.data.results
         siteCount.value = res.data.count
-        fetchSitesTotal(project as number)
+        return fetchSitesTotal(project as number)
       })
       .catch(err => errorHandle(err))
   }
 
-  const createSite = (payload: { form: FormData; page?: number; search?: string }) => {
-    const { page, search, form } = payload
-    api
+  const createSite = (payload: {
+    form: FormData
+    limit?: number | ''
+    page?: number
+    search?: string
+  }): Promise<boolean> => {
+    const { limit, page, search, form } = payload
+    return api
       .post(`/site/`, form)
-      .then(res => {
-        fetchSiteList({ project: res.data.project, page, search })
-        message()
+      .then(res =>
+        fetchSiteList({ project: res.data.project, limit, page, search }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
   }
 
-  const updateSite = (pk: number, payload: { form: FormData; page?: number; search?: string }) => {
-    const { page, search, form } = payload
-    api
+  const updateSite = (
+    pk: number,
+    payload: { form: FormData; limit?: number | ''; page?: number; search?: string },
+  ): Promise<boolean> => {
+    const { limit, page, search, form } = payload
+    return api
       .put(`/site/${pk}/`, form)
-      .then(res => {
-        fetchSiteList({ project: res.data.project, page, search })
-        message()
+      .then(res =>
+        fetchSiteList({ project: res.data.project, limit, page, search }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
   }
 
-  const deleteSite = (pk: number, project: number) => {
+  const deleteSite = (
+    pk: number,
+    project: number,
+    filters?: Partial<SiteFilter>,
+  ): Promise<boolean> =>
     api
       .delete(`/site/${pk}/`)
-      .then(() => {
-        fetchSiteList({ project })
-        message('warning', '', '해당 부지 정보가 삭제되었습니다.')
+      .then(() =>
+        fetchSiteList({ ...filters, project }).then(() => {
+          message('warning', '', '해당 부지 정보가 삭제되었습니다.')
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
-  }
 
   const allOwners = ref<AllOwner[]>([])
   const getOwners = computed(() =>
@@ -144,50 +178,61 @@ export const useSite = defineStore('site', () => {
   const siteOwnerList = ref<SiteOwner[]>([])
   const siteOwnerCount = ref(0)
 
-  const fetchOwnersTotal = (project: number) => {
-    api.get(`/owners-total/?project=${project}`).then(res => {
-      getOwnersTotal.value = res.data.results[0]
-    })
-  }
+  const fetchOwnersTotal = (project: number) =>
+    api
+      .get(`/owners-total/?project=${project}`)
+      .then(res => {
+        getOwnersTotal.value = res.data.results?.[0]
+      })
+      .catch(err => errorHandle(err))
 
-  const fetchAllOwners = (project: number) => {
-    api.get(`/all-owner/?project=${project}`).then(res => {
-      allOwners.value = res.data.results
-    })
-  }
+  const fetchAllOwners = (project: number) =>
+    api
+      .get(`/all-owner/?project=${project}`)
+      .then(res => {
+        allOwners.value = res.data.results
+      })
+      .catch(err => errorHandle(err))
 
-  const fetchSiteOwner = (pk: number) => {
+  const fetchSiteOwner = (pk: number) =>
     api
       .get(`/site-owner/${pk}/`)
       .then(res => {
         siteOwner.value = res.data
       })
       .catch(err => errorHandle(err))
-  }
 
   const fetchSiteOwnerList = (payload: OwnerFilter) => {
     const { project, limit, page, sort, is_use_consent, search } = payload
-    api
-      .get(
-        `/site-owner/?project=${project}&limit=${limit || 10}&page=${page || 1}&own_sort=${sort || ''}&use_consent=${is_use_consent || ''}&search=${search || ''}`,
-      )
+    const params = new URLSearchParams({
+      project: String(project ?? ''),
+      limit: String(limit || 10),
+      page: String(page || 1),
+      own_sort: sort || '',
+      use_consent: is_use_consent || '',
+      search: search || '',
+    })
+    return api
+      .get(`/site-owner/?${params.toString()}`)
       .then(res => {
         siteOwnerList.value = res.data.results
         siteOwnerCount.value = res.data.count
-        fetchOwnersTotal(project as number)
+        return fetchOwnersTotal(project as number)
       })
       .catch(err => errorHandle(err))
   }
 
   const findSiteOwnerPage = async (highlightId: number, filters: OwnerFilter) => {
-    let url = `/site-owner/find_page/?highlight_id=${highlightId}`
-    url += `&project=${filters.project}`
-    if (filters.sort) url += `&own_sort=${filters.sort}`
-    if (filters.is_use_consent) url += `&use_consent=${filters.is_use_consent}`
-    if (filters.search) url += `&search=${filters.search}`
+    const params = new URLSearchParams({
+      highlight_id: String(highlightId),
+      project: String(filters.project ?? ''),
+    })
+    if (filters.sort) params.append('own_sort', filters.sort)
+    if (filters.is_use_consent) params.append('use_consent', filters.is_use_consent)
+    if (filters.search) params.append('search', filters.search)
 
     try {
-      const response = await api.get(url)
+      const response = await api.get(`/site-owner/find_page/?${params.toString()}`)
       return response.data.page
     } catch (err: unknown) {
       errorHandle(err)
@@ -195,49 +240,86 @@ export const useSite = defineStore('site', () => {
     }
   }
 
-  const createSiteOwner = (payload: SiteOwner & OwnerFilter) => {
+  const createSiteOwner = (payload: SiteOwner & OwnerFilter): Promise<boolean> => {
     const { limit, page, sort, is_use_consent, search, ...formData } = payload
-    api
+    return api
       .post(`/site-owner/`, formData)
-      .then(res => {
-        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
-        message()
+      .then(res =>
+        fetchSiteOwnerList({
+          project: res.data.project,
+          limit,
+          page,
+          sort,
+          is_use_consent,
+          search,
+        }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
   }
 
-  const updateSiteOwner = (payload: SiteOwner & OwnerFilter) => {
+  const updateSiteOwner = (payload: SiteOwner & OwnerFilter): Promise<boolean> => {
     const { pk, limit, page, sort, is_use_consent, search, ...formData } = payload
-    api
+    return api
       .put(`/site-owner/${pk}/`, formData)
-      .then(res => {
-        fetchSiteOwnerList({ project: res.data.project, limit, page, sort, is_use_consent, search })
-        message()
+      .then(res =>
+        fetchSiteOwnerList({
+          project: res.data.project,
+          limit,
+          page,
+          sort,
+          is_use_consent,
+          search,
+        }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
   }
 
-  const deleteSiteOwner = (pk: number, project: number) => {
+  const deleteSiteOwner = (
+    pk: number,
+    project: number,
+    filters?: Partial<OwnerFilter>,
+  ): Promise<boolean> =>
     api
       .delete(`/site-owner/${pk}/`)
-      .then(() => {
-        fetchSiteOwnerList({ project })
-        message('warning', '', '해당 소유자 정보가 삭제되었습니다.')
+      .then(() =>
+        fetchSiteOwnerList({ ...filters, project }).then(() => {
+          message('warning', '', '해당 소유자 정보가 삭제되었습니다.')
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
-  }
 
   const relationList = ref<Relation[]>([])
 
-  const patchRelation = (payload: Relation & OwnerFilter) => {
+  const patchRelation = (payload: Relation & OwnerFilter): Promise<boolean> => {
     const { pk, project, limit, page, sort, is_use_consent, search, ...relationData } = payload
-    api
+    return api
       .patch(`/site-relation/${pk}/`, relationData)
-      .then(() => {
-        fetchSiteOwnerList({ project, limit, page, sort, is_use_consent, search })
-        message()
+      .then(() =>
+        fetchSiteOwnerList({ project, limit, page, sort, is_use_consent, search }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
   }
 
   const siteContList = ref<SiteContract[]>([])
@@ -247,37 +329,43 @@ export const useSite = defineStore('site', () => {
     contracted_area: number | null
   }>()
 
-  const fetchContsTotal = (project: number) => {
+  const fetchContsTotal = (project: number) =>
     api
       .get(`/conts-total/?project=${project}`)
       .then(res => {
         getContsTotal.value = res.data.results?.[0]
       })
       .catch(err => errorHandle(err))
-  }
 
   const fetchSiteContList = (payload: ContFilter) => {
     const { project, limit, page, own_sort, search } = payload
-    api
-      .get(
-        `/site-contract/?project=${project}&limit=${limit || 10}&page=${page || 1}&owner__own_sort=${own_sort || ''}&search=${search || ''}`,
-      )
+    const params = new URLSearchParams({
+      project: String(project ?? ''),
+      limit: String(limit || 10),
+      page: String(page || 1),
+      owner__own_sort: own_sort || '',
+      search: search || '',
+    })
+    return api
+      .get(`/site-contract/?${params.toString()}`)
       .then(res => {
         siteContList.value = res.data.results
         siteContCount.value = res.data.count
-        fetchContsTotal(project as number)
+        return fetchContsTotal(project as number)
       })
       .catch(err => errorHandle(err))
   }
 
   const findSiteContractPage = async (highlightId: number, filters: ContFilter) => {
-    let url = `/site-contract/find_page/?highlight_id=${highlightId}`
-    url += `&project=${filters.project}`
-    if (filters.own_sort) url += `&owner__own_sort=${filters.own_sort}`
-    if (filters.search) url += `&search=${filters.search}`
+    const params = new URLSearchParams({
+      highlight_id: String(highlightId),
+      project: String(filters.project ?? ''),
+    })
+    if (filters.own_sort) params.append('owner__own_sort', filters.own_sort)
+    if (filters.search) params.append('search', filters.search)
 
     try {
-      const response = await api.get(url)
+      const response = await api.get(`/site-contract/find_page/?${params.toString()}`)
       return response.data.page
     } catch (err: unknown) {
       errorHandle(err)
@@ -285,35 +373,55 @@ export const useSite = defineStore('site', () => {
     }
   }
 
-  const createSiteCont = (payload: FormData) => {
+  const createSiteCont = (payload: FormData, filters?: Partial<ContFilter>): Promise<boolean> =>
     api
       .post(`/site-contract/`, payload)
-      .then(res => {
-        fetchSiteContList({ project: res.data.project })
-        message()
+      .then(res =>
+        fetchSiteContList({ ...filters, project: res.data.project }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
-  }
 
-  const updateSiteCont = (pk: number, payload: FormData) => {
+  const updateSiteCont = (
+    pk: number,
+    payload: FormData,
+    filters?: Partial<ContFilter>,
+  ): Promise<boolean> =>
     api
       .put(`/site-contract/${pk}/`, payload)
-      .then(res => {
-        fetchSiteContList({ project: res.data.project })
-        message()
+      .then(res =>
+        fetchSiteContList({ ...filters, project: res.data.project }).then(() => {
+          message()
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
-  }
 
-  const deleteSiteCont = (pk: number, project: number) => {
+  const deleteSiteCont = (
+    pk: number,
+    project: number,
+    filters?: Partial<ContFilter>,
+  ): Promise<boolean> =>
     api
       .delete(`/site-contract/${pk}/`)
-      .then(() => {
-        fetchSiteContList({ project })
-        message('warning', '', '해당 부지 매입계약 정보가 삭제되었습니다.')
+      .then(() =>
+        fetchSiteContList({ ...filters, project }).then(() => {
+          message('warning', '', '해당 부지 매입계약 정보가 삭제되었습니다.')
+          return true
+        }),
+      )
+      .catch(err => {
+        errorHandle(err)
+        return false
       })
-      .catch(err => errorHandle(err))
-  }
 
   return {
     allSites,

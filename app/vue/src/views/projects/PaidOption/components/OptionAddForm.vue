@@ -25,6 +25,9 @@ const getTypes = inject<TypeOption[]>('getTypes')
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
+const toNullableNumber = (val: number | '' | null | undefined): number | null =>
+  val !== null && val !== undefined && val !== '' ? Number(val) : null
+
 const validated = ref(false)
 const form = reactive<{
   types: number[]
@@ -32,9 +35,9 @@ const form = reactive<{
   opt_name: string
   opt_desc: string
   opt_maker: string
-  opt_price: number | null
-  opt_deposit: number | null
-  opt_balance: number | null
+  opt_price: number | '' | null
+  opt_deposit: number | '' | null
+  opt_balance: number | '' | null
 }>({
   types: [],
   opt_code: '',
@@ -55,14 +58,11 @@ watch(
 
 // 계약금 + 잔금의 합계가 옵션가격과 일치해야 함 (둘 다 입력된 경우)
 const isDepositBalanceValid = computed(() => {
-  if (
-    form.opt_price !== null &&
-    form.opt_deposit !== null &&
-    (form.opt_deposit as any) !== '' &&
-    form.opt_balance !== null &&
-    (form.opt_balance as any) !== ''
-  ) {
-    return Number(form.opt_deposit) + Number(form.opt_balance) === Number(form.opt_price)
+  const price = toNullableNumber(form.opt_price)
+  const deposit = toNullableNumber(form.opt_deposit)
+  const balance = toNullableNumber(form.opt_balance)
+  if (price !== null && deposit !== null && balance !== null) {
+    return deposit + balance === price
   }
   return true
 })
@@ -70,23 +70,15 @@ const isDepositBalanceValid = computed(() => {
 const isFormValid = computed(() => {
   const hasTypes = form.types.length > 0
   const hasName = Boolean(form.opt_name.trim())
-  const hasPrice = form.opt_price !== null && form.opt_price >= 0
-  const depositValid =
-    form.opt_deposit === null ||
-    (form.opt_deposit as any) === '' ||
-    Number(form.opt_deposit) >= 0
-  const balanceValid =
-    form.opt_balance === null ||
-    (form.opt_balance as any) === '' ||
-    Number(form.opt_balance) >= 0
+  const price = toNullableNumber(form.opt_price)
+  const deposit = toNullableNumber(form.opt_deposit)
+  const balance = toNullableNumber(form.opt_balance)
+  const hasPrice = price !== null && price >= 0
+  const depositValid = deposit === null || deposit >= 0
+  const balanceValid = balance === null || balance >= 0
 
   return (
-    hasTypes &&
-    hasName &&
-    hasPrice &&
-    depositValid &&
-    balanceValid &&
-    isDepositBalanceValid.value
+    hasTypes && hasName && hasPrice && depositValid && balanceValid && isDepositBalanceValid.value
   )
 })
 
@@ -104,21 +96,18 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = () => {
+  const price = toNullableNumber(form.opt_price)
+  if (price === null) return
+
   emit('on-submit', {
     types: [...form.types],
     opt_code: form.opt_code.trim() || null,
     opt_name: form.opt_name.trim(),
     opt_desc: form.opt_desc.trim() || null,
     opt_maker: form.opt_maker.trim() || null,
-    opt_price: Number(form.opt_price),
-    opt_deposit:
-      form.opt_deposit !== null && (form.opt_deposit as any) !== ''
-        ? Number(form.opt_deposit)
-        : null,
-    opt_balance:
-      form.opt_balance !== null && (form.opt_balance as any) !== ''
-        ? Number(form.opt_balance)
-        : null,
+    opt_price: price,
+    opt_deposit: toNullableNumber(form.opt_deposit),
+    opt_balance: toNullableNumber(form.opt_balance),
   })
   validated.value = false
   refConfirmModal.value.close()
@@ -227,7 +216,7 @@ const resetForm = () => {
               min="0"
               :disabled="disabled"
             />
-            <div v-if="validated && !isDepositBalanceValid" class="text-danger small mt-1">
+            <div v-if="!isDepositBalanceValid" class="text-danger small mt-1">
               계약금 + 잔금의 합계가 옵션 가격과 일치해야 합니다.
             </div>
           </CCol>

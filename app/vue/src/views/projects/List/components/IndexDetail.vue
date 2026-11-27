@@ -168,7 +168,8 @@ const toUpdate = () => {
   </CCardBody>
 
   <CCardBody v-else class="text-center p-5 text-secondary">
-    등록된 프로젝트 정보가 없거나 선택되지 않았습니다. 상단에서 프로젝트를 선택하거나 신규 등록해주세요.
+    등록된 프로젝트 정보가 없거나 선택되지 않았습니다. 상단에서 프로젝트를 선택하거나 신규
+    등록해주세요.
   </CCardBody>
 
   <CCardFooter>
