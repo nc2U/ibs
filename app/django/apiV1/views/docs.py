@@ -550,12 +550,16 @@ class OfficialLetterFilterSet(FilterSet):
 class OfficialLetterViewSet(viewsets.ModelViewSet):
     queryset = OfficialLetter.objects.select_related(
         'company', 'company__logo',
-        'seal', 'seal__internal_manager__duty', 'seal__internal_manager__position', 'seal__final_approval_duty',
-        'co_seal', 'co_seal__internal_manager__duty', 'co_seal__internal_manager__position', 'co_seal__final_approval_duty',
+        'seal', 'seal__internal_manager__position', 'seal__final_approval_duty',
+        'co_seal', 'co_seal__internal_manager__position', 'co_seal__final_approval_duty',
         'creator', 'creator__staff', 'updator',
         'approval_document', 'approval_document__drafter__staff',
         'parent_inbound_letter'
-    ).prefetch_related('attachments')
+    ).prefetch_related(
+        'attachments',
+        'seal__internal_manager__assignments__duty',
+        'co_seal__internal_manager__assignments__duty',
+    )
     serializer_class = OfficialLetterSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, HqProjectModulePermission)
     pagination_class = PageNumberPaginationOneHundred
