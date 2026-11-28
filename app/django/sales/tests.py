@@ -2123,6 +2123,93 @@ class SalesImprovementTests(APITestCase):
         self.assertIsNone(mapping.approved_at)
         self.assertEqual(mapping.approval_note, '계약금 미완납')
 
+    def test_audit_security_and_settled_mapping_locks(self):
+        """기정산 계약 매핑 수정/삭제/승인변경 409 차단, ProtectedError 409 변환, PATCH None 초기화 및 쿼리파라미터 RLS 검증"""
+        from sales.services import generate_period_payouts
+
+        # 1. query param (agency__project / team__agency__project / contract__project) 타 프로젝트 조회 403 차단
+        self.client.force_authenticate(user=self.normal_user)
+        for endpoint in (
+            f'/api/v1/sales-team/?agency__project={self.project2.id}',
+            f'/api/v1/sales-person/?team__agency__project={self.project2.id}',
+            f'/api/v1/sales-contract-agent/?contract__project={self.project2.id}',
+            f'/api/v1/sales-clawback/?contract__project={self.project2.id}',
+        ):
+            res_forbidden = self.client.get(endpoint)
+            self.assertEqual(res_forbidden.status_code, http_status.HTTP_403_FORBIDDEN, endpoint)
+
+        # 2. sales.policy 전용 사용자(sales.read 없음) 정책 목록 조회 허용 및 period_title 포함 검증
+        policy_user = User.objects.create_user(username='policy_only_user', password='password123')
+        policy_role = Role.objects.create(name='PolicyOnly', category='ibs_pr_manage', creator=self.admin_user)
+        policy_role.permissions.add(Permission.objects.get(code='sales.policy'))
+        Member.objects.create(user=policy_user, project=self.issue_project1).roles.add(policy_role)
+        CommissionPolicy.objects.create(
+            project=self.project1, name='정책권한전용테스트', agent_fee=1000000, start_date=date(2026, 9, 1)
+        )
+        self.client.force_authenticate(user=policy_user)
+        res_pol = self.client.get(f'/api/v1/sales-policy/?project={self.project1.id}')
+        self.assertEqual(res_pol.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_pol.data['count'], 1)
+
+        # 3. ContractSalesAgentSerializer PATCH 시 sales_person=None + 외주 agency 전환 정상 검증
+        self.client.force_authenticate(user=self.admin_user)
+        outsource_agency = SalesAgency.objects.create(
+            project=self.project1, name='외주 테스트', is_direct_managed=False
+        )
+        Contractor.objects.create(contract=self.contract1, name='계약자1', status='2', contract_date=date(2026, 9, 5))
+        mapping = ContractSalesAgent.objects.create(
+            contract=self.contract1,
+            sales_person=self.person1,
+            contract_date=date(2026, 9, 5),
+            is_settlement_approved=True,
+        )
+        res_switch = self.client.patch(
+            f'/api/v1/sales-contract-agent/{mapping.id}/',
+            {'agency': outsource_agency.id, 'sales_person': None},
+            format='json',
+        )
+        self.assertEqual(res_switch.status_code, http_status.HTTP_200_OK)
+        mapping.refresh_from_db()
+        self.assertEqual(mapping.agency_id, outsource_agency.id)
+        self.assertIsNone(mapping.sales_person_id)
+
+        # 4. sales.person 참조 중인 팀/인력 삭제 시 500 대신 409 Conflict 반환
+        res_del_team = self.client.delete(f'/api/v1/sales-team/{self.team1.id}/')
+        self.assertEqual(res_del_team.status_code, http_status.HTTP_409_CONFLICT)
+
+        # 5. 기정산 계약 매핑 수정·삭제·toggle-approval 409 차단 및 CommissionPayout period_title 노출
+        direct_contract_ku = KeyUnit.objects.create(project=self.project1, unit_type=self.unit_type1, unit_code='U99')
+        direct_contract = Contract.objects.create(
+            project=self.project1, serial_number='CONT-999', order_group=self.order_group1,
+            unit_type=self.unit_type1, key_unit=direct_contract_ku
+        )
+        Contractor.objects.create(contract=direct_contract, name='정산자', status='2', contract_date=date(2026, 9, 6))
+        settled_mapping = ContractSalesAgent.objects.create(
+            contract=direct_contract, sales_person=self.person1, contract_date=date(2026, 9, 6),
+            is_settlement_approved=True
+        )
+        period = SettlementPeriod.objects.create(
+            project=self.project1, title='2026년 9월 정기정산', start_date=date(2026, 9, 1), end_date=date(2026, 9, 30)
+        )
+        generate_period_payouts(period)
+
+        res_payouts = self.client.get(f'/api/v1/sales-payout/?period={period.id}')
+        self.assertEqual(res_payouts.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_payouts.data['results'][0]['period_title'], '2026년 9월 정기정산')
+
+        self.assertEqual(
+            self.client.patch(f'/api/v1/sales-contract-agent/{settled_mapping.id}/', {'note': '변조'}, format='json').status_code,
+            http_status.HTTP_409_CONFLICT,
+        )
+        self.assertEqual(
+            self.client.post(f'/api/v1/sales-contract-agent/{settled_mapping.id}/toggle-approval/', {'is_settlement_approved': False}, format='json').status_code,
+            http_status.HTTP_409_CONFLICT,
+        )
+        self.assertEqual(
+            self.client.delete(f'/api/v1/sales-contract-agent/{settled_mapping.id}/').status_code,
+            http_status.HTTP_409_CONFLICT,
+        )
+
 
 
 

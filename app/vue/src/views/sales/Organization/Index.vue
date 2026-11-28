@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
+import { usePerms } from '@/composables/usePerms'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import type { Project } from '@/store/types/project'
@@ -15,9 +16,13 @@ import TeamFormModal from './components/TeamFormModal.vue'
 import PersonFormModal from './components/PersonFormModal.vue'
 import PersonDocumentModal from './components/PersonDocumentModal.vue'
 
+const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project | null)?.pk)
 const navMenu = useSalesNavMenu(project)
+const canSalesManage = computed(() =>
+  project.value ? can(PERM.SALES_MANAGE, project.value) : can(PERM.SALES_MANAGE),
+)
 
 const salesStore = useSales()
 
@@ -31,6 +36,14 @@ const teamModalRef = ref()
 const personModalRef = ref()
 const docModalRef = ref()
 
+const resetState = () => {
+  selectedAgencyId.value = null
+  selectedTeamId.value = null
+  salesStore.agencyList = []
+  salesStore.teamList = []
+  salesStore.personList = []
+}
+
 const loadData = async (projId: number) => {
   await Promise.all([
     salesStore.fetchAgencyList(projId),
@@ -39,27 +52,16 @@ const loadData = async (projId: number) => {
   ])
 }
 
-const projSelect = (projId: number | null) => {
-  selectedAgencyId.value = null
-  selectedTeamId.value = null
-  if (!projId) {
-    salesStore.agencyList = []
-    salesStore.teamList = []
-    salesStore.personList = []
-  }
-}
-
 watch(
   project,
-  newVal => {
-    selectedAgencyId.value = null
-    selectedTeamId.value = null
-    if (newVal) {
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      resetState()
+    }
+    if (newVal && canSalesManage.value) {
       loadData(newVal)
-    } else {
-      salesStore.agencyList = []
-      salesStore.teamList = []
-      salesStore.personList = []
+    } else if (!newVal) {
+      resetState()
     }
   },
   { immediate: true },
@@ -86,15 +88,32 @@ const onSelectTeam = (teamId: number | null, agencyId?: number | null) => {
 }
 
 // 모달 오픈
-const openAddAgency = () => agencyModalRef.value?.open()
-const openEditAgency = (agency: SalesAgency) => agencyModalRef.value?.open(agency)
+const openAddAgency = () => {
+  if (!canSalesManage.value) return
+  agencyModalRef.value?.open()
+}
+const openEditAgency = (agency: SalesAgency) => {
+  if (!canSalesManage.value) return
+  agencyModalRef.value?.open(agency)
+}
 
-const openAddTeam = (agencyId?: number) => teamModalRef.value?.open(undefined, agencyId)
-const openEditTeam = (team: SalesTeam) => teamModalRef.value?.open(team)
+const openAddTeam = (agencyId?: number) => {
+  if (!canSalesManage.value) return
+  teamModalRef.value?.open(undefined, agencyId)
+}
+const openEditTeam = (team: SalesTeam) => {
+  if (!canSalesManage.value) return
+  teamModalRef.value?.open(team)
+}
 
-const openAddPerson = () =>
+const openAddPerson = () => {
+  if (!canSalesManage.value) return
   personModalRef.value?.open(undefined, selectedTeamId.value ?? undefined)
-const openEditPerson = (person: SalesPerson) => personModalRef.value?.open(person)
+}
+const openEditPerson = (person: SalesPerson) => {
+  if (!canSalesManage.value) return
+  personModalRef.value?.open(person)
+}
 const openDocModal = (person: SalesPerson) => docModalRef.value?.open(person)
 
 const onDataChanged = async () => {
@@ -105,13 +124,8 @@ const onDataChanged = async () => {
 </script>
 
 <template>
-  <SalesAuthGuard>
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+  <SalesAuthGuard :project="project" :required-perm="PERM.SALES_MANAGE">
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="p-3 p-md-4 pb-5">
@@ -172,7 +186,7 @@ const onDataChanged = async () => {
         @saved="onDataChanged"
         @open-docs="openDocModal"
       />
-      <PersonDocumentModal ref="docModalRef" @updated="onDataChanged" />
+      <PersonDocumentModal ref="docModalRef" :project="project" @updated="onDataChanged" />
     </ContentBody>
   </SalesAuthGuard>
 </template>

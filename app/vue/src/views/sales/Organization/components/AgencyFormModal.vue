@@ -2,6 +2,7 @@
 import { reactive, ref, watch } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesAgency } from '@/store/types/sales'
+import { colorLight } from '@/utils/cssMixins'
 import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 
@@ -93,11 +94,11 @@ const submit = async (event: Event) => {
       phone: form.is_direct_managed ? '' : form.phone,
     }
 
-    if (isEdit.value && targetId.value) {
-      await salesStore.updateAgency(targetId.value, payload)
-    } else {
-      await salesStore.createAgency(payload)
-    }
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updateAgency(targetId.value, payload)
+        : await salesStore.createAgency(payload)
+    if (!ok) return
     modalRef.value?.close()
     emit('saved')
   } finally {
@@ -177,7 +178,7 @@ defineExpose({ open })
             {{ isEdit ? '수정 저장' : '등록하기' }}
           </v-btn>
           <v-btn
-            color="light"
+            :color="colorLight"
             size="small"
             flat
             :disabled="isSubmitting"

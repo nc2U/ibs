@@ -4,36 +4,35 @@
  * 영업인력 개인별 전 회차 누적 수수료 지급 이력 모달
  */
 import { computed, ref } from 'vue'
-import api from '@/api'
-import type { CommissionClawback, CommissionPayout } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
+import { useSales } from '@/store/pinia/sales'
+import type { CommissionPayout } from '@/store/types/sales'
+import { colorLight, TableSecondary } from '@/utils/cssMixins'
+
+const salesStore = useSales()
 
 const isVisible = ref(false)
 const isLoading = ref(false)
+const loadError = ref(false)
 
 const personId = ref<number | null>(null)
 const personName = ref<string>('')
-const historyList = ref<CommissionPayout[]>([])
-const clawbackList = ref<CommissionClawback[]>([])
+const historyList = computed(() => salesStore.personPayoutHistoryList)
+const clawbackList = computed(() => salesStore.personClawbackList)
 
 const open = async (payout: CommissionPayout) => {
   personId.value = payout.sales_person
   personName.value = payout.sales_person_name || ''
-  historyList.value = []
-  clawbackList.value = []
+  salesStore.personPayoutHistoryList = []
+  salesStore.personClawbackList = []
+  loadError.value = false
   isVisible.value = true
   isLoading.value = true
   try {
-    // 해당 인력의 전 회차 지급 이력
-    const params = new URLSearchParams()
-    params.append('sales_person', String(payout.sales_person))
-    params.append('limit', '500')
-    const [payoutRes, clawbackRes] = await Promise.all([
-      api.get(`/sales-payout/?${params}`),
-      api.get(`/sales-clawback/?sales_person=${payout.sales_person}`),
+    const [okHistory, okClawback] = await Promise.all([
+      salesStore.fetchPersonPayoutHistory(payout.sales_person),
+      salesStore.fetchPersonClawbacks(payout.sales_person),
     ])
-    historyList.value = payoutRes.data.results ?? payoutRes.data
-    clawbackList.value = clawbackRes.data.results ?? clawbackRes.data
+    loadError.value = !(okHistory && okClawback)
   } finally {
     isLoading.value = false
   }
@@ -61,9 +60,9 @@ const payStatusColor = (status: string) => {
 
 <template>
   <CModal :visible="isVisible" size="xl" alignment="center" @close="close">
-    <CModalHeader>
+    <CModalHeader class="text-body">
       <CModalTitle>
-        <v-icon icon="mdi-account-cash" size="small" class="mr-1 text-primary" />
+        <v-icon icon="mdi-account-cash" size="small" class="me-1 text-primary" />
         {{ personName }} — 전 회차 수수료 지급 이력
       </CModalTitle>
     </CModalHeader>
@@ -72,6 +71,11 @@ const payStatusColor = (status: string) => {
       <div v-if="isLoading" class="py-5 text-center text-muted">
         <v-progress-circular indeterminate color="primary" size="36" class="mb-2" />
         <div>이력 조회 중...</div>
+      </div>
+
+      <div v-else-if="loadError" class="py-5 text-center text-danger">
+        <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2" />
+        <div>지급 이력을 불러오는 중 오류가 발생했습니다.</div>
       </div>
 
       <template v-else>
@@ -128,8 +132,7 @@ const payStatusColor = (status: string) => {
           <CTableBody>
             <CTableRow v-for="p in historyList" :key="p.id">
               <CTableDataCell class="small fw-semibold text-start ps-3">
-                <!-- period 정보는 API에서 period_title 등을 반환하지 않으므로 id 표기 -->
-                <span class="text-muted">#{{ p.period }}</span>
+                {{ p.period_title || `#${p.period}` }}
               </CTableDataCell>
               <CTableDataCell class="font-monospace">{{ p.contract_count }}건</CTableDataCell>
               <CTableDataCell class="text-end font-monospace"
@@ -172,7 +175,7 @@ const payStatusColor = (status: string) => {
         <!-- 환수 이력 상세 (있는 경우만) -->
         <template v-if="clawbackList.length > 0">
           <div class="px-3 pt-3 pb-1 fw-bold small border-top">
-            <v-icon icon="mdi-cash-refund" size="small" class="mr-1 text-danger" />
+            <v-icon icon="mdi-cash-refund" size="small" class="me-1 text-danger" />
             환수 이력 상세
           </div>
           <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
@@ -214,7 +217,7 @@ const payStatusColor = (status: string) => {
     </CModalBody>
 
     <CModalFooter>
-      <v-btn size="small" variant="tonal" @click="close">닫기</v-btn>
+      <v-btn :color="colorLight" size="small" flat @click="close">닫기</v-btn>
     </CModalFooter>
   </CModal>
 </template>

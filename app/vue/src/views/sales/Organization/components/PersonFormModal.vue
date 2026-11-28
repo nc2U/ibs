@@ -2,7 +2,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesDuty, SalesPerson, SalesPersonStatus, TaxType } from '@/store/types/sales'
-import { isValidate } from '@/utils/helper'
+import { colorLight } from '@/utils/cssMixins'
+import { isValidate, message } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -48,6 +49,12 @@ const bankOptions = [
   '케이뱅크',
 ]
 
+const selectableBanks = computed(() =>
+  form.bank_name && !bankOptions.includes(form.bank_name)
+    ? [form.bank_name, ...bankOptions]
+    : bankOptions,
+)
+
 const form = reactive({
   team: null as number | null,
   name: '',
@@ -64,6 +71,9 @@ const form = reactive({
   notes: '',
 })
 
+const parseNumberOrNull = (val: string | string[] | undefined): number | null =>
+  val && !Array.isArray(val) ? Number(val) : null
+
 const resetForm = () => {
   validated.value = false
   form.team = props.defaultTeamId || (teamList.value[0]?.id ?? null)
@@ -73,7 +83,7 @@ const resetForm = () => {
   form.phone = ''
   form.id_number = ''
   form.tax_type = '1'
-  form.bank_name = '국민은행'
+  form.bank_name = ''
   form.account_number = ''
   form.account_holder = ''
   form.join_date = ''
@@ -96,7 +106,7 @@ const open = (person?: SalesPerson, teamId?: number) => {
     form.phone = person.phone
     form.id_number = person.id_number
     form.tax_type = person.tax_type
-    form.bank_name = person.bank_name || '국민은행'
+    form.bank_name = person.bank_name || ''
     form.account_number = person.account_number
     form.account_holder = person.account_holder
     form.join_date = person.join_date || ''
@@ -121,6 +131,11 @@ const submit = async (event: Event) => {
     return
   }
 
+  if (form.join_date && form.quit_date && form.join_date > form.quit_date) {
+    message('warning', '입력 확인', '해촉/퇴사일은 위촉/입사일보다 이전일 수 없습니다.')
+    return
+  }
+
   isSubmitting.value = true
   try {
     const payload: Partial<SalesPerson> = {
@@ -133,17 +148,18 @@ const submit = async (event: Event) => {
       tax_type: form.tax_type,
       bank_name: form.bank_name,
       account_number: form.account_number.trim(),
-      account_holder: form.account_holder.trim() || form.name.trim(),
+      account_holder: form.account_holder.trim() || (form.bank_name || form.account_number.trim() ? form.name.trim() : ''),
       join_date: form.join_date || null,
       quit_date: form.quit_date || null,
       notes: form.notes.trim(),
     }
 
-    if (isEdit.value && targetId.value) {
-      await salesStore.updatePerson(targetId.value, payload)
-    } else {
-      await salesStore.createPerson(payload)
-    }
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updatePerson(targetId.value, payload)
+        : await salesStore.createPerson(payload)
+
+    if (!ok) return
     modalRef.value?.close()
     emit('saved')
   } finally {
@@ -164,9 +180,13 @@ defineExpose({ open })
             <!-- 기본 인적사항 -->
             <CCol md="4">
               <CFormLabel class="small required">소속 팀</CFormLabel>
-              <CFormSelect v-model.number="form.team" required>
+              <CFormSelect
+                :model-value="form.team ? String(form.team) : ''"
+                required
+                @update:model-value="val => (form.team = parseNumberOrNull(val))"
+              >
                 <option value="">소속 팀을 선택하세요</option>
-                <option v-for="t in teamList" :key="t.id" :value="t.id">
+                <option v-for="t in teamList" :key="t.id" :value="String(t.id)">
                   {{ t.agency_name ? `[${t.agency_name}] ` : '' }}
                   {{ t.parent_name ? `${t.parent_name} > ` : '' }}{{ t.name }}
                 </option>
@@ -228,14 +248,15 @@ defineExpose({ open })
             <!-- 계좌 정보 -->
             <CCol md="12" class="pt-2">
               <div class="border-bottom pb-1 text-primary fw-bold">
-                <v-icon icon="mdi-bank" size="small" class="mr-1" /> 정산 계좌 정보
+                <v-icon icon="mdi-bank" size="small" class="me-1" /> 정산 계좌 정보
               </div>
             </CCol>
 
             <CCol md="4">
               <CFormLabel class="small">정산 은행</CFormLabel>
               <CFormSelect v-model="form.bank_name">
-                <option v-for="b in bankOptions" :key="b" :value="b">{{ b }}</option>
+                <option value="">은행 선택</option>
+                <option v-for="b in selectableBanks" :key="b" :value="b">{{ b }}</option>
               </CFormSelect>
             </CCol>
 
@@ -260,7 +281,7 @@ defineExpose({ open })
             <!-- 재직 및 일정 -->
             <CCol md="12" class="pt-2">
               <div class="border-bottom pb-1 text-primary fw-bold">
-                <v-icon icon="mdi-calendar-check" size="small" class="mr-1" /> 활동 및 재직 정보
+                <v-icon icon="mdi-calendar-check" size="small" class="me-1" /> 활동 및 재직 정보
               </div>
             </CCol>
 
@@ -289,7 +310,7 @@ defineExpose({ open })
                 class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center"
               >
                 <div>
-                  <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+                  <v-icon icon="mdi-file-document-multiple-outline" size="small" class="me-1" />
                   증빙 서류 현황
                 </div>
                 <v-btn
@@ -298,7 +319,7 @@ defineExpose({ open })
                   variant="tonal"
                   @click="emit('open-docs', currentPerson)"
                 >
-                  <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
+                  <v-icon icon="mdi-paperclip" size="x-small" class="me-1" />
                   서류 접수 및 관리 ({{ currentPerson.documents_count ?? 0 }}건)
                 </v-btn>
               </div>
@@ -327,7 +348,7 @@ defineExpose({ open })
               size="small"
               @click="emit('open-docs', currentPerson)"
             >
-              <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+              <v-icon icon="mdi-file-document-multiple-outline" size="small" class="me-1" />
               증빙 서류 관리 ({{ currentPerson.documents_count ?? 0 }}건)
             </v-btn>
           </div>
@@ -343,7 +364,7 @@ defineExpose({ open })
               {{ isEdit ? '수정 저장' : '등록하기' }}
             </v-btn>
             <v-btn
-              color="light"
+              :color="colorLight"
               size="small"
               flat
               :disabled="isSubmitting"

@@ -2,8 +2,9 @@
 import { reactive, ref } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SettlementPeriod } from '@/store/types/sales'
+import { colorLight } from '@/utils/cssMixins'
 import { getToday } from '@/utils/baseMixins'
-import { isValidate } from '@/utils/helper'
+import { isValidate, message } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -16,15 +17,16 @@ const emit = defineEmits(['saved'])
 const salesStore = useSales()
 const modalRef = ref()
 const isEdit = ref(false)
+const isSubmitting = ref(false)
 const targetId = ref<number | null>(null)
 const validated = ref(false)
+const currentStatusDisplay = ref('정산 작성 중')
 
 const form = reactive({
   title: '',
   start_date: getToday(),
   end_date: getToday(),
   payout_date: '',
-  status: '1' as '1' | '2' | '3',
 })
 
 const resetForm = () => {
@@ -34,7 +36,7 @@ const resetForm = () => {
   form.start_date = today
   form.end_date = today
   form.payout_date = ''
-  form.status = '1'
+  currentStatusDisplay.value = '정산 작성 중'
   targetId.value = null
   isEdit.value = false
 }
@@ -48,12 +50,14 @@ const open = (period?: SettlementPeriod) => {
     form.start_date = period.start_date
     form.end_date = period.end_date
     form.payout_date = period.payout_date || ''
-    form.status = period.status
+    currentStatusDisplay.value = period.status_display || '정산 작성 중'
   }
   modalRef.value?.callModal()
 }
 
 const submit = async (event: Event) => {
+  if (isSubmitting.value) return
+
   if (isValidate(event)) {
     validated.value = true
     return
@@ -64,22 +68,32 @@ const submit = async (event: Event) => {
     return
   }
 
-  const payload: Partial<SettlementPeriod> = {
-    project: props.project,
-    title: form.title.trim(),
-    start_date: form.start_date,
-    end_date: form.end_date,
-    payout_date: form.payout_date || null,
-    status: form.status,
+  if (form.start_date > form.end_date) {
+    message('warning', '입력 확인', '정산 대상 종료일은 시작일보다 이전일 수 없습니다.')
+    return
   }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updatePeriod(targetId.value, payload)
-  } else {
-    await salesStore.createPeriod(payload)
+  isSubmitting.value = true
+  try {
+    const payload: Partial<SettlementPeriod> = {
+      project: props.project,
+      title: form.title.trim(),
+      start_date: form.start_date,
+      end_date: form.end_date,
+      payout_date: form.payout_date || null,
+    }
+
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updatePeriod(targetId.value, payload)
+        : await salesStore.createPeriod(payload)
+
+    if (!ok) return
+    modalRef.value?.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value?.close()
-  emit('saved')
 }
 
 defineExpose({ open })
@@ -124,19 +138,36 @@ defineExpose({ open })
 
             <CCol md="6">
               <CFormLabel class="small">정산 상태</CFormLabel>
-              <CFormSelect v-model="form.status">
-                <option value="1">정산 작성 중</option>
-                <option value="2">정산 확정 (승인 대기)</option>
-                <option value="3">지급 완료</option>
-              </CFormSelect>
+              <div class="pt-1">
+                <v-chip color="warning" variant="flat" size="small">
+                  {{ currentStatusDisplay }}
+                </v-chip>
+                <div class="form-text text-muted small mt-1">
+                  정산 상태는 [정산 확정] 및 지급 완료 처리 시 자동으로 전환됩니다.
+                </div>
+              </div>
             </CCol>
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn type="submit" color="primary" size="small">
+          <v-btn
+            type="submit"
+            color="primary"
+            size="small"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+          >
             {{ isEdit ? '수정 저장' : '회차 생성' }}
           </v-btn>
-          <v-btn color="light" size="small" flat @click="modalRef?.close()">취소</v-btn>
+          <v-btn
+            :color="colorLight"
+            size="small"
+            flat
+            :disabled="isSubmitting"
+            @click="modalRef?.close()"
+          >
+            취소
+          </v-btn>
         </CModalFooter>
       </CForm>
     </template>

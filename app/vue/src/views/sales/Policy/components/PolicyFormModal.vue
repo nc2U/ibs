@@ -4,8 +4,9 @@ import { useSales } from '@/store/pinia/sales'
 import type { CommissionPolicy } from '@/store/types/sales'
 import type { OrderGroup } from '@/store/types/contract'
 import type { UnitType } from '@/store/types/project'
+import { colorLight } from '@/utils/cssMixins'
 import { getToday } from '@/utils/baseMixins'
-import { isValidate } from '@/utils/helper'
+import { isValidate, message } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -20,6 +21,7 @@ const emit = defineEmits(['saved'])
 const salesStore = useSales()
 const modalRef = ref()
 const isEdit = ref(false)
+const isSubmitting = ref(false)
 const targetId = ref<number | null>(null)
 const validated = ref(false)
 
@@ -45,6 +47,9 @@ const totalFee = computed(() => {
     (form.agency_fee || 0)
   )
 })
+
+const parseNumberOrNull = (val: string | string[] | undefined): number | null =>
+  val && !Array.isArray(val) ? Number(val) : null
 
 const resetForm = () => {
   validated.value = false
@@ -84,6 +89,8 @@ const open = (policy?: CommissionPolicy) => {
 }
 
 const submit = async (event: Event) => {
+  if (isSubmitting.value) return
+
   if (isValidate(event)) {
     validated.value = true
     return
@@ -94,28 +101,39 @@ const submit = async (event: Event) => {
     return
   }
 
-  const payload: Partial<CommissionPolicy> = {
-    project: props.project,
-    name: form.name.trim(),
-    order_group: form.order_group || null,
-    unit_type: form.unit_type || null,
-    agent_fee: form.agent_fee || 0,
-    leader_fee: form.leader_fee || 0,
-    director_fee: form.director_fee || 0,
-    agency_fee: form.agency_fee || 0,
-    pay_condition: form.pay_condition,
-    start_date: form.start_date,
-    end_date: form.end_date || null,
-    is_active: form.is_active,
+  if (form.end_date && form.start_date > form.end_date) {
+    message('warning', '입력 확인', '적용 종료일은 적용 시작일보다 이전일 수 없습니다.')
+    return
   }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updatePolicy(targetId.value, payload)
-  } else {
-    await salesStore.createPolicy(payload)
+  isSubmitting.value = true
+  try {
+    const payload: Partial<CommissionPolicy> = {
+      project: props.project,
+      name: form.name.trim(),
+      order_group: form.order_group || null,
+      unit_type: form.unit_type || null,
+      agent_fee: form.agent_fee || 0,
+      leader_fee: form.leader_fee || 0,
+      director_fee: form.director_fee || 0,
+      agency_fee: form.agency_fee || 0,
+      pay_condition: form.pay_condition,
+      start_date: form.start_date,
+      end_date: form.end_date || null,
+      is_active: form.is_active,
+    }
+
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updatePolicy(targetId.value, payload)
+        : await salesStore.createPolicy(payload)
+
+    if (!ok) return
+    modalRef.value?.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value?.close()
-  emit('saved')
 }
 
 defineExpose({ open })
@@ -140,9 +158,12 @@ defineExpose({ open })
 
             <CCol md="6">
               <CFormLabel class="small">적용 차수</CFormLabel>
-              <CFormSelect v-model.number="form.order_group">
-                <option :value="null">전체 차수 공통 적용</option>
-                <option v-for="og in orderGroupList" :key="og.pk" :value="og.pk">
+              <CFormSelect
+                :model-value="form.order_group ? String(form.order_group) : ''"
+                @update:model-value="val => (form.order_group = parseNumberOrNull(val))"
+              >
+                <option value="">전체 차수 공통 적용</option>
+                <option v-for="og in orderGroupList" :key="og.pk" :value="String(og.pk)">
                   {{ og.name }}
                 </option>
               </CFormSelect>
@@ -150,9 +171,12 @@ defineExpose({ open })
 
             <CCol md="6">
               <CFormLabel class="small">적용 유니트 타입</CFormLabel>
-              <CFormSelect v-model.number="form.unit_type">
-                <option :value="null">전체 타입 공통 적용</option>
-                <option v-for="t in unitTypeList" :key="t.pk" :value="t.pk">
+              <CFormSelect
+                :model-value="form.unit_type ? String(form.unit_type) : ''"
+                @update:model-value="val => (form.unit_type = parseNumberOrNull(val))"
+              >
+                <option value="">전체 타입 공통 적용</option>
+                <option v-for="t in unitTypeList" :key="t.pk" :value="String(t.pk)">
                   {{ t.name }}
                 </option>
               </CFormSelect>
@@ -172,7 +196,7 @@ defineExpose({ open })
                     건당 공급가 (VAT 별도):
                     <strong class="text-body"> {{ totalFee.toLocaleString() }}원</strong>
                   </span>
-                  <span class="badge bg-amber-lighten-4 text-dark px-2 py-1 fs-6 fw-bold">
+                  <span class="badge bg-amber-lighten-4 text-body px-2 py-1 fs-6 fw-bold">
                     VAT 10% 포함 청구액: {{ Math.floor(totalFee * 1.1).toLocaleString() }}원
                   </span>
                 </div>
@@ -252,12 +276,33 @@ defineExpose({ open })
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn type="submit" color="primary" size="small">
+          <v-btn
+            type="submit"
+            color="primary"
+            size="small"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+          >
             {{ isEdit ? '수정 저장' : '등록하기' }}
           </v-btn>
-          <v-btn color="light" size="small" flat @click="modalRef?.close()">취소</v-btn>
+          <v-btn
+            :color="colorLight"
+            size="small"
+            flat
+            :disabled="isSubmitting"
+            @click="modalRef?.close()"
+          >
+            취소
+          </v-btn>
         </CModalFooter>
       </CForm>
     </template>
   </FormModal>
 </template>
+
+<style scoped lang="scss">
+.dark-theme .bg-amber-lighten-4 {
+  background-color: #4c422a !important;
+  color: #fff !important;
+}
+</style>

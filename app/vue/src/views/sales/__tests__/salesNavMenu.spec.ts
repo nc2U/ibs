@@ -16,7 +16,7 @@ describe('useSalesNavMenu Test', () => {
       is_superuser: false,
       work_manager: false,
       has_staff: true,
-    } as any
+    } as unknown as typeof accountStore.userInfo
 
     // allReadableProjects is empty (as it is when not visiting _Work)
     workStore.allReadableProjects = []
@@ -36,7 +36,7 @@ describe('useSalesNavMenu Test', () => {
           'sales.policy',
           'sales.manage',
         ],
-      } as any,
+      } as unknown as (typeof workStore.myProjects)[number],
     ]
 
     const project = ref<number | null>(1)
@@ -60,7 +60,7 @@ describe('useSalesNavMenu Test', () => {
       is_superuser: false,
       work_manager: false,
       has_staff: true,
-    } as any
+    } as unknown as typeof accountStore.userInfo
     workStore.allReadableProjects = []
     workStore.myProjects = [
       {
@@ -70,7 +70,7 @@ describe('useSalesNavMenu Test', () => {
         status: '1',
         visible: true,
         my_perms: [],
-      } as any,
+      } as unknown as (typeof workStore.myProjects)[number],
     ]
 
     const project = ref<number | null>(1)

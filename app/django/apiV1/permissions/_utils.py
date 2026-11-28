@@ -10,6 +10,11 @@ def get_project_pk_from_request(request, view):
             view.kwargs.get('project')
             or (data.get('project') if isinstance(data, dict) else None)
             or query_params.get('project')
+            or query_params.get('agency__project')
+            or query_params.get('team__agency__project')
+            or query_params.get('contract__project')
+            or query_params.get('period__project')
+            or query_params.get('sales_person__team__agency__project')
     )
     if pk is None and (getattr(view, 'basename', None) == 'project' or view.__class__.__name__ == 'ProjectViewSet'):
         pk = getattr(view, 'kwargs', {}).get('pk')

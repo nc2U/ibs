@@ -5,7 +5,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useSales } from '@/store/pinia/sales'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import { useProjectData } from '@/store/pinia/project_data'
 import type { Project } from '@/store/types/project'
 import type { CommissionPolicy } from '@/store/types/sales'
@@ -19,6 +19,9 @@ const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project | null)?.pk)
 const navMenu = useSalesNavMenu(project)
+const canSalesPolicy = computed(() =>
+  project.value ? can(PERM.SALES_POLICY, project.value) : can(PERM.SALES_POLICY),
+)
 
 const pDataStore = useProjectData()
 const unitTypeList = computed(() => pDataStore.unitTypeList)
@@ -39,6 +42,14 @@ const policyModalRef = ref()
 const confirmModalRef = ref()
 const pendingDeletePolicy = ref<CommissionPolicy | null>(null)
 
+const resetFiltersAndLists = () => {
+  filterOrderGroup.value = null
+  filterUnitType.value = null
+  filterActive.value = 'true'
+  search.value = ''
+  salesStore.policyList = []
+}
+
 const loadData = async (projId: number) => {
   await Promise.all([
     salesStore.fetchPolicyList(projId),
@@ -47,19 +58,16 @@ const loadData = async (projId: number) => {
   ])
 }
 
-const projSelect = (projId: number | null) => {
-  if (!projId) {
-    salesStore.policyList = []
-  }
-}
-
 watch(
   project,
-  newVal => {
-    if (newVal) {
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      resetFiltersAndLists()
+    }
+    if (newVal && canSalesPolicy.value) {
       loadData(newVal)
-    } else {
-      salesStore.policyList = []
+    } else if (!newVal) {
+      resetFiltersAndLists()
     }
   },
   { immediate: true },
@@ -88,10 +96,21 @@ const conditionBadgeColor: Record<string, string> = {
   '4': 'info',
 }
 
-const openAddPolicy = () => policyModalRef.value?.open()
-const openEditPolicy = (policy: CommissionPolicy) => policyModalRef.value?.open(policy)
+const parseNumberOrNull = (val: string | string[] | undefined): number | null =>
+  val && !Array.isArray(val) ? Number(val) : null
+
+const openAddPolicy = () => {
+  if (!canSalesPolicy.value) return
+  policyModalRef.value?.open()
+}
+
+const openEditPolicy = (policy: CommissionPolicy) => {
+  if (!canSalesPolicy.value) return
+  policyModalRef.value?.open(policy)
+}
 
 const deletePolicy = (policy: CommissionPolicy) => {
+  if (!canSalesPolicy.value) return
   pendingDeletePolicy.value = policy
   confirmModalRef.value?.callModal()
 }
@@ -99,9 +118,9 @@ const deletePolicy = (policy: CommissionPolicy) => {
 const executeDeletePolicy = async () => {
   if (!pendingDeletePolicy.value) return
   confirmModalRef.value?.close()
-  await salesStore.deletePolicy(pendingDeletePolicy.value.id)
+  const ok = await salesStore.deletePolicy(pendingDeletePolicy.value.id)
   pendingDeletePolicy.value = null
-  if (project.value) {
+  if (ok && project.value) {
     await salesStore.fetchPolicyList(project.value)
   }
 }
@@ -114,13 +133,8 @@ const onSaved = async () => {
 </script>
 
 <template>
-  <SalesAuthGuard>
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+  <SalesAuthGuard :project="project" :required-perm="PERM.SALES_POLICY">
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="p-3 p-md-4 pb-5">
@@ -137,7 +151,8 @@ const onSaved = async () => {
           <CCard class="shadow-sm mb-4">
             <!-- 헤더 및 필터 컨트롤러 -->
             <CCardHeader
-              class="bg-more-light d-flex flex-wrap justify-content-between align-items-center py-2"
+              :class="bgLight"
+              class="d-flex flex-wrap justify-content-between align-items-center py-2"
             >
               <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
                 <v-icon icon="mdi-cog-outline" size="small" class="me-1 text-primary" />
@@ -149,17 +164,25 @@ const onSaved = async () => {
 
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <!-- 차수 필터 -->
-                <CFormSelect v-model.number="filterOrderGroup" style="width: 150px">
-                  <option :value="null">전체 차수</option>
-                  <option v-for="og in orderGroupList" :key="og.pk" :value="og.pk">
+                <CFormSelect
+                  :model-value="filterOrderGroup ? String(filterOrderGroup) : ''"
+                  style="width: 150px"
+                  @update:model-value="val => (filterOrderGroup = parseNumberOrNull(val))"
+                >
+                  <option value="">전체 차수</option>
+                  <option v-for="og in orderGroupList" :key="og.pk" :value="String(og.pk)">
                     {{ og.name }}
                   </option>
                 </CFormSelect>
 
                 <!-- 타입 필터 -->
-                <CFormSelect v-model.number="filterUnitType" style="width: 150px">
-                  <option :value="null">전체 타입</option>
-                  <option v-for="t in unitTypeList" :key="t.pk" :value="t.pk">
+                <CFormSelect
+                  :model-value="filterUnitType ? String(filterUnitType) : ''"
+                  style="width: 150px"
+                  @update:model-value="val => (filterUnitType = parseNumberOrNull(val))"
+                >
+                  <option value="">전체 타입</option>
+                  <option v-for="t in unitTypeList" :key="t.pk" :value="String(t.pk)">
                     {{ t.name }}
                   </option>
                 </CFormSelect>
@@ -176,7 +199,7 @@ const onSaved = async () => {
 
                 <!-- 신규 등록 버튼 -->
                 <v-btn
-                  v-if="can(PERM.SALES_POLICY)"
+                  v-if="canSalesPolicy"
                   color="primary"
                   size="small"
                   @click="openAddPolicy"
@@ -223,7 +246,7 @@ const onSaved = async () => {
                     </CTableHeaderCell>
                     <CTableHeaderCell class="table-warning">
                       VAT 포함 청구금액
-                      <span class="small text-dark fw-normal ms-2">공급가 + 부가세 10%</span>
+                      <span class="small text-body fw-normal ms-2">공급가 + 부가세 10%</span>
                     </CTableHeaderCell>
                     <CTableHeaderCell>지급 조건</CTableHeaderCell>
                     <CTableHeaderCell>상태</CTableHeaderCell>
@@ -236,7 +259,7 @@ const onSaved = async () => {
                     <!-- 정책명 -->
                     <CTableDataCell class="fw-bold">
                       <a
-                        v-if="can(PERM.SALES_POLICY)"
+                        v-if="canSalesPolicy"
                         href="#"
                         class="text-primary text-decoration-none"
                         @click.prevent="openEditPolicy(policy)"
@@ -334,7 +357,7 @@ const onSaved = async () => {
 
                     <!-- 관리 버튼 -->
                     <CTableDataCell>
-                      <template v-if="can(PERM.SALES_POLICY)">
+                      <template v-if="canSalesPolicy">
                         <v-btn
                           icon="mdi-pencil"
                           size="x-small"
@@ -386,7 +409,8 @@ const onSaved = async () => {
             <strong>[{{ pendingDeletePolicy?.name }}]</strong> 수수료 정책을 삭제하시겠습니까?
           </p>
           <p class="text-danger small mt-2 mb-0">
-            * 해당 정책을 참조하는 분양 계약 영업 실적 매핑이 있을 경우 삭제가 제한될 수 있습니다.
+            * 삭제 시 해당 정책을 참조하는 미정산 계약 매핑의 적용 정책 연결이 해제되며 기본 정책으로
+            대체됩니다.
           </p>
         </template>
         <template #footer>
@@ -396,3 +420,10 @@ const onSaved = async () => {
     </ContentBody>
   </SalesAuthGuard>
 </template>
+
+<style scoped lang="scss">
+.dark-theme .table-warning {
+  background-color: #4c422a !important;
+  color: #fff !important;
+}
+</style>

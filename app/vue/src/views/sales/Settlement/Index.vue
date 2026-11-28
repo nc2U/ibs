@@ -5,9 +5,9 @@ import { usePerms } from '@/composables/usePerms'
 import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import type { Project } from '@/store/types/project'
-import type { CommissionPayout } from '@/store/types/sales'
+import type { CommissionPayout, OrgHealthCheckResult } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import SalesAuthGuard from '@/components/AuthGuard/SalesAuthGuard.vue'
@@ -17,12 +17,19 @@ import PayoutDetailModal from './components/PayoutDetailModal.vue'
 
 const refSettlement = ref()
 const refConfirmSettlement = ref()
+const refDeletePeriod = ref()
 
 const router = useRouter()
 const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project | null)?.pk)
 const navMenu = useSalesNavMenu(project)
+const canSalesSettle = computed(() =>
+  project.value ? can(PERM.SALES_SETTLE, project.value) : can(PERM.SALES_SETTLE),
+)
+const canSalesPayout = computed(() =>
+  project.value ? can(PERM.SALES_PAYOUT, project.value) : can(PERM.SALES_PAYOUT),
+)
 
 const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
@@ -44,32 +51,30 @@ const periodModalRef = ref()
 const detailModalRef = ref()
 
 // 조직 건강성 사전 진단 결과
-const orgHealthResult = ref<{
-  is_healthy: boolean
-  error_count: number
-  warning_count: number
-  items: Array<{
-    type: string
-    severity: 'error' | 'warning'
-    agency?: string
-    team?: string
-    unit_type?: string
-    message: string
-  }>
-} | null>(null)
+const orgHealthResult = ref<OrgHealthCheckResult | null>(null)
 const isCheckingHealth = ref(false)
+const isMutating = ref(false)
+
+const resetState = () => {
+  selectedPeriodId.value = null
+  orgHealthResult.value = null
+  salesStore.periodList = []
+  salesStore.payoutList = []
+  salesStore.agencyPayoutList = []
+  salesStore.clawbackList = []
+}
 
 const loadData = async (projId: number) => {
-  await salesStore.fetchPeriodList(projId)
+  await Promise.all([salesStore.fetchPeriodList(projId), salesStore.fetchClawbackList(undefined, projId)])
   if (periodList.value.length > 0) {
     if (!selectedPeriodId.value || !periodList.value.some(p => p.id === selectedPeriodId.value)) {
       selectedPeriodId.value = periodList.value[0].id
+    } else {
+      await Promise.all([
+        salesStore.fetchPayoutList(selectedPeriodId.value),
+        salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+      ])
     }
-    await Promise.all([
-      salesStore.fetchPayoutList(selectedPeriodId.value),
-      salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
-      salesStore.fetchClawbackList(undefined, projId),
-    ])
   } else {
     selectedPeriodId.value = null
     salesStore.payoutList = []
@@ -77,27 +82,16 @@ const loadData = async (projId: number) => {
   }
 }
 
-const projSelect = (projId: number | null) => {
-  if (!projId) {
-    selectedPeriodId.value = null
-    salesStore.periodList = []
-    salesStore.payoutList = []
-    salesStore.agencyPayoutList = []
-    salesStore.clawbackList = []
-  }
-}
-
 watch(
   project,
-  newVal => {
-    if (newVal) {
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      resetState()
+    }
+    if (newVal && canSalesSettle.value) {
       loadData(newVal)
-    } else {
-      selectedPeriodId.value = null
-      salesStore.periodList = []
-      salesStore.payoutList = []
-      salesStore.agencyPayoutList = []
-      salesStore.clawbackList = []
+    } else if (!newVal) {
+      resetState()
     }
   },
   { immediate: true },
@@ -117,15 +111,11 @@ watch(selectedPeriodId, async newVal => {
 
 // 정산 실행 및 확정
 const runGeneratePayouts = async () => {
-  if (!selectedPeriodId.value || !project.value) return
+  if (!selectedPeriodId.value || !project.value || selectedPeriod.value?.status !== '1') return
   isCheckingHealth.value = true
   try {
     const result = await salesStore.validateOrgHealth(project.value)
-    if (result) {
-      orgHealthResult.value = result
-    } else {
-      orgHealthResult.value = null
-    }
+    orgHealthResult.value = result ?? null
   } finally {
     isCheckingHealth.value = false
   }
@@ -133,62 +123,104 @@ const runGeneratePayouts = async () => {
 }
 
 const executeSettlement = async () => {
-  if (!selectedPeriodId.value) return
+  if (!selectedPeriodId.value || isMutating.value) return
   refSettlement.value?.close()
-  await salesStore.generatePayouts(selectedPeriodId.value)
-  if (project.value) {
-    await salesStore.fetchPeriodList(project.value)
-    await Promise.all([
-      salesStore.fetchPayoutList(selectedPeriodId.value),
-      salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
-    ])
+  isMutating.value = true
+  try {
+    const ok = await salesStore.generatePayouts(selectedPeriodId.value)
+    if (!ok) return
+    if (project.value) {
+      await Promise.all([
+        salesStore.fetchPeriodList(project.value),
+        salesStore.fetchPayoutList(selectedPeriodId.value),
+        salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+        salesStore.fetchClawbackList(undefined, project.value),
+      ])
+    }
+  } finally {
+    isMutating.value = false
   }
 }
 
 const goToPayout = () => {
   if (selectedPeriodId.value) {
-    router.push({ path: '/sales/payout', query: { period: selectedPeriodId.value } })
+    router.push({ path: '/sales/payout', query: { period: String(selectedPeriodId.value) } })
   } else {
     router.push('/sales/payout')
   }
 }
 
 const runConfirmSettlement = () => {
-  if (!selectedPeriodId.value) return
+  if (!selectedPeriodId.value || selectedPeriod.value?.status !== '1') return
   refConfirmSettlement.value?.callModal()
 }
 
 const executeConfirmSettlement = async () => {
-  if (!selectedPeriodId.value) return
+  if (!selectedPeriodId.value || isMutating.value) return
   refConfirmSettlement.value?.close()
-  await salesStore.confirmSettlement(selectedPeriodId.value)
-  if (project.value) {
-    await salesStore.fetchPeriodList(project.value)
+  isMutating.value = true
+  try {
+    const ok = await salesStore.confirmSettlement(selectedPeriodId.value)
+    if (!ok) return
+    if (project.value) {
+      await salesStore.fetchPeriodList(project.value)
+    }
+    if (canSalesPayout.value) {
+      goToPayout()
+    }
+  } finally {
+    isMutating.value = false
   }
-  goToPayout()
 }
 
-const openCreatePeriod = () => periodModalRef.value?.open()
+const openCreatePeriod = () => {
+  if (!canSalesSettle.value) return
+  periodModalRef.value?.open()
+}
+
+const openEditPeriod = () => {
+  if (!canSalesSettle.value || !selectedPeriod.value || selectedPeriod.value.status !== '1') return
+  periodModalRef.value?.open(selectedPeriod.value)
+}
+
+const runDeletePeriod = () => {
+  if (!canSalesSettle.value || !selectedPeriod.value || selectedPeriod.value.status !== '1') return
+  refDeletePeriod.value?.callModal()
+}
+
+const executeDeletePeriod = async () => {
+  if (!selectedPeriodId.value || isMutating.value) return
+  refDeletePeriod.value?.close()
+  isMutating.value = true
+  try {
+    const ok = await salesStore.deletePeriod(selectedPeriodId.value)
+    if (!ok) return
+    selectedPeriodId.value = null
+    if (project.value) {
+      await loadData(project.value)
+    }
+  } finally {
+    isMutating.value = false
+  }
+}
+
 const openPayoutDetail = (payout: CommissionPayout) => detailModalRef.value?.open(payout)
 
 const onPeriodSaved = async () => {
   if (project.value) {
+    const prevId = selectedPeriodId.value
     await salesStore.fetchPeriodList(project.value)
     if (periodList.value.length > 0) {
-      selectedPeriodId.value = periodList.value[0].id
+      selectedPeriodId.value =
+        prevId && periodList.value.some(p => p.id === prevId) ? prevId : periodList.value[0].id
     }
   }
 }
 </script>
 
 <template>
-  <SalesAuthGuard>
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+  <SalesAuthGuard :project="project" :required-perm="PERM.SALES_SETTLE">
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="p-3 p-md-4 pb-5">
@@ -213,9 +245,15 @@ const onPeriodSaved = async () => {
                   <v-icon icon="mdi-calendar-range" size="small" class="me-1 text-primary" />
                   정산 회차:
                 </span>
-                <CFormSelect v-model.number="selectedPeriodId" style="min-width: 240px">
-                  <option :value="null">정산 회차를 선택하세요</option>
-                  <option v-for="p in periodList" :key="p.id" :value="p.id">
+                <CFormSelect
+                  :model-value="selectedPeriodId ? String(selectedPeriodId) : ''"
+                  style="min-width: 240px"
+                  @update:model-value="
+                    val => (selectedPeriodId = val && !Array.isArray(val) ? Number(val) : null)
+                  "
+                >
+                  <option value="">정산 회차를 선택하세요</option>
+                  <option v-for="p in periodList" :key="p.id" :value="String(p.id)">
                     [{{ p.status_display }}] {{ p.title }} ({{ p.start_date }} ~ {{ p.end_date }})
                   </option>
                 </CFormSelect>
@@ -238,11 +276,12 @@ const onPeriodSaved = async () => {
               </div>
 
               <!-- 우측: 액션 버튼 그룹 -->
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex flex-wrap align-items-center gap-2">
                 <v-btn
-                  v-if="can(PERM.SALES_SETTLE)"
+                  v-if="canSalesSettle"
                   color="primary"
                   size="small"
+                  :disabled="isMutating"
                   @click="openCreatePeriod"
                 >
                   <v-icon icon="mdi-plus" size="small" class="me-1" />
@@ -250,9 +289,35 @@ const onPeriodSaved = async () => {
                 </v-btn>
 
                 <v-btn
-                  v-if="selectedPeriod && can(PERM.SALES_SETTLE)"
+                  v-if="selectedPeriod && selectedPeriod.status === '1' && canSalesSettle"
+                  color="secondary"
+                  variant="outlined"
+                  size="small"
+                  :disabled="isMutating"
+                  @click="openEditPeriod"
+                >
+                  <v-icon icon="mdi-pencil" size="small" class="me-1" />
+                  회차 수정
+                </v-btn>
+
+                <v-btn
+                  v-if="selectedPeriod && selectedPeriod.status === '1' && canSalesSettle"
+                  color="danger"
+                  variant="outlined"
+                  size="small"
+                  :disabled="isMutating"
+                  @click="runDeletePeriod"
+                >
+                  <v-icon icon="mdi-delete" size="small" class="me-1" />
+                  회차 삭제
+                </v-btn>
+
+                <v-btn
+                  v-if="selectedPeriod && selectedPeriod.status === '1' && canSalesSettle"
                   color="info"
                   size="small"
+                  :loading="isCheckingHealth || isMutating"
+                  :disabled="isCheckingHealth || isMutating"
                   @click="runGeneratePayouts"
                 >
                   <v-icon icon="mdi-calculator-variant" size="small" class="me-1" />
@@ -260,9 +325,10 @@ const onPeriodSaved = async () => {
                 </v-btn>
 
                 <v-btn
-                  v-if="selectedPeriod && selectedPeriod.status === '1' && can(PERM.SALES_SETTLE)"
+                  v-if="selectedPeriod && selectedPeriod.status === '1' && canSalesSettle"
                   color="success"
                   size="small"
+                  :disabled="isMutating"
                   @click="runConfirmSettlement"
                 >
                   <v-icon icon="mdi-check-all" size="small" class="me-1" />
@@ -270,7 +336,7 @@ const onPeriodSaved = async () => {
                 </v-btn>
 
                 <v-btn
-                  v-if="selectedPeriod && selectedPeriod.status !== '1'"
+                  v-if="selectedPeriod && selectedPeriod.status !== '1' && canSalesPayout"
                   color="secondary"
                   variant="outlined"
                   size="small"
@@ -333,14 +399,12 @@ const onPeriodSaved = async () => {
             <!-- 4. 시행사 청구 금액 (VAT 포함) -->
             <CCol sm="6" lg="3">
               <CCard
-                class="shadow-sm h-100 border-start border-start-4 border-start-warning bg-light-subtle"
+                class="shadow-sm h-100 border-start border-start-4 border-start-warning bg-more-light"
               >
                 <CCardBody>
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="text-body-secondary small fw-semibold text-warning-emphasis">
-                      시행사 청구 금액
-                    </div>
-                    <span class="badge bg-warning text-dark small px-1">VAT 포함</span>
+                    <div class="text-body-secondary small fw-semibold">시행사 청구 금액</div>
+                    <span class="badge bg-warning text-body small px-1">VAT 포함</span>
                   </div>
                   <div class="fs-4 fw-bold text-body">
                     {{
@@ -371,7 +435,10 @@ const onPeriodSaved = async () => {
 
           <!-- 개인별 수수료 지급 명세 테이블 -->
           <CCard v-if="selectedPeriod" class="shadow-sm mb-4">
-            <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <CCardHeader
+              :class="bgLight"
+              class="d-flex justify-content-between align-items-center py-2"
+            >
               <div class="fw-bold d-flex align-items-center">
                 <v-icon icon="mdi-format-list-numbered" size="small" class="me-1 text-primary" />
                 개인별 정산 및 세금 공제 명세
@@ -483,8 +550,9 @@ const onPeriodSaved = async () => {
 
                   <CTableRow v-if="payoutList.length === 0">
                     <CTableDataCell colspan="12" class="py-5 text-center text-muted">
-                      정산된 수수료 명세가 없습니다. 상단의 [수수료 자동 정산 실행]을 눌러 계약 실적을
-                      집계하세요.
+                      정산된 수수료 명세가 없습니다.<template v-if="selectedPeriod?.status === '1'">
+                        상단의 [수수료 자동 정산 실행]을 눌러 계약 실적을 집계하세요.</template
+                      >
                     </CTableDataCell>
                   </CTableRow>
                 </CTableBody>
@@ -494,7 +562,10 @@ const onPeriodSaved = async () => {
 
           <!-- 대행사 단위 정산 및 귀속 이익 명세 테이블 -->
           <CCard v-if="selectedPeriod && agencyPayoutList.length > 0" class="shadow-sm mb-4">
-            <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <CCardHeader
+              :class="bgLight"
+              class="d-flex justify-content-between align-items-center py-2"
+            >
               <div class="fw-bold d-flex align-items-center">
                 <v-icon icon="mdi-domain" size="small" class="me-1 text-primary" />
                 대행사 정산 및 귀속 이익 명세
@@ -581,7 +652,10 @@ const onPeriodSaved = async () => {
 
           <!-- 수수료 환수 이력 테이블 -->
           <CCard v-if="selectedPeriod && clawbackList.length > 0" class="shadow-sm mb-4">
-            <CCardHeader class="bg-light d-flex justify-content-between align-items-center py-2">
+            <CCardHeader
+              :class="bgLight"
+              class="d-flex justify-content-between align-items-center py-2"
+            >
               <div class="fw-bold d-flex align-items-center">
                 <v-icon icon="mdi-cash-refund" size="small" class="me-1 text-danger" />
                 수수료 환수 이력
@@ -707,7 +781,7 @@ const onPeriodSaved = async () => {
               <ul class="mb-0 ps-3">
                 <li v-for="(item, idx) in orgHealthResult.items" :key="idx" class="mt-1">
                   <span v-if="item.severity === 'error'" class="badge bg-danger me-1">오류</span>
-                  <span v-else class="badge bg-warning text-dark me-1">주의</span>
+                  <span v-else class="badge bg-warning text-body me-1">주의</span>
                   {{ item.message }}
                 </li>
               </ul>
@@ -739,11 +813,30 @@ const onPeriodSaved = async () => {
           </p>
           <ul class="text-secondary small mb-0 ps-3">
             <li>확정 후에는 정산 계산을 다시 실행할 수 없습니다.</li>
-            <li>확정 처리가 완료되면 [수수료 지급 관리] 화면으로 자동 이동합니다.</li>
+            <li v-if="canSalesPayout">
+              확정 처리가 완료되면 [수수료 지급 관리] 화면으로 자동 이동합니다.
+            </li>
           </ul>
         </template>
         <template #footer>
           <v-btn size="small" color="success" @click="executeConfirmSettlement">정산 확정</v-btn>
+        </template>
+      </ConfirmModal>
+
+      <!-- 정산 회차 삭제 확인 모달 -->
+      <ConfirmModal ref="refDeletePeriod">
+        <template #header>정산 회차 삭제 확인</template>
+        <template #default>
+          <p class="mb-2">
+            <strong>[{{ selectedPeriod?.title }}]</strong> 정산 회차를 삭제하시겠습니까?
+          </p>
+          <p class="text-danger small mb-0">
+            * 정산 작성 중 회차의 지급 명세는 함께 삭제되며, 상계되었던 환수금은 미상계 상태로
+            자동 복원됩니다.
+          </p>
+        </template>
+        <template #footer>
+          <v-btn size="small" color="danger" @click="executeDeletePeriod">회차 삭제</v-btn>
         </template>
       </ConfirmModal>
     </ContentBody>

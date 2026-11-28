@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { ContractSalesAgent } from '@/store/types/sales'
+import { bgLight, colorLight } from '@/utils/cssMixins'
 import { getToday } from '@/utils/baseMixins'
 import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -23,16 +24,23 @@ const salesStore = useSales()
 const modalRef = ref()
 const confirmModalRef = ref()
 const isEdit = ref(false)
+const isSettled = ref(false)
+const isSubmitting = ref(false)
 const targetId = ref<number | null>(null)
 const validated = ref(false)
 
 const personList = computed(() => salesStore.personList)
+const selectablePersonList = computed(() =>
+  personList.value.filter(p => p.status === '1' || p.id === form.sales_person),
+)
 const agencyList = computed(() => salesStore.agencyList)
 // 외주 대행사 목록 (is_direct_managed === false)
 const outsourcedAgencies = computed(() =>
-  agencyList.value.filter(a => !a.is_direct_managed && a.is_active),
+  agencyList.value.filter(a => (!a.is_direct_managed && a.is_active) || a.id === form.agency),
 )
-const policyList = computed(() => salesStore.policyList)
+const policyList = computed(() =>
+  salesStore.policyList.filter(pol => pol.is_active || pol.id === form.policy),
+)
 
 // 이미 다른 담당자가 배정된 계약은 신규 등록 시 제외 (현재 편집 중인 계약은 포함)
 const availableContractOptions = computed(() => {
@@ -96,6 +104,7 @@ const selectedPersonTeamWarning = computed(() => {
 const resetForm = () => {
   validated.value = false
   assignmentType.value = 'direct'
+  isSettled.value = false
   form.contract = null
   form.contract_info = ''
   form.agency = null
@@ -119,6 +128,7 @@ const open = (mapping?: ContractSalesAgent, defaultContractId?: number) => {
   }
   if (mapping) {
     isEdit.value = true
+    isSettled.value = Boolean(mapping.is_settled)
     targetId.value = mapping.id
     form.contract = mapping.contract
     form.contract_info = `${mapping.contract_serial || ''} (${mapping.contractor_name || ''} - ${mapping.unit_info || ''})`
@@ -143,7 +153,12 @@ const open = (mapping?: ContractSalesAgent, defaultContractId?: number) => {
   modalRef.value?.callModal()
 }
 
+const parseNumberOrNull = (val: string | string[] | undefined): number | null =>
+  val && !Array.isArray(val) ? Number(val) : null
+
 const submit = async (event: Event) => {
+  if (isSettled.value || isSubmitting.value) return
+
   if (isValidate(event)) {
     validated.value = true
     return
@@ -166,39 +181,46 @@ const submit = async (event: Event) => {
     }
   }
 
-  const payload: Partial<ContractSalesAgent> = {
-    contract: form.contract,
-    agency: assignmentType.value === 'agency' ? form.agency : null,
-    sales_person: assignmentType.value === 'direct' ? form.sales_person : null,
-    team: null, // 백엔드 save()에서 sales_person 소속으로 자동 세팅됨
-    policy: form.policy,
-    contract_date: form.contract_date || null,
-    mgm_name: form.mgm_name.trim(),
-    mgm_phone: form.mgm_phone.trim(),
-    mgm_fee: form.mgm_fee || 0,
-    note: form.note.trim(),
-    is_settlement_approved: form.is_settlement_approved,
-    approval_note: form.approval_note.trim(),
-  }
+  isSubmitting.value = true
+  try {
+    const payload: Partial<ContractSalesAgent> = {
+      contract: form.contract,
+      agency: assignmentType.value === 'agency' ? form.agency : null,
+      sales_person: assignmentType.value === 'direct' ? form.sales_person : null,
+      team: null, // 백엔드 save()에서 sales_person 소속으로 자동 세팅됨
+      policy: form.policy,
+      contract_date: form.contract_date || null,
+      mgm_name: form.mgm_name.trim(),
+      mgm_phone: form.mgm_phone.trim(),
+      mgm_fee: form.mgm_fee || 0,
+      note: form.note.trim(),
+      is_settlement_approved: form.is_settlement_approved,
+      approval_note: form.is_settlement_approved ? '' : form.approval_note.trim(),
+    }
 
-  if (isEdit.value && targetId.value) {
-    await salesStore.updateContractAgent(targetId.value, payload)
-  } else {
-    await salesStore.createContractAgent(payload)
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updateContractAgent(targetId.value, payload)
+        : await salesStore.createContractAgent(payload)
+
+    if (!ok) return
+    modalRef.value?.close()
+    emit('saved')
+  } finally {
+    isSubmitting.value = false
   }
-  modalRef.value?.close()
-  emit('saved')
 }
 
 const removeMapping = () => {
-  if (!targetId.value) return
+  if (!targetId.value || isSettled.value) return
   confirmModalRef.value?.callModal()
 }
 
 const executeRemoveMapping = async () => {
-  if (!targetId.value) return
+  if (!targetId.value || isSettled.value) return
   confirmModalRef.value?.close()
-  await salesStore.deleteContractAgent(targetId.value)
+  const ok = await salesStore.deleteContractAgent(targetId.value)
+  if (!ok) return
   modalRef.value?.close()
   emit('saved')
 }
@@ -208,21 +230,42 @@ defineExpose({ open })
 
 <template>
   <FormModal ref="modalRef" size="lg">
-    <template #header>{{ isEdit ? '계약 영업 담당자 수정' : '계약 영업 담당자 지정' }}</template>
+    <template #header>
+      {{
+        isSettled
+          ? '계약 영업 담당자 상세 (정산 완료 잠금)'
+          : isEdit
+            ? '계약 영업 담당자 수정'
+            : '계약 영업 담당자 지정'
+      }}
+    </template>
     <template #default>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="submit">
         <CModalBody>
+          <CAlert v-if="isSettled" color="warning" class="mb-3 py-2 small">
+            <v-icon icon="mdi-lock-outline" size="small" class="me-1" />
+            이 계약은 이미 정산 회차에 반영되어 담당자 변경·해제 및 승인 상태 수정을 할 수 없습니다.
+          </CAlert>
+
           <CRow class="g-3">
             <!-- 대상 계약 선택 -->
             <CCol md="12">
               <CFormLabel class="small required"> 대상 분양 계약</CFormLabel>
-              <div v-if="isEdit" class="form-control bg-light fw-bold">
+              <div v-if="isEdit" :class="bgLight" class="form-control fw-bold">
                 {{ form.contract_info || `계약 번호 #${form.contract}` }}
               </div>
               <div v-else>
-                <CFormSelect v-model.number="form.contract" required>
+                <CFormSelect
+                  :model-value="form.contract ? String(form.contract) : ''"
+                  required
+                  @update:model-value="val => (form.contract = parseNumberOrNull(val))"
+                >
                   <option value="">배정할 계약을 선택하세요</option>
-                  <option v-for="c in availableContractOptions" :key="c.value" :value="c.value">
+                  <option
+                    v-for="c in availableContractOptions"
+                    :key="c.value"
+                    :value="String(c.value)"
+                  >
                     {{ c.label }}
                   </option>
                 </CFormSelect>
@@ -233,13 +276,14 @@ defineExpose({ open })
             <!-- 배정 방식 선택 (직영 영업직원 vs 외주 대행사 직배정) -->
             <CCol md="12">
               <CFormLabel class="small required">배정 방식</CFormLabel>
-              <div class="d-flex gap-4 p-2 bg-light rounded border">
+              <div :class="bgLight" class="d-flex gap-4 p-2 rounded border">
                 <CFormCheck
                   id="assignDirectRadio"
                   v-model="assignmentType"
                   type="radio"
                   name="assignmentType"
                   value="direct"
+                  :disabled="isSettled"
                   label="직영 영업인력 배정 (상담사 직접 배정)"
                 />
                 <CFormCheck
@@ -248,6 +292,7 @@ defineExpose({ open })
                   type="radio"
                   name="assignmentType"
                   value="agency"
+                  :disabled="isSettled"
                   label="외주 대행사 직배정 (대행사 단위 배정)"
                 />
               </div>
@@ -257,9 +302,14 @@ defineExpose({ open })
             <template v-if="assignmentType === 'agency'">
               <CCol md="12">
                 <CFormLabel>외주 분양대행사 <span class="text-danger">*</span></CFormLabel>
-                <CFormSelect v-model.number="form.agency" required>
+                <CFormSelect
+                  :model-value="form.agency ? String(form.agency) : ''"
+                  required
+                  :disabled="isSettled"
+                  @update:model-value="val => (form.agency = parseNumberOrNull(val))"
+                >
                   <option value="">외주 분양대행사를 선택하세요</option>
-                  <option v-for="a in outsourcedAgencies" :key="a.id" :value="a.id">
+                  <option v-for="a in outsourcedAgencies" :key="a.id" :value="String(a.id)">
                     {{ a.name }}
                   </option>
                 </CFormSelect>
@@ -275,10 +325,16 @@ defineExpose({ open })
             <template v-else>
               <CCol md="12">
                 <CFormLabel class="small required">담당 영업직원 (상담사)</CFormLabel>
-                <CFormSelect v-model.number="form.sales_person" required>
+                <CFormSelect
+                  :model-value="form.sales_person ? String(form.sales_person) : ''"
+                  required
+                  :disabled="isSettled"
+                  @update:model-value="val => (form.sales_person = parseNumberOrNull(val))"
+                >
                   <option value="">담당 상담사를 선택하세요</option>
-                  <option v-for="p in personList" :key="p.id" :value="p.id">
+                  <option v-for="p in selectablePersonList" :key="p.id" :value="String(p.id)">
                     [{{ p.duty_display }}] {{ p.name }} ({{ p.team_name || '팀 미지정' }})
+                    {{ p.status !== '1' ? `[${p.status_display}]` : '' }}
                   </option>
                 </CFormSelect>
                 <CFormFeedback invalid>담당 영업직원(상담사)을 선택해주세요.</CFormFeedback>
@@ -302,9 +358,13 @@ defineExpose({ open })
             <!-- 적용 수수료 정책 -->
             <CCol md="6">
               <CFormLabel class="small">적용 수수료 정책</CFormLabel>
-              <CFormSelect v-model.number="form.policy">
-                <option :value="null">기본 유니트 정책 자동 적용</option>
-                <option v-for="pol in policyList" :key="pol.id" :value="pol.id">
+              <CFormSelect
+                :model-value="form.policy ? String(form.policy) : ''"
+                :disabled="isSettled"
+                @update:model-value="val => (form.policy = parseNumberOrNull(val))"
+              >
+                <option value="">기본 유니트 정책 자동 적용</option>
+                <option v-for="pol in policyList" :key="pol.id" :value="String(pol.id)">
                   {{ pol.name }} (건당: {{ pol.agent_fee.toLocaleString() }}원)
                 </option>
               </CFormSelect>
@@ -313,7 +373,7 @@ defineExpose({ open })
             <!-- 성과 인정일 -->
             <CCol md="6">
               <CFormLabel class="small">영업 성과 인정일</CFormLabel>
-              <DatePicker v-model="form.contract_date" placeholder="성과 인정일" />
+              <DatePicker v-model="form.contract_date" :disabled="isSettled" placeholder="성과 인정일" />
             </CCol>
 
             <!-- MGM 및 소개 수수료 -->
@@ -326,25 +386,39 @@ defineExpose({ open })
 
             <CCol md="4">
               <CFormLabel class="small">MGM / 소개자 성명</CFormLabel>
-              <CFormInput v-model="form.mgm_name" placeholder="예: OO공인중개사 / 김철수" />
+              <CFormInput
+                v-model="form.mgm_name"
+                :disabled="isSettled"
+                placeholder="예: OO공인중개사 / 김철수"
+              />
             </CCol>
 
             <CCol md="4">
               <CFormLabel class="small">MGM 연락처</CFormLabel>
-              <CFormInput v-model="form.mgm_phone" placeholder="010-0000-0000" />
+              <CFormInput v-model="form.mgm_phone" :disabled="isSettled" placeholder="010-0000-0000" />
             </CCol>
 
             <CCol md="4">
               <CFormLabel class="small">MGM 수수료 (원)</CFormLabel>
               <CInputGroup>
-                <CFormInput v-model.number="form.mgm_fee" type="number" step="10000" min="0" />
+                <CFormInput
+                  v-model.number="form.mgm_fee"
+                  type="number"
+                  step="10000"
+                  min="0"
+                  :disabled="isSettled"
+                />
                 <CInputGroupText>원</CInputGroupText>
               </CInputGroup>
             </CCol>
 
             <CCol md="12">
               <CFormLabel class="small">비고 / 특이사항</CFormLabel>
-              <CFormInput v-model="form.note" placeholder="계약 체결 경위, 특약 메모 등" />
+              <CFormInput
+                v-model="form.note"
+                :disabled="isSettled"
+                placeholder="계약 체결 경위, 특약 메모 등"
+              />
             </CCol>
 
             <!-- 수수료 정산 승인 / 보류 관리 -->
@@ -371,6 +445,7 @@ defineExpose({ open })
                 <CFormCheck
                   id="isSettlementApprovedCheck"
                   v-model="form.is_settlement_approved"
+                  :disabled="isSettled"
                   label="이 계약을 수수료 정산 대상 건으로 최종 승인합니다."
                   class="fw-bold text-body mb-2"
                 />
@@ -385,6 +460,7 @@ defineExpose({ open })
                   </CFormLabel>
                   <CFormInput
                     v-model="form.approval_note"
+                    :disabled="isSettled"
                     placeholder="예: 계약금 2차 분납 500만원 미납, 인감증명서 미징구 등"
                   />
                 </div>
@@ -394,16 +470,38 @@ defineExpose({ open })
         </CModalBody>
         <CModalFooter class="d-flex justify-content-between">
           <div>
-            <v-btn v-if="isEdit" color="danger" variant="text" size="small" @click="removeMapping">
+            <v-btn
+              v-if="isEdit && !isSettled"
+              color="danger"
+              variant="text"
+              size="small"
+              :disabled="isSubmitting"
+              @click="removeMapping"
+            >
               <v-icon icon="mdi-account-remove" size="small" class="me-1" />
               배정 해제
             </v-btn>
           </div>
           <div class="d-flex gap-2">
-            <v-btn type="submit" color="primary" size="small">
+            <v-btn
+              v-if="!isSettled"
+              type="submit"
+              color="primary"
+              size="small"
+              :loading="isSubmitting"
+              :disabled="isSubmitting"
+            >
               {{ isEdit ? '수정 저장' : '배정하기' }}
             </v-btn>
-            <v-btn color="light" size="small" flat @click="modalRef?.close()">취소</v-btn>
+            <v-btn
+              :color="colorLight"
+              size="small"
+              flat
+              :disabled="isSubmitting"
+              @click="modalRef?.close()"
+            >
+              {{ isSettled ? '닫기' : '취소' }}
+            </v-btn>
           </div>
         </CModalFooter>
       </CForm>
@@ -414,7 +512,8 @@ defineExpose({ open })
     <template #header>담당자 배정 해제 확인</template>
     <template #default>
       <p class="mb-0">
-        <strong>{{ form.contract_info || `계약 #${form.contract}` }}</strong> 건의 영업 담당자 배정을 해제하시겠습니까?
+        <strong>{{ form.contract_info || `계약 #${form.contract}` }}</strong> 건의 영업 담당자 배정을
+        해제하시겠습니까?
       </p>
       <p class="text-danger small mt-2 mb-0">
         * 해제 시 기존 배정 정보가 삭제되며, 미배정 계약으로 전환됩니다.

@@ -2,18 +2,34 @@
 import { computed } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { usePerms } from '@/composables/usePerms.ts'
+import type { PermissionCode } from '@/store/constants/permissions'
 import NoAuth from '@/views/_Accounts/NoAuth.vue'
+
+const props = withDefaults(
+  defineProps<{
+    project?: number | null
+    requiredPerm?: PermissionCode | PermissionCode[]
+  }>(),
+  {
+    project: undefined,
+    requiredPerm: undefined,
+  },
+)
 
 const account = useAccount()
 
 const isLoading = computed(() => !account.userInfo)
 
 const { can, PERM } = usePerms()
-const canSalesRead = computed(() => can(PERM.SALES_READ))
+const canAccess = computed(() => {
+  const raw = props.requiredPerm ?? PERM.SALES_READ
+  const perms = Array.isArray(raw) ? raw : [raw]
+  return perms.some(perm => (props.project ? can(perm, props.project) : can(perm)))
+})
 </script>
 
 <template>
   <div v-if="isLoading"></div>
-  <NoAuth v-else-if="!canSalesRead" />
+  <NoAuth v-else-if="!canAccess" />
   <slot v-else />
 </template>

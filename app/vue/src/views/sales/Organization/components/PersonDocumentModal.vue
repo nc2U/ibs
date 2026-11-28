@@ -3,13 +3,21 @@ import { computed, reactive, ref } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesDocType, SalesPerson, SalesPersonDocument } from '@/store/types/sales'
+import { bgLight, colorLight, TableSecondary } from '@/utils/cssMixins'
+import { message, sanitizeExternalUrl } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { TableSecondary } from '@/utils/cssMixins'
+
+const props = defineProps<{
+  project?: number | null
+}>()
 
 const emit = defineEmits(['updated'])
 
 const { can, PERM } = usePerms()
+const canSalesManage = computed(() =>
+  props.project ? can(PERM.SALES_MANAGE, props.project) : can(PERM.SALES_MANAGE),
+)
 const salesStore = useSales()
 const modalRef = ref()
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -78,9 +86,9 @@ const onFileChange = (e: Event) => {
 }
 
 const handleUpload = async () => {
-  if (!currentPerson.value) return
+  if (!canSalesManage.value || !currentPerson.value || isUploading.value) return
   if (!selectedFile.value) {
-    alert('업로드할 서류 파일을 선택해주세요.')
+    message('warning', '알림!', '업로드할 서류 파일을 선택해주세요.')
     return
   }
 
@@ -94,9 +102,10 @@ const handleUpload = async () => {
     }
     formData.append('file', selectedFile.value)
 
-    await salesStore.uploadPersonDocument(formData)
-    await salesStore.fetchPersonDocuments(currentPerson.value.id)
+    const ok = await salesStore.uploadPersonDocument(formData)
+    if (!ok) return
 
+    await salesStore.fetchPersonDocuments(currentPerson.value.id)
     selectedFile.value = null
     form.title = ''
     if (fileInputRef.value) {
@@ -109,13 +118,15 @@ const handleUpload = async () => {
 }
 
 const toggleVerify = async (doc: SalesPersonDocument) => {
-  if (!currentPerson.value) return
-  await salesStore.verifyPersonDocument(doc.id, !doc.is_verified)
+  if (!canSalesManage.value || !currentPerson.value) return
+  const ok = await salesStore.verifyPersonDocument(doc.id, !doc.is_verified)
+  if (!ok) return
   await salesStore.fetchPersonDocuments(currentPerson.value.id)
   emit('updated')
 }
 
 const removeDoc = (doc: SalesPersonDocument) => {
+  if (!canSalesManage.value) return
   pendingDeleteDoc.value = doc
   confirmModalRef.value?.callModal()
 }
@@ -123,9 +134,10 @@ const removeDoc = (doc: SalesPersonDocument) => {
 const executeDeleteDoc = async () => {
   if (!currentPerson.value || !pendingDeleteDoc.value) return
   confirmModalRef.value?.close()
-  await salesStore.deletePersonDocument(pendingDeleteDoc.value.id)
-  await salesStore.fetchPersonDocuments(currentPerson.value.id)
+  const ok = await salesStore.deletePersonDocument(pendingDeleteDoc.value.id)
   pendingDeleteDoc.value = null
+  if (!ok) return
+  await salesStore.fetchPersonDocuments(currentPerson.value.id)
   emit('updated')
 }
 
@@ -143,7 +155,7 @@ defineExpose({ open })
 <template>
   <FormModal ref="modalRef" size="xl">
     <template #icon>
-      <v-icon icon="mdi-file-document-multiple-outline" size="small" color="primary" class="mr-2" />
+      <v-icon icon="mdi-file-document-multiple-outline" size="small" color="primary" class="me-2" />
     </template>
     <template #header>
       {{ currentPerson?.name }} [{{ currentPerson?.duty_display || '상담사' }}] 증빙 서류 관리
@@ -151,9 +163,9 @@ defineExpose({ open })
     <template #default>
       <CModalBody>
         <!-- 1. 신규 서류 첨부 영역 -->
-        <CCard v-if="can(PERM.SALES_MANAGE)" class="mb-4 bg-light border">
+        <CCard v-if="canSalesManage" :class="bgLight" class="mb-4 border">
           <CCardHeader class="py-2 bg-transparent fw-bold d-flex align-items-center">
-            <v-icon icon="mdi-cloud-upload-outline" size="small" class="mr-1 text-primary" />
+            <v-icon icon="mdi-cloud-upload-outline" size="small" class="me-1 text-primary" />
             신규 서류 접수 및 업로드
           </CCardHeader>
           <CCardBody class="py-3">
@@ -181,10 +193,10 @@ defineExpose({ open })
 
               <CCol md="3">
                 <CFormLabel class="small fw-semibold">파일 선택 (PDF, 이미지) *</CFormLabel>
-                <CFormInput
+                <input
                   ref="fileInputRef"
                   type="file"
-                  size="sm"
+                  class="form-control form-control-sm"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   @change="onFileChange"
                 />
@@ -199,7 +211,7 @@ defineExpose({ open })
                   :disabled="!selectedFile"
                   @click="handleUpload"
                 >
-                  <v-icon icon="mdi-upload" size="small" class="mr-1" />
+                  <v-icon icon="mdi-upload" size="small" class="me-1" />
                   서류 등록
                 </v-btn>
               </CCol>
@@ -210,7 +222,7 @@ defineExpose({ open })
         <!-- 2. 기제출 서류 목록 테이블 -->
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div class="fw-bold d-flex align-items-center">
-            <v-icon icon="mdi-folder-file-outline" size="small" class="mr-1 text-primary" />
+            <v-icon icon="mdi-folder-file-outline" size="small" class="me-1 text-primary" />
             제출된 증빙 서류 목록
             <v-chip color="info" variant="flat" size="x-small" class="ms-2">
               {{ documents.length }}건
@@ -249,8 +261,9 @@ defineExpose({ open })
               </CTableDataCell>
               <CTableDataCell class="text-start">
                 <a
-                  :href="doc.file"
+                  :href="sanitizeExternalUrl(doc.file)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-decoration-none text-primary d-inline-flex align-items-center"
                 >
                   <v-icon icon="mdi-file-pdf-box" size="small" class="me-1 text-danger" />
@@ -279,7 +292,7 @@ defineExpose({ open })
                   color="warning"
                   variant="flat"
                   size="x-small"
-                  class="px-2 py-1 text-dark"
+                  class="px-2 py-1 text-body"
                 >
                   <v-icon icon="mdi-clock-outline" size="x-small" class="me-1" />
                   확인대기
@@ -289,8 +302,9 @@ defineExpose({ open })
                 <div class="d-flex justify-content-center align-items-center gap-1">
                   <!-- 다운로드/열기 -->
                   <v-btn
-                    :href="doc.file"
+                    :href="sanitizeExternalUrl(doc.file)"
                     target="_blank"
+                    rel="noopener noreferrer"
                     icon="mdi-download"
                     size="x-small"
                     variant="text"
@@ -299,7 +313,7 @@ defineExpose({ open })
                   />
                   <!-- 검증 토글 -->
                   <v-btn
-                    v-if="can(PERM.SALES_MANAGE)"
+                    v-if="canSalesManage"
                     size="x-small"
                     :color="doc.is_verified ? 'secondary' : 'success'"
                     variant="tonal"
@@ -309,7 +323,7 @@ defineExpose({ open })
                   </v-btn>
                   <!-- 삭제 -->
                   <v-btn
-                    v-if="can(PERM.SALES_MANAGE)"
+                    v-if="canSalesManage"
                     icon="mdi-delete"
                     size="x-small"
                     variant="text"
@@ -331,7 +345,7 @@ defineExpose({ open })
         </CTable>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="light" size="small" flat @click="modalRef?.close()">닫기</v-btn>
+        <v-btn :color="colorLight" size="small" flat @click="modalRef?.close()">닫기</v-btn>
       </CModalFooter>
     </template>
   </FormModal>

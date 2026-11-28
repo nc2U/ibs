@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue'
 import type { ContractSalesAgent } from '@/store/types/sales'
+import { bgLight, colorLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const emit = defineEmits(['confirm'])
@@ -41,7 +42,6 @@ const submit = () => {
     isApproved: form.is_settlement_approved,
     approvalNote: form.approval_note.trim(),
   })
-  close()
 }
 
 defineExpose({ open, close })
@@ -56,7 +56,7 @@ defineExpose({ open, close })
     <template #default>
       <CModalBody class="p-4">
         <!-- 대상 계약 및 담당자 요약 정보 -->
-        <div v-if="targetMapping" class="p-3 mb-4 rounded bg-light border">
+        <div v-if="targetMapping" :class="bgLight" class="p-3 mb-4 rounded border">
           <div class="row g-2 align-items-center">
             <div class="col-12 col-md-6">
               <span class="text-secondary small d-block">대상 계약</span>
@@ -88,7 +88,7 @@ defineExpose({ open, close })
               :class="{
                 'border-success bg-success-subtle text-success fw-bold':
                   form.is_settlement_approved,
-                'border-light text-muted': !form.is_settlement_approved,
+                'border-secondary text-muted': !form.is_settlement_approved,
               }"
               @click="form.is_settlement_approved = true"
             >
@@ -114,7 +114,7 @@ defineExpose({ open, close })
               class="border rounded p-3 flex-fill cursor-pointer transition-all"
               :class="{
                 'border-danger bg-danger-subtle text-danger fw-bold': !form.is_settlement_approved,
-                'border-light text-muted': form.is_settlement_approved,
+                'border-secondary text-muted': form.is_settlement_approved,
               }"
               @click="form.is_settlement_approved = false"
             >
@@ -169,7 +169,7 @@ defineExpose({ open, close })
           />
           {{ form.is_settlement_approved ? '정산 승인으로 저장' : '정산 보류로 저장' }}
         </v-btn>
-        <v-btn color="light" size="small" flat @click="close">취소</v-btn>
+        <v-btn :color="colorLight" size="small" flat @click="close">취소</v-btn>
       </CModalFooter>
     </template>
   </FormModal>

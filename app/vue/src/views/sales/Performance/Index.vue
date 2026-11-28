@@ -6,7 +6,7 @@ import { useSales } from '@/store/pinia/sales'
 import { useContract } from '@/store/pinia/contract'
 import type { Project } from '@/store/types/project'
 import type { ContractSalesAgent } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -19,6 +19,20 @@ const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project | null)?.pk)
 const navMenu = useSalesNavMenu(project)
+
+const canSalesRead = computed(() =>
+  project.value
+    ? can(PERM.SALES_READ, project.value) || can(PERM.SALES_MANAGE, project.value)
+    : can(PERM.SALES_READ) || can(PERM.SALES_MANAGE),
+)
+const canSalesManage = computed(() =>
+  project.value ? can(PERM.SALES_MANAGE, project.value) : can(PERM.SALES_MANAGE),
+)
+const canToggleApproval = computed(() =>
+  project.value
+    ? can(PERM.SALES_MANAGE, project.value) || can(PERM.SALES_SETTLE, project.value)
+    : can(PERM.SALES_MANAGE) || can(PERM.SALES_SETTLE),
+)
 
 const salesStore = useSales()
 const contStore = useContract()
@@ -38,6 +52,19 @@ const search = ref('')
 const modalRef = ref()
 const approvalModalRef = ref()
 
+const resetFiltersAndLists = () => {
+  filterTeam.value = null
+  filterPerson.value = null
+  filterMappingStatus.value = 'all'
+  filterApprovalStatus.value = 'all'
+  search.value = ''
+  salesStore.contractAgentList = []
+  salesStore.agencyList = []
+  salesStore.teamList = []
+  salesStore.personList = []
+  salesStore.policyList = []
+}
+
 const loadData = async (projId: number) => {
   await Promise.all([
     salesStore.fetchContractAgentList(projId),
@@ -49,19 +76,16 @@ const loadData = async (projId: number) => {
   ])
 }
 
-const projSelect = (projId: number | null) => {
-  if (!projId) {
-    salesStore.contractAgentList = []
-  }
-}
-
 watch(
   project,
-  newVal => {
-    if (newVal) {
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      resetFiltersAndLists()
+    }
+    if (newVal && canSalesRead.value) {
       loadData(newVal)
-    } else {
-      salesStore.contractAgentList = []
+    } else if (!newVal) {
+      resetFiltersAndLists()
     }
   },
   { immediate: true },
@@ -87,6 +111,10 @@ const combinedList = computed(() => {
     }
   })
 })
+
+const activeMappedList = computed<ContractSalesAgent[]>(() =>
+  combinedList.value.map(i => i.mapping).filter((m): m is ContractSalesAgent => !!m),
+)
 
 const filteredList = computed(() => {
   return combinedList.value.filter(item => {
@@ -124,10 +152,12 @@ const filteredList = computed(() => {
 })
 
 const openAssignModal = (mapping?: ContractSalesAgent, contractId?: number) => {
+  if (!canSalesManage.value && !mapping?.is_settled) return
   modalRef.value?.open(mapping, contractId)
 }
 
 const toggleApproval = (mapping: ContractSalesAgent, label?: string) => {
+  if (!canToggleApproval.value || mapping.is_settled) return
   approvalModalRef.value?.open(mapping, label)
 }
 
@@ -136,9 +166,16 @@ const onApprovalConfirm = async (payload: {
   isApproved: boolean
   approvalNote: string
 }) => {
-  await salesStore.toggleSettlementApproval(payload.id, payload.approvalNote, payload.isApproved)
-  if (project.value) {
-    await salesStore.fetchContractAgentList(project.value)
+  const ok = await salesStore.toggleSettlementApproval(
+    payload.id,
+    payload.approvalNote,
+    payload.isApproved,
+  )
+  if (ok) {
+    approvalModalRef.value?.close()
+    if (project.value) {
+      await salesStore.fetchContractAgentList(project.value)
+    }
   }
 }
 
@@ -150,13 +187,8 @@ const onSaved = async () => {
 </script>
 
 <template>
-  <SalesAuthGuard>
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+  <SalesAuthGuard :project="project" :required-perm="[PERM.SALES_READ, PERM.SALES_MANAGE]">
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="p-3 p-md-4 pb-5">
@@ -173,13 +205,14 @@ const onSaved = async () => {
           <!-- 상단 실적 KPI 서머리 -->
           <PerformanceSummary
             :total-contracts="allContracts.length"
-            :mapped-list="contractAgentList"
+            :mapped-list="activeMappedList"
           />
 
           <!-- 계약 실적 및 영업담당자 매핑 목록 -->
           <CCard class="shadow-sm mb-4">
             <CCardHeader
-              class="bg-light d-flex flex-wrap justify-content-between align-items-center py-2"
+              :class="bgLight"
+              class="d-flex flex-wrap justify-content-between align-items-center py-2"
             >
               <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
                 <v-icon icon="mdi-account-tie" size="small" class="me-1 text-primary" />
@@ -205,17 +238,29 @@ const onSaved = async () => {
                 </CFormSelect>
 
                 <!-- 팀 필터 -->
-                <CFormSelect v-model.number="filterTeam" style="width: 140px">
-                  <option :value="null">전체 팀</option>
-                  <option v-for="t in teamList" :key="t.id" :value="t.id">
+                <CFormSelect
+                  :model-value="filterTeam ? String(filterTeam) : ''"
+                  style="width: 140px"
+                  @update:model-value="
+                    val => (filterTeam = val && !Array.isArray(val) ? Number(val) : null)
+                  "
+                >
+                  <option value="">전체 팀</option>
+                  <option v-for="t in teamList" :key="t.id" :value="String(t.id)">
                     {{ t.name }}
                   </option>
                 </CFormSelect>
 
                 <!-- 담당직원 필터 -->
-                <CFormSelect v-model.number="filterPerson" style="width: 140px">
-                  <option :value="null">전체 상담사</option>
-                  <option v-for="p in personList" :key="p.id" :value="p.id">
+                <CFormSelect
+                  :model-value="filterPerson ? String(filterPerson) : ''"
+                  style="width: 140px"
+                  @update:model-value="
+                    val => (filterPerson = val && !Array.isArray(val) ? Number(val) : null)
+                  "
+                >
+                  <option value="">전체 상담사</option>
+                  <option v-for="p in personList" :key="p.id" :value="String(p.id)">
                     {{ p.name }}
                   </option>
                 </CFormSelect>
@@ -229,7 +274,7 @@ const onSaved = async () => {
 
                 <!-- 배정 버튼 -->
                 <v-btn
-                  v-if="can(PERM.SALES_MANAGE)"
+                  v-if="canSalesManage"
                   color="primary"
                   size="small"
                   @click="openAssignModal()"
@@ -319,7 +364,8 @@ const onSaved = async () => {
                       <v-chip
                         v-if="item.mapping?.policy_name"
                         size="x-small"
-                        class="bg-light text-body border"
+                        color="secondary"
+                        variant="tonal"
                       >
                         {{ item.mapping.policy_name }}
                       </v-chip>
@@ -343,8 +389,12 @@ const onSaved = async () => {
                               ? 'btn-success text-white'
                               : 'btn-outline-danger'
                           "
-                          :disabled="!can(PERM.SALES_MANAGE)"
-                          title="클릭하여 승인 / 보류 상태를 변경합니다."
+                          :disabled="!canToggleApproval || !!item.mapping.is_settled"
+                          :title="
+                            item.mapping.is_settled
+                              ? '이미 정산 회차에 반영되어 변경할 수 없습니다.'
+                              : '클릭하여 승인 / 보류 상태를 변경합니다.'
+                          "
                           @click="toggleApproval(item.mapping, item.contractLabel)"
                         >
                           <v-icon
@@ -391,7 +441,18 @@ const onSaved = async () => {
 
                     <!-- 관리 액션 -->
                     <CTableDataCell>
-                      <template v-if="can(PERM.SALES_MANAGE)">
+                      <template v-if="item.mapping?.is_settled">
+                        <v-btn
+                          size="x-small"
+                          color="secondary"
+                          variant="tonal"
+                          title="정산 완료 건은 읽기 전용으로만 열람할 수 있습니다."
+                          @click="openAssignModal(item.mapping, item.contractId)"
+                        >
+                          조회
+                        </v-btn>
+                      </template>
+                      <template v-else-if="canSalesManage">
                         <v-btn
                           v-if="item.mapping"
                           size="x-small"

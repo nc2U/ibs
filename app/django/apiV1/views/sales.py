@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, ProtectedError, Q, Sum
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -24,6 +24,29 @@ from sales.models import (
 )
 from sales.services import generate_period_payouts, recalculate_period_totals
 from work.models import IssueProject
+
+
+def _get_allowed_project_ids(user, perms: tuple[str, ...]) -> set[int]:
+    """[RLS] 여러 허용 권한 중 하나라도 보유한 프로젝트 ID 합집합 반환"""
+    allowed: set[int] = set()
+    for perm in perms:
+        allowed.update(get_project_ids_with_permission(user, perm))
+    return allowed
+
+
+class ProtectedDestroyMixin:
+    """참조 보호(PROTECT) 외래키로 삭제 불가 시 500 대신 409 Conflict 반환"""
+
+    protected_error_detail = '참조 중인 하위 데이터 또는 정산·계약 내역이 있어 삭제할 수 없습니다.'
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {'detail': self.protected_error_detail},
+                status=status.HTTP_409_CONFLICT,
+            )
 
 
 def get_accessible_project_ids(user, required_perm: str = 'sales.read'):
@@ -70,7 +93,7 @@ def _sync_period_status(period: SettlementPeriod) -> None:
             period.save(update_fields=['status', 'updated_at'])
 
 
-class SalesAgencyViewSet(viewsets.ModelViewSet):
+class SalesAgencyViewSet(ProtectedDestroyMixin, viewsets.ModelViewSet):
     """분양 대행사 ViewSet"""
     queryset = SalesAgency.objects.all()
     serializer_class = SalesAgencySerializer
@@ -78,20 +101,20 @@ class SalesAgencyViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project', 'is_direct_managed', 'is_active')
     search_fields = ('name', 'ceo_name', 'business_number')
+    protected_error_detail = '해당 대행사에 연결된 계약 매핑 또는 대행사 지급 내역이 있어 삭제할 수 없습니다.'
 
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
-        allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+        allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.manage'))
         return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.manage')
         return 'sales.manage'
 
     def perform_create(self, serializer):
@@ -104,7 +127,7 @@ class SalesAgencyViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
-class SalesTeamViewSet(viewsets.ModelViewSet):
+class SalesTeamViewSet(ProtectedDestroyMixin, viewsets.ModelViewSet):
     """영업 조직 (본부/팀) ViewSet"""
     queryset = SalesTeam.objects.all().select_related('agency', 'parent')
     serializer_class = SalesTeamSerializer
@@ -112,6 +135,7 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('agency', 'agency__project', 'parent', 'is_active')
     search_fields = ('name',)
+    protected_error_detail = '해당 조직에 소속된 인력 또는 계약 매핑이 있어 삭제할 수 없습니다.'
 
     def get_queryset(self):
         user = self.request.user
@@ -119,15 +143,14 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
             annotate_members_count=Count('members', filter=Q(members__status='1'))
         )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
-            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.manage'))
             qs = qs.filter(agency__project_id__in=allowed_ids)
         return qs.order_by('agency', 'order', 'id')
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.manage')
         return 'sales.manage'
 
     def perform_create(self, serializer):
@@ -141,7 +164,7 @@ class SalesTeamViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
-class SalesPersonViewSet(viewsets.ModelViewSet):
+class SalesPersonViewSet(ProtectedDestroyMixin, viewsets.ModelViewSet):
     """영업 인력 (분양상담사/팀장/본부장) ViewSet"""
     queryset = SalesPerson.objects.all().select_related('team__agency', 'user').prefetch_related('documents')
     serializer_class = SalesPersonSerializer
@@ -149,6 +172,7 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('team', 'team__agency__project', 'duty', 'status', 'tax_type')
     search_fields = ('name', 'phone', 'id_number', 'account_holder')
+    protected_error_detail = '해당 인력에 연결된 계약 실적 또는 정산/지급/환수 내역이 있어 삭제할 수 없습니다.'
 
     def get_queryset(self):
         user = self.request.user
@@ -156,15 +180,14 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
             annotate_documents_count=Count('documents')
         )
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
-            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.manage'))
             qs = qs.filter(team__agency__project_id__in=allowed_ids)
         return qs.order_by('team', 'duty', 'name', 'id')
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.manage')
         return 'sales.manage'
 
     def perform_create(self, serializer):
@@ -180,7 +203,7 @@ class SalesPersonViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
-class CommissionPolicyViewSet(viewsets.ModelViewSet):
+class CommissionPolicyViewSet(ProtectedDestroyMixin, viewsets.ModelViewSet):
     """수수료 정책 ViewSet"""
     queryset = CommissionPolicy.objects.all().select_related('project', 'order_group', 'unit_type')
     serializer_class = CommissionPolicySerializer
@@ -194,16 +217,13 @@ class CommissionPolicyViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.policy 권한을 보유한 프로젝트만 필터링
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.policy')
-        )
+        allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.policy', 'sales.manage'))
         return qs.filter(project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.policy', 'sales.manage')
         return 'sales.policy'
 
     def perform_create(self, serializer):
@@ -239,8 +259,7 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = super().get_queryset()
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            # [H-7] sales.read 권한을 실제로 보유한 프로젝트만 노출
-            allowed_ids = get_project_ids_with_permission(user, 'sales.read')
+            allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.manage', 'sales.settle'))
             qs = qs.filter(contract__project_id__in=allowed_ids)
         if self.request.query_params.get('search'):
             return qs.distinct()
@@ -249,23 +268,55 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.manage', 'sales.settle')
+        if self.action == 'toggle_approval':
+            return ('sales.manage', 'sales.settle')
         return 'sales.manage'
+
+    @staticmethod
+    def _is_settled_mapping(agent_mapping: ContractSalesAgent) -> bool:
+        return (
+            PayoutContractDetail.objects.filter(contract_id=agent_mapping.contract_id).exists()
+            or AgencyPayoutContractDetail.objects.filter(contract_id=agent_mapping.contract_id).exists()
+        )
 
     def perform_create(self, serializer):
         contract = serializer.validated_data.get('contract')
         _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.manage')
         serializer.save()
 
+    def update(self, request, *args, **kwargs):
+        agent_mapping = self.get_object()
+        if self._is_settled_mapping(agent_mapping):
+            return Response(
+                {'detail': '이미 정산 회차에 반영된 계약의 담당자 매핑은 수정할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().update(request, *args, **kwargs)
+
     def perform_update(self, serializer):
         contract = serializer.validated_data.get('contract', serializer.instance.contract)
         _check_sales_project_access(self.request.user, getattr(contract, 'project_id', None), 'sales.manage')
         serializer.save()
 
+    def destroy(self, request, *args, **kwargs):
+        agent_mapping = self.get_object()
+        if self._is_settled_mapping(agent_mapping):
+            return Response(
+                {'detail': '이미 정산 회차에 반영된 계약의 담당자 배정은 해제할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'], url_path='toggle-approval')
     def toggle_approval(self, request, pk=None):
         """수수료 정산 승인 / 보류 토글 또는 지정 액션"""
         agent_mapping = self.get_object()
+        if self._is_settled_mapping(agent_mapping):
+            return Response(
+                {'detail': '이미 정산 회차에 반영된 계약의 정산 승인 상태는 변경할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
         explicit_state = request.data.get('is_settlement_approved')
         if explicit_state is not None:
             if isinstance(explicit_state, str):
@@ -275,16 +326,17 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
         else:
             new_state = not agent_mapping.is_settlement_approved
 
+        note = request.data.get('approval_note')
         agent_mapping.is_settlement_approved = new_state
         if new_state:
             agent_mapping.approved_by = request.user
             agent_mapping.approved_at = timezone.now()
+            agent_mapping.approval_note = str(note).strip() if note is not None else ''
         else:
             agent_mapping.approved_by = None
             agent_mapping.approved_at = None
-            note = request.data.get('approval_note')
             if note is not None:
-                agent_mapping.approval_note = note.strip()
+                agent_mapping.approval_note = str(note).strip()
         agent_mapping.save()
 
         status_text = '승인' if new_state else '보류'
@@ -324,6 +376,8 @@ class SettlementPeriodViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
             return ('sales.read', 'sales.settle', 'sales.payout')
+        if self.action == 'validate_org':
+            return ('sales.read', 'sales.settle')
         return 'sales.settle'
 
     def perform_create(self, serializer):
@@ -572,16 +626,13 @@ class CommissionClawbackViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.settle 권한을 보유한 프로젝트만 노출
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.settle')
-        )
+        allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.settle', 'sales.payout'))
         return qs.filter(contract__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.settle', 'sales.payout')
         return 'sales.settle'
 
     def perform_create(self, serializer):
@@ -614,16 +665,13 @@ class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
-        # [H-7] sales.read 또는 sales.manage 권한을 보유한 프로젝트만 노출
-        allowed_ids = set(get_project_ids_with_permission(user, 'sales.read')) | set(
-            get_project_ids_with_permission(user, 'sales.manage')
-        )
+        allowed_ids = _get_allowed_project_ids(user, ('sales.read', 'sales.manage'))
         return qs.filter(sales_person__team__agency__project_id__in=allowed_ids)
 
     @property
     def required_permission(self):
         if self.action in ('list', 'retrieve'):
-            return 'sales.read'
+            return ('sales.read', 'sales.manage')
         return 'sales.manage'
 
     def perform_create(self, serializer):

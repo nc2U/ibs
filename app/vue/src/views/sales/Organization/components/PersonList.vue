@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import { usePerms } from '@/composables/usePerms'
 import type { SalesPerson } from '@/store/types/sales'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const { can, PERM } = usePerms()
+const canSalesManage = computed(() => can(PERM.SALES_MANAGE, props.project))
 const salesStore = useSales()
 const personList = computed(() => salesStore.personList)
 
@@ -26,6 +27,15 @@ const personList = computed(() => salesStore.personList)
 const search = ref('')
 const dutyFilter = ref<string>('')
 const statusFilter = ref<string>('1') // 기본: 재직자 우선
+
+watch(
+  () => props.project,
+  () => {
+    search.value = ''
+    dutyFilter.value = ''
+    statusFilter.value = '1'
+  },
+)
 
 const filteredPersons = computed(() => {
   return personList.value.filter(p => {
@@ -70,6 +80,7 @@ const confirmModalRef = ref()
 const pendingDelete = ref<SalesPerson | null>(null)
 
 const deletePerson = (person: SalesPerson) => {
+  if (!canSalesManage.value) return
   pendingDelete.value = person
   confirmModalRef.value?.callModal()
 }
@@ -77,10 +88,12 @@ const deletePerson = (person: SalesPerson) => {
 const executeDelete = async () => {
   if (!pendingDelete.value) return
   confirmModalRef.value?.close()
-  await salesStore.deletePerson(pendingDelete.value.id)
-  if (props.project) {
-    await salesStore.fetchPersonList(undefined, props.project)
-    await salesStore.fetchTeamList(undefined, props.project)
+  const ok = await salesStore.deletePerson(pendingDelete.value.id)
+  if (ok && props.project) {
+    await Promise.all([
+      salesStore.fetchPersonList(undefined, props.project),
+      salesStore.fetchTeamList(undefined, props.project),
+    ])
   }
   pendingDelete.value = null
 }
@@ -88,11 +101,14 @@ const executeDelete = async () => {
 
 <template>
   <CCard class="shadow-sm mb-4">
-    <CCardHeader class="bg-light d-flex flex-wrap justify-content-between align-items-center py-2">
+    <CCardHeader
+      :class="bgLight"
+      class="d-flex flex-wrap justify-content-between align-items-center py-2"
+    >
       <div class="fw-bold d-flex align-items-center mb-1 mb-md-0">
-        <v-icon icon="mdi-account-multiple" size="small" class="mr-1 text-primary" />
+        <v-icon icon="mdi-account-multiple" size="small" class="me-1 text-primary" />
         영업 인력 명단
-        <v-chip color="info" class="ml-2" shape="rounded-pill" variant="flat" size="x-small">
+        <v-chip color="info" class="ms-2" shape="rounded-pill" variant="flat" size="x-small">
           {{ filteredPersons.length }}명
         </v-chip>
       </div>
@@ -121,12 +137,12 @@ const executeDelete = async () => {
 
         <!-- 등록 버튼 -->
         <v-btn
-          v-if="can(PERM.SALES_MANAGE)"
+          v-if="canSalesManage"
           color="primary"
           size="small"
           @click="emit('add-person')"
         >
-          <v-icon icon="mdi-account-plus" size="small" class="mr-1" />
+          <v-icon icon="mdi-account-plus" size="small" class="me-1" />
           신규 인력 등록
         </v-btn>
       </div>
@@ -181,16 +197,18 @@ const executeDelete = async () => {
             </CTableDataCell>
             <CTableDataCell>
               <a
+                v-if="canSalesManage"
                 href="#"
                 class="fw-bold text-primary text-decoration-none"
                 @click.prevent="emit('edit-person', person)"
               >
                 {{ person.name }}
               </a>
+              <span v-else class="fw-bold">{{ person.name }}</span>
             </CTableDataCell>
             <CTableDataCell>{{ person.phone }}</CTableDataCell>
             <CTableDataCell>
-              <span class="badge bg-light text-body border">
+              <span class="badge bg-more-light text-body border">
                 {{ person.tax_type_display }}
               </span>
             </CTableDataCell>
@@ -210,7 +228,7 @@ const executeDelete = async () => {
                 title="제출 서류 관리"
                 @click="emit('open-docs', person)"
               >
-                <v-icon icon="mdi-paperclip" size="small" class="mr-1" />
+                <v-icon icon="mdi-paperclip" size="small" class="me-1" />
                 서류 {{ person.documents_count ?? 0 }}건
               </v-btn>
             </CTableDataCell>
@@ -224,7 +242,7 @@ const executeDelete = async () => {
               </v-chip>
             </CTableDataCell>
             <CTableDataCell>
-              <template v-if="can(PERM.SALES_MANAGE)">
+              <template v-if="canSalesManage">
                 <v-btn
                   icon="mdi-pencil"
                   size="x-small"
@@ -262,7 +280,9 @@ const executeDelete = async () => {
       <p class="mb-0">
         <strong>[{{ pendingDelete?.name }}]</strong> 인력을 삭제하시겠습니까?
       </p>
-      <small class="text-danger">(등록된 계약 및 수수료 정산 내역과의 연결이 해제될 수 있습니다)</small>
+      <small class="text-danger"
+        >(계약 실적 또는 정산·지급·환수 내역이 연결된 경우 삭제할 수 없습니다)</small
+      >
     </template>
     <template #footer>
       <v-btn size="small" color="danger" @click="executeDelete">삭제</v-btn>

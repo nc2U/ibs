@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import type { CommissionPayout } from '@/store/types/sales'
+import { bgLight, colorLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const modalRef = ref()
@@ -20,7 +21,7 @@ defineExpose({ open })
     <template #default>
       <CModalBody v-if="payout">
         <!-- 기본 인적사항 및 계좌 정보 -->
-        <div class="bg-light p-3 rounded mb-3 border">
+        <div :class="bgLight" class="p-3 rounded mb-3 border">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
               <span class="fs-5 fw-bold text-body me-2">{{ payout.sales_person_name }}</span>
@@ -67,8 +68,8 @@ defineExpose({ open })
         </div>
 
         <!-- 세금 계산 및 실지급액 테이블 -->
-        <table class="table table-bordered small text-center mb-3">
-          <thead class="table-light">
+        <table class="table table-bordered small text-center mb-3 text-body">
+          <thead>
             <tr>
               <th>지급 총액 (세전)</th>
               <th>사업소득세 (3%)</th>
@@ -101,8 +102,8 @@ defineExpose({ open })
             정산 대상 계약 상세 목록 ({{ payout.contract_details?.length ?? 0 }}건)
           </div>
           <div class="table-responsive" style="max-height: 240px; overflow-y: auto">
-            <table class="table table-sm table-hover table-bordered small text-center mb-0">
-              <thead class="table-light sticky-top">
+            <table class="table table-sm table-hover table-bordered small text-center mb-0 text-body">
+              <thead class="sticky-top bg-body-secondary">
                 <tr>
                   <th>계약 일련번호</th>
                   <th>계약자명</th>
@@ -115,7 +116,9 @@ defineExpose({ open })
                   <td class="font-monospace">{{ c.contract_serial }}</td>
                   <td class="fw-bold">{{ c.contractor_name }}</td>
                   <td>
-                    <span class="badge bg-light text-body border">{{ c.role_type_display }}</span>
+                    <span class="badge bg-more-light text-body border">{{
+                      c.role_type_display
+                    }}</span>
                   </td>
                   <td class="text-end font-monospace fw-bold text-primary">
                     {{ c.unit_fee.toLocaleString() }}원
@@ -129,12 +132,12 @@ defineExpose({ open })
           </div>
         </div>
 
-        <div v-if="payout.note" class="mt-3 p-2 bg-light rounded small text-muted">
+        <div v-if="payout.note" :class="bgLight" class="mt-3 p-2 rounded small text-muted">
           <strong>메모:</strong> {{ payout.note }}
         </div>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="light" size="small" flat @click="modalRef?.close()">닫기</v-btn>
+        <v-btn :color="colorLight" size="small" flat @click="modalRef?.close()">닫기</v-btn>
       </CModalFooter>
     </template>
   </FormModal>

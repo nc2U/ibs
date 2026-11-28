@@ -181,11 +181,11 @@ class ContractSalesAgentSerializer(serializers.ModelSerializer):
         read_only_fields = ('approved_by', 'approved_at', 'created_at', 'updated_at')
 
     def validate(self, attrs):
-        contract = attrs.get('contract') or (self.instance.contract if self.instance else None)
-        agency = attrs.get('agency') or (self.instance.agency if self.instance else None)
-        sales_person = attrs.get('sales_person') or (self.instance.sales_person if self.instance else None)
-        team = attrs.get('team') if 'team' in attrs else (self.instance.team if self.instance else None)
-        policy = attrs.get('policy') if 'policy' in attrs else (self.instance.policy if self.instance else None)
+        contract = attrs['contract'] if 'contract' in attrs else (self.instance.contract if self.instance else None)
+        agency = attrs['agency'] if 'agency' in attrs else (self.instance.agency if self.instance else None)
+        sales_person = attrs['sales_person'] if 'sales_person' in attrs else (self.instance.sales_person if self.instance else None)
+        team = attrs['team'] if 'team' in attrs else (self.instance.team if self.instance else None)
+        policy = attrs['policy'] if 'policy' in attrs else (self.instance.policy if self.instance else None)
 
         if not agency and not sales_person:
             raise serializers.ValidationError('외주 대행사 또는 담당 영업직원(상담사) 중 하나는 필수 입력해야 합니다.')
@@ -252,6 +252,7 @@ class PayoutContractDetailSerializer(serializers.ModelSerializer):
 
 
 class CommissionPayoutSerializer(serializers.ModelSerializer):
+    period_title = serializers.ReadOnlyField(source='period.title')
     sales_person_name = serializers.ReadOnlyField(source='sales_person.name')
     duty_display = serializers.CharField(source='sales_person.get_duty_display', read_only=True)
     team_name = serializers.ReadOnlyField(source='sales_person.team.name')
@@ -261,7 +262,7 @@ class CommissionPayoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommissionPayout
         fields = (
-            'id', 'period', 'sales_person', 'sales_person_name', 'duty_display', 'team_name',
+            'id', 'period', 'period_title', 'sales_person', 'sales_person_name', 'duty_display', 'team_name',
             'base_pay', 'contract_count', 'commission_amount', 'bonus_amount',
             'deduction_amount', 'gross_amount', 'income_tax', 'local_income_tax',
             'total_tax', 'net_amount', 'pay_status', 'pay_status_display',

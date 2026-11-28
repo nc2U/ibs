@@ -35,7 +35,7 @@ export const useSalesNavMenu = (
     const projId = projectRef ? (unref(projectRef) ?? undefined) : undefined
     const menus: string[] = []
 
-    if (can(PERM.SALES_READ, projId)) {
+    if (can(PERM.SALES_READ, projId) || can(PERM.SALES_MANAGE, projId)) {
       menus.push('계약 실적 관리')
     }
     if (can(PERM.SALES_SETTLE, projId)) {

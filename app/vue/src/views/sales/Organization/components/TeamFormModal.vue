@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesTeam } from '@/store/types/sales'
+import { colorLight } from '@/utils/cssMixins'
 import { isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 
@@ -45,6 +46,9 @@ watch(
     }
   },
 )
+
+const parseNumberOrNull = (val: string | string[] | undefined): number | null =>
+  val && !Array.isArray(val) ? Number(val) : null
 
 const resetForm = () => {
   validated.value = false
@@ -99,11 +103,12 @@ const submit = async (event: Event) => {
       is_active: form.is_active,
     }
 
-    if (isEdit.value && targetId.value) {
-      await salesStore.updateTeam(targetId.value, payload)
-    } else {
-      await salesStore.createTeam(payload)
-    }
+    const ok =
+      isEdit.value && targetId.value
+        ? await salesStore.updateTeam(targetId.value, payload)
+        : await salesStore.createTeam(payload)
+
+    if (!ok) return
     modalRef.value?.close()
     emit('saved')
   } finally {
@@ -123,9 +128,13 @@ defineExpose({ open })
           <CRow class="g-3">
             <CCol md="6">
               <CFormLabel class="small required">소속 대행사</CFormLabel>
-              <CFormSelect v-model.number="form.agency" required>
-                <option :value="null">대행사를 선택하세요</option>
-                <option v-for="a in agencyList" :key="a.id" :value="a.id">
+              <CFormSelect
+                :model-value="form.agency ? String(form.agency) : ''"
+                required
+                @update:model-value="val => (form.agency = parseNumberOrNull(val))"
+              >
+                <option value="">대행사를 선택하세요</option>
+                <option v-for="a in agencyList" :key="a.id" :value="String(a.id)">
                   {{ a.name }} {{ a.is_direct_managed ? '[직영]' : '' }}
                 </option>
               </CFormSelect>
@@ -134,9 +143,12 @@ defineExpose({ open })
 
             <CCol md="6">
               <CFormLabel class="small">상위 조직 (본부)</CFormLabel>
-              <CFormSelect v-model.number="form.parent">
-                <option :value="null">최상위 본부 (없음)</option>
-                <option v-for="p in parentTeamOptions" :key="p.id" :value="p.id">
+              <CFormSelect
+                :model-value="form.parent ? String(form.parent) : ''"
+                @update:model-value="val => (form.parent = parseNumberOrNull(val))"
+              >
+                <option value="">최상위 본부 (없음)</option>
+                <option v-for="p in parentTeamOptions" :key="p.id" :value="String(p.id)">
                   {{ p.name }}
                 </option>
               </CFormSelect>
@@ -154,11 +166,7 @@ defineExpose({ open })
 
             <CCol md="3">
               <CFormLabel class="small">정렬 순서</CFormLabel>
-              <CFormInput
-                v-model.number="form.order"
-                type="number"
-                min="1"
-              />
+              <CFormInput v-model.number="form.order" type="number" min="1" />
             </CCol>
 
             <CCol md="3" class="d-flex align-items-center pt-4">
@@ -176,7 +184,13 @@ defineExpose({ open })
           >
             {{ isEdit ? '수정 저장' : '등록하기' }}
           </v-btn>
-          <v-btn color="light" size="small" flat :disabled="isSubmitting" @click="modalRef?.close()">
+          <v-btn
+            :color="colorLight"
+            size="small"
+            flat
+            :disabled="isSubmitting"
+            @click="modalRef?.close()"
+          >
             취소
           </v-btn>
         </CModalFooter>

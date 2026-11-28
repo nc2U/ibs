@@ -146,6 +146,7 @@ export interface PayoutContractDetail {
 export interface CommissionPayout {
   id: number
   period: number
+  period_title?: string
   sales_person: number
   sales_person_name?: string
   duty_display?: string

@@ -5,7 +5,9 @@ import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
-import { TableSecondary } from '@/utils/cssMixins'
+import { bgLight, colorLight, TableSecondary } from '@/utils/cssMixins'
+import { getToday } from '@/utils/baseMixins'
+import { message } from '@/utils/helper'
 import type { Project } from '@/store/types/project'
 import type { AgencyPayout, CommissionPayout } from '@/store/types/sales'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -21,6 +23,9 @@ const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project | null)?.pk)
 const navMenu = useSalesNavMenu(project)
+const canSalesPayout = computed(() =>
+  project.value ? can(PERM.SALES_PAYOUT, project.value) : can(PERM.SALES_PAYOUT),
+)
 
 const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
@@ -53,6 +58,18 @@ const historyModalRef = ref()
 const confirmModalRef = ref()
 const pendingBatch = ref<{ status: string; label: string; count: number } | null>(null)
 
+const resetState = () => {
+  selectedPeriodId.value = null
+  statusFilter.value = ''
+  searchQuery.value = ''
+  agencyStatusFilter.value = ''
+  agencySearchQuery.value = ''
+  selectedPayoutIds.value = []
+  salesStore.periodList = []
+  salesStore.payoutList = []
+  salesStore.agencyPayoutList = []
+}
+
 // 데이터 로드
 const loadData = async (projId: number) => {
   await salesStore.fetchPeriodList(projId)
@@ -65,11 +82,12 @@ const loadData = async (projId: number) => {
       !periodList.value.some(p => p.id === selectedPeriodId.value)
     ) {
       selectedPeriodId.value = periodList.value[0].id
+    } else {
+      await Promise.all([
+        salesStore.fetchPayoutList(selectedPeriodId.value),
+        salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
+      ])
     }
-    await Promise.all([
-      salesStore.fetchPayoutList(selectedPeriodId.value),
-      salesStore.fetchAgencyPayoutList(selectedPeriodId.value),
-    ])
   } else {
     selectedPeriodId.value = null
     salesStore.payoutList = []
@@ -78,27 +96,16 @@ const loadData = async (projId: number) => {
   selectedPayoutIds.value = []
 }
 
-const projSelect = (projId: number | null) => {
-  if (!projId) {
-    selectedPeriodId.value = null
-    salesStore.periodList = []
-    salesStore.payoutList = []
-    salesStore.agencyPayoutList = []
-    selectedPayoutIds.value = []
-  }
-}
-
 watch(
   project,
-  newVal => {
-    if (newVal) {
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      resetState()
+    }
+    if (newVal && canSalesPayout.value) {
       loadData(newVal)
-    } else {
-      selectedPeriodId.value = null
-      salesStore.periodList = []
-      salesStore.payoutList = []
-      salesStore.agencyPayoutList = []
-      selectedPayoutIds.value = []
+    } else if (!newVal) {
+      resetState()
     }
   },
   { immediate: true },
@@ -165,16 +172,28 @@ const selectedTotalAmount = computed(() => {
     .reduce((sum, p) => sum + (p.net_amount || 0), 0)
 })
 
-const changePayoutStatus = async (payout: CommissionPayout, newStatus: string) => {
-  if (payout.pay_status === newStatus) return
-  await salesStore.updatePayStatus(payout.id, newStatus)
+const refreshAfterStatusChange = async () => {
+  const tasks: Promise<unknown>[] = []
   if (selectedPeriodId.value) {
-    await salesStore.fetchPayoutList(selectedPeriodId.value)
+    tasks.push(salesStore.fetchPayoutList(selectedPeriodId.value))
+    tasks.push(salesStore.fetchAgencyPayoutList(selectedPeriodId.value))
+  }
+  if (project.value) {
+    tasks.push(salesStore.fetchPeriodList(project.value))
+  }
+  await Promise.all(tasks)
+}
+
+const changePayoutStatus = async (payout: CommissionPayout, newStatus: string) => {
+  if (!canSalesPayout.value || payout.pay_status === newStatus) return
+  const ok = await salesStore.updatePayStatus(payout.id, newStatus)
+  if (ok) {
+    await refreshAfterStatusChange()
   }
 }
 
 const requestBatchUpdate = (targetStatus: string, label: string) => {
-  if (selectedPayoutIds.value.length === 0) return
+  if (!canSalesPayout.value || selectedPayoutIds.value.length === 0) return
   pendingBatch.value = {
     status: targetStatus,
     label,
@@ -184,22 +203,39 @@ const requestBatchUpdate = (targetStatus: string, label: string) => {
 }
 
 const executeBatchUpdate = async () => {
-  if (!pendingBatch.value) return
+  if (!pendingBatch.value || isBatchLoading.value) return
+  const targetStatus = pendingBatch.value.status
   confirmModalRef.value?.close()
   isBatchLoading.value = true
   try {
-    const promises = selectedPayoutIds.value.map(id =>
-      salesStore.updatePayStatus(id, pendingBatch.value!.status),
-    )
-    await Promise.all(promises)
-    if (selectedPeriodId.value) {
-      await salesStore.fetchPayoutList(selectedPeriodId.value)
+    const failedIds: number[] = []
+    for (const id of selectedPayoutIds.value) {
+      const ok = await salesStore.updatePayStatus(id, targetStatus)
+      if (!ok) failedIds.push(id)
     }
-    selectedPayoutIds.value = []
+    await refreshAfterStatusChange()
+    if (failedIds.length > 0) {
+      selectedPayoutIds.value = failedIds
+      message(
+        'warning',
+        '부분 실패',
+        `${failedIds.length}건의 지급 상태 변경에 실패하여 선택을 유지했습니다.`,
+      )
+    } else {
+      selectedPayoutIds.value = []
+    }
   } finally {
     isBatchLoading.value = false
     pendingBatch.value = null
   }
+}
+
+// 스프레드시트 수식 인젝션 방어 + RFC4180 CSV 이스케이프
+const escapeCsvCell = (raw: string | number | null | undefined, forceTextTab = false): string => {
+  const str = String(raw ?? '')
+  const formulaSafe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str
+  const value = forceTextTab && str ? `\t${formulaSafe}` : formulaSafe
+  return `"${value.replace(/"/g, '""')}"`
 }
 
 // 은행 이체용 CSV 다운로드
@@ -230,19 +266,19 @@ const downloadBankingCsv = () => {
 
   const rows = targets.map((p, index) => [
     index + 1,
-    `"${p.bank_name || ''}"`,
-    `"\t${p.account_number || ''}"`,
-    `"${p.account_holder || ''}"`,
+    escapeCsvCell(p.bank_name),
+    escapeCsvCell(p.account_number, true),
+    escapeCsvCell(p.account_holder),
     p.net_amount,
     p.gross_amount,
     p.total_tax,
-    `"${p.sales_person_name}"`,
-    `"${p.team_name}"`,
-    `"${p.duty_display}"`,
-    `"${p.pay_status_display}"`,
-    `"${p.paid_date || ''}"`,
-    `"${selectedPeriod.value?.title || ''}"`,
-    `"${(p.note || '').replace(/"/g, '""')}"`,
+    escapeCsvCell(p.sales_person_name),
+    escapeCsvCell(p.team_name),
+    escapeCsvCell(p.duty_display),
+    escapeCsvCell(p.pay_status_display),
+    escapeCsvCell(p.paid_date),
+    escapeCsvCell(selectedPeriod.value?.title),
+    escapeCsvCell(p.note),
   ])
 
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n')
@@ -252,7 +288,7 @@ const downloadBankingCsv = () => {
   const periodTitle = selectedPeriod.value?.title
     ? selectedPeriod.value.title.replace(/\s+/g, '_')
     : '수수료정산'
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const dateStr = getToday().replace(/-/g, '')
   link.setAttribute('href', url)
   link.setAttribute('download', `은행이체명세_${periodTitle}_${dateStr}.csv`)
   document.body.appendChild(link)
@@ -297,10 +333,10 @@ const agencyPaidAmount = computed(() =>
 )
 
 const changeAgencyPayStatus = async (ap: AgencyPayout, newStatus: string) => {
-  if (ap.pay_status === newStatus) return
-  await salesStore.updateAgencyPayStatus(ap.id, newStatus)
-  if (selectedPeriodId.value) {
-    await salesStore.fetchAgencyPayoutList(selectedPeriodId.value)
+  if (!canSalesPayout.value || ap.pay_status === newStatus) return
+  const ok = await salesStore.updateAgencyPayStatus(ap.id, newStatus)
+  if (ok) {
+    await refreshAfterStatusChange()
   }
 }
 
@@ -313,13 +349,8 @@ const agencyPayStatusColor = (status: string) => {
 </script>
 
 <template>
-  <SalesAuthGuard>
-    <ContentHeader
-      :page-title="pageTitle"
-      :nav-menu="navMenu"
-      selector="ProjectSelect"
-      @proj-select="projSelect"
-    />
+  <SalesAuthGuard :project="project" :required-perm="PERM.SALES_PAYOUT">
+    <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="ProjectSelect" />
 
     <ContentBody>
       <CCardBody class="p-3 p-md-4 pb-5">
@@ -341,12 +372,17 @@ const agencyPayStatusColor = (status: string) => {
                 <CCol md="4" lg="3">
                   <div class="d-flex align-items-center gap-2">
                     <span class="fw-bold text-primary text-nowrap">
-                      <v-icon icon="mdi-calendar-range" size="small" class="mr-1 text-primary" />
+                      <v-icon icon="mdi-calendar-range" size="small" class="me-1 text-primary" />
                       정산 회차:
                     </span>
-                    <CFormSelect v-model.number="selectedPeriodId">
-                      <option :value="null">회차를 선택하세요</option>
-                      <option v-for="p in periodList" :key="p.id" :value="p.id">
+                    <CFormSelect
+                      :model-value="selectedPeriodId ? String(selectedPeriodId) : ''"
+                      @update:model-value="
+                        val => (selectedPeriodId = val && !Array.isArray(val) ? Number(val) : null)
+                      "
+                    >
+                      <option value="">회차를 선택하세요</option>
+                      <option v-for="p in periodList" :key="p.id" :value="String(p.id)">
                         [{{ p.status_display }}] {{ p.title }}
                       </option>
                     </CFormSelect>
@@ -362,9 +398,14 @@ const agencyPayStatusColor = (status: string) => {
                       :variant="activeTab === 'person' ? 'flat' : 'outlined'"
                       @click="activeTab = 'person'"
                     >
-                      <v-icon icon="mdi-account-group" size="small" class="mr-1" />
+                      <v-icon icon="mdi-account-group" size="small" class="me-1" />
                       개인 지급 명세
-                      <v-chip color="light" variant="flat" size="x-small" class="ml-1 text-body">
+                      <v-chip
+                        :color="colorLight"
+                        variant="flat"
+                        size="x-small"
+                        class="ms-1 text-body"
+                      >
                         {{ payoutList.length }}
                       </v-chip>
                     </v-btn>
@@ -374,9 +415,14 @@ const agencyPayStatusColor = (status: string) => {
                       :variant="activeTab === 'agency' ? 'flat' : 'outlined'"
                       @click="activeTab = 'agency'"
                     >
-                      <v-icon icon="mdi-domain" size="small" class="mr-1" />
+                      <v-icon icon="mdi-domain" size="small" class="me-1" />
                       대행사 지급 명세
-                      <v-chip color="light" variant="flat" size="x-small" class="ml-1 text-body">
+                      <v-chip
+                        :color="colorLight"
+                        variant="flat"
+                        size="x-small"
+                        class="ms-1 text-body"
+                      >
                         {{ agencyPayoutList.length }}
                       </v-chip>
                     </v-btn>
@@ -406,7 +452,8 @@ const agencyPayStatusColor = (status: string) => {
             <!-- 필터 바 + 일괄 작업 -->
             <CCard v-if="selectedPeriod" class="shadow-sm mb-4">
               <CCardHeader
-                class="bg-light py-2 d-flex flex-wrap justify-content-between align-items-center gap-2"
+                :class="bgLight"
+                class="py-2 d-flex flex-wrap justify-content-between align-items-center gap-2"
               >
                 <!-- 좌측: 필터 + 검색 -->
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -437,7 +484,7 @@ const agencyPayStatusColor = (status: string) => {
                     />
                     <label
                       for="checkAll"
-                      class="form-check-label small fw-bold text-dark cursor-pointer"
+                      class="form-check-label small fw-bold text-body cursor-pointer"
                     >
                       전체 선택
                     </label>
@@ -450,7 +497,7 @@ const agencyPayStatusColor = (status: string) => {
                       }}원)
                     </v-chip>
 
-                    <template v-if="can(PERM.SALES_PAYOUT)">
+                    <template v-if="canSalesPayout">
                       <v-btn
                         size="small"
                         color="primary"
@@ -458,7 +505,7 @@ const agencyPayStatusColor = (status: string) => {
                         :disabled="isBatchLoading"
                         @click="requestBatchUpdate('2', '지급승인')"
                       >
-                        <v-icon icon="mdi-check" size="small" class="mr-1" />선택 승인
+                        <v-icon icon="mdi-check" size="small" class="me-1" />선택 승인
                       </v-btn>
                       <v-btn
                         size="small"
@@ -467,7 +514,7 @@ const agencyPayStatusColor = (status: string) => {
                         :disabled="isBatchLoading"
                         @click="requestBatchUpdate('3', '지급완료')"
                       >
-                        <v-icon icon="mdi-cash-check" size="small" class="mr-1" />선택 지급완료
+                        <v-icon icon="mdi-cash-check" size="small" class="me-1" />선택 지급완료
                       </v-btn>
                       <v-btn
                         size="small"
@@ -476,7 +523,7 @@ const agencyPayStatusColor = (status: string) => {
                         :disabled="isBatchLoading"
                         @click="requestBatchUpdate('4', '지급보류')"
                       >
-                        <v-icon icon="mdi-pause-circle" size="small" class="mr-1" />선택 보류
+                        <v-icon icon="mdi-pause-circle" size="small" class="me-1" />선택 보류
                       </v-btn>
                     </template>
 
@@ -494,9 +541,9 @@ const agencyPayStatusColor = (status: string) => {
                 <!-- 우측: CSV 다운로드 -->
                 <div class="d-flex align-items-center gap-2">
                   <v-btn size="small" color="success" variant="flat" @click="downloadBankingCsv">
-                    <v-icon icon="mdi-file-delimited" size="small" class="mr-1" />
+                    <v-icon icon="mdi-file-delimited" size="small" class="me-1" />
                     은행 이체용 CSV
-                    <span v-if="selectedPayoutIds.length > 0" class="ml-1"
+                    <span v-if="selectedPayoutIds.length > 0" class="ms-1"
                       >({{ selectedPayoutIds.length }}명)</span
                     >
                   </v-btn>
@@ -600,7 +647,7 @@ const agencyPayStatusColor = (status: string) => {
                       <!-- 지급 상태 드롭다운 -->
                       <CTableDataCell>
                         <select
-                          v-if="can(PERM.SALES_PAYOUT)"
+                          v-if="canSalesPayout"
                           :value="payout.pay_status"
                           class="form-select form-select-sm"
                           :class="{
@@ -725,7 +772,7 @@ const agencyPayStatusColor = (status: string) => {
                   <CCardBody>
                     <div class="text-body-secondary small fw-semibold">직영 / 외주 구분</div>
                     <div class="small mt-1">
-                      <v-chip color="info" variant="flat" size="x-small" class="mr-1">
+                      <v-chip color="info" variant="flat" size="x-small" class="me-1">
                         직영
                         {{ agencyPayoutList.filter(ap => ap.is_direct_managed).length }}개
                       </v-chip>
@@ -741,7 +788,10 @@ const agencyPayStatusColor = (status: string) => {
 
             <!-- 필터 바 -->
             <CCard v-if="selectedPeriod" class="shadow-sm mb-4">
-              <CCardHeader class="bg-light py-2 d-flex align-items-center gap-2 flex-wrap">
+              <CCardHeader
+                :class="bgLight"
+                class="py-2 d-flex align-items-center gap-2 flex-wrap"
+              >
                 <CFormSelect v-model="agencyStatusFilter" style="max-width: 130px">
                   <option value="">전체 상태</option>
                   <option value="1">지급대기</option>
@@ -831,7 +881,7 @@ const agencyPayStatusColor = (status: string) => {
                       <!-- 대행사 지급 상태 -->
                       <CTableDataCell>
                         <select
-                          v-if="can(PERM.SALES_PAYOUT)"
+                          v-if="canSalesPayout"
                           :value="ap.pay_status"
                           class="form-select form-select-sm"
                           :class="agencyPayStatusColor(ap.pay_status)"
