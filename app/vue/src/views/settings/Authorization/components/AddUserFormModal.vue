@@ -115,6 +115,7 @@ defineExpose({ callModal, close: closeModal })
                 autocomplete="off"
                 required
               />
+              <CFormFeedback invalid>아이디를 입력하세요.</CFormFeedback>
             </CCol>
           </CRow>
           <CRow class="mb-3">
@@ -128,6 +129,7 @@ defineExpose({ callModal, close: closeModal })
                 placeholder="이메일"
                 required
               />
+              <CFormFeedback invalid>올바른 이메일 주소를 입력하세요.</CFormFeedback>
             </CCol>
           </CRow>
           <CRow class="mb-3">
@@ -139,11 +141,13 @@ defineExpose({ callModal, close: closeModal })
                 id="password"
                 v-model="form.password"
                 type="password"
+                minlength="8"
                 maxlength="20"
-                placeholder="비밀번호"
+                placeholder="비밀번호 (8자 이상)"
                 autocomplete="off"
                 required
               />
+              <CFormFeedback invalid>비밀번호를 8자 이상 입력하세요.</CFormFeedback>
             </CCol>
             <CCol sm="4">
               <v-btn
@@ -166,10 +170,12 @@ defineExpose({ callModal, close: closeModal })
                 id="pass_conf"
                 v-model="form.pass_conf"
                 type="password"
+                minlength="8"
                 maxlength="20"
                 placeholder="비밀번호 확인"
                 required
               />
+              <CFormFeedback invalid>비밀번호 확인을 8자 이상 입력하세요.</CFormFeedback>
             </CCol>
             <CCol v-if="genPass" sm="4" class="mt-2 mt-sm-0">
               <div

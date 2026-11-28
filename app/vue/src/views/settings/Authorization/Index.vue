@@ -87,9 +87,14 @@ const executeAccountToggle = async () => {
       [field]: value,
     })
     if (updated) {
+      const nextUserInfo =
+        isSelf.value && accStore.userInfo ? { ...accStore.userInfo, [field]: value } : null
       refStatusConfirm.value?.close()
       pendingAction.value = null
       await selectUser(user.value.pk)
+      if (nextUserInfo) {
+        accStore.userInfo = nextUserInfo
+      }
     }
   } finally {
     isUpdatingStatus.value = false
@@ -120,7 +125,7 @@ onBeforeMount(async () => {
         <CCard v-if="user" class="mb-4">
           <CCardBody class="py-3 d-flex flex-wrap justify-content-between align-items-center gap-3" :class="bgLight">
             <div class="d-flex flex-wrap align-items-center gap-2">
-              <v-icon icon="mdi-account-card-details-outline" color="primary" size="small" />
+              <v-icon icon="mdi-card-account-details-outline" color="primary" size="small" />
               <span class="fw-bold">{{ user.username }}</span>
               <span class="text-body-secondary small">({{ user.email }})</span>
               <span v-if="user.staff_name" class="text-body-secondary small">

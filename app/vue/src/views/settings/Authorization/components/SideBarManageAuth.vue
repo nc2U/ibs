@@ -97,17 +97,31 @@ const hasRole = (projPk: number, rolePk: number) => {
 }
 
 // 멤버의 역할 토글 및 업데이트
-const toggleRole = async (proj: IssueProject, rolePk: number) => {
+const toggleRole = async (proj: IssueProject, rolePk: number, event?: Event) => {
   const projPk = proj.pk
-  if (!projPk || !props.user?.pk) return
-  if (!canManageProject(proj) || !isRoleAllowed(proj, rolePk)) return
-  if (mutatingProjects.value[projPk]) return
+  const input = event?.target as HTMLInputElement | null
+  const revertCheckbox = () => {
+    if (input) input.checked = hasRole(projPk || 0, rolePk)
+  }
+
+  if (!projPk || !props.user?.pk) {
+    revertCheckbox()
+    return
+  }
+  if (!canManageProject(proj) || !isRoleAllowed(proj, rolePk)) {
+    revertCheckbox()
+    return
+  }
+  if (mutatingProjects.value[projPk]) {
+    revertCheckbox()
+    return
+  }
 
   const member = memberList.value.find(m => m.project.pk === projPk)
   mutatingProjects.value = { ...mutatingProjects.value, [projPk]: true }
 
+  let ok = false
   try {
-    let ok = false
     if (!member) {
       if (!proj.slug) return
       const created = await workStore.createMember({
@@ -140,6 +154,7 @@ const toggleRole = async (proj: IssueProject, rolePk: number) => {
       }
     }
   } finally {
+    if (!ok) revertCheckbox()
     const nextState = { ...mutatingProjects.value }
     delete nextState[projPk]
     mutatingProjects.value = nextState
@@ -238,7 +253,7 @@ onMounted(() => {
                         !isRoleAllowed(proj, role.pk) ||
                         Boolean(proj.pk && mutatingProjects[proj.pk])
                       "
-                      @change="toggleRole(proj, role.pk)"
+                      @change="toggleRole(proj, role.pk, $event)"
                     />
                   </CCol>
                 </template>

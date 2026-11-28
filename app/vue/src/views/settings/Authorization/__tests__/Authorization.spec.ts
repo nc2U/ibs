@@ -287,6 +287,43 @@ describe('settings Authorization module', () => {
       is_active: true,
     })
     expect(wrapper.text()).toContain('활성 계정')
+
+    // superAuth가 본인 계정의 work_manager 토글 시 accStore.userInfo도 즉시 동기화
+    const superSelf = makeUser({
+      pk: 1,
+      username: 'rootadmin',
+      email: 'root@test.com',
+      is_superuser: true,
+      work_manager: true,
+    })
+    accStore.userInfo = superSelf
+    accStore.usersList = [superSelf, wmUser, approvedUser]
+    mockedApi.put.mockResolvedValueOnce({ data: { detail: '완료' } } as never)
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === `/user/${superSelf.pk}/`) {
+        return Promise.resolve({
+          data: {
+            ...superSelf,
+            work_manager: mockedApi.put.mock.calls.length > 1 ? false : true,
+          },
+        } as never)
+      }
+      if (url === '/user/') {
+        return Promise.resolve({ data: { results: [superSelf, wmUser, approvedUser] } } as never)
+      }
+      return Promise.resolve({ data: { results: [] } } as never)
+    })
+    userSelectComp.vm.$emit('select-user', superSelf.pk)
+    await flushPromises()
+    const wmToggleBtn = wrapper.findAll('button').find(b => b.text().includes('업무관리자 해제'))
+    await wmToggleBtn!.trigger('click')
+    await flushPromises()
+    const confirmBtn2 = wrapper
+      .findAll('.confirm-modal-stub button')
+      .find(b => b.text().includes('확인'))
+    await confirmBtn2!.trigger('click')
+    await flushPromises()
+    expect(accStore.userInfo?.work_manager).toBe(false)
   })
 
   it('SideBarManageAuth scopes dev projects to company, checks per-project permissions and allowed_roles, and passes userPk to deleteMember', async () => {
@@ -372,7 +409,7 @@ describe('settings Authorization module', () => {
       }
       return Promise.resolve({ data: { results: [] } } as never)
     })
-    mockedApi.delete.mockResolvedValueOnce({} as never)
+    mockedApi.delete.mockRejectedValueOnce(new Error('forbidden'))
 
     const wrapper = mount(SideBarManageAuth, {
       props: { user: accStore.userInfo },
@@ -392,8 +429,17 @@ describe('settings Authorization module', () => {
     expect(wrapper.find('#member-role-102-10').attributes('disabled')).toBeDefined()
     expect(wrapper.find('#member-role-101-10').attributes('disabled')).toBeUndefined()
 
-    // 본인(pk=7)의 마지막 역할 해제 -> deleteMember(500, 7) 호출 + my_projects 동기화
-    await wrapper.find('#member-role-101-10').trigger('change')
+    // API 실패 시 체크박스 DOM .checked 상태가 서버 상태(true)로 즉시 복원됨
+    const roleCheckbox = wrapper.find('#member-role-101-10')
+    ;(roleCheckbox.element as HTMLInputElement).checked = false
+    await roleCheckbox.trigger('change')
+    await flushPromises()
+    expect((roleCheckbox.element as HTMLInputElement).checked).toBe(true)
+
+    // 본인(pk=7)의 마지막 역할 해제 성공 -> deleteMember(500, 7) 호출 + my_projects 동기화
+    mockedApi.delete.mockResolvedValueOnce({} as never)
+    ;(roleCheckbox.element as HTMLInputElement).checked = false
+    await roleCheckbox.trigger('change')
     await flushPromises()
 
     expect(mockedApi.delete).toHaveBeenCalledWith('/member/500/')
@@ -410,6 +456,8 @@ describe('settings Authorization module', () => {
     })
     ;(wrapper.vm as unknown as { callModal: () => void }).callModal()
     await flushPromises()
+
+    expect(wrapper.findAll('.invalid-feedback')).toHaveLength(4)
 
     // option 내부 invalid <span> 없이 '01' ~ '24' 텍스트 렌더링
     const options = wrapper.findAll('select option')
