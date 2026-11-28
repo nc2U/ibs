@@ -142,12 +142,45 @@ export type ProAccountFilter = {
 // ----- old types ----------------------------------------
 
 export interface BalanceByAccount {
+  bank_id: number
   bank_acc: string
   bank_num: string
+  is_imprest: boolean
   date_inc: number
   date_out: number
   inc_sum: number | null
   out_sum: number | null
+  balance: number
+}
+
+export interface CompositeProAccountingEntryPayload {
+  pk?: number
+  account?: number | null
+  trader?: string
+  amount?: number
+  contract?: number | null
+  contractor?: number | null
+  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | null
+  installment_order?: number | null
+}
+
+export interface CompositeProBankTransPayload {
+  pk?: number
+  project: number
+  deal_date: string
+  bank_account: number
+  amount: number
+  sort: 1 | 2
+  content: string
+  note?: string
+  accounting_entries: CompositeProAccountingEntryPayload[]
+}
+
+export type CompositeProBankTransPatchPayload = Partial<
+  Omit<CompositeProBankTransPayload, 'accounting_entries'>
+> & {
+  pk: number
+  accounting_entries?: CompositeProAccountingEntryPayload[]
 }
 
 export interface PaymentPaid {

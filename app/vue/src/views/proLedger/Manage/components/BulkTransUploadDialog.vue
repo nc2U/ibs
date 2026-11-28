@@ -19,8 +19,30 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'confirm', payload: { replace: boolean }): void
+  (e: 'update:result', value: BulkParseResult | null): void
+  (e: 'confirm', payload: { replace: boolean; result: BulkParseResult | null }): void
 }>()
+
+const localResult = ref<BulkParseResult | null>(null)
+
+const cloneResult = (src: BulkParseResult | null): BulkParseResult | null => {
+  if (!src) return null
+  return {
+    ...src,
+    summary: { ...src.summary },
+    transactions: src.transactions.map(t => ({
+      ...t,
+      bankForm: { ...t.bankForm },
+      errors: [...t.errors],
+      warnings: [...t.warnings],
+      entries: t.entries.map(e => ({
+        ...e,
+        errors: [...e.errors],
+        warnings: [...e.warnings],
+      })),
+    })),
+  }
+}
 
 const replace = ref(true)
 const selectedBulkBank = ref<number | '' | null>(null)
@@ -30,16 +52,20 @@ const selectedBulkPayOrder = ref<number | null>(null)
 const excludeDuplicates = ref(true)
 
 watch(
-  () => props.modelValue,
-  open => {
+  () => [props.modelValue, props.result] as const,
+  ([open, nextResult]) => {
     if (open) {
+      localResult.value = cloneResult(nextResult)
       replace.value = !props.hasExisting
       selectedBulkBank.value = null
       selectedBulkAccount.value = null
       selectedBulkPayOrder.value = null
       excludeDuplicates.value = true
+    } else if (!nextResult) {
+      localResult.value = null
     }
   },
+  { immediate: true },
 )
 
 // 실제 선택 가능한 계정과목 (대분류/범주 계정 제외)
@@ -52,17 +78,20 @@ const validBankAccounts = computed(() =>
 
 // 결과 검증 및 요약 카운트 재계산
 const updateResultSummary = () => {
-  if (!props.result) return
-  const validTransactions = props.result.transactions.filter(t => t.isValid).length
-  props.result.summary.validTransactions = validTransactions
-  props.result.summary.invalidTransactions = props.result.transactions.length - validTransactions
-  props.result.isValid = props.result.transactions.length > 0 && validTransactions === props.result.transactions.length
+  if (!localResult.value) return
+  const validTransactions = localResult.value.transactions.filter(t => t.isValid).length
+  localResult.value.summary.validTransactions = validTransactions
+  localResult.value.summary.invalidTransactions =
+    localResult.value.transactions.length - validTransactions
+  localResult.value.isValid =
+    localResult.value.transactions.length > 0 &&
+    validTransactions === localResult.value.transactions.length
 }
 
 // 1. 거래계좌 일괄 적용
 const applyBulkBankAccount = () => {
   if (
-    !props.result ||
+    !localResult.value ||
     selectedBulkBank.value === null ||
     selectedBulkBank.value === '' ||
     selectedBulkBank.value === undefined ||
@@ -72,7 +101,7 @@ const applyBulkBankAccount = () => {
   const matched = props.bankAccounts.find(b => b.value === selectedBulkBank.value)
   if (!matched) return
 
-  props.result.transactions.forEach(t => {
+  localResult.value.transactions.forEach(t => {
     t.bankForm.bank_account = matched.value as number
     t.bankForm.bank_account_name = matched.label
     t.errors = t.errors.filter(err => !err.includes('거래계좌'))
@@ -84,7 +113,7 @@ const applyBulkBankAccount = () => {
 // 2. 계정과목 일괄 적용
 const applyBulkAccount = () => {
   if (
-    !props.result ||
+    !localResult.value ||
     selectedBulkAccount.value === null ||
     selectedBulkAccount.value === undefined ||
     !props.accounts
@@ -93,7 +122,7 @@ const applyBulkAccount = () => {
   const matched = props.accounts.find(a => a.value === selectedBulkAccount.value)
   if (!matched) return
 
-  props.result.transactions.forEach(t => {
+  localResult.value.transactions.forEach(t => {
     t.entries.forEach(e => {
       if (!applyOnlyUnassignedAccount.value || !e.account) {
         e.account = matched.value
@@ -109,11 +138,11 @@ const applyBulkAccount = () => {
 
 // 3. 일괄 납부회차 적용
 const applyBulkPayOrder = () => {
-  if (!props.result || !selectedBulkPayOrder.value || !props.payOrders) return
+  if (!localResult.value || !selectedBulkPayOrder.value || !props.payOrders) return
   const matched = props.payOrders.find(p => p.value === selectedBulkPayOrder.value)
   if (!matched) return
 
-  props.result.transactions.forEach(t => {
+  localResult.value.transactions.forEach(t => {
     t.entries.forEach(e => {
       e.installment_order = matched.value
       e.installment_order_name = matched.label
@@ -124,22 +153,24 @@ const applyBulkPayOrder = () => {
 
 // 유효 건수 (중복 제외 옵션 반영)
 const validCount = computed(() => {
-  if (!props.result) return 0
-  return props.result.transactions.filter(t => {
+  if (!localResult.value) return 0
+  return localResult.value.transactions.filter(t => {
     if (excludeDuplicates.value && t.isDuplicate) return false
     return t.isValid
   }).length
 })
 
-const duplicateCount = computed(() => props.result?.summary.duplicateCount ?? 0)
+const duplicateCount = computed(() => localResult.value?.summary.duplicateCount ?? 0)
 
 const handleConfirm = () => {
-  if (props.result && excludeDuplicates.value) {
-    props.result.transactions.forEach(t => {
+  if (localResult.value && excludeDuplicates.value) {
+    localResult.value.transactions.forEach(t => {
       if (t.isDuplicate) t.isValid = false
     })
   }
-  emit('confirm', { replace: replace.value })
+  const confirmedResult = cloneResult(localResult.value)
+  emit('update:result', confirmedResult)
+  emit('confirm', { replace: replace.value, result: confirmedResult })
   emit('update:modelValue', false)
 }
 </script>
@@ -147,7 +178,7 @@ const handleConfirm = () => {
 <template>
   <v-dialog :model-value="modelValue" max-width="1180" persistent scrollable>
     <v-card>
-      <v-card-title class="d-flex align-center bg-grey-lighten-4 py-2">
+      <v-card-title class="d-flex align-center bulk-header-surface py-2">
         <v-icon color="primary" class="me-2">mdi-file-excel-box</v-icon>
         <span class="fw-bold">대량 거래 입력 엑셀 미리보기 및 검증</span>
         <v-spacer />
@@ -156,10 +187,10 @@ const handleConfirm = () => {
         </v-btn>
       </v-card-title>
 
-      <v-card-text v-if="result" class="pa-4">
+      <v-card-text v-if="localResult" class="pa-4">
         <!-- 원본 서식 감지 배너 -->
         <v-alert
-          v-if="result.fileFormat === 'bank_raw'"
+          v-if="localResult.fileFormat === 'bank_raw'"
           type="info"
           variant="tonal"
           class="mb-3 py-2"
@@ -168,39 +199,39 @@ const handleConfirm = () => {
           <div class="d-flex align-center justify-space-between flex-wrap">
             <div>
               <v-chip size="x-small" color="primary" variant="flat" class="me-2 fw-bold">
-                {{ result.detectedBankName || '인터넷 뱅킹' }} 원본 서식 감지
+                {{ localResult.detectedBankName || '인터넷 뱅킹' }} 원본 서식 감지
               </v-chip>
               <strong>은행 거래내역 엑셀 파일</strong>이 자동으로 감지되어 시스템 거래 항목으로 변환되었습니다.
             </div>
           </div>
-          <div class="mt-1 text-caption text-grey-darken-2">
+          <div class="mt-1 text-caption text-medium-emphasis">
             ※ 통장 엑셀 특성상 계좌 및 계정과목이 미지정된 항목은 아래 <strong>[일괄 설정 도구]</strong>를 이용하여 원클릭으로 손쉽게 지정할 수 있습니다.
           </div>
         </v-alert>
 
         <!-- 요약 상태 알림 -->
-        <v-alert :type="result.isValid ? 'success' : 'warning'" variant="tonal" class="mb-3 py-2">
+        <v-alert :type="localResult.isValid ? 'success' : 'warning'" variant="tonal" class="mb-3 py-2">
           <div class="d-flex align-center justify-space-between flex-wrap">
             <div>
-              <strong>은행거래:</strong> {{ result.summary.transactionCount }}건 (권장 최대 60건) |
-              <strong>회계 계정:</strong> {{ result.summary.entryCount }}건 (최대 250행) |
+              <strong>은행거래:</strong> {{ localResult.summary.transactionCount }}건 (권장 최대 60건) |
+              <strong>회계 계정:</strong> {{ localResult.summary.entryCount }}건 (최대 250행) |
               <strong class="text-success">반영 가능:</strong> {{ validCount }}건 |
-              <strong class="text-error">오류:</strong> {{ result.summary.invalidTransactions }}건
+              <strong class="text-error">오류:</strong> {{ localResult.summary.invalidTransactions }}건
               <template v-if="duplicateCount > 0">
                 | <strong class="text-warning">중복 의심:</strong> {{ duplicateCount }}건
               </template>
             </div>
             <v-chip size="x-small" color="primary" variant="outlined" class="ms-auto">
-              {{ result.fileFormat === 'bank_raw' ? '은행 원본 변환 모드' : 'IBS 표준 템플릿' }}
+              {{ localResult.fileFormat === 'bank_raw' ? '은행 원본 변환 모드' : 'IBS 표준 템플릿' }}
             </v-chip>
           </div>
-          <div v-if="!result.isValid" class="mt-1 text-caption text-error">
+          <div v-if="!localResult.isValid" class="mt-1 text-caption text-error">
             ※ 거래계좌 또는 계정과목 오류가 있는 거래는 제외되며, 상단 일괄 지정 도구를 통해 해결할 수 있습니다.
           </div>
         </v-alert>
 
         <!-- 일괄 지정 도구 패널 (통장 / 계정과목 / 납부회차 / 중복제외) -->
-        <v-card variant="outlined" class="mb-3 bg-grey-lighten-5">
+        <v-card variant="outlined" class="mb-3 bulk-panel-surface">
           <v-card-text class="py-2">
             <div class="text-caption fw-bold text-primary mb-2 d-flex align-center">
               <v-icon size="16" color="primary" class="me-1">mdi-auto-fix</v-icon>
@@ -219,7 +250,6 @@ const handleConfirm = () => {
                   variant="outlined"
                   hide-details
                   placeholder="거래계좌 선택"
-                  class="bg-white"
                   clearable
                 />
                 <v-btn
@@ -244,7 +274,6 @@ const handleConfirm = () => {
                   variant="outlined"
                   hide-details
                   placeholder="계정과목 선택"
-                  class="bg-white"
                   clearable
                 />
                 <v-btn
@@ -277,7 +306,6 @@ const handleConfirm = () => {
                   variant="outlined"
                   hide-details
                   placeholder="납부회차 선택"
-                  class="bg-white"
                   clearable
                 />
                 <v-btn
@@ -294,8 +322,8 @@ const handleConfirm = () => {
 
             <!-- 중복 의심 거래 건너뛰기 토글 -->
             <div v-if="duplicateCount > 0" class="mt-2 pt-2 border-t d-flex align-center">
-              <v-icon color="warning" size="18" class="mr-1">mdi-alert-box-outline</v-icon>
-              <span class="text-caption font-weight-bold text-grey-darken-3 mr-3">
+              <v-icon color="warning" size="18" class="me-1">mdi-alert-box-outline</v-icon>
+              <span class="text-caption fw-bold text-high-emphasis me-3">
                 기존 등록된 거래와 일치하는 중복 의심 거래가 {{ duplicateCount }}건 있습니다.
               </span>
               <v-switch
@@ -309,13 +337,13 @@ const handleConfirm = () => {
           </v-card-text>
         </v-card>
 
-        <div v-if="result.transactions.length === 0" class="text-center text-grey py-6">
+        <div v-if="localResult.transactions.length === 0" class="text-center text-medium-emphasis py-6">
           읽을 수 있는 거래 행이 없습니다. 엑셀 파일 형식을 확인해 주세요.
         </div>
 
         <div style="max-height: 480px; overflow-y: auto">
           <v-card
-            v-for="t in result.transactions"
+            v-for="t in localResult.transactions"
             :key="t.firstRow"
             variant="outlined"
             class="mb-3"
@@ -328,18 +356,18 @@ const handleConfirm = () => {
                   :color="t.isDuplicate && excludeDuplicates ? 'warning' : t.isValid ? 'success' : 'error'"
                   size="18"
                 />
-                <strong class="text-grey-darken-2">#{{ t.key }}</strong>
+                <strong class="text-medium-emphasis">#{{ t.key }}</strong>
                 <v-chip size="x-small" :color="t.bankForm.sort === 1 ? 'indigo' : 'red'" variant="flat">
                   {{ t.bankForm.sort === 1 ? '입금' : '출금' }}
                 </v-chip>
-                <span class="font-weight-medium">{{ t.bankForm.deal_date }}</span>
-                <span v-if="t.bankForm.bank_account_name" class="text-primary font-weight-medium">
+                <span class="fw-medium">{{ t.bankForm.deal_date }}</span>
+                <span v-if="t.bankForm.bank_account_name" class="text-primary fw-medium">
                   {{ t.bankForm.bank_account_name }}
                 </span>
-                <span v-else class="text-error font-weight-medium">
+                <span v-else class="text-error fw-medium">
                   [계좌 미지정]
                 </span>
-                <span class="text-grey-darken-1">{{ t.bankForm.content }}</span>
+                <span class="text-medium-emphasis">{{ t.bankForm.content }}</span>
 
                 <v-chip v-if="t.isDuplicate" size="x-small" color="warning" variant="tonal">
                   중복 의심: {{ t.duplicateReason }}
@@ -351,21 +379,21 @@ const handleConfirm = () => {
                 </span>
               </div>
 
-              <div v-for="(msg, i) in t.errors" :key="`e${i}`" class="text-error text-caption ml-6 mt-1">
+              <div v-for="(msg, i) in t.errors" :key="`e${i}`" class="text-error text-caption ms-6 mt-1">
                 ✖ {{ msg }}
               </div>
               <div
                 v-for="(msg, i) in t.warnings"
                 :key="`w${i}`"
-                class="text-warning text-caption ml-6 mt-1"
+                class="text-warning text-caption ms-6 mt-1"
               >
                 ⚠ {{ msg }}
               </div>
 
               <!-- 분개 항목 표 -->
-              <table class="w-100 mt-2" style="border-collapse: collapse; font-size: 0.85rem">
+              <table class="w-100 mt-2 bulk-entry-table">
                 <thead>
-                  <tr style="background: #f5f5f5">
+                  <tr class="bulk-table-head-row">
                     <th class="pa-1 text-start" style="width: 50px">행</th>
                     <th class="pa-1 text-start">계정이름</th>
                     <th class="pa-1 text-start">거래처</th>
@@ -376,8 +404,8 @@ const handleConfirm = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="e in t.entries" :key="e.rowNumber" style="border-top: 1px solid #eee">
-                    <td class="pa-1 text-grey">{{ e.rowNumber }}</td>
+                  <tr v-for="e in t.entries" :key="e.rowNumber" class="bulk-table-body-row">
+                    <td class="pa-1 text-medium-emphasis">{{ e.rowNumber }}</td>
                     <td class="pa-1">
                       <span v-if="e.account_name" class="fw-medium">
                         {{ e.account_name }}
@@ -401,7 +429,7 @@ const handleConfirm = () => {
                       <span v-if="e.installment_order_name" class="text-primary fw-medium">
                         {{ e.installment_order_name }}
                       </span>
-                      <span v-else class="text-grey">-</span>
+                      <span v-else class="text-medium-emphasis">-</span>
                     </td>
                     <td class="pa-1">
                       <span v-for="(m, i) in e.errors" :key="`ee${i}`" class="text-error d-block">
@@ -422,7 +450,7 @@ const handleConfirm = () => {
         </div>
       </v-card-text>
 
-      <v-card-actions class="bg-grey-lighten-4 py-2 px-4">
+      <v-card-actions class="bulk-header-surface py-2 px-4">
         <v-switch
           v-model="replace"
           color="primary"
@@ -445,3 +473,44 @@ const handleConfirm = () => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped lang="scss">
+.bulk-header-surface {
+  background-color: #f5f5f5;
+}
+
+.bulk-panel-surface {
+  background-color: #fafafa;
+}
+
+.bulk-entry-table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.bulk-table-head-row {
+  background-color: #f5f5f5;
+}
+
+.bulk-table-body-row {
+  border-top: 1px solid #eeeeee;
+}
+
+.dark-theme {
+  .bulk-header-surface {
+    background-color: #2f3349;
+  }
+
+  .bulk-panel-surface {
+    background-color: #25293c;
+  }
+
+  .bulk-table-head-row {
+    background-color: #2f3349;
+  }
+
+  .bulk-table-body-row {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+}
+</style>

@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms.ts'
+import { message } from '@/utils/helper'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
-interface NewEntryForm {
+export interface NewEntryForm {
   pk?: number
   account?: number | null
   trader?: string
@@ -13,57 +14,74 @@ interface NewEntryForm {
   evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
   contract?: number | null
   contractor?: number | null
+  installment_order?: number | null
 }
 
 interface Props {
   sort: 1 | 2
   displayRows: NewEntryForm[]
   transAmount: number | null
+  project?: number | null
 }
 
-const props = defineProps<Props>() // Assign defineProps to a variable
-
-watch(
-  () => props.transAmount,
-  newValue => {
-    if (props.displayRows.length === 1) {
-      props.displayRows[0].amount = newValue || undefined
-    }
-  },
-)
-
-// props.sort 변경을 감지하여 account와 evidence_type을 초기화하는 watch 추가
-watch(
-  () => props.sort,
-  (newValue, oldValue) => {
-    // 실제로 값이 변경되었을 때만 초기화 (초기 로드 시 oldValue는 undefined)
-    if (oldValue !== undefined && newValue !== oldValue) {
-      props.displayRows.forEach(row => {
-        row.account = null // account 초기화
-        row.evidence_type = '' // evidence_type 초기화
-      })
-    }
-  },
-)
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+})
 
 interface Emits {
+  (e: 'update:entries', rows: NewEntryForm[]): void
   (e: 'removeEntry', index: number): void
-
   (e: 'insertTransferFee', index: number): void
 }
 
 const emit = defineEmits<Emits>()
 
-const { can, PERM } = usePerms()
-const canLedgerManage = computed(() => can(PERM.LEDGER_CREATE) || can(PERM.LEDGER_UPDATE))
+const updateRowField = (index: number, patch: Partial<NewEntryForm>) => {
+  const nextRows = props.displayRows.map((row, i) => (i === index ? { ...row, ...patch } : row))
+  emit('update:entries', nextRows)
+}
+
+watch(
+  () => props.transAmount,
+  newValue => {
+    const normalized = newValue || undefined
+    if (props.displayRows.length === 1 && props.displayRows[0]?.amount !== normalized) {
+      updateRowField(0, { amount: normalized })
+    }
+  },
+)
+
+// props.sort 변경을 감지하여 account와 evidence_type, contract/contractor 초기화
+watch(
+  () => props.sort,
+  (newValue, oldValue) => {
+    if (oldValue !== undefined && newValue !== oldValue) {
+      const nextRows = props.displayRows.map(row => ({
+        ...row,
+        account: null,
+        contract: null,
+        contractor: null,
+        evidence_type: '' as const,
+      }))
+      emit('update:entries', nextRows)
+    }
+  },
+)
+
+const { can, canGlobal, PERM } = usePerms()
+const canLedgerManage = computed(() =>
+  (props.project
+    ? can(PERM.LEDGER_CREATE, props.project) ||
+      can(PERM.LEDGER_UPDATE, props.project) ||
+      can(PERM.LEDGER_MANAGE, props.project)
+    : can(PERM.LEDGER_CREATE) || can(PERM.LEDGER_UPDATE) || can(PERM.LEDGER_MANAGE)) ||
+  canGlobal(PERM.LEDGER_MANAGE),
+)
 
 const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
 const getContractors = inject<ComputedRef<{ value: number; label: string }[]>>('getAllContractors')
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
-const transferFeePk = inject('transferFeePk')
-
-// Track which row indexes have already inserted transfer fees
-const insertedTransferFees = ref<Set<number>>(new Set())
+const transferFeePk = inject<ComputedRef<number | undefined>>('transferFeePk')
 
 const sortType = computed(() => {
   if (props.sort === 1) return 'deposit' // 입금
@@ -71,66 +89,43 @@ const sortType = computed(() => {
   return null // 전체
 })
 
-// 선택된 account가 contract를 요구하는지 확인
+// 선택된 account가 contract/contractor를 요구하는지 확인
 const getAccountById = (accountId: number | null | undefined): AccountPicker | undefined => {
   if (!accountId || !proAccounts?.value) return undefined
   return proAccounts.value.find(acc => acc.value === accountId)
 }
 
-// account 변경 시 requires_contract 가 false면 contract 를 null로 초기화
-// is_related_contractor 가 false면 contractor 를 null로 초기화
-watch(
-  () => props.displayRows.map(row => row.account),
-  (newAccounts, oldAccounts) => {
-    props.displayRows.forEach((row, index) => {
-      // account가 변경된 경우에만 처리
-      if (newAccounts[index] !== oldAccounts?.[index]) {
-        const account = getAccountById(row.account)
-
-        // account가 없거나 requires_contract가 false인 경우 contract를 null로 초기화
-        if (!account || !account.requires_contract) {
-          row.contract = null
-        } else if (row.contract === undefined) {
-          row.contract = null
-        }
-
-        // account가 없거나 is_related_contractor가 false인 경우 contractor를 null로 초기화
-        if (!account || !account.is_related_contractor) {
-          row.contractor = null
-        } else if (row.contractor === undefined) {
-          row.contractor = null
-        }
-      }
-    })
-  },
-  { deep: true },
-)
+const onAccountChange = (index: number, accId: number | null) => {
+  const account = getAccountById(accId)
+  const current = props.displayRows[index]
+  updateRowField(index, {
+    account: accId,
+    contract: account?.requires_contract ? (current?.contract ?? null) : null,
+    contractor: account?.is_related_contractor ? (current?.contractor ?? null) : null,
+  })
+}
 
 const removeEntry = (index: number) => {
   emit('removeEntry', index)
 }
 
-// Check if transfer fee already inserted for this row
 const hasInsertedFee = (index: number): boolean => {
-  return insertedTransferFees.value.has(index)
+  const nextRow = props.displayRows[index + 1]
+  return Boolean(
+    nextRow &&
+      transferFeePk?.value !== undefined &&
+      nextRow.account === transferFeePk.value &&
+      nextRow.trader?.includes('이체수수료'),
+  )
 }
 
 const insertTransferFee = (index: number) => {
-  // Check if already inserted for this row
-  if (hasInsertedFee(index)) {
-    return // Silently ignore (icon should be disabled)
-  }
+  if (hasInsertedFee(index)) return
 
-  const currentRow = props.displayRows[index]
-
-  // Validate transferFeePk exists
-  if (transferFeePk === undefined) {
-    alert('이체수수료 계정이 설정되지 않았습니다. 관리자에게 문의하세요.')
+  if (!transferFeePk || transferFeePk.value === undefined) {
+    message('warning', '알림!', '이체수수료 계정이 설정되지 않았습니다. 관리자에게 문의하세요.')
     return
   }
-
-  // Mark as inserted
-  insertedTransferFees.value.add(index)
 
   emit('insertTransferFee', index)
 }
@@ -140,16 +135,14 @@ const insertTransferFee = (index: number) => {
 const isEvidenceRequired = (row: NewEntryForm): boolean => {
   if (props.sort === 1) return false // 입금은 지출증빙 불필요
 
-  // 출금(sort===2)인 경우
   const account = getAccountById(row.account)
   if (!account) return true // 계정이 선택되지 않았으면 일단 required
 
-  // 대체(출금) 계정인 경우 지출증빙 불필요
   if (account.category === 'transfer' && account.direction === '출금') {
     return false
   }
 
-  return true // 일반 출금 계정은 지출증빙 필수
+  return true
 }
 </script>
 
@@ -167,18 +160,20 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
         <LedgerAccount
-          v-model="row.account"
+          :model-value="row.account ?? null"
           :options="proAccounts ?? []"
           :sort-type="sortType"
           required
+          @update:model-value="val => onAccountChange(idx, val)"
         />
         <!-- contract 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.requires_contract" class="pt-0 px-2">
           <MultiSelect
-            v-model.number="row.contract"
+            :model-value="row.contract ?? null"
             mode="single"
             :options="getContracts"
             placeholder="계약 정보 선택 (선택)"
+            @update:model-value="val => updateRowField(idx, { contract: val ? Number(val) : null })"
           />
         </div>
         <div
@@ -186,32 +181,44 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           class="pt-0 px-2"
         >
           <MultiSelect
-            v-model.number="row.contractor"
+            :model-value="row.contractor ?? null"
             mode="single"
             :options="getContractors"
             placeholder="계약자 정보 선택"
+            @update:model-value="val => updateRowField(idx, { contractor: val ? Number(val) : null })"
           />
         </div>
       </CTableDataCell>
       <CTableDataCell class="px-1">
-        <CFormInput v-model="row.trader" size="sm" placeholder="거래처" />
+        <CFormInput
+          :model-value="row.trader ?? ''"
+          size="sm"
+          placeholder="거래처"
+          @update:model-value="val => updateRowField(idx, { trader: String(val ?? '') })"
+        />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormInput
-          v-model.number="row.amount"
+          :model-value="row.amount"
           size="sm"
           type="number"
           min="0"
           placeholder="분류 금액"
+          @update:model-value="
+            val => updateRowField(idx, { amount: val === '' || val === null ? undefined : Number(val) })
+          "
         />
       </CTableDataCell>
       <CTableDataCell class="px-1">
         <CFormSelect
-          v-model="row.evidence_type"
+          :model-value="row.evidence_type ?? ''"
           :disabled="sort === 1"
           :required="isEvidenceRequired(row)"
           size="sm"
           placeholder="지출 증빙"
+          @update:model-value="
+            val => updateRowField(idx, { evidence_type: (val ?? '') as NewEntryForm['evidence_type'] })
+          "
         >
           <option value="">---------</option>
           <option value="0">증빙없음</option>
@@ -223,7 +230,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
-      <CTableDataCell v-if="canLedgerManage" class="text-right pr-2">
+      <CTableDataCell v-if="canLedgerManage" class="text-end pe-2">
         <v-icon
           v-if="sort === 2 && !row.trader?.includes('이체수수료')"
           icon="mdi-playlist-plus"
@@ -234,7 +241,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           v-tooltip="'이체수수료 추가'"
           @click="insertTransferFee(idx)"
         />
-        <v-icon icon="mdi-close" size="small" class="ml-2 pointer" @click="removeEntry(idx)" />
+        <v-icon icon="mdi-close" size="small" class="ms-2 pointer" @click="removeEntry(idx)" />
       </CTableDataCell>
     </CTableRow>
   </CTable>

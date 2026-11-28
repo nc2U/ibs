@@ -2085,6 +2085,171 @@ class AdminHtmlRenderingTests(LedgerTestBase):
         res_invalid = self.client.get('/api/v1/ledger/company-transaction/find_page/?highlight_id=abc')
         self.assertEqual(res_invalid.status_code, http_status.HTTP_400_BAD_REQUEST)
 
+    def test_project_find_page_filters_and_rls(self):
+        """프로젝트 find_page가 project/is_imprest/account_category/limit 필터와 RLS를 준수하는지 검증"""
+        imprest_bank = ProjectBankAccount.objects.create(
+            project=self.project_a,
+            bankcode=self.bank_code,
+            alias_name='운영비계좌A',
+            number='111-222-333',
+            is_imprest=True,
+        )
+        txs = []
+        for idx in range(1, 21):
+            tx = ProjectBankTransaction.objects.create(
+                project=self.project_a,
+                bank_account=imprest_bank if idx % 5 == 0 else self.bank_acc_a,
+                deal_date=date(2026, 8, idx),
+                amount=100000 * idx,
+                sort=self.sort_deposit if idx % 2 == 0 else self.sort_withdraw,
+                content=f'프로젝트 거래 {idx:02d}',
+                creator=self.admin_user,
+            )
+            ProjectAccountingEntry.objects.create(
+                transaction_id=tx.transaction_id,
+                project=self.project_a,
+                account=self.account_deposit if idx % 2 == 0 else self.account_expense,
+                amount=100000 * idx,
+                trader=f'거래처{idx}',
+            )
+            txs.append(tx)
+
+        other_tx = ProjectBankTransaction.objects.create(
+            project=self.project_b,
+            bank_account=self.bank_acc_b,
+            deal_date=date(2026, 8, 25),
+            amount=500000,
+            sort=self.sort_deposit,
+            content='타 프로젝트 거래',
+            creator=self.admin_user,
+        )
+
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 최신 거래(day 20, index 19) -> 1페이지
+        res_p1 = self.client.get(
+            f'/api/v1/ledger/project-transaction/find_page/?project={self.project_a.pk}&highlight_id={txs[19].pk}'
+        )
+        self.assertEqual(res_p1.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_p1.data['page'], 1)
+
+        # 2. 전체 project_a 기준 day 03(index 2) -> 앞에 17건 -> 2페이지
+        res_p2 = self.client.get(
+            f'/api/v1/ledger/project-transaction/find_page/?project={self.project_a.pk}&highlight_id={txs[2].pk}'
+        )
+        self.assertEqual(res_p2.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_p2.data['page'], 2)
+
+        # 3. is_imprest=true 필터 (day 5,10,15,20 4건만 남음 -> day 05(index 4)도 1페이지)
+        res_imprest = self.client.get(
+            f'/api/v1/ledger/project-transaction/find_page/?project={self.project_a.pk}&is_imprest=true&highlight_id={txs[4].pk}'
+        )
+        self.assertEqual(res_imprest.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_imprest.data['page'], 1)
+
+        # 4. account_category 필터 적용 (자산 입금 10건만 남음 -> day 02(index 1)도 1페이지)
+        res_filtered = self.client.get(
+            f'/api/v1/ledger/project-transaction/find_page/?project={self.project_a.pk}&account_category=asset&highlight_id={txs[1].pk}'
+        )
+        self.assertEqual(res_filtered.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_filtered.data['page'], 1)
+
+        # 5. 타 프로젝트 거래 조회 시 RLS 차단 (404)
+        res_rls = self.client.get(
+            f'/api/v1/ledger/project-transaction/find_page/?highlight_id={other_tx.pk}'
+        )
+        self.assertEqual(res_rls.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 6. 잘못된/누락된 파라미터 -> 400
+        res_missing = self.client.get('/api/v1/ledger/project-transaction/find_page/')
+        self.assertEqual(res_missing.status_code, http_status.HTTP_400_BAD_REQUEST)
+        res_invalid = self.client.get('/api/v1/ledger/project-transaction/find_page/?highlight_id=abc')
+        self.assertEqual(res_invalid.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+    def test_project_balance_by_account_directpay_filter(self):
+        """프로젝트 balance_by_account가 직불(direct/bank_account__directpay) 및 잔액 필터를 정확히 반영하는지 검증"""
+        directpay_bank = ProjectBankAccount.objects.create(
+            project=self.project_a,
+            bankcode=self.bank_code,
+            alias_name='직불계좌A',
+            number='555-666-777',
+            directpay=True,
+        )
+        zero_bank = ProjectBankAccount.objects.create(
+            project=self.project_a,
+            bankcode=self.bank_code,
+            alias_name='잔고영계좌A',
+            number='888-999-000',
+            directpay=False,
+        )
+        ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=self.bank_acc_a,
+            deal_date=date(2026, 8, 10),
+            amount=300000,
+            sort=self.sort_deposit,
+            content='일반 계좌 입금',
+            creator=self.admin_user,
+        )
+        ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=directpay_bank,
+            deal_date=date(2026, 8, 10),
+            amount=500000,
+            sort=self.sort_deposit,
+            content='직불 계좌 입금',
+            creator=self.admin_user,
+        )
+        ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=zero_bank,
+            deal_date=date(2026, 8, 9),
+            amount=100000,
+            sort=self.sort_deposit,
+            content='잔고영 입금',
+            creator=self.admin_user,
+        )
+        ProjectBankTransaction.objects.create(
+            project=self.project_a,
+            bank_account=zero_bank,
+            deal_date=date(2026, 8, 10),
+            amount=100000,
+            sort=self.sort_withdraw,
+            content='잔고영 출금',
+            creator=self.admin_user,
+        )
+
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. 기본/direct=0 + is_balance=true: 직불계좌와 잔액 0 계좌 모두 제외
+        res_default = self.client.get(
+            f'/api/v1/ledger/project-transaction/balance_by_account/?project={self.project_a.pk}&date=2026-08-10&direct=0&is_balance=true'
+        )
+        self.assertEqual(res_default.status_code, http_status.HTTP_200_OK)
+        names_default = [row['bank_acc'] for row in res_default.data]
+        self.assertIn(self.bank_acc_a.alias_name, names_default)
+        self.assertNotIn('직불계좌A', names_default)
+        self.assertNotIn('잔고영계좌A', names_default)
+
+        # 2. direct=i: 직불계좌 포함
+        res_direct = self.client.get(
+            f'/api/v1/ledger/project-transaction/balance_by_account/?project={self.project_a.pk}&date=2026-08-10&direct=i&is_balance=true'
+        )
+        self.assertEqual(res_direct.status_code, http_status.HTTP_200_OK)
+        names_direct = [row['bank_acc'] for row in res_direct.data]
+        self.assertIn(self.bank_acc_a.alias_name, names_direct)
+        self.assertIn('직불계좌A', names_direct)
+        self.assertNotIn('잔고영계좌A', names_direct)
+
+        # 3. is_balance 빈 문자열 + bank_account__directpay=i: 잔액 0 계좌 및 직불계좌 모두 포함
+        res_all = self.client.get(
+            f'/api/v1/ledger/project-transaction/balance_by_account/?project={self.project_a.pk}&date=2026-08-10&bank_account__directpay=i&is_balance='
+        )
+        self.assertEqual(res_all.status_code, http_status.HTTP_200_OK)
+        names_all = [row['bank_acc'] for row in res_all.data]
+        self.assertIn('직불계좌A', names_all)
+        self.assertIn('잔고영계좌A', names_all)
+
 
 
 

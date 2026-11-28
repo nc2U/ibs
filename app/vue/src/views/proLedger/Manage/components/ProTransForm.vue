@@ -3,14 +3,19 @@ import { computed, onBeforeMount, reactive, ref, watch, provide } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
-import { useExcelUpload } from '@/composables/useExcelUpload'
+import { useExcelUpload, type ParseResult } from '@/composables/useExcelUpload'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { usePayment } from '@/store/pinia/payment.ts'
-import { TableSecondary } from '@/utils/cssMixins.ts'
-import type { ProBankTrans } from '@/store/types/proLedger.ts'
-import type { ParseResult } from '@/composables/useExcelUpload'
+import { bgLight, TableSecondary } from '@/utils/cssMixins.ts'
+import type {
+  CompositeProAccountingEntryPayload,
+  CompositeProBankTransPayload,
+  ProBankTrans,
+  ProjectBank,
+} from '@/store/types/proLedger.ts'
 import { type BulkParseResult, useBulkTransExcel } from '@/composables/useBulkTransExcel'
 import BankTransactionRow, { type BankTransactionData } from './BankTransactionRow.vue'
 import BulkTransUploadDialog from './BulkTransUploadDialog.vue'
@@ -18,41 +23,46 @@ import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import NoAuth from '@/views/_Accounts/NoAuth.vue'
 import AccountManage from './AccountManage.vue'
-import ProAccountEntry from './ProAccountEntry.vue'
+import ProAccountEntry, { type NewEntryForm } from './ProAccountEntry.vue'
 import BankAcc from './BankAcc.vue'
 
-const props = defineProps({
-  project: { type: Number, default: null },
-})
-
-const fetchFormData = async (projId: number) => {
-  await proLedgerStore.fetchProBankAccList(projId)
-  await proLedgerStore.fetchAllProBankAccList(projId)
-  await proLedgerStore.fetchProjectAccounts()
-  await contractStore.fetchAllContracts(projId)
-  await contractStore.fetchAllContractors(projId)
-  await paymentStore.fetchPayOrderList(projId)
+interface Props {
+  project?: number | null
+  isImprest?: boolean
 }
 
-watch(
-  () => props.project,
-  async val => {
-    if (val) {
-      await fetchFormData(val)
-    }
-    if (isCreateMode.value) initializeCreateForm()
-    else await router.push({ name: '거래 내역 관리' })
-  },
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+  isImprest: false,
+})
+
+const accStore = useAccount()
+const { can, canGlobal, PERM } = usePerms()
+const proLedgerStore = useProLedger()
+const contractStore = useContract()
+const paymentStore = usePayment()
+
+const canLedgerCreate = computed(() =>
+  props.project ? can(PERM.LEDGER_CREATE, props.project) : can(PERM.LEDGER_CREATE),
+)
+const canLedgerUpdate = computed(() =>
+  props.project ? can(PERM.LEDGER_UPDATE, props.project) : can(PERM.LEDGER_UPDATE),
+)
+const canLedgerDelete = computed(() =>
+  props.project ? can(PERM.LEDGER_DELETE, props.project) : can(PERM.LEDGER_DELETE),
+)
+const canLedgerManage = computed(
+  () =>
+    canLedgerCreate.value ||
+    canLedgerUpdate.value ||
+    (props.project ? can(PERM.LEDGER_MANAGE, props.project) : can(PERM.LEDGER_MANAGE)) ||
+    canGlobal(PERM.LEDGER_MANAGE),
 )
 
-const { can, PERM } = usePerms()
-const canLedgerCreate = computed(() => can(PERM.LEDGER_CREATE))
-const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
-const canLedgerDelete = computed(() => can(PERM.LEDGER_DELETE))
-const canLedgerManage = computed(() => canLedgerCreate.value || canLedgerUpdate.value)
-
 const confirmModal = ref()
+const leaveConfirmModal = ref()
 const alertModal = ref()
 const refAccountManage = ref()
 const refBankAcc = ref()
@@ -61,11 +71,13 @@ const [route, router] = [useRoute(), useRouter()]
 
 const transId = computed(() => Number(route.params.transId) || null)
 const isCreateMode = computed(() => !transId.value)
+const listRouteName = computed(() => (props.isImprest ? '운영비 내역 관리' : '거래 내역 관리'))
+const canAccessForm = computed(() =>
+  isCreateMode.value ? canLedgerCreate.value : canLedgerUpdate.value,
+)
 const isSaving = ref(false)
+const skipLeaveGuard = ref(false)
 
-const proLedgerStore = useProLedger()
-const contractStore = useContract()
-const paymentStore = usePayment()
 const payOrderOptions = computed(() =>
   paymentStore.payOrderList.map(po => ({
     value: po.pk as number,
@@ -74,6 +86,36 @@ const payOrderOptions = computed(() =>
 )
 const transferFeePk = computed(() => proLedgerStore.transferFeePk)
 const transaction = computed(() => proLedgerStore.proBankTrans as ProBankTrans | null)
+
+provide(
+  'getContracts',
+  computed(() => contractStore.getContracts),
+)
+provide(
+  'getAllContractors',
+  computed(() => contractStore.getAllContractors),
+)
+provide(
+  'proAccounts',
+  computed(() => proLedgerStore.proAccounts),
+)
+provide('transferFeePk', transferFeePk)
+
+const fetchFormData = async (projId: number) => {
+  const tasks: Promise<unknown>[] = [
+    proLedgerStore.fetchProBankAccList(projId),
+    proLedgerStore.fetchAllProBankAccList(projId),
+    contractStore.fetchAllContracts(projId),
+    contractStore.fetchAllContractors(projId),
+  ]
+  if (!proLedgerStore.proAccountList.length) {
+    tasks.push(proLedgerStore.fetchProjectAccounts())
+  }
+  if (!props.isImprest) {
+    tasks.push(paymentStore.fetchPayOrderList(projId))
+  }
+  await Promise.all(tasks)
+}
 
 // Watch transaction data to reinitialize form when loaded
 watch(
@@ -85,7 +127,7 @@ watch(
   },
 )
 
-// 은행 거래 폼 데이터 (생성 모드용)
+// 은행 거래 폼 데이터 (수정 모드용)
 interface ProBankTransForm {
   deal_date: string
   note: string
@@ -106,19 +148,7 @@ const bankForm = reactive<ProBankTransForm>({
   bank_account: '',
 })
 
-// 입력 폼 데이터
-interface NewEntryForm {
-  pk?: number
-  account?: number | null
-  trader?: string
-  amount?: number
-  contract?: number | null
-  contractor?: number | null
-  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
-  installment_order?: number | null
-}
-
-// 수정 가능한 폼 데이터 (기존 데이터 + 새로운 데이터) - 수정 모드용
+// 수정 가능한 폼 데이터 - 수정 모드용
 const editableEntries = ref<NewEntryForm[]>([])
 
 // 신규 생성 모드용: 다수 은행거래건 배열
@@ -137,12 +167,9 @@ const createNewTransaction = (data?: Partial<BankTransactionData>): BankTransact
   entries: data?.entries || [{}],
 })
 
-// 폼 초기화 함수들
 const initializeCreateForm = () => {
-  // 신규 모드: 다수 거래건 구조로 초기화 (기본 1개 거래건)
   bankTransactions.value = [createNewTransaction()]
 
-  // 기존 단일 거래건 폼도 초기화 (하위 호환성 유지)
   Object.assign(bankForm, {
     deal_date: getToday(),
     bank_account: '',
@@ -157,7 +184,6 @@ const initializeCreateForm = () => {
 const initializeEditForm = () => {
   if (!transaction.value) return
 
-  // 수정 모드: 기존 데이터로 초기화
   Object.assign(bankForm, {
     deal_date: transaction.value.deal_date,
     note: transaction.value.note,
@@ -167,7 +193,6 @@ const initializeEditForm = () => {
     amount: transaction.value.amount,
   })
 
-  // 기존 회계 항목들로 초기화
   if (transaction.value.accounting_entries) {
     editableEntries.value = transaction.value.accounting_entries.map(entry => ({
       pk: entry.pk,
@@ -177,14 +202,32 @@ const initializeEditForm = () => {
       contract: entry.contract,
       contractor: entry.contractor,
       evidence_type: entry.evidence_type,
+      installment_order: entry.contract_payment?.installment_order ?? null,
     }))
   } else {
     editableEntries.value = [{}]
   }
 }
 
+watch(
+  () => props.project,
+  async (val, oldVal) => {
+    if (!val || val === oldVal) return
+    if (isCreateMode.value) {
+      await fetchFormData(val)
+      if (oldVal) initializeCreateForm()
+    } else if (oldVal) {
+      skipLeaveGuard.value = true
+      await router.push({ name: listRouteName.value })
+    }
+  },
+)
+
 // 표시할 행 목록
 const displayRows = computed(() => editableEntries.value)
+const onEditableEntriesUpdate = (rows: NewEntryForm[]) => {
+  editableEntries.value = rows
+}
 
 // 은행 거래 금액
 const bankAmount = computed(() => bankForm.amount || 0)
@@ -206,49 +249,38 @@ const totalEntryAmount = computed(() => {
   }, 0)
 })
 
-// 차액 계산 - bankAmount 사용
-const difference = computed(() => {
-  return bankAmount.value - totalEntryAmount.value
-})
+const difference = computed(() => bankAmount.value - totalEntryAmount.value)
+const isBalanced = computed(() => difference.value === 0)
 
-// 금액 일치 여부
-const isBalanced = computed(() => {
-  return difference.value === 0
-})
-
-// 은행 계좌 목록
+// 은행 계좌 목록 (Imprest 모드에서는 운영비 계좌 우선, 수정 모드 비활성/타 계좌 폴백 포함)
 const formBankAccounts = computed(() => {
-  const activeBanks = proLedgerStore.getProBanks
+  const activeBanks = props.isImprest
+    ? proLedgerStore.getImprestProBanks
+    : proLedgerStore.getProBanks
 
   if (isCreateMode.value) {
-    // 신규 등록 시에는 활성 계좌만 표시
     return activeBanks
   }
 
-  // 수정 모드일 때
   const currentBankId = transaction.value?.bank_account
-  if (!currentBankId) {
-    return activeBanks // 거래에 계좌 정보가 없는 경우
+  if (!currentBankId) return activeBanks
+
+  if (activeBanks.some(b => b.value === currentBankId)) {
+    return activeBanks
   }
 
-  const isBankInActiveList = activeBanks.some(b => b.value === currentBankId)
-  if (isBankInActiveList) {
-    return activeBanks // 현재 거래 계좌가 활성 목록에 이미 있으면 그대로 반환
-  }
-
-  // 현재 거래 계좌가 활성 목록에 없는 경우 (비활성/숨김 상태)
-  // 전체 계좌 목록에서 찾아서 추가
   const currentBank = proLedgerStore.allProBankList.find(b => b.pk === currentBankId)
   if (currentBank) {
-    const currentBankOption = {
-      value: currentBank.pk,
-      label: `${currentBank.alias_name} (비활성/숨김)`,
-    }
-    // 비활성 계좌를 목록 맨 위에 추가하고, 나머지는 활성 계좌 목록
-    return [currentBankOption, ...activeBanks]
+    return [
+      {
+        value: currentBank.pk,
+        label: `${currentBank.alias_name} (비활성/숨김)`,
+      },
+      ...activeBanks,
+    ]
   }
 
-  return activeBanks // 혹시 전체 목록에도 없으면 활성 목록만 반환
+  return activeBanks
 })
 
 // === 엑셀: 1건의 은행거래에 대한 다수 회계 계정 입력 ===
@@ -257,7 +289,6 @@ const uploadDialogVisible = ref(false)
 const parseResult = ref<ParseResult | null>(null)
 const { parseExcelFile, downloadTemplate } = useExcelUpload()
 
-// 업로드/다운로드 대상 거래건 (신규 모드: 행 index, 수정 모드: 단일 거래건)
 const uploadTargetIndex = ref<number>(0)
 const targetEntries = computed<NewEntryForm[]>(() =>
   isCreateMode.value
@@ -270,14 +301,12 @@ const targetAmount = computed(() =>
     : bankForm.amount || 0,
 )
 
-// ID → 이름 변환 (엑셀 표기/매칭용)
 const resolveEntryNames = (entry: NewEntryForm) => {
   const account = proLedgerStore.proAccounts.find(acc => acc.value === entry.account)
   const contract = contractStore.getContracts.find(c => c.value === entry.contract)
   return { account_name: account?.label || '', contract_name: contract?.label || '' }
 }
 
-// Download template handler
 const handleDownloadTemplate = (index = 0) => {
   uploadTargetIndex.value = index
   const entries = targetEntries.value.map(entry => ({
@@ -290,21 +319,17 @@ const handleDownloadTemplate = (index = 0) => {
   downloadTemplate({ amount: targetAmount.value, entries }, 'project')
 }
 
-// Upload click handler
 const handleUploadClick = (index = 0) => {
   uploadTargetIndex.value = index
   fileInputRef.value?.click()
 }
 
-// File change handler
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
-
   if (!file) return
 
   try {
-    // Prepare existing entries for matching - resolve IDs to names
     const existingEntries = targetEntries.value.map(entry => ({
       pk: entry.pk,
       account: entry.account ?? undefined,
@@ -312,31 +337,32 @@ const handleFileChange = async (event: Event) => {
       trader: entry.trader || '',
       amount: entry.amount || 0,
       evidence_type: entry.evidence_type || '',
-      contract: entry.contract ?? undefined, // Convert null to undefined
+      contract: entry.contract ?? undefined,
     }))
 
-    // Parse Excel file with matching
-    await parseExcelFile(
+    const result = await parseExcelFile(
       file,
       proLedgerStore.proAccounts,
       existingEntries,
       targetAmount.value,
       'project',
       contractStore.getContracts,
-    ).then(result => {
-      parseResult.value = result
-      uploadDialogVisible.value = true
-    })
+    )
+    parseResult.value = result
+    uploadDialogVisible.value = true
   } catch (error) {
     console.error('Excel parsing error:', error)
-    alertModal.value?.callModal('엑셀 파싱 오류', '엑셀 파일 파싱 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
+    alertModal.value?.callModal(
+      '엑셀 파싱 오류',
+      '엑셀 파일 파싱 중 오류가 발생했습니다.',
+      'mdi-alert-circle',
+      'danger',
+    )
   } finally {
-    // Reset file input
     target.value = ''
   }
 }
 
-// Confirm upload handler
 const handleUploadConfirm = () => {
   if (!parseResult.value) return
 
@@ -350,43 +376,49 @@ const handleUploadConfirm = () => {
   })
 
   if (isCreateMode.value) {
-    // 신규 모드: 저장된 항목(pk)이 없으므로 업로드된 유효 항목으로 전체 교체
-    const list = targetEntries.value
-    const uploaded = [...parseResult.value.entriesToUpdate, ...parseResult.value.entriesToCreate]
-      .filter(p => p.isValid)
-      .sort((a, b) => a.rowNumber - b.rowNumber)
-      .map(toEntry)
-    if (uploaded.length) list.splice(0, list.length, ...uploaded)
+    const current = bankTransactions.value[uploadTargetIndex.value]
+    if (current) {
+      const uploaded = [
+        ...parseResult.value.entriesToUpdate,
+        ...parseResult.value.entriesToCreate,
+      ]
+        .filter(p => p.isValid)
+        .sort((a, b) => a.rowNumber - b.rowNumber)
+        .map(toEntry)
+      if (uploaded.length) {
+        updateBankTransaction(uploadTargetIndex.value, {
+          ...current,
+          entries: uploaded,
+        })
+      }
+    }
   } else {
-    // Step 1: Update existing entries (preserve pk)
+    const nextEntries = [...editableEntries.value]
     parseResult.value.entriesToUpdate.forEach(parsedEntry => {
-      if (!parsedEntry.isValid) return // Skip invalid
-
-      const existingEntry = editableEntries.value.find(e => e.pk === parsedEntry.existingPk)
-
-      if (existingEntry) {
-        // Update fields (keep pk)
-        existingEntry.account = parsedEntry.account ?? null
-        existingEntry.trader = parsedEntry.trader
-        existingEntry.amount = parsedEntry.amount
-        existingEntry.evidence_type = parsedEntry.evidence_type as NewEntryForm['evidence_type']
-        existingEntry.contract = parsedEntry.contract ?? null
+      if (!parsedEntry.isValid) return
+      const idx = nextEntries.findIndex(e => e.pk === parsedEntry.existingPk)
+      if (idx !== -1) {
+        nextEntries[idx] = {
+          ...nextEntries[idx],
+          account: parsedEntry.account ?? null,
+          trader: parsedEntry.trader,
+          amount: parsedEntry.amount,
+          evidence_type: parsedEntry.evidence_type as NewEntryForm['evidence_type'],
+          contract: parsedEntry.contract ?? null,
+        }
       }
     })
 
-    // Step 2: Create new entries (no pk)
     parseResult.value.entriesToCreate.forEach(parsedEntry => {
-      if (!parsedEntry.isValid) return // Skip invalid
-      editableEntries.value.push(toEntry(parsedEntry))
+      if (!parsedEntry.isValid) return
+      nextEntries.push(toEntry(parsedEntry))
     })
 
-    // Step 3: Delete entries (remove from an array)
     parseResult.value.entriesToDelete.forEach(entryToDelete => {
-      const index = editableEntries.value.findIndex(e => e.pk === entryToDelete.pk)
-      if (index !== -1) {
-        editableEntries.value.splice(index, 1)
-      }
+      const idx = nextEntries.findIndex(e => e.pk === entryToDelete.pk)
+      if (idx !== -1) nextEntries.splice(idx, 1)
     })
+    editableEntries.value = nextEntries
   }
 
   uploadDialogVisible.value = false
@@ -399,8 +431,15 @@ const bulkDialogVisible = ref(false)
 const bulkResult = ref<BulkParseResult | null>(null)
 const { downloadBulkTemplate, parseBulkFile, parseBulkText } = useBulkTransExcel()
 
-const getExistingForDeduplication = () => {
-  const dbExisting = proLedgerStore.proBankTransList.map(t => ({
+const getExistingForDeduplication = async () => {
+  let dbList = proLedgerStore.proBankTransList
+  if (props.project && proLedgerStore.proBankTransCount > dbList.length) {
+    dbList = await proLedgerStore.fetchExistingTransRefs(
+      props.project,
+      props.isImprest ? 'true' : 'all',
+    )
+  }
+  const dbExisting = dbList.map(t => ({
     deal_date: t.deal_date,
     amount: t.amount,
     sort: t.sort,
@@ -421,7 +460,7 @@ const handleBulkDownload = () =>
   downloadBulkTemplate({
     bankAccounts: formBankAccounts.value,
     accounts: proLedgerStore.proAccounts,
-    payOrders: payOrderOptions.value,
+    payOrders: props.isImprest ? [] : payOrderOptions.value,
     systemType: 'project',
   })
 
@@ -433,13 +472,14 @@ const handleBulkFileChange = async (event: Event) => {
   if (!file) return
 
   try {
+    const existingTransactions = await getExistingForDeduplication()
     bulkResult.value = await parseBulkFile(file, {
       bankAccounts: formBankAccounts.value,
       accounts: proLedgerStore.proAccounts,
-      payOrders: payOrderOptions.value,
+      payOrders: props.isImprest ? [] : payOrderOptions.value,
       systemType: 'project',
       contracts: contractStore.getContracts,
-      existingTransactions: getExistingForDeduplication(),
+      existingTransactions,
     })
     bulkDialogVisible.value = true
   } catch (error) {
@@ -467,13 +507,14 @@ const handleBulkPaste = async () => {
       )
       return
     }
+    const existingTransactions = await getExistingForDeduplication()
     bulkResult.value = await parseBulkText(text, {
       bankAccounts: formBankAccounts.value,
       accounts: proLedgerStore.proAccounts,
-      payOrders: payOrderOptions.value,
+      payOrders: props.isImprest ? [] : payOrderOptions.value,
       systemType: 'project',
       contracts: contractStore.getContracts,
-      existingTransactions: getExistingForDeduplication(),
+      existingTransactions,
     })
     bulkDialogVisible.value = true
   } catch (error) {
@@ -489,7 +530,6 @@ const handleBulkPaste = async () => {
   }
 }
 
-// 현재 폼에 사용자가 입력한 내용이 있는지 (빈 기본 거래건 1개는 '없음'으로 간주)
 const hasEnteredTransactions = computed(() =>
   bankTransactions.value.some(
     t =>
@@ -499,10 +539,17 @@ const hasEnteredTransactions = computed(() =>
   ),
 )
 
-const handleBulkConfirm = ({ replace }: { replace: boolean }) => {
-  if (!bulkResult.value) return
+const handleBulkConfirm = ({
+  replace,
+  result,
+}: {
+  replace: boolean
+  result?: BulkParseResult | null
+}) => {
+  const source = result ?? bulkResult.value
+  if (!source) return
 
-  const imported: BankTransactionData[] = bulkResult.value.transactions
+  const imported: BankTransactionData[] = source.transactions
     .filter(t => t.isValid)
     .map(t =>
       createNewTransaction({
@@ -532,38 +579,37 @@ const handleBulkConfirm = ({ replace }: { replace: boolean }) => {
 }
 
 const addRow = () => {
-  editableEntries.value.push({})
+  editableEntries.value = [...editableEntries.value, {}]
 }
 
 const removeEntry = (index: number) => {
-  if (editableEntries.value.length === 1) {
-    // entry 개수가 1개일 때는 amount를 0으로 설정 (삭제 처리)
-    editableEntries.value[index].amount = 0
+  const next = [...editableEntries.value]
+  if (next.length === 1) {
+    next[0] = { ...next[0], amount: 0 }
   } else {
-    // entry 행수가 2개 이상일 배열에서 제거
-    editableEntries.value.splice(index, 1)
+    next.splice(index, 1)
   }
+  editableEntries.value = next
 }
 
 const insertTransferFeeEntry = (index: number) => {
   if (transferFeePk.value === undefined) {
-    alertModal.value?.callModal('계정 안내', '이체수수료 계정이 설정되지 않았습니다.', 'mdi-alert-circle', 'warning')
+    alertModal.value?.callModal(
+      '계정 안내',
+      '이체수수료 계정이 설정되지 않았습니다.',
+      'mdi-alert-circle',
+      'warning',
+    )
     return
   }
 
-  const currentRow = editableEntries.value[index]
+  const next = [...editableEntries.value]
+  const currentRow = next[index]
   const bankTransactionAmount = Number(bankForm.amount) || 0
-
-  // Calculate a new amount based on bank transaction amount (minimum 0)
   const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
+  next[index] = { ...currentRow, amount: newCurrentAmount }
 
-  // Modify the current row amount
-  currentRow.amount = newCurrentAmount
-
-  // Create a trader name (default to [] if empty)
   const currentTrader = currentRow.trader?.trim() || '[]'
-
-  // Create a new transfer fee entry
   const newEntry: NewEntryForm = {
     pk: undefined,
     account: transferFeePk.value,
@@ -574,32 +620,26 @@ const insertTransferFeeEntry = (index: number) => {
     evidence_type: '0',
   }
 
-  // Insert immediately after the current row
-  editableEntries.value.splice(index + 1, 0, newEntry)
+  next.splice(index + 1, 0, newEntry)
+  editableEntries.value = next
 }
 
 // === 신규 모드용 다수 거래건 메서드 ===
-
-// 새 은행거래건 추가
 const addBankTransaction = () => {
   bankTransactions.value.push(createNewTransaction())
 }
 
-// 은행거래건 삭제
 const removeBankTransaction = (index: number) => {
   if (bankTransactions.value.length > 1) {
     bankTransactions.value.splice(index, 1)
   }
 }
 
-// 거래건 업데이트
 const updateBankTransaction = (index: number, data: BankTransactionData) => {
   bankTransactions.value[index] = data
 }
 
-// 대체(출금) 거래 감지 시 대체(입금) 거래 자동 추가
 const handleTransferWithdraw = (sourceData: BankTransactionData) => {
-  // 대체(입금) 계정 찾기 (category='transfer' && direction='입금')
   const depositTransferAccount = proLedgerStore.proAccounts.find(
     acc => acc.is_cate_only === false && acc.category === 'transfer' && acc.direction === '입금',
   )
@@ -609,28 +649,43 @@ const handleTransferWithdraw = (sourceData: BankTransactionData) => {
     return
   }
 
-  // 새로운 대체(입금) 거래건 추가
-  bankTransactions.value.push({
-    bankForm: {
-      deal_date: sourceData.bankForm.deal_date,
-      bank_account: null, // 사용자가 선택해야 함 (출발 계좌와 달라야 함)
-      amount: sourceData.bankForm.amount,
-      sort: 1, // 입금
-      content: sourceData.bankForm.content,
-      note: sourceData.bankForm.note,
-    },
-    entries: [
-      {
-        account: depositTransferAccount.value, // 대체(입금) 계정 자동 선택
-        trader: sourceData.entries[0]?.trader || '',
-        amount: sourceData.bankForm.amount || undefined,
-        evidence_type: '',
+  bankTransactions.value.push(
+    createNewTransaction({
+      bankForm: {
+        deal_date: sourceData.bankForm.deal_date,
+        bank_account: null,
+        amount: sourceData.bankForm.amount,
+        sort: 1,
+        content: sourceData.bankForm.content,
+        note: sourceData.bankForm.note,
       },
-    ],
-  })
+      entries: [
+        {
+          account: depositTransferAccount.value,
+          trader: sourceData.entries[0]?.trader || '',
+          amount: sourceData.bankForm.amount || undefined,
+          evidence_type: '',
+        },
+      ],
+    }),
+  )
 }
 
-// 유효성 검사
+const mapEntriesToPayload = (entries: NewEntryForm[]): CompositeProAccountingEntryPayload[] =>
+  entries
+    .filter(e => (e.amount || 0) > 0)
+    .map(entry => ({
+      ...(entry.pk !== undefined ? { pk: entry.pk } : {}),
+      account: entry.account ?? null,
+      trader: entry.trader,
+      amount: entry.amount,
+      contract: entry.contract ?? null,
+      contractor: entry.contractor ?? null,
+      installment_order: entry.installment_order ?? null,
+      evidence_type: entry.evidence_type === '' ? null : (entry.evidence_type ?? null),
+    }))
+
+// 유효성 검사 (수정 모드)
 const validateForm = () => {
   if (!isBalanced.value) {
     throw new Error('거래 금액과 분류 금액이 일치하지 않습니다.')
@@ -651,42 +706,32 @@ const validateForm = () => {
   }
 }
 
-// 수정 거래 데이터 생성
-const buildUpdatePayload = () => {
-  if (!transaction.value) {
+const buildUpdatePayload = (): CompositeProBankTransPayload => {
+  if (!transaction.value?.pk) {
     throw new Error('수정할 거래 데이터가 없습니다.')
   }
 
   validateForm()
 
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(entry => ({
-      ...entry,
-      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-    }))
-
   return {
     pk: transaction.value.pk,
     project: props.project!,
     deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account!,
+    bank_account: Number(bankForm.bank_account),
     amount: bankForm.amount!,
     sort: bankForm.sort,
     content: bankForm.content,
     note: bankForm.note,
-    accounting_entries: validEntries,
-    filters: {},
-  } as any // API 요청 타입과 ProBankTrans 타입이 다르므로 any 처리
+    accounting_entries: mapEntriesToPayload(editableEntries.value),
+  }
 }
 
-// 신규 모드용: 다수 거래건 저장
-const saveMultipleTransactions = async () => {
-  // 각 거래건 검증
+const validateCreateList = () => {
+  if (!props.project) {
+    throw new Error('프로젝트가 선택되지 않았습니다.')
+  }
   for (let i = 0; i < bankTransactions.value.length; i++) {
     const trans = bankTransactions.value[i]
-
-    // 필수 필드 검증
     if (
       !trans.bankForm.deal_date ||
       !trans.bankForm.bank_account ||
@@ -696,113 +741,135 @@ const saveMultipleTransactions = async () => {
       throw new Error(`거래건 ${i + 1}: 거래일자, 거래계좌, 금액, 적요는 필수 입력 항목입니다.`)
     }
 
-    // 금액 일치 검증
-    const bankAmount = trans.bankForm.amount || 0
+    const bankAmt = trans.bankForm.amount || 0
     const entryTotal = trans.entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
-    if (bankAmount !== entryTotal) {
+    if (bankAmt !== entryTotal) {
       throw new Error(
-        `거래건 ${i + 1}: 거래 금액(${bankAmount})과 분류 금액(${entryTotal})이 일치하지 않습니다.`,
+        `거래건 ${i + 1}: 거래 금액(${bankAmt})과 분류 금액(${entryTotal})이 일치하지 않습니다.`,
       )
     }
 
-    // 유효한 분개 항목 검증
     const validEntries = trans.entries.filter(e => (e.amount || 0) > 0)
     if (validEntries.length === 0) {
       throw new Error(`거래건 ${i + 1}: 최소 하나 이상의 분류 항목이 필요합니다.`)
     }
+    if (validEntries.some(e => !e.account)) {
+      throw new Error(`거래건 ${i + 1}: 분류 금액이 입력된 모든 항목에 회계 계정을 선택해야 합니다.`)
+    }
   }
+}
 
-  // 각 거래건을 개별적으로 API 호출
+const saveMultipleTransactions = async (): Promise<boolean> => {
+  validateCreateList()
+
+  let savedCount = 0
   for (const trans of bankTransactions.value) {
-    const validEntries = trans.entries
-      .filter(e => (e.amount || 0) > 0)
-      .map(entry => ({
-        ...entry,
-        contract: entry.contract ?? null,
-        contractor: entry.contractor ?? null,
-        installment_order: entry.installment_order ?? null,
-        evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-      }))
-
-    const payload = {
+    const payload: CompositeProBankTransPayload = {
       project: props.project!,
       deal_date: trans.bankForm.deal_date,
-      bank_account: trans.bankForm.bank_account!,
+      bank_account: Number(trans.bankForm.bank_account),
       amount: trans.bankForm.amount!,
       sort: trans.bankForm.sort,
       content: trans.bankForm.content,
       note: trans.bankForm.note,
-      accounting_entries: validEntries,
-    } as any
+      accounting_entries: mapEntriesToPayload(trans.entries),
+    }
 
-    await proLedgerStore.createProBankTrans(payload)
+    const ok = await proLedgerStore.createProBankTrans(payload)
+    if (!ok) {
+      if (savedCount > 0) {
+        bankTransactions.value = bankTransactions.value.slice(savedCount)
+      }
+      return false
+    }
+    savedCount++
   }
+
+  return true
 }
 
-// 저장 처리
 const saveTransaction = async (event: Event) => {
+  if (!canAccessForm.value) return
   const isFormInvalid = isValidate(event) || !isFormValid.value
   if (isFormInvalid) {
     validated.value = true
     event.preventDefault()
     event.stopPropagation()
-  } else {
-    if (isSaving.value) return
+    return
+  }
 
-    try {
-      isSaving.value = true
+  if (isSaving.value) return
 
-      if (isCreateMode.value) {
-        // 신규 모드: 다수 거래건 저장
-        await saveMultipleTransactions()
-      } else {
-        // 수정 모드: 기존 단일 거래건 저장
-        const payload = buildUpdatePayload()
-        await proLedgerStore.updateProBankTrans(payload)
-      }
+  try {
+    isSaving.value = true
 
-      // 성공 시 거래 목록 페이지로 이동
-      await router.push({ name: '거래 내역 관리' })
-    } catch (error: any) {
-      console.error('저장 실패:', error)
-      alertModal.value?.callModal('저장 오류', error.message || '저장 중 오류가 발생했습니다.', 'mdi-alert-circle', 'danger')
-    } finally {
-      isSaving.value = false
+    if (isCreateMode.value) {
+      const ok = await saveMultipleTransactions()
+      if (!ok) return
+      bankTransactions.value = []
+    } else {
+      const payload = buildUpdatePayload()
+      const ok = await proLedgerStore.updateProBankTrans(payload)
+      if (!ok) return
     }
+
+    skipLeaveGuard.value = true
+    await router.push({ name: listRouteName.value })
+  } catch (error: unknown) {
+    console.error('저장 실패:', error)
+    const msg = error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.'
+    alertModal.value?.callModal('저장 오류', msg, 'mdi-alert-circle', 'danger')
+  } finally {
+    isSaving.value = false
   }
 }
 
 const delTransaction = async () => {
-  confirmModal.value.close()
-  await proLedgerStore.deleteProBankTrans(transaction.value?.pk!)
-  await router.replace({ name: '거래 내역 관리' })
+  const pk = transaction.value?.pk
+  if (!pk || !canLedgerDelete.value) return
+  confirmModal.value?.close()
+  const ok = await proLedgerStore.deleteProBankTrans(pk)
+  if (!ok) return
+  skipLeaveGuard.value = true
+  await router.replace({ name: listRouteName.value })
 }
 
 const accCallModal = () => {
-  if (props.project) refBankAcc.value.callModal()
+  if (props.project) refBankAcc.value?.callModal()
 }
 
-// 단일 거래건의 균형 검사 헬퍼 함수
+const onBankCreate = (payload: ProjectBank) =>
+  proLedgerStore.createProBankAcc({
+    ...payload,
+    project: payload.project ?? props.project ?? null,
+    is_imprest: props.isImprest ? (payload.is_imprest ?? true) : payload.is_imprest,
+  })
+
+const onBankUpdate = (payload: ProjectBank) =>
+  proLedgerStore.updateProBankAcc({
+    ...payload,
+    project: payload.project ?? props.project ?? null,
+  })
+
 const isTransactionBalanced = (
-  bankAmount: number | null,
+  bankAmt: number | null,
   entries: { amount?: number | null }[],
 ): boolean => {
-  if (!bankAmount) return false
+  if (!bankAmt) return false
   const totalEntries = entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
-  return bankAmount === totalEntries
+  return bankAmt === totalEntries
 }
 
-// 폼 유효성 검사 상태
 const isFormValid = computed(() => {
   if (isCreateMode.value) {
-    // 신규 모드: 모든 거래건 검증
     if (bankTransactions.value.length === 0) return false
 
     return bankTransactions.value.every(trans => {
       const hasRequiredFields = !!(
         trans.bankForm.deal_date &&
         trans.bankForm.bank_account &&
-        trans.bankForm.amount
+        trans.bankForm.amount &&
+        trans.bankForm.content
       )
       const hasValidEntries =
         trans.entries.length > 0 &&
@@ -812,13 +879,17 @@ const isFormValid = computed(() => {
           return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
         }) &&
         trans.entries.some(e => (e.amount || 0) > 0)
-      const isBalanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
+      const balanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
 
-      return hasRequiredFields && hasValidEntries && isBalanced
+      return hasRequiredFields && hasValidEntries && balanced
     })
   } else {
-    // 수정 모드: 기존 단일 거래건 검증
-    const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
+    const hasRequiredFields = !!(
+      bankForm.deal_date &&
+      bankForm.bank_account &&
+      bankForm.amount &&
+      bankForm.content
+    )
     const hasValidEntries =
       editableEntries.value.length > 0 &&
       editableEntries.value.every(e => {
@@ -831,14 +902,10 @@ const isFormValid = computed(() => {
   }
 })
 
-// 저장 버튼 비활성화 상태
-const isSaveDisabled = computed(() => {
-  return isSaving.value
-})
+const isSaveDisabled = computed(() => !canAccessForm.value || isSaving.value)
 
-// 네비게이션 가드
 const hasUnsavedChanges = computed(() => {
-  if (!isCreateMode.value) return false
+  if (!isCreateMode.value || !canAccessForm.value) return false
 
   return (
     hasEnteredTransactions.value ||
@@ -848,25 +915,54 @@ const hasUnsavedChanges = computed(() => {
   )
 })
 
-onBeforeRouteLeave((to, from, next) => {
-  if (hasUnsavedChanges.value) {
-    const answer = window.confirm('저장하지 않은 변경사항이 있습니다. 페이지를 떠나시겠습니까?')
-    next(answer)
-  } else {
+let resolveLeavePrompt: ((allow: boolean) => void) | null = null
+
+const confirmLeave = () => {
+  const resolve = resolveLeavePrompt
+  resolveLeavePrompt = null
+  leaveConfirmModal.value?.close()
+  resolve?.(true)
+}
+
+const cancelLeave = () => {
+  if (!resolveLeavePrompt) return
+  const resolve = resolveLeavePrompt
+  resolveLeavePrompt = null
+  resolve(false)
+}
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (skipLeaveGuard.value || !hasUnsavedChanges.value) {
     next()
+    return
   }
+  new Promise<boolean>(resolve => {
+    resolveLeavePrompt = resolve
+    leaveConfirmModal.value?.callModal(
+      '페이지 이동 확인',
+      '저장하지 않은 변경사항이 있습니다. 페이지를 떠나시겠습니까?',
+      'mdi-alert-box',
+      'warning',
+      '이동',
+      'warning',
+    )
+  }).then(allow => next(allow))
 })
 
 onBeforeMount(async () => {
   if (props.project) {
-    await fetchFormData(props.project)
+    const needsLoad =
+      !proLedgerStore.proBankList.length ||
+      !proLedgerStore.proAccountList.length ||
+      (!props.isImprest && !paymentStore.payOrderList.length)
+    if (needsLoad) {
+      await fetchFormData(props.project)
+    }
   }
 
   if (isCreateMode.value) {
-    // 신규 모드: 기본 폼으로 초기화
     initializeCreateForm()
-  } else if (transId.value) {
-    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
+  } else if (transId.value && canAccessForm.value) {
     await proLedgerStore.fetchProBankTrans(transId.value)
     initializeEditForm()
   }
@@ -874,7 +970,9 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <NoAuth v-if="accStore.userInfo && !canAccessForm" />
   <CForm
+    v-else
     class="needs-validation"
     novalidate
     :validated="validated"
@@ -882,7 +980,15 @@ onBeforeMount(async () => {
   >
     <CRow
       class="text-end py-2 mb-1 mx-1"
-      :class="isCreateMode ? 'bg-light-blue-lighten-5' : 'bg-light-green-lighten-5'"
+      :class="
+        isImprest
+          ? isCreateMode
+            ? 'bg-brown-lighten-5'
+            : 'bg-amber-lighten-5'
+          : isCreateMode
+            ? 'bg-light-blue-lighten-5'
+            : 'bg-light-green-lighten-5'
+      "
     >
       <CCol class="text-start">
         <template v-if="isCreateMode">
@@ -891,14 +997,14 @@ onBeforeMount(async () => {
         <template v-else>
           {{ transaction?.deal_date }} ∙ {{ transaction?.bank_account_name }} ∙
           {{ transaction?.content }}
-          <span class="ml-2 text-success strong">분할 중...</span>
+          <span class="ms-2 text-success strong">분할 중...</span>
         </template>
       </CCol>
       <CCol col="2">
         <span> 거래내역 금액: {{ sortName }} {{ numFormat(bankAmount, 0, '0') }} </span>
         ∙
         <span>분류 금액 합계: {{ sortName }} {{ numFormat(totalEntryAmount, 0, '0') }}</span> ∙
-        <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
+        <span class="strong me-3" :class="{ 'text-danger': !isBalanced }">
           차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
         </span>
 
@@ -917,7 +1023,7 @@ onBeforeMount(async () => {
           variant="flat"
           size="small"
           :disabled="isSaving"
-          @click="router.push({ name: '거래 내역 관리' })"
+          @click="router.push({ name: listRouteName })"
         >
           취소
         </v-btn>
@@ -942,17 +1048,17 @@ onBeforeMount(async () => {
 
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
-          <CTableHeaderCell class="pl-3" colspan="5">
+          <CTableHeaderCell class="ps-3" colspan="5">
             은행거래내역
             <!-- 신규 모드: 다수 은행거래 + 회계 계정 엑셀 대량 입력 -->
             <template v-if="isCreateMode">
               <span class="text-grey mx-2">|</span>
-              <span class="text-caption mr-1">대량 입력</span>
+              <span class="text-caption me-1">대량 입력</span>
               <v-icon
                 icon="mdi-download"
                 size="16"
                 color="info"
-                class="mr-2 pointer"
+                class="me-2 pointer"
                 @click="handleBulkDownload"
                 v-tooltip="'IBS 표준 대량 입력 템플릿 다운로드'"
               />
@@ -989,26 +1095,23 @@ onBeforeMount(async () => {
               />
             </template>
           </CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="canLedgerManage ? 4 : 3">
-            <span class="text-grey mr-2">|</span> 분류 내역
-            <span v-if="isCreateMode" class="text-caption text-grey ml-1">
+          <CTableHeaderCell class="ps-0" :colspan="canLedgerManage ? 4 : 3">
+            <span class="text-grey me-2">|</span> 분류 내역
+            <span v-if="isCreateMode" class="text-caption text-grey ms-1">
               (거래건별 엑셀 입력은 각 행의 아이콘 사용)
             </span>
           </CTableHeaderCell>
           <CTableHeaderCell class="px-0">
             <!-- 수정 모드: 단일 거래건의 회계 계정 템플릿 -->
             <template v-if="!isCreateMode">
-              <!-- Download Template -->
               <v-icon
                 icon="mdi-download"
                 size="16"
                 color="info"
-                class="mr-2 pointer"
+                class="me-2 pointer"
                 @click="handleDownloadTemplate()"
                 v-tooltip="'회계 계정 정보 템플릿 다운로드'"
               />
-
-              <!-- Upload Excel -->
               <v-icon
                 icon="mdi-upload"
                 size="16"
@@ -1019,7 +1122,6 @@ onBeforeMount(async () => {
               />
             </template>
 
-            <!-- Hidden file input (분류 내역 업로드: 신규/수정 공통) -->
             <input
               ref="fileInputRef"
               type="file"
@@ -1043,7 +1145,7 @@ onBeforeMount(async () => {
           <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">
             계정
-            <a href="#" @click.prevent="refAccountManage.callModal()">
+            <a href="#" @click.prevent="refAccountManage?.callModal()">
               <CIcon name="cilCog" />
             </a>
           </CTableHeaderCell>
@@ -1062,6 +1164,7 @@ onBeforeMount(async () => {
             :key="trans.uid ?? `trans-${idx}`"
             :transaction="trans"
             :index="idx"
+            :project="project"
             :bank-accounts="formBankAccounts"
             :pro-accounts="proLedgerStore.proAccounts"
             :get-contracts="contractStore.getContracts"
@@ -1074,13 +1177,13 @@ onBeforeMount(async () => {
           />
 
           <!-- 거래건 추가 버튼 행 -->
-          <CTableRow class="bg-light">
+          <CTableRow :class="bgLight">
             <CTableDataCell colspan="10" class="text-center py-2">
               <v-btn size="small" color="primary" variant="outlined" @click="addBankTransaction">
-                <v-icon icon="mdi-plus" class="mr-1" />
+                <v-icon icon="mdi-plus" class="me-1" />
                 은행거래건 추가
               </v-btn>
-              <small class="text-muted ml-3">
+              <small class="text-muted ms-3">
                 (현재 {{ bankTransactions.length }}건의 거래를 입력 중입니다)
               </small>
             </CTableDataCell>
@@ -1090,17 +1193,14 @@ onBeforeMount(async () => {
         <!-- 수정 모드: 기존 단일 거래건 입력 -->
         <template v-else>
           <CTableRow class="sticky-bank-row">
-            <!-- 거래일자 -->
             <CTableDataCell>
               <DatePicker v-model="bankForm.deal_date" required />
             </CTableDataCell>
 
-            <!-- 메모 -->
             <CTableDataCell>
               <CFormInput v-model="bankForm.note" placeholder="메모" maxlength="50" />
             </CTableDataCell>
 
-            <!-- 거래계좌 -->
             <CTableDataCell>
               <CFormSelect v-model="bankForm.bank_account" required>
                 <option value="">---------</option>
@@ -1110,19 +1210,17 @@ onBeforeMount(async () => {
               </CFormSelect>
             </CTableDataCell>
 
-            <!-- 적요 -->
             <CTableDataCell>
               <CFormInput v-model="bankForm.content" placeholder="적요" maxlength="100" required />
             </CTableDataCell>
 
-            <!-- 입출금액 -->
-            <CTableDataCell class="text-right">
+            <CTableDataCell class="text-end">
               <div class="d-flex align-items-center justify-content-end">
                 <CFormSelect
                   v-model.number="bankForm.sort"
                   style="width: 70px"
                   required
-                  class="mr-2"
+                  class="me-2"
                 >
                   <option :value="1">입금</option>
                   <option :value="2">출금</option>
@@ -1134,9 +1232,9 @@ onBeforeMount(async () => {
                   placeholder="금액"
                   required
                   style="width: 120px"
-                  class="text-right"
+                  class="text-end"
                 />
-                <v-btn density="compact" rounded="1" size="22" class="ml-2 pointer" @click="addRow">
+                <v-btn density="compact" rounded="1" size="22" class="ms-2 pointer" @click="addRow">
                   <v-icon icon="mdi-plus" color="success" />
                 </v-btn>
               </div>
@@ -1147,6 +1245,8 @@ onBeforeMount(async () => {
                 :sort="bankForm.sort"
                 :display-rows="displayRows"
                 :trans-amount="bankForm.amount"
+                :project="project"
+                @update:entries="onEditableEntriesUpdate"
                 @remove-entry="removeEntry"
                 @insert-transfer-fee="insertTransferFeeEntry"
               />
@@ -1161,8 +1261,8 @@ onBeforeMount(async () => {
         <v-btn
           color="warning"
           size="small"
-          @click="confirmModal.callModal()"
-          :disabled="!canLedgerDelete"
+          @click="confirmModal?.callModal()"
+          :disabled="!canLedgerDelete || isSaving"
         >
           삭제
         </v-btn>
@@ -1171,7 +1271,7 @@ onBeforeMount(async () => {
   </CForm>
 
   <ConfirmModal ref="confirmModal">
-    <template #header>거래 내역 삭제</template>
+    <template #header>{{ isImprest ? '운영비 거래 내역 삭제' : '거래 내역 삭제' }}</template>
     <template #default>
       삭제한 데이터는 복구할 수 없습니다. 해당 입출금 거래 정보를 삭제하시겠습니까?
     </template>
@@ -1180,11 +1280,19 @@ onBeforeMount(async () => {
     </template>
   </ConfirmModal>
 
+  <ConfirmModal ref="leaveConfirmModal" @confirm-func="confirmLeave" @close="cancelLeave" />
+
   <AlertModal ref="alertModal" />
 
   <AccountManage ref="refAccountManage" />
 
-  <BankAcc ref="refBankAcc" />
+  <BankAcc
+    ref="refBankAcc"
+    :project="project"
+    :is-imprest="isImprest"
+    @on-bank-create="onBankCreate"
+    @on-bank-update="onBankUpdate"
+  />
 
   <ExcelUploadDialog
     v-model="uploadDialogVisible"
@@ -1196,11 +1304,35 @@ onBeforeMount(async () => {
 
   <BulkTransUploadDialog
     v-model="bulkDialogVisible"
-    :result="bulkResult"
+    v-model:result="bulkResult"
     :has-existing="hasEnteredTransactions"
-    :pay-orders="payOrderOptions"
+    :pay-orders="isImprest ? undefined : payOrderOptions"
     :bank-accounts="formBankAccounts"
     :accounts="proLedgerStore.proAccounts"
     @confirm="handleBulkConfirm"
   />
 </template>
+
+<style scoped lang="scss">
+.dark-theme {
+  .bg-light-blue-lighten-5 {
+    background-color: #27374d !important;
+    color: #fff !important;
+  }
+
+  .bg-light-green-lighten-5 {
+    background-color: #283c34 !important;
+    color: #fff !important;
+  }
+
+  .bg-brown-lighten-5 {
+    background-color: #463a35 !important;
+    color: #fff !important;
+  }
+
+  .bg-amber-lighten-5 {
+    background-color: #4c4a43 !important;
+    color: #fff !important;
+  }
+}
+</style>

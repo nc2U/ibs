@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
+import { TableSecondary } from '@/utils/cssMixins'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -24,12 +25,13 @@ const searchedAccounts = computed(() =>
         .filter(acc => acc.depth > 1)
         .filter(
           acc =>
-            acc.name.includes(searchQuery.value) || acc.description.includes(searchQuery.value),
+            acc.name.includes(searchQuery.value) ||
+            (acc.description ?? '').includes(searchQuery.value),
         )
     : null,
 )
 
-const callModal = () => refDAccount.value.callModal()
+const callModal = () => refDAccount.value?.callModal()
 
 defineExpose({ callModal })
 </script>
@@ -61,29 +63,29 @@ defineExpose({ callModal })
           <col style="width: 25%" />
         </colgroup>
 
-        <CTableHead class="bg-secondary">
-          <CTableRow>
-            <CTableHeaderCell class="pl-2">1차</CTableHeaderCell>
-            <CTableHeaderCell class="pl-2">2차</CTableHeaderCell>
-            <CTableHeaderCell class="pl-2">3차</CTableHeaderCell>
+        <CTableHead>
+          <CTableRow :color="TableSecondary">
+            <CTableHeaderCell class="ps-2">1차</CTableHeaderCell>
+            <CTableHeaderCell class="ps-2">2차</CTableHeaderCell>
+            <CTableHeaderCell class="ps-2">3차</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
 
         <CTableBody>
           <CTableRow v-for="acc in computedAccounts" :key="acc.pk">
-            <CTableDataCell class="pl-2">
+            <CTableDataCell class="ps-2">
               <span v-if="acc.depth === 1">
                 {{ acc.name }}
                 <span v-if="acc.description" class="text-muted">({{ acc.description }})</span>
               </span>
             </CTableDataCell>
-            <CTableDataCell class="pl-2">
+            <CTableDataCell class="ps-2">
               <span v-if="acc.depth === 2">
                 {{ acc.name }}
                 <span v-if="acc.description" class="text-muted">({{ acc.description }})</span>
               </span>
             </CTableDataCell>
-            <CTableDataCell class="pl-2">
+            <CTableDataCell class="ps-2">
               <span v-if="acc.depth === 3">
                 {{ acc.name }}
                 <span v-if="acc.description" class="text-muted">({{ acc.description }})</span>
@@ -95,10 +97,10 @@ defineExpose({ callModal })
 
       <div v-else style="min-height: 800px">
         <v-divider class="my-4" />
-        <CRow v-for="acc in searchedAccounts" :key="acc.pk" class="pl-3 my-3">
+        <CRow v-for="acc in searchedAccounts" :key="acc.pk" class="ps-3 my-3">
           <CCol>
             {{ acc.full_path }}
-            <span class="text-muted ml-3">({{ acc.description }})</span>
+            <span v-if="acc.description" class="text-muted ms-3">({{ acc.description }})</span>
           </CCol>
         </CRow>
       </div>

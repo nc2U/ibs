@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, provide, reactive, watch } from 'vue'
+import { message } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import ProAccountEntry from './ProAccountEntry.vue'
+import ProAccountEntry, { type NewEntryForm } from './ProAccountEntry.vue'
 
 // 은행 거래 폼 데이터
 interface BankForm {
@@ -13,35 +16,26 @@ interface BankForm {
   amount: number | null
 }
 
-// 회계 분개 데이터
-interface EntryForm {
-  pk?: number
-  account?: number | null
-  trader?: string
-  amount?: number
-  contract?: number | null
-  contractor?: number | null
-  evidence_type?: '' | '0' | '1' | '2' | '3' | '4' | '5' | '6'
-  installment_order?: number | null
-}
-
 // 전체 거래건 데이터 구조
 export interface BankTransactionData {
   uid?: string | number
   bankForm: BankForm
-  entries: EntryForm[]
+  entries: NewEntryForm[]
 }
 
 interface Props {
   transaction: BankTransactionData
   index: number
+  project?: number | null
   bankAccounts: { value: number | null | undefined; label: string }[]
-  proAccounts: any[]
+  proAccounts: AccountPicker[]
   getContracts: { value: number; label: string }[]
   getAllContractors: { value: number; label: string }[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+})
 
 interface Emits {
   (e: 'update:transaction', value: BankTransactionData): void
@@ -53,43 +47,54 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const { can, canGlobal, PERM } = usePerms()
+const canLedgerManage = computed(() =>
+  (props.project
+    ? can(PERM.LEDGER_CREATE, props.project) ||
+      can(PERM.LEDGER_UPDATE, props.project) ||
+      can(PERM.LEDGER_MANAGE, props.project)
+    : can(PERM.LEDGER_CREATE) || can(PERM.LEDGER_UPDATE) || can(PERM.LEDGER_MANAGE)) ||
+  canGlobal(PERM.LEDGER_MANAGE),
+)
+
 // 로컬 상태 관리 - props를 직접 수정하지 않고 emit으로 업데이트
 const localBankForm = reactive<BankForm>({ ...props.transaction.bankForm })
-let isSyncingFromProps = false
 
-// props 변경 시 localBankForm 동기화
+const isSameBankForm = (a: BankForm, b: BankForm): boolean =>
+  a.deal_date === b.deal_date &&
+  a.note === b.note &&
+  a.bank_account === b.bank_account &&
+  a.content === b.content &&
+  a.sort === b.sort &&
+  a.amount === b.amount
+
+// props 변경 시 localBankForm 동기화 (자신이 방출한 동일 값에는 반응하지 않음)
 watch(
   () => props.transaction.bankForm,
   newBankForm => {
-    isSyncingFromProps = true
-    Object.assign(localBankForm, newBankForm)
-    // nextTick 후 동기화 플래그 해제
-    setTimeout(() => {
-      isSyncingFromProps = false
-    }, 0)
-  },
-  { deep: true },
-)
-
-const localEntries = computed({
-  get: () => props.transaction.entries,
-  set: value => {
-    emit('update:transaction', { uid: props.transaction.uid, bankForm: localBankForm, entries: value })
-  },
-})
-
-// bankForm 사용자에 의한 변경 시에만 부모에게 알림 (props로 인한 변경 시 루프 및 불필요한 이벤트 방지)
-watch(
-  localBankForm,
-  () => {
-    if (!isSyncingFromProps) {
-      emit('update:transaction', { uid: props.transaction.uid, bankForm: localBankForm, entries: props.transaction.entries })
+    if (!isSameBankForm(localBankForm, newBankForm)) {
+      Object.assign(localBankForm, newBankForm)
     }
   },
   { deep: true },
 )
 
-// provide for JournalRow
+// bankForm 사용자에 의한 변경 시에만 부모에게 알림
+watch(
+  localBankForm,
+  () => {
+    if (!isSameBankForm(localBankForm, props.transaction.bankForm)) {
+      emit('update:transaction', {
+        uid: props.transaction.uid,
+        bankForm: { ...localBankForm },
+        entries: props.transaction.entries,
+      })
+    }
+  },
+  { deep: true },
+)
+
+// provide for ProAccountEntry
 provide(
   'getContracts',
   computed(() => props.getContracts),
@@ -128,72 +133,80 @@ const isBalanced = computed(() => difference.value === 0)
 // 표시할 분개 행 목록
 const displayRows = computed(() => props.transaction.entries)
 
+const onEntriesUpdate = (entries: NewEntryForm[]) => {
+  emit('update:transaction', {
+    uid: props.transaction.uid,
+    bankForm: { ...localBankForm },
+    entries,
+  })
+}
+
 // 분개 행 추가
 const addRow = () => {
   const newEntries = [...props.transaction.entries, {}]
-  emit('update:transaction', { bankForm: localBankForm, entries: newEntries })
+  emit('update:transaction', {
+    uid: props.transaction.uid,
+    bankForm: { ...localBankForm },
+    entries: newEntries,
+  })
 }
 
 // 분개 행 삭제
 const removeEntry = (index: number) => {
   const newEntries = [...props.transaction.entries]
   if (newEntries.length === 1) {
-    // 1개일 때는 amount를 0으로 설정
-    newEntries[index].amount = 0
+    newEntries[0] = { ...newEntries[0], amount: 0 }
   } else {
-    // 2개 이상일 때는 배열에서 제거
     newEntries.splice(index, 1)
   }
-  emit('update:transaction', { bankForm: localBankForm, entries: newEntries })
+  emit('update:transaction', {
+    uid: props.transaction.uid,
+    bankForm: { ...localBankForm },
+    entries: newEntries,
+  })
 }
 
 const insertTransferFeeEntry = (index: number) => {
   if (!transferFeePk || transferFeePk.value === undefined) {
-    alert('이체수수료 계정이 설정되지 않았습니다.')
+    message('warning', '알림!', '이체수수료 계정이 설정되지 않았습니다.')
     return
   }
 
   const currentRow = props.transaction.entries[index]
   const bankTransactionAmount = Number(props.transaction.bankForm.amount) || 0
-
-  // Calculate a new amount based on bank transaction amount (minimum 0)
   const newCurrentAmount = Math.max(0, bankTransactionAmount - 500)
 
-  // Create new entries array (immutable pattern)
   const newEntries = [...props.transaction.entries]
-
-  // Modify the current row amount
   newEntries[index] = {
     ...newEntries[index],
     amount: newCurrentAmount,
   }
 
-  // Create a trader name (default to [] if empty)
   const currentTrader = currentRow.trader?.trim() || '[]'
 
-  // Create a new transfer fee entry
-  const newEntry: EntryForm = {
+  const newEntry: NewEntryForm = {
     pk: undefined,
     account: transferFeePk.value,
-    trader: `${currentTrader}-이체수수료`,
+    trader: `[${currentTrader}]-이체수수료`,
     amount: 500,
     contract: null,
     contractor: null,
     evidence_type: '0',
   }
 
-  // Insert immediately after the current row
   newEntries.splice(index + 1, 0, newEntry)
 
-  // Emit to parent
-  emit('update:transaction', { bankForm: localBankForm, entries: newEntries })
+  emit('update:transaction', {
+    uid: props.transaction.uid,
+    bankForm: { ...localBankForm },
+    entries: newEntries,
+  })
 }
 
 // 대체(출금) 계정 감지 watch
 watch(
   () => props.transaction.entries.map(e => e.account),
   (newAccounts, oldAccounts) => {
-    // 단일 분개 & 출금 구분 & 대체(출금) 계정 선택 시
     if (
       props.transaction.entries.length === 1 &&
       localBankForm.sort === 2 &&
@@ -201,8 +214,8 @@ watch(
     ) {
       const account = props.proAccounts.find(acc => acc.value === newAccounts[0])
       if (account && account.category === 'transfer' && account.direction === '출금') {
-        // 대체 거래 자동 추가 이벤트 발생
         emit('detectTransferWithdraw', {
+          uid: props.transaction.uid,
           bankForm: { ...localBankForm },
           entries: [...props.transaction.entries],
         })
@@ -243,7 +256,7 @@ watch(
     <!-- 입출금액 -->
     <CTableDataCell>
       <div class="d-flex align-items-center">
-        <CFormSelect v-model.number="localBankForm.sort" style="width: 70px" required class="mr-2">
+        <CFormSelect v-model.number="localBankForm.sort" style="width: 70px" required class="me-2">
           <option :value="1">입금</option>
           <option :value="2">출금</option>
         </CFormSelect>
@@ -254,13 +267,13 @@ watch(
           placeholder="금액"
           required
           style="width: 120px"
-          class="text-right mr-2"
+          class="text-end me-2"
         />
         <v-icon
           icon="mdi-download"
           size="16"
           color="info"
-          class="ml-auto mr-1 pointer"
+          class="ms-auto me-1 pointer"
           @click="emit('downloadTemplate')"
           v-tooltip="'이 거래건의 회계 계정 템플릿 다운로드'"
         />
@@ -268,7 +281,7 @@ watch(
           icon="mdi-upload"
           size="16"
           color="success"
-          class="mr-1 pointer"
+          class="me-1 pointer"
           @click="emit('uploadEntries')"
           v-tooltip="'이 거래건의 회계 계정 엑셀 업로드'"
         />
@@ -286,7 +299,7 @@ watch(
           density="compact"
           rounded="1"
           size="22"
-          class="ml-1 pointer"
+          class="ms-1 pointer"
           @click="addRow"
         >
           <v-icon icon="mdi-plus" color="success" />
@@ -294,12 +307,14 @@ watch(
       </div>
     </CTableDataCell>
 
-    <!-- 분류 내역 (JournalRow) -->
-    <CTableDataCell colspan="5" class="p-0">
+    <!-- 분류 내역 (ProAccountEntry) -->
+    <CTableDataCell :colspan="canLedgerManage ? 5 : 4" class="p-0">
       <ProAccountEntry
         :sort="localBankForm.sort"
         :display-rows="displayRows"
         :trans-amount="localBankForm.amount"
+        :project="project"
+        @update:entries="onEntriesUpdate"
         @remove-entry="removeEntry"
         @insert-transfer-fee="insertTransferFeeEntry"
       />
@@ -308,7 +323,7 @@ watch(
 
   <!-- 금액 일치 여부 표시 행 (차액이 0이 아닐 때만) -->
   <CTableRow v-if="!isBalanced" class="bg-warning-lighten-5">
-    <CTableDataCell colspan="10" class="text-center py-1">
+    <CTableDataCell :colspan="canLedgerManage ? 10 : 9" class="text-center py-1">
       <small class="text-danger">
         <v-icon icon="mdi-alert" size="16" />
         차액: {{ sortName }} {{ Math.abs(difference).toLocaleString() }}원 (거래 금액과 분류 금액이
@@ -317,3 +332,10 @@ watch(
     </CTableDataCell>
   </CTableRow>
 </template>
+
+<style scoped lang="scss">
+.dark-theme .bg-warning-lighten-5 {
+  background-color: #4c422a !important;
+  color: #fff !important;
+}
+</style>

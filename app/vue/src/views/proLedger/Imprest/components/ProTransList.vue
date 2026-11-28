@@ -1,120 +1,22 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { TableSecondary } from '@/utils/cssMixins'
-import { useProLedger } from '@/store/pinia/proLedger.ts'
-import { usePerms } from '@/composables/usePerms.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
-import Pagination from '@/components/Pagination'
-import AccountManage from '@/views/proLedger/Manage/components/AccountManage.vue'
-import BankAcc from './BankAcc.vue'
-import ProTransItem from './ProTransItem.vue'
+import ProTransList from '@/views/proLedger/Manage/components/ProTransList.vue'
 
-interface Props {
+defineProps<{
   project?: number | null
   highlightId?: number | null
   currentPage?: number
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  project: null,
-  highlightId: null,
-  currentPage: 1,
-})
+}>()
 const emit = defineEmits(['page-select', 'on-bank-create', 'on-bank-update'])
-
-const { can, PERM } = usePerms()
-const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
-const canLedgerManage = computed(() => can(PERM.LEDGER_CREATE))
-const canLedgerEdit = computed(() => canLedgerUpdate.value || canLedgerManage.value)
-
-const refAccountManage = ref()
-const refBankAcc = ref()
-
-const proLedgerStore = useProLedger()
-const proTransPages = computed(() => proLedgerStore.proTransPages)
-const proBankTransList = computed(() => proLedgerStore.proBankTransList)
-const proCalculated = computed(() => proLedgerStore.proLedgerCalculated) // 최종 정산 일자
-
-const pageSelect = (page: number) => emit('page-select', page)
-
-const accCallModal = () => {
-  if (props.project) refBankAcc.value.callModal()
-}
 </script>
 
 <template>
-  <hr class="my-0" />
-  <CTable hover responsive align="middle">
-    <colgroup>
-      <col style="width: 7%" />
-      <col style="width: 12%" />
-      <col style="width: 8%" />
-      <col style="width: 12%" />
-      <col style="width: 9%" />
-      <col style="width: 2%" />
-
-      <col style="width: 14%" />
-      <col style="width: 13%" />
-      <col style="width: 8%" />
-      <col style="width: 12%" />
-      <col v-if="canLedgerEdit" style="width: 3%" />
-    </colgroup>
-
-    <CTableHead>
-      <CTableRow :color="TableSecondary">
-        <CTableHeaderCell class="ps-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="ps-0" :colspan="canLedgerEdit ? 5 : 4">
-          <span class="text-grey me-2">|</span> 분류 내역
-        </CTableHeaderCell>
-      </CTableRow>
-
-      <CTableRow :color="TableSecondary">
-        <CTableHeaderCell scope="col">거래일자</CTableHeaderCell>
-        <CTableHeaderCell scope="col">메모</CTableHeaderCell>
-        <CTableHeaderCell scope="col">
-          거래계좌
-          <a href="#" class="ms-1" @click.prevent="accCallModal">
-            <CIcon name="cilCog" />
-          </a>
-        </CTableHeaderCell>
-        <CTableHeaderCell scope="col">적요</CTableHeaderCell>
-        <CTableHeaderCell scope="col">입출금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">확인</CTableHeaderCell>
-        <CTableHeaderCell class="ps-0" scope="col">
-          <span class="text-grey me-2">|</span> 계정
-          <a href="#" class="ms-1" @click.prevent="refAccountManage.callModal()">
-            <CIcon name="cilCog" />
-          </a>
-        </CTableHeaderCell>
-        <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
-        <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
-        <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="canLedgerEdit" scope="col"></CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-
-    <CTableBody>
-      <ProTransItem
-        v-for="proTrans in proBankTransList"
-        :key="proTrans.pk as number"
-        :pro-trans="proTrans"
-        :calculated="proCalculated?.calculated"
-        :is-highlighted="props.highlightId === proTrans.pk"
-      />
-    </CTableBody>
-  </CTable>
-
-  <Pagination
-    :active-page="props.currentPage"
-    :limit="8"
-    :pages="proTransPages(15)"
-    class="mt-3"
-    @active-page-change="pageSelect"
-  />
-  <AccountManage ref="refAccountManage" />
-
-  <BankAcc
-    ref="refBankAcc"
+  <ProTransList
+    :project="project"
+    :highlight-id="highlightId"
+    :current-page="currentPage"
+    is-imprest
+    @page-select="emit('page-select', $event)"
     @on-bank-create="emit('on-bank-create', $event as ProjectBank)"
     @on-bank-update="emit('on-bank-update', $event as ProjectBank)"
   />

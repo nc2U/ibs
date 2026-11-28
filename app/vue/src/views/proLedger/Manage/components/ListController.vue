@@ -1,26 +1,31 @@
 <script lang="ts" setup>
-import { computed, inject, nextTick, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, onBeforeMount, ref, watch } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
 import { useContract } from '@/store/pinia/contract.ts'
-import { type DataFilter } from '@/store/types/proLedger.ts'
+import type { AccountPicker } from '@/store/types/comLedger.ts'
+import type { DataFilter, ProjectBank } from '@/store/types/proLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
-const props = defineProps({
-  project: { type: Number, default: null },
-  imprest: { type: Boolean, default: false },
-  dataFilter: { type: Object as PropType<DataFilter>, default: () => {} },
+interface Props {
+  project?: number | null
+  imprest?: boolean
+  imprestOnly?: boolean
+  dataFilter?: DataFilter
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+  imprest: false,
+  imprestOnly: false,
+  dataFilter: () => ({}),
 })
-watch(
-  () => props.project,
-  () => resetForm(),
-)
 
 const emit = defineEmits(['list-filtering'])
 
-const form = ref<DataFilter>({
+const emptyFilter = (): DataFilter => ({
   page: 1,
   project: null,
   from_date: '',
@@ -32,6 +37,8 @@ const form = ref<DataFilter>({
   contract: null,
   search: '',
 })
+
+const form = ref<DataFilter>(emptyFilter())
 
 const formsCheck = computed(() => {
   const a = !form.value.from_date
@@ -48,9 +55,14 @@ const formsCheck = computed(() => {
 const contStore = useContract()
 const getContracts = computed(() => contStore.getContracts)
 
-const proAccounts = inject<any[]>('proAccounts')
-const allProBankList = inject<any[]>('allProBankList')
-const proBankTransCount = inject<any>('proBankTransCount')
+const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
+const allProBankList = inject<ComputedRef<ProjectBank[]>>('allProBankList')
+const proBankTransCount = inject<ComputedRef<number>>('proBankTransCount')
+
+const selectableBanks = computed(() => {
+  const list = allProBankList?.value ?? []
+  return props.imprestOnly ? list.filter(acc => acc.is_imprest) : list
+})
 
 const sortType = computed(() => {
   if (form.value.sort === 1) return 'deposit' // 입금
@@ -58,60 +70,68 @@ const sortType = computed(() => {
   return null // 전체
 })
 
-watch(
-  () => form.value.from_date,
-  () => listFiltering(1),
-)
-watch(
-  () => form.value.to_date,
-  () => listFiltering(1),
-)
-
-//   methods: {
-const sortSelect = () => {
-  listFiltering(1)
-  form.value.account_category = ''
-  form.value.account = null
-}
-
-const cateSelect = () => {
-  listFiltering(1)
-  form.value.account = null
-}
-
 const listFiltering = (page = 1) => {
   form.value.page = page
   form.value.search = (form.value.search ?? '')?.trim()
-  const is_imprest = props.imprest ? 'all' : 'false'
+  const is_imprest = props.imprestOnly ? 'true' : props.imprest ? 'all' : 'false'
   nextTick(() => {
     emit('list-filtering', { ...form.value, is_imprest })
   })
 }
 
+watch(
+  () => props.project,
+  () => {
+    form.value = emptyFilter()
+  },
+)
+
+watch(
+  () => form.value.from_date,
+  (val, oldVal) => {
+    if (val !== oldVal) listFiltering(1)
+  },
+)
+watch(
+  () => form.value.to_date,
+  (val, oldVal) => {
+    if (val !== oldVal) listFiltering(1)
+  },
+)
+
+const sortSelect = () => {
+  form.value.account_category = ''
+  form.value.account = null
+  listFiltering(1)
+}
+
+const cateSelect = () => {
+  form.value.account = null
+  listFiltering(1)
+}
+
+const clearContractFilter = () => {
+  form.value.contract = null
+  listFiltering(1)
+}
+
 defineExpose({ listFiltering })
 
 const resetForm = () => {
-  form.value.from_date = ''
-  form.value.to_date = ''
-  form.value.sort = null
-  form.value.account_category = ''
-  form.value.account = null
-  form.value.bank_account = null
-  form.value.contract = null
-  form.value.search = ''
+  form.value = emptyFilter()
   listFiltering(1)
 }
 
 onBeforeMount(() => {
   if (props.dataFilter) {
-    form.value.from_date = props.dataFilter.from_date
-    form.value.to_date = props.dataFilter.to_date
-    form.value.sort = props.dataFilter.sort
-    form.value.account_category = props.dataFilter.account_category
-    form.value.account = props.dataFilter.account
-    form.value.bank_account = props.dataFilter.bank_account
-    form.value.contract = props.dataFilter.contract
-    form.value.search = props.dataFilter.search
+    form.value.from_date = props.dataFilter.from_date ?? ''
+    form.value.to_date = props.dataFilter.to_date ?? ''
+    form.value.sort = props.dataFilter.sort ?? null
+    form.value.account_category = props.dataFilter.account_category ?? ''
+    form.value.account = props.dataFilter.account ?? null
+    form.value.bank_account = props.dataFilter.bank_account ?? null
+    form.value.contract = props.dataFilter.contract ?? null
+    form.value.search = props.dataFilter.search ?? ''
   }
 })
 </script>
@@ -177,7 +197,7 @@ onBeforeMount(() => {
               <CCol md="6" lg="3" class="mb-3">
                 <CFormSelect v-model.number="form.bank_account" @change="listFiltering(1)">
                   <option value="">거래계좌</option>
-                  <option v-for="acc in allProBankList" :key="acc.pk" :value="acc.pk">
+                  <option v-for="acc in selectableBanks" :key="acc.pk!" :value="acc.pk">
                     {{ acc.alias_name }}
                   </option>
                 </CFormSelect>
@@ -196,7 +216,7 @@ onBeforeMount(() => {
               :options="getContracts"
               placeholder="계약 정보 선택"
               @select="listFiltering(1)"
-              @clear="resetForm"
+              @clear="clearContractFilter"
             />
           </CCol>
           <CCol md="6" lg="7" class="mb-3">
@@ -215,7 +235,7 @@ onBeforeMount(() => {
     </CRow>
 
     <CRow>
-      <CCol color="warning" class="p-2 pl-3">
+      <CCol color="warning" class="p-2 ps-3">
         <strong> 거래 건수 조회 결과 : {{ numFormat(proBankTransCount ?? 0, 0, 0) }} 건 </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-end mb-0">

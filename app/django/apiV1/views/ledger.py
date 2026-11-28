@@ -887,7 +887,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         except ValueError:
             page_size = 15
 
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = get_project_transactions(request.query_params, user=request.user)
         target = queryset.filter(pk=highlight_id).values('pk', 'deal_date', 'created_at').first()
         if not target:
             return Response({'error': 'Item not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -909,11 +909,21 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def balance_by_account(self, request):
         """계좌별 잔액 조회"""
-        date = request.query_params.get('date', get_today_str())
+        raw_date = request.query_params.get('date')
+        date = raw_date if raw_date and raw_date != 'undefined' else get_today_str()
         project = request.query_params.get('project')
         is_balance = request.query_params.get('is_balance', '')
+        directpay = (
+            request.query_params.get('direct')
+            or request.query_params.get('bank_account__directpay')
+            or '0'
+        )
+        include_directpay = str(directpay).lower() in ('i', 'true', '1')
 
         queryset = ProjectBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
+        if not include_directpay:
+            queryset = queryset.filter(bank_account__directpay=False)
+
         user = request.user
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             accessible = list(get_accessible_project_ids(user))
@@ -929,7 +939,10 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(project_id__in=accessible)
         elif project:
-            queryset = queryset.filter(project_id=project)
+            try:
+                queryset = queryset.filter(project_id=int(project))
+            except (ValueError, TypeError):
+                queryset = queryset.none()
 
         result = queryset.values(
             bank_id=F('bank_account_id'),
@@ -958,7 +971,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
             balance=F('inc_sum') - F('out_sum')
         )
 
-        if is_balance == 'true':
+        if str(is_balance).lower() in ('true', '1'):
             result = result.exclude(balance=0)
 
         return Response(list(result))

@@ -12,7 +12,7 @@ import { useContract } from '@/store/pinia/contract.ts'
 import { useProLedger } from '@/store/pinia/proLedger'
 import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
-import { type DataFilter as Filter } from '@/store/types/proLedger'
+import type { DataFilter as Filter, ProjectBank } from '@/store/types/proLedger'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -24,14 +24,22 @@ import ProTransList from './components/ProTransList.vue'
 import ProTransForm from './components/ProTransForm.vue'
 
 const { can, PERM } = usePerms()
-const canLedgerCreate = computed(() => can(PERM.LEDGER_CREATE))
+const proStore = useProject()
+const project = computed(() => proStore.project?.pk)
+const canLedgerCreate = computed(() =>
+  project.value ? can(PERM.LEDGER_CREATE, project.value) : can(PERM.LEDGER_CREATE),
+)
+const canAccessProject = (projId?: number | null) =>
+  projId ? can(PERM.LEDGER_READ, projId) : can(PERM.LEDGER_READ)
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 const highlightId = computed(() => {
   const id = route.query.highlight_id
-  return id ? parseInt(id as string, 10) : null
+  if (!id) return null
+  const parsed = parseInt(String(id), 10)
+  return Number.isNaN(parsed) ? null : parsed
 })
 
 const PAGE_SIZE = 15 // Django 목록 페이지 크기와 동일하게 유지
@@ -42,17 +50,20 @@ const loadImprest = () => localStorage.getItem(IMPREST_KEY) === 'all'
 const imprest = ref(loadImprest()) // 운영계좌 내역 포함 여부
 
 const setImprest = () => {
+  if (!project.value || !canAccessProject(project.value)) return
   dataFilter.value.page = 1
   imprest.value = !imprest.value
   const is_imprest = imprest.value ? 'all' : 'false'
   localStorage.setItem(IMPREST_KEY, is_imprest)
-  fetchProBankTransList({ ...dataFilter.value, is_imprest })
+  fetchProBankTransList({ ...dataFilter.value, project: project.value, is_imprest })
 }
 
 // URL에서 project 파라미터 읽기
 const urlProjectId = computed(() => {
   const id = route.query.project
-  return id ? parseInt(id as string, 10) : null
+  if (!id) return null
+  const parsed = parseInt(String(id), 10)
+  return Number.isNaN(parsed) ? null : parsed
 })
 
 const excelUrl = computed(() => {
@@ -72,8 +83,6 @@ const excelUrl = computed(() => {
   return `/excel/pro-trans/?${params.toString()}`
 })
 
-const proStore = useProject()
-const project = computed(() => proStore.project?.pk)
 const fetchProject = (pk: number) => proStore.fetchProject(pk)
 
 const contStore = useContract()
@@ -99,30 +108,36 @@ provide('getAllContractors', getAllContractors)
 const fetchProjectAccounts = () => proLedgerStore.fetchProjectAccounts()
 const fetchProBankAccList = (pk: number) => proLedgerStore.fetchProBankAccList(pk)
 const fetchAllProBankAccList = (pk: number) => proLedgerStore.fetchAllProBankAccList(pk)
-const createProBankAcc = (payload: any) => proLedgerStore.createProBankAcc(payload)
-const updateProBankAcc = (payload: any) => proLedgerStore.updateProBankAcc(payload)
 
-const onBankCreate = (payload: any) => createProBankAcc(payload)
-const onBankUpdate = (payload: any) => updateProBankAcc(payload)
+const onBankCreate = (payload: ProjectBank) =>
+  proLedgerStore.createProBankAcc({
+    ...payload,
+    project: payload.project ?? project.value ?? null,
+  })
+const onBankUpdate = (payload: ProjectBank) =>
+  proLedgerStore.updateProBankAcc({
+    ...payload,
+    project: payload.project ?? project.value ?? null,
+  })
 
 const fetchProBankTransList = (payload: Filter) => proLedgerStore.fetchProBankTransList(payload)
-const findProBankTransPage = (highlightId: number, filters: Filter) =>
-  proLedgerStore.findProBankTransPage(highlightId, filters)
+const findProBankTransPage = (targetHighlightId: number, filters: Filter) =>
+  proLedgerStore.findProBankTransPage(targetHighlightId, filters)
 const fetchProLedgerCalculation = (com: number) => proLedgerStore.fetchProLedgerCalculation(com)
 
 const pageSelect = (page: number) => listControl.value?.listFiltering(page)
 
 const listFiltering = (payload: Filter) => {
-  // 필터링 시 query string 정리
   clearQueryString()
-  if (project.value) payload.project = project.value
-  if (project.value) fetchProBankTransList(payload)
+  if (project.value && canAccessProject(project.value)) {
+    payload.project = project.value
+    fetchProBankTransList(payload)
+  }
 }
 
-const dataSetup = async (pk: number) => {
-  // 거래 목록 조회 전에 필터의 project 설정
+const dataSetup = async (pk: number, targetHighlightId: number | null = null) => {
+  if (!canAccessProject(pk)) return
   proLedgerStore.proBankTransFilter.project = pk
-  // 서로 독립적인 호출은 병렬로 실행
   await Promise.all([
     fetchProject(pk),
     fetchAllContracts(pk),
@@ -131,10 +146,16 @@ const dataSetup = async (pk: number) => {
     fetchAllProBankAccList(pk),
   ])
   const is_imprest = imprest.value ? 'all' : 'false'
-  await Promise.all([
-    fetchProBankTransList({ ...dataFilter.value, project: pk, is_imprest }),
-    fetchProLedgerCalculation(pk),
-  ])
+  const baseFilter: Filter = { ...dataFilter.value, project: pk, is_imprest }
+  if (targetHighlightId) {
+    const targetPage = await findProBankTransPage(targetHighlightId, {
+      ...baseFilter,
+      limit: PAGE_SIZE,
+    })
+    baseFilter.page = targetPage
+    proLedgerStore.proBankTransFilter.page = targetPage
+  }
+  await Promise.all([fetchProBankTransList(baseFilter), fetchProLedgerCalculation(pk)])
 }
 
 const dataReset = () => {
@@ -147,12 +168,11 @@ const dataReset = () => {
 }
 
 const projSelect = async (target: number | null, skipClearQuery = false) => {
-  // 프로젝트 변경 시 query string 정리 (URL 파라미터로부터 자동 전환하는 경우는 제외)
   if (!skipClearQuery) {
     clearQueryString()
   }
   dataReset()
-  if (!!target) {
+  if (target) {
     await dataSetup(target)
   }
 }
@@ -160,8 +180,8 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
 // Query string 정리 함수
 const clearQueryString = () => {
   if (route.query.highlight_id) {
-    // highlight_id만 제거하고 나머지 query(project 등)는 보존
-    const { highlight_id: _omit, ...rest } = route.query
+    const rest = { ...route.query }
+    delete rest.highlight_id
     router
       .replace({
         name: route.name,
@@ -180,28 +200,6 @@ const scrollToHighlight = async () => {
     const element = document.querySelector(`[data-cash-id="${highlightId.value}"]`)
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // highlightId는 computed이므로 URL 파라미터가 있는 동안 자동으로 유지됩니다
-    }
-  }
-}
-
-const loadHighlightPage = async () => {
-  if (highlightId.value && project.value) {
-    try {
-      // 현재 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
-      const targetPage = await findProBankTransPage(highlightId.value, {
-        ...dataFilter.value,
-        project: project.value,
-        limit: PAGE_SIZE,
-      })
-      // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
-      proLedgerStore.proBankTransFilter.page = targetPage
-      await fetchProBankTransList({
-        ...dataFilter.value,
-        project: project.value,
-      })
-    } catch (error) {
-      console.error('Error finding highlight page:', error)
     }
   }
 }
@@ -210,24 +208,13 @@ const loading = ref(true)
 onBeforeMount(async () => {
   try {
     imprest.value = loadImprest()
-
-    // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-    let projectId = project.value || proStore.currentProject
-    if (urlProjectId.value && urlProjectId.value !== projectId) {
-      // 프로젝트 전환 (query string 정리 건너뛰기)
-      await projSelect(urlProjectId.value, true)
-      projectId = urlProjectId.value
-    }
+    const targetProjectId = urlProjectId.value || project.value || proStore.currentProject
+    if (!canAccessProject(targetProjectId)) return
 
     await fetchProjectAccounts()
 
-    if (projectId) {
-      // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-      if (highlightId.value) {
-        await loadHighlightPage()
-      } else {
-        await dataSetup(projectId)
-      }
+    if (targetProjectId) {
+      await dataSetup(targetProjectId, highlightId.value)
       await scrollToHighlight()
     }
   } catch (err) {
@@ -245,7 +232,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <ProLedgerAuthGuard>
+  <ProLedgerAuthGuard :project="project">
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -267,6 +254,7 @@ onBeforeRouteLeave(() => {
           <AddProTrans
             v-if="canLedgerCreate"
             :project="project as number"
+            route-name="거래 내역 관리 - 생성"
           />
 
           <TableTitleRow

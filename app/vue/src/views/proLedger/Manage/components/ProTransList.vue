@@ -9,16 +9,29 @@ import BankAcc from './BankAcc.vue'
 import ProTransItem from './ProTransItem.vue'
 import AccountManage from './AccountManage.vue'
 
-const props = defineProps({
-  project: { type: Number, default: null },
-  highlightId: { type: Number, default: null },
-  currentPage: { type: Number, default: 1 },
+interface Props {
+  project?: number | null
+  highlightId?: number | null
+  currentPage?: number
+  isImprest?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  project: null,
+  highlightId: null,
+  currentPage: 1,
+  isImprest: false,
 })
 const emit = defineEmits(['page-select', 'on-bank-create', 'on-bank-update'])
 
 const { can, canGlobal, PERM } = usePerms()
-const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
-const canLedgerManage = computed(() => can(PERM.LEDGER_MANAGE) || canGlobal(PERM.LEDGER_MANAGE))
+const canLedgerUpdate = computed(() =>
+  props.project ? can(PERM.LEDGER_UPDATE, props.project) : can(PERM.LEDGER_UPDATE),
+)
+const canLedgerManage = computed(() =>
+  (props.project ? can(PERM.LEDGER_MANAGE, props.project) : can(PERM.LEDGER_MANAGE)) ||
+  canGlobal(PERM.LEDGER_MANAGE),
+)
 const canLedgerEdit = computed(() => canLedgerUpdate.value || canLedgerManage.value)
 
 const refAccountManage = ref()
@@ -32,7 +45,7 @@ const proCalculated = computed(() => proLedgerStore.proLedgerCalculated) // 최�
 const pageSelect = (page: number) => emit('page-select', page)
 
 const accCallModal = () => {
-  if (props.project) refBankAcc.value.callModal()
+  if (props.project) refBankAcc.value?.callModal()
 }
 </script>
 
@@ -56,7 +69,7 @@ const accCallModal = () => {
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
-        <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
+        <CTableHeaderCell class="ps-3" colspan="6">은행거래내역</CTableHeaderCell>
         <CTableHeaderCell class="ps-0" :colspan="canLedgerEdit ? 5 : 4">
           <span class="text-grey me-2">|</span> 분류 내역
         </CTableHeaderCell>
@@ -76,7 +89,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">확인</CTableHeaderCell>
         <CTableHeaderCell class="ps-0" scope="col">
           <span class="text-grey me-2">|</span> 계정
-          <a href="#" class="ms-1" @click.prevent="refAccountManage.callModal()">
+          <a href="#" class="ms-1" @click.prevent="refAccountManage?.callModal()">
             <CIcon name="cilCog" />
           </a>
         </CTableHeaderCell>
@@ -92,8 +105,10 @@ const accCallModal = () => {
         v-for="proTrans in proBankTransList"
         :key="proTrans.pk as number"
         :pro-trans="proTrans"
+        :project="project"
         :calculated="proCalculated?.calculated"
         :is-highlighted="props.highlightId === proTrans.pk"
+        :is-imprest="isImprest"
       />
     </CTableBody>
   </CTable>
@@ -109,6 +124,8 @@ const accCallModal = () => {
 
   <BankAcc
     ref="refBankAcc"
+    :project="project"
+    :is-imprest="isImprest"
     @on-bank-create="emit('on-bank-create', $event as ProjectBank)"
     @on-bank-update="emit('on-bank-update', $event as ProjectBank)"
   />

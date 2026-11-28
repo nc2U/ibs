@@ -7,11 +7,13 @@ import { useProLedger } from '@/store/pinia/proLedger.ts'
 interface Props {
   date?: string
   isBalance?: string
+  direct?: string
 }
 
 withDefaults(defineProps<Props>(), {
   date: '',
   isBalance: 'true',
+  direct: '0',
 })
 
 const emit = defineEmits<{
@@ -29,13 +31,13 @@ const totals = computed(() => {
   let dateOutTotal = 0
 
   for (const bal of proBalanceByAccList.value) {
-    dateIncSum += (bal as any).date_inc || 0
-    dateOutSum += (bal as any).date_out || 0
-    if ((bal as any).inc_sum !== null && (bal as any).inc_sum !== undefined) {
-      dateIncTotal += (bal as any).inc_sum || 0
+    dateIncSum += bal.date_inc || 0
+    dateOutSum += bal.date_out || 0
+    if (bal.inc_sum !== null && bal.inc_sum !== undefined) {
+      dateIncTotal += bal.inc_sum || 0
     }
-    if ((bal as any).out_sum !== null && (bal as any).out_sum !== undefined) {
-      dateOutTotal += (bal as any).out_sum || 0
+    if (bal.out_sum !== null && bal.out_sum !== undefined) {
+      dateOutTotal += bal.out_sum || 0
     }
   }
 
@@ -50,14 +52,12 @@ const totals = computed(() => {
   }
 })
 
-const handleExistBalanceChange = (e: Event) => {
-  const target = e.target as HTMLInputElement
-  emit('is-exist-balance', target.checked)
+const handleExistBalanceChange = (val: boolean) => {
+  emit('is-exist-balance', Boolean(val))
 }
 
-const handleDirectBalanceChange = (e: Event) => {
-  const target = e.target as HTMLInputElement
-  emit('direct-balance', target.checked)
+const handleDirectBalanceChange = (val: boolean) => {
+  emit('direct-balance', Boolean(val))
 }
 </script>
 
@@ -85,15 +85,16 @@ const handleDirectBalanceChange = (e: Event) => {
           <CFormSwitch
             id="select-acc-sort"
             label="잔고 존재 계좌"
-            :checked="!!isBalance"
-            @change="handleExistBalanceChange"
+            :model-value="!!isBalance"
+            @update:model-value="handleExistBalanceChange"
           />
         </CTableDataCell>
         <CTableDataCell colspan="3">
           <CFormSwitch
             id="select-directpay"
             label="직불 용역비 계좌 포함"
-            @change="handleDirectBalanceChange"
+            :model-value="direct === 'i'"
+            @update:model-value="handleDirectBalanceChange"
           />
         </CTableDataCell>
         <CTableDataCell class="text-end">(단위: 원)</CTableDataCell>
@@ -109,19 +110,23 @@ const handleDirectBalanceChange = (e: Event) => {
 
     <CTableBody>
       <template v-if="proBalanceByAccList.length > 0">
-        <CTableRow v-for="(bal, i) in proBalanceByAccList" :key="i" class="text-end">
+        <CTableRow v-for="(bal, i) in proBalanceByAccList" :key="bal.bank_id ?? i" class="text-end">
           <CTableDataCell v-if="i === 0" class="text-center" :rowspan="proBalanceByAccList.length">
             보통예금
           </CTableDataCell>
           <CTableDataCell class="text-start">{{ bal.bank_acc }}</CTableDataCell>
           <CTableDataCell class="text-start">{{ bal.bank_num }}</CTableDataCell>
           <CTableDataCell>
-            {{ numFormat(((bal as any).inc_sum || 0) - ((bal as any).out_sum || 0) - ((bal as any).date_inc - (bal as any).date_out)) }}
+            {{
+              numFormat(
+                (bal.inc_sum || 0) - (bal.out_sum || 0) - ((bal.date_inc || 0) - (bal.date_out || 0)),
+              )
+            }}
           </CTableDataCell>
-          <CTableDataCell>{{ numFormat((bal as any).date_inc) }}</CTableDataCell>
-          <CTableDataCell>{{ numFormat((bal as any).date_out) }}</CTableDataCell>
+          <CTableDataCell>{{ numFormat(bal.date_inc || 0) }}</CTableDataCell>
+          <CTableDataCell>{{ numFormat(bal.date_out || 0) }}</CTableDataCell>
           <CTableDataCell>
-            {{ numFormat(((bal as any).inc_sum || 0) - ((bal as any).out_sum || 0)) }}
+            {{ numFormat((bal.inc_sum || 0) - (bal.out_sum || 0)) }}
           </CTableDataCell>
         </CTableRow>
       </template>

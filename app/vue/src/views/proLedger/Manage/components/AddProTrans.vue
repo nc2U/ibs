@@ -1,9 +1,16 @@
 <script lang="ts" setup>
 import { AlertLight } from '@/utils/cssMixins'
 
-defineProps<{
-  project?: number | null
-}>()
+withDefaults(
+  defineProps<{
+    project?: number | null
+    routeName?: string
+  }>(),
+  {
+    project: null,
+    routeName: '거래 내역 관리 - 생성',
+  },
+)
 </script>
 
 <template>
@@ -12,7 +19,7 @@ defineProps<{
       color="primary"
       :disabled="!project"
       prepend-icon="mdi-plus"
-      @click="$router.push({ name: '거래 내역 관리 - 생성' })"
+      @click="$router.push({ name: routeName })"
     >
       새 거래 등록
     </v-btn>

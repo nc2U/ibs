@@ -1323,7 +1323,7 @@ onBeforeRouteLeave(async () => {
 
   <BulkTransUploadDialog
     v-model="bulkDialogVisible"
-    :result="bulkResult"
+    v-model:result="bulkResult"
     :has-existing="hasEnteredTransactions"
     :bank-accounts="formBankAccounts"
     :accounts="ledgerStore.comAccounts"

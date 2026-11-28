@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { message } from '@/utils/helper.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -11,10 +11,12 @@ import type {
 } from '@/store/types/project'
 
 interface Props {
+  project?: number | null
   date?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
+  project: undefined,
   date: '',
 })
 
@@ -24,11 +26,13 @@ const emit = defineEmits<{
 }>()
 
 const { can, canGlobal, PERM } = usePerms()
-const canLedgerEdit = computed(
-  () => can(PERM.LEDGER_UPDATE) || can(PERM.LEDGER_MANAGE) || canGlobal(PERM.LEDGER_MANAGE),
+const canLedgerEdit = computed(() =>
+  (props.project
+    ? can(PERM.LEDGER_UPDATE, props.project) || can(PERM.LEDGER_MANAGE, props.project)
+    : can(PERM.LEDGER_UPDATE) || can(PERM.LEDGER_MANAGE)) || canGlobal(PERM.LEDGER_MANAGE),
 )
 
-const formNumber = ref(1000)
+const formNumber = ref<number | null>(null)
 const isRevised = ref('1')
 
 watch(isRevised, val => {
@@ -108,16 +112,28 @@ const sumTotal = computed(() => {
 })
 
 let isPatching = false
+let patchTimer: ReturnType<typeof setTimeout> | null = null
+
+onBeforeUnmount(() => {
+  if (patchTimer) clearTimeout(patchTimer)
+})
+
 const patchBudget = (pk: number, budgetStr: string, oldBudget: number, isRevised = false) => {
   if (isPatching) return
-  formNumber.value = 1000
+  formNumber.value = null
   if (canLedgerEdit.value) {
-    const bg = parseInt(budgetStr, 10) || 0
-    if (bg !== oldBudget) {
+    const cleaned = budgetStr.replace(/,/g, '').trim()
+    if (!cleaned) return
+    const bg = Number(cleaned)
+    if (!Number.isFinite(bg) || bg < 0) return
+    const rounded = Math.trunc(bg)
+    if (rounded !== oldBudget) {
       isPatching = true
-      emit('patch-budget', pk, bg, isRevised)
-      setTimeout(() => {
+      emit('patch-budget', pk, rounded, isRevised)
+      if (patchTimer) clearTimeout(patchTimer)
+      patchTimer = setTimeout(() => {
         isPatching = false
+        patchTimer = null
       }, 300)
     }
   } else {
@@ -180,8 +196,8 @@ const patchBudget = (pk: number, budgetStr: string, oldBudget: number, isRevised
       </CTableRow>
       <CTableRow :color="TableSecondary" class="text-center">
         <CTableHeaderCell colspan="4">구분</CTableHeaderCell>
-        <CTableHeaderCell color="light" v-show="isRevised === '0'">기초 예산 금액</CTableHeaderCell>
-        <CTableHeaderCell color="light" v-show="isRevised === '1'">현황 예산 금액</CTableHeaderCell>
+        <CTableHeaderCell v-show="isRevised === '0'">기초 예산 금액</CTableHeaderCell>
+        <CTableHeaderCell v-show="isRevised === '1'">현황 예산 금액</CTableHeaderCell>
         <CTableHeaderCell>전월 집행 금액 누계</CTableHeaderCell>
         <CTableHeaderCell>당월 집행 금액</CTableHeaderCell>
         <CTableHeaderCell>집행금액 합계</CTableHeaderCell>
@@ -230,7 +246,7 @@ const patchBudget = (pk: number, budgetStr: string, oldBudget: number, isRevised
           v-show="isRevised === '1'"
           class="py-0 bg-amber-lighten-5"
           :class="canLedgerEdit ? 'pointer' : ''"
-          @dblclick="formNumber = canLedgerEdit ? i : 1000"
+          @dblclick="formNumber = canLedgerEdit ? i : null"
         >
           <span v-if="formNumber !== i">
             {{ numFormat(obj.revised_budget || obj.budget) }}
@@ -241,10 +257,20 @@ const patchBudget = (pk: number, budgetStr: string, oldBudget: number, isRevised
               class="form-control text-end"
               :value="obj.revised_budget || obj.budget"
               @blur="
-                patchBudget(obj.pk as number, ($event.target as HTMLInputElement).value, obj.revised_budget ?? 0, true)
+                patchBudget(
+                  obj.pk as number,
+                  ($event.target as HTMLInputElement).value,
+                  obj.revised_budget || obj.budget,
+                  true,
+                )
               "
               @keydown.enter="
-                patchBudget(obj.pk as number, ($event.target as HTMLInputElement).value, obj.revised_budget ?? 0, true)
+                patchBudget(
+                  obj.pk as number,
+                  ($event.target as HTMLInputElement).value,
+                  obj.revised_budget || obj.budget,
+                  true,
+                )
               "
             />
           </span>
@@ -298,3 +324,15 @@ const patchBudget = (pk: number, budgetStr: string, oldBudget: number, isRevised
     </CTableBody>
   </CTable>
 </template>
+
+<style lang="scss" scoped>
+.dark-theme .bg-indigo-lighten-5 {
+  background-color: #2f3349 !important;
+  color: #fff !important;
+}
+
+.dark-theme .bg-amber-lighten-5 {
+  background-color: #4c4a43 !important;
+  color: #fff !important;
+}
+</style>

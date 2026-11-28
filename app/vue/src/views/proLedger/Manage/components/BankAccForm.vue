@@ -1,21 +1,36 @@
 <script lang="ts" setup>
-import api from '@/api'
-import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms.ts'
-import { isValidate, errorHandle } from '@/utils/helper'
+import { useProject } from '@/store/pinia/project'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { isValidate } from '@/utils/helper'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({
-  bankAcc: { type: Object as PropType<ProjectBank>, default: () => null },
+interface Props {
+  bankAcc?: ProjectBank | null
+  project?: number | null
+  isImprest?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  bankAcc: null,
+  project: null,
+  isImprest: false,
 })
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 
-const { can, PERM } = usePerms()
-const canLedgerCreate = computed(() => can(PERM.LEDGER_CREATE))
-const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
+const projStore = useProject()
+const proLedgerStore = useProLedger()
+const targetProject = computed(() => props.project ?? projStore.project?.pk ?? null)
+
+const { can, canGlobal, PERM } = usePerms()
+const canLedgerManage = computed(() => {
+  const projId = props.bankAcc?.project ?? targetProject.value
+  return (projId ? can(PERM.LEDGER_MANAGE, projId) : can(PERM.LEDGER_MANAGE)) || canGlobal(PERM.LEDGER_MANAGE)
+})
 
 const refConfirmModal = ref()
 const refAlertModal = ref()
@@ -34,7 +49,7 @@ const form = reactive<ProjectBank>({
   is_hide: false,
   inactive: false,
   directpay: false,
-  is_imprest: false,
+  is_imprest: props.isImprest,
 })
 
 const formsCheck = computed(() => {
@@ -54,30 +69,38 @@ const formsCheck = computed(() => {
   } else return false
 })
 
-const bankCodeList = ref<{ pk: number; code: string; name: string }[]>([])
-
-const fetchBankCodeList = () =>
-  api
-    .get('/ledger/bank-code/')
-    .then(res => (bankCodeList.value = res.data.results))
-    .catch(err => errorHandle(err.response.data))
+const bankCodeList = computed(() => proLedgerStore.bankCodeList)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (canLedgerCreate.value || canLedgerUpdate.value) {
-      refConfirmModal.value.callModal()
-    } else refAlertModal.value.callModal()
+    if (!props.bankAcc && !targetProject.value) {
+      refAlertModal.value?.callModal('오류', '프로젝트가 선택되지 않았습니다.')
+      validated.value = false
+      return
+    }
+    if (canLedgerManage.value) {
+      refConfirmModal.value?.callModal()
+    } else refAlertModal.value?.callModal()
     validated.value = false
   }
 }
 
-const onBankAccSubmit = () => {
-  if (props.bankAcc) emit('on-bank-update', { ...form })
-  else emit('on-bank-create', { ...form })
-  refConfirmModal.value.close()
-  formDataReset()
+const formDataReset = () => {
+  form.pk = null
+  form.project = targetProject.value
+  form.bankcode = null
+  form.alias_name = ''
+  form.number = ''
+  form.holder = ''
+  form.open_date = null
+  form.note = ''
+  form.is_hide = false
+  form.inactive = false
+  form.directpay = false
+  form.is_imprest = props.isImprest
+  validated.value = false
 }
 
 const formDataSetup = () => {
@@ -94,29 +117,37 @@ const formDataSetup = () => {
     form.inactive = props.bankAcc.inactive
     form.directpay = props.bankAcc.directpay
     form.is_imprest = props.bankAcc.is_imprest
+  } else {
+    formDataReset()
   }
 }
 
-const formDataReset = () => {
-  form.pk = null
-  form.project = null
-  form.bankcode = null
-  form.alias_name = ''
-  form.number = ''
-  form.holder = ''
-  form.open_date = null
-  form.note = ''
-  form.is_hide = false
-  form.inactive = false
-  form.directpay = false
-  form.is_imprest = false
+const onBankAccSubmit = () => {
+  const payload: ProjectBank = {
+    ...form,
+    project: form.project ?? targetProject.value,
+  }
+  if (props.bankAcc) {
+    emit('on-bank-update', payload)
+    refConfirmModal.value?.close()
+  } else {
+    emit('on-bank-create', payload)
+    refConfirmModal.value?.close()
+    formDataReset()
+  }
 }
 
-onMounted(() => {
-  fetchBankCodeList()
-  formDataSetup()
+watch(
+  () => [props.bankAcc, props.project, props.isImprest],
+  () => formDataSetup(),
+  { immediate: true },
+)
+
+onMounted(async () => {
+  if (!proLedgerStore.bankCodeList.length) {
+    await proLedgerStore.fetchBankCodeList()
+  }
 })
-onUpdated(() => formDataSetup())
 </script>
 
 <template>
@@ -204,7 +235,7 @@ onUpdated(() => formDataSetup())
                   color="success"
                   hide-details
                 />
-                <v-tooltip activator="parent" location="start"> 운영비용(전도금) 계좌"</v-tooltip>
+                <v-tooltip activator="parent" location="start">운영비용(전도금) 계좌</v-tooltip>
               </CCol>
             </CRow>
           </CCol>
@@ -263,7 +294,11 @@ onUpdated(() => formDataSetup())
 
         <CRow>
           <CCol sm="12" class="text-end pt-1">
-            <v-btn :color="bankAcc ? 'success' : 'primary'" type="submit" :disabled="formsCheck">
+            <v-btn
+              :color="bankAcc ? 'success' : 'primary'"
+              type="submit"
+              :disabled="!canLedgerManage || formsCheck"
+            >
               거래계좌 정보 <span v-if="bankAcc">저장</span><span v-else>추가</span>하기
             </v-btn>
           </CCol>

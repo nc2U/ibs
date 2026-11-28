@@ -92,7 +92,7 @@ const handleCancel = () => {
         :class="`bg-${config.color}`"
       >
         <div class="d-flex align-items-center">
-          <v-icon :icon="config.icon" size="20" class="mr-2" />
+          <v-icon :icon="config.icon" size="20" class="me-2" />
           <span>{{ config.title }}</span>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" @click="handleCancel" />
@@ -100,19 +100,19 @@ const handleCancel = () => {
 
       <v-card-text class="pt-4">
         <div v-if="accountName" class="mb-3">
-          <div class="text-caption text-grey">계정</div>
-          <div class="text-body-1 font-weight-medium">{{ accountName }}</div>
+          <div class="text-caption text-medium-emphasis">계정</div>
+          <div class="text-body-1 fw-medium">{{ accountName }}</div>
         </div>
 
         <div>
-          <div class="text-caption text-grey mb-2">{{ config.label }}</div>
+          <div class="text-caption text-medium-emphasis mb-2">{{ config.label }}</div>
           <MultiSelect
             v-model.number="selectedId"
             mode="single"
             :options="options"
             :placeholder="config.placeholder"
           />
-          <div class="text-caption text-grey-darken-1">{{ config.helpText }}</div>
+          <div class="text-caption text-medium-emphasis">{{ config.helpText }}</div>
         </div>
       </v-card-text>
 
