@@ -14,24 +14,30 @@ const userId = ref<number | null>(null)
 const accountStore = useAccount()
 const userInfo = computed(() => accountStore.userInfo)
 const workManager = computed(() => accountStore.workManager)
-const getUsers = computed(() => accountStore.getUsers)
-
 const allowGetUsers = computed(() =>
-  userInfo.value?.is_superuser
-    ? getUsers.value
-    : getUsers.value.filter(u => u.value === userInfo.value?.pk),
+  accountStore.usersList
+    .filter(u => u.pk !== undefined && u.pk !== null)
+    .map(u => {
+      const staffSuffix = u.staff_name ? ` - ${u.staff_name}` : ''
+      const pendingSuffix = u.is_active ? '' : ' [승인대기]'
+      return {
+        value: u.pk as number,
+        label: `${u.username}${staffSuffix}${pendingSuffix}`,
+      }
+    }),
 )
 
 const selectUser = () => nextTick(() => emit('select-user', userId.value))
 
 onBeforeMount(() => {
-  if (userInfo.value) userId.value = userInfo.value.pk as number
+  if (props.selUser) userId.value = props.selUser
+  else if (userInfo.value) userId.value = userInfo.value.pk as number
 })
 
 watch(
   () => props.selUser,
   newVal => {
-    if (!!newVal) userId.value = newVal
+    if (newVal) userId.value = newVal
     else userId.value = null
   },
 )
@@ -59,8 +65,10 @@ const addUserModal = () => emit('add-user-modal')
           </CCol>
         </CRow>
       </CCol>
-      <CCol xl="4" v-if="workManager" class="text-end pt-1">
-        <v-btn variant="tonal" color="primary" @click="addUserModal">사용자 생성</v-btn>
+      <CCol v-if="workManager" xl="4" class="text-end pt-1">
+        <v-btn type="button" variant="tonal" color="primary" @click="addUserModal">
+          사용자 생성
+        </v-btn>
       </CCol>
     </CRow>
   </CCallout>

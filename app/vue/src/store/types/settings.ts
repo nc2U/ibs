@@ -9,8 +9,8 @@ export interface Company {
   org_number: string
   business_cond: string
   business_even: string
-  es_date: string
-  op_date: string
+  es_date: string | null
+  op_date: string | null
   zipcode: string
   address1: string
   address2: string

@@ -85,7 +85,8 @@ class UserViewSet(viewsets.ModelViewSet):
         # 2. 기본값: 활성 사용자(is_active=True)만 조회 (인사/관리자용 명시적 파라미터 지원)
         is_active_param = self.request.query_params.get('is_active')
         if is_active_param is None:
-            queryset = queryset.filter(is_active=True)
+            if not (self.action == 'retrieve' and (user.is_superuser or getattr(user, 'work_manager', False))):
+                queryset = queryset.filter(is_active=True)
         elif is_active_param.lower() in ('true', '1'):
             queryset = queryset.filter(is_active=True)
         elif is_active_param.lower() in ('false', '0'):

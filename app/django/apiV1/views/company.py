@@ -1,5 +1,7 @@
+from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import FilterSet, CharFilter, DateFilter
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
 from company.models import (
     Company, Logo, CompanySeal, Department, JobGrade, Position, DutyTitle,
@@ -92,6 +94,17 @@ class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperUserOrReadOnly)
     ordering = ['id']
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response(
+                {'detail': '연결된 관계회사/회계 이력 등 보호 데이터가 존재하여 회사 정보를 삭제할 수 없습니다.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LogoViewSet(viewsets.ModelViewSet):

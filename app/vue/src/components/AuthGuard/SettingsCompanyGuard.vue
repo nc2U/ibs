@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { usePerms } from '@/composables/usePerms.ts'
+import { usePerms } from '@/composables/usePerms'
 import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
 const isLoading = computed(() => !account.userInfo)
 
-const { can, PERM } = usePerms()
+const { canGlobal, PERM } = usePerms()
 const canComSettingsRead = computed(
-  () => account.isStaff && can(PERM.PROJECT_CREATE) && can(PERM.PROJECT_UPDATE),
+  () =>
+    Boolean(account.superAuth) ||
+    (account.isStaff && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE))),
 )
 </script>
 

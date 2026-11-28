@@ -155,8 +155,12 @@ const AppSidebarNav = defineComponent({
       prManage: canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE),
       siteRead: canGlobal(PERM.SITE_READ),
       comManage:
-        isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE)),
-      authManage: isStaff.value && canGlobal(PERM.PROJECT_MEMBER),
+        Boolean(account.superAuth) ||
+        (isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE))),
+      authManage:
+        Boolean(account.superAuth) ||
+        Boolean(account.workManager) ||
+        (isStaff.value && canGlobal(PERM.PROJECT_MEMBER)),
       salesRead: canGlobal(PERM.SALES_READ),
       salesManage: canGlobal(PERM.SALES_MANAGE),
       salesPolicy: canGlobal(PERM.SALES_POLICY),

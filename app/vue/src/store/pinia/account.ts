@@ -60,17 +60,19 @@ export const useAccount = defineStore('account', () => {
 
   // actions
   const fetchUsersList = (isActive: boolean | 'all' = true) => {
-    const params: Record<string, string | number | boolean> = { limit: 500 }
-    if (isActive !== 'all') params.is_active = isActive
+    const params: Record<string, string | number | boolean> = {
+      limit: 500,
+      is_active: isActive,
+    }
     return api
       .get('/user/', { params })
       .then(res => (usersList.value = res.data.results ?? res.data ?? []))
       .catch(err => errorHandle(err))
   }
 
-  const fetchUser = (pk: number) =>
+  const fetchUser = (pk: number, params?: Record<string, string | number | boolean>) =>
     api
-      .get(`/user/${pk}/`)
+      .get(`/user/${pk}/`, params ? { params } : undefined)
       .then(res => (user.value = res.data))
       .catch(err => errorHandle(err))
 

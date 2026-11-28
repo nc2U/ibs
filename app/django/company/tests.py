@@ -701,5 +701,41 @@ class CompanySecurityAndOptimizationTests(APITestCase):
         res_pc_excel = ExportPromotionCandidates().get(req_pc)
         self.assertEqual(res_pc_excel.status_code, 200)
 
+    def test_company_viewset_permissions_extended_fields_and_protected_delete(self):
+        """[settings/Company] 비슈퍼유저 쓰기 차단, 확장 필드 수정 및 PROTECT 연결 회사 삭제 시 409 반환"""
+        from ledger.models import Affiliate
+
+        # 비슈퍼유저는 생성/수정/삭제 불가 (403)
+        self.client.force_authenticate(user=self.user_1)
+        res_create_denied = self.client.post('/api/v1/company/', {
+            'name': '무단회사', 'tax_number': '111-11-11111', 'ceo': '홍길동', 'org_number': '111111-1111111'
+        })
+        self.assertEqual(res_create_denied.status_code, status.HTTP_403_FORBIDDEN)
+        res_patch_denied = self.client.patch(f'/api/v1/company/{self.company_1.pk}/', {'en_name': 'Hacked Co.'})
+        self.assertEqual(res_patch_denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 슈퍼유저는 확장 필드 포함 부분 수정 및 null 날짜 처리 가능
+        self.client.force_authenticate(user=self.admin)
+        res_patch = self.client.patch(f'/api/v1/company/{self.company_1.pk}/', {
+            'en_name': 'Gabul Construction Co., Ltd.',
+            'phone': '02-1234-5678',
+            'fax': '02-1234-5679',
+            'email': 'info@gabul.co.kr',
+            'is_default': True,
+            'es_date': None,
+        }, format='json')
+        self.assertEqual(res_patch.status_code, status.HTTP_200_OK)
+        self.company_1.refresh_from_db()
+        self.assertEqual(self.company_1.en_name, 'Gabul Construction Co., Ltd.')
+        self.assertEqual(self.company_1.phone, '02-1234-5678')
+        self.assertTrue(self.company_1.is_default)
+        self.assertIsNone(self.company_1.es_date)
+
+        # Affiliate(PROTECT) 연결 시 삭제하면 500 대신 409 Conflict 반환
+        Affiliate.objects.create(sort='company', company=self.company_1)
+        res_del = self.client.delete(f'/api/v1/company/{self.company_1.pk}/')
+        self.assertEqual(res_del.status_code, status.HTTP_409_CONFLICT)
+        self.assertTrue(Company.objects.filter(pk=self.company_1.pk).exists())
+
 
 

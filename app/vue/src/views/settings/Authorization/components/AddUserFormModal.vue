@@ -1,29 +1,47 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { isValidate } from '@/utils/helper'
+import { useAccount } from '@/store/pinia/account'
+import { generatePassword, isValidate } from '@/utils/helper'
 import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const emit = defineEmits(['on-submit'])
+const emit = defineEmits<{
+  'on-created': [pk: number]
+}>()
 
-const refFormModal = ref()
+const accStore = useAccount()
+
+const refFormModal = ref<InstanceType<typeof FormModal> | null>(null)
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
 const form = reactive({
   username: '',
   email: '',
   password: '',
   pass_conf: '',
-
   mail_sending: true,
-  send_option: '1',
+  send_option: '1' as '1' | '2',
   expired: 24,
 })
 
-const genPass = ref()
+const genPass = ref('')
 const validated = ref(false)
-const refAlertModal = ref()
+const isSubmitting = ref(false)
 
-const onSubmit = (event: Event) => {
+const formReset = () => {
+  form.username = ''
+  form.email = ''
+  form.password = ''
+  form.pass_conf = ''
+  form.mail_sending = true
+  form.send_option = '1'
+  form.expired = 24
+  genPass.value = ''
+  validated.value = false
+}
+
+const onSubmit = async (event: Event) => {
+  if (isSubmitting.value) return
   if (isValidate(event)) {
     validated.value = true
     return
@@ -34,36 +52,28 @@ const onSubmit = (event: Event) => {
     return
   }
 
-  emit('on-submit', { ...form })
-  validated.value = false
-  formReset()
-  refFormModal.value?.close()
-}
-
-const formReset = () => {
-  form.username = ''
-  form.email = ''
-  form.password = ''
-  form.pass_conf = ''
-  form.mail_sending = true
-  form.send_option = '1'
-  form.expired = 24
-}
-
-const generatePassword = () => {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?'
-  let password = ''
-
-  for (let i = 0; i < 8; i++) {
-    // Use cryptographically secure random number generation
-    const array = new Uint32Array(1)
-    window.crypto.getRandomValues(array)
-    const randomIndex = array[0] % chars.length
-    password += chars[randomIndex]
+  isSubmitting.value = true
+  try {
+    const created = await accStore.adminCreateUser({
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      mail_sending: form.mail_sending,
+      send_option: form.send_option,
+      expired: form.expired,
+    })
+    if (created?.pk) {
+      formReset()
+      refFormModal.value?.close()
+      emit('on-created', created.pk)
+    }
+  } finally {
+    isSubmitting.value = false
   }
+}
 
-  genPass.value = password
+const createRandomPassword = () => {
+  genPass.value = generatePassword()
 }
 
 const applyGen = () => {
@@ -72,13 +82,21 @@ const applyGen = () => {
   genPass.value = ''
 }
 
-const callModal = () => refFormModal.value?.callModal()
+const callModal = () => {
+  formReset()
+  refFormModal.value?.callModal()
+}
 
-defineExpose({ callModal })
+const closeModal = () => {
+  formReset()
+  refFormModal.value?.close()
+}
+
+defineExpose({ callModal, close: closeModal })
 </script>
 
 <template>
-  <FormModal ref="refFormModal">
+  <FormModal ref="refFormModal" @close="formReset">
     <template #icon>
       <v-icon icon="mdi-account-check" color="success" class="me-2" />
     </template>
@@ -90,8 +108,8 @@ defineExpose({ callModal })
             <CFormLabel for="username" class="col-sm-3 col-form-label required">아이디</CFormLabel>
             <CCol sm="9">
               <CFormInput
-                v-model="form.username"
                 id="username"
+                v-model="form.username"
                 maxlength="30"
                 placeholder="아이디"
                 autocomplete="off"
@@ -103,8 +121,8 @@ defineExpose({ callModal })
             <CFormLabel for="email" class="col-sm-3 col-form-label required">이메일</CFormLabel>
             <CCol sm="9">
               <CFormInput
-                v-model="form.email"
                 id="email"
+                v-model="form.email"
                 type="email"
                 maxlength="100"
                 placeholder="이메일"
@@ -118,8 +136,8 @@ defineExpose({ callModal })
             </CFormLabel>
             <CCol sm="5">
               <CFormInput
-                v-model="form.password"
                 id="password"
+                v-model="form.password"
                 type="password"
                 maxlength="20"
                 placeholder="비밀번호"
@@ -128,31 +146,42 @@ defineExpose({ callModal })
               />
             </CCol>
             <CCol sm="4">
-              <v-btn color="info" size="small" class="mt-1" @click="generatePassword">
+              <v-btn
+                type="button"
+                color="info"
+                size="small"
+                class="mt-1"
+                @click="createRandomPassword"
+              >
                 임의 패스워드 생성
               </v-btn>
             </CCol>
           </CRow>
-          <CRow class="mb-4" style="height: 45px">
+          <CRow class="mb-4" style="min-height: 45px">
             <CFormLabel for="pass_conf" class="col-sm-3 col-form-label required">
               비밀번호 확인
             </CFormLabel>
             <CCol sm="5">
               <CFormInput
-                v-model="form.pass_conf"
                 id="pass_conf"
+                v-model="form.pass_conf"
                 type="password"
                 maxlength="20"
                 placeholder="비밀번호 확인"
                 required
               />
             </CCol>
-            <CCol v-if="genPass" sm="4">
-              <div class="p-1 mb-1 bg-yellow-lighten-1 text-center" style="width: 90px">
+            <CCol v-if="genPass" sm="4" class="mt-2 mt-sm-0">
+              <div
+                class="p-1 mb-1 bg-warning-subtle text-body rounded text-center fw-bold text-break"
+                style="min-width: 110px"
+              >
                 {{ genPass }}
               </div>
-              <v-btn color="light" size="x-small" @click="genPass = ''">취소</v-btn>
-              <v-btn color="success" size="x-small" @click="applyGen">적용</v-btn>
+              <div class="d-flex gap-1">
+                <v-btn type="button" color="light" size="x-small" @click="genPass = ''">취소</v-btn>
+                <v-btn type="button" color="success" size="x-small" @click="applyGen">적용</v-btn>
+              </div>
             </CCol>
           </CRow>
 
@@ -161,9 +190,9 @@ defineExpose({ callModal })
           <CRow>
             <CCol class="mb-3">
               <CFormCheck
+                id="inform-mail"
                 v-model="form.mail_sending"
                 type="checkbox"
-                id="inform-mail"
                 label="새로 생성한 사용자에게 알림 메일 보내기"
               />
             </CCol>
@@ -172,23 +201,30 @@ defineExpose({ callModal })
           <CRow>
             <CCol sm="12" class="ps-5 mb-3">
               <CFormCheck
+                id="content-option1"
                 v-model="form.send_option"
                 value="1"
                 type="radio"
                 name="content-option"
-                id="content-option1"
                 label="패스워드 재설정 링크 포함"
                 :disabled="!form.mail_sending"
               />
             </CCol>
-            <CRow>
-              <CCol sm="5" class="ps-5 mb-3">
+            <CRow class="mb-3 align-items-center">
+              <CCol sm="5" class="ps-5">
                 <span class="ps-4">링크 만료 시간 : </span>
               </CCol>
               <CCol sm="4">
-                <CFormSelect v-model.number="form.expired" size="sm" :disabled="!form.mail_sending">
-                  <option v-for="i in 24" :value="i" :key="i">
-                    <span v-if="i < 10">0</span>{{ i }}
+                <CFormSelect
+                  :model-value="String(form.expired)"
+                  size="sm"
+                  :disabled="!form.mail_sending || form.send_option !== '1'"
+                  @update:model-value="
+                    val => (form.expired = !Array.isArray(val) && Number(val) ? Number(val) : 24)
+                  "
+                >
+                  <option v-for="i in 24" :key="i" :value="String(i)">
+                    {{ String(i).padStart(2, '0') }}
                   </option>
                 </CFormSelect>
               </CCol>
@@ -196,11 +232,11 @@ defineExpose({ callModal })
             </CRow>
             <CCol sm="12" class="ps-5 mb-3">
               <CFormCheck
+                id="content-option2"
                 v-model="form.send_option"
                 value="2"
                 type="radio"
                 name="content-option"
-                id="content-option2"
                 label="사용자 패스워드 포함"
                 :disabled="!form.mail_sending"
               />
@@ -208,8 +244,18 @@ defineExpose({ callModal })
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn type="submit" size="small" color="primary">확인</v-btn>
-          <v-btn color="light" size="small" flat @click="refFormModal?.close()">닫기</v-btn>
+          <v-btn
+            type="submit"
+            size="small"
+            color="primary"
+            :disabled="isSubmitting"
+            :loading="isSubmitting"
+          >
+            확인
+          </v-btn>
+          <v-btn type="button" color="light" size="small" :disabled="isSubmitting" flat @click="closeModal">
+            닫기
+          </v-btn>
         </CModalFooter>
       </CForm>
     </template>

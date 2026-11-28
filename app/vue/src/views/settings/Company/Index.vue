@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/settings/_menu/headermixin'
+import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings'
-import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import SettingsCompanyGuard from '@/components/AuthGuard/SettingsCompanyGuard.vue'
@@ -11,46 +11,54 @@ import CompanyForm from './components/CompanyForm.vue'
 import CompanyDetail from './components/CompanyDetail.vue'
 
 const compName = ref<'CompanyDetail' | 'CreateForm' | 'UpdateForm'>('CompanyDetail')
+const isSubmitting = ref(false)
 
+const account = useAccount()
 const comStore = useCompany()
 const company = computed(() => comStore.company)
 
-const createForm = () => (compName.value = 'CreateForm')
-const updateForm = () => (compName.value = 'UpdateForm')
+const createForm = () => {
+  if (!account.superAuth) return
+  compName.value = 'CreateForm'
+}
+const updateForm = () => {
+  if (!account.superAuth || !company.value?.pk) return
+  compName.value = 'UpdateForm'
+}
 const resetForm = () => (compName.value = 'CompanyDetail')
 
 const onSubmit = async (payload: Company) => {
-  if (payload.pk) await comStore.updateCompany(payload)
-  else await comStore.createCompany(payload)
-  resetForm()
-}
-
-const onDelete = async (pk: number) => {
-  await comStore.deleteCompany(pk)
-  resetForm()
-}
-
-const RefCompanyForm = ref()
-const dataSet = () => {
-  if (RefCompanyForm.value) {
-    RefCompanyForm.value.formDataSetup()
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    const ok = payload.pk
+      ? await comStore.updateCompany(payload)
+      : await comStore.createCompany(payload)
+    if (ok) resetForm()
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-const loading = ref(true)
-onBeforeMount(() => {
-  loading.value = false
-})
+const onDelete = async (pk: number) => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    const ok = await comStore.deleteCompany(pk)
+    if (ok) resetForm()
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
   <SettingsCompanyGuard>
-    <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
       :nav-menu="navMenu"
       selector="CompanySelect"
-      @com-select="dataSet"
+      :selectable="compName === 'CompanyDetail'"
     />
 
     <ContentBody>
@@ -61,12 +69,18 @@ onBeforeMount(() => {
         @update-form="updateForm"
       />
 
-      <CompanyForm v-if="compName === 'CreateForm'" @on-submit="onSubmit" @reset-form="resetForm" />
+      <CompanyForm
+        v-else-if="compName === 'CreateForm'"
+        :company="null"
+        :submitting="isSubmitting"
+        @on-submit="onSubmit"
+        @reset-form="resetForm"
+      />
 
       <CompanyForm
-        ref="RefCompanyForm"
-        v-if="compName === 'UpdateForm'"
+        v-else-if="compName === 'UpdateForm'"
         :company="company as Company"
+        :submitting="isSubmitting"
         @on-submit="onSubmit"
         @on-delete="onDelete"
         @reset-form="resetForm"

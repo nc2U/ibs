@@ -188,6 +188,33 @@ class AccountsSecurityAndIsolationTests(APITestCase):
         self.user_b.refresh_from_db()
         self.assertTrue(self.user_b.work_manager)
 
+    def test_work_manager_can_retrieve_and_approve_inactive_user(self):
+        """work_manager는 미승인(비활성) 사용자를 단건/목록 조회하고 AdminManageUserView로 승인(is_active=True) 가능"""
+        wm_user = User.objects.create_user(
+            username='workmgr_app', email='wm_app@test.com', password='password123', work_manager=True
+        )
+        pending_user = User.objects.create_user(
+            username='pending_u', email='pending@test.com', password='password123', is_active=False
+        )
+        self.client.force_authenticate(user=wm_user)
+
+        res_list = self.client.get('/api/v1/user/?is_active=all')
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        list_pks = [u['pk'] for u in res_list.data['results']]
+        self.assertIn(pending_user.pk, list_pks)
+
+        res_detail = self.client.get(f'/api/v1/user/{pending_user.pk}/')
+        self.assertEqual(res_detail.status_code, status.HTTP_200_OK)
+        self.assertFalse(res_detail.data['is_active'])
+
+        res_approve = self.client.put('/api/v1/admin-create-user/', {
+            'email': pending_user.email,
+            'is_active': True,
+        })
+        self.assertEqual(res_approve.status_code, status.HTTP_200_OK)
+        pending_user.refresh_from_db()
+        self.assertTrue(pending_user.is_active)
+
     def test_todo_ownership_isolation(self):
         """Todo는 작성자 본인 데이터만 조회 가능"""
         self.client.force_authenticate(user=self.user_a)

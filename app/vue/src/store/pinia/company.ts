@@ -114,25 +114,56 @@ export const useCompany = defineStore('company', () => {
 
   const removeCompany = () => (company.value = null)
 
-  const createCompany = (payload: Company) =>
-    api
-      .post(`/company/`, payload)
-      .then(res => fetchCompanyList().then(() => fetchCompany(res.data.pk).then(() => message())))
-      .catch(err => errorHandle(err))
+  const createCompany = async (payload: Company): Promise<boolean> => {
+    try {
+      const res = await api.post(`/company/`, payload)
+      await fetchCompanyList()
+      await fetchCompany(res.data.pk)
+      message()
+      return true
+    } catch (err) {
+      errorHandle(err)
+      return false
+    }
+  }
 
-  const updateCompany = (payload: Company) =>
-    api
-      .put(`/company/${payload.pk}/`, payload)
-      .then(res => fetchCompany(res.data.pk).then(() => message()))
-      .catch(err => errorHandle(err))
+  const updateCompany = async (payload: Company): Promise<boolean> => {
+    try {
+      const res = await api.patch(`/company/${payload.pk}/`, payload)
+      await Promise.all([fetchCompanyList(), fetchCompany(res.data.pk)])
+      message()
+      return true
+    } catch (err) {
+      errorHandle(err)
+      return false
+    }
+  }
 
-  const deleteCompany = (pk: number) =>
-    api
-      .delete(`/company/${pk}/`)
-      .then(() =>
-        fetchCompanyList().then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.')),
-      )
-      .catch(err => errorHandle(err))
+  const deleteCompany = async (pk: number): Promise<boolean> => {
+    try {
+      await api.delete(`/company/${pk}/`)
+      await fetchCompanyList()
+      if (company.value?.pk === pk) {
+        const nextCompany =
+          companyList.value.find(c => c.is_default) || companyList.value[0] || null
+        if (nextCompany?.pk) {
+          await fetchCompany(nextCompany.pk)
+        } else {
+          company.value = null
+          try {
+            localStorage.removeItem('curr-company')
+          } catch {
+            // ignore storage errors
+          }
+        }
+      }
+      message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      return true
+    } catch (err) {
+      errorHandle(err)
+      return false
+    }
+  }
 
   // states & getters
   const logo = ref<Logo | null>(null)

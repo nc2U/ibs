@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
 import { TableSecondary } from '@/utils/cssMixins'
 import type { Company } from '@/store/types/settings'
@@ -12,20 +11,18 @@ defineProps({
 
 const emit = defineEmits(['create-form', 'update-form'])
 
-const refAlertModal = ref()
+const refAlertModal = ref<InstanceType<typeof AlertModal> | null>(null)
 
-const { can, PERM } = usePerms()
 const account = useAccount()
-
-const canProjectUpdate = computed(() => account.isStaff && can(PERM.PROJECT_UPDATE))
+const canManageCompany = computed(() => Boolean(account.superAuth))
 
 const toEdit = () => {
-  if (canProjectUpdate.value) emit('update-form')
+  if (canManageCompany.value) emit('update-form')
   else refAlertModal.value?.callModal()
 }
 
 const toCreate = () => {
-  if (account.superAuth) emit('create-form')
+  if (canManageCompany.value) emit('create-form')
   else refAlertModal.value?.callModal()
 }
 </script>
@@ -47,21 +44,38 @@ const toCreate = () => {
           </CTableHead>
           <CTableBody>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 회사명</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">회사명</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.name }}</span>
+                <span v-if="company">
+                  {{ company.name }}
+                  <v-chip
+                    v-if="company.is_default"
+                    color="primary"
+                    variant="tonal"
+                    size="x-small"
+                    class="ms-2"
+                  >
+                    메인 회사
+                  </v-chip>
+                </span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 회사 약칭</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">영문 회사명</CTableHeaderCell>
+              <CTableDataCell>
+                <span v-if="company">{{ company.en_name || '-' }}</span>
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableHeaderCell scope="row" :color="TableSecondary">회사 약칭</CTableHeaderCell>
               <CTableDataCell>
                 <span v-if="company">{{ company.short_name || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 대표자명</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">대표자명</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.ceo }}</span>
+                <span v-if="company">{{ company.ceo || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
@@ -69,7 +83,7 @@ const toCreate = () => {
                 사업자등록번호
               </CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.tax_number }}</span>
+                <span v-if="company">{{ company.tax_number || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
@@ -77,41 +91,64 @@ const toCreate = () => {
                 법인등록번호
               </CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.org_number }}</span>
+                <span v-if="company">{{ company.org_number || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 업태</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">업태</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.business_cond }}</span>
+                <span v-if="company">{{ company.business_cond || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 종목</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">종목</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.business_even }}</span>
+                <span v-if="company">{{ company.business_even || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 설립일자</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">설립일자</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.es_date }}</span>
+                <span v-if="company">{{ company.es_date || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 개업일자</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">개업일자</CTableHeaderCell>
               <CTableDataCell>
-                <span v-if="company">{{ company.op_date }}</span>
+                <span v-if="company">{{ company.op_date || '-' }}</span>
               </CTableDataCell>
             </CTableRow>
-
             <CTableRow>
-              <CTableHeaderCell scope="row" :color="TableSecondary"> 회사주소</CTableHeaderCell>
+              <CTableHeaderCell scope="row" :color="TableSecondary">대표전화 / 팩스</CTableHeaderCell>
               <CTableDataCell>
                 <span v-if="company">
-                  <span v-if="company.zipcode">({{ company.zipcode }})</span>
-                  {{ company.address1 }} {{ company.address2 }}
-                  {{ company.address3 }}
+                  {{ company.phone || '-' }}
+                  <span v-if="company.fax" class="text-body-secondary ms-2">
+                    (FAX: {{ company.fax }})
+                  </span>
+                </span>
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableHeaderCell scope="row" :color="TableSecondary">대표이메일</CTableHeaderCell>
+              <CTableDataCell>
+                <span v-if="company">{{ company.email || '-' }}</span>
+              </CTableDataCell>
+            </CTableRow>
+            <CTableRow>
+              <CTableHeaderCell scope="row" :color="TableSecondary">회사주소</CTableHeaderCell>
+              <CTableDataCell>
+                <span v-if="company">
+                  <template
+                    v-if="
+                      company.zipcode || company.address1 || company.address2 || company.address3
+                    "
+                  >
+                    <span v-if="company.zipcode">({{ company.zipcode }})</span>
+                    {{ company.address1 }} {{ company.address2 }}
+                    {{ company.address3 }}
+                  </template>
+                  <template v-else>-</template>
                 </span>
               </CTableDataCell>
             </CTableRow>
@@ -122,7 +159,7 @@ const toCreate = () => {
   </CCardBody>
 
   <CCardFooter>
-    <CRow v-if="canProjectUpdate" class="justify-content-between">
+    <CRow v-if="canManageCompany" class="justify-content-between">
       <CCol xs="auto">
         <v-btn type="button" color="success" :disabled="!company" @click="toEdit">
           <v-icon icon="mdi-check-circle-outline" size="small" class="me-1" />
