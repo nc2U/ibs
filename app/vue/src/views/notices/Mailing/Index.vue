@@ -197,10 +197,8 @@ const insertVariable = (variableTag: string) => {
 }
 
 const hasEmailBodyContent = (html: string): boolean => {
-  const text = html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .trim()
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const text = (doc.body?.textContent ?? '').replace(/\u00A0/g, ' ').trim()
   return text.length > 0 || /<(img|hr|table|iframe)\b/i.test(html)
 }
 
